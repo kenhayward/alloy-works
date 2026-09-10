@@ -148,36 +148,63 @@ calling it as somebody, and that somebody's permissions are what stop the conver
 | **IAM-039** | Signing out must invalidate the session everywhere it is active, not only in the browser that asked | T1      | Specified |
 | **IAM-040** | A user must be able to see their own active sessions and end any of them                            | T3      | Specified |
 
-## 11. Non-requirements
+## 11. External participation
 
-| ID          | Not this                                                                                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **IAM-N01** | **Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)   |
-| **IAM-N02** | **No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it |
-| **IAM-N03** | **No sharing between tenants.** Whether cross-tenant collaboration is served some other way is **IAM-Q04**                                                                     |
-| **IAM-N04** | **No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless                            |
+| ID          | Requirement                                                                                                                                                                                 | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-045** | A principal must be markable as external to the tenant, and must be shown as external everywhere they appear - in presence, on a thread, on a suggestion and in an administrator's listings | T4         | Specified |
+| **IAM-046** | An external principal must authenticate by the routes IAM-041 and IAM-043 already allow, and must never be issued a credential of any kind by the product                                   | Constraint | Specified |
+| **IAM-047** | An external principal must be able to read, comment and suggest, and must never be able to edit content, pass a lifecycle gate, sign, or publish                                            | Constraint | Specified |
+| **IAM-048** | External access must be granted against named spaces or documents through the permission model in section 6, never by a status that opens the tenant                                        | Constraint | Specified |
+| **IAM-049** | External access must carry an expiry, which a tenant policy defaults and caps, and which cannot be left unset                                                                               | Constraint | Specified |
+| **IAM-050** | Extending external access must be a positive act by somebody inside the tenant, and must be audited                                                                                         | T4         | Specified |
+| **IAM-051** | An administrator must be able to list every external principal in the tenant and everything each can reach, which is IAM-029 asked from the other end                                       | T4         | Specified |
 
-## 12. Open questions
+**IAM-049 is the requirement that earns its place from other people's mistakes.** Guest access leaks
+the same way in every product that offers it: somebody left the client firm, nobody told the host,
+and the account is still good two years later. An expiry that a tenant may leave empty is an expiry
+that is empty, so the requirement is that it cannot be. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md).
 
-| ID          | Question                                                                                                                                                                                               | What would settle it                                                                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **IAM-Q01** | **Pure federation, or a first-party identity provider with federation as an option?**                                                                                                                  | **Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) |
-| **IAM-Q02** | **Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report               | A customer requirement that cannot be met by putting the annex in its own space                                                                                                                                       |
-| **IAM-Q03** | **Is there anonymous or link-based read for a published artifact?** Sending a client a report is the commonest thing a consultancy does, and requiring them to have an account may not survive contact | Whether early customers publish outward. It interacts with audit: a reader with no identity leaves a thinner trail                                                                                                    |
-| **IAM-Q04** | **How does cross-tenant collaboration work, if at all?** A client reviewing a report inside their consultant's tenant is ordinary in this market, and IAM-001 forbids it outright                      | A decision on whether to serve it by guest identities inside one tenant, or by a sharing mechanism between two                                                                                                        |
+**IAM-047 draws the line at authority rather than at usefulness.** A suggestion is inert until an
+author inside the tenant accepts it, which is exactly what makes it safe to give away. Signing is
+not, because LIF's signing acts assume a signer whom the asserting organisation has identity-proofed,
+and a guest is somebody the tenant has invited rather than somebody it can vouch for.
 
-**IAM-Q03 and IAM-Q04 are the two most likely to force a change here**, and both come from the same
-place: this market's documents are written by one organisation for another. A model that assumes
-everyone who touches a document works for the tenant that owns it is a clean model, and it may not
-be the one customers need.
+## 12. Non-requirements
 
-## 13. Traceability
+| ID          | Not this                                                                                                                                                                                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IAM-N01** | **Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)                                                                                                                        |
+| **IAM-N02** | **No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it                                                                                                                      |
+| **IAM-N03** | **No sharing between tenants.** An outsider participates as a guest principal inside the host tenant (section 11), never as a bridge between two. Cross-tenant sharing is deferred rather than refused - see [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md) |
+| **IAM-N04** | **No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless                                                                                                                                                 |
 
-| This document | Rests on                                                                  |
-| ------------- | ------------------------------------------------------------------------- |
-| Section 3     | Scope §11 security; §13 names multi-tenant leakage as a top-two risk      |
-| IAM-020       | Scope §7.14, the separately grantable right to see a connection's results |
-| Section 8     | Scope §7.14, "why can this person do this"                                |
-| IAM-036       | Scope §7.6, tool use bound by the calling user's permissions              |
-| IAM-023       | CNT-104 to CNT-106, the three modes of access                             |
-| IAM-N04       | Scope §9 decision 2 and §11, the renderer is untrusted                    |
+## 13. Open questions
+
+| ID          | Question                                                                                                                                                                                                                                                                                                                                | What would settle it                                                                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **IAM-Q01** | **Pure federation, or a first-party identity provider with federation as an option?**                                                                                                                                                                                                                                                   | **Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md)                |
+| **IAM-Q02** | **Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report                                                                                                                                                | A customer requirement that cannot be met by putting the annex in its own space                                                                                                                                                      |
+| **IAM-Q03** | **Is there anonymous or link-based read for a published artifact?**                                                                                                                                                                                                                                                                     | **Settled.** Link-based, never anonymous: a publication is shared to a named recipient who proves who they are once (PUB-057 to PUB-060). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md) |
+| **IAM-Q04** | **How does cross-tenant collaboration work, if at all?**                                                                                                                                                                                                                                                                                | **Settled for now.** Guest principals inside the host tenant, and true cross-tenant sharing deferred until customers' clients become customers themselves. See %s                                                                    |
+| **IAM-Q05** | **What happens to a guest's attribution when their access is revoked?** Their comments and accepted suggestions are part of the audited record of how the document reached its wording, and a name that vanishes from a five-year-old baseline is the failure this specification keeps finding. An erasure request points the other way | Legal advice on where attribution in an audited record sits against a right to erasure, which is a question about the regime rather than about the product                                                                           |
+| **IAM-Q06** | **Is the same human guesting for three tenants three unrelated principals?** ADR-0008 implies yes, and a shared directory across tenants would be a convenience that quietly crosses the isolation boundary                                                                                                                             | Whether a guest ever needs to see their work across tenants in one place, which nobody has yet asked for                                                                                                                             |
+
+**IAM-Q03 and IAM-Q04 were the two most likely to force a change here, and they did.** Both came
+from the same place: this market's documents are written by one organisation for another, and a model
+assuming everyone who touches a document works for the tenant that owns it was never going to be the
+one customers need. Section 11 is what replaced it. What is left open is smaller and sharper - what a
+revoked guest leaves behind, and whether one person guesting in several places is one record or
+several.
+
+## 14. Traceability
+
+| This document | Rests on                                                                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Section 3     | Scope §11 security; §13 names multi-tenant leakage as a top-two risk                                                                                        |
+| IAM-020       | Scope §7.14, the separately grantable right to see a connection's results                                                                                   |
+| Section 8     | Scope §7.14, "why can this person do this"                                                                                                                  |
+| IAM-036       | Scope §7.6, tool use bound by the calling user's permissions                                                                                                |
+| IAM-023       | CNT-104 to CNT-106, the three modes of access                                                                                                               |
+| IAM-N04       | Scope §9 decision 2 and §11, the renderer is untrusted                                                                                                      |
+| Section 11    | [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md) - IAM-001 holds, and an outsider is a principal rather than a bridge |

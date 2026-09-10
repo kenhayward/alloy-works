@@ -53,20 +53,30 @@ unfinished state into the permanent record with nobody's name against the decisi
 
 ## 5. Threads
 
-| ID          | Requirement                                                                                            | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **COL-012** | A thread must be anchorable to a span of text, a component, a table cell, or an outline node           | T3         | Specified |
-| **COL-013** | A thread must be resolvable, and resolving it must record who did so and when                          | T3         | Specified |
-| **COL-014** | A thread must support replies, and must show them in order with their authors                          | T3         | Specified |
-| **COL-015** | A mention must notify the person mentioned, and must respect whether they may read the thing discussed | T3         | Specified |
-| **COL-016** | A thread must survive the content around it changing                                                   | T3         | Specified |
-| **COL-017** | A thread whose anchor no longer exists must be surfaced as orphaned, never silently discarded          | Constraint | Specified |
-| **COL-018** | Threads must be listable for a whole document, filterable by state, author and age                     | T3         | Specified |
-| **COL-019** | Threads must not appear in published output in any form                                                | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **COL-012** | A thread must be anchorable to a span of text, a component, a table cell, or an outline node                                                               | T3         | Specified |
+| **COL-013** | A thread must be resolvable, and resolving it must record who did so and when                                                                              | T3         | Specified |
+| **COL-014** | A thread must support replies, and must show them in order with their authors                                                                              | T3         | Specified |
+| **COL-015** | A mention must notify the person mentioned, and must respect whether they may read the thing discussed                                                     | T3         | Specified |
+| **COL-016** | A thread must survive the content around it changing                                                                                                       | T3         | Specified |
+| **COL-017** | A thread whose anchor no longer exists must be surfaced as orphaned, never silently discarded                                                              | Constraint | Specified |
+| **COL-018** | Threads must be listable for a whole document, filterable by state, author and age                                                                         | T3         | Specified |
+| **COL-019** | Threads must not appear in published output in any form                                                                                                    | Constraint | Specified |
+| **COL-038** | A thread must be markable internal, and an internal thread must be invisible to external principals (**IAM-045**)                                          | T4         | Specified |
+| **COL-039** | Whether a thread is internal must be evident to everybody who can see it, so that an internal thread is never mistaken for one the client has already read | Constraint | Specified |
+| **COL-040** | A reply must inherit the internal marking of the thread it joins, and must never be able to widen it                                                       | Constraint | Specified |
 
 **COL-017 is the same principle as everywhere else in this specification.** A comment that vanishes
 because somebody edited the sentence it referred to is feedback silently discarded, and the person
 who wrote it will assume it was read.
+
+**COL-038 to COL-040 stopped being an open question the moment external reviewers did.** Nobody
+reviews a document in front of their client without somewhere to talk first, so an internal thread is
+not a refinement of review, it is what makes reviewing alongside a client possible at all. COL-039
+matters more than it looks: the dangerous mistake is not an internal thread the client can read, which
+a permission check prevents, but an internal thread somebody believes is internal when it is not. See
+[ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md).
 
 ## 6. Suggestions
 
@@ -119,12 +129,12 @@ on sends that sentence to whoever is on the thread, past whatever permissions th
 
 ## 10. Open questions
 
-| ID          | Question                                                                                                                                        | What would settle it                                                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **COL-Q01** | **May a reviewer who also holds authoring rights edit directly instead of suggesting?** Carried from CNT-Q10                                    | Whether review in this market is a separate pass or a mode anybody drops into           |
-| **COL-Q02** | **What is the default lock timeout (COL-008)?** Too short interrupts thinking; too long blocks a colleague                                      | Observed behaviour. Fifteen minutes is a guess, not a finding                           |
-| **COL-Q03** | **Can a thread be private to some reviewers?** Internal comments before a client sees a document are ordinary in consulting                     | Whether early customers review in front of their clients. It interacts with **IAM-Q04** |
-| **COL-Q04** | **Does the soft-lock bet survive contact with users?** Scope §13 names it as a risk, and it is the one thing here that a demo will be judged on | Early evaluations. The content model stays CRDT-compatible either way                   |
+| ID          | Question                                                                                                                                        | What would settle it                                                                                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **COL-Q01** | **May a reviewer who also holds authoring rights edit directly instead of suggesting?** Carried from CNT-Q10                                    | Whether review in this market is a separate pass or a mode anybody drops into                                                                                                                               |
+| **COL-Q02** | **What is the default lock timeout (COL-008)?** Too short interrupts thinking; too long blocks a colleague                                      | Observed behaviour. Fifteen minutes is a guess, not a finding                                                                                                                                               |
+| **COL-Q03** | **Can a thread be private to some reviewers?**                                                                                                  | **Settled.** Internal threads are required, not optional, because external reviewers exist (COL-038 to COL-040). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md) |
+| **COL-Q04** | **Does the soft-lock bet survive contact with users?** Scope §13 names it as a risk, and it is the one thing here that a demo will be judged on | Early evaluations. The content model stays CRDT-compatible either way                                                                                                                                       |
 
 ## 11. Traceability
 

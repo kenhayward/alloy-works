@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.7 - 2026-09-10 (PR #12)
+
+How people outside the organisation take part, which the requirements had flagged as the question
+most likely to force a change.
+
+### Added
+
+- A decision on external participation. A client reviewer becomes a guest principal inside the host
+  tenant - read, comment and suggest, never edit, approve, sign or publish - authenticating the same
+  way everybody else does, with an expiry that cannot be left unset. A finished report reaches
+  somebody outside by a link that names its recipient, expires, can be revoked, records every access
+  and tells a reader when a later publication has superseded the one they are holding.
+- Seven requirements covering guest principals, and four covering shared publications.
+- Three requirements making a comment thread markable internal, so that a document can be reviewed
+  alongside a client without every conversation happening in front of them.
+
+### Changed
+
+- Anonymous distribution is now explicitly not something the product does. A report meant for the
+  public goes on a web server. A reader with no identity cannot be told that the version in their
+  hands has been corrected, and answering that is most of the reason this product exists.
+- Sharing between tenants stays out, and is now deferred rather than merely absent: what would bring
+  it back is customers' own clients becoming customers, and until that happens guests serve the same
+  need for a fraction of the work.
+- Two smaller questions replace the two large ones: what a guest's name should do on a five-year-old
+  comment once their access has lapsed, and whether one person invited by three organisations is one
+  record or three.
+
 ## 0.2.6 - 2026-09-10 (PR #11)
 
 The three decisions that needed a product answer rather than an engineering one.

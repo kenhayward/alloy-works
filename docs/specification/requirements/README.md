@@ -1,10 +1,10 @@
 # Detailed requirements
 
 > **Status: v1, for review.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written. 855 requirements, 88
-> non-requirements and 91 numbered questions, six of which have since been settled. These say what the product must do, in enough detail to
-> choose an architecture on. They do not say how to build it - that is the architecture, and it
-> comes next.
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written. 869 requirements, 88
+> non-requirements and 93 numbered questions, twelve of which have since been settled. These say
+> what the product must do, in enough detail to choose an architecture on. They do not say how to
+> build it - that is the architecture, and it comes next.
 
 ## How a requirement is written
 
