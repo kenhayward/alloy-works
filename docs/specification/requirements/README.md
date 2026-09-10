@@ -74,7 +74,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **CNT** | Content and authoring                     | 7.1     | [CNT-content-and-authoring.md](CNT-content-and-authoring.md)                                       |
 | **STR** | Structure, numbering and cross-references | 7.2     | [STR-structure-numbering-and-cross-references.md](STR-structure-numbering-and-cross-references.md) |
 | **REU** | Reuse, variants and conditional profiling | 7.3     | -                                                                                                  |
-| **DAT** | Data connectivity and bindings            | 7.4     | -                                                                                                  |
+| **DAT** | Data connectivity and bindings            | 7.4     | [DAT-data-connectivity-and-bindings.md](DAT-data-connectivity-and-bindings.md)                     |
 | **TAB** | Tabular presentation                      | 7.5     | -                                                                                                  |
 | **GEN** | Generative AI                             | 7.6     | -                                                                                                  |
 | **COL** | Collaboration and review                  | 7.7     | -                                                                                                  |
@@ -88,7 +88,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **API** | API, MCP and extensibility                | 7.15    | -                                                                                                  |
 | **LOC** | Localisation and translation              | 7.16    | -                                                                                                  |
 | **ADM** | Administration, cost and observability    | 7.17    | -                                                                                                  |
-| **STY** | Styles and presentation themes            | 7.18    | -                                                                                                  |
+| **STY** | Styles and presentation themes            | 7.18    | [STY-styles-and-presentation-themes.md](STY-styles-and-presentation-themes.md)                     |
 | **TPL** | Templates and document instantiation      | 7.19    | -                                                                                                  |
 | **AST** | Assets and media                          | 7.20    | -                                                                                                  |
 | **LIB** | Reference libraries                       | 7.21    | -                                                                                                  |
