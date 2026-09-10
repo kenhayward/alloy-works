@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.4 - 2026-09-10 (PR #9)
+
+The first detailed requirements, and identifiers to track them by.
+
+### Added
+
+- `docs/specification/requirements/`, holding one document per capability area in the scope. Every
+  requirement carries an identifier like `CNT-014` so it can be pointed at from a commit, a test or
+  a conversation without being quoted, and so that progress can be read off what cites it rather
+  than off a status column somebody has to remember to update.
+- The first area written in full: content and authoring. Eighty requirements covering the content
+  model, the block and inline vocabularies, footnotes, mathematics, citations, characters, pasting
+  from other tools, the editing session, the document view and editor accessibility - each with the
+  reasoning next to it, because a requirement without its argument gets re-litigated by the first
+  person who disagrees.
+- All seventeen area codes are reserved up front, so the shape of the whole specification is visible
+  before most of it is written and nothing quietly fails to be specified at all.
+- A test over the requirements. Identifiers have one permitted shape, are never issued twice, never
+  renumber, and leave no gaps - a withdrawn requirement keeps its row rather than vanishing. It also
+  checks that every requirement actually states something binding, which caught twenty-one entries
+  that were vocabulary items rather than requirements.
+
 ## 0.2.3 - 2026-09-10 (PR #8)
 
 The rules for decision records, written down and then enforced.
