@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.5 - 2026-09-10 (PR #10)
+
+How documents will be turned into PDF, decided in part.
+
+### Added
+
+- A decision to keep per-server commercial licensing out of the publishing pipeline. The two engines
+  that reliably meet the fidelity bar are priced per server, and keeping them out keeps the cost of
+  running the product independent of what it charges. The price is that whatever the free engines do
+  not do becomes something to build, and accessible tagging is the likeliest candidate.
+- `docs/specification/Publishing_Engine_Spike.md`, the brief that chooses between the open engines
+  that decision leaves. Nine cases, four of them gates, and one of them a question the requirements
+  had quietly left contradictory: a preview must be quick and must come from the same machinery as a
+  finished document, and an engine that has to lay out every page before it can show the fortieth
+  cannot do both.
+
+### Changed
+
+- The risk register now says that a licensing risk has been traded for a fidelity one rather than
+  retired. What happens if that trade turns out badly was already written down, and it is that a
+  licence comes back into the cost model and the smallest worthwhile customer gets larger.
+
 ## 0.2.4 - 2026-09-10 (PR #9)
 
 The first detailed requirements, and identifiers to track them by.

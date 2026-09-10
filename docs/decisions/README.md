@@ -35,11 +35,12 @@ when a record is missing from it, when a row points at a file that is not there,
 disagree about a status. A stale index is worse than no index, because it says a decision does not
 exist.
 
-| #                                                         | Decision                                    | Status   |
-| --------------------------------------------------------- | ------------------------------------------- | -------- |
-| [0001](0001-record-architecture-decisions.md)             | Record architecture decisions               | Accepted |
-| [0002](0002-pnpm-workspaces-and-turborepo.md)             | pnpm workspaces with Turborepo              | Accepted |
-| [0003](0003-one-renderer-two-deliveries.md)               | One renderer, two deliveries                | Accepted |
-| [0004](0004-brand-assets-and-packaging.md)                | Brand assets and desktop packaging          | Accepted |
-| [0005](0005-purpose-built-node-and-mark-content-model.md) | A purpose-built node-and-mark content model | Accepted |
-| [0006](0006-iteration-version-revision.md)                | Iteration, version and revision             | Accepted |
+| #                                                                  | Decision                                           | Status   |
+| ------------------------------------------------------------------ | -------------------------------------------------- | -------- |
+| [0001](0001-record-architecture-decisions.md)                      | Record architecture decisions                      | Accepted |
+| [0002](0002-pnpm-workspaces-and-turborepo.md)                      | pnpm workspaces with Turborepo                     | Accepted |
+| [0003](0003-one-renderer-two-deliveries.md)                        | One renderer, two deliveries                       | Accepted |
+| [0004](0004-brand-assets-and-packaging.md)                         | Brand assets and desktop packaging                 | Accepted |
+| [0005](0005-purpose-built-node-and-mark-content-model.md)          | A purpose-built node-and-mark content model        | Accepted |
+| [0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md) | No per-server licensing in the publishing pipeline | Accepted |
+| [0006](0006-iteration-version-revision.md)                         | Iteration, version and revision                    | Accepted |
