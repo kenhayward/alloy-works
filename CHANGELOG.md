@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.3 - 2026-09-10 (PR #8)
+
+The rules for decision records, written down and then enforced.
+
+### Added
+
+- A test over `docs/decisions/`. Every record has to appear in that folder's index, every index row
+  has to point at a record that exists, and the two have to agree about a record's status. The index
+  was previously kept in step by hand, which works right up until it does not - and an index that
+  has quietly fallen behind is worse than none, because it says a decision does not exist.
+
+### Changed
+
+- The working agreement now says what a decision record actually is, rather than leaving it to be
+  inferred from the four that happened to exist: the sections it contains, the statuses it can
+  carry, and the rule that its status line is the only part ever edited afterwards.
+- It also says when to write one. Two different tests were in circulation - one in `CLAUDE.md` and a
+  different one in the decisions folder - and they are now a single rule with both halves: the
+  choice constrains later work, **and** its reasoning would otherwise have to be reconstructed from
+  the diff. Along with a note to wait until a decision has survived contact with something rather
+  than recording it while it is one conversation old.
+- `docs/specification/` is now described in the working agreement. It is the one folder that
+  describes the product being built towards rather than the repository as it is, which is what
+  separates a specification from a decision record.
+
 ## 0.2.2 - 2026-09-10 (PR #6)
 
 The content model decision, tested rather than argued. All four gates pass, so ADR-0005 stands.
