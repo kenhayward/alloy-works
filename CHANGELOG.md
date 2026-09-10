@@ -83,6 +83,13 @@ The first detailed requirements, and identifiers to track them by.
   missing from it. Two areas so far have existed only because somebody happened to ask "is that
   covered elsewhere?" - an artifact may now be listed as belonging to nobody, deliberately and
   visibly, but it cannot simply be absent.
+- A twentieth, **assets and media**, and a twenty-first, **reference libraries**. Both came out of
+  the ownership pass: assets, bibliographies and terminology were all things a space holds and
+  content points at, and none of them belonged to anybody.
+- Terminology in particular is new to the specification. A term is referenced rather than typed, the
+  same way a citation is, which is what makes "Marketing Authorisation Holder (MAH)" on first mention
+  and "MAH" thereafter possible at all - whether a mention is the first depends on the document, and
+  a component reused in two reports may be the first in one and the fortieth in the other.
 - A nineteenth, **templates and document instantiation**. Most documents in this product will begin
   by being created from a template, and nothing covered that happening once - only the same thing
   happening in bulk. It also gives a home to the two definitions nothing else owned, the metadata

@@ -140,6 +140,13 @@ These names are the shared vocabulary for every requirements document that follo
   referenced like components, carry alt text and caption metadata, and are numbered by the document
   that uses them rather than by themselves.
 
+- **Bibliography entry** - a managed record of a source, referenced by a citation rather than typed.
+- **Term** - a managed record of what something is called: a preferred label, alternative labels, an
+  abbreviation, a definition, a status, and a label per language. Referenced from content and never
+  typed, so that first-use expansion and glossaries can be resolved by the document rather than
+  baked into the component.
+- **Vocabulary** - a named list of the permitted values a metadata field may take.
+
 ### Assembly
 
 - **Document** - the unit a reader receives and a publication is made from. A document owns an
@@ -207,7 +214,7 @@ be shared across templates without cloning anything.
 
 ## 7. Capability scope
 
-Nineteen areas. Each becomes one detailed requirements document.
+Twenty-one areas. Each becomes one detailed requirements document.
 
 ### 7.1 Authoring
 
@@ -527,6 +534,61 @@ template designer named in §5 had no area serving them.
   discovered at publish time has already cost somebody a day.
 - **Bulk generation rests on this.** §7.3 instantiates many documents from one template and a set of
   parameter rows; that is the same act repeated, and the guarantees it needs are the ones here.
+
+### 7.20 Assets and media
+
+An asset is a managed, versioned binary a space holds and content references. It gets its own area
+because binaries carry a set of concerns nothing else in this product does, and because something
+downstream now depends on getting them right: §7.18 resolves an image style by deriving one
+dimension from the picture's own proportions, which requires knowing them.
+
+- **Validated on the way in, not inspected later.** An upload is checked against a declared list of
+  permitted formats and refused if it does not match, and scanned for malware before it can be
+  referenced by anything.
+- **Intrinsic properties recorded on ingest** - dimensions, colour space, page count. Discovering an
+  image's proportions at publish time is too late for a layout that depends on them.
+- **Derivatives generated on ingest**: thumbnails and preview renditions, so that browsing a library
+  of several thousand images does not fetch several thousand originals.
+- **Alt text belongs to the use, not only the asset.** The same photograph means different things in
+  two documents. An asset carries a default; the figure that places it may override, and §7.1 makes
+  the figure's alt text a publish-time requirement either way.
+- **Versioned, with references pinned or floating** exactly as component references are. Replacing
+  an asset creates a version; it does not silently change every document that used the old one.
+- **Where-used, and deletion that respects it.** An asset referenced by a baseline cannot be deleted,
+  because a published document that no longer renders is worse than a storage bill.
+- **Rights and provenance.** An asset records its source and the licence it is held under, and
+  publishing can be refused where a licence does not permit the use. Content credentials, where an
+  asset carries them, are either preserved or deliberately stripped - and which one happened is
+  recorded rather than left to chance.
+- **Import and export**, with the metadata above, so an asset library can move between spaces.
+
+### 7.21 Reference libraries
+
+A library is a set of small structured records a space holds and content references by identity:
+bibliography entries, terms, and controlled vocabularies. They are grouped because they behave
+identically - referenced rather than typed, versioned, permissioned, searchable, and answerable to
+"where is this used" - and separated from assets because none of them is a binary.
+
+- **Bibliography entries**, referenced by a citation rather than typed (§7.1), importable in standard
+  interchange formats, and deduplicated so that one source does not become four records.
+- **Terms.** A term entry carries a preferred label, alternative labels, an abbreviation, a
+  definition, a status, and a label per language. **A term is referenced from content, never typed**
+  - the same rule as a citation, and for the same reason.
+- **First use is a property of the document, not the component.** "Marketing Authorisation Holder
+  (MAH)" on first mention and "MAH" thereafter can only be resolved at publish time, because a
+  component reused in two reports may be the first mention in one and the fortieth in the other.
+  This is why a term has to be a reference: expanding it into text would bake a document-level fact
+  into reusable content.
+- **Glossaries and lists of abbreviations** are generated from the terms a document actually uses,
+  by the publishing pipeline, the same way a list of figures is.
+- **Controlled vocabularies** - named lists of permitted values a metadata field draws on. §7.19
+  declares which vocabulary a field uses; the vocabulary itself lives here, so two templates can
+  share one.
+- **A thesaurus, not an ontology.** Broader, narrower and related relations between terms, so that
+  searching for one finds the others (§7.11). Inference is deliberately excluded: §7.12 already gives
+  a declared, queryable relationship graph, and in a regulated market "the system inferred it" is a
+  liability rather than a feature.
+- **Versioned, with where-used and import and export**, as for assets.
 
 ## 8. Non-goals
 

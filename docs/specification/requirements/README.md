@@ -90,6 +90,8 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **ADM** | Administration, cost and observability    | 7.17    | -                                                            |
 | **STY** | Styles and presentation themes            | 7.18    | -                                                            |
 | **TPL** | Templates and document instantiation      | 7.19    | -                                                            |
+| **AST** | Assets and media                          | 7.20    | -                                                            |
+| **LIB** | Reference libraries                       | 7.21    | -                                                            |
 
 ## Who owns what
 
@@ -111,7 +113,7 @@ may not be missing.
 | **Iteration**                              | VER                | Retention window is VER's; the editing behaviour is CNT's            |
 | **Component version**                      | VER                |                                                                      |
 | **Component revision**                     | VER, LIF           | VER the designation, LIF the gate that creates it                    |
-| **Asset**                                  | **nobody yet**     | Gap. See below                                                       |
+| **Asset**                                  | AST                | STY depends on its intrinsic dimensions                              |
 | **Document**                               | TPL, STR, LIF, VER | Created by TPL, structured by STR, governed by LIF, versioned by VER |
 | **Outline**                                | STR                | The live outline. A template's starting outline is TPL's             |
 | **Baseline**                               | VER                |                                                                      |
@@ -133,41 +135,41 @@ may not be missing.
 | **Presentation theme**                     | STY                |                                                                      |
 | **Publishing layout**                      | PUB                |                                                                      |
 | **Prompt library**                         | GEN                |                                                                      |
+| **Bibliography entry**                     | LIB                | CNT owns the citation that references it                             |
+| **Term**                                   | LIB                | CNT owns the reference mark, PUB the glossary, LOC the labels        |
+| **Vocabulary**                             | LIB                | TPL declares which vocabulary a field uses; LIB holds the list       |
 
 Artifacts the scope refers to without defining in §6:
 
-| Artifact                     | Owned by                    | Note                                                      |
-| ---------------------------- | --------------------------- | --------------------------------------------------------- |
-| Bibliography entry           | **nobody yet**              | Gap. CNT-051 calls it "a managed artifact within a space" |
-| Term, controlled vocabulary  | **not in the scope at all** | Gap. Raised from customer requirements; not yet specified |
-| User, role, service identity | IAM                         |                                                           |
-| Secret                       | DAT, ADM                    | DAT what a connection needs, ADM where it is kept         |
-| Model endpoint               | GEN, ADM                    | GEN the use, ADM the configuration                        |
-| Audit log                    | LIF                         |                                                           |
-| Notification                 | COL                         |                                                           |
-| Webhook                      | API                         |                                                           |
-| Search index                 | SCH                         |                                                           |
-| Retention policy             | LIF                         |                                                           |
-| Style catalogue              | STY                         |                                                           |
-| Template                     | TPL                         |                                                           |
+| Artifact                     | Owned by | Note                                              |
+| ---------------------------- | -------- | ------------------------------------------------- |
+| User, role, service identity | IAM      |                                                   |
+| Secret                       | DAT, ADM | DAT what a connection needs, ADM where it is kept |
+| Model endpoint               | GEN, ADM | GEN the use, ADM the configuration                |
+| Audit log                    | LIF      |                                                   |
+| Notification                 | COL      |                                                   |
+| Webhook                      | API      |                                                   |
+| Search index                 | SCH      |                                                   |
+| Retention policy             | LIF      |                                                   |
+| Style catalogue              | STY      |                                                   |
+| Template                     | TPL      |                                                   |
 
-### The gaps this pass found
+### What this pass found
 
-Three artifacts have no owner, and they are the same shape: **a managed thing a space holds, that
-content references by identity**, needing versioning, permissions, where-used and import/export.
+Three artifacts had no owner: **assets**, **bibliography entries**, and **terminology**, which was
+not in the scope at all. All three were the same shape - a managed thing a space holds that content
+references by identity, needing versioning, permissions, where-used and import or export.
 
-Whether they are one area or two is the open question. The case for **two**:
+They became **two** areas rather than one. Assets are binaries and carry concerns nothing else here
+does: upload and format validation, malware scanning, derivatives and thumbnails, intrinsic
+dimensions that `STY` depends on for aspect ratio, alt text, rights, storage sizing. Bibliography
+entries, terms and vocabularies are small structured records with none of that. What they genuinely
+share - reference by identity and where-used - is an argument for a common mechanism rather than a
+common area, in the same way that `CNT` and `DAT` both anchor footnotes without being one area.
 
-- **Assets are binaries** and carry concerns nothing else here does - upload and format validation,
-  malware scanning, derivative and thumbnail generation, intrinsic dimensions (which `STY` now
-  depends on for aspect ratio), alt text enforcement, rights and licensing, storage sizing.
-- **Bibliography entries, terms and vocabularies are small structured records** with none of that.
-  They share labels, definitions, per-language variants and a status.
-
-Putting them together gives one document where two thirds of the requirements apply to a third of
-the subject. What they genuinely share - reference by identity, where-used, versioning - is an
-argument for a common _mechanism_, not a common area, in the same way that `CNT` and `DAT` both
-anchor footnotes without being one area.
+Two of the twenty-one areas, `STY` and `TPL`, existed only because somebody happened to ask whether
+something was covered elsewhere. Two more, `AST` and `LIB`, came from looking on purpose. The guard
+above is what makes the difference repeatable.
 
 ## The shape of an area document
 
