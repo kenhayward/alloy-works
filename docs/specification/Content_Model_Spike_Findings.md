@@ -167,11 +167,32 @@ fidelity need a real consumer in the verification loop permanently** - a human c
 renderer, or a third-party validator - and the scope's "maintained test suite against real report
 shapes" has to mean that, or it will keep passing while the output is wrong.
 
-The third symptom also settled a design question rather than just a bug. Empty paragraphs stay
-dropped on import: they are presentation, and schema decision 5 says appearance belongs to the
-presentation theme. Preserving them would put formatting into content. **The correct fix was to make
-the export supply spacing from the layout**, which is what the publishing layout in the scope is for.
-Choosing literal preservation instead would be a scope change, not a bug fix.
+## Settled: a Word round-trip is lossy by design
+
+The third symptom was raised twice and is worth recording as a decision rather than a bug, so nobody
+re-opens it from the diff.
+
+**Empty paragraphs stay dropped on import.** They are presentation, and schema decision 5 says
+appearance belongs to the presentation theme. Preserving them was considered and rejected: a
+component carrying its author's blank lines into all forty documents that reuse it is precisely how
+a component CMS degrades into a word processor. Spacing would double wherever a theme also supplied
+some, comparison would report blank-line edits as content changes, and the visual consistency the
+scope promises in section 3 would erode one override at a time. Capturing the spacing as a per-block
+property was rejected for the same reason in a quieter form.
+
+**The general principle, which is bigger than this symptom: a Word round-trip through a component
+CMS is lossy by design, and that is the product working rather than failing.** The whole premise is
+that appearance comes from a theme rather than from the document. So the bar for import is **content
+fidelity** - nothing said is lost, and anything dropped is named - and the bar for export is
+**publish fidelity** - output under our own layout is right. "The round-trip looks identical to the
+source" is neither of those, and chasing it would mean abandoning the premise.
+
+**What follows is that the layout has to do the work the blank lines were doing.** The exported
+styles now carry generous paragraph and heading spacing, plus `keepNext` and `keepLines` on headings
+so one never strands at the foot of a page with its text overleaf - the kind of thing that is
+invisible until something paginates, and exactly what "submission-grade" means in scope section 7.10.
+That is the publishing layout earning its place as a first-class artifact, and it is a better answer
+than reproducing an authoring habit.
 
 ## What is still unproven
 

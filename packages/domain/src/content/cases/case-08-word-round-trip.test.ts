@@ -221,6 +221,17 @@ describe('case 8 - Word round-trip', () => {
      * has to supply the separation from the layout instead. It did not, so the document came back
      * with the heading run into the text.
      */
+    /**
+     * A heading alone at the foot of a page with its text overleaf is the sort of thing that makes
+     * output look unfinished, and it is invisible until something paginates. It belongs with the
+     * spacing, because both are the layout doing what empty paragraphs were doing by hand.
+     */
+    it('keeps a heading with the text beneath it across a page break', () => {
+      for (const level of [1, 2, 3]) {
+        expect(styleBlock(`Heading${level}`)).toMatch(/<w:keepNext\/>/);
+      }
+    });
+
     it('carries spacing in the styles, so separation never depends on empty paragraphs', () => {
       expect(partText('word/styles.xml')).toMatch(
         /<w:docDefaults>[\s\S]*?<w:spacing[^>]*w:after="[1-9]/,

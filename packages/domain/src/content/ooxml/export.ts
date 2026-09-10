@@ -182,17 +182,28 @@ function numberingXml(): string {
 }
 
 /**
- * `w:pPr` is a sequence, not a bag: `numPr` before `spacing` before `outlineLvl`. Word tolerates
- * the wrong order until the day it does not, and the failure is a file that will not open.
+ * `w:pPr` is a sequence, not a bag: `keepNext` before `numPr` before `spacing` before `outlineLvl`.
+ * Word tolerates the wrong order until the day it does not, and the failure is a file that will not
+ * open at all.
+ *
+ * The spacing is generous on purpose. The source document separated its blocks with empty
+ * paragraphs, and those are dropped on import because they are presentation - so the layout has to
+ * produce a gap that reads like the one the author was making by hand, not merely a gap that
+ * exists. Twentieths of a point: 360 is 18pt.
  */
 function headingStyle(level: number): string {
   const size = { 1: 32, 2: 28, 3: 26 }[level] ?? 24;
+  const before = level === 1 ? 360 : 280;
+  const after = level === 1 ? 240 : 160;
   return (
     `<w:style w:type="paragraph" w:styleId="Heading${level}">` +
     `<w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/>` +
     '<w:pPr>' +
+    // A heading stranded at the foot of a page with its text overleaf is invisible until something
+    // paginates, and it is exactly what "submission-grade" in scope 7.10 is about.
+    '<w:keepNext/><w:keepLines/>' +
     `<w:numPr><w:ilvl w:val="${level - 1}"/><w:numId w:val="1"/></w:numPr>` +
-    '<w:spacing w:before="240" w:after="120"/>' +
+    `<w:spacing w:before="${before}" w:after="${after}"/>` +
     `<w:outlineLvl w:val="${level - 1}"/>` +
     '</w:pPr>' +
     `<w:rPr><w:b/><w:sz w:val="${size}"/></w:rPr>` +
@@ -208,7 +219,7 @@ function stylesXml(): string {
     // The importer drops those - they are presentation, not content - which makes supplying the
     // separation from the layout the export's job rather than an optional nicety.
     '<w:docDefaults><w:pPrDefault><w:pPr>' +
-    '<w:spacing w:after="160" w:line="259" w:lineRule="auto"/>' +
+    '<w:spacing w:after="200" w:line="276" w:lineRule="auto"/>' +
     '</w:pPr></w:pPrDefault></w:docDefaults>' +
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
     HEADING_LEVELS.map(headingStyle).join('') +

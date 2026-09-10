@@ -39,7 +39,10 @@ The content model decision, tested rather than argued. All four gates pass, so A
 - Importing a Word document no longer discards empty paragraphs without saying so. Word writes an
   empty paragraph in a shorter form that the reader was not looking for, so they were dropped and
   never counted - and an import that quietly loses content is the one thing the importer is not
-  allowed to do.
+  allowed to do. They are still dropped, deliberately: blank lines are a way of laying a page out,
+  and layout is the theme's job, not the content's. What they were doing by hand now comes from the
+  layout instead, with wider spacing around headings and a rule that keeps a heading on the same
+  page as the text beneath it.
 
 ## 0.2.1 - 2026-09-10 (PR #5)
 
