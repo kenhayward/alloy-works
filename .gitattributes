@@ -1,0 +1,14 @@
+# Normalise to LF in the repository regardless of the checkout platform. CI runs Linux and
+# contributors are on Windows and macOS; without this, a file's line endings depend on who last
+# touched it and diffs turn into whole-file rewrites.
+* text=auto eol=lf
+
+# Binary and generated files that must not be normalised.
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+
+pnpm-lock.yaml -diff linguist-generated

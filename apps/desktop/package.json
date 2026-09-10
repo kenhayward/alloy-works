@@ -1,0 +1,21 @@
+{
+  "name": "@alloy-works/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "pnpm run build && wait-on tcp:127.0.0.1:5173 && electron .",
+    "start": "electron .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@alloy-works/web": "workspace:*",
+    "@types/node": "^24.5.2",
+    "electron": "^44.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0",
+    "wait-on": "^9.1.0"
+  }
+}
