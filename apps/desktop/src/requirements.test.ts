@@ -235,3 +235,56 @@ describe('the numbered non-requirements and open questions', () => {
     });
   }
 });
+
+/**
+ * Every artifact the scope defines has to appear in the ownership map, even if what it says is that
+ * nobody owns it yet.
+ *
+ * Two of the nineteen areas - STY and TPL - exist because somebody asked "is this covered
+ * elsewhere?" and the answer turned out to be no. Both were found by luck. A concept can be listed
+ * as unowned here, deliberately and visibly; what it cannot be is absent, which is how the first two
+ * went unnoticed.
+ */
+describe('the ownership map', () => {
+  const scope = readFileSync(join(repoRoot, 'docs', 'specification', 'Project_Scope.md'), 'utf8');
+
+  const between = (text: string, from: string, to: string): string => {
+    const start = text.indexOf(from);
+    const end = text.indexOf(to, start + 1);
+    expect(start, `found "${from}"`).toBeGreaterThan(-1);
+    expect(end, `found "${to}"`).toBeGreaterThan(start);
+    return text.slice(start, end);
+  };
+
+  /**
+   * A definition names a thing and then describes it: `- **Tenant** - a customer` in a list, or
+   * `| **Metadata schema** | ...` in a table. What that deliberately excludes is a bolded sentence
+   * making a point - section 6 has one, about numbering belonging to the outline - which is a rule
+   * rather than an artifact and has nothing to own it.
+   */
+  const definedNames = (text: string): string[] => [
+    ...new Set([
+      ...[...text.matchAll(/^- \*\*([^*]+)\*\* - /gm)].map((match) => match[1]!.trim()),
+      ...[...text.matchAll(/^\| \*\*([^*]+)\*\* +\|/gm)].map((match) => match[1]!.trim()),
+    ]),
+  ];
+
+  const scopeConcepts = definedNames(
+    between(scope, '## 6. Core concepts', '## 7. Capability scope'),
+  );
+  const mapped = new Set(
+    definedNames(
+      between(read('README.md'), '## Who owns what', '## The shape of an area document'),
+    ),
+  );
+
+  it('found the concepts to check', () => {
+    expect(scopeConcepts.length).toBeGreaterThan(20);
+  });
+
+  it('accounts for every concept the scope defines', () => {
+    const missing = scopeConcepts.filter((concept) => !mapped.has(concept));
+
+    expect(missing, 'concepts defined in the scope but absent from the ownership map').toEqual([]);
+  });
+});

@@ -91,6 +91,84 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **STY** | Styles and presentation themes            | 7.18    | -                                                            |
 | **TPL** | Templates and document instantiation      | 7.19    | -                                                            |
 
+## Who owns what
+
+Every artifact the scope defines belongs to exactly one area, or is explicitly shared between named
+ones, or is explicitly unowned. The third case is the reason this table exists: `STY` and `TPL` were
+both found by somebody asking "is this covered elsewhere?" rather than by anyone looking, and an
+artifact nobody owns is one that quietly fails to be specified.
+
+`apps/desktop/src/requirements.test.ts` checks that every concept defined in
+[`Project_Scope.md`](../Project_Scope.md) §6 appears below. A concept may be listed as unowned; it
+may not be missing.
+
+| Artifact (scope §6)                        | Owned by           | Note                                                                 |
+| ------------------------------------------ | ------------------ | -------------------------------------------------------------------- |
+| **Tenant**                                 | IAM                | Isolation boundary                                                   |
+| **Space**                                  | IAM, ADM           | IAM the permission boundary, ADM creating and administering one      |
+| **Component**                              | CNT                |                                                                      |
+| **Node-and-mark model**                    | CNT                |                                                                      |
+| **Iteration**                              | VER                | Retention window is VER's; the editing behaviour is CNT's            |
+| **Component version**                      | VER                |                                                                      |
+| **Component revision**                     | VER, LIF           | VER the designation, LIF the gate that creates it                    |
+| **Asset**                                  | **nobody yet**     | Gap. See below                                                       |
+| **Document**                               | TPL, STR, LIF, VER | Created by TPL, structured by STR, governed by LIF, versioned by VER |
+| **Outline**                                | STR                | The live outline. A template's starting outline is TPL's             |
+| **Baseline**                               | VER                |                                                                      |
+| **Publication**                            | PUB                |                                                                      |
+| **Parameter set**                          | TPL                |                                                                      |
+| **Data connection**                        | DAT                |                                                                      |
+| **Query definition**                       | DAT                |                                                                      |
+| **Binding**                                | DAT                |                                                                      |
+| **Binding mode**                           | DAT                | Live, pinned, refreshable - and what happens when a source moves     |
+| **Provenance record**                      | DAT, LIF           | DAT writes it, LIF audits it                                         |
+| **Relationship**                           | REL                |                                                                      |
+| **Condition**                              | REU                | CNT owns the mark, REU the evaluation                                |
+| **Review thread**                          | COL                | CNT owns the anchor mark                                             |
+| **Suggestion**                             | COL                | CNT owns the mark                                                    |
+| **Workflow state**                         | LIF                |                                                                      |
+| **Metadata schema**                        | TPL                | Which vocabulary a field draws on is TPL's; the vocabulary is not    |
+| **Structure outline**                      | TPL                | The definition, not a document's live outline                        |
+| **Data connections and query definitions** | DAT                |                                                                      |
+| **Presentation theme**                     | STY                |                                                                      |
+| **Publishing layout**                      | PUB                |                                                                      |
+| **Prompt library**                         | GEN                |                                                                      |
+
+Artifacts the scope refers to without defining in §6:
+
+| Artifact                     | Owned by                    | Note                                                      |
+| ---------------------------- | --------------------------- | --------------------------------------------------------- |
+| Bibliography entry           | **nobody yet**              | Gap. CNT-051 calls it "a managed artifact within a space" |
+| Term, controlled vocabulary  | **not in the scope at all** | Gap. Raised from customer requirements; not yet specified |
+| User, role, service identity | IAM                         |                                                           |
+| Secret                       | DAT, ADM                    | DAT what a connection needs, ADM where it is kept         |
+| Model endpoint               | GEN, ADM                    | GEN the use, ADM the configuration                        |
+| Audit log                    | LIF                         |                                                           |
+| Notification                 | COL                         |                                                           |
+| Webhook                      | API                         |                                                           |
+| Search index                 | SCH                         |                                                           |
+| Retention policy             | LIF                         |                                                           |
+| Style catalogue              | STY                         |                                                           |
+| Template                     | TPL                         |                                                           |
+
+### The gaps this pass found
+
+Three artifacts have no owner, and they are the same shape: **a managed thing a space holds, that
+content references by identity**, needing versioning, permissions, where-used and import/export.
+
+Whether they are one area or two is the open question. The case for **two**:
+
+- **Assets are binaries** and carry concerns nothing else here does - upload and format validation,
+  malware scanning, derivative and thumbnail generation, intrinsic dimensions (which `STY` now
+  depends on for aspect ratio), alt text enforcement, rights and licensing, storage sizing.
+- **Bibliography entries, terms and vocabularies are small structured records** with none of that.
+  They share labels, definitions, per-language variants and a status.
+
+Putting them together gives one document where two thirds of the requirements apply to a third of
+the subject. What they genuinely share - reference by identity, where-used, versioning - is an
+argument for a common _mechanism_, not a common area, in the same way that `CNT` and `DAT` both
+anchor footnotes without being one area.
+
 ## The shape of an area document
 
 ```

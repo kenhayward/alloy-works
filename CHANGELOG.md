@@ -79,6 +79,10 @@ The first detailed requirements, and identifiers to track them by.
 - An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
   span the editor and the publisher and to belong to neither, so they now have a section of their own
   in the scope rather than being assumed by both.
+- A map of which area owns each thing the specification defines, and a check that nothing is
+  missing from it. Two areas so far have existed only because somebody happened to ask "is that
+  covered elsewhere?" - an artifact may now be listed as belonging to nobody, deliberately and
+  visibly, but it cannot simply be absent.
 - A nineteenth, **templates and document instantiation**. Most documents in this product will begin
   by being created from a template, and nothing covered that happening once - only the same thing
   happening in bulk. It also gives a home to the two definitions nothing else owned, the metadata
