@@ -1,9 +1,10 @@
 # Detailed requirements
 
-> **Status: in progress.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7. These say what the product must do, in enough
-> detail to choose an architecture on. They do not say how to build it - that is the architecture,
-> and it comes after.
+> **Status: complete in draft, for review.** One document per capability area in
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written. 847 requirements, 88
+> non-requirements and 91 open questions. These say what the product must do, in enough detail to
+> choose an architecture on. They do not say how to build it - that is the architecture, and it
+> comes next.
 
 ## How a requirement is written
 
@@ -83,11 +84,11 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **PUB** | Publishing and output                     | 7.10    | [PUB-publishing-and-output.md](PUB-publishing-and-output.md)                                       |
 | **SCH** | Search, navigation and discovery          | 7.11    | [SCH-search-navigation-and-discovery.md](SCH-search-navigation-and-discovery.md)                   |
 | **REL** | Relationships and the graph               | 7.12    | [REL-relationships-and-the-graph.md](REL-relationships-and-the-graph.md)                           |
-| **IMP** | Import, export and interchange            | 7.13    | -                                                                                                  |
+| **IMP** | Import, export and interchange            | 7.13    | [IMP-import-export-and-interchange.md](IMP-import-export-and-interchange.md)                       |
 | **IAM** | Identity, tenancy and access control      | 7.14    | [IAM-identity-tenancy-and-access-control.md](IAM-identity-tenancy-and-access-control.md)           |
-| **API** | API, MCP and extensibility                | 7.15    | -                                                                                                  |
-| **LOC** | Localisation and translation              | 7.16    | -                                                                                                  |
-| **ADM** | Administration, cost and observability    | 7.17    | -                                                                                                  |
+| **API** | API, MCP and extensibility                | 7.15    | [API-api-mcp-and-extensibility.md](API-api-mcp-and-extensibility.md)                               |
+| **LOC** | Localisation and translation              | 7.16    | [LOC-localisation-and-translation.md](LOC-localisation-and-translation.md)                         |
+| **ADM** | Administration, cost and observability    | 7.17    | [ADM-administration-cost-and-observability.md](ADM-administration-cost-and-observability.md)       |
 | **STY** | Styles and presentation themes            | 7.18    | [STY-styles-and-presentation-themes.md](STY-styles-and-presentation-themes.md)                     |
 | **TPL** | Templates and document instantiation      | 7.19    | [TPL-templates-and-document-instantiation.md](TPL-templates-and-document-instantiation.md)         |
 | **AST** | Assets and media                          | 7.20    | [AST-assets-and-media.md](AST-assets-and-media.md)                                                 |

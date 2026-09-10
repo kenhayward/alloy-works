@@ -79,6 +79,9 @@ The first detailed requirements, and identifiers to track them by.
 - An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
   span the editor and the publisher and to belong to neither, so they now have a section of their own
   in the scope rather than being assumed by both.
+- **All twenty-one capability areas written**: 847 requirements, 88 non-requirements and 91 open
+  questions, each carrying the reasoning beside it. Enough of the specification to choose an
+  architecture on, which was the point of writing them.
 - Seven of the twenty-one areas written in full, close to four hundred requirements between them:
   content and authoring, structure and numbering, identity and access, data and bindings, styles and
   themes, publishing and output, and templates. Enough of the specification to choose an architecture
