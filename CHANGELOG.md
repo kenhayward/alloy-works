@@ -3,6 +3,45 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.1 - 2026-09-10 (PR #5)
+
+The first scope document, and the first decision it needed. Still no product - this says what the
+product is going to be, and how its content will be represented.
+
+### Added
+
+- `docs/specification/Project_Scope.md`, the top-down scope for Alloy Works as a component content
+  management system for reports that mix authored narrative with live data. It names the market it
+  is aimed at and how it compares to Workiva, Paligo, Heretto, Veeva and Quarto; defines the
+  vocabulary the rest of the specification will use - component, revision, document, outline,
+  baseline, template, binding, provenance; sets out seventeen capability areas; and is explicit
+  about what Alloy Works will not be.
+- Nine decisions recorded as settled, with the reasoning: the wedge market, web-first with the
+  service as the system of record, the component repository with the template as a binding
+  artifact, soft component locks instead of real-time co-editing, OpenAPI as the source of truth,
+  a curated rather than mirrored MCP surface, PDF and Word as the fidelity bar, schema-declared
+  relationships, and AI output as a proposal until a human accepts it.
+- Ten decisions recorded as still open, each with what it hinges on, so that the three irreversible
+  ones - the content representation, the storage and revision model, and the publishing engine -
+  are spiked before anything is built on top of them.
+- Six delivery tranches, ten named risks with mitigations, and a "what would change the answer"
+  section in the same idiom as the decision records.
+- A decision record for the content model: content is held as a purpose-built tree of nodes and
+  marks, serialised as JSON and identical to the editor's own model, with XHTML, OOXML, Markdown
+  and DITA serving at the boundary rather than at the core. The deciding argument is that a
+  profiling condition and a reviewer's redline routinely cover overlapping ranges of the same
+  sentence, and no tree markup can represent that without abandoning its own model - whereas marks
+  applied to ranges make it the ordinary case.
+- `docs/specification/Content_Model_Spike.md`, the brief that validates that decision before
+  anything is built on it. Ten deliberately hard cases - among them a redline crossing a
+  conditional boundary, a footnote anchored to a cell in a table that a query might not return, and
+  a round-trip through Word with track changes on - of which four are gates that supersede the
+  decision record rather than being worked around.
+- The content representation therefore moves from the open list to the settled one, the remaining
+  irreversible decisions drop from three to two, and Word export moves into the first delivery
+  tranche, since the schema is designed against its mapping and that mapping has to be exercised
+  while the schema can still change cheaply.
+
 ## 0.2.0 - 2026-09-10 (PR #4)
 
 The Alloy Works mark, wired into every place an icon is asked for.
