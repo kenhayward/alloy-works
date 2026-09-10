@@ -76,13 +76,13 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **REU** | Reuse, variants and conditional profiling | 7.3     | [REU-reuse-variants-and-conditional-profiling.md](REU-reuse-variants-and-conditional-profiling.md) |
 | **DAT** | Data connectivity and bindings            | 7.4     | [DAT-data-connectivity-and-bindings.md](DAT-data-connectivity-and-bindings.md)                     |
 | **TAB** | Tabular presentation                      | 7.5     | [TAB-tabular-presentation.md](TAB-tabular-presentation.md)                                         |
-| **GEN** | Generative AI                             | 7.6     | -                                                                                                  |
+| **GEN** | Generative AI                             | 7.6     | [GEN-generative-ai.md](GEN-generative-ai.md)                                                       |
 | **COL** | Collaboration and review                  | 7.7     | [COL-collaboration-and-review.md](COL-collaboration-and-review.md)                                 |
 | **LIF** | Lifecycle, workflow and audit             | 7.8     | [LIF-lifecycle-workflow-and-audit.md](LIF-lifecycle-workflow-and-audit.md)                         |
 | **VER** | Versioning, baselines and comparison      | 7.9     | [VER-versioning-baselines-and-comparison.md](VER-versioning-baselines-and-comparison.md)           |
 | **PUB** | Publishing and output                     | 7.10    | [PUB-publishing-and-output.md](PUB-publishing-and-output.md)                                       |
-| **SCH** | Search, navigation and discovery          | 7.11    | -                                                                                                  |
-| **REL** | Relationships and the graph               | 7.12    | -                                                                                                  |
+| **SCH** | Search, navigation and discovery          | 7.11    | [SCH-search-navigation-and-discovery.md](SCH-search-navigation-and-discovery.md)                   |
+| **REL** | Relationships and the graph               | 7.12    | [REL-relationships-and-the-graph.md](REL-relationships-and-the-graph.md)                           |
 | **IMP** | Import, export and interchange            | 7.13    | -                                                                                                  |
 | **IAM** | Identity, tenancy and access control      | 7.14    | [IAM-identity-tenancy-and-access-control.md](IAM-identity-tenancy-and-access-control.md)           |
 | **API** | API, MCP and extensibility                | 7.15    | -                                                                                                  |
