@@ -32,17 +32,35 @@ CNT-014
 - **Cite the identifier in whatever verifies it.** A test named for `CNT-014` is what makes that
   requirement demonstrably met, and it is how coverage will be reported later.
 
+### Non-requirements and open questions are numbered too
+
+A reviewer needs to cite "the third non-requirement" without quoting it, so those get identifiers as
+well, in their own sequences and in a shape that cannot be confused with a requirement:
+
+- **`CNT-N01`** - a non-requirement. Something this area deliberately does not do.
+- **`CNT-Q01`** - an open question, with what would settle it.
+
+`CNT-N02` and `CNT-Q05` cannot be misread as `CNT-002`, which is the point of the letter.
+
+### Numbering runs out of order down the page, deliberately
+
+Identifiers are contiguous **as a set**, not in document order. A requirement added later belongs
+beside the ones it relates to and keeps the next free number when it goes there, so a section can
+read `CNT-014 ... CNT-023, CNT-081, CNT-086`. Requiring document order would mean renumbering on
+every insertion, which is exactly what the never-reuse rule forbids. The set has no holes, which is
+what catches a requirement deleted instead of withdrawn.
+
 `apps/desktop/src/requirements.test.ts` enforces the format, the uniqueness, the contiguous
-numbering, the known vocabularies and this index.
+numbering, the known vocabularies and this index, for all three identifier kinds.
 
 ### Columns
 
-| Column          | Meaning                                                                                                                                        |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ID**          | As above                                                                                                                                       |
-| **Requirement** | One statement of what must be true. `must` is binding; `should` is a strong default that an implementer may argue against in a decision record |
-| **Tranche**     | `T1`-`T6` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `-` if it is a constraint rather than a deliverable                    |
-| **Status**      | `Specified`, `Withdrawn`, or `Superseded by XXX-NNN`. Nothing here tracks build progress - that is what citations are for                      |
+| Column          | Meaning                                                                                                                                                                       |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ID**          | As above                                                                                                                                                                      |
+| **Requirement** | One statement of what must be true. `must` is binding; `should` is a strong default that an implementer may argue against in a decision record                                |
+| **Tranche**     | `T1`-`T6` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `Constraint` where the requirement governs how something is built rather than naming a thing to build |
+| **Status**      | `Specified`, `Withdrawn`, or `Superseded by XXX-NNN`. Nothing here tracks build progress - that is what citations are for                                                     |
 
 ## Areas
 
@@ -81,8 +99,8 @@ that the codes are reserved and the shape of the whole is visible from the start
 ## 3..n Narrative        the design thinking, section by section, each ending in a
                          requirements table. The prose is where the reasoning lives; the
                          table is where the commitments live
-## Non-requirements      what this area deliberately does not do
-## Open questions        what is not settled, and what would settle it
+## Non-requirements      what this area deliberately does not do, each numbered XXX-Nnn
+## Open questions        what is not settled and what would settle it, each numbered XXX-Qnn
 ## Traceability          scope sections, decision records and findings this rests on
 ```
 

@@ -1,8 +1,8 @@
 # CNT - Content and authoring
 
-> **Status: draft, for review.** The first detailed requirements area. It rests on a content model
-> that has been built and tested rather than only argued, so it is more settled than the areas that
-> follow will be at first draft.
+> **Status: draft, revised after review.** The first detailed requirements area. It rests on a
+> content model that has been built and tested rather than only argued, so it is more settled than
+> the areas that follow will be at first draft.
 
 ## 1. Purpose
 
@@ -26,19 +26,21 @@ the document doing the resolving. That is what makes one component usable in for
 
 Boundaries with neighbouring areas:
 
-| Not here                                               | There            |
-| ------------------------------------------------------ | ---------------- |
-| Where a component sits, numbering, cross-references    | **STR**          |
-| Transclusion, variables, conditional profiling         | **REU**          |
-| Tables whose rows come from a query                    | **DAT**, **TAB** |
-| Who may edit, locks, threads, accepting suggestions    | **COL**          |
-| Rendering to PDF, Word or HTML                         | **PUB**          |
-| Pasting from and exporting to foreign formats at scale | **IMP**          |
+| Not here                                                    | There            |
+| ----------------------------------------------------------- | ---------------- |
+| Where a component sits, numbering, cross-references         | **STR**          |
+| Transclusion, variables, conditional profiling              | **REU**          |
+| Tables whose rows come from a query                         | **DAT**, **TAB** |
+| Who may edit, locks, threads, accepting suggestions         | **COL**          |
+| What a version is, comparison, baselines                    | **VER**          |
+| Rendering to PDF, Word or HTML; lists of figures and tables | **PUB**          |
+| Pasting from and exporting to foreign formats at scale      | **IMP**          |
 
 **The model here must accommodate what those areas need from day one**, even where their features
 land in a later tranche. Marks for conditions, suggestions and comments exist in the T1 schema
-because retrofitting a range annotation onto stored content is a migration of every revision ever
-written. The scope makes this point at the tranche level; this document is where it becomes concrete.
+because retrofitting a range annotation onto stored content is a migration of everything already
+written. The scope makes this point at the tranche level; this document is where it becomes
+concrete.
 
 ## 3. The content model
 
@@ -51,27 +53,27 @@ Identity is the other load-bearing idea, and it appears twice. **Blocks carry an
 comparison can say "this paragraph moved and was reworded" instead of "one vanished and another
 appeared". **Marks carry an id** so that an annotation fragmented by an overlap is still one
 annotation, and accepting it is one action. Both were established by the spike rather than assumed,
-and both have to be in the schema from the first revision ever stored, because revisions are
+and both have to be in the schema from the first snapshot ever stored, because snapshots are
 immutable and identity cannot be granted retrospectively.
 
-| ID          | Requirement                                                                                                                                                            | Tranche | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **CNT-001** | Content must be a tree of typed block nodes, serialised as JSON, structurally identical to what the editor manipulates in memory                                       | T1      | Specified |
-| **CNT-002** | Every block node must carry an identifier, allocated when the block is created, unique within its component, and never reused                                          | T1      | Specified |
-| **CNT-003** | Every annotation over a range of text must be a mark; marks must be able to cover overlapping ranges without nesting and without being split into separate annotations | T1      | Specified |
-| **CNT-004** | Every mark must carry an identifier; an annotation fragmented across several text nodes must remain one annotation under one identifier                                | T1      | Specified |
-| **CNT-005** | Accepting, rejecting or excluding a marked annotation must act on every fragment of that identifier in one operation                                                   | T1      | Specified |
-| **CNT-006** | The mark vocabulary must be closed. Adding a mark type is a schema change with a migration, not a configuration option                                                 | -       | Specified |
-| **CNT-007** | The model must contain no mark or node whose only purpose is to represent an overlap, a range start or a range end                                                     | -       | Specified |
-| **CNT-008** | Marks must be semantic. The model must carry no presentational property - no font, size, colour, alignment or spacing                                                  | -       | Specified |
-| **CNT-009** | A resolution pass (accepting a suggestion, excluding a condition) must preserve block identifiers                                                                      | T1      | Specified |
-| **CNT-010** | Content must be validated on creation, on revision, and on read-back from storage                                                                                      | T1      | Specified |
-| **CNT-011** | Every stored content document must record the schema version it was written against                                                                                    | T1      | Specified |
-| **CNT-012** | A migration path must exist from every schema version ever written to the current one, and must be exercised by a test carrying a fixture of each                      | T1      | Specified |
-| **CNT-013** | Content that fails validation on read-back must be quarantined and reported, never silently coerced or partially loaded                                                | T1      | Specified |
+| ID          | Requirement                                                                                                                                                            | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **CNT-001** | Content must be a tree of typed block nodes, serialised as JSON, structurally identical to what the editor manipulates in memory                                       | T1         | Specified |
+| **CNT-002** | Every block node must carry an identifier, allocated when the block is created, unique within its component, and never reused                                          | T1         | Specified |
+| **CNT-003** | Every annotation over a range of text must be a mark; marks must be able to cover overlapping ranges without nesting and without being split into separate annotations | T1         | Specified |
+| **CNT-004** | Every mark must carry an identifier; an annotation fragmented across several text nodes must remain one annotation under one identifier                                | T1         | Specified |
+| **CNT-005** | Accepting, rejecting or excluding a marked annotation must act on every fragment of that identifier in one operation                                                   | T1         | Specified |
+| **CNT-006** | The mark vocabulary must be closed. Adding a mark type is a schema change with a migration, not a configuration option                                                 | Constraint | Specified |
+| **CNT-007** | The model must contain no mark or node whose only purpose is to represent an overlap, a range start or a range end                                                     | Constraint | Specified |
+| **CNT-008** | Marks must be semantic in intent. The model must carry no typeface, font size, colour or spacing                                                                       | Constraint | Specified |
+| **CNT-009** | A resolution pass (accepting a suggestion, excluding a condition) must preserve block identifiers                                                                      | T1         | Specified |
+| **CNT-010** | Content must be validated on creation, on change, and on read-back from storage                                                                                        | T1         | Specified |
+| **CNT-011** | Every stored content document must record the schema version it was written against                                                                                    | T1         | Specified |
+| **CNT-012** | A migration path must exist from every schema version ever written to the current one, and must be exercised by a test carrying a fixture of each                      | T1         | Specified |
+| **CNT-013** | Content that fails validation on read-back must be quarantined and reported, never silently coerced or partially loaded                                                | T1         | Specified |
 
-**CNT-012 is the expensive one and it is not optional.** Revisions are immutable, so a schema change
-cannot rewrite what is already stored. Every version ever written stays readable for as long as the
+**CNT-012 is the expensive one and it is not optional.** Snapshots are immutable, so a schema change
+cannot rewrite what is already stored. Everything ever written stays readable for as long as the
 tenant keeps its content, which in this market is measured in decades.
 
 ## 4. Block content
@@ -80,52 +82,90 @@ The block vocabulary is deliberately small. Every addition is a construct that h
 comparison, conditional resolution, translation, and three output formats, so the bar is that a
 report cannot be written without it.
 
-| ID          | Requirement                                                                                                                                            | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **CNT-014** | Paragraphs must be supported, as the default block                                                                                                     | T1      | Specified |
-| **CNT-015** | Lists must be supported - ordered, unordered and definition - nestable to at least six levels, with an author-settable start number on an ordered list | T1      | Specified |
-| **CNT-016** | Authored tables must be supported, with header rows and columns, merged cells, and a caption                                                           | T1      | Specified |
-| **CNT-017** | Figures must be supported, carrying a caption and alternative text, and referencing a managed asset rather than embedding one                          | T1      | Specified |
-| **CNT-018** | Preformatted blocks must be supported, with an optional language label, preserving whitespace exactly                                                  | T1      | Specified |
-| **CNT-019** | Block quotations must be supported, with an optional attribution that may carry a citation                                                             | T1      | Specified |
-| **CNT-020** | Admonitions must be supported, from a closed vocabulary declared by the presentation theme                                                             | T2      | Specified |
-| **CNT-021** | Block-level equations must be supported                                                                                                                | T1      | Specified |
-| **CNT-022** | A figure's alternative text must be required, and publishing must fail when it is absent                                                               | T1      | Specified |
-| **CNT-023** | Empty blocks used for vertical spacing must not be representable. Separation is a property of the presentation theme                                   | -       | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                        | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **CNT-014** | Paragraphs must be supported, as the default block                                                                                                                                                                                                                                 | T1         | Specified |
+| **CNT-015** | Lists must be supported - **ordered (numbered)**, unordered, and definition - nestable to at least six levels, with an author-settable start number and numbering format (decimal, alphabetic, roman) on an ordered list                                                           | T1         | Specified |
+| **CNT-016** | Authored tables must be supported, with header rows and columns, merged cells, and a caption                                                                                                                                                                                       | T1         | Specified |
+| **CNT-017** | Figures must be supported, carrying a caption and alternative text, and referencing a managed asset rather than embedding one                                                                                                                                                      | T1         | Specified |
+| **CNT-018** | Preformatted blocks must be supported, with an optional language label, preserving whitespace exactly                                                                                                                                                                              | T1         | Specified |
+| **CNT-019** | Block quotations must be supported, with an optional attribution that may carry a citation                                                                                                                                                                                         | T1         | Specified |
+| **CNT-020** | Admonitions must be supported, from a closed vocabulary declared by the presentation theme                                                                                                                                                                                         | T2         | Specified |
+| **CNT-021** | Block-level equations must be supported                                                                                                                                                                                                                                            | T1         | Specified |
+| **CNT-022** | A figure's alternative text must be required, and publishing must fail when it is absent                                                                                                                                                                                           | T1         | Specified |
+| **CNT-023** | Empty blocks used for vertical spacing must not be representable. Separation is a property of the presentation theme                                                                                                                                                               | Constraint | Specified |
+| **CNT-081** | Every caption-bearing block - figure, table, block equation - must carry a stable identity, so the outline can number it and a cross-reference can target it (**STR** owns the sequences; **PUB** owns lists of figures and tables)                                                | T1         | Specified |
+| **CNT-086** | An image must be placeable inside a table cell                                                                                                                                                                                                                                     | T1         | Specified |
+| **CNT-088** | An image reference must carry a placement and size **intent** from a closed vocabulary the presentation theme declares - `icon`, `inline`, `column-width`, `full-width` - and the theme must resolve that intent to real dimensions. The model must not carry pixel or point sizes | T1         | Specified |
+
+**CNT-015 answers a review question directly:** _ordered_ means numbered. A list's numbering is local
+to that list and independent of the outline's numbering of headings, figures, tables and equations -
+a numbered list restarts at 1 wherever it appears, which is exactly why it cannot be the same
+mechanism.
+
+**CNT-081 keeps numbering out of the component while making it possible.** Captions are authored
+here; numbers are not, because a figure that is figure 3 in one report and figure 11 in another
+cannot store either. The component supplies identity, the outline supplies the number, and the list
+of figures or tables is assembled at publish time from both.
+
+**CNT-088 answers "who does the layout formatting" for an image.** The author states intent; the
+theme decides millimetres. This matters most for the case raised in review - instructions for use,
+where a step's illustration has to sit at a known size for the page to be readable - and it also
+means one component can render at a different size in a different document, because the theme is
+what differs. Whether a single document may override the theme's resolution is **CNT-Q06**.
 
 **CNT-022 has a cost and is deliberate.** Alternative text is a legal requirement for accessible
 output in this market, and the only moment anyone knows what a figure means is when it is placed.
 Making it a publish-time failure rather than a warning is the difference between an accessible
 product and one that reports itself as accessible.
 
-**CNT-023 was contested and is settled.** A Word round-trip through this product will not reproduce
-an author's blank lines, and that is the product working rather than failing - see the spike
-findings. The layout supplies the separation instead.
+**CNT-023 was contested and is settled** - but review is right that losing the blank lines can be
+jarring, and the answer is **CNT-082**: the editor renders the theme's spacing, so the author sees
+the separation rather than losing it. The blank lines go; the gap they were making stays.
 
 ## 5. Inline content and marks
 
-| ID          | Requirement                                                                                                                                                        | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **CNT-024** | Text must be the base inline node                                                                                                                                  | T1      | Specified |
-| **CNT-025** | Inline equations must be supported                                                                                                                                 | T1      | Specified |
-| **CNT-026** | Footnote anchors must be inline nodes (section 6)                                                                                                                  | T1      | Specified |
-| **CNT-027** | Cross-references must be inline nodes carrying a target identity and what to display, never a resolved number or title                                             | T1      | Specified |
-| **CNT-028** | Citations must be inline nodes (section 8)                                                                                                                         | T1      | Specified |
-| **CNT-029** | Variables must be supported, carrying a name resolved at publish time (**REU** owns resolution)                                                                    | T1      | Specified |
-| **CNT-030** | Inline data bindings must be supported, carrying a query reference (**DAT** owns resolution)                                                                       | T1      | Specified |
-| **CNT-031** | Semantic character marks must be supported: emphasis, strong, subscript, superscript, inline code, defined term, quoted phrase, foreign phrase with a language tag | T1      | Specified |
-| **CNT-032** | Condition marks must be supported, carrying an axis and permitted values (**REU** owns evaluation)                                                                 | T1      | Specified |
-| **CNT-033** | Suggestion marks must be supported, carrying an operation and an author (**COL** owns the review workflow)                                                         | T1      | Specified |
-| **CNT-034** | Comment anchor marks must be supported, carrying a thread identity (**COL** owns the thread)                                                                       | T1      | Specified |
-| **CNT-035** | The editor must offer no control over font, size, colour or alignment                                                                                              | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                              | Tranche | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **CNT-024** | Text must be the base inline node                                                                                                                                                        | T1      | Specified |
+| **CNT-025** | Inline equations must be supported                                                                                                                                                       | T1      | Specified |
+| **CNT-026** | Footnote anchors must be inline nodes (section 6)                                                                                                                                        | T1      | Specified |
+| **CNT-027** | Cross-references must be inline nodes carrying a target identity and what to display, never a resolved number or title                                                                   | T1      | Specified |
+| **CNT-028** | Citations must be inline nodes (section 8)                                                                                                                                               | T1      | Specified |
+| **CNT-029** | Variables must be supported, carrying a name resolved at publish time (**REU** owns resolution)                                                                                          | T1      | Specified |
+| **CNT-030** | Inline data bindings must be supported, carrying a query reference (**DAT** owns resolution)                                                                                             | T1      | Specified |
+| **CNT-031** | Character-level marks must be supported: **emphasis, strong, underline, subscript, superscript**, inline code, defined term and quoted phrase                                            | T1      | Specified |
+| **CNT-032** | Condition marks must be supported, carrying an axis and permitted values (**REU** owns evaluation)                                                                                       | T1      | Specified |
+| **CNT-033** | Suggestion marks must be supported, carrying an operation and an author (**COL** owns the review workflow)                                                                               | T1      | Specified |
+| **CNT-034** | Comment anchor marks must be supported, carrying a thread identity (**COL** owns the thread)                                                                                             | T1      | Specified |
+| **CNT-035** | The author must be able to apply and remove every mark in CNT-031 directly, from a toolbar and by keyboard shortcut. The editor must offer no control over typeface, font size or colour | T1      | Specified |
+| **CNT-083** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag                                            | T1      | Specified |
+| **CNT-084** | A run's language must be carried through to every output format as the language of that passage                                                                                          | T1      | Specified |
+| **CNT-085** | An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning                                                             | T1      | Specified |
+| **CNT-087** | An image must be placeable inline within a run of text                                                                                                                                   | T1      | Specified |
 
-**CNT-029 to CNT-034 are in T1 and their features are not.** Their marks and nodes are in the
-schema from the start precisely because they are not needed yet: adding a range annotation to a
-model whose content is already stored and immutable is a migration of everything.
+**CNT-031 and CNT-035 answer the strongest objection in review, and it was right.** "Appearance is
+the theme's, always" is true of blocks and false of characters. An author writing a report must be
+able to bold a phrase, italicise a term, underline a fragment and set a subscript - and telling them
+to express that as a semantic abstraction they did not ask for is how structured authoring tools
+earn their reputation.
 
-**CNT-031 includes a foreign phrase with a language tag** because tagged PDF and accessible Word
-both need the language of a run to be known, and an author switching language mid-sentence is
-ordinary in this market. It is cheap here and impossible to retrofit at publish time.
+The line that survives is narrower and defensible: **the author chooses from a closed set of marks;
+the theme decides what each one looks like.** Strong renders bold in most themes and could render as
+small capitals in a house style that says so. What the author cannot pick is a typeface, a point
+size or a colour, because those are the choices that make two components in one document look like
+they came from two documents.
+
+**CNT-085 is honest about the exception.** Underline has no semantic meaning - it is named for its
+appearance, and it is here because house styles in this market require it. Calling it `emphasis-2`
+and pretending otherwise would fool nobody.
+
+**CNT-083 answers a review point precisely: there is no such thing as a foreign language.** The
+earlier wording said "foreign phrase", which describes a relation to a reader rather than a property
+of text. The model records **language**, never foreignness: a component declares its base language,
+and a run that differs declares its own. This is not decoration - tagged PDF and accessible Word
+both require the language of a passage to be known, and it cannot be recovered at publish time from
+the text alone.
 
 ## 6. Footnotes
 
@@ -133,20 +173,21 @@ Footnotes are where this market differs from general document tooling, and where
 loses credibility. A note may hang off a phrase, off a single cell of a table, or off a table as a
 whole, and all three occur in the same report.
 
-| ID          | Requirement                                                                                                                    | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **CNT-036** | A footnote must be anchorable to a span of text                                                                                | T1      | Specified |
-| **CNT-037** | A footnote must be anchorable to a cell of an authored table                                                                   | T1      | Specified |
-| **CNT-038** | A footnote must be anchorable to a table as a whole                                                                            | T1      | Specified |
-| **CNT-039** | A footnote anchored into generated content must identify its target by data, never by position (**DAT** owns the binding case) | T2      | Specified |
-| **CNT-040** | Footnote content must support paragraphs, lists, citations, inline equations and cross-references                              | T1      | Specified |
-| **CNT-041** | Footnote numbering must be a property of the outline, not of the component (**STR** owns it)                                   | T1      | Specified |
-| **CNT-042** | A footnote whose anchor cannot be resolved must fail the publish with a named error identifying the footnote                   | T1      | Specified |
+| ID          | Requirement                                                                                                                                                          | Tranche | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **CNT-036** | A footnote must be anchorable to a span of text                                                                                                                      | T1      | Specified |
+| **CNT-037** | A footnote must be anchorable to a cell of an authored table                                                                                                         | T1      | Specified |
+| **CNT-038** | A footnote must be anchorable to a table as a whole                                                                                                                  | T1      | Specified |
+| **CNT-039** | A footnote anchored into generated content must identify its target by data, never by position (**DAT** owns the binding case)                                       | T2      | Specified |
+| **CNT-040** | Footnote content must support paragraphs, the character marks in CNT-031, citations, inline equations and cross-references. It must **not** support tables or images | T1      | Specified |
+| **CNT-041** | Footnote numbering must be a property of the outline, not of the component (**STR** owns it)                                                                         | T1      | Specified |
+| **CNT-042** | A footnote whose anchor cannot be resolved must fail the publish with a named error identifying the footnote                                                         | T1      | Specified |
 
-**CNT-040 is the unresolved one.** It makes footnote content recursive - a citation inside a
-footnote inside a table cell is an ordinary occurrence in a regulated report, and the spike's case
-4 was never run. The schema draft currently holds footnote content as text runs only. See open
-questions.
+**CNT-040 was an open question and review has closed it.** Text and citations yes; tables and images
+no. That is a simplification rather than a deferral: footnote content stays a restricted block
+sequence instead of becoming the full recursive model, which keeps the schema smaller and footnote
+rendering tractable in all three output formats. The spike's unrun case 4 - a citation inside a
+footnote inside a table cell - remains required and remains supported, because a citation is inline.
 
 ## 7. Mathematics and scientific notation
 
@@ -197,7 +238,7 @@ reports phantom edits, and a bound value fails to match a key that looks the sam
 | **CNT-062** | Paste from HTML must preserve structure                                                                                              | T1      | Specified |
 | **CNT-063** | Every paste must produce a report naming what was normalised and what was discarded, shown to the author at the time                 | T1      | Specified |
 | **CNT-064** | Nothing discarded on paste may be absent from that report; the tests for paste must assert what was dropped as well as what survived | T1      | Specified |
-| **CNT-065** | Pasted content must never carry presentational formatting into the model                                                             | T1      | Specified |
+| **CNT-065** | Pasted content must never carry typeface, size or colour into the model                                                              | T1      | Specified |
 
 **CNT-064 is written the way it is because of how it failed in the spike.** The Word importer
 dropped three empty paragraphs and did not count them, because they were written in a form the
@@ -207,33 +248,51 @@ and the tests for CNT-060 to CNT-065 must assert both halves.
 
 ## 11. The editing session
 
-| ID          | Requirement                                                                                                                | Tranche | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **CNT-066** | Edits must be saved without an explicit save action                                                                        | T1      | Specified |
-| **CNT-067** | An interrupted session - closed tab, lost connection, crash - must be recoverable to the last edit the author saw accepted | T1      | Specified |
-| **CNT-068** | The editor must state plainly whether the current draft is saved, saving, or failing to save                               | T1      | Specified |
-| **CNT-069** | Undo and redo must be scoped to the component being edited and must survive a reload within the session                    | T1      | Specified |
-| **CNT-070** | A revision must be cut on an explicit act, not on every keystroke; the rule for when must be stated and testable           | T1      | Specified |
-| **CNT-071** | Concurrent access is governed by soft component locks (**COL**); this area must not assume single-writer access            | -       | Specified |
+Review raised a real gap: if edits save continuously, and a snapshot is not cut on every keystroke,
+**where does the save go?** The answer needs three levels rather than two, and the vocabulary has to
+be settled before it can be used - the proposal is **CNT-Q02**.
 
-**CNT-070 is unsettled in its detail and it matters.** Revisions are immutable and comparison is
-built on them, so a revision per keystroke makes history unreadable and a revision per session loses
-the intermediate states a reviewer needs. See open questions.
+- A **working draft** is the in-progress state. Continuously saved, recoverable, mutable, not
+  numbered, and visible only to the editor holding the lock. This is where an autosave goes, which
+  is what closes the gap.
+- A **version** is an immutable snapshot, cut on a stated boundary. Minor, numerous, and the unit
+  comparison and recovery work over.
+- A **revision** is a version designated as an issued state when a component passes a lifecycle
+  gate. Major, few, and the thing a reader cites. A revision is a marker on a version, not a second
+  history beside it.
+
+Written `revision.version`, so `3.14` is the fourteenth save since the third issue, and `0.7` is
+seven saves of something never yet issued.
+
+| ID          | Requirement                                                                                                                                                                                                             | Tranche    | Status    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **CNT-066** | Edits must be saved continuously and without an explicit save action, into a working draft                                                                                                                              | T1         | Specified |
+| **CNT-067** | An interrupted session - closed tab, lost connection, crash - must be recoverable to the last edit the author saw accepted                                                                                              | T1         | Specified |
+| **CNT-068** | The editor must state plainly whether the current draft is saved, saving, or failing to save                                                                                                                            | T1         | Specified |
+| **CNT-069** | Undo and redo must be scoped to the component being edited and must survive a reload within the session                                                                                                                 | T1         | Specified |
+| **CNT-070** | A version must be cut on a stated boundary - an explicit save, the release of a lock, or a declared period of inactivity - and never on a keystroke. The rule must be stated and testable (**VER** owns the definition) | T1         | Specified |
+| **CNT-071** | Concurrent access is governed by soft component locks (**COL**); this area must not assume single-writer access                                                                                                         | Constraint | Specified |
+| **CNT-089** | A working draft must not be a version: it must be mutable, unnumbered, and invisible to anyone but the editor holding the lock                                                                                          | T1         | Specified |
 
 ## 12. The document view
 
-| ID          | Requirement                                                                                                      | Tranche | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **CNT-072** | A document must render as one continuous, visually consistent scroll, with its components inline                 | T1      | Specified |
-| **CNT-073** | Component boundaries must be revealed on hover and by an explicit toggle, and must not be permanent chrome       | T1      | Specified |
-| **CNT-074** | The view must always show which component the cursor is in, and whether it is editable by this user right now    | T1      | Specified |
-| **CNT-075** | Read-only rendering must be typographically identical to the editing view                                        | T1      | Specified |
-| **CNT-076** | The view must remain usable on a document assembling several hundred components (**budget in §11 of the scope**) | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                        | Tranche | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **CNT-072** | A document must render as one continuous, visually consistent scroll, with its components inline                                                                                                   | T1      | Specified |
+| **CNT-073** | Component boundaries must be revealed on hover and by an explicit toggle, and must not be permanent chrome                                                                                         | T1      | Specified |
+| **CNT-074** | The view must always show which component the cursor is in, whether this user may edit it right now, and **when they may not, why** - naming who holds the lock and when it is expected to release | T1      | Specified |
+| **CNT-075** | Read-only rendering must be typographically identical to the editing view                                                                                                                          | T1      | Specified |
+| **CNT-076** | The view must remain usable on a document assembling several hundred components (budget in scope §11)                                                                                              | T1      | Specified |
+| **CNT-082** | The editing view must render the presentation theme's block spacing, so that the separation an author sees is the separation the output will have                                                  | T1      | Specified |
 
 **CNT-072 and CNT-073 are in tension by design.** The monolithic reading experience is the point of
 the view; the component boundary is what an author needs and a reader does not. Permanent chrome
 would make the product look like an authoring tool rather than a document, which is the first thing
 a prospect judges.
+
+**CNT-074 exists because "you cannot edit this" without a reason is an error message, not an
+interface.** "Locked by Grace Hopper, idle 6 minutes, releases at 14:20" tells an author what to do
+next. A greyed-out box does not.
 
 ## 13. Editor accessibility
 
@@ -246,35 +305,38 @@ a prospect judges.
 
 ## 14. Non-requirements
 
-Stated so nobody has to infer them.
-
-- **No arbitrary styling.** Appearance is the presentation theme's, always.
-- **No page layout in content.** Page breaks, margins and running heads belong to the publishing
-  layout.
-- **No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere.
-- **No embedded spreadsheets or live formulas.** Computation belongs in the query layer.
-- **No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3.
-- **No per-author formatting preferences.** Two authors editing the same document must produce
-  content that looks the same.
+| ID          | Not this                                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-N01** | **No typeface, font size or colour control.** Character appearance comes from the closed mark set in CNT-031; block appearance from the theme. Narrower than "no styling" on purpose - see CNT-035 |
+| **CNT-N02** | **No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**                         |
+| **CNT-N03** | **No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere                                                                                                    |
+| **CNT-N04** | **No embedded spreadsheets or live formulas.** Computation belongs in the query layer                                                                                                              |
+| **CNT-N05** | **No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3                                                                                                     |
+| **CNT-N06** | **No per-author formatting preferences.** Two authors editing one document must produce content that looks the same                                                                                |
+| **CNT-N07** | **No tables or images inside footnotes** (CNT-040)                                                                                                                                                 |
 
 ## 15. Open questions
 
-| Question                                                                                                       | What would settle it                                                                   |
-| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Is footnote content fully recursive (CNT-040)?** Currently text runs only in the schema draft                | Spike case 4 - a citation inside a footnote inside a table cell - which was never run  |
-| **When is a revision cut (CNT-070)?** Per session, per idle period, per explicit save, or per lock release     | A decision informed by what comparison and audit need, then a decision record          |
-| **Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer | The first customer requirement that cannot be expressed with the closed set            |
-| **What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form               | The publishing engine decision - it constrains what can be rendered to PDF faithfully  |
-| **How is an authored table's cell identified for a footnote anchor (CNT-037)?** Bound tables use a data key    | Whether authored tables gain stable cell identity, or anchors use block-relative paths |
+| ID          | Question                                                                                                                                                                                                                              | What would settle it                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **CNT-Q01** | **What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form                                                                                                                                      | The publishing engine decision - it constrains what can be rendered to PDF faithfully                        |
+| **CNT-Q02** | **Is the working draft / version / revision vocabulary in section 11 adopted?** It collides with existing usage: scope §6 and §7.9, ADR-0005 and the spike findings all say "revision" for what is now a version                      | A decision, then a ripple through the scope, a glossary entry, and the `revision` field in `packages/domain` |
+| **CNT-Q03** | **What exactly is the boundary that cuts a version (CNT-070)?** Explicit save, lock release, a period of inactivity, or all three with a minimum interval                                                                             | What comparison and audit need from history, argued in **VER**                                               |
+| **CNT-Q04** | **Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer                                                                                                                        | The first customer requirement that cannot be expressed with the closed set                                  |
+| **CNT-Q05** | **How is an authored table's cell identified for a footnote anchor (CNT-037)?** Bound tables use a data key                                                                                                                           | Whether authored table cells gain stable identity, or anchors use a path relative to the block               |
+| **CNT-Q06** | **May a document override the theme's resolution of an image's size intent (CNT-088)?** Instructions for use may need a fixed size the theme does not know about                                                                      | A real document whose readability depends on it, or a house style that fixes it centrally                    |
+| **CNT-Q07** | **Is a forced page break content or structure?** "This section starts on a new page" reads like an outline property; "keep these two blocks together" reads like a content one. Recommendation: the first in **STR**, the second here | A decision in **STR**, since the outline is where the first half would live                                  |
+| **CNT-Q08** | **Is block alignment ever the author's?** Centred captions and right-aligned numeric columns are real; a freely centred paragraph is a house-style decision. Recommendation: named block styles from the theme, never a free toggle   | A house style that needs it, or the first table whose column alignment cannot be declared in **TAB**         |
 
 ## 16. Traceability
 
 | This document               | Rests on                                                         |
 | --------------------------- | ---------------------------------------------------------------- |
 | Section 3                   | ADR-0005; spike findings cases 1, 3, 7                           |
-| CNT-023                     | Spike findings, "Settled: a Word round-trip is lossy by design"  |
+| CNT-023, CNT-082            | Spike findings, "Settled: a Word round-trip is lossy by design"  |
 | CNT-039                     | Spike findings case 3                                            |
 | CNT-064                     | Spike findings, the silent-drop defect found under symptom three |
-| CNT-041, CNT-047            | Scope §6, "numbering is a property of the outline"               |
+| CNT-041, CNT-047, CNT-081   | Scope §6, "numbering is a property of the outline"               |
 | CNT-022, CNT-078 to CNT-080 | Scope §11, accessibility                                         |
-| Section 4, 5                | Scope §7.1                                                       |
+| CNT-083, CNT-084            | Scope §7.16 and §11; PDF/UA requires the language of a passage   |
+| Sections 4, 5               | Scope §7.1                                                       |

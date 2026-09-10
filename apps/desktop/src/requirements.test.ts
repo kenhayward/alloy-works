@@ -32,6 +32,13 @@ const REQUIREMENT_ROW =
 const INDEX_ROW =
   /^\|\s*\*\*([A-Z]{3})\*\*\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
 
+/**
+ * Non-requirements and open questions are numbered too, in their own sequences, so a reviewer can
+ * cite one without quoting it. `CNT-N02` and `CNT-Q05` cannot be mistaken for `CNT-002`.
+ */
+const NON_REQUIREMENT_ROW = /^\|\s*\*\*([A-Z]{3}-N\d{2})\*\*\s*\|\s*(.+?)\s*\|\s*$/gm;
+const OPEN_QUESTION_ROW = /^\|\s*\*\*([A-Z]{3}-Q\d{2})\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*$/gm;
+
 interface Requirement {
   readonly id: string;
   readonly statement: string;
@@ -52,7 +59,7 @@ function requirementsIn(name: string): Requirement[] {
 
 const allRequirements = areaDocuments.flatMap(requirementsIn);
 
-const KNOWN_TRANCHE = /^(T[1-6]|-)$/;
+const KNOWN_TRANCHE = /^(T[1-6]|Constraint)$/;
 const KNOWN_STATUS = /^(Specified|Withdrawn|Superseded by [A-Z]{3}-\d{3})$/;
 
 describe('the requirement identifiers', () => {
@@ -83,14 +90,18 @@ describe('the requirement identifiers', () => {
   });
 
   /**
-   * Contiguous from 001, which is what makes a withdrawn requirement stay visible: deleting one
-   * would leave a hole, and this fails on holes.
+   * Contiguous from 001 as a SET, deliberately not in document order. A requirement added later
+   * belongs beside the ones it relates to, and it keeps the next free number when it goes there -
+   * so the numbers run out of order down the page. Requiring document order would mean renumbering
+   * on every insert, which is exactly what the never-reuse rule forbids.
+   *
+   * The hole is what this catches: deleting a requirement instead of marking it withdrawn.
    */
   it('numbers each area from 001 with no gap and no repeat', () => {
     for (const name of areaDocuments) {
-      const numbers = requirementsIn(name).map((requirement) =>
-        Number.parseInt(requirement.id.slice(4), 10),
-      );
+      const numbers = requirementsIn(name)
+        .map((requirement) => Number.parseInt(requirement.id.slice(4), 10))
+        .sort((left, right) => left - right);
 
       expect(numbers, `${name} numbers contiguously`).toEqual(numbers.map((_, index) => index + 1));
     }
@@ -163,4 +174,62 @@ describe('the requirements index', () => {
     // nobody has claimed, which is how one quietly fails to be specified at all.
     expect(indexRows).toHaveLength(17);
   });
+});
+
+describe('the numbered non-requirements and open questions', () => {
+  const collect = (pattern: RegExp): { id: string; document: string }[] =>
+    areaDocuments.flatMap((name) =>
+      [...read(name).matchAll(pattern)].map((match) => ({ id: match[1]!, document: name })),
+    );
+
+  for (const [label, pattern, prefix] of [
+    ['non-requirement', NON_REQUIREMENT_ROW, 'N'],
+    ['open question', OPEN_QUESTION_ROW, 'Q'],
+  ] as const) {
+    describe(`${label}s`, () => {
+      const rows = collect(pattern);
+
+      it('exist to be checked', () => {
+        expect(rows.length).toBeGreaterThan(0);
+      });
+
+      it('never reuse an identifier', () => {
+        const seen = rows.map((row) => row.id);
+
+        expect(seen).toEqual([...new Set(seen)]);
+      });
+
+      it('sit under the area code of the document holding them', () => {
+        for (const row of rows) {
+          expect(row.id.slice(0, 3), `${row.id} sits in ${row.document}`).toBe(
+            row.document.slice(0, 3),
+          );
+        }
+      });
+
+      it('number from 01 with no gap and no repeat', () => {
+        for (const name of areaDocuments) {
+          const numbers = rows
+            .filter((row) => row.document === name)
+            .map((row) => Number.parseInt(row.id.slice(5), 10))
+            .sort((left, right) => left - right);
+          if (numbers.length === 0) continue;
+
+          expect(numbers, `${name} ${label} numbering`).toEqual(
+            numbers.map((_, index) => index + 1),
+          );
+        }
+      });
+
+      // Literals rather than a constructed pattern: `\d` inside a template literal collapses to a
+      // bare `d`, which would leave this asserting almost nothing while still passing.
+      const SHAPE = prefix === 'N' ? /^[A-Z]{3}-N\d{2}$/ : /^[A-Z]{3}-Q\d{2}$/;
+
+      it('cannot be mistaken for a requirement identifier', () => {
+        for (const row of rows) {
+          expect(row.id).toMatch(SHAPE);
+        }
+      });
+    });
+  }
 });

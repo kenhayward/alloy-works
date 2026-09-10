@@ -24,6 +24,27 @@ The first detailed requirements, and identifiers to track them by.
   renumber, and leave no gaps - a withdrawn requirement keeps its row rather than vanishing. It also
   checks that every requirement actually states something binding, which caught twenty-one entries
   that were vocabulary items rather than requirements.
+- Non-requirements and open questions are numbered as well, so a reviewer can cite one without
+  quoting it, in a shape that cannot be confused with a requirement.
+
+### Changed
+
+- Revised after review. An author can now apply bold, italic, underline, superscript and subscript
+  directly - the earlier wording put appearance entirely in the hands of the theme, which is right
+  for blocks and wrong for characters. What an author still cannot choose is a typeface, a size or a
+  colour, because those are what make two parts of one document look like they came from two.
+- Language is recorded rather than foreignness. The earlier wording spoke of a "foreign phrase",
+  which describes a relation to a reader rather than a property of the text; a component now
+  declares its language and any passage that differs declares its own.
+- Images can sit in a table cell and inline with text, and carry an intent - icon, inline, column
+  width, full width - that the theme turns into a real size. So the same illustration can be sized
+  for the document it appears in rather than carrying one size everywhere.
+- Footnotes hold text and citations, and deliberately not tables or images. That was an open
+  question and is now settled.
+- The editor shows the spacing the theme will apply, so removing an author's blank lines no longer
+  means losing the gap they were making.
+- Where a component cannot be edited, the reason is shown - who holds it and when it frees up -
+  rather than only that it is unavailable.
 
 ## 0.2.3 - 2026-09-10 (PR #8)
 
