@@ -68,15 +68,15 @@ and the failure is invisible until somebody re-publishes.
 
 ## 6. Baselines
 
-| ID          | Requirement                                                                                                                                                   | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                             | T3         | Specified |
-| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, layout and citation style the document used, and the outline itself | Constraint | Specified |
-| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                      | Constraint | Specified |
-| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                               | T4         | Specified |
-| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                           | T3         | Specified |
-| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                | Constraint | Specified |
-| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                  | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                             | Tranche    | Status    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                                                                                       | T3         | Specified |
+| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, typeface, layout and citation style the document used, and the outline itself (**STY-047** is what makes a typeface pinnable) | Constraint | Specified |
+| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                                                                                | Constraint | Specified |
+| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                                                                                         | T4         | Specified |
+| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                                                                                     | T3         | Specified |
+| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                                                                          | Constraint | Specified |
+| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                                                                            | Constraint | Specified |
 
 **VER-018 and VER-023 are the same requirement seen from two ends.** A baseline is only a promise
 that a document can be reproduced; a pin to something deletable is not a pin.
