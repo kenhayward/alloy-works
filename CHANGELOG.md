@@ -30,6 +30,13 @@ The content model decision, tested rather than argued. All four gates pass, so A
   normalises line endings inside one produces a file that no longer opens - with a diff that says
   nothing changed.
 
+### Fixed
+
+- Exported Word documents now carry heading numbers, footnote numbers and the spacing between
+  blocks. Opening an exported file in Word showed all three missing, and none of it was visible to
+  the round-trip test, which reads our own output and so could only ever prove that our reader and
+  our writer agree with each other.
+
 ## 0.2.1 - 2026-09-10 (PR #5)
 
 The first scope document, and the first decision it needed. Still no product - this says what the

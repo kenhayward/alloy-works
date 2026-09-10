@@ -151,6 +151,78 @@ function emitHeading(section: OutlineSection, bookmarkId: number): string {
   );
 }
 
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+
+/**
+ * Multilevel decimal numbering, linked to the heading styles below.
+ *
+ * Without this part a heading is just bold text: Word renders no number, and a `REF ... \w`
+ * cross-reference has no number to quote. Both were reported from a real Word session - see
+ * issue #7 - because nothing our own reader does could have caught them.
+ */
+function numberingXml(): string {
+  const levels = HEADING_LEVELS.map((level) => {
+    const pattern = HEADING_LEVELS.slice(0, level)
+      .map((each) => `%${each}`)
+      .join('.');
+    return (
+      `<w:lvl w:ilvl="${level - 1}"><w:start w:val="1"/><w:numFmt w:val="decimal"/>` +
+      `<w:lvlText w:val="${pattern}"/><w:lvlJc w:val="left"/>` +
+      `<w:pPr><w:ind w:left="${level * 432}" w:hanging="432"/></w:pPr></w:lvl>`
+    );
+  }).join('');
+
+  return (
+    XML_HEAD +
+    `<w:numbering ${W_NS}>` +
+    `<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="multilevel"/>${levels}</w:abstractNum>` +
+    '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>' +
+    '</w:numbering>'
+  );
+}
+
+/**
+ * `w:pPr` is a sequence, not a bag: `numPr` before `spacing` before `outlineLvl`. Word tolerates
+ * the wrong order until the day it does not, and the failure is a file that will not open.
+ */
+function headingStyle(level: number): string {
+  const size = { 1: 32, 2: 28, 3: 26 }[level] ?? 24;
+  return (
+    `<w:style w:type="paragraph" w:styleId="Heading${level}">` +
+    `<w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/>` +
+    '<w:pPr>' +
+    `<w:numPr><w:ilvl w:val="${level - 1}"/><w:numId w:val="1"/></w:numPr>` +
+    '<w:spacing w:before="240" w:after="120"/>' +
+    `<w:outlineLvl w:val="${level - 1}"/>` +
+    '</w:pPr>' +
+    `<w:rPr><w:b/><w:sz w:val="${size}"/></w:rPr>` +
+    '</w:style>'
+  );
+}
+
+function stylesXml(): string {
+  return (
+    XML_HEAD +
+    `<w:styles ${W_NS}>` +
+    // Spacing lives here, so that separation between blocks never depends on empty paragraphs.
+    // The importer drops those - they are presentation, not content - which makes supplying the
+    // separation from the layout the export's job rather than an optional nicety.
+    '<w:docDefaults><w:pPrDefault><w:pPr>' +
+    '<w:spacing w:after="160" w:line="259" w:lineRule="auto"/>' +
+    '</w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
+    HEADING_LEVELS.map(headingStyle).join('') +
+    '<w:style w:type="paragraph" w:styleId="FootnoteText"><w:name w:val="footnote text"/>' +
+    '<w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>' +
+    '<w:rPr><w:sz w:val="20"/></w:rPr></w:style>' +
+    '<w:style w:type="character" w:styleId="FootnoteReference"><w:name w:val="footnote reference"/>' +
+    '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr></w:style>' +
+    '<w:style w:type="character" w:styleId="CommentReference"><w:name w:val="annotation reference"/>' +
+    '</w:style>' +
+    '</w:styles>'
+  );
+}
+
 export function exportDocx(source: ExportSource): Uint8Array {
   const context: EmitContext = { nextFootnoteId: 1, footnotes: [], revisionId: 1 };
   const byId = new Map(source.components.map((component) => [component.id, component]));
@@ -195,6 +267,7 @@ export function exportDocx(source: ExportSource): Uint8Array {
         '<Default Extension="xml" ContentType="application/xml"/>' +
         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
         '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+        '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
         '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>' +
         '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>' +
         '</Types>',
@@ -211,26 +284,14 @@ export function exportDocx(source: ExportSource): Uint8Array {
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
         '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>' +
         '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/>' +
+        '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
         '</Relationships>',
     ),
     'word/document.xml': encoder.encode(
       XML_HEAD + `<w:document ${W_NS}><w:body>${body}</w:body></w:document>`,
     ),
-    'word/styles.xml': encoder.encode(
-      XML_HEAD +
-        `<w:styles ${W_NS}>` +
-        [1, 2, 3, 4, 5, 6]
-          .map(
-            (level) =>
-              `<w:style w:type="paragraph" w:styleId="Heading${level}">` +
-              `<w:name w:val="heading ${level}"/><w:pPr><w:outlineLvl w:val="${level - 1}"/></w:pPr>` +
-              '</w:style>',
-          )
-          .join('') +
-        '<w:style w:type="character" w:styleId="FootnoteReference"><w:name w:val="footnote reference"/></w:style>' +
-        '<w:style w:type="character" w:styleId="CommentReference"><w:name w:val="annotation reference"/></w:style>' +
-        '</w:styles>',
-    ),
+    'word/styles.xml': encoder.encode(stylesXml()),
+    'word/numbering.xml': encoder.encode(numberingXml()),
     'word/footnotes.xml': encoder.encode(
       XML_HEAD +
         `<w:footnotes ${W_NS}>` +
@@ -238,7 +299,10 @@ export function exportDocx(source: ExportSource): Uint8Array {
         context.footnotes
           .map(
             (footnote) =>
-              `<w:footnote w:id="${footnote.id}"><w:p>${run(footnote.text)}</w:p></w:footnote>`,
+              `<w:footnote w:id="${footnote.id}">` +
+              '<w:p><w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr>' +
+              '<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>' +
+              `${run(footnote.text)}</w:p></w:footnote>`,
           )
           .join('') +
         '</w:footnotes>',

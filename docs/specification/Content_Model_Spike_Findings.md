@@ -3,23 +3,28 @@
 > **Status: gates complete.** All four gate cases in [`Content_Model_Spike.md`](Content_Model_Spike.md)
 > have run. **[ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) is
 > confirmed** - no gate needed a workaround that leaks into the schema, so the record stands rather
-> than being superseded. One check remains outside this repository: opening an exported `.docx` in
-> Word itself. See section "What is still unproven".
+> than being superseded.
+>
+> **Case 8 was declared passed too early.** It was passed on a round-trip verified by our own
+> reader. Opening an exported file in Word then found three defects that reader could not see -
+> [issue #7](https://github.com/kenhayward/alloy-works/issues/7). All three were in the emitter
+> rather than in the content model, all three are fixed, and the correction is written up below
+> rather than quietly absorbed, because the reason it happened matters more than the fix.
 
 Only the four gate cases were in scope for this run - see the depth decision recorded in the brief.
 The six non-gate cases (2, 4, 5, 6, 9, 10) have not been run.
 
 ## Verdicts
 
-| Case                                            | Verdict            | Cost                                                                 |
-| ----------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
-| **1** - Overlapping annotations                 | **Pass**           | None. The overlap needed no construct of its own                     |
-| **3** - Cell-anchored footnote in a bound table | **Pass with cost** | Bound tables need a declared key column, and it is not optional      |
-| **7** - Comparison across a move + edit         | **Pass with cost** | Blocks need a stable id in the schema from the first revision stored |
-| **8** - Word round-trip                         | **Pass with cost** | The importer must SPLIT into outline plus components, not load       |
+| Case                                            | Verdict            | Cost                                                                                                             |
+| ----------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| **1** - Overlapping annotations                 | **Pass**           | None. The overlap needed no construct of its own                                                                 |
+| **3** - Cell-anchored footnote in a bound table | **Pass with cost** | Bound tables need a declared key column, and it is not optional                                                  |
+| **7** - Comparison across a move + edit         | **Pass with cost** | Blocks need a stable id in the schema from the first revision stored                                             |
+| **8** - Word round-trip                         | **Pass with cost** | Import must SPLIT into outline plus components; and a real Word session was needed to find three emitter defects |
 
 Code is in `packages/domain/src/content/`. Each case is a test named after the case it answers, so
-the brief and the suite stay traceable to one another. 41 tests in the domain package, 99 across the
+the brief and the suite stay traceable to one another. 47 tests in the domain package, 105 across the
 repository.
 
 ## Case 1 - Overlapping annotations: pass
@@ -124,15 +129,43 @@ tracked a change in them**, which interacts directly with the privacy requiremen
 Office formats. A `.docx` is a ZIP, and a checkout that normalises line endings inside one produces a
 file that no longer opens, with a diff showing nothing changed. Now pinned as binary.
 
+## What the Word session found, and the lesson under it
+
+An exported file was opened in Word. The text was intact, the footnote was attached in the right
+place and the cross-reference resolved. Three things were wrong ([issue #7](https://github.com/kenhayward/alloy-works/issues/7)):
+
+| Symptom                                | Cause                                                                                                                                                                      | Fix                                                                                             |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Headings had no numbers                | No `word/numbering.xml` was emitted at all, and the heading styles linked to no numbering definition                                                                       | A multilevel decimal scheme, related from the document part and linked from every heading style |
+| The footnote had no number             | `w:footnoteReference` numbers the mark in the text; the number at the FOOT of the page comes from `w:footnoteRef` **inside the footnote's own content**, which was missing | `w:footnoteRef` in each footnote, a `FootnoteText` style, and a superscript `FootnoteReference` |
+| Blank lines between blocks disappeared | The importer drops empty paragraphs - correctly, they are presentation - so the export has to supply the separation from the layout instead, and it supplied none          | Paragraph spacing in `w:docDefaults` and in the heading styles                                  |
+
+**Two things are worth separating here.** All three defects were in the **emitter**, not in the
+content model. Nothing about nodes and marks was implicated, which is mild corroboration for
+ADR-0005 rather than a threat to it. But the reason they survived to a human is not mild at all.
+
+**A round-trip test that reads its own output can only prove self-consistency.** Ours did exactly
+that, and passed, while producing a document that any reader would have called wrong. For a format
+whose consumer is another vendor's application, self-consistency is not the bar and never becomes
+it. The consequence for the publishing requirements is a standing one, not a one-off: **Word and PDF
+fidelity need a real consumer in the verification loop permanently** - a human check, a reference
+renderer, or a third-party validator - and the scope's "maintained test suite against real report
+shapes" has to mean that, or it will keep passing while the output is wrong.
+
+The third symptom also settled a design question rather than just a bug. Empty paragraphs stay
+dropped on import: they are presentation, and schema decision 5 says appearance belongs to the
+presentation theme. Preserving them would put formatting into content. **The correct fix was to make
+the export supply spacing from the layout**, which is what the publishing layout in the scope is for.
+Choosing literal preservation instead would be a scope change, not a bug fix.
+
 ## What is still unproven
 
-- **Word has not opened a file we produced.** The round-trip is verified by our own reader, which
-  proves the mapping is self-consistent, not that Word accepts it. An exported `.docx` exists for
-  that check and it needs a human with Word.
-- **Numbering was not exercised.** The fixture's "numbered heading" takes its number from the
-  Heading 1 style rather than from a direct `w:numPr`, so `word/numbering.xml` was never read. Real
-  reports use both. This is a gap in the fixture, not in the model, and the next Word case should
-  carry an explicitly numbered list.
+- **The re-export has not been confirmed in Word.** The three fixes are asserted by tests over the
+  emitted OOXML, which is a proxy. Only Word can confirm the rendering, and by the argument above
+  that will always be true.
+- **Numbering is emitted but only exercised through heading styles.** The fixture's numbered heading
+  takes its number from a style rather than a direct `w:numPr`, so a numbered list in body text is
+  still untested. The next Word fixture should carry one.
 - **The six non-gate cases have not run**, including case 5 (maths) and case 6 (transclusion with a
   local override) - the case where DITA is genuinely stronger.
 
