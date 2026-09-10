@@ -201,7 +201,21 @@ export function importDocx(bytes: Uint8Array): ImportedDocx {
     return marks;
   };
 
-  const events: XmlEvent[] = scanXml(documentXml);
+  /**
+   * A self-closing element is an open and a close with nothing between them. Normalising that here,
+   * once, rather than remembering to handle both shapes at every use: Word writes an empty
+   * paragraph as `<w:p/>`, the walker only finished a paragraph on a closing tag, and so three
+   * empty paragraphs were dropped without ever being counted - silently, which the import contract
+   * says cannot happen.
+   */
+  const events: XmlEvent[] = scanXml(documentXml).flatMap<XmlEvent>((event) =>
+    event.kind === 'self'
+      ? [
+          { kind: 'open', name: event.name, attrs: event.attrs },
+          { kind: 'close', name: event.name },
+        ]
+      : [event],
+  );
 
   for (const event of events) {
     if (event.kind === 'text') {
@@ -216,7 +230,7 @@ export function importDocx(bytes: Uint8Array): ImportedDocx {
 
     const { name } = event;
 
-    if (event.kind === 'open' || event.kind === 'self') {
+    if (event.kind === 'open') {
       switch (name) {
         case 'w:p':
           inline = [];

@@ -36,6 +36,10 @@ The content model decision, tested rather than argued. All four gates pass, so A
   blocks. Opening an exported file in Word showed all three missing, and none of it was visible to
   the round-trip test, which reads our own output and so could only ever prove that our reader and
   our writer agree with each other.
+- Importing a Word document no longer discards empty paragraphs without saying so. Word writes an
+  empty paragraph in a shorter form that the reader was not looking for, so they were dropped and
+  never counted - and an import that quietly loses content is the one thing the importer is not
+  allowed to do.
 
 ## 0.2.1 - 2026-09-10 (PR #5)
 

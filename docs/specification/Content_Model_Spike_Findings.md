@@ -140,8 +140,23 @@ place and the cross-reference resolved. Three things were wrong ([issue #7](http
 | The footnote had no number             | `w:footnoteReference` numbers the mark in the text; the number at the FOOT of the page comes from `w:footnoteRef` **inside the footnote's own content**, which was missing | `w:footnoteRef` in each footnote, a `FootnoteText` style, and a superscript `FootnoteReference` |
 | Blank lines between blocks disappeared | The importer drops empty paragraphs - correctly, they are presentation - so the export has to supply the separation from the layout instead, and it supplied none          | Paragraph spacing in `w:docDefaults` and in the heading styles                                  |
 
-**Two things are worth separating here.** All three defects were in the **emitter**, not in the
-content model. Nothing about nodes and marks was implicated, which is mild corroboration for
+**A fourth defect turned up while investigating the third, and it is the worst of them.** Word
+writes an empty paragraph as a **self-closing** `<w:p/>`. The walker only finished a paragraph on a
+closing tag, so the fixture's three empty paragraphs were never counted and the
+`empty-paragraphs-dropped` diagnostic never fired. Content was dropped in silence - the one thing
+the import contract says cannot happen, and the exact criterion case 8 was recorded as passing.
+
+It survived because every assertion in the case was about **what came through**. Nothing asserted
+about what did not. A test suite for an importer needs both halves, and that belongs in the import
+requirements as a rule rather than as a lesson learned once: an importer is judged on its
+diagnostics as much as on its output.
+
+The fix is to normalise a self-closing element into an open and a close at the point of scanning,
+so a structural element written either way goes down one path. Special-casing at each use is how
+the bug happened.
+
+**Two things are worth separating.** All four defects were in the **importer or the emitter**, not
+in the content model. Nothing about nodes and marks was implicated, which is mild corroboration for
 ADR-0005 rather than a threat to it. But the reason they survived to a human is not mild at all.
 
 **A round-trip test that reads its own output can only prove self-consistency.** Ours did exactly

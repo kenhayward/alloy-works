@@ -108,6 +108,24 @@ describe('case 8 - Word round-trip', () => {
         'section-properties-not-imported',
       );
     });
+
+    /**
+     * The fixture separates its blocks with three empty paragraphs, and Word writes an empty
+     * paragraph as a SELF-CLOSING `<w:p/>`. The walker only finished a paragraph on a closing tag,
+     * so those three were never counted and the diagnostic never fired: content was dropped in
+     * silence, which is the one thing the import contract says cannot happen.
+     *
+     * It went unnoticed because every other assertion here is about what survived. Nothing was
+     * asserting about what did not.
+     */
+    it('counts the empty paragraphs it dropped, including self-closing ones', () => {
+      const dropped = imported.diagnostics.find(
+        (diagnostic) => diagnostic.code === 'empty-paragraphs-dropped',
+      );
+
+      expect(dropped).toBeDefined();
+      expect(dropped?.detail).toMatch(/\b3\b/);
+    });
   });
 
   describe('exporting and reading back', () => {
