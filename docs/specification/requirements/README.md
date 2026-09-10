@@ -80,7 +80,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **COL** | Collaboration and review                  | 7.7     | -                                                                                                  |
 | **LIF** | Lifecycle, workflow and audit             | 7.8     | -                                                                                                  |
 | **VER** | Versioning, baselines and comparison      | 7.9     | -                                                                                                  |
-| **PUB** | Publishing and output                     | 7.10    | -                                                                                                  |
+| **PUB** | Publishing and output                     | 7.10    | [PUB-publishing-and-output.md](PUB-publishing-and-output.md)                                       |
 | **SCH** | Search, navigation and discovery          | 7.11    | -                                                                                                  |
 | **REL** | Relationships and the graph               | 7.12    | -                                                                                                  |
 | **IMP** | Import, export and interchange            | 7.13    | -                                                                                                  |
@@ -89,7 +89,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **LOC** | Localisation and translation              | 7.16    | -                                                                                                  |
 | **ADM** | Administration, cost and observability    | 7.17    | -                                                                                                  |
 | **STY** | Styles and presentation themes            | 7.18    | [STY-styles-and-presentation-themes.md](STY-styles-and-presentation-themes.md)                     |
-| **TPL** | Templates and document instantiation      | 7.19    | -                                                                                                  |
+| **TPL** | Templates and document instantiation      | 7.19    | [TPL-templates-and-document-instantiation.md](TPL-templates-and-document-instantiation.md)         |
 | **AST** | Assets and media                          | 7.20    | -                                                                                                  |
 | **LIB** | Reference libraries                       | 7.21    | -                                                                                                  |
 
