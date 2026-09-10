@@ -66,6 +66,34 @@ export const textNodeSchema = z.object({
 });
 
 /**
+ * A footnote anchored to a point in running text. Its content is text runs rather than arbitrary
+ * blocks: enough for the gate cases, and deliberately not more. Case 4 - a citation inside a
+ * footnote inside a table cell - is what decides whether this has to become fully recursive.
+ */
+export const footnoteNodeSchema = z.object({
+  type: z.literal('footnote'),
+  id: z.string().min(1),
+  content: z.array(textNodeSchema),
+});
+
+/**
+ * A reference to something else by identity. It carries no number and no title: those are resolved
+ * at publish time in the context of the document doing the resolving, which is what lets the same
+ * component be referenced from two documents that number it differently.
+ */
+export const crossReferenceNodeSchema = z.object({
+  type: z.literal('crossReference'),
+  targetId: z.string().min(1),
+  display: z.enum(['number', 'title', 'page']),
+});
+
+export const inlineNodeSchema = z.discriminatedUnion('type', [
+  textNodeSchema,
+  footnoteNodeSchema,
+  crossReferenceNodeSchema,
+]);
+
+/**
  * Blocks carry a stable `id`. It is what lets comparison say "this paragraph moved and was
  * reworded" instead of "a paragraph vanished and a different one appeared" - see case 7. The id
  * has to be in the schema from the first revision ever stored, because revisions are immutable
@@ -78,7 +106,7 @@ export const textNodeSchema = z.object({
 export const paragraphNodeSchema = z.object({
   type: z.literal('paragraph'),
   id: z.string().min(1).optional(),
-  content: z.array(textNodeSchema),
+  content: z.array(inlineNodeSchema),
 });
 
 /**
@@ -124,6 +152,9 @@ export const contentDocumentSchema = z.object({
 });
 
 export type TextNode = z.infer<typeof textNodeSchema>;
+export type FootnoteNode = z.infer<typeof footnoteNodeSchema>;
+export type CrossReferenceNode = z.infer<typeof crossReferenceNodeSchema>;
+export type InlineNode = z.infer<typeof inlineNodeSchema>;
 export type ParagraphNode = z.infer<typeof paragraphNodeSchema>;
 export type CellFootnote = z.infer<typeof cellFootnoteSchema>;
 export type BoundTableNode = z.infer<typeof boundTableNodeSchema>;
@@ -157,7 +188,18 @@ export function text(value: string, marks: readonly Mark[] = []): TextNode {
   return { type: 'text', text: value, marks: [...marks] };
 }
 
-export function paragraph(content: readonly TextNode[], id?: string): ParagraphNode {
+export function footnote(id: string, content: readonly TextNode[]): FootnoteNode {
+  return footnoteNodeSchema.parse({ type: 'footnote', id, content: [...content] });
+}
+
+export function crossReference(
+  targetId: string,
+  display: CrossReferenceNode['display'] = 'number',
+): CrossReferenceNode {
+  return crossReferenceNodeSchema.parse({ type: 'crossReference', targetId, display });
+}
+
+export function paragraph(content: readonly InlineNode[], id?: string): ParagraphNode {
   return id === undefined
     ? { type: 'paragraph', content: [...content] }
     : { type: 'paragraph', id, content: [...content] };

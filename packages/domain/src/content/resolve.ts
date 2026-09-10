@@ -1,6 +1,7 @@
 import type {
   BlockNode,
   ContentDocument,
+  InlineNode,
   Mark,
   ParagraphNode,
   SuggestionMark,
@@ -29,8 +30,12 @@ function isParagraph(block: BlockNode): block is ParagraphNode {
   return block.type === 'paragraph';
 }
 
+function isText(node: InlineNode): node is TextNode {
+  return node.type === 'text';
+}
+
 function textNodes(document: ContentDocument): TextNode[] {
-  return document.content.filter(isParagraph).flatMap((block) => block.content);
+  return document.content.filter(isParagraph).flatMap((block) => block.content.filter(isText));
 }
 
 /**
@@ -44,7 +49,12 @@ export function fragmentsOf(document: ContentDocument, id: string): Fragment[] {
 export function plainText(document: ContentDocument): string {
   return document.content
     .filter(isParagraph)
-    .map((block) => block.content.map((node) => node.text).join(''))
+    .map((block) =>
+      block.content
+        .filter(isText)
+        .map((node) => node.text)
+        .join(''),
+    )
     .join('\n');
 }
 
@@ -61,7 +71,7 @@ function rewrite(
     document.content.map((block) =>
       isParagraph(block)
         ? paragraph(
-            block.content.flatMap((node) => decide(node) ?? []),
+            block.content.flatMap((node) => (isText(node) ? (decide(node) ?? []) : node)),
             block.id,
           )
         : block,

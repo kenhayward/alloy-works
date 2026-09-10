@@ -45,7 +45,10 @@ export function stripBlockIds(document: ContentDocument): ContentDocument {
 
 function blockText(block: BlockNode): string {
   return block.type === 'paragraph'
-    ? block.content.map((node) => node.text).join('')
+    ? block.content
+        .filter((node) => node.type === 'text')
+        .map((node) => (node.type === 'text' ? node.text : ''))
+        .join('')
     : `${block.query.id} ${block.columns.join(' ')}`;
 }
 
