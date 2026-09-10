@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.1 - 2026-09-10 (PR #5)
+
+The first scope document. Still no product - this says what the product is going to be.
+
+### Added
+
+- `docs/specification/Project_Scope.md`, the top-down scope for Alloy Works as a component content
+  management system for reports that mix authored narrative with live data. It names the market it
+  is aimed at and how it compares to Workiva, Paligo, Heretto, Veeva and Quarto; defines the
+  vocabulary the rest of the specification will use - component, revision, document, outline,
+  baseline, template, binding, provenance; sets out seventeen capability areas; and is explicit
+  about what Alloy Works will not be.
+- Nine decisions recorded as settled, with the reasoning: the wedge market, web-first with the
+  service as the system of record, the component repository with the template as a binding
+  artifact, soft component locks instead of real-time co-editing, OpenAPI as the source of truth,
+  a curated rather than mirrored MCP surface, PDF and Word as the fidelity bar, schema-declared
+  relationships, and AI output as a proposal until a human accepts it.
+- Ten decisions recorded as still open, each with what it hinges on, so that the three irreversible
+  ones - the content representation, the storage and revision model, and the publishing engine -
+  are spiked before anything is built on top of them.
+- Six delivery tranches, ten named risks with mitigations, and a "what would change the answer"
+  section in the same idiom as the decision records.
+
 ## 0.2.0 - 2026-09-10 (PR #4)
 
 The Alloy Works mark, wired into every place an icon is asked for.

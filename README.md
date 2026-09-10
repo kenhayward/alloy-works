@@ -7,7 +7,8 @@ application and a desktop application**.
 > **Status: research, and scaffolding.** The workspaces, the split between web and desktop, and the
 > seam between them are real and tested. There is no content storage, no authoring UI and no
 > publishing yet. [`docs/features.md`](docs/features.md) is explicit about what does and does not
-> exist.
+> exist; [`docs/specification/Project_Scope.md`](docs/specification/Project_Scope.md) is what it is
+> being built towards.
 
 ## Features
 
@@ -67,6 +68,7 @@ docs/         Architecture, development, testing, CI and decision records.
 | [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                            |
 | [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                              |
 | [docs/decisions/](docs/decisions/)                 | Architecture decision records                                        |
+| [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements  |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                  |
 
 ## Platforms

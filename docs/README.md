@@ -11,6 +11,11 @@ describe how the repo works today, and a PR that changes how it works updates th
 | [ci-and-releases.md](ci-and-releases.md) | The CI pipeline, why it is advisory today, versioning and the changelog           |
 | [features.md](features.md)               | The canonical inventory of what the product does                                  |
 | [decisions/](decisions/)                 | Architecture decision records - what was decided and what would change the answer |
+| [specification/](specification/)         | What the product is going to be - scope first, then detailed requirements         |
+
+`specification/` is the one folder that describes the product rather than the repository. Everything
+else here is true today; the specification is true of the thing being built towards, and
+[features.md](features.md) stays the honest account of the distance between them.
 
 ## Where the rules live
 
