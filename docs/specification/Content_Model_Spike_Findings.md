@@ -7,9 +7,11 @@
 >
 > **Case 8 was declared passed too early.** It was passed on a round-trip verified by our own
 > reader. Opening an exported file in Word then found three defects that reader could not see -
-> [issue #7](https://github.com/kenhayward/alloy-works/issues/7). All three were in the emitter
-> rather than in the content model, all three are fixed, and the correction is written up below
-> rather than quietly absorbed, because the reason it happened matters more than the fix.
+> [issue #7](https://github.com/kenhayward/alloy-works/issues/7) - and investigating the third found
+> a fourth, worse one. All four were in the importer or the emitter rather than in the content model,
+> all four are fixed, and **the corrected output has now been confirmed in Word**. The correction is
+> written up below rather than quietly absorbed, because the reason it happened matters more than
+> the fix.
 
 Only the four gate cases were in scope for this run - see the depth decision recorded in the brief.
 The six non-gate cases (2, 4, 5, 6, 9, 10) have not been run.
@@ -196,9 +198,11 @@ than reproducing an authoring habit.
 
 ## What is still unproven
 
-- **The re-export has not been confirmed in Word.** The three fixes are asserted by tests over the
-  emitted OOXML, which is a proxy. Only Word can confirm the rendering, and by the argument above
-  that will always be true.
+- **Word rendering is confirmed, and always will need confirming.** The corrected export was opened
+  in Word: headings numbered, the cross-reference showing a real number, the footnote numbered, and
+  the spacing reading as intended. The tests here assert the OOXML constructs rather than the
+  rendering, which is a proxy - so this is not a box that stays ticked. By the argument above, every
+  material change to the emitter needs a real consumer to look at the result.
 - **Numbering is emitted but only exercised through heading styles.** The fixture's numbered heading
   takes its number from a style rather than a direct `w:numPr`, so a numbered list in body text is
   still untested. The next Word fixture should carry one.
