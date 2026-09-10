@@ -135,12 +135,22 @@ answers it - a publication that does not record what made it cannot be reproduce
 
 ## 10. Publications
 
-| ID          | Requirement                                                                                          | Tranche    | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **PUB-047** | A publication must be retained, addressable by URL, and permissioned (**IAM**)                       | T1         | Specified |
-| **PUB-048** | A publication must be listed alongside the document that produced it, with who published it and when | T1         | Specified |
-| **PUB-049** | A publication must be accompanied by the provenance of every bound value in it (**DAT-042**)         | T2         | Specified |
-| **PUB-050** | A publication must be immutable; correcting one must produce another rather than replacing it        | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                  | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
+| **PUB-047** | A publication must be retained, addressable by URL, and permissioned (**IAM**)                                                                               | T1         | Specified |
+| **PUB-048** | A publication must be listed alongside the document that produced it, with who published it and when                                                         | T1         | Specified |
+| **PUB-049** | A publication must be accompanied by the provenance of every bound value in it (**DAT-042**)                                                                 | T2         | Specified |
+| **PUB-050** | A publication must be immutable; correcting one must produce another rather than replacing it                                                                | Constraint | Specified |
+| **PUB-057** | A publication must be shareable outside the tenant only to a named recipient who has proved who they are, and never anonymously                              | Constraint | Specified |
+| **PUB-058** | Such a share must expire, and must be revocable with immediate effect                                                                                        | T4         | Specified |
+| **PUB-059** | A recipient opening a publication that a later one has superseded must be told so, rather than reading a corrected document's predecessor without knowing    | Constraint | Specified |
+| **PUB-060** | Every access to a shared publication must be recorded - who, when, and which publication - and must be reportable to the tenant that shared it (**LIF-026**) | T4         | Specified |
+
+**PUB-057 reads like a weaker thing than an account, and it is a stronger thing than what it
+replaces.** The realistic alternative is not that a client signs in; it is that somebody emails them
+a PDF, which carries no reader identity, cannot be revoked, and cannot tell them the version in their
+hand has been superseded. PUB-059 and PUB-060 are what a file in an inbox can never do, and they are
+the reason this is worth building rather than leaving to the customer. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md).
 
 ## 11. Failure
 
@@ -160,12 +170,12 @@ answers it - a publication that does not record what made it cannot be reproduce
 
 ## 13. Non-requirements
 
-| ID          | Not this                                                                                                                                     |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PUB-N01** | **Not a prepress system.** No imposition, colour separation, trapping or bleed management                                                    |
-| **PUB-N02** | **No web publishing channel.** The output is documents, not a site                                                                           |
-| **PUB-N03** | **No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again |
-| **PUB-N04** | **Google Docs is not held to the fidelity bar**, and must not be sold as though it were                                                      |
+| ID          | Not this                                                                                                                                                                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-N01** | **Not a prepress system.** No imposition, colour separation, trapping or bleed management                                                                                                                                                                                                      |
+| **PUB-N02** | **No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)) |
+| **PUB-N03** | **No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again                                                                                                                                                   |
+| **PUB-N04** | **Google Docs is not held to the fidelity bar**, and must not be sold as though it were                                                                                                                                                                                                        |
 
 ## 14. Open questions
 
