@@ -17,7 +17,7 @@ export const componentSchema = z.object({
     message: 'A component needs a title',
   }),
   body: z.string(),
-  revision: z.int().min(1),
+  version: z.int().min(1),
 });
 
 export type Component = z.infer<typeof componentSchema>;
@@ -30,13 +30,17 @@ export function parseComponent(value: unknown): Component {
 }
 
 export function createComponent(draft: ComponentDraft): Component {
-  return parseComponent({ ...draft, id: globalThis.crypto.randomUUID(), revision: 1 });
+  return parseComponent({ ...draft, id: globalThis.crypto.randomUUID(), version: 1 });
 }
 
 /**
- * Returns the next revision. The component passed in is left alone: revisions are values, so a
- * caller holding an earlier one keeps holding exactly what it read.
+ * Returns the next version. The component passed in is left alone: versions are values, so a caller
+ * holding an earlier one keeps holding exactly what it read.
+ *
+ * Named for what it produces rather than "revise", because a revision is now a narrower thing - a
+ * version designated as issued at a lifecycle gate. See
+ * docs/decisions/0006-iteration-version-revision.md.
  */
-export function reviseComponent(component: Component, changes: Partial<ComponentDraft>): Component {
-  return parseComponent({ ...component, ...changes, revision: component.revision + 1 });
+export function nextVersion(component: Component, changes: Partial<ComponentDraft>): Component {
+  return parseComponent({ ...component, ...changes, version: component.version + 1 });
 }

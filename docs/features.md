@@ -27,7 +27,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   installer. Nothing is signed, notarised or published.
 
 - **A content model.** `packages/domain` defines a `Component` - a typed, titled, independently
-  revisable piece of content - with validation on creation, on revision and on anything read back
+  versioned piece of content - with validation on creation, on change and on anything read back
   from storage. It is pure TypeScript: no React, no Electron, no filesystem.
 
 ## What does not exist
@@ -37,7 +37,7 @@ Named explicitly so nobody has to read the source to find out:
 - No content storage, persistence, import or export.
 - No authoring UI - no editor, no component tree, no reuse or transclusion.
 - No publishing or output formats.
-- No search, no metadata, no taxonomy, no workflow, no versioning of content beyond the `revision`
+- No search, no metadata, no taxonomy, no workflow, no versioning of content beyond the `version`
   counter on a single component.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

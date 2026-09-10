@@ -8,8 +8,8 @@ describe('the domain package', () => {
       'componentSchema',
       'componentTypes',
       'createComponent',
+      'nextVersion',
       'parseComponent',
-      'reviseComponent',
     ]);
   });
 });

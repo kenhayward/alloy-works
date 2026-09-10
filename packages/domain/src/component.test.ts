@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createComponent, parseComponent, reviseComponent } from './component.js';
+import { createComponent, nextVersion, parseComponent } from './component.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 describe('createComponent', () => {
-  it('assigns an identity and starts at revision 1', () => {
+  it('assigns an identity and starts at version 1', () => {
     const component = createComponent({
       type: 'topic',
       title: 'Install the printer',
@@ -13,7 +13,7 @@ describe('createComponent', () => {
     });
 
     expect(component.id).toMatch(UUID);
-    expect(component.revision).toBe(1);
+    expect(component.version).toBe(1);
     expect(component.type).toBe('topic');
     expect(component.title).toBe('Install the printer');
     expect(component.body).toBe('Steps.');
@@ -46,8 +46,8 @@ describe('parseComponent', () => {
     expect(() => parseComponent(stored)).toThrow();
   });
 
-  it('rejects a revision below 1', () => {
-    const stored = { ...createComponent({ type: 'task', title: 'A', body: '' }), revision: 0 };
+  it('rejects a version below 1', () => {
+    const stored = { ...createComponent({ type: 'task', title: 'A', body: '' }), version: 0 };
 
     expect(() => parseComponent(stored)).toThrow();
   });
@@ -57,28 +57,28 @@ describe('parseComponent', () => {
   });
 });
 
-describe('reviseComponent', () => {
-  it('increments the revision and keeps the identity', () => {
+describe('nextVersion', () => {
+  it('increments the version and keeps the identity', () => {
     const first = createComponent({ type: 'topic', title: 'Install', body: 'Old.' });
-    const second = reviseComponent(first, { body: 'New.' });
+    const second = nextVersion(first, { body: 'New.' });
 
     expect(second.id).toBe(first.id);
-    expect(second.revision).toBe(2);
+    expect(second.version).toBe(2);
     expect(second.body).toBe('New.');
     expect(second.title).toBe('Install');
   });
 
   it('does not mutate the component it was given', () => {
     const first = createComponent({ type: 'topic', title: 'Install', body: 'Old.' });
-    reviseComponent(first, { body: 'New.' });
+    nextVersion(first, { body: 'New.' });
 
     expect(first.body).toBe('Old.');
-    expect(first.revision).toBe(1);
+    expect(first.version).toBe(1);
   });
 
   it('applies the same validation as creation', () => {
     const first = createComponent({ type: 'topic', title: 'Install', body: 'Old.' });
 
-    expect(() => reviseComponent(first, { title: '' })).toThrow(/title/i);
+    expect(() => nextVersion(first, { title: '' })).toThrow(/title/i);
   });
 });

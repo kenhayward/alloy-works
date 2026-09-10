@@ -3,6 +3,123 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.4 - 2026-09-10 (PR #9)
+
+The first detailed requirements, and identifiers to track them by.
+
+### Added
+
+- `docs/specification/requirements/`, holding one document per capability area in the scope. Every
+  requirement carries an identifier like `CNT-014` so it can be pointed at from a commit, a test or
+  a conversation without being quoted, and so that progress can be read off what cites it rather
+  than off a status column somebody has to remember to update.
+- The first area written in full: content and authoring. Eighty requirements covering the content
+  model, the block and inline vocabularies, footnotes, mathematics, citations, characters, pasting
+  from other tools, the editing session, the document view and editor accessibility - each with the
+  reasoning next to it, because a requirement without its argument gets re-litigated by the first
+  person who disagrees.
+- All seventeen area codes are reserved up front, so the shape of the whole specification is visible
+  before most of it is written and nothing quietly fails to be specified at all.
+- A test over the requirements. Identifiers have one permitted shape, are never issued twice, never
+  renumber, and leave no gaps - a withdrawn requirement keeps its row rather than vanishing. It also
+  checks that every requirement actually states something binding, which caught twenty-one entries
+  that were vocabulary items rather than requirements.
+- Non-requirements and open questions are numbered as well, so a reviewer can cite one without
+  quoting it, in a shape that cannot be confused with a requirement.
+
+### Changed
+
+- Revised after review. An author can now apply bold, italic, underline, superscript and subscript
+  directly - the earlier wording put appearance entirely in the hands of the theme, which is right
+  for blocks and wrong for characters. What an author still cannot choose is a typeface, a size or a
+  colour, because those are what make two parts of one document look like they came from two.
+- Language is recorded rather than foreignness. The earlier wording spoke of a "foreign phrase",
+  which describes a relation to a reader rather than a property of the text; a component now
+  declares its language and any passage that differs declares its own.
+- Images can sit in a table cell and inline with text, and carry an intent - icon, inline, column
+  width, full width - that the theme turns into a real size. So the same illustration can be sized
+  for the document it appears in rather than carrying one size everywhere.
+- Footnotes hold text and citations, and deliberately not tables or images. That was an open
+  question and is now settled.
+- The editor shows the spacing the theme will apply, so removing an author's blank lines no longer
+  means losing the gap they were making.
+- Where a component cannot be edited, the reason is shown - who holds it and when it frees up -
+  rather than only that it is unavailable.
+- **Three words for a component's history, where there had been one.** An **iteration** is an interim
+  save - immutable, private to whoever holds the lock, and kept only long enough to recover from a
+  closed tab. A **version** is an iteration kept for the record, cut when an author stops rather than
+  on every keystroke. A **revision** is a version that has been issued, when a component passes a
+  lifecycle gate. Written together as `3.14` - the fourteenth version since the third issue.
+- This closes a real gap: content saves continuously, but a snapshot is deliberately not taken on
+  every keystroke, and until now the save had nowhere to land. It also stops an author pressing save
+  from spending a number that is supposed to mean somebody signed something.
+- The scope, the domain package, the README and the feature list now use the new words. Earlier
+  records keep their wording and carry a note, because a record of what was decided is not rewritten
+  after the fact.
+- Appearance now comes from **named styles picked from a catalogue** that an administrator can
+  extend - an image is a "Thumbnail", a paragraph takes a paragraph style, a table takes a table
+  style, a citation takes Harvard or Vancouver. Authors get real control over how something looks
+  without being handed a font picker, and a house style has somewhere to live.
+- An image style fixes one dimension and takes the other from the picture's own proportions, so
+  nothing is ever squashed. Where that would make an image too tall for the page, the style caps the
+  height instead and still keeps the proportions.
+- The editor shows the theme's type and spacing, and a preview shows the document as it will
+  publish, in whichever output format is chosen. Both are needed: a scrolling editor can show the
+  words a reader will see but has no pages, so it can never show where a table breaks.
+- Spelling is checked as you type, against the language of the words being written rather than one
+  language for the whole editor, with room for a tenant's own dictionary. It behaves the same in the
+  desktop app, which does not get it for free the way a browser does.
+- The document opens in one of three modes - read, review or author - so a reader is not looking at
+  an editing interface with most of it greyed out.
+- A version is now only ever created by a deliberate act, never by leaving the room. Interim saves
+  are kept until the next version rather than for a fixed time, so nothing is lost by walking away
+  and nothing is recorded as a decision nobody made.
+- Undo reaches back to where the editing session started and no further. Going back beyond that is
+  restoring an earlier version, which is a different and recorded act.
+- An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
+  span the editor and the publisher and to belong to neither, so they now have a section of their own
+  in the scope rather than being assumed by both.
+- The specification is marked **v1** and is the baseline the next round iterates against. It is not
+  finished in the sense of being right - 91 open questions say otherwise - it is finished in the
+  sense that every area has been written once, so that a change to any of it is now a visible change
+  rather than a gap being filled.
+- **All twenty-one capability areas written**: 847 requirements, 88 non-requirements and 91 open
+  questions, each carrying the reasoning beside it. Enough of the specification to choose an
+  architecture on, which was the point of writing them.
+- Seven of the twenty-one areas written in full, close to four hundred requirements between them:
+  content and authoring, structure and numbering, identity and access, data and bindings, styles and
+  themes, publishing and output, and templates. Enough of the specification to choose an architecture
+  on, which was the point of writing them.
+- Two more areas written in full. **Structure, numbering and cross-references** covers the outline a
+  document is built from, the numbering computed over it, and what "see section 4.2" resolves to -
+  all of it recomputed rather than stored, because a component that is section 2 of one report and
+  section 7.3 of another cannot carry either. **Identity, tenancy and access control** covers the
+  customer boundary, signing in through a customer's own directory, and who may do what - written
+  as how things must be enforced rather than only what must be true, since this is the area where a
+  mistake is a breach.
+- A map of which area owns each thing the specification defines, and a check that nothing is
+  missing from it. Two areas so far have existed only because somebody happened to ask "is that
+  covered elsewhere?" - an artifact may now be listed as belonging to nobody, deliberately and
+  visibly, but it cannot simply be absent.
+- A twentieth, **assets and media**, and a twenty-first, **reference libraries**. Both came out of
+  the ownership pass: assets, bibliographies and terminology were all things a space holds and
+  content points at, and none of them belonged to anybody.
+- Terminology in particular is new to the specification. A term is referenced rather than typed, the
+  same way a citation is, which is what makes "Marketing Authorisation Holder (MAH)" on first mention
+  and "MAH" thereafter possible at all - whether a mention is the first depends on the document, and
+  a component reused in two reports may be the first in one and the fortieth in the other.
+- A nineteenth, **templates and document instantiation**. Most documents in this product will begin
+  by being created from a template, and nothing covered that happening once - only the same thing
+  happening in bulk. It also gives a home to the two definitions nothing else owned, the metadata
+  schema and the starting outline, and to the template designer the scope named as a user and then
+  never served.
+- An author can move a document's reference to a different version or revision of a component,
+  forwards or back, from the document itself - the audited step back and step forward. It changes
+  what a reader sees without changing a word, so it is recorded.
+- Comparison is reachable while writing: pick an earlier version or revision from a list showing who
+  changed each and when, and see it as a redline. Separately, an author can see what they themselves
+  have changed since sitting down, which is a different question with a different boundary.
+
 ## 0.2.3 - 2026-09-10 (PR #8)
 
 The rules for decision records, written down and then enforced.

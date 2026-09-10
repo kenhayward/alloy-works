@@ -3,7 +3,7 @@ export {
   componentTypes,
   createComponent,
   parseComponent,
-  reviseComponent,
+  nextVersion,
 } from './component.js';
 
 export type { Component, ComponentDraft, ComponentType } from './component.js';

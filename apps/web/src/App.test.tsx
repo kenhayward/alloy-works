@@ -14,7 +14,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Alloy Works' })).toBeInTheDocument();
     expect(screen.getByText('Install the printer')).toBeInTheDocument();
-    expect(screen.getByText(/revision 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/version 1/i)).toBeInTheDocument();
   });
 
   it('names the delivery it is running under', async () => {

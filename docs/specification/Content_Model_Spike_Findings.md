@@ -13,6 +13,12 @@
 > written up below rather than quietly absorbed, because the reason it happened matters more than
 > the fix.
 
+> **Terminology note, added later.** This document says "revision" throughout for an immutable
+> snapshot of a component. [ADR-0006](../decisions/0006-iteration-version-revision.md) has since
+> split that into three - iteration, version, revision - and what is called a revision here is what
+> is now called a **version**. The wording is left as it was written rather than rewritten, because
+> this is a record of what a spike found.
+
 Only the four gate cases were in scope for this run - see the depth decision recorded in the brief.
 The six non-gate cases (2, 4, 5, 6, 9, 10) have not been run.
 

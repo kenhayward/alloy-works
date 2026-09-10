@@ -1,6 +1,6 @@
 # Alloy Works - Project Scope
 
-> **Status: proposed scope, not built.** This document defines what Alloy Works is for, what it
+> **Status: v1, for review. Proposed scope, not built.** This document defines what Alloy Works is for, what it
 > will and will not do, and which decisions are already settled. It is deliberately intent-level:
 > it says what a capability is for and how we will know it worked, not how it is implemented. It is
 > the input to a set of detailed requirements documents, which are in turn the input to a proposed
@@ -120,9 +120,16 @@ These names are the shared vocabulary for every requirements document that follo
 - **Component** - the atom. A small, typed, titled, independently revisable piece of content that a
   document may reference. It knows its own content and metadata. It does not know its heading
   number, its position, or which documents use it.
-- **Component revision** - an immutable snapshot of a component. Revisions are never edited and
-  never deleted; a change creates a new one. Everything downstream - baselines, comparison, audit,
-  provenance - depends on this holding without exception.
+- **Iteration** - an interim save of a component. Immutable, timestamped, visible only to the editor
+  holding the lock, and retained for a declared recovery window rather than for ever. This is where
+  continuous saving goes, and it is not part of the record of what a component said.
+- **Component version** - an iteration promoted to the record, cut on a stated boundary. Versions are
+  never edited and never deleted. Everything downstream - baselines, comparison, audit, provenance -
+  depends on this holding without exception.
+- **Component revision** - a version designated as issued, when a component passes a lifecycle gate.
+  A marker on a version, not a second history beside it. Written `revision.version`, so `3.14` is the
+  fourteenth version since the third issue and `0.7` is something never yet issued. A revision is
+  what a reader cites. See [ADR-0006](../decisions/0006-iteration-version-revision.md).
 - **Node-and-mark model** - the canonical form of a component's content: a tree of typed **nodes**
   (paragraph, list, table, figure, equation) carrying **marks** applied to ranges of text.
   Conditions, redlines, comment anchors, citations, variables and inline bindings are all marks, and
@@ -133,19 +140,26 @@ These names are the shared vocabulary for every requirements document that follo
   referenced like components, carry alt text and caption metadata, and are numbered by the document
   that uses them rather than by themselves.
 
+- **Bibliography entry** - a managed record of a source, referenced by a citation rather than typed.
+- **Term** - a managed record of what something is called: a preferred label, alternative labels, an
+  abbreviation, a definition, a status, and a label per language. Referenced from content and never
+  typed, so that first-use expansion and glossaries can be resolved by the document rather than
+  baked into the component.
+- **Vocabulary** - a named list of the permitted values a metadata field may take.
+
 ### Assembly
 
 - **Document** - the unit a reader receives and a publication is made from. A document owns an
   outline and a set of metadata values. It does not own content.
 - **Outline** - the ordered tree that gives a document its structure. Each node is either a
   **section** (a structural heading that exists only in this document) or a **component reference**
-  (a pointer to a component, pinned to a revision or floating at latest). Sections and components
+  (a pointer to a component, pinned to a version or floating at latest). Sections and components
   are therefore independent, as they must be: a component reused at depth 2 in one report and depth
   4 in another cannot carry its own heading level.
 - **Numbering, cross-references and captions are properties of the outline, never of the
   component.** They are resolved at publish time in the context of the document doing the resolving.
   This single rule is what makes reuse possible at all.
-- **Baseline** - a named, immutable version of a document that pins the exact revision of every
+- **Baseline** - a named, immutable version of a document that pins the exact version of every
   component, asset, definition and bound value it used. A baseline is what "as published", "as
   submitted" and "compare against" actually mean. Without baselines, comparison across time is
   undefined.
@@ -158,14 +172,14 @@ A **template** is a _binding_ artifact. It composes the six definitions below an
 Each is independently reusable and independently versioned, so a table look, a query or a prompt can
 be shared across templates without cloning anything.
 
-| Definition                                 | What it declares                                                                               |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| **Metadata schema**                        | The typed fields a document and its components must or may carry, and their validation rules   |
-| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation  |
-| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                      |
-| **Presentation theme**                     | On-screen and in-output appearance: text styles, list styles, table looks, field formatting    |
-| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format  |
-| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings |
+| Definition                                 | What it declares                                                                                                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Metadata schema**                        | The typed fields a document and its components must or may carry, and their validation rules                                                                              |
+| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation                                                                             |
+| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                                                                                                 |
+| **Presentation theme**                     | On-screen and in-output appearance, as named style catalogues an administrator can extend - paragraph, character, table, image, admonition and citation styles. See §7.18 |
+| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format                                                                             |
+| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings                                                                            |
 
 - **Parameter set** - the values that instantiate a template into a document: the site, the period,
   the product, the jurisdiction. Parameters feed queries, metadata, conditions and prompts, which is
@@ -200,7 +214,7 @@ be shared across templates without cloning anything.
 
 ## 7. Capability scope
 
-Seventeen areas. Each becomes one detailed requirements document.
+Twenty-one areas. Each becomes one detailed requirements document.
 
 ### 7.1 Authoring
 
@@ -238,7 +252,7 @@ that uses it.
   reader scrolls.
 - Generated table of contents, table of figures and table of tables in published output.
 - **Deep links**: a stable, shareable URL for a tenant, space, document, outline node, component,
-  revision, baseline, publication or review thread. Opening one navigates to and highlights the
+  version, baseline, publication or review thread. Opening one navigates to and highlights the
   target, subject to permission.
 
 ### 7.3 Reuse, variants and conditional profiling
@@ -246,7 +260,7 @@ that uses it.
 The capability that makes this a component CMS rather than a good editor.
 
 - A component may be referenced by any number of documents, in any space the referrer can read.
-- Each reference is independently pinned to a revision or floating at latest, and which one is
+- Each reference is independently pinned to a version or floating at latest, and which one is
   visible in the editor.
 - **"Where used" is a first-class query**, not a report.
 - Editing a component used elsewhere warns and shows the impact before the change is saved.
@@ -346,16 +360,17 @@ Two surfaces: declared prompts inside templates, and a tool-enabled assistant al
 
 ### 7.9 Versioning, baselines and comparison
 
-- Immutable component revisions with an author, a timestamp and an optional change note.
-- Document baselines pinning every referenced revision, definition version and bound value.
+- Immutable component versions with an author, a timestamp and an optional change note, and
+  revisions designating the versions that were issued.
+- Document baselines pinning every referenced version, definition version and bound value.
 - **Comparison at three levels, because they answer three different questions:**
   - **Structural** - what moved, was added or was removed in the outline.
   - **Content** - what changed inside a component, rendered as a redline.
   - **Resolved output** - what changed in the published result, which catches changes caused by
     data, conditions or definition versions rather than by anyone editing anything.
-- Comparison between any two revisions of a component and any two baselines of a document, including
+- Comparison between any two versions of a component and any two baselines of a document, including
   across a template version change.
-- Restoring an earlier revision creates a new revision. Nothing is ever rewritten.
+- Restoring an earlier version creates a new version. Nothing is ever rewritten.
 
 ### 7.10 Publishing and output
 
@@ -448,11 +463,11 @@ depend on the document doing the resolving.
   right-to-left.
 - **Content translation, which is the larger half and the one that carries commercial value**:
   per-language variants of a component, a translation status that is invalidated when the source
-  revision changes, XLIFF round-trip to translation vendors, and machine translation as an assist
+  version changes, XLIFF round-trip to translation vendors, and machine translation as an assist
   with human review.
 - A document is published in a language, and the publishing layout may vary by language.
 - Phased after the core, but **the content model must accommodate it from the start.** Retrofitting
-  language variants onto a monolingual revision model is a rewrite.
+  language variants onto a monolingual version model is a rewrite.
 
 ### 7.17 Administration, cost and observability
 
@@ -462,6 +477,118 @@ depend on the document doing the resolving.
   volume.
 - Operational observability: health, latency and error budgets per capability, with tenant-scoped
   diagnostics an administrator can read without raising a support ticket.
+
+### 7.18 Styles and presentation themes
+
+Appearance is named, catalogued and extensible, rather than chosen freely by an author or hard-coded
+by a developer. This area exists because style catalogues turned out to span the editor and the
+publisher and to belong to neither: an author selects a style while writing, and the publisher
+resolves it while rendering, so the catalogue itself is a third thing.
+
+- **Style catalogues** for paragraphs, character marks, tables, images, admonitions and citations. A
+  style names an appearance; content selects a style by name; nothing in content describes how the
+  style looks.
+- **Configuration-extensible by a tenant administrator.** Adding "Small thumbnail" beside "Thumbnail"
+  is configuration, not a release. A catalogue nobody can extend becomes a queue of change requests.
+- **One catalogue, two consumers.** The editor and the publisher resolve the same style, so what an
+  author sees is what a reader gets - within the limits of a scrolling view, which has no pages.
+- **Image styles fix one dimension and derive the other** from the image's own proportions, with a
+  declared maximum in the other direction. Fixing both distorts the picture, and does it silently.
+- **A presentation theme binds a set of catalogues**, and a template binds a theme. Themes are
+  versioned like every other definition artifact, and a baseline pins the theme version it published
+  under - otherwise re-publishing an approved document could change how it looks.
+- **Separate from the publishing layout.** A theme decides what things look like; a layout decides
+  page size, margins, running heads and pagination. They are configured independently because a
+  house style outlives a page format.
+- **Catalogues must be exportable and importable**, so a house style can move between spaces and
+  tenants rather than being rebuilt by hand.
+
+### 7.19 Templates and document instantiation
+
+A template is the artifact that binds the others, and instantiating one is how most documents in
+this product will begin. Neither had an owner: §6 defined a parameter set and §7.3 specified
+generating many documents at once, but nothing covered a single document being created, and the
+template designer named in §5 had no area serving them.
+
+- **Template authoring.** A template designer creates, edits and versions a template, and binds to
+  it the six definitions in §6. Two of those - the **metadata schema** and the **structure
+  outline** - are owned here, because nothing else owns them; the other four belong to **DAT**,
+  **STY**, **PUB** and **GEN**, and a template only references them.
+- **Declared parameters.** A template declares what it needs to be instantiated: each parameter's
+  name, type, permitted values, and whether it is required. A document cannot be created until the
+  required ones are supplied.
+- **Instantiation.** Creating a document from a template and a parameter set: materialising the
+  starting outline, seeding metadata, resolving variables, and binding the queries the template
+  declares. Whether a query runs at creation and is pinned, or stays live, follows the binding mode
+  in §7.4 rather than being decided here.
+- **Divergence is expected.** After instantiation a document owns its own outline and may depart from
+  the template it came from. That is the point of a starting shape rather than a cage - but the
+  document records which template and which template version produced it, so the departure is
+  visible rather than merely absent.
+- **A template changes after documents exist.** Existing documents must not change underneath their
+  authors. What a template version change gives is an answer to "which documents came from this
+  version", and a decision about whether a document can be moved forward to a newer one - which is a
+  migration, with everything that implies, rather than a setting.
+- **Validation.** A document must satisfy the metadata schema its template binds, and a template
+  whose definition bindings do not resolve must not be usable to create anything. A broken template
+  discovered at publish time has already cost somebody a day.
+- **Bulk generation rests on this.** §7.3 instantiates many documents from one template and a set of
+  parameter rows; that is the same act repeated, and the guarantees it needs are the ones here.
+
+### 7.20 Assets and media
+
+An asset is a managed, versioned binary a space holds and content references. It gets its own area
+because binaries carry a set of concerns nothing else in this product does, and because something
+downstream now depends on getting them right: §7.18 resolves an image style by deriving one
+dimension from the picture's own proportions, which requires knowing them.
+
+- **Validated on the way in, not inspected later.** An upload is checked against a declared list of
+  permitted formats and refused if it does not match, and scanned for malware before it can be
+  referenced by anything.
+- **Intrinsic properties recorded on ingest** - dimensions, colour space, page count. Discovering an
+  image's proportions at publish time is too late for a layout that depends on them.
+- **Derivatives generated on ingest**: thumbnails and preview renditions, so that browsing a library
+  of several thousand images does not fetch several thousand originals.
+- **Alt text belongs to the use, not only the asset.** The same photograph means different things in
+  two documents. An asset carries a default; the figure that places it may override, and §7.1 makes
+  the figure's alt text a publish-time requirement either way.
+- **Versioned, with references pinned or floating** exactly as component references are. Replacing
+  an asset creates a version; it does not silently change every document that used the old one.
+- **Where-used, and deletion that respects it.** An asset referenced by a baseline cannot be deleted,
+  because a published document that no longer renders is worse than a storage bill.
+- **Rights and provenance.** An asset records its source and the licence it is held under, and
+  publishing can be refused where a licence does not permit the use. Content credentials, where an
+  asset carries them, are either preserved or deliberately stripped - and which one happened is
+  recorded rather than left to chance.
+- **Import and export**, with the metadata above, so an asset library can move between spaces.
+
+### 7.21 Reference libraries
+
+A library is a set of small structured records a space holds and content references by identity:
+bibliography entries, terms, and controlled vocabularies. They are grouped because they behave
+identically - referenced rather than typed, versioned, permissioned, searchable, and answerable to
+"where is this used" - and separated from assets because none of them is a binary.
+
+- **Bibliography entries**, referenced by a citation rather than typed (§7.1), importable in standard
+  interchange formats, and deduplicated so that one source does not become four records.
+- **Terms.** A term entry carries a preferred label, alternative labels, an abbreviation, a
+  definition, a status, and a label per language. **A term is referenced from content, never typed**
+  - the same rule as a citation, and for the same reason.
+- **First use is a property of the document, not the component.** "Marketing Authorisation Holder
+  (MAH)" on first mention and "MAH" thereafter can only be resolved at publish time, because a
+  component reused in two reports may be the first mention in one and the fortieth in the other.
+  This is why a term has to be a reference: expanding it into text would bake a document-level fact
+  into reusable content.
+- **Glossaries and lists of abbreviations** are generated from the terms a document actually uses,
+  by the publishing pipeline, the same way a list of figures is.
+- **Controlled vocabularies** - named lists of permitted values a metadata field draws on. §7.19
+  declares which vocabulary a field uses; the vocabulary itself lives here, so two templates can
+  share one.
+- **A thesaurus, not an ontology.** Broader, narrower and related relations between terms, so that
+  searching for one finds the others (§7.11). Inference is deliberately excluded: §7.12 already gives
+  a declared, queryable relationship graph, and in a regulated market "the system inferred it" is a
+  liability rather than a feature.
+- **Versioned, with where-used and import and export**, as for assets.
 
 ## 8. Non-goals
 
@@ -490,7 +617,7 @@ Stated explicitly so nobody has to infer them.
 | 1   | **Wedge: regulated data-driven reports**                                                     | It is the one market where every capability on the list coexists naturally, and it is the least well served. A narrow wedge is what makes the ranking rule in section 4 usable                                                                                                                                                           |
 | 2   | **Web-first; the service is the system of record; desktop is a convenience shell**           | Tenancy, audit, RBAC, review and collaboration cannot live in a renderer. One storage backend, one auth model, no offline sync problem                                                                                                                                                                                                   |
 | 3   | **Component repository, with the template as a binding artifact**                            | A template that owns structure, metadata, queries, styles, layouts and prompts is a god-object, and reuse of any one of them degrades to copy-and-paste                                                                                                                                                                                  |
-| 4   | **Soft component locks and presence, not real-time co-editing; suggestions are first-class** | Character-level CRDT editing fights immutable revisions, comparison, approval gates and audit. The parallelism authors want is across components. Workiva, Paligo and Heretto all lock                                                                                                                                                   |
+| 4   | **Soft component locks and presence, not real-time co-editing; suggestions are first-class** | Character-level CRDT editing fights immutable versions, comparison, approval gates and audit. The parallelism authors want is across components. Workiva, Paligo and Heretto all lock                                                                                                                                                    |
 | 5   | **OpenAPI is the source of truth for the synchronous API**                                   | The product's own clients use the same API, and a generated-and-contract-tested specification is the only kind that stays true                                                                                                                                                                                                           |
 | 6   | **MCP is a curated task-shaped facade over the API**                                         | A mirrored API becomes hundreds of poorly-described tools that degrade the models using them                                                                                                                                                                                                                                             |
 | 7   | **PDF and Word set the fidelity bar; Google Docs is a labelled lossy export**                | The Google Docs API cannot express the pagination, layout and numbering control the product exists to provide                                                                                                                                                                                                                            |
@@ -513,17 +640,17 @@ The first two below are the remaining irreversible ones, and they are **spiked t
 than separately - see [`Content_Model_Spike.md`](Content_Model_Spike.md) for why, and for the ten
 cases that decide them.
 
-| #   | Decision                       | What it hinges on                                                                                                                                                                                                                                                                                                                           |
-| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Storage and revision model** | Relational rows with revision history, event sourcing, or content-addressed objects. Follows from [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and from the comparison and audit requirements. Case 7 of the spike is a storage question as much as a model one, which is why the two are settled in one pass |
-| 2   | **Pagination and PDF engine**  | Commercial (Prince, Antenna House), open (PagedJS, WeasyPrint, Typst), or headless browser. Hinges on PDF/UA, footnote placement, table breaking and maths, and on per-server licence cost, which can dominate unit economics                                                                                                               |
-| 3   | **Word generation approach**   | Direct OOXML or an intermediate representation. Constrained by ADR-0005's commitment to design the schema against the OOXML mapping, and by the engine decision above                                                                                                                                                                       |
-| 4   | **Tenant isolation model**     | Pooled, schema-per-tenant, or database-per-tenant. Hinges on data residency commitments and expected customer size                                                                                                                                                                                                                          |
-| 5   | **Search infrastructure**      | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence                                                                                                                                                                                               |
-| 6   | **Relationship storage**       | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                                                                                                                                                                                                              |
-| 7   | **Realtime transport**         | Presence, locks, notifications and streaming, and whether one channel serves all four                                                                                                                                                                                                                                                       |
-| 8   | **Fonts and design tokens**    | Carried forward as an open question. The typographic system has to work identically in a browser, in the Electron shell over `file://`, and in the publishing pipeline. Licensing for fonts embedded in published PDF is part of this                                                                                                       |
-| 9   | **Identity strategy**          | Pure federation, or a first-party identity provider with federation as an option                                                                                                                                                                                                                                                            |
+| #   | Decision                      | What it hinges on                                                                                                                                                                                                                                                                                                                          |
+| --- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **Storage and version model** | Relational rows with version history, event sourcing, or content-addressed objects. Follows from [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and from the comparison and audit requirements. Case 7 of the spike is a storage question as much as a model one, which is why the two are settled in one pass |
+| 2   | **Pagination and PDF engine** | Commercial (Prince, Antenna House), open (PagedJS, WeasyPrint, Typst), or headless browser. Hinges on PDF/UA, footnote placement, table breaking and maths, and on per-server licence cost, which can dominate unit economics                                                                                                              |
+| 3   | **Word generation approach**  | Direct OOXML or an intermediate representation. Constrained by ADR-0005's commitment to design the schema against the OOXML mapping, and by the engine decision above                                                                                                                                                                      |
+| 4   | **Tenant isolation model**    | Pooled, schema-per-tenant, or database-per-tenant. Hinges on data residency commitments and expected customer size                                                                                                                                                                                                                         |
+| 5   | **Search infrastructure**     | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence                                                                                                                                                                                              |
+| 6   | **Relationship storage**      | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                                                                                                                                                                                                             |
+| 7   | **Realtime transport**        | Presence, locks, notifications and streaming, and whether one channel serves all four                                                                                                                                                                                                                                                      |
+| 8   | **Fonts and design tokens**   | Carried forward as an open question. The typographic system has to work identically in a browser, in the Electron shell over `file://`, and in the publishing pipeline. Licensing for fonts embedded in published PDF is part of this                                                                                                      |
+| 9   | **Identity strategy**         | Pure federation, or a first-party identity provider with federation as an option                                                                                                                                                                                                                                                           |
 
 ## 11. Cross-cutting requirements
 
@@ -539,7 +666,7 @@ named regimes - 21 CFR Part 11, SOX, GxP, ISO 27001 - are made only where valida
 as capabilities that support a customer's compliance rather than as certifications of the product.
 
 **Privacy.** Personal data handling, subject access and erasure. Erasure conflicts with an
-append-only audit log and immutable revisions; that tension is real and is resolved by design in the
+append-only audit log and immutable versions; that tension is real and is resolved by design in the
 requirements, not by exception at run time.
 
 **Accessibility.** WCAG 2.2 AA for the application and PDF/UA for published output. Both tested.
@@ -561,14 +688,14 @@ the web delivery. Where a platform lags, say so plainly rather than implying par
 
 Six tranches, ordered by dependency and by risk. Each is a usable increment, not a layer.
 
-| Tranche                    | Contains                                                                                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 - The spine**         | Tenancy, identity, RBAC, spaces, components with immutable revisions, documents with outlines, the editor, numbering and cross-references, search, PDF and Word publishing, the OpenAPI surface |
-| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, tabular presentation and field formatting                                                                    |
-| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit                                                                                  |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries                                                                   |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                     |
-| **T6 - The interchange**   | Word import and breakout, citation styles, translation and XLIFF                                                                                                                                |
+| Tranche                    | Contains                                                                                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1 - The spine**         | Tenancy, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, search, PDF and Word publishing, the OpenAPI surface |
+| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, tabular presentation and field formatting                                                                   |
+| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit                                                                                 |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries                                                                  |
+| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                    |
+| **T6 - The interchange**   | Word import and breakout, citation styles, translation and XLIFF                                                                                                                               |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate.
@@ -577,7 +704,7 @@ Two things cut across the order:
 
 - **The content model spike runs before T1 starts.**
   [`Content_Model_Spike.md`](Content_Model_Spike.md) validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
-  against its ten hardest cases and settles the revision store in the same pass. T1 builds on the
+  against its ten hardest cases and settles the version store in the same pass. T1 builds on the
   schema draft it produces.
 - **The content model must accommodate reuse, conditions, translation and tracked changes from T1**,
   even where the user-facing capability lands in T4 or T6. Retrofitting any of the four is a
@@ -632,7 +759,7 @@ Two things cut across the order:
 
 1. **Run the content model spike** - [`Content_Model_Spike.md`](Content_Model_Spike.md) - which
    validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and settles the
-   revision store in the same pass.
+   version store in the same pass.
 2. **Detailed requirements**, one document per capability area in section 7, under
    `docs/specification/requirements/`. Authoring, versioning and comparison, and publishing all
    depend on what the spike finds; the rest do not, and can be written alongside it.
