@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+release/
+*.tsbuildinfo
+
+# Task cache
+.turbo/
+
+# Test output
+coverage/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example

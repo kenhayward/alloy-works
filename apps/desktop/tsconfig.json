@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    // The Electron main process is CommonJS, and verbatimModuleSyntax forbids ESM syntax in a
+    // CommonJS module. Off here so the shell can be written in import syntax and emitted as CJS.
+    "verbatimModuleSyntax": false,
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src", "vitest.config.mts"]
+}

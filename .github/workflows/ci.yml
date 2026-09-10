@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch supersedes the first; no point burning minutes on a stale commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, typecheck, build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile, never a loose install: a loose install would silently resolve a
+      # different tree than the lock file names, which is the whole point of committing one.
+      # This step is NOT continue-on-error - a lock file that will not install should stop the run.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # ---------------------------------------------------------------------------------------
+      # TEMPORARY: every check below is continue-on-error while the repo is finding its baseline.
+      # The run reports results without blocking a merge.
+      #
+      # These flags come off, and `main` gets branch protection requiring this job, once the
+      # baseline is agreed. See docs/ci-and-releases.md ("Turning CI into a gate") for the
+      # checklist. Until then a red check is information, not permission to ignore it.
+      # ---------------------------------------------------------------------------------------
+      - name: Lint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Format
+        run: pnpm format
+        continue-on-error: true
+
+      - name: Typecheck
+        run: pnpm typecheck
+        continue-on-error: true
+
+      - name: Build
+        run: pnpm build
+        continue-on-error: true
+
+      - name: Test
+        run: pnpm test
+        continue-on-error: true
