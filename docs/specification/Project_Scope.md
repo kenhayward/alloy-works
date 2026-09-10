@@ -207,7 +207,7 @@ be shared across templates without cloning anything.
 
 ## 7. Capability scope
 
-Eighteen areas. Each becomes one detailed requirements document.
+Nineteen areas. Each becomes one detailed requirements document.
 
 ### 7.1 Authoring
 
@@ -495,6 +495,38 @@ resolves it while rendering, so the catalogue itself is a third thing.
   house style outlives a page format.
 - **Catalogues must be exportable and importable**, so a house style can move between spaces and
   tenants rather than being rebuilt by hand.
+
+### 7.19 Templates and document instantiation
+
+A template is the artifact that binds the others, and instantiating one is how most documents in
+this product will begin. Neither had an owner: §6 defined a parameter set and §7.3 specified
+generating many documents at once, but nothing covered a single document being created, and the
+template designer named in §5 had no area serving them.
+
+- **Template authoring.** A template designer creates, edits and versions a template, and binds to
+  it the six definitions in §6. Two of those - the **metadata schema** and the **structure
+  outline** - are owned here, because nothing else owns them; the other four belong to **DAT**,
+  **STY**, **PUB** and **GEN**, and a template only references them.
+- **Declared parameters.** A template declares what it needs to be instantiated: each parameter's
+  name, type, permitted values, and whether it is required. A document cannot be created until the
+  required ones are supplied.
+- **Instantiation.** Creating a document from a template and a parameter set: materialising the
+  starting outline, seeding metadata, resolving variables, and binding the queries the template
+  declares. Whether a query runs at creation and is pinned, or stays live, follows the binding mode
+  in §7.4 rather than being decided here.
+- **Divergence is expected.** After instantiation a document owns its own outline and may depart from
+  the template it came from. That is the point of a starting shape rather than a cage - but the
+  document records which template and which template version produced it, so the departure is
+  visible rather than merely absent.
+- **A template changes after documents exist.** Existing documents must not change underneath their
+  authors. What a template version change gives is an answer to "which documents came from this
+  version", and a decision about whether a document can be moved forward to a newer one - which is a
+  migration, with everything that implies, rather than a setting.
+- **Validation.** A document must satisfy the metadata schema its template binds, and a template
+  whose definition bindings do not resolve must not be usable to create anything. A broken template
+  discovered at publish time has already cost somebody a day.
+- **Bulk generation rests on this.** §7.3 instantiates many documents from one template and a set of
+  parameter rows; that is the same act repeated, and the guarantees it needs are the ones here.
 
 ## 8. Non-goals
 

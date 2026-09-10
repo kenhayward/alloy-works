@@ -79,6 +79,11 @@ The first detailed requirements, and identifiers to track them by.
 - An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
   span the editor and the publisher and to belong to neither, so they now have a section of their own
   in the scope rather than being assumed by both.
+- A nineteenth, **templates and document instantiation**. Most documents in this product will begin
+  by being created from a template, and nothing covered that happening once - only the same thing
+  happening in bulk. It also gives a home to the two definitions nothing else owned, the metadata
+  schema and the starting outline, and to the template designer the scope named as a user and then
+  never served.
 - An author can move a document's reference to a different version or revision of a component,
   forwards or back, from the document itself - the audited step back and step forward. It changes
   what a reader sees without changing a word, so it is recorded.

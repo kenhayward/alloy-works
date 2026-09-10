@@ -89,6 +89,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **LOC** | Localisation and translation              | 7.16    | -                                                            |
 | **ADM** | Administration, cost and observability    | 7.17    | -                                                            |
 | **STY** | Styles and presentation themes            | 7.18    | -                                                            |
+| **TPL** | Templates and document instantiation      | 7.19    | -                                                            |
 
 ## The shape of an area document
 
