@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alloy Works</title>
+
+    <!--
+      Three icon declarations, deliberately. The ICO carries every frame Windows and older
+      browsers ask for; the SVG is what modern browsers prefer and the only one that stays sharp
+      at any size; the apple-touch-icon is opaque because iOS ignores transparency and applies
+      its own mask. A browser picks the best it understands and ignores the rest.
+    -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/mark-light.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!--
+      Colours the browser chrome on mobile and the title bar of an installed app. The values are
+      the brand ground colours: paper for light, ink for dark.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2F0EB" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#12161B" />
   </head>
   <body>
     <div id="root"></div>

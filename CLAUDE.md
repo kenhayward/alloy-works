@@ -77,7 +77,9 @@ Once it is a gate: a PR that does not go green does not merge - no exceptions, n
 route around it. If a job is flaky, fix or quarantine it in its own PR with an issue; never rerun
 until green and merge on the second roll.
 
-Packaging the desktop app will run on a **tag**, not on every PR. It is not wired up yet.
+Packaging runs on a **tag**, never on every PR - it is slow, downloads platform toolchains, and a
+pull request does not need an installer. `pnpm --filter @alloy-works/desktop package` builds one
+locally; nothing is signed, notarised or published, and there is no release workflow.
 
 ## Branches, issues and pull requests (required)
 
@@ -107,11 +109,13 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
 - **Bump rule:** a **functional enhancement** bumps **Minor +1 and resets Build to 0** (`0.1.2` ->
   `0.2.0`); any other PR (fix / chore / docs / refactor) bumps **Build +1** (`0.2.0` -> `0.2.1`).
   **Only bump Major when explicitly asked.**
-- **The canonical version is `/version.json`**, mirrored only by the root `package.json`. Workspace
-  packages are **not** individually versioned - they are all `private: true` at `0.0.0`, because
-  nothing publishes them and a version nobody reads is a version that silently drifts. The day
-  something does read one (an About box, an installer, a published package), add the mirror **and
-  the test that fails when the mirrors disagree** in the same PR.
+- **The canonical version is `/version.json`**, mirrored by the root `package.json` and
+  `apps/desktop/package.json` - the latter because electron-builder stamps it into the installer,
+  the executable and the Windows uninstall entry. `apps/desktop/src/version.test.ts` fails when a
+  mirror drifts, and checks the newest changelog entry too.
+- **`apps/web` and `packages/domain` stay unversioned** at `0.0.0` and `private: true`: nothing
+  publishes them, and a version nobody reads is a version that silently drifts. The day something
+  does read one, add the mirror **and extend that test** in the same PR.
 - **Add an entry to the top of [`CHANGELOG.md`](CHANGELOG.md)** with the version, the date, the PR
   number, and `Added` / `Changed` / `Fixed` bullets as applicable. Write it for someone who wants to
   know what changed for them, not for someone reading the diff. The topmost entry's version must
@@ -191,6 +195,19 @@ domain package first, or go through the root script.
 - **Cross-platform from day one.** Windows, macOS and Linux: no path separator assumptions, no
   case-sensitivity assumptions, no platform-only shortcuts without an equivalent. Where a platform
   is behind, say so plainly in the README rather than implying parity.
+- **An icon path is never a build error.** Every mechanism - favicon, manifest, tray, window, Dock,
+  About panel, installer - substitutes a platform default in silence when the file is missing or
+  unreadable. So every icon path is checked against the disk by a test, and a new one gets the same
+  treatment in the PR that adds it. `docs/architecture.md` has the full table of where each lives.
+- **Electron's native image loader is not asar-aware**, even though Node's `fs` is. An image path
+  inside `app.asar` reads fine from JavaScript and produces **no icon at all**, with no error, when
+  handed to `new Tray()` or a BrowserWindow `icon`. Images go through `assetRoot()` and are listed
+  in `asarUnpack`. This one only appears in a packaged build - which is why a packaging change
+  means running the packaged app, not just building it.
+- **Render new icon sizes from the SVG masters in `assets/brand/`,** never by upscaling a PNG, and
+  use the `-small-` variants at 32px and below. The masters keep their C2PA provenance manifests;
+  assets that ship to users have them stripped. `assets/brand/README.md` has the geometry rules and
+  the commands.
 - Prefer a hand-written fake over reaching for a mocking library, and keep pure logic (state models,
   formatting, path resolution) in separate modules from framework calls so it can be unit tested
   without booting the app.

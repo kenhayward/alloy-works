@@ -118,5 +118,49 @@ The Electron main process is **CommonJS** on purpose. An ESM main process would 
 `sandbox: false` on the preload, which is a worse trade than the one import attribute the CommonJS
 side needs to type-import from an ESM package (see the comment in `apps/desktop/src/shell.ts`).
 
-**There is no installer yet.** Packaging the desktop app is not wired up. When it is, it runs on a
-**tag**, not on every PR.
+## Packaging
+
+`apps/desktop/electron-builder.yml` produces a Windows NSIS installer, and carries macOS and Linux
+configuration that has not been run. There is **no signing, no notarisation, no auto-update and no
+release workflow** - `pnpm --filter @alloy-works/desktop package` builds one locally. When releases
+are wired up they run on a **tag**, not on every PR.
+
+Two layout facts the shell depends on:
+
+- **The renderer is copied into the bundle as `renderer/`.** `apps/web` does not exist inside the
+  package, so `files` maps `../web/dist` to `renderer/` and `rendererIndexHtml` resolves that path
+  when `app.isPackaged` is true.
+- **Images are unpacked out of the asar.** Electron's **native** image loader is not asar-aware,
+  even though Node's `fs` is - so a tray or window icon path inside `app.asar` reads fine from
+  JavaScript and produces no icon at all, with no error. The tray images and the window icon are
+  listed in `asarUnpack` and read from `app.asar.unpacked` via `assetRoot()`. The renderer is
+  deliberately **not** unpacked: `loadFile` goes through the asar-aware path.
+
+## Icons
+
+The vector masters live in `assets/brand/`; everything else is rendered from them. An icon path is
+never a build error in any of these mechanisms - the platform substitutes its own default silently -
+so every path below is checked against the disk by a test.
+
+| Where                     | Mechanism                                 | Asset                                           |
+| ------------------------- | ----------------------------------------- | ----------------------------------------------- |
+| Browser tab               | `<link rel="icon">`, ICO and SVG          | `apps/web/public/favicon.ico`, `mark-light.svg` |
+| iOS home screen           | `<link rel="apple-touch-icon">`           | `apps/web/public/apple-touch-icon.png` (opaque) |
+| Installed web app         | `site.webmanifest`, incl. a maskable icon | `apps/web/public/icon-*.png`                    |
+| Window and taskbar        | `BrowserWindow({ icon })`                 | `apps/desktop/assets/icon.png`                  |
+| macOS Dock, development   | `app.dock.setIcon()`                      | same                                            |
+| About panel               | `app.setAboutPanelOptions({ iconPath })`  | same                                            |
+| Tray / menu bar           | `new Tray()`, theme-aware                 | `apps/desktop/assets/tray/*`                    |
+| Windows app identity      | `app.setAppUserModelId()`                 | none - see below                                |
+| Application icon          | electron-builder `win`/`mac`/`linux`      | `apps/desktop/build/*`                          |
+| Installer and uninstaller | electron-builder `nsis`                   | `apps/desktop/build/icon.ico`                   |
+
+**`AppUserModelID` is the one with no asset.** Windows groups taskbar buttons, jump lists and toast
+notifications by that id rather than by the window or the executable; left unset, the app inherits
+Electron's identity and shows Electron's icon however the other icons are configured. It must equal
+`appId` in the packaging config, and a test asserts it does.
+
+**The tray needs three files, not one.** macOS takes a template image and inverts it for the menu
+bar itself; Windows and Linux have no such concept, so the glyph is swapped against
+`nativeTheme.shouldUseDarkColors` and re-swapped when the theme changes. Each variant ships an
+`@2x` companion, which Electron finds on its own from the 1x path.

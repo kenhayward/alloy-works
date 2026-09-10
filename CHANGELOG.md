@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.0 - 2026-09-10 (PR #4)
+
+The Alloy Works mark, wired into every place an icon is asked for.
+
+### Added
+
+- The brand mark as the web favicon - an ICO for browsers that want one, an SVG for those that
+  prefer it, an opaque apple-touch-icon for iOS, and a web app manifest with a maskable icon so
+  an installed app fills the shape Android gives it rather than sitting in a white circle.
+- Desktop icons: the window and taskbar icon, the macOS Dock icon in development, the About
+  panel icon, and a tray icon that follows the system theme - a template image on macOS, which
+  inverts itself for the menu bar, and a light or dark glyph swapped by hand everywhere else.
+- A Windows application identity (`AppUserModelID`), without which the taskbar, jump lists and
+  notifications show Electron's icon however the app is configured.
+- Packaging with electron-builder: a Windows NSIS installer with its own installer and
+  uninstaller icons, plus macOS and Linux icon configuration. Nothing is signed or published.
+- The vector masters under `assets/brand/`, with a note on how to re-render any size.
+
+### Changed
+
+- `apps/desktop/package.json` now mirrors `version.json`, because electron-builder stamps that
+  version into the installer and the executable. A test fails when the mirrors drift.
+
 ## 0.1.0 - 2026-09-10 (PR #1)
 
 The first commit of anything beyond a licence. Scaffolding only - no content storage, no authoring

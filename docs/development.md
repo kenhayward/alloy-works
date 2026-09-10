@@ -68,6 +68,26 @@ Two things worth knowing when it misbehaves:
 Closing the window ends the session and `pnpm app` exits 0 - `concurrently --success first` takes
 its result from whichever half exits first.
 
+## Packaging
+
+```bash
+pnpm --filter @alloy-works/desktop package       # installer for the current platform
+pnpm --filter @alloy-works/desktop package:dir   # unpacked app only, much faster
+```
+
+Output goes to `release/`, which is git-ignored. There is no signing and no release workflow - this
+builds an installer you can run locally, and nothing more.
+
+**Test a packaging change by running the packaged app, not just the build.** The dev and packaged
+layouts differ in two ways that unit tests cannot see: the renderer is copied in as `renderer/`,
+and images are read from outside the asar. A mistake in either shows up only in the installed app -
+as a blank window, or as a tray icon that is simply not there.
+
+**On Windows, keep the checkout path short.** NSIS's `makensis.exe` is not long-path aware, and a
+deep checkout can take a nested include inside `app-builder-lib` past the 260-character limit; the
+error names a file that is present. `.npmrc` caps pnpm's virtual-store names at 50 characters to
+buy back room, but a very deep path can still exceed it.
+
 ## Adding a workspace
 
 1. Create `apps/<name>` or `packages/<name>` with a `package.json` named `@alloy-works/<name>`,

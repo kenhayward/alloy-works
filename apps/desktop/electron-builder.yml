@@ -1,0 +1,76 @@
+# Packaging for the desktop delivery.
+#
+# There is no signing, no notarisation and no publishing here yet - this produces an installer
+# you can run locally, and nothing more. When releases are wired up they run on a tag, never on
+# a pull request. See docs/ci-and-releases.md.
+
+# Must match APP_USER_MODEL_ID in src/icons.ts, or the installed app and the running app are two
+# different identities to Windows and the taskbar icon is wrong.
+appId: works.alloy.desktop
+productName: Alloy Works
+copyright: Copyright (c) 2026 Ken Hayward
+
+# The workspace package is scoped, and electron-builder uses `name` for intermediate artifact
+# filenames - "@alloy-works/desktop" becomes "@alloy-worksdesktop-0.2.0-x64.nsis.7z". This
+# renames it inside the bundle only; the workspace keeps its scoped name.
+extraMetadata:
+  name: alloy-works
+
+artifactName: ${productName} Setup ${version}.${ext}
+
+directories:
+  buildResources: build
+  output: ../../release
+
+# The renderer is a sibling workspace, which does not exist inside the bundle - so its build is
+# copied in as renderer/. src/icons.ts resolves that path when app.isPackaged is true.
+files:
+  - dist/**/*
+  - assets/**/*
+  - from: ../web/dist
+    to: renderer
+
+asar: true
+
+# Electron's native image loader cannot read from inside an asar archive, so anything handed to
+# `new Tray()` or a BrowserWindow `icon` has to sit outside it. src/icons.ts resolves these from
+# app.asar.unpacked. The renderer is NOT unpacked - loadFile goes through the asar-aware path.
+# Named precisely rather than as assets/**. These patterns are not anchored to the app root, so
+# a bare "assets/**" also matches renderer/assets and pushes the 300KB renderer bundle out of the
+# archive for nothing - and a leading slash, which would anchor it, matches nothing at all.
+asarUnpack:
+  - assets/tray/*
+  - assets/icon.png
+
+win:
+  # The ICO already carries every frame Windows asks for, up to 256.
+  icon: build/icon.ico
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  # Three separate icons, all easy to leave at the electron-builder default: the installer
+  # executable, the uninstaller executable (which is also the Add/Remove Programs entry), and
+  # the header shown in the wizard.
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  # An NSIS sidebar bitmap (installerSidebar, 164x314 BMP) and its uninstaller twin are also
+  # supported. The design bundle has no artwork for them, so the default is deliberate rather
+  # than forgotten - add them when there is a sidebar design.
+
+mac:
+  # macOS does not mask app icons - the artwork carries its own rounded shape - so this is the
+  # squircle tile, not the bare mark. electron-builder converts the 1024px PNG to .icns itself,
+  # so no macOS machine and no iconutil run is needed.
+  icon: build/icon-mac.png
+  category: public.app-category.productivity
+
+linux:
+  # The bare mark with transparency: a Linux launcher draws its own background.
+  icon: build/icon-linux.png
+  category: Office
+  target:
+    - AppImage

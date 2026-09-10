@@ -11,11 +11,12 @@ application and a desktop application**.
 
 ## Features
 
-| Feature                      | Description                                                                                         |
-| ---------------------------- | --------------------------------------------------------------------------------------------------- |
-| One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell          |
-| Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window          |
-| Content model                | A typed, titled, independently revisable `Component`, validated on creation, revision and read-back |
+| Feature                      | Description                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                       |
+| Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                       |
+| Content model                | A typed, titled, independently revisable `Component`, validated on creation, revision and read-back              |
+| Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer |
 
 Full prose list: [`docs/features.md`](docs/features.md).
 
@@ -38,6 +39,12 @@ Run the desktop delivery - dev server and Electron shell together:
 
 ```bash
 pnpm app
+```
+
+Build a desktop installer for your platform (unsigned, output in `release/`):
+
+```bash
+pnpm --filter @alloy-works/desktop package
 ```
 
 ## Layout
@@ -65,8 +72,9 @@ docs/         Architecture, development, testing, CI and decision records.
 ## Platforms
 
 The web delivery targets current browsers. The desktop delivery is built on Electron and is intended
-to be first-class on Windows, macOS and Linux - **none of them are packaged or tested as installers
-yet**, and there is no release process.
+to be first-class on Windows, macOS and Linux. **Only the Windows installer has been built and run**;
+the macOS and Linux packaging is configured but untested, nothing is signed or notarised, and there
+is no release process.
 
 ## Licence
 
