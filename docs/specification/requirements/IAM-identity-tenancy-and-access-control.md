@@ -45,15 +45,26 @@ arrives as a decision to skip a check - it arrives as one query out of four hund
 
 ## 4. Identity
 
-| ID          | Requirement                                                                                                                            | Tranche | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **IAM-007** | A tenant must be able to federate authentication with its own identity provider over OIDC                                              | T1      | Specified |
-| **IAM-008** | Users should be provisioned and de-provisioned by SCIM where the customer supports it, with a documented manual path where they do not | T2      | Specified |
-| **IAM-009** | Group membership asserted by the identity provider must be mappable to roles, so that access follows the customer's own directory      | T1      | Specified |
-| **IAM-010** | A user disabled at the identity provider must lose access without waiting for a token to expire                                        | T1      | Specified |
-| **IAM-011** | A tenant must be able to federate with more than one identity provider, because contractors and acquisitions do not share a directory  | T2      | Specified |
-| **IAM-012** | Authentication must be re-assertable within a session, so that a signing act can require it (**LIF** owns when)                        | T3      | Specified |
-| **IAM-013** | Every authentication, and every authorisation that resulted in a refusal, must be recorded in the audit log (**LIF** owns the log)     | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                            | Tranche    | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-007** | A tenant must be able to federate authentication with its own identity provider over OIDC                                                                                              | T1         | Specified |
+| **IAM-008** | Users should be provisioned and de-provisioned by SCIM where the customer supports it, with a documented manual path where they do not                                                 | T2         | Specified |
+| **IAM-009** | Group membership asserted by the identity provider must be mappable to roles, so that access follows the customer's own directory                                                      | T1         | Specified |
+| **IAM-010** | A user disabled at the identity provider must lose access without waiting for a token to expire                                                                                        | T1         | Specified |
+| **IAM-011** | A tenant must be able to federate with more than one identity provider, because contractors and acquisitions do not share a directory                                                  | T2         | Specified |
+| **IAM-012** | Authentication must be re-assertable within a session, so that a signing act can require it (**LIF** owns when)                                                                        | T3         | Specified |
+| **IAM-013** | Every authentication, and every authorisation that resulted in a refusal, must be recorded in the audit log (**LIF** owns the log)                                                     | T1         | Specified |
+| **IAM-041** | A tenant with no identity provider configured must be able to authenticate its users by Google account, so that an evaluation or a small deployment works before any federation exists | T1         | Specified |
+| **IAM-042** | The product must never store, reset or transmit a password. There must be no local credential of any kind, for any user, including an administrator                                    | Constraint | Specified |
+| **IAM-043** | A tenant must declare which authentication routes it permits - its own provider, Google accounts, or both - and must be able to close a route once it no longer needs it               | T1         | Specified |
+| **IAM-044** | Only basic identity scopes may be requested from an account provider - `openid`, `email` and `profile` - and a scope that is sensitive or restricted must never be requested           | Constraint | Specified |
+
+**IAM-042 is the requirement that must not erode.** A single "temporary" local password, added once
+for an administrator who could not wait for federation, brings back a password store, reset flows,
+multi-factor enrolment, a breach surface and an assessor's questions - none of which this product
+otherwise has to answer for. IAM-041 exists so that nobody ever has a reason to ask, and IAM-044
+keeps the Google route inside the basic identity scopes, which is what keeps the product out of app
+verification. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md).
 
 ## 5. Spaces
 
@@ -141,19 +152,19 @@ calling it as somebody, and that somebody's permissions are what stop the conver
 
 | ID          | Not this                                                                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **IAM-N01** | **Not an identity provider.** Authentication federates to the customer's. Whether a first-party option is ever offered is **IAM-Q01**                                          |
+| **IAM-N01** | **Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)   |
 | **IAM-N02** | **No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it |
 | **IAM-N03** | **No sharing between tenants.** Whether cross-tenant collaboration is served some other way is **IAM-Q04**                                                                     |
 | **IAM-N04** | **No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless                            |
 
 ## 12. Open questions
 
-| ID          | Question                                                                                                                                                                                               | What would settle it                                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **IAM-Q01** | **Pure federation, or a first-party identity provider with federation as an option?** This is open decision 9 in scope §10                                                                             | The first customer without a usable identity provider - small consultancies frequently have none                   |
-| **IAM-Q02** | **Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report               | A customer requirement that cannot be met by putting the annex in its own space                                    |
-| **IAM-Q03** | **Is there anonymous or link-based read for a published artifact?** Sending a client a report is the commonest thing a consultancy does, and requiring them to have an account may not survive contact | Whether early customers publish outward. It interacts with audit: a reader with no identity leaves a thinner trail |
-| **IAM-Q04** | **How does cross-tenant collaboration work, if at all?** A client reviewing a report inside their consultant's tenant is ordinary in this market, and IAM-001 forbids it outright                      | A decision on whether to serve it by guest identities inside one tenant, or by a sharing mechanism between two     |
+| ID          | Question                                                                                                                                                                                               | What would settle it                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IAM-Q01** | **Pure federation, or a first-party identity provider with federation as an option?**                                                                                                                  | **Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) |
+| **IAM-Q02** | **Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report               | A customer requirement that cannot be met by putting the annex in its own space                                                                                                                                       |
+| **IAM-Q03** | **Is there anonymous or link-based read for a published artifact?** Sending a client a report is the commonest thing a consultancy does, and requiring them to have an account may not survive contact | Whether early customers publish outward. It interacts with audit: a reader with no identity leaves a thinner trail                                                                                                    |
+| **IAM-Q04** | **How does cross-tenant collaboration work, if at all?** A client reviewing a report inside their consultant's tenant is ordinary in this market, and IAM-001 forbids it outright                      | A decision on whether to serve it by guest identities inside one tenant, or by a sharing mechanism between two                                                                                                        |
 
 **IAM-Q03 and IAM-Q04 are the two most likely to force a change here**, and both come from the same
 place: this market's documents are written by one organisation for another. A model that assumes

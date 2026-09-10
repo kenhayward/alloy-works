@@ -128,18 +128,31 @@ one day, and a theme change months later re-renders something that was signed.
 
 ## 11. Typefaces
 
-| ID          | Requirement                                                                                                                               | Tranche    | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **STY-039** | A theme must declare the typefaces it uses, and each must be available in a browser, in the desktop shell, and in the publishing pipeline | T1         | Specified |
-| **STY-040** | A typeface that cannot be loaded must fail the publish, and must never be substituted silently                                            | Constraint | Specified |
-| **STY-041** | A theme must record the licence under which each typeface is held, and whether that licence permits embedding it in published output      | T1         | Specified |
-| **STY-042** | Publishing must refuse to embed a typeface whose licence does not permit it, and must say so rather than quietly substituting             | T1         | Specified |
+| ID          | Requirement                                                                                                                                                                             | Tranche    | Status    |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **STY-039** | A theme must declare the typefaces it uses, and each must be available in a browser, in the desktop shell, and in the publishing pipeline                                               | T1         | Specified |
+| **STY-040** | A typeface that cannot be loaded must fail the publish, and must never be substituted silently                                                                                          | Constraint | Specified |
+| **STY-041** | A theme must record the licence under which each typeface is held, and whether that licence permits embedding it in published output                                                    | T1         | Specified |
+| **STY-042** | Publishing must refuse to embed a typeface whose licence does not permit it, and must say so rather than quietly substituting                                                           | T1         | Specified |
+| **STY-045** | Typefaces supplied with the product must be open-licence, on terms that permit embedding in published output and redistribution with the software                                       | Constraint | Specified |
+| **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it | T2         | Specified |
+| **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                        | Constraint | Specified |
+| **STY-048** | The default theme must cover the scripts LOC-004 admits and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                    | T1         | Specified |
 
-**Section 11 is the open font question from the architecture work, arriving where it belongs.** The
+**Section 11 was the open font question from the architecture work, and it is now settled.** The
 constraint that made it hard has not changed: one typographic system has to work in a browser tab,
-in an Electron window loading over `file://`, and in whatever renders the PDF. What is new is
-STY-041 and STY-042 - embedding a typeface in a published document is a licensed act, and a product
-that embeds without checking has made its customers' licensing problem into its own.
+in an Electron window loading over `file://`, and in whatever renders the PDF. What settles it is
+that embedding a typeface in a published document is a licensed act, and a product that embeds
+without checking has made its customers' licensing problem into its own. STY-045 keeps the
+product's own faces open-licence; STY-046 leaves a customer's brand face where its licence already
+sits, with the customer. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md).
+
+**STY-047 closes a hole that only became visible once that was answered.** STY-028 pins a theme
+version in a baseline, and PUB-046 requires re-publishing that baseline years later to produce the
+same document. Those two are compatible only if the files themselves are pinned - a theme version
+naming a typeface that has since been revised, or withdrawn, re-renders differently and says
+nothing. It is the failure mode this specification keeps meeting: not an error, an absence nobody
+notices.
 
 ## 12. Interchange
 
@@ -159,12 +172,12 @@ that embeds without checking has made its customers' licensing problem into its 
 
 ## 14. Open questions
 
-| ID          | Question                                                                                                                                                              | What would settle it                                                                                                                            |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **STY-Q01** | **Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse                           | Whether early customers serve more than one end client from one tenant. Likely yes in this market                                               |
-| **STY-Q02** | **Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on | The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch      |
-| **STY-Q03** | **Who supplies typefaces, and who holds the licence?** A customer's brand font is licensed to the customer, not to this product                                       | A decision with commercial as much as technical weight: whether a tenant uploads fonts it has licensed, and what the product asserts about that |
-| **STY-Q04** | **Does a theme need variants - screen against print, light against dark?** Reading a document on screen and printing it may reasonably differ                         | Whether the editor's rendering of the theme (STY-036) turns out to be legible for long reading                                                  |
+| ID          | Question                                                                                                                                                              | What would settle it                                                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **STY-Q01** | **Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse                           | Whether early customers serve more than one end client from one tenant. Likely yes in this market                                                                                                                    |
+| **STY-Q02** | **Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on | The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch                                                                           |
+| **STY-Q03** | **Who supplies typefaces, and who holds the licence?**                                                                                                                | **Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md) |
+| **STY-Q04** | **Does a theme need variants - screen against print, light against dark?** Reading a document on screen and printing it may reasonably differ                         | Whether the editor's rendering of the theme (STY-036) turns out to be legible for long reading                                                                                                                       |
 
 ## 15. Traceability
 

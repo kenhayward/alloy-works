@@ -3,6 +3,40 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.6 - 2026-09-10 (PR #11)
+
+The three decisions that needed a product answer rather than an engineering one.
+
+### Added
+
+- A decision that tenants are isolated by schema - one database, a schema per tenant, enforced by
+  the database's own roles rather than by application code remembering a filter. What settles it is
+  which mistakes stay reversible: moving a schema into its own database later is mechanical, while
+  splitting pooled rows into schemas later is a migration of everything.
+- A decision that authentication is federated and the product never holds a password. A tenant uses
+  its own provider over OIDC, or Google accounts where it has no provider yet, which is the state
+  every tenant is in for its first hour. Only basic identity scopes are requested, which is what
+  keeps the product out of Google app verification.
+- A decision that product-supplied typefaces are open-licence only, and that a customer's brand face
+  is supplied by the customer under the customer's own licence. Same reasoning as the publishing
+  engine: nothing priced per server, per domain or per title sits between a document and its reader.
+- Five requirements that follow from those: the Google route and the tenant's choice of which
+  authentication routes it permits, the ban on local credentials, the licence terms product-supplied
+  typefaces must meet, and coverage of the scripts and mathematics the rest of the specification
+  already promised.
+
+### Changed
+
+- A baseline now pins the typeface files it published with, not the theme version that named them.
+  This closes a real gap: one requirement pins a theme version in a baseline and another requires
+  re-publishing that baseline years later to produce the same document, and those two are only
+  compatible if the files themselves are pinned. A typeface revised or withdrawn in the meantime
+  re-renders the document differently and says nothing about it.
+- The open question about Google Docs export now records that it has a second problem as well as
+  being lossy. Writing to somebody's Google Docs needs restricted scopes, which means app
+  verification and a periodic security assessment - a compliance cost nothing else in the product
+  carries.
+
 ## 0.2.5 - 2026-09-10 (PR #10)
 
 How documents will be turned into PDF, decided in part.
