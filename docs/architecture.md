@@ -4,6 +4,11 @@
 > are real and tested. The product on top of them is not written yet - the single `Component` in
 > `packages/domain` exists to prove the path end to end, not to fix a content model.
 
+**This document describes the repository as it stands.** The subsystems being designed on top of it
+live in [`design/`](design/), one document per subsystem, each naming the requirements it answers.
+This page is the map; those are the depth. As each subsystem is built, its design document stops
+describing something planned and starts describing something here.
+
 ## Workspaces
 
 One pnpm workspace, one lock file, three packages.

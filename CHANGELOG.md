@@ -3,6 +3,42 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.8 - 2026-09-10 (PR #13)
+
+Where design documents live, and the first one: how history is stored.
+
+### Added
+
+- `docs/design/`, one document per subsystem, sitting between the requirements and the code. Each
+  design document names the requirements it answers, and a test builds the reverse index - so a
+  requirement nothing claims is work not yet designed, and that gap shows up without anybody
+  maintaining a list. Design boundaries follow subsystems rather than the twenty-one requirement
+  areas, because storage alone answers six of them.
+- A decision on how history is stored: a relational, append-only version chain with content held
+  inline and addressed by a hash. Baseline pins are real foreign keys, so refusing to delete
+  something a baseline still needs is the database's job rather than something application code has
+  to remember. Interim saves live in a separate store with a time to live that nothing points at,
+  which keeps continuous autosaving out of the table every audit and comparison reads.
+- The first design document, covering iterations, versions, revisions, baselines, restore and
+  derived data. It answers thirty-two requirements, and says which ones it deliberately does not.
+- Two requirements for derived data: what produced it must be recorded, and re-deriving must alter
+  no version. Embeddings are keyed by the content they came from rather than by the version they
+  were found in, so identical text is embedded once however many versions and documents contain it.
+- A requirement that computing an embedding is a model call like any other, and so is subject to the
+  same rules about a tenant's data boundary. Semantic search reads like an index rather than like
+  inference, which is exactly why that needed saying.
+
+### Changed
+
+- Event sourcing is ruled out rather than left open. The argument for it was that comparison needed
+  a log of every edit; the content model spike found that it does not.
+- Semantic search will not have a permission story of its own, and must not. Because the vectors sit
+  beside the content they came from, filtering by permission is part of the search rather than
+  something applied to its results - which matters, because discarding results afterwards leaks the
+  fact that they existed.
+- `docs/README.md` and `docs/architecture.md` now distinguish what is true of the repository today
+  from what is planned. Architecture is the map; the design documents are the depth.
+
 ## 0.2.7 - 2026-09-10 (PR #12)
 
 How people outside the organisation take part, which the requirements had flagged as the question

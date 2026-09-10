@@ -92,14 +92,20 @@ true from the first generated sentence. Marking after the fact is not possible.
 
 ## 8. Models
 
-| ID          | Requirement                                                                                                               | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **GEN-027** | A tenant must be able to configure multiple model endpoints, across providers, including self-hosted ones                 | T5         | Specified |
-| **GEN-028** | A tenant must be able to route by purpose, so that drafting and summarising need not use the same model                   | T5         | Specified |
-| **GEN-029** | Endpoint credentials must be held as secrets, on the same terms as data connections (**DAT-003**)                         | Constraint | Specified |
-| **GEN-030** | A tenant must be able to bring its own provider account                                                                   | T5         | Specified |
-| **GEN-031** | Where a model endpoint is outside the tenant's data boundary, that must be stated in configuration rather than discovered | T5         | Specified |
-| **GEN-032** | A model that is unavailable must fail visibly; the product must not silently fall back to a different one                 | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                   | Tranche    | Status    |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **GEN-027** | A tenant must be able to configure multiple model endpoints, across providers, including self-hosted ones                                                                                                                                     | T5         | Specified |
+| **GEN-028** | A tenant must be able to route by purpose, so that drafting and summarising need not use the same model                                                                                                                                       | T5         | Specified |
+| **GEN-029** | Endpoint credentials must be held as secrets, on the same terms as data connections (**DAT-003**)                                                                                                                                             | Constraint | Specified |
+| **GEN-030** | A tenant must be able to bring its own provider account                                                                                                                                                                                       | T5         | Specified |
+| **GEN-031** | Where a model endpoint is outside the tenant's data boundary, that must be stated in configuration rather than discovered                                                                                                                     | T5         | Specified |
+| **GEN-038** | Computing an embedding is a model call and is subject to GEN-027 and GEN-031 on the same terms as generation, so a tenant that will not send content beyond its boundary must be able to embed within it or to have no semantic search at all | Constraint | Specified |
+| **GEN-032** | A model that is unavailable must fail visibly; the product must not silently fall back to a different one                                                                                                                                     | Constraint | Specified |
+
+**GEN-038 says out loud something that is otherwise inferred from both being model calls.**
+Semantic search reads as an index rather than as inference, and an index does not feel like sending
+content to a third party - but that is exactly what embedding a corpus is, and it happens once for
+every component rather than once for every question somebody asks. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md).
 
 ## 9. Cost
 
