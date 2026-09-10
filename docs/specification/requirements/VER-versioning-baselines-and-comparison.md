@@ -124,7 +124,20 @@ in genuine conflict, and the resolution is a design decision taken once - most l
 identity of an author from the record that they acted - rather than a case-by-case judgement made
 under time pressure.
 
-## 10. Non-requirements
+## 10. Derived data
+
+| ID          | Requirement                                                                                                                                 | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **VER-039** | Data derived from a version - an embedding above all - must record the model and the model version that produced it                         | T5         | Specified |
+| **VER-040** | Re-deriving must insert new derived data and must alter no version, so that changing model is an operation rather than a rewrite of history | Constraint | Specified |
+
+**VER-039 and VER-040 exist because a version is immutable and the things derived from it are not.**
+Models are replaced, and re-embedding a corpus is ordinary work rather than an exception. Storing a
+mutable value on an immutable row resolves badly in exactly one direction, so derived data is keyed
+by the content it came from rather than by the version it was found in - which also means identical
+content is embedded once however many versions and documents contain it. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) and [storage-and-versioning.md](../../design/storage-and-versioning.md).
+
+## 11. Non-requirements
 
 | ID          | Not this                                                                                                         |
 | ----------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -133,21 +146,22 @@ under time pressure.
 | **VER-N03** | **No automatic versioning on a timer.** A version is a positive act (CNT-070)                                    |
 | **VER-N04** | **Iterations are not history.** They are recovery, they are private, and they expire                             |
 
-## 11. Open questions
+## 12. Open questions
 
-| ID          | Question                                                                                                                                      | What would settle it                                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **VER-Q01** | **What is the default iteration retention window (VER-004)?** Too short loses work; too long is storage spent on keystrokes                   | Observed authoring behaviour. A day is a plausible starting guess and no more than a guess                    |
-| **VER-Q02** | **How is resolved-output comparison implemented (VER-031)?** It needs two full publishing runs, or a resolved intermediate that can be diffed | The publishing engine decision, since comparing rendered PDFs is not the same as comparing what produced them |
-| **VER-Q03** | **How is erasure reconciled with immutability (VER-038)?**                                                                                    | A design decision with legal input, taken once and recorded                                                   |
-| **VER-Q04** | **Is a baseline ever created automatically (VER-021)?** Every approval producing one is tidy; it may also produce thousands nobody wanted     | Whether lifecycle gates in practice are frequent or rare                                                      |
+| ID          | Question                                                                                                                                      | What would settle it                                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **VER-Q01** | **What is the default iteration retention window (VER-004)?** Too short loses work; too long is storage spent on keystrokes                   | Observed authoring behaviour. A day is a plausible starting guess and no more than a guess. [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) makes the cost concrete: the expiry sweep is cheap, the storage is not |
+| **VER-Q02** | **How is resolved-output comparison implemented (VER-031)?** It needs two full publishing runs, or a resolved intermediate that can be diffed | The publishing engine decision, since comparing rendered PDFs is not the same as comparing what produced them                                                                                                                                  |
+| **VER-Q03** | **How is erasure reconciled with immutability (VER-038)?**                                                                                    | A design decision with legal input, taken once and recorded                                                                                                                                                                                    |
+| **VER-Q04** | **Is a baseline ever created automatically (VER-021)?** Every approval producing one is tidy; it may also produce thousands nobody wanted     | Whether lifecycle gates in practice are frequent or rare                                                                                                                                                                                       |
 
-## 12. Traceability
+## 13. Traceability
 
-| This document      | Rests on                                                         |
-| ------------------ | ---------------------------------------------------------------- |
-| Sections 3 to 5    | ADR-0006                                                         |
-| VER-027 to VER-029 | Spike findings, case 7 - block identity, and how a match is made |
-| VER-018 to VER-023 | Scope §6 baseline; DAT-038                                       |
-| VER-024, VER-031   | Scope §7.9, comparison at three levels                           |
-| VER-038            | Scope §11 privacy, the erasure tension named there               |
+| This document            | Rests on                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sections 3 to 5          | ADR-0006                                                                                                                                                                 |
+| VER-027 to VER-029       | Spike findings, case 7 - block identity, and how a match is made                                                                                                         |
+| VER-018 to VER-023       | Scope §6 baseline; DAT-038                                                                                                                                               |
+| VER-024, VER-031         | Scope §7.9, comparison at three levels                                                                                                                                   |
+| VER-038                  | Scope §11 privacy, the erasure tension named there                                                                                                                       |
+| Sections 3 to 6, 8 to 10 | [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) and [storage-and-versioning.md](../../design/storage-and-versioning.md) - how each is stored |

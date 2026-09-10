@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                        | One renderer, two deliveries                                  | Accepted |
 | [0004](0004-brand-assets-and-packaging.md)                         | Brand assets and desktop packaging                            | Accepted |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)          | A purpose-built node-and-mark content model                   | Accepted |
+| [0012](0012-relational-version-chain-hashed-content.md)            | A relational version chain with hashed content                | Accepted |
 | [0011](0011-external-participation-guests-and-identified-links.md) | External participation: guest principals and identified links | Accepted |
 | [0010](0010-open-licence-typefaces-only.md)                        | Open-licence typefaces only                                   | Accepted |
 | [0009](0009-federation-and-google-accounts-no-local-passwords.md)  | Federation and Google accounts, no local passwords            | Accepted |
