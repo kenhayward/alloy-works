@@ -41,7 +41,7 @@ export function App({ bridge = resolveBridge() }: AppProps): React.JSX.Element {
         <h2>{sample.title}</h2>
         <p>{sample.body}</p>
         <p>
-          {sample.type} - revision {sample.revision}
+          {sample.type} - version {sample.version}
         </p>
       </article>
     </main>

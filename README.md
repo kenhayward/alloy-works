@@ -16,7 +16,7 @@ application and a desktop application**.
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                       |
 | Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                       |
-| Content model                | A typed, titled, independently revisable `Component`, validated on creation, revision and read-back              |
+| Content model                | A typed, titled, independently versioned `Component`, validated on creation, on change and on read-back          |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer |
 
 Full prose list: [`docs/features.md`](docs/features.md).

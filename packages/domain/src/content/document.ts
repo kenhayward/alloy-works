@@ -96,7 +96,7 @@ export const inlineNodeSchema = z.discriminatedUnion('type', [
 /**
  * Blocks carry a stable `id`. It is what lets comparison say "this paragraph moved and was
  * reworded" instead of "a paragraph vanished and a different one appeared" - see case 7. The id
- * has to be in the schema from the first revision ever stored, because revisions are immutable
+ * has to be in the schema from the first version ever stored, because versions are immutable
  * and an id cannot be granted retrospectively to content that was written without one.
  *
  * It is optional only because content can arrive without identity - imported from Word, restored

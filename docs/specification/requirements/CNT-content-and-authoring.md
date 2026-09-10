@@ -53,7 +53,7 @@ Identity is the other load-bearing idea, and it appears twice. **Blocks carry an
 comparison can say "this paragraph moved and was reworded" instead of "one vanished and another
 appeared". **Marks carry an id** so that an annotation fragmented by an overlap is still one
 annotation, and accepting it is one action. Both were established by the spike rather than assumed,
-and both have to be in the schema from the first snapshot ever stored, because snapshots are
+and both have to be in the schema from the first version ever stored, because versions are
 immutable and identity cannot be granted retrospectively.
 
 | ID          | Requirement                                                                                                                                                            | Tranche    | Status    |
@@ -72,7 +72,7 @@ immutable and identity cannot be granted retrospectively.
 | **CNT-012** | A migration path must exist from every schema version ever written to the current one, and must be exercised by a test carrying a fixture of each                      | T1         | Specified |
 | **CNT-013** | Content that fails validation on read-back must be quarantined and reported, never silently coerced or partially loaded                                                | T1         | Specified |
 
-**CNT-012 is the expensive one and it is not optional.** Snapshots are immutable, so a schema change
+**CNT-012 is the expensive one and it is not optional.** Versions are immutable, so a schema change
 cannot rewrite what is already stored. Everything ever written stays readable for as long as the
 tenant keeps its content, which in this market is measured in decades.
 
@@ -249,30 +249,35 @@ and the tests for CNT-060 to CNT-065 must assert both halves.
 ## 11. The editing session
 
 Review raised a real gap: if edits save continuously, and a snapshot is not cut on every keystroke,
-**where does the save go?** The answer needs three levels rather than two, and the vocabulary has to
-be settled before it can be used - the proposal is **CNT-Q02**.
+**where does the save go?** The answer needs three levels rather than two, and the vocabulary is
+settled in [ADR-0006](../../decisions/0006-iteration-version-revision.md).
 
-- A **working draft** is the in-progress state. Continuously saved, recoverable, mutable, not
-  numbered, and visible only to the editor holding the lock. This is where an autosave goes, which
-  is what closes the gap.
-- A **version** is an immutable snapshot, cut on a stated boundary. Minor, numerous, and the unit
-  comparison and recovery work over.
-- A **revision** is a version designated as an issued state when a component passes a lifecycle
-  gate. Major, few, and the thing a reader cites. A revision is a marker on a version, not a second
-  history beside it.
+- An **iteration** is an interim save. Immutable, timestamped, visible only to the editor holding the
+  lock, and retained for a declared recovery window rather than for ever. This is where continuous
+  saving goes - which is what closes the gap - and it is not part of the record of what the component
+  said.
+- A **version** is an iteration promoted to the record, cut on a stated boundary. Minor, numerous,
+  and the unit that comparison, baselines and reuse work over.
+- A **revision** is a version designated as issued when a component passes a lifecycle gate. Major,
+  few, and what a reader cites - a marker on a version, not a second history beside it.
 
-Written `revision.version`, so `3.14` is the fourteenth save since the third issue, and `0.7` is
-seven saves of something never yet issued.
+Written `revision.version`: `3.14` is the fourteenth version since the third issue, `0.7` something
+never yet issued.
+
+Iterations being discardable is the part that pays for the rest. An interim save is a keystroke
+buffer, not an authored act, and keeping every one of them for the decades this market keeps content
+would be storage spent on something nobody will read.
 
 | ID          | Requirement                                                                                                                                                                                                             | Tranche    | Status    |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **CNT-066** | Edits must be saved continuously and without an explicit save action, into a working draft                                                                                                                              | T1         | Specified |
+| **CNT-066** | Edits must be saved continuously and without an explicit save action, as iterations                                                                                                                                     | T1         | Specified |
 | **CNT-067** | An interrupted session - closed tab, lost connection, crash - must be recoverable to the last edit the author saw accepted                                                                                              | T1         | Specified |
 | **CNT-068** | The editor must state plainly whether the current draft is saved, saving, or failing to save                                                                                                                            | T1         | Specified |
 | **CNT-069** | Undo and redo must be scoped to the component being edited and must survive a reload within the session                                                                                                                 | T1         | Specified |
 | **CNT-070** | A version must be cut on a stated boundary - an explicit save, the release of a lock, or a declared period of inactivity - and never on a keystroke. The rule must be stated and testable (**VER** owns the definition) | T1         | Specified |
 | **CNT-071** | Concurrent access is governed by soft component locks (**COL**); this area must not assume single-writer access                                                                                                         | Constraint | Specified |
-| **CNT-089** | A working draft must not be a version: it must be mutable, unnumbered, and invisible to anyone but the editor holding the lock                                                                                          | T1         | Specified |
+| **CNT-089** | An iteration must not be a version: it must be immutable, timestamped, visible only to the editor holding the lock, and discarded after a declared recovery window (**VER** owns the window)                            | T1         | Specified |
+| **CNT-090** | An author must be able to see the iterations retained for the component they are editing, and restore any of them within that window                                                                                    | T1         | Specified |
 
 ## 12. The document view
 
@@ -317,16 +322,16 @@ next. A greyed-out box does not.
 
 ## 15. Open questions
 
-| ID          | Question                                                                                                                                                                                                                              | What would settle it                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **CNT-Q01** | **What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form                                                                                                                                      | The publishing engine decision - it constrains what can be rendered to PDF faithfully                        |
-| **CNT-Q02** | **Is the working draft / version / revision vocabulary in section 11 adopted?** It collides with existing usage: scope §6 and §7.9, ADR-0005 and the spike findings all say "revision" for what is now a version                      | A decision, then a ripple through the scope, a glossary entry, and the `revision` field in `packages/domain` |
-| **CNT-Q03** | **What exactly is the boundary that cuts a version (CNT-070)?** Explicit save, lock release, a period of inactivity, or all three with a minimum interval                                                                             | What comparison and audit need from history, argued in **VER**                                               |
-| **CNT-Q04** | **Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer                                                                                                                        | The first customer requirement that cannot be expressed with the closed set                                  |
-| **CNT-Q05** | **How is an authored table's cell identified for a footnote anchor (CNT-037)?** Bound tables use a data key                                                                                                                           | Whether authored table cells gain stable identity, or anchors use a path relative to the block               |
-| **CNT-Q06** | **May a document override the theme's resolution of an image's size intent (CNT-088)?** Instructions for use may need a fixed size the theme does not know about                                                                      | A real document whose readability depends on it, or a house style that fixes it centrally                    |
-| **CNT-Q07** | **Is a forced page break content or structure?** "This section starts on a new page" reads like an outline property; "keep these two blocks together" reads like a content one. Recommendation: the first in **STR**, the second here | A decision in **STR**, since the outline is where the first half would live                                  |
-| **CNT-Q08** | **Is block alignment ever the author's?** Centred captions and right-aligned numeric columns are real; a freely centred paragraph is a house-style decision. Recommendation: named block styles from the theme, never a free toggle   | A house style that needs it, or the first table whose column alignment cannot be declared in **TAB**         |
+| ID          | Question                                                                                                                                                                                                                              | What would settle it                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-Q01** | **What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form                                                                                                                                      | The publishing engine decision - it constrains what can be rendered to PDF faithfully                                                                                                         |
+| **CNT-Q02** | **Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**                                                                                                                                       | **Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled |
+| **CNT-Q03** | **What exactly is the boundary that cuts a version (CNT-070)?** Explicit save, lock release, a period of inactivity, or all three with a minimum interval                                                                             | What comparison and audit need from history, argued in **VER**                                                                                                                                |
+| **CNT-Q04** | **Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer                                                                                                                        | The first customer requirement that cannot be expressed with the closed set                                                                                                                   |
+| **CNT-Q05** | **How is an authored table's cell identified for a footnote anchor (CNT-037)?** Bound tables use a data key                                                                                                                           | Whether authored table cells gain stable identity, or anchors use a path relative to the block                                                                                                |
+| **CNT-Q06** | **May a document override the theme's resolution of an image's size intent (CNT-088)?** Instructions for use may need a fixed size the theme does not know about                                                                      | A real document whose readability depends on it, or a house style that fixes it centrally                                                                                                     |
+| **CNT-Q07** | **Is a forced page break content or structure?** "This section starts on a new page" reads like an outline property; "keep these two blocks together" reads like a content one. Recommendation: the first in **STR**, the second here | A decision in **STR**, since the outline is where the first half would live                                                                                                                   |
+| **CNT-Q08** | **Is block alignment ever the author's?** Centred captions and right-aligned numeric columns are real; a freely centred paragraph is a house-style decision. Recommendation: named block styles from the theme, never a free toggle   | A house style that needs it, or the first table whose column alignment cannot be declared in **TAB**                                                                                          |
 
 ## 16. Traceability
 

@@ -42,3 +42,4 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)               | One renderer, two deliveries                | Accepted |
 | [0004](0004-brand-assets-and-packaging.md)                | Brand assets and desktop packaging          | Accepted |
 | [0005](0005-purpose-built-node-and-mark-content-model.md) | A purpose-built node-and-mark content model | Accepted |
+| [0006](0006-iteration-version-revision.md)                | Iteration, version and revision             | Accepted |

@@ -38,7 +38,9 @@ A reviewer needs to cite "the third non-requirement" without quoting it, so thos
 well, in their own sequences and in a shape that cannot be confused with a requirement:
 
 - **`CNT-N01`** - a non-requirement. Something this area deliberately does not do.
-- **`CNT-Q01`** - an open question, with what would settle it.
+- **`CNT-Q01`** - an open question, with what would settle it. A question that gets settled **keeps
+  its row**, with the answer and where it was recorded in place of what would settle it. Removing it
+  would break a citation and leave a hole in the numbering.
 
 `CNT-N02` and `CNT-Q05` cannot be misread as `CNT-002`, which is the point of the letter.
 

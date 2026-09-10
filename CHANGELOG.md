@@ -45,6 +45,17 @@ The first detailed requirements, and identifiers to track them by.
   means losing the gap they were making.
 - Where a component cannot be edited, the reason is shown - who holds it and when it frees up -
   rather than only that it is unavailable.
+- **Three words for a component's history, where there had been one.** An **iteration** is an interim
+  save - immutable, private to whoever holds the lock, and kept only long enough to recover from a
+  closed tab. A **version** is an iteration kept for the record, cut when an author stops rather than
+  on every keystroke. A **revision** is a version that has been issued, when a component passes a
+  lifecycle gate. Written together as `3.14` - the fourteenth version since the third issue.
+- This closes a real gap: content saves continuously, but a snapshot is deliberately not taken on
+  every keystroke, and until now the save had nowhere to land. It also stops an author pressing save
+  from spending a number that is supposed to mean somebody signed something.
+- The scope, the domain package, the README and the feature list now use the new words. Earlier
+  records keep their wording and carry a note, because a record of what was decided is not rewritten
+  after the fact.
 
 ## 0.2.3 - 2026-09-10 (PR #8)
 
