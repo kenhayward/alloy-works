@@ -69,29 +69,29 @@ numbering, the known vocabularies and this index, for all three identifier kinds
 Each area is one document, and the code is permanent. Areas not yet written are listed anyway, so
 that the codes are reserved and the shape of the whole is visible from the start.
 
-| Code    | Area                                      | Scope § | Document                                                     |
-| ------- | ----------------------------------------- | ------- | ------------------------------------------------------------ |
-| **CNT** | Content and authoring                     | 7.1     | [CNT-content-and-authoring.md](CNT-content-and-authoring.md) |
-| **STR** | Structure, numbering and cross-references | 7.2     | -                                                            |
-| **REU** | Reuse, variants and conditional profiling | 7.3     | -                                                            |
-| **DAT** | Data connectivity and bindings            | 7.4     | -                                                            |
-| **TAB** | Tabular presentation                      | 7.5     | -                                                            |
-| **GEN** | Generative AI                             | 7.6     | -                                                            |
-| **COL** | Collaboration and review                  | 7.7     | -                                                            |
-| **LIF** | Lifecycle, workflow and audit             | 7.8     | -                                                            |
-| **VER** | Versioning, baselines and comparison      | 7.9     | -                                                            |
-| **PUB** | Publishing and output                     | 7.10    | -                                                            |
-| **SCH** | Search, navigation and discovery          | 7.11    | -                                                            |
-| **REL** | Relationships and the graph               | 7.12    | -                                                            |
-| **IMP** | Import, export and interchange            | 7.13    | -                                                            |
-| **IAM** | Identity, tenancy and access control      | 7.14    | -                                                            |
-| **API** | API, MCP and extensibility                | 7.15    | -                                                            |
-| **LOC** | Localisation and translation              | 7.16    | -                                                            |
-| **ADM** | Administration, cost and observability    | 7.17    | -                                                            |
-| **STY** | Styles and presentation themes            | 7.18    | -                                                            |
-| **TPL** | Templates and document instantiation      | 7.19    | -                                                            |
-| **AST** | Assets and media                          | 7.20    | -                                                            |
-| **LIB** | Reference libraries                       | 7.21    | -                                                            |
+| Code    | Area                                      | Scope § | Document                                                                                           |
+| ------- | ----------------------------------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| **CNT** | Content and authoring                     | 7.1     | [CNT-content-and-authoring.md](CNT-content-and-authoring.md)                                       |
+| **STR** | Structure, numbering and cross-references | 7.2     | [STR-structure-numbering-and-cross-references.md](STR-structure-numbering-and-cross-references.md) |
+| **REU** | Reuse, variants and conditional profiling | 7.3     | -                                                                                                  |
+| **DAT** | Data connectivity and bindings            | 7.4     | -                                                                                                  |
+| **TAB** | Tabular presentation                      | 7.5     | -                                                                                                  |
+| **GEN** | Generative AI                             | 7.6     | -                                                                                                  |
+| **COL** | Collaboration and review                  | 7.7     | -                                                                                                  |
+| **LIF** | Lifecycle, workflow and audit             | 7.8     | -                                                                                                  |
+| **VER** | Versioning, baselines and comparison      | 7.9     | -                                                                                                  |
+| **PUB** | Publishing and output                     | 7.10    | -                                                                                                  |
+| **SCH** | Search, navigation and discovery          | 7.11    | -                                                                                                  |
+| **REL** | Relationships and the graph               | 7.12    | -                                                                                                  |
+| **IMP** | Import, export and interchange            | 7.13    | -                                                                                                  |
+| **IAM** | Identity, tenancy and access control      | 7.14    | [IAM-identity-tenancy-and-access-control.md](IAM-identity-tenancy-and-access-control.md)           |
+| **API** | API, MCP and extensibility                | 7.15    | -                                                                                                  |
+| **LOC** | Localisation and translation              | 7.16    | -                                                                                                  |
+| **ADM** | Administration, cost and observability    | 7.17    | -                                                                                                  |
+| **STY** | Styles and presentation themes            | 7.18    | -                                                                                                  |
+| **TPL** | Templates and document instantiation      | 7.19    | -                                                                                                  |
+| **AST** | Assets and media                          | 7.20    | -                                                                                                  |
+| **LIB** | Reference libraries                       | 7.21    | -                                                                                                  |
 
 ## Who owns what
 

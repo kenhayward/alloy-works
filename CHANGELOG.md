@@ -79,6 +79,13 @@ The first detailed requirements, and identifiers to track them by.
 - An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
   span the editor and the publisher and to belong to neither, so they now have a section of their own
   in the scope rather than being assumed by both.
+- Two more areas written in full. **Structure, numbering and cross-references** covers the outline a
+  document is built from, the numbering computed over it, and what "see section 4.2" resolves to -
+  all of it recomputed rather than stored, because a component that is section 2 of one report and
+  section 7.3 of another cannot carry either. **Identity, tenancy and access control** covers the
+  customer boundary, signing in through a customer's own directory, and who may do what - written
+  as how things must be enforced rather than only what must be true, since this is the area where a
+  mistake is a breach.
 - A map of which area owns each thing the specification defines, and a check that nothing is
   missing from it. Two areas so far have existed only because somebody happened to ask "is that
   covered elsewhere?" - an artifact may now be listed as belonging to nobody, deliberately and
