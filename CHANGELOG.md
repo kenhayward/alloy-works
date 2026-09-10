@@ -3,6 +3,47 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.2 - 2026-09-10 (PR #6)
+
+The content model decision, tested rather than argued. All four gates pass, so ADR-0005 stands.
+
+### Added
+
+- A schema draft for the content model in `packages/domain/src/content/` - a tree of typed nodes
+  carrying marks applied to ranges of text - together with the four hardest cases from the spike
+  brief, each written as a test named after the case it answers.
+- Overlapping annotations work with no construct of their own: a profiling condition and a
+  reviewer's redline can cover overlapping parts of the same sentence, and accepting one then
+  excluding the other gives exactly the same result as doing it the other way round.
+- Comparison tells a paragraph that moved and was reworded from a paragraph that was deleted and
+  replaced, which is the difference between a comparison view that informs and one that is noise.
+- A footnote anchored to a cell of a query-driven table stays on the same data when the query
+  reorders its rows, and produces a named error - never a blank - when the row it points at stops
+  being returned.
+- Word documents can be read and written: tracked insertions and deletions arrive as suggestions
+  attributed to their author, comments arrive as threads anchored in the content, and footnotes and
+  cross-references survive both directions.
+
+### Changed
+
+- `.gitattributes` now pins Office formats as binary. They are ZIP archives, and a checkout that
+  normalises line endings inside one produces a file that no longer opens - with a diff that says
+  nothing changed.
+
+### Fixed
+
+- Exported Word documents now carry heading numbers, footnote numbers and the spacing between
+  blocks. Opening an exported file in Word showed all three missing, and none of it was visible to
+  the round-trip test, which reads our own output and so could only ever prove that our reader and
+  our writer agree with each other.
+- Importing a Word document no longer discards empty paragraphs without saying so. Word writes an
+  empty paragraph in a shorter form that the reader was not looking for, so they were dropped and
+  never counted - and an import that quietly loses content is the one thing the importer is not
+  allowed to do. They are still dropped, deliberately: blank lines are a way of laying a page out,
+  and layout is the theme's job, not the content's. What they were doing by hand now comes from the
+  layout instead, with wider spacing around headings and a rule that keeps a heading on the same
+  page as the text beneath it.
+
 ## 0.2.1 - 2026-09-10 (PR #5)
 
 The first scope document, and the first decision it needed. Still no product - this says what the

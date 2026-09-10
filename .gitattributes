@@ -11,4 +11,13 @@
 *.woff binary
 *.woff2 binary
 
+# Office formats are ZIP archives. Left to the `text=auto` heuristic above, a checkout on a
+# platform that normalises line endings can rewrite bytes inside the archive and produce a file
+# that no longer opens - with a diff that says nothing was changed.
+*.docx binary
+*.dotx binary
+*.xlsx binary
+*.pptx binary
+*.zip binary
+
 pnpm-lock.yaml -diff linguist-generated
