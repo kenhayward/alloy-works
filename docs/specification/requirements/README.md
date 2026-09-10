@@ -73,13 +73,13 @@ that the codes are reserved and the shape of the whole is visible from the start
 | ------- | ----------------------------------------- | ------- | -------------------------------------------------------------------------------------------------- |
 | **CNT** | Content and authoring                     | 7.1     | [CNT-content-and-authoring.md](CNT-content-and-authoring.md)                                       |
 | **STR** | Structure, numbering and cross-references | 7.2     | [STR-structure-numbering-and-cross-references.md](STR-structure-numbering-and-cross-references.md) |
-| **REU** | Reuse, variants and conditional profiling | 7.3     | -                                                                                                  |
+| **REU** | Reuse, variants and conditional profiling | 7.3     | [REU-reuse-variants-and-conditional-profiling.md](REU-reuse-variants-and-conditional-profiling.md) |
 | **DAT** | Data connectivity and bindings            | 7.4     | [DAT-data-connectivity-and-bindings.md](DAT-data-connectivity-and-bindings.md)                     |
 | **TAB** | Tabular presentation                      | 7.5     | -                                                                                                  |
 | **GEN** | Generative AI                             | 7.6     | -                                                                                                  |
-| **COL** | Collaboration and review                  | 7.7     | -                                                                                                  |
-| **LIF** | Lifecycle, workflow and audit             | 7.8     | -                                                                                                  |
-| **VER** | Versioning, baselines and comparison      | 7.9     | -                                                                                                  |
+| **COL** | Collaboration and review                  | 7.7     | [COL-collaboration-and-review.md](COL-collaboration-and-review.md)                                 |
+| **LIF** | Lifecycle, workflow and audit             | 7.8     | [LIF-lifecycle-workflow-and-audit.md](LIF-lifecycle-workflow-and-audit.md)                         |
+| **VER** | Versioning, baselines and comparison      | 7.9     | [VER-versioning-baselines-and-comparison.md](VER-versioning-baselines-and-comparison.md)           |
 | **PUB** | Publishing and output                     | 7.10    | [PUB-publishing-and-output.md](PUB-publishing-and-output.md)                                       |
 | **SCH** | Search, navigation and discovery          | 7.11    | -                                                                                                  |
 | **REL** | Relationships and the graph               | 7.12    | -                                                                                                  |
