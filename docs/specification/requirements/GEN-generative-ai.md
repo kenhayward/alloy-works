@@ -68,7 +68,7 @@ be wrong in ways somebody has already fixed.
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **GEN-017** | Component content, imported documents, query results and comments must be treated as data, never as instructions                                               | Constraint | Specified |
 | **GEN-018** | Text within retrieved content that addresses the assistant must not change what it does, and must not be acted on                                              | Constraint | Specified |
-| **GEN-019** | No content may raise the authority of a tool call. Authorisation comes from the calling identity and from nowhere else (**GEN-008**)                           | Constraint | Specified |
+| **GEN-019** | No content may raise the authority of a tool call. Authorisation must come from the calling identity and from nowhere else (**GEN-008**)                       | Constraint | Specified |
 | **GEN-020** | Injection must be attempted by tests through every path content reaches a model - a component, an imported document, a query result, a comment - and must fail | T5         | Specified |
 | **GEN-021** | Where the assistant declines to follow an instruction found in content, it should say so, because a silent refusal looks like a failure to understand          | T5         | Specified |
 
