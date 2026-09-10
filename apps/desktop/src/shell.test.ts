@@ -90,6 +90,15 @@ describe('the built preload', () => {
     expect(preload()).not.toMatch(/require\(['"]\.{1,2}[/\\]/);
   });
 
+  // The allowed list for a sandboxed preload is electron, events, timers and url. Anything else
+  // - node:path included - throws on load and takes the whole bridge down with it, silently. So
+  // the invariant is not "no relative require", it is "nothing but electron".
+  it('requires nothing but electron', () => {
+    const required = [...preload().matchAll(/require\(["']([^"']+)["']\)/g)].map((m) => m[1]);
+
+    expect([...new Set(required)]).toEqual(['electron']);
+  });
+
   it('still exposes the bridge under the name the renderer reads', () => {
     expect(preload()).toContain(BRIDGE_GLOBAL);
     expect(preload()).toContain(PLATFORM_INFO_CHANNEL);

@@ -18,6 +18,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   locally; in the desktop shell it answers over an enumerated IPC channel from a sandboxed preload.
   The renderer never branches on which one it got.
 
+- **An identity.** The Alloy Works mark - an isometric wireframe cube whose three coloured seams
+  run into one fused centre node - as the browser favicon, the installed web-app icon, the desktop
+  window, taskbar, Dock and About-panel icon, a theme-aware tray icon, and the application and
+  installer icons for a packaged build. The vector masters live in `assets/brand/`.
+
+- **A packaged desktop build.** `pnpm --filter @alloy-works/desktop package` produces a Windows
+  installer. Nothing is signed, notarised or published.
+
 - **A content model.** `packages/domain` defines a `Component` - a typed, titled, independently
   revisable piece of content - with validation on creation, on revision and on anything read back
   from storage. It is pure TypeScript: no React, no Electron, no filesystem.
@@ -31,4 +39,5 @@ Named explicitly so nobody has to read the source to find out:
 - No publishing or output formats.
 - No search, no metadata, no taxonomy, no workflow, no versioning of content beyond the `revision`
   counter on a single component.
-- No desktop installer, and no release process.
+- No signed or published release - the installer builds locally and is unsigned.
+- No auto-update.

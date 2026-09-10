@@ -3,6 +3,11 @@ import type { PlatformInfo } from '@alloy-works/web/platform' with { 'resolution
 /**
  * Pure decisions the shell makes, kept out of main.ts so they can be tested without booting
  * Electron. main.ts is the thin layer that calls Electron with what these return.
+ *
+ * This is the ONLY module the preload imports, and it is bundled into the preload as a result.
+ * A sandboxed preload may require `electron`, `events`, `timers` and `url` - nothing else - so
+ * **this file must not import a Node built-in**, `node:path` included. Anything that needs one
+ * belongs in a main-process-only module such as icons.ts. The bundle is checked by a test.
  */
 
 /**

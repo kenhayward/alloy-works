@@ -82,11 +82,16 @@ The scheme is **Major.Minor.Build**, starting at `0.1.0`. The canonical version 
 - Any other PR - fix, chore, docs, refactor - bumps **Build +1** (`0.2.0` -> `0.2.1`).
 - **Only bump Major when explicitly asked.**
 
-The root `package.json` mirrors `version.json`. **Workspace packages are not individually
-versioned** - they are all `private: true` at `0.0.0`, because nothing publishes them and a version
-nobody reads is a version that silently drifts. When something does start reading a version - an
-About box, an installer, a published package - add the mirror **and the test that fails when the
-mirrors disagree** in the same PR.
+The mirrors are the root `package.json` and `apps/desktop/package.json`. The desktop package joined
+the list in 0.2.0, when electron-builder started stamping the version into the installer, the
+executable's file properties and the Windows uninstall entry - which is exactly the trigger this
+section described. `apps/desktop/src/version.test.ts` fails when any mirror drifts, and it checks
+the newest changelog entry too.
+
+**The other workspace packages are still not individually versioned** - `apps/web` and
+`packages/domain` are `private: true` at `0.0.0`, because nothing publishes them and a version
+nobody reads is a version that silently drifts. When something does start reading one, add the
+mirror **and extend that test** in the same PR.
 
 ## The changelog
 
@@ -99,5 +104,10 @@ one when the version starts being read at runtime.
 
 ## Releases
 
-**There is no release process yet.** The desktop app is not packaged and nothing is published. When
-packaging is wired up it runs on a **tag**, not on every PR, and this section gets the details.
+**There is no release process yet.** `pnpm --filter @alloy-works/desktop package` builds an
+installer locally - see [development.md](development.md) - but nothing is signed, notarised or
+published, and CI does not build one. Packaging on CI belongs on a **tag**, not on every PR: it is
+slow, it downloads platform toolchains, and a pull request does not need an installer.
+
+Before there is a real release, at minimum: code signing on Windows and notarisation on macOS
+(without them users get a SmartScreen or Gatekeeper warning), and a decision about auto-update.

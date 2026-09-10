@@ -1,19 +1,26 @@
 {
   "name": "@alloy-works/desktop",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
+  "description": "Alloy Works desktop shell",
+  "productName": "Alloy Works",
+  "author": "Ken Hayward",
+  "license": "Apache-2.0",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && esbuild src/preload.ts --bundle --format=cjs --platform=node --target=node22 --external:electron --sourcemap --outfile=dist/preload.js",
     "dev": "pnpm run build && wait-on tcp:127.0.0.1:5173 && electron .",
     "start": "electron .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package": "pnpm run build && pnpm --filter @alloy-works/web build && electron-builder --config electron-builder.yml",
+    "package:dir": "pnpm run build && pnpm --filter @alloy-works/web build && electron-builder --config electron-builder.yml --dir"
   },
   "devDependencies": {
     "@alloy-works/web": "workspace:*",
     "@types/node": "^24.5.2",
     "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0",
