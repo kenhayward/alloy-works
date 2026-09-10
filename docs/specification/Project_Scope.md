@@ -165,14 +165,14 @@ A **template** is a _binding_ artifact. It composes the six definitions below an
 Each is independently reusable and independently versioned, so a table look, a query or a prompt can
 be shared across templates without cloning anything.
 
-| Definition                                 | What it declares                                                                               |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| **Metadata schema**                        | The typed fields a document and its components must or may carry, and their validation rules   |
-| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation  |
-| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                      |
-| **Presentation theme**                     | On-screen and in-output appearance: text styles, list styles, table looks, field formatting    |
-| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format  |
-| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings |
+| Definition                                 | What it declares                                                                                                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Metadata schema**                        | The typed fields a document and its components must or may carry, and their validation rules                                                                              |
+| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation                                                                             |
+| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                                                                                                 |
+| **Presentation theme**                     | On-screen and in-output appearance, as named style catalogues an administrator can extend - paragraph, character, table, image, admonition and citation styles. See §7.18 |
+| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format                                                                             |
+| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings                                                                            |
 
 - **Parameter set** - the values that instantiate a template into a document: the site, the period,
   the product, the jurisdiction. Parameters feed queries, metadata, conditions and prompts, which is
@@ -207,7 +207,7 @@ be shared across templates without cloning anything.
 
 ## 7. Capability scope
 
-Seventeen areas. Each becomes one detailed requirements document.
+Eighteen areas. Each becomes one detailed requirements document.
 
 ### 7.1 Authoring
 
@@ -470,6 +470,31 @@ depend on the document doing the resolving.
   volume.
 - Operational observability: health, latency and error budgets per capability, with tenant-scoped
   diagnostics an administrator can read without raising a support ticket.
+
+### 7.18 Styles and presentation themes
+
+Appearance is named, catalogued and extensible, rather than chosen freely by an author or hard-coded
+by a developer. This area exists because style catalogues turned out to span the editor and the
+publisher and to belong to neither: an author selects a style while writing, and the publisher
+resolves it while rendering, so the catalogue itself is a third thing.
+
+- **Style catalogues** for paragraphs, character marks, tables, images, admonitions and citations. A
+  style names an appearance; content selects a style by name; nothing in content describes how the
+  style looks.
+- **Configuration-extensible by a tenant administrator.** Adding "Small thumbnail" beside "Thumbnail"
+  is configuration, not a release. A catalogue nobody can extend becomes a queue of change requests.
+- **One catalogue, two consumers.** The editor and the publisher resolve the same style, so what an
+  author sees is what a reader gets - within the limits of a scrolling view, which has no pages.
+- **Image styles fix one dimension and derive the other** from the image's own proportions, with a
+  declared maximum in the other direction. Fixing both distorts the picture, and does it silently.
+- **A presentation theme binds a set of catalogues**, and a template binds a theme. Themes are
+  versioned like every other definition artifact, and a baseline pins the theme version it published
+  under - otherwise re-publishing an approved document could change how it looks.
+- **Separate from the publishing layout.** A theme decides what things look like; a layout decides
+  page size, margins, running heads and pagination. They are configured independently because a
+  house style outlives a page format.
+- **Catalogues must be exportable and importable**, so a house style can move between spaces and
+  tenants rather than being rebuilt by hand.
 
 ## 8. Non-goals
 

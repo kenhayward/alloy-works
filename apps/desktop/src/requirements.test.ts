@@ -170,9 +170,11 @@ describe('the requirements index', () => {
   });
 
   it('reserves a code for every area named in the scope', () => {
-    // Seventeen capability areas in Project_Scope.md section 7. A code missing here is an area
-    // nobody has claimed, which is how one quietly fails to be specified at all.
-    expect(indexRows).toHaveLength(17);
+    // Eighteen capability areas in Project_Scope.md section 7. A code missing here is an area
+    // nobody has claimed, which is how one quietly fails to be specified at all. The number is
+    // asserted rather than counted from the scope so that adding an area is a deliberate act in
+    // two places, not a silent one in either.
+    expect(indexRows).toHaveLength(18);
   });
 });
 

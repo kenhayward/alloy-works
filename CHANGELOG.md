@@ -76,6 +76,15 @@ The first detailed requirements, and identifiers to track them by.
   and nothing is recorded as a decision nobody made.
 - Undo reaches back to where the editing session started and no further. Going back beyond that is
   restoring an earlier version, which is a different and recorded act.
+- An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
+  span the editor and the publisher and to belong to neither, so they now have a section of their own
+  in the scope rather than being assumed by both.
+- An author can move a document's reference to a different version or revision of a component,
+  forwards or back, from the document itself - the audited step back and step forward. It changes
+  what a reader sees without changing a word, so it is recorded.
+- Comparison is reachable while writing: pick an earlier version or revision from a list showing who
+  changed each and when, and see it as a redline. Separately, an author can see what they themselves
+  have changed since sitting down, which is a different question with a different boundary.
 
 ## 0.2.3 - 2026-09-10 (PR #8)
 
