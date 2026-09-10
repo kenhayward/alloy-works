@@ -130,9 +130,25 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   two-column table linking to `docs/features.md`, the canonical full prose list. A user-facing
   feature change updates both. The README deliberately carries **no version number** - it would
   drift; the version lives in `version.json` and the changelog.
-- **`docs/decisions/`** gets a new record when a choice constrains later work. Records are never
-  edited once accepted - a decision that no longer holds gets a new record superseding it. A record
-  states what would **change the answer**, not just the conclusion.
+- **`docs/decisions/`** gets a new record when a choice constrains later work **and** its reasoning
+  would otherwise have to be reconstructed from the diff. Both halves matter: a choice nobody will
+  question needs no record, and a record that states only the conclusion is an opinion with a date
+  on it. Write it once the choice has **survived contact with something** - a spike, a prototype, a
+  review - not while it is one conversation old; until then the reasoning belongs in
+  `docs/specification/`, where it can still be edited.
+  - Every record is `NNNN-short-title.md`, titled `# NNNN - Title`, carries `**Status:**` and
+    `**Date:**` lines, and has `## Context`, `## Decision`, `## What would change the answer` and
+    `## Consequences`.
+  - Status is `Accepted`, `Proposed` or `Superseded by NNNN`, and **the status line is the only edit
+    a record ever takes**. A decision that no longer holds gets a superseding record, never a
+    rewrite.
+  - **Add the index row to `docs/decisions/README.md` in the same PR.**
+    `apps/desktop/src/decisions.test.ts` fails when the index and the records disagree - a stale
+    index is worse than no index, because it says a decision does not exist.
+- **`docs/specification/`** describes the product being built towards, not the repository as it is
+  today - the scope, the detailed requirements, and the brief and findings for each spike that
+  settles an irreversible decision. It is the one folder in `docs/` that is not true yet;
+  [`docs/features.md`](docs/features.md) stays the honest account of the distance between them.
 
 ## Commands
 

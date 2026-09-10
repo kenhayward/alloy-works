@@ -86,8 +86,9 @@ A PR should:
 - **Bump the version and add one changelog entry** - see below.
 - **Update the docs it invalidates**, in the same PR. `docs/architecture.md` when a component,
   contract, dependency or packaging detail changes; `README.md` and `docs/features.md` together when
-  a user-facing feature changes; a new record in `docs/decisions/` when the PR makes a choice that
-  constrains later work.
+  a user-facing feature changes; a new record in `docs/decisions/` - **and its row in that folder's
+  index** - when the PR makes a choice that constrains later work and whose reasoning would
+  otherwise have to be reconstructed from the diff.
 
 Commit messages: a short imperative subject line saying what the commit does, and a body explaining
 why when the why is not obvious. There is no enforced format.
