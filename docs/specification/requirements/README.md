@@ -75,7 +75,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **STR** | Structure, numbering and cross-references | 7.2     | [STR-structure-numbering-and-cross-references.md](STR-structure-numbering-and-cross-references.md) |
 | **REU** | Reuse, variants and conditional profiling | 7.3     | [REU-reuse-variants-and-conditional-profiling.md](REU-reuse-variants-and-conditional-profiling.md) |
 | **DAT** | Data connectivity and bindings            | 7.4     | [DAT-data-connectivity-and-bindings.md](DAT-data-connectivity-and-bindings.md)                     |
-| **TAB** | Tabular presentation                      | 7.5     | -                                                                                                  |
+| **TAB** | Tabular presentation                      | 7.5     | [TAB-tabular-presentation.md](TAB-tabular-presentation.md)                                         |
 | **GEN** | Generative AI                             | 7.6     | -                                                                                                  |
 | **COL** | Collaboration and review                  | 7.7     | [COL-collaboration-and-review.md](COL-collaboration-and-review.md)                                 |
 | **LIF** | Lifecycle, workflow and audit             | 7.8     | [LIF-lifecycle-workflow-and-audit.md](LIF-lifecycle-workflow-and-audit.md)                         |
@@ -90,8 +90,8 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **ADM** | Administration, cost and observability    | 7.17    | -                                                                                                  |
 | **STY** | Styles and presentation themes            | 7.18    | [STY-styles-and-presentation-themes.md](STY-styles-and-presentation-themes.md)                     |
 | **TPL** | Templates and document instantiation      | 7.19    | [TPL-templates-and-document-instantiation.md](TPL-templates-and-document-instantiation.md)         |
-| **AST** | Assets and media                          | 7.20    | -                                                                                                  |
-| **LIB** | Reference libraries                       | 7.21    | -                                                                                                  |
+| **AST** | Assets and media                          | 7.20    | [AST-assets-and-media.md](AST-assets-and-media.md)                                                 |
+| **LIB** | Reference libraries                       | 7.21    | [LIB-reference-libraries.md](LIB-reference-libraries.md)                                           |
 
 ## Who owns what
 
