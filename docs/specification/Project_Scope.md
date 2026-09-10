@@ -123,6 +123,12 @@ These names are the shared vocabulary for every requirements document that follo
 - **Component revision** - an immutable snapshot of a component. Revisions are never edited and
   never deleted; a change creates a new one. Everything downstream - baselines, comparison, audit,
   provenance - depends on this holding without exception.
+- **Node-and-mark model** - the canonical form of a component's content: a tree of typed **nodes**
+  (paragraph, list, table, figure, equation) carrying **marks** applied to ranges of text.
+  Conditions, redlines, comment anchors, citations, variables and inline bindings are all marks, and
+  each carries an id - which is what lets two of them overlap without nesting, the thing no tree
+  markup represents without leaving its own model. See
+  [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md).
 - **Asset** - a managed, versioned binary: image, vector graphic, embedded object. Assets are
   referenced like components, carry alt text and caption metadata, and are numbered by the document
   that uses them rather than by themselves.
@@ -479,17 +485,18 @@ Stated explicitly so nobody has to infer them.
 
 ## 9. Decisions already taken
 
-| #   | Decision                                                                                     | Why                                                                                                                                                                                    |
-| --- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Wedge: regulated data-driven reports**                                                     | It is the one market where every capability on the list coexists naturally, and it is the least well served. A narrow wedge is what makes the ranking rule in section 4 usable         |
-| 2   | **Web-first; the service is the system of record; desktop is a convenience shell**           | Tenancy, audit, RBAC, review and collaboration cannot live in a renderer. One storage backend, one auth model, no offline sync problem                                                 |
-| 3   | **Component repository, with the template as a binding artifact**                            | A template that owns structure, metadata, queries, styles, layouts and prompts is a god-object, and reuse of any one of them degrades to copy-and-paste                                |
-| 4   | **Soft component locks and presence, not real-time co-editing; suggestions are first-class** | Character-level CRDT editing fights immutable revisions, comparison, approval gates and audit. The parallelism authors want is across components. Workiva, Paligo and Heretto all lock |
-| 5   | **OpenAPI is the source of truth for the synchronous API**                                   | The product's own clients use the same API, and a generated-and-contract-tested specification is the only kind that stays true                                                         |
-| 6   | **MCP is a curated task-shaped facade over the API**                                         | A mirrored API becomes hundreds of poorly-described tools that degrade the models using them                                                                                           |
-| 7   | **PDF and Word set the fidelity bar; Google Docs is a labelled lossy export**                | The Google Docs API cannot express the pagination, layout and numbering control the product exists to provide                                                                          |
-| 8   | **Relationship types are schema-declared**                                                   | Unconstrained any-to-any relationships cannot be validated and cannot be usefully queried                                                                                              |
-| 9   | **AI output is a proposal until a human accepts it**                                         | Required by the regulated wedge, and the only defensible position when generated content enters a document that somebody signs                                                         |
+| #   | Decision                                                                                     | Why                                                                                                                                                                                                                                                                                                                                      |
+| --- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Wedge: regulated data-driven reports**                                                     | It is the one market where every capability on the list coexists naturally, and it is the least well served. A narrow wedge is what makes the ranking rule in section 4 usable                                                                                                                                                           |
+| 2   | **Web-first; the service is the system of record; desktop is a convenience shell**           | Tenancy, audit, RBAC, review and collaboration cannot live in a renderer. One storage backend, one auth model, no offline sync problem                                                                                                                                                                                                   |
+| 3   | **Component repository, with the template as a binding artifact**                            | A template that owns structure, metadata, queries, styles, layouts and prompts is a god-object, and reuse of any one of them degrades to copy-and-paste                                                                                                                                                                                  |
+| 4   | **Soft component locks and presence, not real-time co-editing; suggestions are first-class** | Character-level CRDT editing fights immutable revisions, comparison, approval gates and audit. The parallelism authors want is across components. Workiva, Paligo and Heretto all lock                                                                                                                                                   |
+| 5   | **OpenAPI is the source of truth for the synchronous API**                                   | The product's own clients use the same API, and a generated-and-contract-tested specification is the only kind that stays true                                                                                                                                                                                                           |
+| 6   | **MCP is a curated task-shaped facade over the API**                                         | A mirrored API becomes hundreds of poorly-described tools that degrade the models using them                                                                                                                                                                                                                                             |
+| 7   | **PDF and Word set the fidelity bar; Google Docs is a labelled lossy export**                | The Google Docs API cannot express the pagination, layout and numbering control the product exists to provide                                                                                                                                                                                                                            |
+| 8   | **Relationship types are schema-declared**                                                   | Unconstrained any-to-any relationships cannot be validated and cannot be usefully queried                                                                                                                                                                                                                                                |
+| 9   | **AI output is a proposal until a human accepts it**                                         | Required by the regulated wedge, and the only defensible position when generated content enters a document that somebody signs                                                                                                                                                                                                           |
+| 10  | **Content is a purpose-built node-and-mark model, with standards at the boundary**           | Conditions and redlines overlap without nesting, and no tree markup represents that without abandoning its own model. A standard's main benefit here is the output chain, which 7.10 already owns. XHTML, OOXML, Markdown and DITA serve at the boundary. See [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) |
 
 **On the existing repository.** [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md) still
 stands, but decision 2 narrows its premise: the desktop delivery no longer has a capability
@@ -500,21 +507,23 @@ end to end; they carry no weight here.
 
 ## 10. Decisions still open
 
-Each becomes an architecture decision record when it is taken. The first three are effectively
-irreversible and are the ones to spike.
+Each becomes an architecture decision record when it is taken. The content representation used to
+head this list; it is now settled in [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md).
+The first two below are the remaining irreversible ones, and they are **spiked together** rather
+than separately - see [`Content_Model_Spike.md`](Content_Model_Spike.md) for why, and for the ten
+cases that decide them.
 
-| #   | Decision                             | What it hinges on                                                                                                                                                                                                                                                                                                                                                         |
-| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Component content representation** | The most consequential and least reversible choice in the product. It must express footnotes at span, cell and table level; maths; citations; cross-references; condition markers; variables; and redlines - and must diff semantically and round-trip to OOXML. Candidates: a structured XML schema, a rich-text document JSON model, or a constrained Markdown superset |
-| 2   | **Storage and revision model**       | Relational rows with revision history, event sourcing, or content-addressed objects. Follows from 1, and from the comparison and audit requirements                                                                                                                                                                                                                       |
-| 3   | **Pagination and PDF engine**        | Commercial (Prince, Antenna House), open (PagedJS, WeasyPrint, Typst), or headless browser. Hinges on PDF/UA, footnote placement, table breaking and maths, and on per-server licence cost, which can dominate unit economics                                                                                                                                             |
-| 4   | **Word generation approach**         | Direct OOXML or an intermediate representation. Follows from 1 and 3                                                                                                                                                                                                                                                                                                      |
-| 5   | **Tenant isolation model**           | Pooled, schema-per-tenant, or database-per-tenant. Hinges on data residency commitments and expected customer size                                                                                                                                                                                                                                                        |
-| 6   | **Search infrastructure**            | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence                                                                                                                                                                                                                             |
-| 7   | **Relationship storage**             | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                                                                                                                                                                                                                                            |
-| 8   | **Realtime transport**               | Presence, locks, notifications and streaming, and whether one channel serves all four                                                                                                                                                                                                                                                                                     |
-| 9   | **Fonts and design tokens**          | Carried forward as an open question. The typographic system has to work identically in a browser, in the Electron shell over `file://`, and in the publishing pipeline. Licensing for fonts embedded in published PDF is part of this                                                                                                                                     |
-| 10  | **Identity strategy**                | Pure federation, or a first-party identity provider with federation as an option                                                                                                                                                                                                                                                                                          |
+| #   | Decision                       | What it hinges on                                                                                                                                                                                                                                                                                                                           |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Storage and revision model** | Relational rows with revision history, event sourcing, or content-addressed objects. Follows from [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and from the comparison and audit requirements. Case 7 of the spike is a storage question as much as a model one, which is why the two are settled in one pass |
+| 2   | **Pagination and PDF engine**  | Commercial (Prince, Antenna House), open (PagedJS, WeasyPrint, Typst), or headless browser. Hinges on PDF/UA, footnote placement, table breaking and maths, and on per-server licence cost, which can dominate unit economics                                                                                                               |
+| 3   | **Word generation approach**   | Direct OOXML or an intermediate representation. Constrained by ADR-0005's commitment to design the schema against the OOXML mapping, and by the engine decision above                                                                                                                                                                       |
+| 4   | **Tenant isolation model**     | Pooled, schema-per-tenant, or database-per-tenant. Hinges on data residency commitments and expected customer size                                                                                                                                                                                                                          |
+| 5   | **Search infrastructure**      | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence                                                                                                                                                                                               |
+| 6   | **Relationship storage**       | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                                                                                                                                                                                                              |
+| 7   | **Realtime transport**         | Presence, locks, notifications and streaming, and whether one channel serves all four                                                                                                                                                                                                                                                       |
+| 8   | **Fonts and design tokens**    | Carried forward as an open question. The typographic system has to work identically in a browser, in the Electron shell over `file://`, and in the publishing pipeline. Licensing for fonts embedded in published PDF is part of this                                                                                                       |
+| 9   | **Identity strategy**          | Pure federation, or a first-party identity provider with federation as an option                                                                                                                                                                                                                                                            |
 
 ## 11. Cross-cutting requirements
 
@@ -566,38 +575,51 @@ what makes it a shippable increment rather than a foundation nobody can evaluate
 
 Two things cut across the order:
 
+- **The content model spike runs before T1 starts.**
+  [`Content_Model_Spike.md`](Content_Model_Spike.md) validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
+  against its ten hardest cases and settles the revision store in the same pass. T1 builds on the
+  schema draft it produces.
 - **The content model must accommodate reuse, conditions, translation and tracked changes from T1**,
   even where the user-facing capability lands in T4 or T6. Retrofitting any of the four is a
-  rewrite, and section 10's first decision is where that is either got right or got wrong.
+  rewrite, which is why cases 1, 6 and 7 of the spike exist.
+- **Word export is a T1 deliverable and Word import is a T6 one.** They are different problems, and
+  only the export is on the critical path: it is the stated fidelity bar, and ADR-0005 commits to
+  designing the schema against its mapping - so that mapping has to be exercised while the schema
+  can still change cheaply.
 - **A thin AI slice rides along from T2** - draft assistance in the editor, grounded in the current
   document - so the governance model in 7.6 is exercised against real use early rather than designed
   in the abstract and discovered to be wrong at T5.
 
 ## 13. Risks
 
-| Risk                                                     | Why it matters                                                                   | Mitigation                                                                                                                                     |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Scope**                                                | This is five products. Undisciplined, it never ships                             | Tranches, the non-goals list, and the ranking rule in section 4                                                                                |
-| **The content model choice is irreversible in practice** | Everything downstream depends on it                                              | Spike it against the hardest cases - a cell footnote, maths inside a table, a redline spanning a conditional boundary - before any editor code |
-| **Word fidelity, in both directions**                    | The classic killer in this category                                              | Publish fidelity is a maintained test suite against real report shapes; import is assisted only, never unattended                              |
-| **Publishing engine licensing**                          | Commercial engines are priced per server and can dominate unit economics         | Decide early with cost modelled, and keep the pipeline's render stage replaceable                                                              |
-| **Prompt injection through ingested content**            | The product ingests untrusted documents and query results directly into prompts  | Content is never instructions; tools are permission-bound; mutating actions are confirmed by a human                                           |
-| **Loose compliance claims**                              | Expensive to make, dangerous to make wrongly                                     | Capabilities, not certifications, until validated                                                                                              |
-| **The soft-lock bet**                                    | Users may reject anything short of live co-editing                               | Measure it in early evaluations, and keep the content model compatible with an upgrade                                                         |
-| **Multi-tenant data connection security**                | The most likely source of a serious breach                                       | One shared enforcement module, execution identity always explicit, escape cases tested directly                                                |
-| **AI cost unpredictability**                             | Usage-based cost against seat-based pricing is how margins disappear             | Budgets, caching, routing and visible accounting from the first AI feature                                                                     |
-| **Go-to-market**                                         | Competing with Workiva and Veeva means an enterprise sales motion, not a product | Out of scope for this document, and the reason the wedge is deliberately narrow                                                                |
+| Risk                                             | Why it matters                                                                   | Mitigation                                                                                                                                       |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Scope**                                        | This is five products. Undisciplined, it never ships                             | Tranches, the non-goals list, and the ranking rule in section 4                                                                                  |
+| **The content model is decided but unvalidated** | ADR-0005 was argued, not tested, and everything downstream depends on it         | The ten-case spike, run before T1. Its four gates supersede the record rather than patch the schema, so a failure is visible instead of absorbed |
+| **Word fidelity, in both directions**            | The classic killer in this category                                              | Publish fidelity is a maintained test suite against real report shapes; import is assisted only, never unattended                                |
+| **Publishing engine licensing**                  | Commercial engines are priced per server and can dominate unit economics         | Decide early with cost modelled, and keep the pipeline's render stage replaceable                                                                |
+| **Prompt injection through ingested content**    | The product ingests untrusted documents and query results directly into prompts  | Content is never instructions; tools are permission-bound; mutating actions are confirmed by a human                                             |
+| **Loose compliance claims**                      | Expensive to make, dangerous to make wrongly                                     | Capabilities, not certifications, until validated                                                                                                |
+| **The soft-lock bet**                            | Users may reject anything short of live co-editing                               | Measure it in early evaluations, and keep the content model compatible with an upgrade                                                           |
+| **Multi-tenant data connection security**        | The most likely source of a serious breach                                       | One shared enforcement module, execution identity always explicit, escape cases tested directly                                                  |
+| **AI cost unpredictability**                     | Usage-based cost against seat-based pricing is how margins disappear             | Budgets, caching, routing and visible accounting from the first AI feature                                                                       |
+| **Go-to-market**                                 | Competing with Workiva and Veeva means an enterprise sales motion, not a product | Out of scope for this document, and the reason the wedge is deliberately narrow                                                                  |
 
 ## 14. What would change the answer
 
 - **The wedge shifts to technical documentation.** DITA interchange becomes close to mandatory,
-  translation moves far forward, and the data-binding subsystem drops in priority. Decisions 1 and
-  3 in section 9 both change.
+  translation moves far forward, and the data-binding subsystem drops in priority. Decisions 1 and 3
+  in section 9 both change, and [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) reopens -
+  DITA's interchange value goes from near zero to substantial the moment procurement starts scoring
+  it.
 - **A customer requires genuine offline field authoring.** The local-first question reopens,
   ADR-0003's premise changes again, and the desktop delivery reacquires a capability justification.
-- **Evaluations show live co-editing is table stakes.** T3 moves forward, decision 4 in section 9
-  is reversed, and the content model must be CRDT-compatible from T1 - which changes decision 1 in
-  section 10, the one that cannot be changed cheaply later.
+- **Evaluations show live co-editing is table stakes.** T3 moves forward and decision 4 in section 9
+  is reversed. It does **not** reopen the content model: node-and-mark is the family CRDT
+  implementations are built for, so this outcome strengthens ADR-0005 rather than threatening it.
+- **A spike gate fails.** Cases 1, 3, 7 or 8 needing a workaround that leaks into the schema
+  supersedes ADR-0005, and T1 does not start until a replacement record exists. This is the most
+  likely of anything on this list, which is why the spike comes first.
 - **Customer data cannot leave the network.** Either the desktop shell becomes an edge connector for
   on-premises sources, or the deployment model gains a self-hosted option. Both are significant, and
   both are much cheaper decided early.
@@ -608,11 +630,15 @@ Two things cut across the order:
 
 ## 15. What comes next
 
-1. **Detailed requirements**, one document per capability area in section 7, under
-   `docs/specification/requirements/`.
-2. **Spikes for the three irreversible decisions** - content representation, storage and revision
-   model, publishing engine - each ending in an architecture decision record.
-3. **A proposed architecture**, informed by both.
+1. **Run the content model spike** - [`Content_Model_Spike.md`](Content_Model_Spike.md) - which
+   validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and settles the
+   revision store in the same pass.
+2. **Detailed requirements**, one document per capability area in section 7, under
+   `docs/specification/requirements/`. Authoring, versioning and comparison, and publishing all
+   depend on what the spike finds; the rest do not, and can be written alongside it.
+3. **The remaining irreversible spike** - the pagination and PDF engine - informed by what cases 3,
+   5 and 8 turn up about what the engine has to provide.
+4. **A proposed architecture**, informed by all of it.
 
-No implementation before 1 and 2. The order matters: the content model decision is made once, and
-everything in section 7 is downstream of it.
+No implementation before the spike. The content model is decided once, and everything in section 7
+is downstream of it.
