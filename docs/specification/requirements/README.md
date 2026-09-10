@@ -1,6 +1,6 @@
 # Detailed requirements
 
-> **Status: complete in draft, for review.** One document per capability area in
+> **Status: v1, for review.** One document per capability area in
 > [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written. 847 requirements, 88
 > non-requirements and 91 open questions. These say what the product must do, in enough detail to
 > choose an architecture on. They do not say how to build it - that is the architecture, and it

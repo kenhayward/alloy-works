@@ -1,6 +1,6 @@
 # SCH - Search, navigation and discovery
 
-> **Status: draft, for review.**
+> **Status: v1, for review.**
 
 ## 1. Purpose
 

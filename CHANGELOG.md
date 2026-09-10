@@ -79,6 +79,10 @@ The first detailed requirements, and identifiers to track them by.
 - An eighteenth capability area, **styles and presentation themes**. Style catalogues turned out to
   span the editor and the publisher and to belong to neither, so they now have a section of their own
   in the scope rather than being assumed by both.
+- The specification is marked **v1** and is the baseline the next round iterates against. It is not
+  finished in the sense of being right - 91 open questions say otherwise - it is finished in the
+  sense that every area has been written once, so that a change to any of it is now a visible change
+  rather than a gap being filled.
 - **All twenty-one capability areas written**: 847 requirements, 88 non-requirements and 91 open
   questions, each carrying the reasoning beside it. Enough of the specification to choose an
   architecture on, which was the point of writing them.

@@ -1,6 +1,6 @@
 # CNT - Content and authoring
 
-> **Status: draft, revised after review.** The first detailed requirements area. It rests on a
+> **Status: v1, for review.** The first detailed requirements area. It rests on a
 > content model that has been built and tested rather than only argued, so it is more settled than
 > the areas that follow will be at first draft.
 

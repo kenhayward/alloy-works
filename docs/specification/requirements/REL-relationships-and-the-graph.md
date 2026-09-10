@@ -1,6 +1,6 @@
 # REL - Relationships and the graph
 
-> **Status: draft, for review.**
+> **Status: v1, for review.**
 
 ## 1. Purpose
 

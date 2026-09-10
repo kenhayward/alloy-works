@@ -1,6 +1,6 @@
 # DAT - Data connectivity and bindings
 
-> **Status: draft, for review.**
+> **Status: v1, for review.**
 
 ## 1. Purpose
 

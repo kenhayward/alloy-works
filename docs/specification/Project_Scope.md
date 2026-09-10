@@ -1,6 +1,6 @@
 # Alloy Works - Project Scope
 
-> **Status: proposed scope, not built.** This document defines what Alloy Works is for, what it
+> **Status: v1, for review. Proposed scope, not built.** This document defines what Alloy Works is for, what it
 > will and will not do, and which decisions are already settled. It is deliberately intent-level:
 > it says what a capability is for and how we will know it worked, not how it is implemented. It is
 > the input to a set of detailed requirements documents, which are in turn the input to a proposed

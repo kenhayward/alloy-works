@@ -1,6 +1,6 @@
 # STR - Structure, numbering and cross-references
 
-> **Status: draft, for review.**
+> **Status: v1, for review.**
 
 ## 1. Purpose
 
