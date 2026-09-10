@@ -1,9 +1,12 @@
 import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'node:path';
 
-import { PLATFORM_INFO_CHANNEL, describePlatform, resolveRendererTarget } from './shell.js';
-
-const DEV_SERVER_URL = 'http://localhost:5173';
+import {
+  DEV_SERVER_URL,
+  PLATFORM_INFO_CHANNEL,
+  describePlatform,
+  resolveRendererTarget,
+} from './shell.js';
 
 function rendererIndexHtml(): string {
   // Unpackaged, getAppPath() is apps/desktop, so its sibling is the renderer's build output.

@@ -60,6 +60,26 @@ The gate re-arms for the next test. The opt-out is per test, never per file.
 Prefer a hand-written fake over reaching for a mocking library, and keep pure logic in separate
 modules from the framework calls so it can be unit tested without booting the app.
 
+## Run the app when you change the shell
+
+Some failures in the desktop delivery are invisible to every suite above, because they are about
+whether the process starts and what it is allowed to do once it has. Two were found by running the
+app and would have passed CI indefinitely:
+
+- The dev server bound `::1` while the shell waited on `127.0.0.1`, so `wait-on` blocked forever and
+  the window never opened - **no error, just a hang**.
+- The preload was compiled rather than bundled, so its relative `require` threw inside the sandbox,
+  the bridge was never injected, and the desktop window silently reported itself as `web`.
+
+Both now have tests, and both tests only exist because someone ran `pnpm app` and looked. So:
+**changing the shell, the preload, the dev scripts or the Vite server config means running
+`pnpm app` and reading what the window says**, not just watching the suites go green.
+
+A note on that second one: `resolveBridge` falls back to the browser implementation when
+`window.alloyWorks` is absent, and it cannot distinguish "no shell injected one" from "the shell
+tried and failed". That fallback is right for the web delivery and it is what made the bug quiet.
+Graceful degradation hides failures - so where a fallback exists, something else has to be watching.
+
 ## Not wired up yet
 
 **There is no browser suite.** jsdom has no layout engine, so any question about _rendered_ output -

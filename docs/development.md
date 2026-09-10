@@ -49,9 +49,24 @@ pnpm dev:web       # http://localhost:5173
 pnpm app
 ```
 
-The shell waits for port 5173, then opens a window pointed at the dev server, so editing the
+The shell waits for `127.0.0.1:5173`, then opens a window pointed at the dev server, so editing the
 renderer hot-reloads inside the desktop window. It is the same renderer either way - the only thing
-that changes is which `PlatformBridge` answers, and the running app tells you which one it got.
+that changes is which `PlatformBridge` answers, and the running app tells you which one it got. In
+the desktop window it should read **"Running as desktop on Electron _x.y.z_"**; if it says `web`,
+the preload failed to load and the renderer fell back to the browser bridge.
+
+Two things worth knowing when it misbehaves:
+
+- **The address is pinned to `127.0.0.1`, not `localhost`.** Node 17+ resolves `localhost` to the
+  IPv6 loopback first, and a dev server on `::1` with a shell waiting on `127.0.0.1` hangs forever
+  with no error. Vite's `server.host`, the shell's `DEV_SERVER_URL` and the `dev` script all name
+  the same literal address, and a test fails if they drift.
+- **`strictPort` is on**, so a stale dev server from a previous run makes `pnpm app` fail fast with
+  "Port 5173 is already in use" rather than quietly starting on 5174 where the shell will never find
+  it. Kill the old process rather than changing the port.
+
+Closing the window ends the session and `pnpm app` exits 0 - `concurrently --success first` takes
+its result from whichever half exits first.
 
 ## Adding a workspace
 

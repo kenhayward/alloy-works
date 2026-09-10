@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   BRIDGE_GLOBAL,
+  DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
   describePlatform,
   resolveRendererTarget,
@@ -55,5 +59,39 @@ describe('the bridge contract', () => {
 
   it('namespaces the IPC channel, so an unrelated handler cannot answer it', () => {
     expect(PLATFORM_INFO_CHANNEL).toBe('alloy-works:platform-info');
+  });
+});
+
+describe('the dev server address', () => {
+  it('is the IPv4 loopback, matching what the dev server binds', () => {
+    expect(DEV_SERVER_URL).toBe('http://127.0.0.1:5173');
+  });
+
+  // The dev script waits for this address before launching Electron. If the two drift apart,
+  // wait-on blocks forever and the window never opens - with no error to explain why.
+  it('is the address the dev script waits for', () => {
+    const packageJson: { scripts: Record<string, string> } = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf8'),
+    );
+    const waitOn = /wait-on tcp:(\S+)/.exec(packageJson.scripts.dev ?? '');
+
+    expect(waitOn?.[1]).toBe(new URL(DEV_SERVER_URL).host);
+  });
+});
+
+describe('the built preload', () => {
+  const preload = (): string => readFileSync(join(process.cwd(), 'dist', 'preload.js'), 'utf8');
+
+  // The window is created with sandbox: true, and a sandboxed preload can require `electron` and a
+  // few Node built-ins - nothing else. A relative require throws before contextBridge is reached,
+  // and the renderer then falls back to the browser bridge without anything reporting a problem.
+  // So the preload has to arrive as one self-contained file.
+  it('contains no relative require, which the sandbox cannot resolve', () => {
+    expect(preload()).not.toMatch(/require\(['"]\.{1,2}[/\\]/);
+  });
+
+  it('still exposes the bridge under the name the renderer reads', () => {
+    expect(preload()).toContain(BRIDGE_GLOBAL);
+    expect(preload()).toContain(PLATFORM_INFO_CHANNEL);
   });
 });

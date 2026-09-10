@@ -14,7 +14,10 @@ UI, no publishing.
   `@alloy-works/web` (the React renderer, and the web delivery) and `@alloy-works/desktop` (the
   Electron shell). Turborepo orders and caches the build, typecheck and test tasks.
 - One renderer serving both deliveries: the Electron window loads the same React app the browser
-  does, pointed at the dev server while unpackaged and at the built bundle once packaged.
+  does, pointed at the dev server while unpackaged and at the built bundle once packaged. The
+  preload is bundled into a self-contained file so it can load under `sandbox: true`, and the dev
+  server address is pinned to the IPv4 loopback so the shell and the server cannot disagree about
+  where it is. Both are covered by tests.
 - A typed platform bridge - the single seam for everything that differs between a browser tab and a
   desktop window. The shell is typechecked against the renderer's own contract, so the two cannot
   drift apart silently.

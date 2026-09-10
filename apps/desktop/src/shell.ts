@@ -5,6 +5,17 @@ import type { PlatformInfo } from '@alloy-works/web/platform' with { 'resolution
  * Electron. main.ts is the thin layer that calls Electron with what these return.
  */
 
+/**
+ * The address the dev server binds and the shell waits for, pinned to the IPv4 loopback.
+ *
+ * Not `localhost`: Node 17+ resolves it to the IPv6 loopback first, so a Vite server left on the
+ * default host binds ::1 only and anything waiting on 127.0.0.1 waits forever. The dev script
+ * waits here before launching Electron, and that hang produces no error at all - just a window
+ * that never opens. One literal address, agreed by a test, rather than three spellings resolved
+ * independently by Vite, wait-on and Chromium.
+ */
+export const DEV_SERVER_URL = 'http://127.0.0.1:5173';
+
 /** The global the preload writes and the renderer reads. */
 export const BRIDGE_GLOBAL = 'alloyWorks';
 

@@ -10,7 +10,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "app": "pnpm --filter @alloy-works/domain build && concurrently -k -n web,shell -c blue,magenta \"pnpm --filter @alloy-works/web dev\" \"pnpm --filter @alloy-works/desktop dev\"",
+    "app": "pnpm --filter @alloy-works/domain build && concurrently -k --success first -n web,shell -c blue,magenta \"pnpm --filter @alloy-works/web dev\" \"pnpm --filter @alloy-works/desktop dev\"",
     "dev:web": "pnpm --filter @alloy-works/web dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",

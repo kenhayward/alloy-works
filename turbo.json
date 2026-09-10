@@ -16,6 +16,9 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "@alloy-works/desktop#test": {
+      "dependsOn": ["^build", "build"]
     }
   }
 }

@@ -37,8 +37,12 @@ The shell decides where to load the renderer from, and that decision is a pure f
 (`resolveRendererTarget` in `apps/desktop/src/shell.ts`) so it can be tested without booting
 Electron:
 
-- **Unpackaged** - loads `http://localhost:5173`, the Vite dev server, so a renderer edit
-  hot-reloads inside the desktop window.
+- **Unpackaged** - loads `http://127.0.0.1:5173`, the Vite dev server, so a renderer edit
+  hot-reloads inside the desktop window. The address is pinned to the **IPv4 loopback**, not
+  `localhost`: Node 17+ resolves `localhost` to `::1` first, so a Vite server left on the default
+  host binds IPv6 only and the shell's `wait-on tcp:127.0.0.1:5173` blocks forever - a hang with no
+  error and no window. Vite's `server.host`, the shell's `DEV_SERVER_URL` and the `dev` script all
+  name the same literal address, and a test fails when they drift apart.
 - **Packaged** - loads `apps/web/dist/index.html` from disk. The renderer is built with
   `base: './'` for exactly this reason: an absolute `/assets/...` URL resolves against the
   filesystem root under `file://` and the window comes up blank.
@@ -93,11 +97,19 @@ design decision that has not been taken - see [decisions/](decisions/) when it i
 
 ## Build and packaging
 
-| Workspace         | Build                        | Output                                       |
-| ----------------- | ---------------------------- | -------------------------------------------- |
-| `packages/domain` | `tsc -p tsconfig.build.json` | `dist/` - JS, `.d.ts` and source maps        |
-| `apps/web`        | `vite build`                 | `dist/` - the static renderer bundle         |
-| `apps/desktop`    | `tsc -p tsconfig.build.json` | `dist/main.js`, `dist/preload.js` (CommonJS) |
+| Workspace         | Build                               | Output                                       |
+| ----------------- | ----------------------------------- | -------------------------------------------- |
+| `packages/domain` | `tsc -p tsconfig.build.json`        | `dist/` - JS, `.d.ts` and source maps        |
+| `apps/web`        | `vite build`                        | `dist/` - the static renderer bundle         |
+| `apps/desktop`    | `tsc`, then esbuild for the preload | `dist/main.js`, `dist/preload.js` (CommonJS) |
+
+**The preload is bundled, not merely compiled.** The window is created with `sandbox: true`, and a
+sandboxed preload can `require` only `electron` and a small set of Node built-ins - a relative
+`require` throws before `contextBridge` is reached. `tsc` alone emits `require("./shell.js")`, and
+the failure is **silent**: the bridge is never injected, `resolveBridge` falls back to the browser
+implementation, and the desktop window reports itself as `web`. So esbuild bundles `preload.ts` into
+one self-contained file with `electron` left external, and a test fails the build if a relative
+`require` reappears in the output.
 
 Turborepo orders these: `build`, `typecheck` and `test` all declare `dependsOn: ["^build"]`, so the
 domain package is built before anything that imports it.

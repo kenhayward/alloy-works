@@ -6,7 +6,11 @@ export default defineConfig({
   // The desktop shell loads this build from disk with a file:// URL, so every asset reference
   // has to be relative. An absolute /assets/... path resolves to the filesystem root there.
   base: './',
-  server: { port: 5173, strictPort: true },
+  // 127.0.0.1, not the default `localhost`: Node 17+ resolves localhost to ::1 first, so the
+  // default host binds the IPv6 loopback only and the desktop shell's wait-on never sees the
+  // server come up. The shell's DEV_SERVER_URL names this same address, and a test pins them
+  // together.
+  server: { host: '127.0.0.1', port: 5173, strictPort: true },
   build: { outDir: 'dist', emptyOutDir: true },
   test: {
     environment: 'jsdom',

@@ -35,6 +35,14 @@ Supporting choices that follow from this:
 - **The main process is CommonJS.** An ESM main process would force `sandbox: false` on the preload.
   Keeping the sandbox is worth more than the one import attribute CommonJS needs to type-import from
   an ESM package.
+- **The preload is bundled by esbuild, not merely compiled by `tsc`.** This follows directly from
+  keeping `sandbox: true`: a sandboxed preload can `require` only `electron` and a few Node
+  built-ins, so the `require("./shell.js")` that `tsc` emits throws before `contextBridge` runs. The
+  cheaper-looking fix - dropping the sandbox - would trade a real security boundary for a build step,
+  which is the wrong way round.
+- **The dev server address is pinned to the IPv4 loopback**, in Vite's `server.host`, the shell's
+  `DEV_SERVER_URL` and the `dev` script alike. `localhost` is not one address: Node 17+ resolves it
+  to `::1` first while other clients try IPv4, and the mismatch shows up as a hang with no error.
 - **The renderer is untrusted**, in both deliveries. `contextIsolation: true`,
   `nodeIntegration: false`, `sandbox: true`, and a preload that exposes a narrow enumerated surface -
   never a general "run this for me" bridge. Every IPC handler validates its own arguments in the
