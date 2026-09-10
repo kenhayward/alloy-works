@@ -56,6 +56,26 @@ The first detailed requirements, and identifiers to track them by.
 - The scope, the domain package, the README and the feature list now use the new words. Earlier
   records keep their wording and carry a note, because a record of what was decided is not rewritten
   after the fact.
+- Appearance now comes from **named styles picked from a catalogue** that an administrator can
+  extend - an image is a "Thumbnail", a paragraph takes a paragraph style, a table takes a table
+  style, a citation takes Harvard or Vancouver. Authors get real control over how something looks
+  without being handed a font picker, and a house style has somewhere to live.
+- An image style fixes one dimension and takes the other from the picture's own proportions, so
+  nothing is ever squashed. Where that would make an image too tall for the page, the style caps the
+  height instead and still keeps the proportions.
+- The editor shows the theme's type and spacing, and a preview shows the document as it will
+  publish, in whichever output format is chosen. Both are needed: a scrolling editor can show the
+  words a reader will see but has no pages, so it can never show where a table breaks.
+- Spelling is checked as you type, against the language of the words being written rather than one
+  language for the whole editor, with room for a tenant's own dictionary. It behaves the same in the
+  desktop app, which does not get it for free the way a browser does.
+- The document opens in one of three modes - read, review or author - so a reader is not looking at
+  an editing interface with most of it greyed out.
+- A version is now only ever created by a deliberate act, never by leaving the room. Interim saves
+  are kept until the next version rather than for a fixed time, so nothing is lost by walking away
+  and nothing is recorded as a decision nobody made.
+- Undo reaches back to where the editing session started and no further. Going back beyond that is
+  restoring an earlier version, which is a different and recorded act.
 
 ## 0.2.3 - 2026-09-10 (PR #8)
 
