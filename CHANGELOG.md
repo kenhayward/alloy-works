@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.5.0 - 2026-09-11 (PR #31)
+
+Signing in, for the first time.
+
+### Added
+
+- People can sign in to an environment through their organisation's own sign-in system, and the
+  service remembers them until they sign out, stop using it for an hour, or twelve hours pass.
+- Signing out ends the session at once, on every device using it.
+- The service can say who is signed in and to which environment.
+- A session belongs to the environment that issued it: every part of the service that needs one is
+  tested to refuse a session from any other environment.
+- A stand-in sign-in system with invented people, so development and testing need no real accounts.
+
 ## 0.4.1 - 2026-09-11 (PR #30)
 
 The plan for signing in.

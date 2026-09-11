@@ -3,7 +3,9 @@
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
+import { tenantNames } from './names.js';
 import { createTenant } from './provision.js';
+import { configureOrganisationSignIn } from './sign-in.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
 const server =
@@ -48,4 +50,12 @@ for (const environment of environments) {
   }
 }
 await check.end();
+for (const environment of environments) {
+  const tenant = tenantNames(environment.tenant.id);
+  await configureOrganisationSignIn(
+    adminUrl,
+    { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
+    { issuer: 'http://127.0.0.1:9090', clientId: 'alloy-dev', secretName: 'stand_in' },
+  );
+}
 console.log(`Ready: database ${database}, service login aw_service / ${TEST_PASSWORDS.service}`);
