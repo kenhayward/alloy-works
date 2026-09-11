@@ -38,6 +38,13 @@ describe('theme schema', () => {
     expect(() => themeSchema.parse({ ...theme, typefaces: [evil] })).toThrow();
   });
 
+  it('requires a typeface to carry its vertical metrics, which place its baseline', () => {
+    const theme = exampleTheme();
+    const { descent: _d, ...withoutDescent } = theme.typefaces[0]!;
+    void _d;
+    expect(() => themeSchema.parse({ ...theme, typefaces: [withoutDescent] })).toThrow();
+  });
+
   it('requires every default to be stated, because defaults end every inheritance chain', () => {
     const theme = exampleTheme();
     const partial: Record<string, unknown> = { ...theme.defaults };

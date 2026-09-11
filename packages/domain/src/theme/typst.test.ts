@@ -23,6 +23,8 @@ describe('projectTypst', () => {
       spaceAfter: 6,
       lineSpacing: 24,
       keepWithNext: true,
+      descent: 0.216,
+      leading: 6,
     });
   });
 

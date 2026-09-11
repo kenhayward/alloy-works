@@ -18,6 +18,10 @@ export interface TypstStyle {
   readonly spaceAfter: number;
   readonly lineSpacing: number;
   readonly keepWithNext: boolean;
+  /** The face's descender, in ems: where the template puts the baseline inside a line. */
+  readonly descent: number;
+  /** Points between one line's box and the next: line spacing less one em. */
+  readonly leading: number;
 }
 
 export interface TypstMark {
@@ -48,6 +52,8 @@ export function projectTypst(theme: ResolvedTheme): TypstTheme {
       spaceAfter: p.spaceAfter,
       lineSpacing: p.lineSpacing,
       keepWithNext: p.keepWithNext,
+      descent: face.descent,
+      leading: Number((p.lineSpacing - p.size).toFixed(3)),
     };
   }
 

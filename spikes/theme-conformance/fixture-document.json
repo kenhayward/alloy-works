@@ -1,0 +1,34 @@
+{
+  "blocks": [
+    { "style": "heading", "lines": [[{ "text": "T1x Heading one" }]] },
+    {
+      "style": "body",
+      "lines": [
+        [{ "text": "T2x first line of body" }],
+        [{ "text": "T3x second line after a forced break" }]
+      ]
+    },
+    {
+      "style": "body",
+      "lines": [
+        [
+          { "text": "T4x body with a " },
+          { "text": "strongword", "marks": ["strong"] },
+          { "text": " in it" }
+        ]
+      ]
+    },
+    { "style": "quote", "lines": [[{ "text": "T5x a quote: six after body plus twelve before" }]] },
+    { "style": "body", "lines": [[{ "text": "T6x body after a quote" }]] },
+    {
+      "style": "heading",
+      "lines": [[{ "text": "T7x Heading with " }, { "text": "headword", "marks": ["strong"] }]]
+    },
+    {
+      "style": "body",
+      "lines": [
+        [{ "text": "T8x body with " }, { "text": "bothword", "marks": ["strong", "emphasis"] }]
+      ]
+    }
+  ]
+}

@@ -7,6 +7,12 @@ import { markNames } from './schema.js';
  * - Block spacing is padding, which adds between siblings, never margin, which collapses - so the
  *   gap between two blocks is the space after plus the space before, as in the output (STY-050).
  * - Line spacing is a line-height in points: the baseline distance the theme declares (STY-051).
+ * - CSS splits a line's extra space half above and half below; Word puts it all above. So each
+ *   block adds its half-leading above as padding and takes it back below as a negative margin -
+ *   margin, because padding cannot go negative, and a single negative margin collapsing against
+ *   the next block's zero leaves exactly that amount. Measured against Word's model in
+ *   spikes/theme-conformance, where without this the editor drifted a point at every change of
+ *   line spacing.
  * - Nothing that depends on pagination is written; preview shows those (STY-037).
  *
  * Safe to generate from tenant data because the schema already restricts every string that
@@ -19,12 +25,13 @@ export function projectCss(theme: ResolvedTheme): string {
     const p = style.properties;
     const face = theme.typefaces[p.typeface];
     if (face === undefined) throw new Error(`Unresolved typeface "${p.typeface}"`);
+    const halfLeading = (p.lineSpacing - (face.ascent + face.descent) * p.size) / 2;
     rules.push(
-      `.aw-p-${style.id} { margin: 0; font-family: "${face.family}"; font-size: ${pt(p.size)}; ` +
-        `font-weight: ${p.bold ? 700 : 400}; font-style: ${p.italic ? 'italic' : 'normal'}; ` +
-        `color: ${p.colour}; text-indent: ${pt(p.firstLineIndent)}; ` +
-        `padding-top: ${pt(p.spaceBefore)}; padding-bottom: ${pt(p.spaceAfter)}; ` +
-        `line-height: ${pt(p.lineSpacing)}; }`,
+      `.aw-p-${style.id} { margin: 0 0 ${pt(-halfLeading)} 0; font-family: "${face.family}"; ` +
+        `font-size: ${pt(p.size)}; font-weight: ${p.bold ? 700 : 400}; ` +
+        `font-style: ${p.italic ? 'italic' : 'normal'}; color: ${p.colour}; ` +
+        `text-indent: ${pt(p.firstLineIndent)}; padding-top: ${pt(p.spaceBefore + halfLeading)}; ` +
+        `padding-bottom: ${pt(p.spaceAfter)}; line-height: ${pt(p.lineSpacing)}; }`,
     );
   }
 

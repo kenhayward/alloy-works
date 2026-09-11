@@ -60,9 +60,19 @@ export const characterStyleSchema = z.strictObject({
   italic: z.boolean().optional(),
 });
 
+/** A fraction of the em: how the face's own metrics measure a distance. */
+const em = z.number().positive().max(2);
+
 export const typefaceSchema = z.strictObject({
   id: z.string().min(1),
   family: familyName,
+  /**
+   * Vertical metrics, as fractions of the em, read from the font file when a typeface is ingested.
+   * They place the baseline inside a line: Word puts a line's extra space above it and its baseline
+   * one descender above the line's foot, and matching that in CSS and Typst needs these numbers.
+   */
+  ascent: em,
+  descent: em,
   /** STY-052: a permitted face for Word output, where this one may not be embedded there. */
   wordFamily: familyName.optional(),
 });

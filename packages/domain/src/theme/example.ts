@@ -12,7 +12,8 @@ export function exampleTheme(): Theme {
   return {
     id: 'example',
     paper: '#ffffff',
-    typefaces: [{ id: 'serif', family: 'Liberation Serif' }],
+    // Liberation Serif's hhea metrics: 1825 and 443 units in a 2048-unit em.
+    typefaces: [{ id: 'serif', family: 'Liberation Serif', ascent: 0.891, descent: 0.216 }],
     defaults: {
       typeface: 'serif',
       size: 11,

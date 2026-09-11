@@ -10,16 +10,22 @@ const css = projectCss(resolveTheme(exampleTheme()));
 describe('projectCss', () => {
   it('writes every stated property of a paragraph style at its resolved value', () => {
     expect(css).toContain(
-      '.aw-p-heading { margin: 0; font-family: "Liberation Serif"; font-size: 18pt; ' +
+      '.aw-p-heading { margin: 0 0 -2.037pt 0; font-family: "Liberation Serif"; font-size: 18pt; ' +
         'font-weight: 700; font-style: normal; color: #1a1a1a; text-indent: 0pt; ' +
-        'padding-top: 12pt; padding-bottom: 6pt; line-height: 24pt; }',
+        'padding-top: 14.037pt; padding-bottom: 6pt; line-height: 24pt; }',
     );
   });
 
-  it('spaces blocks with padding, which adds, never with margin, which collapses (STY-050)', () => {
-    expect(css).not.toMatch(/margin-(top|bottom)/);
-    expect(css).toContain('.aw-p-quote { margin: 0;');
-    expect(css).toMatch(/\.aw-p-quote \{[^}]*padding-top: 12pt; padding-bottom: 12pt;/);
+  it('spaces blocks with padding, which adds, never with collapsing margins (STY-050)', () => {
+    expect(css).toMatch(/\.aw-p-quote \{[^}]*padding-top: 12\.912pt; padding-bottom: 12pt;/);
+  });
+
+  it("moves each line's extra space above it, as Word does, by cancelling CSS's split (STY-051)", () => {
+    // CSS puts half of a line's extra space above and half below. Word puts all of it above.
+    // Half-leading = (line spacing - (ascent + descent) x size) / 2: 0.912pt for body at 11pt on
+    // 14pt. Adding it above and taking it back below as a margin - which can go negative where
+    // padding cannot - leaves it all above.
+    expect(css).toMatch(/\.aw-p-body \{ margin: 0 0 -0\.912pt 0;[^}]*padding-top: 0\.912pt;/);
   });
 
   it('writes nothing that depends on pagination - preview shows those (STY-037)', () => {

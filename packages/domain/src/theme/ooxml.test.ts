@@ -77,7 +77,15 @@ describe('projectStylesXml', () => {
 
   it("uses a typeface's declared Word face where it has one (STY-052)", () => {
     const theme = exampleTheme();
-    theme.typefaces = [{ id: 'serif', family: 'Brand Serif', wordFamily: 'Liberation Serif' }];
+    theme.typefaces = [
+      {
+        id: 'serif',
+        family: 'Brand Serif',
+        wordFamily: 'Liberation Serif',
+        ascent: 0.9,
+        descent: 0.2,
+      },
+    ];
     const withStandIn = projectStylesXml(resolveTheme(theme));
     expect(withStandIn).toContain('w:ascii="Liberation Serif"');
     expect(withStandIn).not.toContain('Brand Serif');
