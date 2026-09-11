@@ -13,9 +13,10 @@ understand the storage layer, rather than something to be thrown away.
 
 ## Documents
 
-| Document                                               | Subsystem                                                   |
-| ------------------------------------------------------ | ----------------------------------------------------------- |
-| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data |
+| Document                                               | Subsystem                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                |
+| [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement |
 
 ## Why these are not one per requirement area
 
