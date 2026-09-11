@@ -13,7 +13,14 @@ import { AppError } from './errors.js';
 import { createHttp, type HttpOptions } from './http.js';
 import { SignInFailed, type OidcClient, type ProviderSettings } from './oidc.js';
 import type { SecretStore } from './secrets.js';
-import { createSession, hashToken, SESSION_POLICY, type SessionPrincipal } from './sessions.js';
+import {
+  createSession,
+  endSession,
+  findSession,
+  hashToken,
+  SESSION_POLICY,
+  type SessionPrincipal,
+} from './sessions.js';
 import { cachedResolver } from './tenants.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
@@ -55,6 +62,11 @@ type Handlers = {
 function tenantOf(request: FastifyRequest): Tenant {
   if (!request.tenant) throw new Error('A tenant-scoped handler ran without a tenant');
   return request.tenant;
+}
+
+function principalOf(request: FastifyRequest): SessionPrincipal {
+  if (!request.principal) throw new Error('An authenticated handler ran without a principal');
+  return request.principal;
 }
 
 function sameValue(a: string, b: string): boolean {
@@ -209,12 +221,24 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return reply.redirect('/', 302);
     },
 
-    signOut: async () => {
-      throw new Error('signOut arrives in Task 8');
+    signOut: async (request, reply) => {
+      const token = request.cookies[SESSION_COOKIE];
+      if (token) await db.withTenant(tenantOf(request), (trx) => endSession(trx, token));
+      reply.clearCookie(SESSION_COOKIE, COOKIE);
+      return reply.status(204).send();
     },
 
-    getMe: async () => {
-      throw new Error('getMe arrives in Task 8');
+    getMe: async (request) => {
+      const principal = principalOf(request);
+      const profile = await db.withTenant(tenantOf(request), (trx) =>
+        trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
+      );
+      return {
+        id: principal.principalId,
+        displayName: principal.displayName,
+        email: principal.email,
+        environment: profile.display_name,
+      };
     },
   };
 
@@ -245,6 +269,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
               // "request completed" line.
               request.log = request.log.child({ tenant: tenant.id });
               reply.log = request.log;
+            },
+          }
+        : {}),
+      ...(route.authenticated
+        ? {
+            // After onRequest has found the tenant: a session is looked up only in the tenant whose
+            // hostname this is, so another environment's token is simply not found (IAM-003).
+            preHandler: async (request: FastifyRequest) => {
+              const token = request.cookies[SESSION_COOKIE];
+              const principal = token
+                ? await db.withTenant(tenantOf(request), (trx) => findSession(trx, token))
+                : undefined;
+              if (!principal) throw new AppError(401, 'unauthenticated', 'Sign in to continue.');
+              request.principal = principal;
             },
           }
         : {}),
