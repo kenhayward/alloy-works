@@ -29,14 +29,16 @@ requirements below say how something must be enforced rather than only what must
 
 ## 3. Tenancy
 
-| ID          | Requirement                                                                                                                       | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-001** | Every artifact must belong to exactly one tenant, and no artifact may be shared between tenants                                   | Constraint | Specified |
-| **IAM-002** | Tenant isolation must be enforced at the data layer, not by application code remembering to add a filter                          | Constraint | Specified |
-| **IAM-003** | The tenant a request acts within must be derived from the authenticated session, and never from a parameter the caller supplies   | Constraint | Specified |
-| **IAM-004** | Every read and write path must be covered by a test that attempts access from a second tenant and is refused                      | T1         | Specified |
-| **IAM-005** | Search indexes, caches, secrets, model endpoints, publications and the audit log must each be tenant-scoped, not only the content | T1         | Specified |
-| **IAM-006** | Deleting a tenant must render everything it owns unreadable on a stated timetable, and that timetable must be verifiable          | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                               | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-001** | Every artifact must belong to exactly one tenant, and no artifact may be shared between tenants                                                                                                                           | Constraint | Specified |
+| **IAM-002** | Tenant isolation must be enforced at the data layer, not by application code remembering to add a filter                                                                                                                  | Constraint | Specified |
+| **IAM-003** | The tenant a request acts within must be derived from the authenticated session, and never from a parameter the caller supplies                                                                                           | Constraint | Specified |
+| **IAM-004** | Every read and write path must be covered by a test that attempts access from a second tenant and is refused                                                                                                              | T1         | Specified |
+| **IAM-005** | Search indexes, caches, secrets, model endpoints, publications and the audit log must each be tenant-scoped, not only the content                                                                                         | T1         | Specified |
+| **IAM-006** | Deleting a tenant must render everything it owns unreadable on a stated timetable, and that timetable must be verifiable                                                                                                  | T3         | Specified |
+| **IAM-052** | A customer must be able to hold several tenants - production, a sandbox, a validation environment - grouped by an organisation that shares billing, administration and identity provider configuration, and never content | T1         | Specified |
+| **IAM-053** | Each tenant must be reachable at its own hostname, two-level names such as an environment under a customer's name included, and a customer's own domain must be addable without a code change                             | T1         | Specified |
 
 **IAM-002 and IAM-003 are written as enforcement rather than intent on purpose.** Multi-tenant
 leakage is named in scope §13 as one of the two most likely sources of a serious breach, and it never
@@ -45,19 +47,20 @@ arrives as a decision to skip a check - it arrives as one query out of four hund
 
 ## 4. Identity
 
-| ID          | Requirement                                                                                                                                                                            | Tranche    | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-007** | A tenant must be able to federate authentication with its own identity provider over OIDC                                                                                              | T1         | Specified |
-| **IAM-008** | Users should be provisioned and de-provisioned by SCIM where the customer supports it, with a documented manual path where they do not                                                 | T2         | Specified |
-| **IAM-009** | Group membership asserted by the identity provider must be mappable to roles, so that access follows the customer's own directory                                                      | T1         | Specified |
-| **IAM-010** | A user disabled at the identity provider must lose access without waiting for a token to expire                                                                                        | T1         | Specified |
-| **IAM-011** | A tenant must be able to federate with more than one identity provider, because contractors and acquisitions do not share a directory                                                  | T2         | Specified |
-| **IAM-012** | Authentication must be re-assertable within a session, so that a signing act can require it (**LIF** owns when)                                                                        | T3         | Specified |
-| **IAM-013** | Every authentication, and every authorisation that resulted in a refusal, must be recorded in the audit log (**LIF** owns the log)                                                     | T1         | Specified |
-| **IAM-041** | A tenant with no identity provider configured must be able to authenticate its users by Google account, so that an evaluation or a small deployment works before any federation exists | T1         | Specified |
-| **IAM-042** | The product must never store, reset or transmit a password. There must be no local credential of any kind, for any user, including an administrator                                    | Constraint | Specified |
-| **IAM-043** | A tenant must declare which authentication routes it permits - its own provider, Google accounts, or both - and must be able to close a route once it no longer needs it               | T1         | Specified |
-| **IAM-044** | Only basic identity scopes may be requested from an account provider - `openid`, `email` and `profile` - and a scope that is sensitive or restricted must never be requested           | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                       | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-007** | A tenant must be able to federate authentication with its own identity provider over OIDC                                                                                                                                                         | T1         | Specified |
+| **IAM-008** | Users should be provisioned and de-provisioned by SCIM where the customer supports it, with a documented manual path where they do not                                                                                                            | T2         | Specified |
+| **IAM-009** | Group membership asserted by the identity provider must be mappable to roles, so that access follows the customer's own directory                                                                                                                 | T1         | Specified |
+| **IAM-010** | A user disabled at the identity provider must lose access without waiting for a token to expire                                                                                                                                                   | T1         | Specified |
+| **IAM-011** | A tenant must be able to federate with more than one identity provider, because contractors and acquisitions do not share a directory                                                                                                             | T2         | Specified |
+| **IAM-012** | Authentication must be re-assertable within a session, so that a signing act can require it (**LIF** owns when)                                                                                                                                   | T3         | Specified |
+| **IAM-013** | Every authentication, and every authorisation that resulted in a refusal, must be recorded in the audit log (**LIF** owns the log)                                                                                                                | T1         | Specified |
+| **IAM-041** | A tenant with no identity provider configured must be able to authenticate its users by Google account, so that an evaluation or a small deployment works before any federation exists                                                            | T1         | Specified |
+| **IAM-042** | The product must never store, reset or transmit a password. There must be no local credential of any kind, for any user, including an administrator                                                                                               | Constraint | Specified |
+| **IAM-043** | A tenant must declare which authentication routes it permits - its own provider, Google accounts, or both - and must be able to close a route once it no longer needs it                                                                          | T1         | Specified |
+| **IAM-054** | A tenant accepting Google accounts must say who may enter by that route - the addresses it has invited, and any Google Workspace domains it names - because any Google account can authenticate, and authenticating must never be enough to enter | T1         | Specified |
+| **IAM-044** | Only basic identity scopes may be requested from an account provider - `openid`, `email` and `profile` - and a scope that is sensitive or restricted must never be requested                                                                      | Constraint | Specified |
 
 **IAM-042 is the requirement that must not erode.** A single "temporary" local password, added once
 for an administrator who could not wait for federation, brings back a password store, reset flows,

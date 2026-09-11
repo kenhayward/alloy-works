@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.19 - 2026-09-11 (PR #24)
+
+The groundwork every part of the service will be built on, designed before any of it is written.
+
+### Added
+
+- A customer can have several separate environments - production, a sandbox, a test copy - each
+  completely apart from the others, grouped under one organisation that shares sign-in settings,
+  administrators and billing.
+- Each environment has its own web address, such as `dev.acme` under the product's domain, and a
+  customer's own domain can be added later.
+- How signing in, staying signed in and signing out work: sessions end the moment you sign out, are
+  revoked or are disabled, on every device at once, and no password is ever stored.
+- Sign in with a Google account, personal or work, for trials, demonstrations and development
+  environments that have no company sign-in yet. Nothing needs setting up; only people you invite, or
+  people from work domains you name, can get in.
+- A safeguard at the heart of the service: every request can only ever reach its own environment's
+  data, and a mistake in the code produces an error rather than someone else's information.
+- The conventions every part of the service's interface follows, so that the application, other
+  systems and the published interface description can never disagree.
+- The design for these foundations, a decision record, and three new requirements.
+
 ## 0.2.18 - 2026-09-11 (PR #23)
 
 The whole system on one page, and the platform it runs on.
