@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.4.1 - 2026-09-11 (PR #30)
+
+The plan for signing in.
+
+### Added
+
+- The plan for the first half of signing in: a stand-in sign-in system with invented people for
+  development and testing, signing in through an organisation's own system, sessions, signing out,
+  and a check that no environment accepts another's session. Its riskiest parts were tried out first.
+  The second half, signing in with Google, will be planned once this half is built.
+
 ## 0.4.0 - 2026-09-11 (PR #29)
 
 The service answers for the first time.
