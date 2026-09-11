@@ -35,6 +35,8 @@ describe('the version mirrors', () => {
     expect(read('apps', 'web', 'package.json').version).toBe('0.0.0');
     expect(read('packages', 'domain', 'package.json').version).toBe('0.0.0');
     expect(read('packages', 'db', 'package.json').version).toBe('0.0.0');
+    expect(read('packages', 'api-contract', 'package.json').version).toBe('0.0.0');
+    expect(read('apps', 'service', 'package.json').version).toBe('0.0.0');
   });
 
   it('matches the newest changelog entry', () => {

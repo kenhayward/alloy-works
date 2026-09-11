@@ -1,5 +1,5 @@
 {
-  "name": "@alloy-works/db",
+  "name": "@alloy-works/api-contract",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,28 +10,23 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./testing": {
-      "types": "./dist/testing/database.d.ts",
-      "default": "./dist/testing/database.js"
-    }
+    "./openapi.json": "./openapi.json"
   },
   "files": [
     "dist",
-    "migrations"
+    "openapi.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "dev:setup": "tsx src/dev-setup.ts"
+    "generate": "tsx src/generate.ts"
   },
   "dependencies": {
-    "kysely": "^0.29.5",
-    "pg": "^8.23.0"
+    "zod": "^4.6.1"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
-    "@types/pg": "^8.23.1",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"

@@ -4,3 +4,4 @@ out/
 .turbo/
 coverage/
 pnpm-lock.yaml
+packages/api-contract/openapi.json

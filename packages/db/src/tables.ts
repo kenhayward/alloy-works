@@ -38,6 +38,13 @@ export interface PrincipalTable {
   created_at: Generated<Date>;
 }
 
+export interface ProfileTable {
+  singleton: Generated<boolean>;
+  display_name: string;
+  updated_at: Generated<Date>;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
+  profile: ProfileTable;
 }

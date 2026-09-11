@@ -15,14 +15,16 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, four packages.
+One pnpm workspace, one lock file, six packages.
 
-| Workspace         | Package                | Holds                                                                                                                            |
-| ----------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain` | `@alloy-works/domain`  | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                       |
-| `apps/web`        | `@alloy-works/web`     | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                       |
-| `apps/desktop`    | `@alloy-works/desktop` | The Electron shell: main process and preload. No UI of its own                                                                   |
-| `packages/db`     | `@alloy-works/db`      | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
+| Workspace               | Package                     | Holds                                                                                                                            |
+| ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | `@alloy-works/domain`       | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                       |
+| `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                       |
+| `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                   |
+| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
+| `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
+| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes. Not yet reached by the renderer                             |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -109,10 +111,14 @@ There is no server and no persistence behind the renderer yet. The renderer buil
 through the domain package at module load and renders it, and asks the bridge which delivery it is
 running under.
 
-Beside it, `packages/db` can prepare a Postgres database, provision tenants and migrate them, and
-reach a tenant's data only through `withTenant`, which assumes the tenant's role for one transaction
-([ADR-0020](decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)). Nothing calls
-it yet: the service that will is proposed in [`design/system.md`](design/system.md).
+Beside it, the web service answers HTTP on its own: a request's hostname names a tenant, found in the
+platform table; the service reads that tenant's data only through `withTenant` in `packages/db`,
+which assumes the tenant's role for one transaction
+([ADR-0020](decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)); and every
+answer and every error follows the contract in `packages/api-contract`, from which the committed
+`openapi.json` is generated and checked. It has one tenant-scoped route, `GET /v1/tenant`, and nobody
+can sign in yet. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
+[`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
 ## Build and packaging
 

@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.4.0 - 2026-09-11 (PR #29)
+
+The service answers for the first time.
+
+### Added
+
+- The web service itself, running for the first time. Each environment answers at its own address,
+  and the service works out which environment a request is for from that address alone.
+- Every answer and every error follows one published description of the service's interface, which
+  the service is built from and checked against, so the two can never disagree.
+- Errors always come in the same form, with a reference to quote when reporting a problem, and never
+  reveal anything internal or anything sent with the request.
+- A development setup with two sample environments, so the service can be run and tried locally.
+
+### Fixed
+
+- Test runs no longer end with warnings about missing test output files (#27).
+
 ## 0.3.1 - 2026-09-11 (PR #28)
 
 The plan for the service's first working version.

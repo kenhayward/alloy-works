@@ -73,5 +73,15 @@ export async function createTenant(
 ): Promise<Tenant> {
   const tenant = await provisionTenant(adminUrl, input);
   await migrate(migratorUrl);
+  const client = new pg.Client({ connectionString: adminUrl });
+  await client.connect();
+  try {
+    await client.query(
+      `insert into ${client.escapeIdentifier(tenant.schema)}.profile (display_name) values ($1)`,
+      [input.tenant.name],
+    );
+  } finally {
+    await client.end();
+  }
   return tenant;
 }

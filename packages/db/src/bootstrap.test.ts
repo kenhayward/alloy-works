@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './test/database.js';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('bootstrapCluster', () => {
   let db: TestDatabase;

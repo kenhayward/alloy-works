@@ -11,7 +11,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": []
     },
     "dev": {
       "cache": false,
@@ -21,6 +21,11 @@
       "dependsOn": ["^build", "build"]
     },
     "@alloy-works/db#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
+    },
+    "@alloy-works/service#test": {
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
