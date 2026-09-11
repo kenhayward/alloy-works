@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.5.1 - 2026-09-11 (PR #32)
+
+The plan for signing in with Google.
+
+### Added
+
+- The plan for the second half of signing in: letting an environment take Google accounts with
+  nothing for the customer to set up, through one central sign-in address, admitting only the
+  people it invited and the Workspace domains it names.
+
 ## 0.5.0 - 2026-09-11 (PR #31)
 
 Signing in, for the first time.
