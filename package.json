@@ -1,6 +1,6 @@
 {
   "name": "alloy-works",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "private": true,
   "type": "module",
   "description": "Component Content Management System - web and desktop delivery from one renderer",

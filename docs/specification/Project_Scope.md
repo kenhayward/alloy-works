@@ -635,6 +635,7 @@ Stated explicitly so nobody has to infer them.
 | 18  | **Search is Postgres alone, behind one interface**                                           | Words and meaning in the tenant's own schema, in one query, restricted by the same permission predicate before anything is ranked, and returned as one list labelled by what matched. No second copy of the content to keep in step or to reproduce permissions in. Ranking may use tenant-wide statistics, a stated residual risk. See [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md)                                                                                                                     |
 | 19  | **Relationships are Postgres rows, walked by recursive SQL**                                 | Declared relationships sit beside the version chain, and references are read where they live, never copied into the graph. Traversal expands each artifact at most once per depth, tests permissions inside each step so nothing beyond an unreadable artifact is touched, and stops at the nearest thousand results; a complete impact list is a background report. Revisited when PostgreSQL's graph queries gain variable-length paths. See [ADR-0017](../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md) |
 | 20  | **Realtime is one push stream, fanned out through Postgres**                                 | Each open document holds one Server-Sent Events stream carrying presence, lock changes and notification nudges as ids, never content or authority; every action is an ordinary request whose transaction notifies. Clients converge from a snapshot on every connect rather than replaying events. Model output streams on the request that asked for it. See [ADR-0018](../decisions/0018-realtime-one-push-channel-postgres-fan-out.md)                                                                                            |
+| 21  | **The platform is a TypeScript service, publishing workers and object storage**              | The service is TypeScript on Node, importing the same `packages/domain` rules as the renderer. Publishing runs in workers claiming jobs from a queue in Postgres and invoking a pinned Typst binary; previews keep Typst warm per open document. Binaries live in S3-compatible storage, with SeaweedFS bundled for development and small installations. See [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md) and [`system.md`](../design/system.md)                                   |
 
 **On the existing repository.** [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md) still
 stands, but decision 2 narrows its premise: the desktop delivery no longer has a capability
@@ -657,14 +658,15 @@ below is reversible. Search infrastructure has since been settled too, in
 [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md), after a short spike on
 the one risk the chosen shape carried, and relationship storage the same way, in
 [ADR-0017](../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md). Realtime
-transport, the last, followed in
-[ADR-0018](../decisions/0018-realtime-one-push-channel-postgres-fan-out.md), so **no decision in
-this section remains open**; the table is kept empty rather than removed, so that the next one has
-somewhere to go.
+transport followed in
+[ADR-0018](../decisions/0018-realtime-one-push-channel-postgres-fan-out.md). The platform those
+decisions run on followed in
+[ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md), and
+drawing the system for it surfaced the one decision below.
 
-| #   | Decision  | What it hinges on |
-| --- | --------- | ----------------- |
-| -   | None open |                   |
+| #   | Decision    | What it hinges on                                                                                                                |
+| --- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Hosting** | Which cloud, and whether customers may host the system themselves. Hinges on the first customer's data residency needs (ADM-Q01) |
 
 ## 11. Cross-cutting requirements
 
@@ -776,8 +778,10 @@ The four steps this section first listed are done. The content model spike confi
 written, twenty-one areas under [`requirements/`](requirements/); the publishing engine spike chose
 Typst ([ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)); and
 the architecture is proposed, as the decision records in [`docs/decisions/`](../decisions/) and the
-design documents in [`docs/design/`](../design/). Every decision section 10 held is settled, most of
-them after a short spike measured the one risk the chosen shape carried.
+design documents in [`docs/design/`](../design/), with the whole system drawn in
+[`system.md`](../design/system.md). Every decision section 10 held is settled, most of them after a
+short spike measured the one risk the chosen shape carried; drawing the system added one, hosting,
+which waits on a customer rather than on design.
 
 What remains before T1 is built, in order:
 

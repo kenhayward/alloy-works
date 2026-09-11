@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.18 - 2026-09-11 (PR #23)
+
+The whole system on one page, and the platform it runs on.
+
+### Added
+
+- A map of the proposed system: what runs where, in which language, and how information moves
+  between the pieces - signing in, writing, live updates, searching, publishing, previewing and the
+  AI assistant - with a diagram for each of the main paths.
+- A decision on the platform: the service is written in the same language as the application
+  itself, so the rules about content, themes and Word documents exist once; publishing runs on
+  separate machines so a large publication never slows anyone down while they write; and files are
+  kept in standard cloud storage.
+- Development and small installations come with everything they need in one bundle, including a
+  file store. MinIO, the usual choice, is no longer maintained, so SeaweedFS is used instead.
+
+### Changed
+
+- The existing architecture document now says plainly that it describes the code as it stands, and
+  points to the proposed system for everything not built yet.
+- Where the system is hosted, and whether customers can host it themselves, is recorded as the one
+  decision still open.
+
 ## 0.2.17 - 2026-09-11 (PR #22)
 
 How the screen stays live, decided after measuring it - the last of the open architecture decisions.

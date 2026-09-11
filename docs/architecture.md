@@ -1,8 +1,12 @@
-# Architecture
+# Architecture - the repository as built
 
 > Status: scaffolding. The workspaces, the split between web and desktop, and the seam between them
 > are real and tested. The product on top of them is not written yet - the single `Component` in
 > `packages/domain` exists to prove the path end to end, not to fix a content model.
+>
+> **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
+> system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
+> them - is [`design/system.md`](design/system.md). None of it exists here yet.
 
 **This document describes the repository as it stands.** The subsystems being designed on top of it
 live in [`design/`](design/), one document per subsystem, each naming the requirements it answers.
@@ -100,10 +104,11 @@ Rules that hold for every channel added later:
 
 ## Data flow today
 
-There is no storage layer, no server and no persistence. The renderer builds one `Component`
+There is no storage layer, no server and no persistence yet. The renderer builds one `Component`
 through the domain package at module load and renders it, and asks the bridge which delivery it is
-running under. That is the whole flow. A real content store, and the port it sits behind, is a
-design decision that has not been taken - see [decisions/](decisions/) when it is.
+running under. That is the whole flow. The storage model is decided
+([ADR-0012](decisions/0012-relational-version-chain-hashed-content.md)) and the service that will
+hold it is proposed in [`design/system.md`](design/system.md); neither is built.
 
 ## Build and packaging
 

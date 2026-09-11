@@ -61,15 +61,16 @@ docs/         Architecture, development, testing, CI and decision records.
 
 ## Documentation
 
-| Document                                           | What it covers                                                       |
-| -------------------------------------------------- | -------------------------------------------------------------------- |
-| [docs/architecture.md](docs/architecture.md)       | Workspaces, the renderer/shell split, the platform bridge, packaging |
-| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                               |
-| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                            |
-| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                              |
-| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                        |
-| [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements  |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                  |
+| Document                                           | What it covers                                                                                |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging |
+| [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                  |
+| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                        |
+| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                     |
+| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                       |
+| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                 |
+| [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements                           |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                           |
 
 ## Platforms
 
