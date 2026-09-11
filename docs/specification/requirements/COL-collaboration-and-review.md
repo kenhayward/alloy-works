@@ -120,12 +120,13 @@ on sends that sentence to whoever is on the thread, past whatever permissions th
 
 ## 9. Non-requirements
 
-| ID          | Not this                                                                                                                                           |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **COL-N01** | **No real-time character-level co-editing.** Scope §9 decision 4; the parallelism authors want is across components (**COL-011**)                  |
-| **COL-N02** | **No document-level locking.** It defeats the point of components                                                                                  |
-| **COL-N03** | **No comments in published output** (COL-019)                                                                                                      |
-| **COL-N04** | **No anonymous review.** Every comment, suggestion and acceptance is attributable, because an audited document cannot contain unattributed changes |
+| ID          | Not this                                                                                                                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **COL-N01** | **No real-time character-level co-editing.** Scope §9 decision 4; the parallelism authors want is across components (**COL-011**)                                                                    |
+| **COL-N02** | **No document-level locking.** It defeats the point of components                                                                                                                                    |
+| **COL-N03** | **No comments in published output** (COL-019)                                                                                                                                                        |
+| **COL-N04** | **No anonymous review.** Every comment, suggestion and acceptance is attributable, because an audited document cannot contain unattributed changes                                                   |
+| **COL-N05** | **No live cursors.** Presence says which component each person is in and their mode (COL-001, COL-002), not where their cursor is; cursor-level presence belongs to the co-editing COL-N01 rules out |
 
 ## 10. Open questions
 
