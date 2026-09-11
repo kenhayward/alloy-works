@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.15 - 2026-09-11 (PR #20)
+
+Word documents checked in Word itself.
+
+### Changed
+
+- The two parts of the Word output that had been decided but never seen in Word have now been
+  opened in it, and both work. Word asks once whether to update the document when it opens, and the
+  contents page, the list of figures and "see page" references then show the right page numbers.
+  Equations - sums, integrals, limits, fractions, roots and brackets - come out as proper Word
+  equations, exactly as intended.
+- Numbered equations keep their number in a form that references can point at, having tried Word's
+  built-in equation numbering beside it.
+
 ## 0.2.14 - 2026-09-11 (PR #19)
 
 How search will work, decided after measuring it.

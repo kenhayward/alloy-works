@@ -102,7 +102,9 @@ Typst, like MathML, sets them side by side.
 
 A display equation is an `m:oMathPara`; an inline one an `m:oMath` inside the paragraph. A numbered
 equation carries its number as a `SEQ` field at a right tab stop, so that a `REF` to it updates like
-any other.
+any other. Word's own equation-array numbering (`#` inside an `m:eqArr`) was tried beside it and also
+worked in Word, but nothing can refer to its number, and LibreOffice - which the conformance harness
+renders with - does not support it.
 
 ## Accessibility (PUB-035)
 
@@ -125,12 +127,29 @@ any other.
 - **Schema checks** against ECMA-376 in the conformance harness.
 - **Rendering** through LibreOffice in the conformance harness, measured the way the theme prototype's
   Word output was.
-- **Word itself** (PUB-029), before any change to the writer lands. Two mechanics are decided and not
-  yet seen there: fields refreshed on opening, and equations built from the tree.
+- **Word itself** (PUB-029), before any change to the writer lands.
+
+### The two mechanics ADR-0015 left unseen
+
+ADR-0015 decided two things nobody had yet watched Word do. A probe document
+([`spikes/word-probe/`](../../spikes/word-probe/)) put both in front of Word on 2026-09-11, and both
+worked:
+
+| Mechanic                                | What Word did                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fields refreshed on opening (PUB-066)   | Asked once whether to update the document's fields; accepted, the contents, the list of figures and "Figure 1, on page N" were all correct                     |
+| Equations from the maths tree (PUB-067) | Every equation correct: the sum, integral and limit holding their operands, the fraction, root and stretchy brackets, both inline and display, both numberings |
+
+**LibreOffice differs, and that matters for the fallback.** Converting the same document, it
+refreshed the `REF` and `PAGEREF` fields but not the contents or list of figures, set an integral's
+limits above and below the sign rather than beside it, and did not number the equation array. So
+ADR-0015's fallback - refreshing fields on the server with LibreOffice - would need the indexes
+updated explicitly, not merely the document opened and saved, and the harness's LibreOffice
+rendering is a check on structure, not on how an equation looks.
 
 ## Open questions
 
 | ID  | Question                                                                                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| New | Whether recipients accept Word's field-update prompt. If not, ADR-0015 names the fallback: refresh on the server with LibreOffice, with its layout's page numbers                    |
+| New | Whether recipients accept Word's field-update prompt. The prompt works; whether a client's reader trusts it is a question for real recipients. If not, ADR-0015 names the fallback   |
 | New | Whether the output includes review - suggestions and comments - by default, or only when the publisher asks. PUB-028 is T6, and a client copy with internal comments in it is a leak |
