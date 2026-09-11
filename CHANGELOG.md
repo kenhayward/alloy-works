@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.9 - 2026-09-11 (PR #14)
+
+The publishing engine spike has run its four gates, and one engine passed all of them.
+
+### Added
+
+- The findings of the publishing engine spike. Four open-source engines were each asked to produce
+  an accessible PDF, place footnotes on the right page, break a long table across pages, and
+  re-render page 40 of a 300-page document fast enough to preview while writing. Typst passed all
+  four; no other engine passed more than two.
+- The most important thing it found is a failure nobody would see. Given a footnote too long to fit,
+  one engine pushes it upward past the top of the page, and the first part of the note simply is not
+  there - no error, no warning, and nothing for a reader to notice.
+- The harness that produced those findings, kept so the cases can be re-run against whichever engine
+  is chosen. It runs in Docker and is not part of the build.
+
+### Changed
+
+- Choosing Typst is not recorded yet. It collides with an earlier decision that the published
+  document passes through HTML on its way to PDF, which Typst does not read, and the cost of that is
+  every theme existing twice - once for the editor and once for the output. That is a product call,
+  and it is written up for one.
+- The requirements are found to be missing two things: a stated budget for how fast preview must be,
+  and any record of which engine version produced a publication. Without the second, re-publishing an
+  approved document on a newer engine can change it with nothing anyone pinned having moved.
+
 ## 0.2.8 - 2026-09-10 (PR #13)
 
 Where design documents live, and the first one: how history is stored.
