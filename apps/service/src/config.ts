@@ -8,6 +8,7 @@ export interface Config {
   readonly port: number;
   readonly host: string;
   readonly logLevel: LogLevel;
+  readonly allowInsecureIssuers: boolean;
 }
 
 export class ConfigError extends Error {}
@@ -26,6 +27,9 @@ const Environment = z.object({
   LOG_LEVEL: z
     .enum(LOG_LEVELS, { error: `must be one of ${LOG_LEVELS.join(', ')}` })
     .default('info'),
+  ALLOW_INSECURE_ISSUERS: z
+    .enum(['true', 'false'], { error: 'must be true or false' })
+    .default('false'),
 });
 
 /**
@@ -38,8 +42,14 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     const problems = result.error.issues.map((issue) => `${issue.path.join('.')} ${issue.message}`);
     throw new ConfigError(`The service cannot start:\n  ${problems.join('\n  ')}`);
   }
-  const { DATABASE_URL, PORT, HOST, LOG_LEVEL } = result.data;
-  return { databaseUrl: DATABASE_URL, port: PORT, host: HOST, logLevel: LOG_LEVEL };
+  const { DATABASE_URL, PORT, HOST, LOG_LEVEL, ALLOW_INSECURE_ISSUERS } = result.data;
+  return {
+    databaseUrl: DATABASE_URL,
+    port: PORT,
+    host: HOST,
+    logLevel: LOG_LEVEL,
+    allowInsecureIssuers: ALLOW_INSECURE_ISSUERS === 'true',
+  };
 }
 
 /** The configuration as it may appear in a log: the database password replaced. */
@@ -51,5 +61,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     port: config.port,
     host: config.host,
     logLevel: config.logLevel,
+    allowInsecureIssuers: String(config.allowInsecureIssuers),
   };
 }
