@@ -57,6 +57,15 @@ and `http://dev.acme.localhost:8080/v1/me` says who you are. On another port, te
 where the service is, since it only returns people to addresses it knows:
 `STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
 
+The development environment also takes Google accounts, with the stand-in playing Google and
+`signin.localhost:8080` as the one address it returns to. Open
+`http://dev.acme.localhost:8080/v1/sign-in/google`: Grace is invited and gets in; Alice is not, and
+the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in `.env` and
+`STAND_IN_GOOGLE_REDIRECT_URI` for the stand-in to match. The stand-in plays both providers with
+one issuer, so anyone who has signed in to the environment the organisation's way is already its
+principal, and comes straight in. Like Google, it remembers who signed in and does not ask again:
+restart it to choose someone else.
+
 Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
 the service listens on the IPv4 address only - the same trap the renderer's dev server met. If
 anything else on the machine listens on port 8080 over IPv6, a browser can reach that instead. Set

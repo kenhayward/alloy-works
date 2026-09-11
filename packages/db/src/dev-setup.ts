@@ -5,7 +5,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { createTenant } from './provision.js';
-import { configureOrganisationSignIn } from './sign-in.js';
+import { configureOrganisationSignIn, inviteToTenant, permitGoogleSignIn } from './sign-in.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
 const server =
@@ -58,4 +58,10 @@ for (const environment of environments) {
     { issuer: 'http://127.0.0.1:9090', clientId: 'alloy-dev', secretName: 'stand_in' },
   );
 }
+// The development environment also takes Google accounts, the stand-in playing Google: Grace is
+// invited, as a demonstration's first administrator would be; Alice is not, so she is refused.
+const development = tenantNames('acmedev');
+const developmentTenant = { id: 'acmedev', schema: development.schema, role: development.role };
+await permitGoogleSignIn(adminUrl, developmentTenant);
+await inviteToTenant(adminUrl, developmentTenant, 'grace@example.com');
 console.log(`Ready: database ${database}, service login aw_service / ${TEST_PASSWORDS.service}`);
