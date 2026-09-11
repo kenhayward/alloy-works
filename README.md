@@ -68,6 +68,7 @@ docs/         Architecture, development, testing, CI and decision records.
 | [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                        |
 | [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                     |
 | [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                       |
+| [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                            |
 | [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                 |
 | [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements                           |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                           |
