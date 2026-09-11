@@ -52,6 +52,8 @@ export interface ResolvedParagraphStyle {
 export interface ResolvedTheme {
   readonly id: string;
   readonly paper: string;
+  /** The root of every chain; also the canvas's ink. */
+  readonly defaults: ResolvedProperties;
   readonly typefaces: Readonly<Record<string, Typeface>>;
   /** In catalogue order, which is the order projections emit them. */
   readonly paragraphStyles: readonly ResolvedParagraphStyle[];
@@ -123,7 +125,14 @@ export function resolveTheme(input: unknown): ResolvedTheme {
       : { id: style.id, name: style.name, basedOn: style.basedOn, properties };
   });
 
-  return { id: theme.id, paper: theme.paper, typefaces, paragraphStyles, characterStyles };
+  return {
+    id: theme.id,
+    paper: theme.paper,
+    defaults: { ...theme.defaults },
+    typefaces,
+    paragraphStyles,
+    characterStyles,
+  };
 }
 
 /**
