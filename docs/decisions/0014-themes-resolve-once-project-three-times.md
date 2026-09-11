@@ -56,9 +56,12 @@ fully resolved styles, and three projections translate those and decide nothing.
 
 ## What would change the answer
 
-- **Word disagreeing with LibreOffice.** LibreOffice is the Word-model renderer the harness could run;
-  it implements the toggle rule and matches Word's line placement to a hundredth of a point. Word
-  itself has not been measured. If it differs, the Word projection changes and this record does not.
+- **Word disagreeing with LibreOffice where it has not been looked at.** LibreOffice is the
+  Word-model renderer the harness could run; it implements the toggle rule and matches Word's line
+  placement to a hundredth of a point. Word itself was checked by eye on the fixture before this
+  was accepted: the bold heading's strong word bold, the strong-and-emphasised word bold italic,
+  and the spacing matching the PDF. Word has not been measured to the point, and has not seen a
+  second face. If it differs there, the Word projection changes and this record does not.
 - **A face whose metric tables disagree.** Fonts carry more than one set of vertical metrics, and
   renderers do not all read the same one. Liberation Serif's agree; a face whose do not may need its
   metrics chosen per target, which the conformance suite would show.
@@ -75,7 +78,7 @@ fully resolved styles, and three projections translate those and decide nothing.
   starts, as the content model draft did.
 - **`spikes/theme-conformance/` grows into the conformance suite**: generated property values, more
   faces, the remaining properties - tables, images, admonitions - and, eventually, CI.
-- **The Word output must be opened in Word** (PUB-029), and one row of the design is still unverified
-  anywhere: what Word needs set to drop space before at the top of a page.
+- **The Word output was opened in Word** (PUB-029) and matched the PDF by eye, and must be again
+  whenever the Word projection changes. One row of the design is still unverified anywhere: what Word needs set to drop space before at the top of a page.
 - The design's own first draft of the Word section was wrong about the toggle, and is corrected in
   place with the control that showed it.

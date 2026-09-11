@@ -14,6 +14,7 @@ The theme model, built and measured: one theme now looks the same in the editor,
   tests, written before the code they test.
 - A harness that renders the same document all three ways and measures where every line sits. Every
   line now lands within a fifth of a point of the others, and the PDF and Word within a hundredth.
+  Opened in Word itself, the document matches the PDF, including its bold and bold italic words.
 - A decision recording that shape, now that it has been tested against something real.
 
 ### Changed

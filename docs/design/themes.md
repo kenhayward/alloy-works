@@ -307,7 +307,8 @@ style and nothing more, so restyling `Strong` in Word still reaches every run it
 **Measured with a control.** The same Word document with every pin removed, rendered by LibreOffice:
 the strong word in the bold heading came out **regular**, and the strong-and-emphasised word lost its
 italic. With the pins, both are right. So the renderer implements Word's rule, the problem is real,
-and the pins are what fix it. LibreOffice is a proxy; Word itself is the check PUB-029 requires.
+and the pins are what fix it. Word itself was then checked by eye, as PUB-029 requires: the same
+two words bold and bold italic, and the spacing matching the PDF.
 
 ## Keeping the three in agreement
 
@@ -350,7 +351,9 @@ its paragraphs explicitly, Typst dropped the quote's indent - since Typst 0.13, 
 a block is not a paragraph, and first-line indent silently does nothing to it while leading still
 applies. Both were caught by the harness, which is also how it is known that the harness can fail.
 
-**Still a proxy:** LibreOffice stands in for Word, and one fixture with one face is not every theme.
+**Checked in Word, by eye:** the fixture's output opened in Word matches the PDF, including both
+pinned words and the spacing. **Still not measured:** Word to the point, and more than one face -
+one fixture with one face is not every theme.
 The conformance suite this becomes (STY-053) needs generated values, more faces - in particular faces
 whose metric tables disagree with each other, where renderers may choose different ones - and Word.
 
