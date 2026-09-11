@@ -15,6 +15,19 @@ pnpm install
 Always the plain install locally; CI uses `pnpm install --frozen-lockfile`. Never `npm install` or
 `yarn` - there is one lock file and it is `pnpm-lock.yaml`.
 
+## The database
+
+The database suite - and, from later plans, the service - needs PostgreSQL 17 with pgvector. Docker
+runs it:
+
+```bash
+docker compose up -d --wait postgres   # 127.0.0.1:5432, superuser postgres / postgres
+docker compose down                    # stop it; add -v to throw away its data
+```
+
+The password is a development default for a container bound to `127.0.0.1`, never a credential for
+anything deployed. `pnpm test` fails with an instruction to start it when it is not running.
+
 ## Commands
 
 Everything below runs from the repo root.
