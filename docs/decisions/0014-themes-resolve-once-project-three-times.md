@@ -79,6 +79,7 @@ fully resolved styles, and three projections translate those and decide nothing.
 - **`spikes/theme-conformance/` grows into the conformance suite**: generated property values, more
   faces, the remaining properties - tables, images, admonitions - and, eventually, CI.
 - **The Word output was opened in Word** (PUB-029) and matched the PDF by eye, and must be again
-  whenever the Word projection changes. One row of the design is still unverified anywhere: what Word needs set to drop space before at the top of a page.
+  whenever the Word projection changes. One row of the design is still unverified anywhere: what
+  Word needs set to drop space before at the top of a page.
 - The design's own first draft of the Word section was wrong about the toggle, and is corrected in
   place with the control that showed it.
