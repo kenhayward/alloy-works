@@ -630,6 +630,7 @@ Stated explicitly so nobody has to infer them.
 | 14  | **Outsiders participate as guests, and finished documents travel by identified link**        | A client reviewer is a principal inside the host tenant with read, comment and suggest and a mandatory expiry, never a bridge between two tenants. A recipient gets a link that names them, expires and is revocable. Nothing is anonymous, because a reader with no identity cannot be told the version they hold has been superseded. See [ADR-0011](../decisions/0011-external-participation-guests-and-identified-links.md) |
 | 15  | **History is a relational, append-only version chain with hashed content**                   | Baseline pins are real foreign keys, so refusing to delete something a baseline needs is the database's job rather than application code's. Iterations live in a separate store with a time to live that nothing references. Derived data, embeddings included, is keyed by content hash rather than by version. See [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md)                                   |
 | 16  | **Typst renders the PDF, from data, through one fixed template**                             | The only one of four open-source engines to pass all four gates. It is given the resolved document as JSON and never Typst source, so no content can execute; fonts come only from the files a baseline pins; the engine version is recorded with every publication. Narrows ADR-0005: XHTML stays an export. See [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)                       |
+| 17  | **Word output is our own writer, and it reflows**                                            | Written in `packages/domain` from the same resolved document as the PDF, styled by the theme's Word projection. Word lays out its own pages, so the PDF is the paged record; anything showing a page number is a field Word refreshes on opening, and equations are native Word equations from the same maths tree as the PDF. See [ADR-0015](../decisions/0015-word-output-our-own-writer-reflowable.md)                       |
 
 **On the existing repository.** [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md) still
 stands, but decision 2 narrows its premise: the desktop delivery no longer has a capability
@@ -650,12 +651,11 @@ in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-te
 [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) ran all nine of its cases. What remains
 below is reversible.
 
-| #   | Decision                     | What it hinges on                                                                                                                                                     |
-| --- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Word generation approach** | Direct OOXML or an intermediate representation. Constrained by ADR-0005's commitment to design the schema against the OOXML mapping, and by the engine decision above |
-| 2   | **Search infrastructure**    | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence                         |
-| 3   | **Relationship storage**     | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                                        |
-| 4   | **Realtime transport**       | Presence, locks, notifications and streaming, and whether one channel serves all four                                                                                 |
+| #   | Decision                  | What it hinges on                                                                                                                             |
+| --- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Search infrastructure** | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence |
+| 2   | **Relationship storage**  | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                |
+| 3   | **Realtime transport**    | Presence, locks, notifications and streaming, and whether one channel serves all four                                                         |
 
 ## 11. Cross-cutting requirements
 
