@@ -12,6 +12,11 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 
+const routeClosed = {
+  description: 'This environment does not permit signing in this way',
+  schema: ErrorBody,
+} as const;
+
 export const routes = {
   getHealth: {
     operationId: 'getHealth',
@@ -43,10 +48,7 @@ export const routes = {
     authenticated: false,
     responses: {
       302: { description: 'On to the identity provider' },
-      404: {
-        description: 'This environment does not permit signing in this way',
-        schema: ErrorBody,
-      },
+      404: routeClosed,
     },
   },
   finishOrganisationSignIn: {
@@ -60,6 +62,18 @@ export const routes = {
     responses: {
       302: { description: 'Signed in, and on to the application' },
       401: { description: 'The sign-in could not be completed', schema: ErrorBody },
+    },
+  },
+  startGoogleSignIn: {
+    operationId: 'startGoogleSignIn',
+    method: 'GET',
+    path: '/v1/sign-in/google',
+    summary: 'Begin signing in with a Google account, by way of the one sign-in address',
+    tenantScoped: true,
+    authenticated: false,
+    responses: {
+      302: { description: 'On to Google' },
+      404: routeClosed,
     },
   },
   signOut: {

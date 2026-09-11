@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -6,12 +6,19 @@ import {
   type RouteContract,
   type SignInCallback,
 } from '@alloy-works/api-contract';
-import type { Tenant, TenantDatabase } from '@alloy-works/db';
+import type { SignInRoute, Tenant, TenantDatabase } from '@alloy-works/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
+import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { createHttp, type HttpOptions } from './http.js';
-import { SignInFailed, type OidcClient, type ProviderSettings } from './oidc.js';
+import {
+  SignInFailed,
+  type Identity,
+  type OidcClient,
+  type ProviderSettings,
+  type SignInStart,
+} from './oidc.js';
 import type { SecretStore } from './secrets.js';
 import {
   createSession,
@@ -21,6 +28,7 @@ import {
   SESSION_POLICY,
   type SessionPrincipal,
 } from './sessions.js';
+import { signState } from './sign-in-state.js';
 import { cachedResolver } from './tenants.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
@@ -37,6 +45,8 @@ export interface AppOptions extends HttpOptions {
   readonly db: TenantDatabase;
   readonly oidc: OidcClient;
   readonly secrets: SecretStore;
+  /** The product's one Google client and the sign-in address it returns to; without, no Google route. */
+  readonly google?: GoogleSettings;
   readonly tenantCacheMs?: number;
 }
 
@@ -44,6 +54,7 @@ export interface AppOptions extends HttpOptions {
 export const SIGN_IN_COOKIE = '__Host-aw_signin';
 const SIGN_IN_ATTEMPT_MS = 10 * 60 * 1000;
 const CALLBACK_PATH = '/v1/sign-in/organisation/callback';
+const GOOGLE_CALLBACK_PATH = '/v1/sign-in/google/callback';
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
 
 type Success<R extends RouteContract> = R['responses'] extends {
@@ -78,6 +89,14 @@ function sameValue(a: string, b: string): boolean {
 const signInFailed = () =>
   new AppError(401, 'sign_in_failed', 'The sign-in could not be completed. Please start again.');
 
+const routeClosed = () =>
+  new AppError(
+    404,
+    'sign_in_route_closed',
+    'This environment does not permit signing in this way.',
+    'IAM-043',
+  );
+
 /**
  * The service: the contract's routes and nothing else. Every route in `routes` must have a handler
  * here - the Handlers type refuses to compile otherwise - and each is registered with the schemas its
@@ -93,21 +112,103 @@ export function buildApp(options: AppOptions): FastifyInstance {
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
 
+  function secret(name: string): string {
+    const value = secrets.get(name);
+    if (value === undefined) throw new Error(`The secret ${name} is not in the secret store`);
+    return value;
+  }
+
+  async function permits(tenant: Tenant, route: SignInRoute): Promise<boolean> {
+    const row = await db.withTenant(tenant, (trx) =>
+      trx.selectFrom('sign_in_route').select('route').where('route', '=', route).executeTakeFirst(),
+    );
+    return row !== undefined;
+  }
+
   async function organisationProvider(tenant: Tenant): Promise<ProviderSettings | undefined> {
-    const row = await db.withTenant(tenant, async (trx) => {
-      const permitted = await trx
-        .selectFrom('sign_in_route')
-        .select('route')
-        .where('route', '=', 'organisation')
-        .executeTakeFirst();
-      return permitted && trx.selectFrom('identity_provider').selectAll().executeTakeFirst();
-    });
-    if (!row) return undefined;
-    const clientSecret = secrets.get(row.secret_name);
-    if (clientSecret === undefined) {
-      throw new Error(`The secret ${row.secret_name} is not in the secret store`);
+    if (!(await permits(tenant, 'organisation'))) return undefined;
+    const row = await db.withTenant(tenant, (trx) =>
+      trx.selectFrom('identity_provider').selectAll().executeTakeFirst(),
+    );
+    return (
+      row && { issuer: row.issuer, clientId: row.client_id, clientSecret: secret(row.secret_name) }
+    );
+  }
+
+  function googleProvider(google: GoogleSettings): ProviderSettings {
+    return { issuer: google.issuer, clientId: google.clientId, clientSecret: secret('google') };
+  }
+
+  async function recordAttempt(
+    tenant: Tenant,
+    route: SignInRoute,
+    stateHash: string,
+    start: SignInStart,
+  ): Promise<void> {
+    await db.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('sign_in_attempt')
+        .values({
+          state_hash: stateHash,
+          nonce: start.nonce,
+          code_verifier: start.codeVerifier,
+          route,
+          expires_at: new Date(Date.now() + SIGN_IN_ATTEMPT_MS),
+        })
+        .execute(),
+    );
+  }
+
+  /** Deleted as it is read: an attempt is used once, whatever happens next, and never once expired. */
+  async function takeAttempt(tenant: Tenant, route: SignInRoute, stateHash: string) {
+    const attempt = await db.withTenant(tenant, (trx) =>
+      trx
+        .deleteFrom('sign_in_attempt')
+        .where('state_hash', '=', stateHash)
+        .where('route', '=', route)
+        .returningAll()
+        .executeTakeFirst(),
+    );
+    return attempt && attempt.expires_at > new Date() ? attempt : undefined;
+  }
+
+  /** The exchange at the provider. A refusal becomes sign_in_failed, logged by its kind alone. */
+  async function finishAt(
+    request: FastifyRequest,
+    provider: ProviderSettings,
+    expected: { readonly state: string; readonly nonce: string; readonly codeVerifier: string },
+  ): Promise<Identity> {
+    try {
+      return await oidc.finish(
+        provider,
+        new URL(`${request.protocol}://${request.host}${request.url}`),
+        expected,
+      );
+    } catch (error) {
+      if (error instanceof SignInFailed) {
+        // Only the kind of refusal: openid-client's error chain can carry the callback's
+        // parameters, the authorisation code among them, and the logger walks the whole chain.
+        const cause = error.cause as { code?: unknown; name?: unknown } | undefined;
+        request.log.warn(
+          { reason: String(cause?.code ?? cause?.name ?? 'refused') },
+          'sign-in refused',
+        );
+        throw signInFailed();
+      }
+      throw error;
     }
-    return { issuer: row.issuer, clientId: row.client_id, clientSecret };
+  }
+
+  /** Starts a session for the principal, and sends the browser on into the application. */
+  async function signInAs(
+    reply: FastifyReply,
+    tenant: Tenant,
+    principalId: string,
+    route: SignInRoute,
+  ): Promise<FastifyReply> {
+    const token = await db.withTenant(tenant, (trx) => createSession(trx, principalId, route));
+    reply.setCookie(SESSION_COOKIE, token, { ...COOKIE, maxAge: SESSION_POLICY.absoluteMs / 1000 });
+    return reply.redirect('/', 302);
   }
 
   const handlers: Handlers = {
@@ -123,30 +224,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
     startOrganisationSignIn: async (request, reply) => {
       const tenant = tenantOf(request);
       const provider = await organisationProvider(tenant);
-      if (!provider) {
-        throw new AppError(
-          404,
-          'sign_in_route_closed',
-          'This environment does not permit signing in this way.',
-          'IAM-043',
-        );
-      }
+      if (!provider) throw routeClosed();
       const start = await oidc.start(
         provider,
         `${request.protocol}://${request.host}${CALLBACK_PATH}`,
       );
-      await db.withTenant(tenant, (trx) =>
-        trx
-          .insertInto('sign_in_attempt')
-          .values({
-            state_hash: hashToken(start.state),
-            nonce: start.nonce,
-            code_verifier: start.codeVerifier,
-            route: 'organisation',
-            expires_at: new Date(Date.now() + SIGN_IN_ATTEMPT_MS),
-          })
-          .execute(),
-      );
+      await recordAttempt(tenant, 'organisation', hashToken(start.state), start);
       reply.setCookie(SIGN_IN_COOKIE, start.state, {
         ...COOKIE,
         maxAge: SIGN_IN_ATTEMPT_MS / 1000,
@@ -163,62 +246,56 @@ export function buildApp(options: AppOptions): FastifyInstance {
         throw signInFailed();
       }
       const state = query.state;
-      // Deleted as it is read: an attempt is used once, whatever happens next.
-      const attempt = await db.withTenant(tenant, (trx) =>
-        trx
-          .deleteFrom('sign_in_attempt')
-          .where('state_hash', '=', hashToken(state))
-          .where('route', '=', 'organisation')
-          .returningAll()
-          .executeTakeFirst(),
-      );
+      const attempt = await takeAttempt(tenant, 'organisation', hashToken(state));
       const provider = await organisationProvider(tenant);
-      if (!attempt || attempt.expires_at <= new Date() || !provider) throw signInFailed();
-      let identity;
-      try {
-        identity = await oidc.finish(
-          provider,
-          new URL(`${request.protocol}://${request.host}${request.url}`),
-          { state, nonce: attempt.nonce, codeVerifier: attempt.code_verifier },
-        );
-      } catch (error) {
-        if (error instanceof SignInFailed) {
-          // Only the kind of refusal: openid-client's error chain can carry the callback's
-          // parameters, the authorisation code among them, and the logger walks the whole chain.
-          const cause = error.cause as { code?: unknown; name?: unknown } | undefined;
-          request.log.warn(
-            { reason: String(cause?.code ?? cause?.name ?? 'refused') },
-            'sign-in refused',
-          );
-          throw signInFailed();
-        }
-        throw error;
-      }
-      const found = identity;
-      const token = await db.withTenant(tenant, async (trx) => {
-        // Found by issuer and subject, never by email address, which can be reassigned.
-        const principal = await trx
+      if (!attempt || !provider) throw signInFailed();
+      const identity = await finishAt(request, provider, {
+        state,
+        nonce: attempt.nonce,
+        codeVerifier: attempt.code_verifier,
+      });
+      // Found by issuer and subject, never by email address, which can be reassigned.
+      const principal = await db.withTenant(tenant, (trx) =>
+        trx
           .insertInto('principal')
           .values({
-            issuer: found.issuer,
-            subject: found.subject,
-            email: found.email,
-            display_name: found.name,
+            issuer: identity.issuer,
+            subject: identity.subject,
+            email: identity.email,
+            display_name: identity.name,
           })
           .onConflict((conflict) =>
             conflict
               .columns(['issuer', 'subject'])
-              .doUpdateSet({ email: found.email, display_name: found.name }),
+              .doUpdateSet({ email: identity.email, display_name: identity.name }),
           )
           .returning('id')
-          .executeTakeFirstOrThrow();
-        return createSession(trx, principal.id, 'organisation');
-      });
-      reply.setCookie(SESSION_COOKIE, token, {
-        ...COOKIE,
-        maxAge: SESSION_POLICY.absoluteMs / 1000,
-      });
-      return reply.redirect('/', 302);
+          .executeTakeFirstOrThrow(),
+      );
+      return signInAs(reply, tenant, principal.id, 'organisation');
+    },
+
+    startGoogleSignIn: async (request, reply) => {
+      const tenant = tenantOf(request);
+      const { google } = options;
+      if (!google || !(await permits(tenant, 'google'))) throw routeClosed();
+      // The attempt is bound to this browser by the cookie, and named in the state Google carries
+      // to the sign-in address - signed, so nobody can point it at another environment.
+      const attempt = randomBytes(32).toString('base64url');
+      const start = await oidc.start(
+        googleProvider(google),
+        `${request.protocol}://${google.signInHost}${GOOGLE_CALLBACK_PATH}`,
+        {
+          state: signState(secret('sign_in_state'), {
+            tenant: tenant.id,
+            host: request.host,
+            attempt,
+          }),
+        },
+      );
+      await recordAttempt(tenant, 'google', hashToken(attempt), start);
+      reply.setCookie(SIGN_IN_COOKIE, attempt, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
+      return reply.redirect(start.url, 302);
     },
 
     signOut: async (request, reply) => {
