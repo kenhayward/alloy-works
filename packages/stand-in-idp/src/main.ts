@@ -6,9 +6,22 @@ const redirectUris = (
   process.env.STAND_IN_REDIRECT_URIS ??
   'http://acme.localhost:8080/v1/sign-in/organisation/callback,http://dev.acme.localhost:8080/v1/sign-in/organisation/callback'
 ).split(',');
+const googleRedirectUri =
+  process.env.STAND_IN_GOOGLE_REDIRECT_URI ??
+  'http://signin.localhost:8080/v1/sign-in/google/callback';
 
 const idp = await startStandInProvider({
   port,
-  clients: [{ clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret', redirectUris }],
+  clients: [
+    { clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret', redirectUris },
+    // Plays the product's one Google client, returning only to the sign-in address.
+    {
+      clientId: 'alloy-google-dev',
+      clientSecret: 'stand-in-google-secret',
+      redirectUris: [googleRedirectUri],
+    },
+  ],
 });
-console.log(`Stand-in provider at ${idp.issuer}, for ${redirectUris.join(' and ')}`);
+console.log(
+  `Stand-in provider at ${idp.issuer}, for ${[...redirectUris, googleRedirectUri].join(' and ')}`,
+);

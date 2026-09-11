@@ -22,13 +22,20 @@ export interface Identity {
   readonly email: string | null;
   readonly emailVerified: boolean;
   readonly name: string | null;
+  /** The Workspace domain managing the account (Google's `hd`); null for a personal account. */
+  readonly hostedDomain: string | null;
 }
 
 /** Anything that stops a sign-in: its message is safe to show, and the cause is for the log. */
 export class SignInFailed extends Error {}
 
 export interface OidcClient {
-  start(provider: ProviderSettings, redirectUri: string): Promise<SignInStart>;
+  /** A caller that must carry something through the provider signs its own state and passes it. */
+  start(
+    provider: ProviderSettings,
+    redirectUri: string,
+    options?: { readonly state?: string },
+  ): Promise<SignInStart>;
   finish(
     provider: ProviderSettings,
     callbackUrl: URL,
@@ -65,10 +72,10 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
   }
 
   return {
-    async start(provider, redirectUri) {
+    async start(provider, redirectUri, options) {
       const config = await configuration(provider);
       const codeVerifier = client.randomPKCECodeVerifier();
-      const state = client.randomState();
+      const state = options?.state ?? client.randomState();
       const nonce = client.randomNonce();
       const url = client.buildAuthorizationUrl(config, {
         redirect_uri: redirectUri,
@@ -104,6 +111,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         email: typeof claims.email === 'string' ? claims.email : null,
         emailVerified: claims.email_verified === true,
         name: typeof claims.name === 'string' ? claims.name : null,
+        hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
       };
     },
   };

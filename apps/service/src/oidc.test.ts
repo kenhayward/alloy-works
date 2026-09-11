@@ -40,6 +40,7 @@ describe('the OpenID Connect client', () => {
       email: 'ada@example.com',
       emailVerified: true,
       name: 'Ada',
+      hostedDomain: null,
     });
   });
 
@@ -54,5 +55,20 @@ describe('the OpenID Connect client', () => {
   it('refuses a provider reached over plain HTTP unless told the stand-in is allowed', async () => {
     const strict = createOidcClient({ allowInsecureIssuers: false });
     await expect(strict.start(provider, REDIRECT)).rejects.toThrow(/HTTPS/);
+  });
+
+  it('carries the state it is given, when the caller signs its own', async () => {
+    const start = await oidc.start(provider, REDIRECT, { state: 'signed-by-the-caller' });
+    expect(start.state).toBe('signed-by-the-caller');
+    expect(new URL(start.url).searchParams.get('state')).toBe('signed-by-the-caller');
+  });
+
+  it('says which Workspace domain manages an account, as Google does', async () => {
+    const start = await oidc.start(provider, REDIRECT);
+    const back = await completeAtStandIn(start.url, 'alice', idp.issuer);
+    expect(await oidc.finish(provider, back, start)).toMatchObject({
+      subject: 'alice',
+      hostedDomain: 'example.org',
+    });
   });
 });

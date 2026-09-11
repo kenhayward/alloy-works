@@ -7,6 +7,13 @@ export interface StandInUser {
   readonly id: string;
   readonly name: string;
   readonly email: string;
+  /** False plays an account whose address its provider has not verified. True unless said. */
+  readonly emailVerified?: boolean;
+  /**
+   * The Workspace domain that manages the account, sent as Google's `hd` claim. A personal account
+   * has none, whatever its address.
+   */
+  readonly hostedDomain?: string;
 }
 
 export interface StandInClient {
@@ -28,10 +35,11 @@ export interface StandInProvider {
   close(): Promise<void>;
 }
 
-/** Invented people, the only ones the stand-in knows. */
+/** Invented people, the only ones the stand-in knows. Alice's account is managed by a Workspace domain. */
 export const STAND_IN_USERS: readonly StandInUser[] = [
   { id: 'ada', name: 'Ada', email: 'ada@example.com' },
   { id: 'grace', name: 'Grace', email: 'grace@example.com' },
+  { id: 'alice', name: 'Alice', email: 'alice@example.org', hostedDomain: 'example.org' },
 ];
 
 /**
@@ -80,7 +88,7 @@ function page(uid: string, users: readonly StandInUser[]): string {
         `<li><a href="/interaction/${uid}?user=${user.id}">${user.name} (${user.email})</a></li>`,
     )
     .join('');
-  return `<!doctype html><title>Stand-in sign-in</title><h1>Stand-in sign-in</h1><p>A development stand-in for an organisation's identity provider. Sign in as:</p><ul>${choices}</ul>`;
+  return `<!doctype html><title>Stand-in sign-in</title><h1>Stand-in sign-in</h1><p>A development stand-in for a sign-in provider: an organisation's, or Google. Sign in as:</p><ul>${choices}</ul>`;
 }
 
 /**
@@ -116,7 +124,8 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     adapter: memoryAdapter(),
     jwks: { keys: [signingKey] },
     pkce: { required: () => true },
-    claims: { openid: ['sub'], email: ['email', 'email_verified'], profile: ['name'] },
+    // `hd` rides on the openid scope, as Google sends it: present only for a Workspace account.
+    claims: { openid: ['sub', 'hd'], email: ['email', 'email_verified'], profile: ['name'] },
     // Put the claims in the ID token, as Google does, rather than only behind the userinfo endpoint.
     conformIdTokenClaims: false,
     ttl: {
@@ -138,7 +147,8 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
             sub: user.id,
             name: user.name,
             email: user.email,
-            email_verified: true,
+            email_verified: user.emailVerified ?? true,
+            ...(user.hostedDomain === undefined ? {} : { hd: user.hostedDomain }),
           }),
         }
       );

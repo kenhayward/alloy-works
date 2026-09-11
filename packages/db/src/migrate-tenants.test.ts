@@ -1,4 +1,4 @@
-import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,6 +7,12 @@ import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type NewTenant } from './provision.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+
+/** Every tenant migration in the repository, in order: what a current tenant has applied. */
+const CURRENT = (await readdir(new URL('../migrations/tenant/', import.meta.url)))
+  .filter((name) => name.endsWith('.sql'))
+  .map((name) => name.slice(0, -'.sql'.length))
+  .sort();
 
 describe('migrate: tenant schemas', () => {
   let db: TestDatabase;
@@ -35,11 +41,7 @@ describe('migrate: tenant schemas', () => {
 
   it('brings a new tenant to the current version, as its owner role', async () => {
     const tenant = await createTenant(db.adminUrl, db.migratorUrl, input(db.newTenantId()));
-    expect(await versions(tenant.schema)).toEqual([
-      '0001_principals',
-      '0002_profile',
-      '0003_sign_in',
-    ]);
+    expect(await versions(tenant.schema)).toEqual(CURRENT);
     const owner = await queryAs(
       db.adminUrl,
       `select tableowner from pg_tables where schemaname = $1 and tablename = 'principal'`,
@@ -60,11 +62,7 @@ describe('migrate: tenant schemas', () => {
       ids.map((id) => createTenant(db.adminUrl, db.migratorUrl, input(id))),
     );
     for (const tenant of both) {
-      expect(await versions(tenant.schema)).toEqual([
-        '0001_principals',
-        '0002_profile',
-        '0003_sign_in',
-      ]);
+      expect(await versions(tenant.schema)).toEqual(CURRENT);
     }
   });
 
@@ -77,33 +75,24 @@ describe('migrate: tenant schemas', () => {
     try {
       await cp(new URL('../migrations/', import.meta.url), dir, { recursive: true });
       await writeFile(
-        join(dir, 'tenant', '0004_widgets.sql'),
+        join(dir, 'tenant', '9999_widgets.sql'),
         'create table widget (id int primary key);',
       );
       const migrationsDir = pathToFileURL(`${dir}/`);
 
-      // Only the later tenant already has a widget table, so 0004 fails there and nowhere else.
+      // Only the later tenant already has a widget table, so 9999 fails there and nowhere else.
       await queryAs(db.adminUrl, `create table ${late.schema}.widget (id int)`);
 
       await expect(migrate(db.migratorUrl, { migrationsDir })).rejects.toThrow(
         new RegExp(`Migrating ${late.schema} failed`),
       );
-      expect(await versions(early.schema)).toEqual([
-        '0001_principals',
-        '0002_profile',
-        '0003_sign_in',
-        '0004_widgets',
-      ]);
-      expect(await versions(late.schema)).toEqual([
-        '0001_principals',
-        '0002_profile',
-        '0003_sign_in',
-      ]);
+      expect(await versions(early.schema)).toEqual([...CURRENT, '9999_widgets']);
+      expect(await versions(late.schema)).toEqual(CURRENT);
 
       await queryAs(db.adminUrl, `drop table ${late.schema}.widget`);
       const resumed = await migrate(db.migratorUrl, { migrationsDir });
       expect(resumed.tenants[early.id]).toEqual([]);
-      expect(resumed.tenants[late.id]).toEqual(['0004_widgets']);
+      expect(resumed.tenants[late.id]).toEqual(['9999_widgets']);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

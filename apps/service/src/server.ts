@@ -13,6 +13,7 @@ const app = buildApp({
   logLevel: config.logLevel,
   oidc: createOidcClient({ allowInsecureIssuers: config.allowInsecureIssuers }),
   secrets: environmentSecrets(process.env),
+  ...(config.google ? { google: config.google } : {}),
 });
 
 const stop = async (signal: string) => {

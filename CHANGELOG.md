@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.6.0 - 2026-09-11 (PR #33)
+
+Signing in with a Google account.
+
+### Added
+
+- An environment can let people sign in with a Google account, personal or Workspace, with nothing
+  for the customer to set up - so a proof of concept or a demonstration can start the same day.
+- Only the people an environment invited by address, and accounts of the Workspace domains it names,
+  come in that way. An invitation belongs to the first account that accepts it, so the address
+  changing hands later lets nobody else in.
+- Closing a way of signing in ends every session it started.
+
 ## 0.5.1 - 2026-09-11 (PR #32)
 
 The plan for signing in with Google.

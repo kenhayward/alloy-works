@@ -115,3 +115,6 @@ run `pnpm --filter @alloy-works/api-contract generate`, and commit both.
 Signing in is tested against the stand-in provider, started in process on a free port, so the tests
 need no network and no real accounts. `cross-tenant.test.ts` presents a session from one environment
 to every authenticated route of another, and fails for any new route that would accept it.
+
+The stand-in plays Google too, `hd` claim and all, so `google-sign-in.test.ts` drives the whole Google
+route - the sign-in address, the admission rules and the hand-off - with no Google account.

@@ -35,3 +35,6 @@ export const SignInCallback = z.object({
   error: z.string().optional(),
 });
 export type SignInCallback = z.infer<typeof SignInCallback>;
+
+export const GoogleHandoff = z.object({ code: z.string() });
+export type GoogleHandoff = z.infer<typeof GoogleHandoff>;

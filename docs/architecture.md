@@ -25,7 +25,7 @@ One pnpm workspace, one lock file, seven packages.
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
 | `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes. Not yet reached by the renderer                             |
-| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, for development and tests only                                               |
+| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -119,7 +119,10 @@ which assumes the tenant's role for one transaction
 answer and every error follows the contract in `packages/api-contract`, from which the committed
 `openapi.json` is generated and checked. People sign in through their organisation's identity
 provider - in development and tests, the stand-in - and hold a session in their environment's own
-schema, which `GET /v1/me` and signing out use. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
+schema, which `GET /v1/me` and signing out use. An environment may also take Google accounts:
+Google returns to the one sign-in address, `signin.<domain>`, which checks the account against the
+environment's invitations and named Workspace domains and hands the sign-in back to the environment
+with a one-time code. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
 [`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
 ## Build and packaging
