@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.20 - 2026-09-11 (PR #25)
+
+The plan for building the service's skeleton, before any of it is built.
+
+### Added
+
+- A home for implementation plans, and the order the service's skeleton will be built in: the
+  database, then the service itself, then signing in, then background work, then live updates and
+  the application talking to it - each finished and tested before the next begins.
+- The first of those plans in full: the database layer, step by step, each step starting with the
+  test that proves it.
+
 ## 0.2.19 - 2026-09-11 (PR #24)
 
 The groundwork every part of the service will be built on, designed before any of it is written.

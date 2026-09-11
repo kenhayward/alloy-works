@@ -140,6 +140,9 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   two-column table linking to `docs/features.md`, the canonical full prose list. A user-facing
   feature change updates both. The README deliberately carries **no version number** - it would
   drift; the version lives in `version.json` and the changelog.
+- **`docs/plans/`** holds implementation plans: how a design becomes code, task by task, test
+  first. A plan is written when its turn comes, committed before the work it describes starts, and
+  its status in `docs/plans/README.md` updated when that work lands.
 - **`docs/decisions/`** gets a new record when a choice constrains later work **and** its reasoning
   would otherwise have to be reconstructed from the diff. Both halves matter: a choice nobody will
   question needs no record, and a record that states only the conclusion is an opinion with a date
