@@ -33,7 +33,8 @@ export function projectCss(theme: ResolvedTheme): string {
     if (style === undefined) continue;
     const declarations: string[] = [];
     if (style.bold !== undefined) declarations.push(`font-weight: ${style.bold ? 700 : 400}`);
-    if (style.italic !== undefined) declarations.push(`font-style: ${style.italic ? 'italic' : 'normal'}`);
+    if (style.italic !== undefined)
+      declarations.push(`font-style: ${style.italic ? 'italic' : 'normal'}`);
     if (declarations.length > 0) rules.push(`.aw-mark-${mark} { ${declarations.join('; ')}; }`);
   }
 

@@ -28,7 +28,10 @@ export function runFormat(
   for (const mark of marks) {
     const style = theme.characterStyles[mark];
     if (style === undefined) {
-      throw new ThemeError('unknown-mark', `Mark "${mark}" has no character style in theme "${theme.id}"`);
+      throw new ThemeError(
+        'unknown-mark',
+        `Mark "${mark}" has no character style in theme "${theme.id}"`,
+      );
     }
     if (style.bold !== undefined) bold = style.bold;
     if (style.italic !== undefined) italic = style.italic;

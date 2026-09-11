@@ -40,7 +40,8 @@ describe('theme schema', () => {
 
   it('requires every default to be stated, because defaults end every inheritance chain', () => {
     const theme = exampleTheme();
-    const { lineSpacing: _dropped, ...partial } = theme.defaults;
+    const partial: Record<string, unknown> = { ...theme.defaults };
+    delete partial['lineSpacing'];
     expect(() => themeSchema.parse({ ...theme, defaults: partial })).toThrow();
   });
 });

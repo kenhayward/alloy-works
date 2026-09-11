@@ -109,7 +109,10 @@ export function resolveTheme(input: unknown): ResolvedTheme {
 
   const checkTypeface = (id: string, where: string): void => {
     if (typefaces[id] === undefined) {
-      throw new ThemeError('unknown-typeface', `${where} uses typeface "${id}", which the theme does not declare`);
+      throw new ThemeError(
+        'unknown-typeface',
+        `${where} uses typeface "${id}", which the theme does not declare`,
+      );
     }
   };
   checkTypeface(theme.defaults.typeface, 'The defaults');
