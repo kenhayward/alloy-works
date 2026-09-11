@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                            | One renderer, two deliveries                                  | Accepted |
 | [0004](0004-brand-assets-and-packaging.md)                             | Brand assets and desktop packaging                            | Accepted |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)              | A purpose-built node-and-mark content model                   | Accepted |
+| [0018](0018-realtime-one-push-channel-postgres-fan-out.md)             | Realtime: one push channel, fanned out through Postgres       | Accepted |
 | [0017](0017-relationships-in-postgres-traversed-by-recursive-sql.md)   | Relationships in Postgres, traversed by recursive SQL         | Accepted |
 | [0016](0016-search-in-postgres-behind-one-interface.md)                | Search in Postgres, behind one interface                      | Accepted |
 | [0015](0015-word-output-our-own-writer-reflowable.md)                  | Word output: our own writer, reflowable by design             | Accepted |

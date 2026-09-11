@@ -55,12 +55,18 @@ that were never exposed.
 
 ## 5. Realtime
 
-| ID          | Requirement                                                                                                                       | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **API-014** | Presence, locks, notifications and streaming model responses must be specified separately from OpenAPI, which cannot express them | T3         | Specified |
-| **API-015** | That specification must be as authoritative as the OpenAPI one, and must be tested the same way                                   | T3         | Specified |
-| **API-016** | A realtime connection must authenticate and authorise exactly as a request does, and must re-check on reconnect                   | Constraint | Specified |
-| **API-017** | Realtime delivery must be at-least-once with client-side de-duplication, or must state plainly that it is not                     | T3         | Specified |
+| ID          | Requirement                                                                                                                                                              | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
+| **API-014** | Presence, locks, notifications and streaming model responses must be specified separately from OpenAPI, which cannot express them                                        | T3         | Specified |
+| **API-015** | That specification must be as authoritative as the OpenAPI one, and must be tested the same way                                                                          | T3         | Specified |
+| **API-016** | A realtime connection must authenticate and authorise exactly as a request does, and must re-check on reconnect                                                          | Constraint | Specified |
+| **API-017** | Realtime delivery must be at-least-once with client-side de-duplication, or must state plainly that it is not                                                            | T3         | Specified |
+| **API-035** | A realtime client must converge on the current state from a snapshot on every connect and reconnect, so that no missed event can leave it wrong                          | T3         | Specified |
+| **API-036** | A change to presence, a lock or the inbox must reach every connected viewer entitled to it within a stated interval - provisionally p95 of 250ms, never above one second | Constraint | Specified |
+
+**API-035 is how API-017 is answered.** Individual realtime events are not guaranteed and are not
+replayed; the picture on a screen is, because it is rebuilt from a snapshot whenever the connection
+is. Anything a person must not miss - a notification - is a row in their inbox, not an event.
 
 **API-014 exists because a specification that is complete only on paper is worse than an incomplete
 one.** Presence and streaming are the parts a client integrator most needs described, and pretending
@@ -113,12 +119,12 @@ be individually reasonable.
 
 ## 10. Open questions
 
-| ID          | Question                                                                                                                                | What would settle it                                             |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **API-Q01** | **Which realtime transport, and is it one channel or several?** Open decision 7 in scope §10                                            | A spike once the collaboration requirements are being built      |
-| **API-Q02** | **How many MCP tools is the right number (API-024)?** Too few and an agent cannot do the job; too many and it does none of them well    | Evaluation against real tasks, which is the only way to find out |
-| **API-Q03** | **Where do extensions run?** In-process is fast and dangerous; out-of-process is safe and slow, and both are a support burden           | The architecture, and how much a connector is expected to do     |
-| **API-Q04** | **Is the API public, or for integrators under contract?** It changes what deprecation costs and how much the specification must promise | A commercial decision as much as a technical one                 |
+| ID          | Question                                                                                                                                | What would settle it                                                                                                                                                                                                                                                                                          |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API-Q01** | **Which realtime transport, and is it one channel or several?** Open decision 7 in scope §10                                            | **Settled** by a spike. One Server-Sent Events stream per open document for presence, locks and notification nudges, fanned out through Postgres `LISTEN`/`NOTIFY`; model output streams on the request that asked for it. See [ADR-0018](../../decisions/0018-realtime-one-push-channel-postgres-fan-out.md) |
+| **API-Q02** | **How many MCP tools is the right number (API-024)?** Too few and an agent cannot do the job; too many and it does none of them well    | Evaluation against real tasks, which is the only way to find out                                                                                                                                                                                                                                              |
+| **API-Q03** | **Where do extensions run?** In-process is fast and dangerous; out-of-process is safe and slow, and both are a support burden           | The architecture, and how much a connector is expected to do                                                                                                                                                                                                                                                  |
+| **API-Q04** | **Is the API public, or for integrators under contract?** It changes what deprecation costs and how much the specification must promise | A commercial decision as much as a technical one                                                                                                                                                                                                                                                              |
 
 ## 11. Traceability
 

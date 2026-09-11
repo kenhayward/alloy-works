@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.17 - 2026-09-11 (PR #22)
+
+How the screen stays live, decided after measuring it - the last of the open architecture decisions.
+
+### Added
+
+- A decision that each open document keeps one live connection to the service, which tells it who
+  else is there, which parts are being edited and when a notification arrives. It works through
+  ordinary web connections, so it should get through the corporate networks this market uses.
+- A test with 5,000 people on two servers delivered every update to exactly the people allowed to see
+  it, typically within a few thousandths of a second, and nothing reached anyone who should not have
+  had it.
+- If a server stops, the people on it reconnect on their own, and within a few seconds their screens
+  show the true state again: who holds which component, and who is where.
+- Presence shows which component each person is in and whether they are reading, reviewing or
+  writing. It does not show live cursors.
+- Someone working in a part of a document you cannot see appears only as being in the document.
+- Answers from the AI assistant stream onto your screen as they are written, and stop the moment you
+  leave.
+- The design for live updates, two new requirements, and one thing the product will not do.
+
+### Changed
+
+- The project scope now says what comes next, now that every open architecture decision is settled:
+  review the requirements, finish the designs the first release needs, then build it.
+
 ## 0.2.16 - 2026-09-11 (PR #21)
 
 How links between things are stored and followed, decided after measuring it.
