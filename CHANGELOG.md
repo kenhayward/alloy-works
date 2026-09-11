@@ -16,11 +16,14 @@ The groundwork every part of the service will be built on, designed before any o
   customer's own domain can be added later.
 - How signing in, staying signed in and signing out work: sessions end the moment you sign out, are
   revoked or are disabled, on every device at once, and no password is ever stored.
+- Sign in with a Google account, personal or work, for trials, demonstrations and development
+  environments that have no company sign-in yet. Nothing needs setting up; only people you invite, or
+  people from work domains you name, can get in.
 - A safeguard at the heart of the service: every request can only ever reach its own environment's
   data, and a mistake in the code produces an error rather than someone else's information.
 - The conventions every part of the service's interface follows, so that the application, other
   systems and the published interface description can never disagree.
-- The design for these foundations, a decision record, and two new requirements.
+- The design for these foundations, a decision record, and three new requirements.
 
 ## 0.2.18 - 2026-09-11 (PR #23)
 

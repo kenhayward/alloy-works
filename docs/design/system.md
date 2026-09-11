@@ -98,8 +98,9 @@ workers alike, so a rule cannot be implemented twice and drift.
 ### Signing in
 
 The hostname names the tenant; the service redirects to the identity provider the tenant or its
-organisation configures, over OpenID Connect, or to Google where the tenant permits it (ADR-0009), and
-holds no password of any kind. The session it issues lives in that tenant's schema; every request and
+organisation configures, over OpenID Connect, or to Google where the tenant permits it (ADR-0009) -
+the route a proof of concept or a demonstration uses, returning through one central `signin.<domain>`
+because Google accepts only exact return addresses - and holds no password of any kind. The session it issues lives in that tenant's schema; every request and
 every realtime stream after that is authorised against it (API-016), and every database access
 assumes the tenant's role for one transaction. See [service-foundations.md](service-foundations.md).
 

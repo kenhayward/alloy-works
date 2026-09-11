@@ -42,6 +42,13 @@ Kysely; migrations are plain SQL applied to every schema by a runner of our own.
 - **Hostnames are data.** A platform table maps any hostname to a tenant. The default is two levels,
   `acme.<domain>` and `dev.acme.<domain>`, with certificates issued per organisation; a customer's own
   domain is a row later.
+- **Two sign-in routes, both first-class.** The organisation's own OpenID Connect provider, redirecting
+  to each environment's hostname; and Google accounts, for proofs of concept, demonstrations,
+  development environments and small customers, through one Google client the product registers.
+  Google accepts only exact redirect URIs, so it returns to one central `signin.<domain>`, which hands
+  the result to the environment through a one-time code. A tenant accepting Google admits only
+  addresses it invited and Workspace domains it names. Developers and CI use a stand-in provider in the
+  compose file, through the same code path.
 - **Sessions and API tokens live in the tenant's schema**, as hashes of random tokens, checked on every
   request. The hostname chooses where to look; the session found is the authority.
 - **`SET LOCAL ROLE` per transaction.** The service and workers log in as roles with no right to any
@@ -78,8 +85,9 @@ Kysely; migrations are plain SQL applied to every schema by a runner of our own.
   a realtime event - is the skeleton's test.
 - **PostgreSQL 16 or later is required**, for role membership that can be assumed but not inherited. Any
   managed Postgres chosen with hosting must offer it, as well as pgvector.
-- Two requirements follow: IAM-052 (an organisation grouping tenants, sharing configuration but never
-  content) and IAM-053 (each tenant at its own hostname).
+- Three requirements follow: IAM-052 (an organisation grouping tenants, sharing configuration but
+  never content), IAM-053 (each tenant at its own hostname) and IAM-054 (a tenant accepting Google
+  accounts saying who may enter by that route).
 - Each environment registers its own redirect URI with the customer's identity provider, which the
   sign-in instructions for administrators must say plainly.
 - Scope §6's container hierarchy gains the organisation above the tenant.

@@ -24,29 +24,30 @@ generated from them and committed, and the renderer's client is generated from t
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **IAM-003** | Authority comes from the session found; the hostname only chooses where to look, and a session exists only in the tenant that issued it |
-| **IAM-004** | A shared harness gives every route a test that signs in to one tenant and calls with another's hostname and ids, and must be refused    |
-| **IAM-007** | Sign-in is the OpenID Connect authorisation code flow with PKCE, against the provider the tenant or its organisation configures         |
-| **IAM-034** | An API token is a row with explicit scopes, a subset of its creator's, and an expiry that cannot be left unset                          |
-| **IAM-035** | A token or session is checked against its row on every request, so deleting the row revokes it at once                                  |
-| **IAM-039** | Signing out deletes the session row, which ends it in every browser and device presenting that cookie                                   |
-| **IAM-041** | Google is one more OpenID Connect provider, available to any tenant whose permitted routes include it                                   |
-| **IAM-042** | There is no credential table: principals are identified by their provider's issuer and subject, and no password field exists anywhere   |
-| **IAM-043** | Each tenant records the routes it permits; sign-in offers only those, and closing one ends the sessions it issued                       |
-| **IAM-044** | Sign-in requests `openid`, `email` and `profile` and nothing else, and a test pins the scope list                                       |
-| **IAM-052** | An organisation groups tenants for billing, administration and a shared provider configuration, and holds no content                    |
-| **IAM-053** | A hostname table maps any hostname to a tenant: two-level names by default, and a customer's own domain later through the same table    |
-| **API-001** | The renderer calls the service only through the client generated from the committed OpenAPI document                                    |
-| **API-002** | Routes are zod schemas; the OpenAPI document is generated from them at build, committed, and the client types generated from it         |
-| **API-003** | CI regenerates the document and fails on any difference; Fastify validates every response against its schema in tests                   |
-| **API-005** | Every error is one JSON shape with a stable `code`, a message, and the request's trace id                                               |
-| **API-006** | The error shape names what failed and, where a rule refused it, the rule's identifier                                                   |
-| **API-007** | Listings take and return an opaque cursor over a stable order; offsets are never accepted                                               |
-| **API-008** | A mutating request with an `Idempotency-Key` records its response per tenant, and a repeat returns the recorded response                |
-| **API-010** | Every path begins with its major version, `/v1`; a breaking change is a new version                                                     |
-| **API-012** | Response schemas are open - generated clients ignore fields they do not know - and adding a field is never a new version                |
+| ID          | How it is met                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IAM-003** | Authority comes from the session found; the hostname only chooses where to look, and a session exists only in the tenant that issued it                 |
+| **IAM-004** | A shared harness gives every route a test that signs in to one tenant and calls with another's hostname and ids, and must be refused                    |
+| **IAM-007** | The organisation's provider is an OpenID Connect authorisation code flow with PKCE, redirecting to each environment's own hostname                      |
+| **IAM-034** | An API token is a row with explicit scopes, a subset of its creator's, and an expiry that cannot be left unset                                          |
+| **IAM-035** | A token or session is checked against its row on every request, so deleting the row revokes it at once                                                  |
+| **IAM-039** | Signing out deletes the session row, which ends it in every browser and device presenting that cookie                                                   |
+| **IAM-041** | The Google route needs no customer configuration: one product-registered client, returning through `signin.<domain>` to the environment                 |
+| **IAM-042** | There is no credential table: principals are identified by their provider's issuer and subject, and no password field exists anywhere                   |
+| **IAM-043** | Each tenant records the routes it permits; sign-in offers only those, and closing one ends the sessions it issued                                       |
+| **IAM-044** | Sign-in requests `openid`, `email` and `profile` and nothing else, and a test pins the scope list                                                       |
+| **IAM-054** | A tenant accepting Google accounts admits only the addresses it invited and the Workspace domains it names; an invitation binds once, by verified email |
+| **IAM-052** | An organisation groups tenants for billing, administration and a shared provider configuration, and holds no content                                    |
+| **IAM-053** | A hostname table maps any hostname to a tenant: two-level names by default, and a customer's own domain later through the same table                    |
+| **API-001** | The renderer calls the service only through the client generated from the committed OpenAPI document                                                    |
+| **API-002** | Routes are zod schemas; the OpenAPI document is generated from them at build, committed, and the client types generated from it                         |
+| **API-003** | CI regenerates the document and fails on any difference; Fastify validates every response against its schema in tests                                   |
+| **API-005** | Every error is one JSON shape with a stable `code`, a message, and the request's trace id                                                               |
+| **API-006** | The error shape names what failed and, where a rule refused it, the rule's identifier                                                                   |
+| **API-007** | Listings take and return an opaque cursor over a stable order; offsets are never accepted                                                               |
+| **API-008** | A mutating request with an `Idempotency-Key` records its response per tenant, and a repeat returns the recorded response                                |
+| **API-010** | Every path begins with its major version, `/v1`; a breaking change is a new version                                                                     |
+| **API-012** | Response schemas are open - generated clients ignore fields they do not know - and adding a field is never a new version                                |
 
 IAM-002, isolation at the data layer across every container, is owned by [system.md](system.md); the
 database roles below are how the service and workers meet it.
@@ -72,16 +73,84 @@ certificate for `*.acme.<domain>` is issued automatically when an organisation i
 
 ## Signing in
 
-1. The hostname gives the tenant; the tenant gives its permitted routes (IAM-043) and the providers
-   configured for it or its organisation.
-2. The service starts the OpenID Connect authorisation code flow with PKCE, requesting `openid`,
-   `email` and `profile` only (IAM-044). Each hostname is registered as its own redirect URI, which a
-   customer's provider sees as one application per environment - the separation their own change
-   control usually wants anyway.
+There are two routes in, and a tenant declares which it permits (IAM-043). Both are OpenID Connect
+authorisation code flows with PKCE, requesting `openid`, `email` and `profile` and nothing else
+(IAM-044); what differs is whose provider it is and who may come through it.
+
+| Route                           | For                                                                              | Needs from the customer                         |
+| ------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **The organisation's provider** | Any customer with a directory: Entra ID, Okta, Google Workspace as a provider    | An application registration per environment     |
+| **Google accounts**             | Proofs of concept, demonstrations, development environments, and small customers | Nothing but the addresses of the people invited |
+
+### The organisation's own provider
+
+1. The hostname gives the tenant; the tenant gives the provider configured for it or its organisation.
+2. The service redirects to the provider with this hostname as the redirect URI. Each environment's
+   hostname is registered with the provider as its own application - the separation a customer's
+   own change control usually wants anyway.
 3. On return, the principal is found in the tenant's schema by the provider's issuer and subject,
    never by email address, which can be reassigned. A first sign-in creates the principal where the
-   tenant's policy allows it.
-4. A session row is written in the tenant's schema and its token set in a cookie.
+   tenant's policy allows it; group claims map to roles (IAM-009).
+4. A session row is written in the tenant's schema and its token set in the tenant's cookie.
+
+### Google accounts
+
+This is the route that lets a customer start before any federation exists (IAM-041, ADR-0009): a
+proof of concept or a demonstration is a tenant created with **the Google route only and its first
+administrator invited by address**, and it can be working the same afternoon. Any Google account
+works - a personal one or a Workspace one - through **one Google client the product registers once**,
+so the customer configures nothing. Asking only for basic scopes is what keeps that client out of
+Google's app verification.
+
+**Google accepts only exact redirect URIs, never a pattern**, and every environment has its own
+hostname. So Google always returns to one address, `signin.<domain>`, which hands the result back to
+the environment that asked:
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant T as dev.acme.<domain>
+    participant C as signin.<domain>
+    participant G as Google
+    B->>T: sign in with Google
+    T->>T: record the attempt in the tenant: nonce, PKCE verifier, expiry
+    T->>B: redirect to Google, state names the tenant and the attempt (signed)
+    B->>G: consent
+    G->>B: redirect to signin.<domain> with a code
+    B->>C: code and state
+    C->>C: verify the state's signature and the attempt; exchange the code;<br/>check the ID token: audience, issuer, expiry, nonce, verified email
+    C->>C: admit or refuse by the tenant's Google policy; write a one-time<br/>hand-off code in the tenant, valid for sixty seconds
+    C->>B: redirect to dev.acme.<domain> with the hand-off code
+    B->>T: hand-off code
+    T->>T: consume the code once; write the session
+    T->>B: set __Host-aw_session
+```
+
+`signin.<domain>` is the same service answering another hostname; it holds no session and sets no
+cookie of its own. It redirects only to a hostname that `tenant_hostname` maps to the tenant the state
+names, so it cannot be used to send anyone elsewhere.
+
+**Being able to sign in to Google is not permission to enter** (IAM-054). Every Google account can
+authenticate, so a tenant that accepts the route says who may come through it:
+
+- **Invited addresses.** An invitation names an email address. The first sign-in whose ID token
+  carries that address as verified binds the invitation to that Google account's subject; from then
+  on the principal is found by issuer and subject alone, so a later change of address, or somebody
+  else acquiring it, changes nothing.
+- **Named Workspace domains**, optionally. A tenant may admit any account whose token carries one of
+  its domains in the hosted-domain claim, which Google sets only for Workspace accounts that domain
+  manages. A personal account never matches one.
+
+When the customer's own provider arrives, the tenant closes the Google route, which ends every session
+it issued (IAM-043).
+
+### On developers' machines and in CI
+
+The compose file includes a **stand-in OpenID Connect provider** with a handful of fictitious users,
+configured as the development tenant's provider. Local development and every automated test go
+through the same code path as production - there is no bypass in the service, and no credential of
+the product's own (IAM-042). The stand-in exists only in the compose file; no deployed tenant is
+configured with it.
 
 The same human in three tenants is three principals (IAM-Q06): each tenant knows only its own.
 
@@ -239,12 +308,16 @@ client and a development proxy to the service.
   resumes on the next run; a new tenant ends at the same version as every other.
 - **The contract**: the regenerated OpenAPI document equals the committed one.
 - **The scopes**: sign-in requests exactly `openid email profile`.
+- **The Google route**: an uninvited account is refused; a personal account never matches a named
+  Workspace domain; a hand-off code works once and not after sixty seconds; a tampered state is
+  refused; and `signin.<domain>` will not redirect to a hostname the state's tenant does not own.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                           |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | How a user disabled at their provider loses access at once (IAM-010): OpenID Connect back-channel logout, periodic re-validation, or SCIM. Server-side sessions make each possible |
-| New | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                         |
-| New | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                          |
-| New | Where secrets live in production, which is decided with hosting                                                                                                                    |
+| ID  | Question                                                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| New | How a user disabled at their provider loses access at once (IAM-010): OpenID Connect back-channel logout, periodic re-validation, or SCIM. Server-side sessions make each possible   |
+| New | Whether a tenant may override its organisation's provider configuration, or only choose among the organisation's providers                                                           |
+| New | How many Google-route tenants one product-registered Google client can serve before Google's quotas or review expectations change, which a demonstration programme would reach first |
+| New | How long migrating every tenant takes at a few thousand tenants, and how much parallelism the runner may use without starving the service                                            |
+| New | Where secrets live in production, which is decided with hosting                                                                                                                      |
