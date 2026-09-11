@@ -20,6 +20,15 @@ export function createHttp(options: HttpOptions): FastifyInstance {
     logger: {
       level: options.logLevel,
       redact: ['req.headers.authorization', 'req.headers.cookie'],
+      // The request line without its query string: a sign-in callback carries an authorisation
+      // code, which is a credential for as long as it lives.
+      serializers: {
+        req: (request: { method: string; url: string; host: string }) => ({
+          method: request.method,
+          url: request.url.replace(/\?.*/s, ''),
+          host: request.host,
+        }),
+      },
       ...(options.logStream ? { stream: options.logStream } : {}),
     },
     genReqId: () => randomUUID(),

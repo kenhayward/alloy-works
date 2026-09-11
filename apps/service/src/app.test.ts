@@ -12,6 +12,8 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { createOidcClient } from './oidc.js';
+import { environmentSecrets } from './secrets.js';
 
 describe('the service', () => {
   let db: TestDatabase;
@@ -42,7 +44,13 @@ describe('the service', () => {
         done();
       },
     });
-    app = buildApp({ db: tenantDb, logLevel: 'info', logStream });
+    app = buildApp({
+      db: tenantDb,
+      logLevel: 'info',
+      logStream,
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({}),
+    });
   });
 
   afterAll(async () => {
