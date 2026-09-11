@@ -631,6 +631,7 @@ Stated explicitly so nobody has to infer them.
 | 15  | **History is a relational, append-only version chain with hashed content**                   | Baseline pins are real foreign keys, so refusing to delete something a baseline needs is the database's job rather than application code's. Iterations live in a separate store with a time to live that nothing references. Derived data, embeddings included, is keyed by content hash rather than by version. See [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md)                                   |
 | 16  | **Typst renders the PDF, from data, through one fixed template**                             | The only one of four open-source engines to pass all four gates. It is given the resolved document as JSON and never Typst source, so no content can execute; fonts come only from the files a baseline pins; the engine version is recorded with every publication. Narrows ADR-0005: XHTML stays an export. See [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)                       |
 | 17  | **Word output is our own writer, and it reflows**                                            | Written in `packages/domain` from the same resolved document as the PDF, styled by the theme's Word projection. Word lays out its own pages, so the PDF is the paged record; anything showing a page number is a field Word refreshes on opening, and equations are native Word equations from the same maths tree as the PDF. See [ADR-0015](../decisions/0015-word-output-our-own-writer-reflowable.md)                       |
+| 18  | **Search is Postgres alone, behind one interface**                                           | Words and meaning in the tenant's own schema, in one query, restricted by the same permission predicate before anything is ranked, and returned as one list labelled by what matched. No second copy of the content to keep in step or to reproduce permissions in. Ranking may use tenant-wide statistics, a stated residual risk. See [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md)                |
 
 **On the existing repository.** [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md) still
 stands, but decision 2 narrows its premise: the desktop delivery no longer has a capability
@@ -649,13 +650,14 @@ The storage and version model used to head this list too; it is now settled in
 no step log. The pagination and PDF engine was the last irreversible decision; it is now settled
 in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), after
 [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) ran all nine of its cases. What remains
-below is reversible.
+below is reversible. Search infrastructure has since been settled too, in
+[ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md), after a short spike on
+the one risk the chosen shape carried.
 
-| #   | Decision                  | What it hinges on                                                                                                                             |
-| --- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Search infrastructure** | Whether full-text and semantic search are one system or two, and how the permission filter is applied at query time without leaking existence |
-| 2   | **Relationship storage**  | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume                                                                |
-| 3   | **Realtime transport**    | Presence, locks, notifications and streaming, and whether one channel serves all four                                                         |
+| #   | Decision                 | What it hinges on                                                                     |
+| --- | ------------------------ | ------------------------------------------------------------------------------------- |
+| 1   | **Relationship storage** | Recursive SQL or a graph store. Hinges on realistic traversal depth and volume        |
+| 2   | **Realtime transport**   | Presence, locks, notifications and streaming, and whether one channel serves all four |
 
 ## 11. Cross-cutting requirements
 
