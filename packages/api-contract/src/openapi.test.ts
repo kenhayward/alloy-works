@@ -71,4 +71,10 @@ describe('the OpenAPI document', () => {
     const signedOut = operation('/v1/sign-out', 'post').responses['204'];
     expect(signedOut).toEqual({ description: 'Signed out, everywhere this session was in use' });
   });
+
+  it('marks a query parameter required when the schema requires it', () => {
+    expect(operation('/v1/sign-in/google/complete', 'get').parameters).toEqual([
+      { name: 'code', in: 'query', required: true, schema: { type: 'string' } },
+    ]);
+  });
 });

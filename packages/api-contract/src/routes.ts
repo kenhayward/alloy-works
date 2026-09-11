@@ -1,5 +1,5 @@
 import type { RouteContract } from './contract.js';
-import { ErrorBody, Health, Me, SignInCallback, TenantProfile } from './schemas.js';
+import { ErrorBody, GoogleHandoff, Health, Me, SignInCallback, TenantProfile } from './schemas.js';
 
 /** The API's major version, as in `/v1`. It changes only with a breaking change (API-010). */
 export const API_VERSION = '1';
@@ -14,6 +14,11 @@ const unauthenticated = {
 
 const routeClosed = {
   description: 'This environment does not permit signing in this way',
+  schema: ErrorBody,
+} as const;
+
+const signInFailed = {
+  description: 'The sign-in could not be completed',
   schema: ErrorBody,
 } as const;
 
@@ -61,7 +66,7 @@ export const routes = {
     query: SignInCallback,
     responses: {
       302: { description: 'Signed in, and on to the application' },
-      401: { description: 'The sign-in could not be completed', schema: ErrorBody },
+      401: signInFailed,
     },
   },
   startGoogleSignIn: {
@@ -74,6 +79,35 @@ export const routes = {
     responses: {
       302: { description: 'On to Google' },
       404: routeClosed,
+    },
+  },
+  finishGoogleSignIn: {
+    operationId: 'finishGoogleSignIn',
+    method: 'GET',
+    path: '/v1/sign-in/google/callback',
+    summary:
+      'Where Google returns, at the sign-in address only; hands the sign-in to its environment',
+    tenantScoped: false,
+    authenticated: false,
+    query: SignInCallback,
+    responses: {
+      302: { description: 'Admitted, and on to the environment that asked, with a one-time code' },
+      401: signInFailed,
+      403: { description: 'This account is not invited to that environment', schema: ErrorBody },
+      404: { description: 'This is not the sign-in address', schema: ErrorBody },
+    },
+  },
+  completeGoogleSignIn: {
+    operationId: 'completeGoogleSignIn',
+    method: 'GET',
+    path: '/v1/sign-in/google/complete',
+    summary: 'Redeems the one-time code from the sign-in address, and signs in',
+    tenantScoped: true,
+    authenticated: false,
+    query: GoogleHandoff,
+    responses: {
+      302: { description: 'Signed in, and on to the application' },
+      401: signInFailed,
     },
   },
   signOut: {

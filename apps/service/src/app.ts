@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import {
   routes,
   SESSION_COOKIE,
+  type GoogleHandoff,
   type RouteContract,
   type SignInCallback,
 } from '@alloy-works/api-contract';
@@ -11,6 +12,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
+import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
 import {
   SignInFailed,
@@ -28,7 +30,7 @@ import {
   SESSION_POLICY,
   type SessionPrincipal,
 } from './sessions.js';
-import { signState } from './sign-in-state.js';
+import { signState, verifyState } from './sign-in-state.js';
 import { cachedResolver } from './tenants.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
@@ -55,6 +57,9 @@ export const SIGN_IN_COOKIE = '__Host-aw_signin';
 const SIGN_IN_ATTEMPT_MS = 10 * 60 * 1000;
 const CALLBACK_PATH = '/v1/sign-in/organisation/callback';
 const GOOGLE_CALLBACK_PATH = '/v1/sign-in/google/callback';
+const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
+/** How long a hand-off code lives: one redirect's worth. */
+const HANDOFF_MS = 60 * 1000;
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
 
 type Success<R extends RouteContract> = R['responses'] extends {
@@ -96,6 +101,8 @@ const routeClosed = () =>
     'This environment does not permit signing in this way.',
     'IAM-043',
   );
+
+const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
 
 /**
  * The service: the contract's routes and nothing else. Every route in `routes` must have a handler
@@ -296,6 +303,83 @@ export function buildApp(options: AppOptions): FastifyInstance {
       await recordAttempt(tenant, 'google', hashToken(attempt), start);
       reply.setCookie(SIGN_IN_COOKIE, attempt, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
       return reply.redirect(start.url, 302);
+    },
+
+    finishGoogleSignIn: async (request, reply) => {
+      const { google } = options;
+      // The same service answers here, at the one address Google returns to, and only here.
+      if (!google || request.host.toLowerCase() !== google.signInHost) throw notFound();
+      const query = request.query as SignInCallback;
+      const claimed = query.state ? verifyState(secret('sign_in_state'), query.state) : undefined;
+      if (query.error || !query.code || !query.state || !claimed) throw signInFailed();
+      const state = query.state;
+      // Signed or not, the state's address must belong to the state's environment: that is what
+      // keeps the sign-in address from sending anyone anywhere else.
+      const tenant = await tenants.resolve(new URL(`http://${claimed.host}`).hostname);
+      if (!tenant || tenant.id !== claimed.tenant) throw signInFailed();
+      request.log = request.log.child({ tenant: tenant.id });
+      reply.log = request.log;
+      const attempt = await takeAttempt(tenant, 'google', hashToken(claimed.attempt));
+      if (!attempt || !(await permits(tenant, 'google'))) throw signInFailed();
+      const identity = await finishAt(request, googleProvider(google), {
+        state,
+        nonce: attempt.nonce,
+        codeVerifier: attempt.code_verifier,
+      });
+      const code = randomBytes(32).toString('base64url');
+      const admitted = await db.withTenant(tenant, async (trx) => {
+        const principalId = await admitGoogleAccount(trx, identity);
+        if (principalId === undefined) return false;
+        // The hand-off names the attempt, so only the browser holding that attempt's cookie can
+        // redeem it at the environment.
+        await trx
+          .insertInto('sign_in_handoff')
+          .values({
+            code_hash: hashToken(code),
+            principal_id: principalId,
+            attempt_hash: attempt.state_hash,
+            expires_at: new Date(Date.now() + HANDOFF_MS),
+          })
+          .execute();
+        return true;
+      });
+      if (!admitted) {
+        throw new AppError(
+          403,
+          'not_invited',
+          'This account is not invited to that environment.',
+          'IAM-054',
+        );
+      }
+      return reply.redirect(
+        `${request.protocol}://${claimed.host}${GOOGLE_COMPLETE_PATH}?code=${code}`,
+        302,
+      );
+    },
+
+    completeGoogleSignIn: async (request, reply) => {
+      const tenant = tenantOf(request);
+      const { code } = request.query as GoogleHandoff;
+      const bound = request.cookies[SIGN_IN_COOKIE];
+      reply.clearCookie(SIGN_IN_COOKIE, COOKIE);
+      // Deleted as it is read, like an attempt: a hand-off code is used once.
+      const handoff = await db.withTenant(tenant, (trx) =>
+        trx
+          .deleteFrom('sign_in_handoff')
+          .where('code_hash', '=', hashToken(code))
+          .returningAll()
+          .executeTakeFirst(),
+      );
+      // Only in the browser that started: its cookie is the attempt the hand-off was written for.
+      if (
+        !handoff ||
+        handoff.expires_at <= new Date() ||
+        !bound ||
+        !sameValue(hashToken(bound), handoff.attempt_hash)
+      ) {
+        throw signInFailed();
+      }
+      return signInAs(reply, tenant, handoff.principal_id, 'google');
     },
 
     signOut: async (request, reply) => {
