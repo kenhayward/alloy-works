@@ -1,7 +1,8 @@
 # Publishing engine spike
 
-> **Status: proposed, not run.** The brief for the second irreversible decision named in
-> [`Project_Scope.md`](Project_Scope.md) §10. It follows the shape of
+> **Status: gates run; cases 5 to 9 not yet run.** Findings are in
+> [`Publishing_Engine_Spike_Findings.md`](Publishing_Engine_Spike_Findings.md). The brief for the
+> second irreversible decision named in [`Project_Scope.md`](Project_Scope.md) §10. It follows the shape of
 > [`Content_Model_Spike.md`](Content_Model_Spike.md), which worked: hard cases, named gates, a
 > written finding per case, and a decision record either way.
 
