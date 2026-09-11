@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.3.1 - 2026-09-11 (PR #28)
+
+The plan for the service's first working version.
+
+### Added
+
+- The second of the service's building plans, in full: the service itself, the one published
+  description of its interface it is built from, the single form every error takes, and how it tells
+  which environment a request is for. Each step starts with the test that proves it, and the parts
+  most likely to go wrong were tried out before the plan was written.
+
 ## 0.3.0 - 2026-09-11 (PR #26)
 
 The first piece of the service: the database it will stand on.
