@@ -37,4 +37,38 @@ describe('the OpenAPI document', () => {
   it('carries no JSON Schema dialect markers inside the document', () => {
     expect(JSON.stringify(document)).not.toContain('$schema');
   });
+
+  type Operation = {
+    security: Record<string, string[]>[];
+    parameters?: { name: string; in: string; required: boolean }[];
+    responses: Record<string, { headers?: Record<string, unknown>; content?: unknown }>;
+  };
+  const operation = (path: string, method: string) => document.paths[path]?.[method] as Operation;
+
+  it('says which operations need a session, and how one is presented', () => {
+    expect(document.components.securitySchemes).toEqual({
+      session: { type: 'apiKey', in: 'cookie', name: '__Host-aw_session' },
+    });
+    expect(operation('/v1/me', 'get').security).toEqual([{ session: [] }]);
+    expect(operation('/v1/tenant', 'get').security).toEqual([]);
+  });
+
+  it('describes a redirect by where it goes, with no body', () => {
+    const redirect = operation('/v1/sign-in/organisation', 'get').responses['302'];
+    expect(redirect?.headers).toHaveProperty('Location');
+    expect(redirect?.content).toBeUndefined();
+  });
+
+  it('lists query parameters, required only when the schema requires them', () => {
+    expect(operation('/v1/sign-in/organisation/callback', 'get').parameters).toEqual([
+      { name: 'code', in: 'query', required: false, schema: { type: 'string' } },
+      { name: 'state', in: 'query', required: false, schema: { type: 'string' } },
+      { name: 'error', in: 'query', required: false, schema: { type: 'string' } },
+    ]);
+  });
+
+  it('describes a response with no body by its status alone', () => {
+    const signedOut = operation('/v1/sign-out', 'post').responses['204'];
+    expect(signedOut).toEqual({ description: 'Signed out, everywhere this session was in use' });
+  });
 });
