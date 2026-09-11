@@ -1,20 +1,19 @@
 # Publishing engine spike - findings
 
-> **Status: gates complete, decision not yet taken.** All four gate cases in
-> [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) have run against all four candidates.
-> **Typst is the only candidate that passes all four**, and nothing else passes more than two. It
-> is not yet recorded as a decision, for two reasons stated at the end: the five non-gate cases have
-> not run, and choosing Typst collides with a decision already taken - ADR-0005 makes XHTML the
-> publishing intermediate, and Typst does not read XHTML. That second one is a product call rather
-> than an engineering one.
+> **Status: complete, and decided in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** All nine cases in
+> [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) have run. The four gates ran against all
+> four candidates; **Typst was the only one to pass all four**, and nothing else passed more than two.
+> Cases 5 to 9 then ran against the two finalists, Typst and WeasyPrint, and so did the gates again
+> in the shape the decision prescribes - the resolved document as data, read by one fixed Typst
+> template - because recording a decision on an unmeasured shape is how a case gets declared passed
+> too early.
 >
-> **Three verdicts were nearly declared failed too early.** The first pass reported that no engine
-> carried a passage's language, that Typst dropped six footnotes, and that Typst could not break a
-> table across pages. All three were the harness, not the engines. They are written up below for
-> the same reason the content model spike wrote up the case it declared passed too early.
-
-Only the four gates were in scope for this run, following the depth decision taken for the content
-model spike. Cases 5 to 9 have not been run.
+> **Eight verdicts were nearly declared failed too early**, three in the first round and five in the
+> second. Every one was the harness or the template rather than an engine, and every one was caught
+> by refusing to record a verdict until the page itself had been looked at. They are written up below,
+> because the pattern matters more than any one of them. **Two engine defects survived that scrutiny**,
+> both in WeasyPrint and both silent: a footnote whose opening is set above the top of the page, and a
+> contents entry that prints the wrong page number while its own link goes to the right one.
 
 ## Verdicts
 
@@ -27,6 +26,16 @@ model spike. Cases 5 to 9 have not been run.
 
 \* PagedJS passes only near the front of a long document; headless Chrome is fast at a job it is
 not doing. Both are explained under gate 4.
+
+Cases 5 to 9 ran against the two engines that passed a layout gate and a tagging gate between them.
+
+| Case                                | Typst                                     | WeasyPrint                                                       |
+| ----------------------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| **5** - Mathematics                 | **Pass**                                  | Pass with cost - equations are images                            |
+| **6** - Running heads and numbering | **Pass**                                  | **Pass**                                                         |
+| **7** - Typefaces                   | Pass with cost - warns, does not fail     | Pass with cost - warns, does not fail                            |
+| **8** - The long document           | **Pass** - 1.3 s, every page number right | Pass on budget - 8.7 s; one contents entry prints the wrong page |
+| **9** - Determinism                 | **Pass**, with the timestamp pinned       | **Pass**                                                         |
 
 Under the brief's scoring a gate failure is a cost rather than a disqualification, so each failure
 below says what would have to be built. The costs are not symmetrical, and that is most of the
@@ -206,6 +215,145 @@ already JSON, already the thing every format is produced from - is the natural i
 renderer per format. That would narrow ADR-0005 rather than overturn it: the content model is
 untouched; only its statement about what sits between resolve and render changes.
 
+## Case 5 - Mathematics
+
+**Both pass. Typst sets mathematics; WeasyPrint shows pictures of it, and one consequence is silent.**
+
+An equation in running text, in a heading, in a table cell, in a footnote and in a caption, and two
+numbered display equations with an unnumbered one between them - so the second must be (2), or the
+unnumbered one consumed a number CNT-047 says it must not.
+
+|                                          | WeasyPrint                         | Typst                     |
+| ---------------------------------------- | ---------------------------------- | ------------------------- |
+| All five positions                       | Yes                                | Yes                       |
+| Accessible alternative on every equation | 8 of 8, tagged as Figure           | 8 of 8, tagged as Formula |
+| Numbering: (1), (2), and no (3)          | Yes                                | Yes                       |
+| Equation reachable as text               | No - it is an image                | Yes                       |
+| Heading's bookmark keeps its equation    | **No** - "Summation over a sample" | Yes                       |
+| PDF/UA-1                                 | Pass                               | Pass                      |
+
+WeasyPrint has no mathematics of its own, so equations are typeset by MathJax into SVG and placed as
+images. That works, and it passes the validator. It also means an equation in a heading vanishes
+from the heading's bookmark without a trace: the navigation pane says "Summation over a sample" and
+nobody is told the sum was ever there.
+
+**The LaTeX route into Typst is where the recommended shape was hardest, and it holds.** The content
+model stores LaTeX (CNT-044). Translating LaTeX to Typst source and evaluating it would reopen the hole
+the data shape exists to close, so the route is LaTeX to MathML - which Word needs anyway on its way to
+OMML - and MathML to a small structural tree the template assembles from Typst's own maths functions.
+An element the tree does not recognise fails the build, which is what CNT-049 asks for.
+
+The first render by that route had real typographic defects, and they were the template's, not
+Typst's: operators arrived as strings, and a string set in maths is just text, so `E=mc²` lost its
+spacing, an integral stayed small with its limits stacked, and a bracket would not stretch. Turning
+each operator into a Typst symbol gives it everything Typst knows about that character natively. After
+that the data route and Typst's own markup are indistinguishable by eye.
+
+## Case 6 - Running heads, numbering and front matter
+
+**Both pass, page by page.** A title page without a number, front matter in roman from ii, the body
+restarting at 1 at the first chapter, running heads carrying the current chapter and suppressed where
+a chapter opens, and an appendix numbered A-1 onward. Every element is expressed once, in the theme
+or the template, and nothing in the document repeats it.
+
+One difference a reader will notice: **Typst writes PDF page labels, and WeasyPrint does not.** In
+Typst's output a viewer's page box says "iii" and "A-2", matching the printed numbers. In WeasyPrint's
+it says 5 on a page printed 1, and a reader told to go to page 12 lands on the wrong one.
+
+## Case 7 - Typefaces and embedding
+
+**Both embed and subset correctly. Neither fails when a face is missing - both warn and substitute,
+so the cost is the same for both: the pipeline must treat that warning as a failed publish.**
+
+| A face declared by the theme is missing | What appears instead                 | What is said                                        |
+| --------------------------------------- | ------------------------------------ | --------------------------------------------------- |
+| WeasyPrint                              | Noto Sans, from the system           | A logged warning                                    |
+| Typst, system fonts                     | Libertinus Serif, Typst's own        | A warning, with the line of the theme that named it |
+| Typst, pinned fonts only                | Liberation Serif, the only face left | The same warning                                    |
+
+Typst can be confined to exactly the font files a baseline pins - `--ignore-system-fonts`,
+`--ignore-embedded-fonts`, `--font-path` - which is what STY-047 needs and what makes case 9 hold
+across machines. One consequence: pinning excludes Typst's built-in mathematics face, so a theme's
+pinned set has to include one, as ADR-0010 already expected.
+
+**A second silent failure turned up beside the case, and no setting catches it.** Case 7 asks what
+happens when a face cannot be loaded. It does not ask what happens when a face loads and lacks the
+characters it is asked to set. Tried with an Arabic phrase in a Latin face: with system fonts, Typst
+quietly borrows the glyphs from DejaVu Sans, a face nobody declared; with pinned fonts only, it sets
+five empty boxes. In both cases the exit code is 0 and there is no warning. The document ships with
+words a reader cannot read. The remedy is ours to build, and it is small: before compiling, check that
+every character in the resolved document exists in the theme's pinned faces, and fail if not. That
+is STY-049. It was tested on Typst only; WeasyPrint's font fallback is the same shape and was not
+tried.
+
+## Case 8 - The 300-page document
+
+**Both are well inside the provisional budget. Typst gets every generated page number right; WeasyPrint
+prints one wrong, silently.**
+
+The brief's document: 400 components, 60 figures, 40 tables, 200 footnotes, a generated contents, a
+list of figures, twenty cross-references that print a page number, and fifty references. Timed at a
+quarter, half and full length, each the fastest of three fresh processes.
+
+|                                   | Typst                     | WeasyPrint                   |
+| --------------------------------- | ------------------------- | ---------------------------- |
+| Pages                             | 252                       | 276                          |
+| Publish                           | **1.3 s**                 | 8.7 s                        |
+| Per page at 1/4, 1/2, full length | 5.0, 4.9, 5.1 ms - linear | 27, 30, 32 ms - slowly worse |
+| Peak memory                       | 433 MB                    | 426 MB                       |
+| Contents entries right            | **400 of 400**            | 399 of 400                   |
+| List of figures right             | 60 of 60                  | 60 of 60                     |
+| Cross-references right            | 20 of 20                  | 20 of 20                     |
+
+Scope §11 promises a publish budget and states none; this spike used thirty seconds for 300 pages,
+which PUB-064 now records as provisional. Memory grows linearly in both, at about 1.7 MB a page, so a
+1,000-page document wants something like 1.7 GB of worker - a sizing input rather than a problem.
+
+**WeasyPrint's wrong entry was traced before it was believed.** Heading sec063 sits on page 53. The
+contents line for it prints 54. The link on that same line goes to page 53. So WeasyPrint knew where
+the heading was, and printed a number from an earlier layout pass that it never corrected. One entry
+in four hundred is exactly the rate at which nobody finds it by reading.
+
+## Case 9 - Determinism
+
+**Both pass.** The same input rendered twice on one machine, and once on a second machine of a
+different architecture - x86 and ARM, because publishing runs on servers and an ARM server beside an
+x86 one is the realistic second machine, and the likeliest place for floating-point layout to differ.
+The ARM run used Typst's own aarch64 binary under emulation.
+
+- **Typst, with its creation timestamp pinned** (`SOURCE_DATE_EPOCH`): byte-identical, run to run and
+  across architectures, for all three documents tried. Unpinned, eight lines differ - dates and
+  document identifiers - and every page renders pixel-identical.
+- **WeasyPrint**: byte-identical in every mode, pinned or not.
+
+So the set of fields allowed to differ is empty, provided the pipeline always pins the timestamp. It
+should pin it to the time recorded with the publication, so that re-publishing a baseline reproduces
+the original rather than a copy of it dated today.
+
+## The recommended shape, measured
+
+The decision prescribes something the gates did not test: not Typst markup, but the resolved document
+as JSON, read by one fixed template (`template.typ`) that never changes per document. It was measured
+rather than assumed.
+
+| Gate re-run in the data shape | Result                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| 1 - Tagged PDF                | Pass - PDF/UA-1, and the French passage carried                            |
+| 2 - Footnotes                 | Pass - 20 of 20 on their anchor's page, note 12 split                      |
+| 3 - Table                     | Pass                                                                       |
+| 4 - Preview                   | Pass - an edit reaches page 40 in 0.39 to 0.45 s, against 0.36 s as markup |
+
+**The security property was demonstrated, not asserted.** A paragraph of content reading
+`#read("secret.txt")`, `$x^2$`, `*bold*`, `<label>` and `@ref`, and an equation whose LaTeX carries the
+same call, were rendered with a file called `secret.txt` in the compile root. In the data shape both
+come out as those literal characters and the file is never read. The same text written straight into
+Typst markup, as an emitter that forgot to escape would write it, **printed the file's contents into
+the document**. Typst's own sandbox limits that reach to the compile root, which is why each job must
+compile in a root holding only its own files.
+
+The template is about 130 lines. The data emitter, MathML included, is about 120 lines of Python.
+Neither is large; the cost the decision carries is still the theme, not the code.
+
 ## What the harness nearly got wrong
 
 **Three failures were declared and then withdrawn**, and each was the harness:
@@ -228,6 +376,26 @@ words from the document's own random stream, so everything after the edit came o
 engines without caching that changed nothing; for Typst it turned one edit into a rewrite of the
 remaining two hundred pages. The edit now has its own generator.
 
+## What the harness nearly got wrong, again
+
+The first round withdrew three failures. The second round withdrew five, and four were mine in the
+template or the theme rather than in a check:
+
+- **"Typst gets case 6 wrong from page 8."** A page holding only the tail of a paragraph carried no
+  marker, and the check lost track of which chapter it was in. Typst was right on every page.
+- **"WeasyPrint cannot restart page numbering."** The CSS reset the counter on an element, which
+  WeasyPrint ignores. A page group - `@page body:nth(1 of body)` - does it properly.
+- **"WeasyPrint gets 0 of 400 contents entries right."** The same CSS: an element counter stuck at 1
+  made every page reference read 1. Fixed, it is 399 of 400 - and the one is real.
+- **"Typst puts figure 18 on the wrong page."** The template let every figure break across pages, to
+  let tables do so, and an image parted from its caption. Only tables may break now.
+- **"The data route cannot typeset mathematics properly."** Operators set as strings, above.
+
+**The lesson is the same one twice over, and it is the one the content model spike recorded:** a
+harness that reads its own output proves only that it agrees with itself. Every one of these was
+caught by opening the page before recording the verdict, and every engine defect that remains was
+confirmed the same way.
+
 ## What is a proxy and what is verified
 
 | Claim                                     | How it was established                                                | What would verify it                                                                                              |
@@ -238,11 +406,14 @@ remaining two hundred pages. The edit now has its own generator.
 | WeasyPrint's clipped note                 | Traced to exact coordinates above the page edge                       | **Opening `case2-weasyprint.pdf` at page 6**                                                                      |
 | Timings                                   | One machine: Docker Desktop, 8 vCPUs, neighbours idle; warm processes | A second machine, and a preview measured as the editor would request it                                           |
 | Typst preview in the editor               | Measured as PDF export in watch mode                                  | Typst also renders to SVG, and compiles to WebAssembly - so preview might run in the browser. Neither is measured |
+| Mathematics typeset correctly             | Looked at, rendered to an image, against Typst's native output        | Somebody who reads mathematics for a living                                                                       |
+| Determinism across architectures          | Typst's aarch64 binary under emulation                                | A real ARM server                                                                                                 |
+| WeasyPrint's wrong contents number        | Printed number against the link's own destination                     | **Opening `case8-weasyprint.pdf`**, contents entry sec063, and following the number                               |
 
 The generated documents are synthetic and uniform. Real reports have denser tables, nested lists and
 irregular structure, and the gates should be re-run against a real one before anything is built.
 
-## A requirements gap this exposed
+## Requirements gaps this exposed
 
 **Nothing pins the engine version.** PUB-043 requires the same baseline, layout version and theme
 version to produce the same output, and VER-018 pins every component, asset, theme, typeface and
@@ -255,40 +426,31 @@ It applies whichever engine wins, and it is sharper for a fast-moving one: Typst
 0.14.2, 0.15.0 and 0.15.1 in the last nine months, where PagedJS has had no stable release since
 July 2023. A publication should record the engine and version that produced it, and a baseline
 should be re-publishable on that version for as long as the baseline exists. That is a requirement
-for **VER** and **PUB**, and it belongs in the decision record whichever engine it names.
+for **VER** and **PUB**, and it belongs in the decision record whichever engine it names. It is
+now **PUB-063** and **VER-041**.
 
-## What was not run
+Three more came out of cases 4 to 8, and are now written down:
 
-Cases 5 to 9 - mathematics, running heads and numbering, typefaces, the full 300-page budget, and
-determinism - are the correctness and budget cases. Two of them matter to a Typst decision in
-particular:
+- **A preview budget** (CNT-114) and **a publish budget** (PUB-064), both provisional. CNT-096 and scope
+  §11 each promised a number; neither stated one.
+- **Content reaches the engine as data** (PUB-062), and a page-range preview may be untagged while a
+  publication never is (PUB-061).
+- **Every character must have a glyph in the theme's faces** (STY-049), because no engine setting
+  catches it and the failure is a document with unreadable words in it.
 
-- **Case 7, typefaces.** STY-040 requires a missing typeface to fail the publish. Whether Typst fails
-  or substitutes with a warning has not been tested here.
-- **Case 6, running heads and numbering.** Roman front matter, restarts and section-carrying heads are
-  where CSS Paged Media is strongest; they are expressible in Typst, but not yet shown to be.
+## Decision
 
-Case 5 is likely to favour Typst, which sets mathematics natively; it should still be run.
+**Typst, rendering the resolved document as data through one fixed template.** Recorded in
+[ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), which narrows ADR-0005: XHTML stays a first-class export, and stops being the thing
+between the content model and the PDF.
 
-## Recommendation
-
-**Typst, subject to two things.**
-
-1. **Run cases 5 to 9 against Typst before recording the decision** - with WeasyPrint alongside as
-   the runner-up, since it is the only other engine that passes a layout gate and a tagging gate.
-   Case 7 especially: a typeface that substitutes silently would be the same class of failure as
-   WeasyPrint's footnote, in the engine chosen partly for not having it.
-2. **Decide the intermediate.** Choosing Typst means ADR-0005's statement that XHTML is the
-   publishing intermediate is narrowed by a new record - the resolved content model becomes the
-   intermediate, rendered as data through a fixed Typst template - and the cost of that is a theme
-   model that compiles to both CSS and Typst. That is a product decision as much as an engineering
-   one, because it is where the typographic promises in STY get made twice.
-
-**ADR-0007 is confirmed, not sent back.** The brief said a gate failed by every candidate would be
-the finding that reopens it. No gate was failed by every candidate, and one candidate failed none.
+**ADR-0007 is confirmed, not sent back.** The brief said a gate failed by every candidate would be the
+finding that reopens it. No gate was failed by every candidate, and one candidate failed none.
 
 ## Where the code is
 
 `spikes/publishing-engine/`, outside the pnpm workspace and outside CI - it needs four PDF engines
-and a Java validator. Its README says how to run it. The cases (`cases.py`) and the checks
-(`checks.py`) are the regression suite the brief asks to keep; the rest is scaffolding.
+and a Java validator. Its README says how to run it. The cases (`cases.py`, `cases_more.py`) and the
+checks (`checks.py`, `checks_more.py`) are the regression suite the brief asks to keep, and
+`template.typ` with `typst_data.py` is the first working draft of the shape ADR-0013 prescribes. The
+rest is scaffolding.

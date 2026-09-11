@@ -1,6 +1,6 @@
 # Publishing engine spike
 
-> **Status: gates run; cases 5 to 9 not yet run.** Findings are in
+> **Status: complete; decided in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** Findings are in
 > [`Publishing_Engine_Spike_Findings.md`](Publishing_Engine_Spike_Findings.md). The brief for the
 > second irreversible decision named in [`Project_Scope.md`](Project_Scope.md) §10. It follows the shape of
 > [`Content_Model_Spike.md`](Content_Model_Spike.md), which worked: hard cases, named gates, a

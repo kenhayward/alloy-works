@@ -208,7 +208,8 @@ TYPST_PREAMBLE = """
 #show heading.where(level: 1): set text(size: 18pt)
 #show heading.where(level: 2): set text(size: 14pt)
 #show figure.where(kind: table): set figure.caption(position: top)
-#show figure: set block(breakable: true)
+// Tables may run across pages; an image must never be parted from its caption.
+#show figure.where(kind: table): set block(breakable: true)
 #show table.cell: set text(size: 9.5pt)
 #show footnote.entry: set text(size: 9pt)
 """
