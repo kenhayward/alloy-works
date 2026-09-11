@@ -24,6 +24,11 @@
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
+    },
+    "@alloy-works/service#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
     }
   }
 }
