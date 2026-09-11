@@ -150,9 +150,10 @@ unpredictably, and the size of the gap between what was asked for and what came 
 signal about content the user cannot see. **SCH-Q04 asked whether semantic search needs its own
 permission story; this is the answer, and the answer is that it must not need one.**
 
-It follows that the vector index lives in Postgres beside the content. That constrains the search
-infrastructure decision rather than settling it: how full-text works, and how the two are ranked
-together, remains open as SCH-Q01.
+It follows that the vector index lives in Postgres beside the content. That constrained the search
+infrastructure decision, which [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md)
+has since settled: full-text sits beside the vectors, and [search.md](search.md) designs the two
+together.
 
 **Computing an embedding is a model call.** GEN-031 requires a tenant to be told when a model
 endpoint sits outside its data boundary, and that applies to embedding exactly as it applies to
@@ -183,5 +184,4 @@ half that pays.
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **VER-Q01** | The iteration retention window still has no number behind it, and this design makes the cost of getting it wrong concrete: the sweep is cheap, the storage is not                                                       |
 | **VER-Q03** | Erasure against immutable history. VER-038 points at the resolution - the author is a reference, not a copy - and this design adopts it, but the legal question of what else must go is not answered here               |
-| **SCH-Q01** | Whether full-text and semantic search are one system or two. This design places the vectors; it does not decide the rest                                                                                                |
 | New         | Whether inline JSONB holds up at authoring volumes, which decides when the content store is extracted. A sizing question, answerable by load rather than by argument, and needed before build rather than before design |

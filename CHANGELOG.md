@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.14 - 2026-09-11 (PR #19)
+
+How search will work, decided after measuring it.
+
+### Added
+
+- A decision that search runs inside each organisation's own part of the database, searching by words and by
+  meaning together, rather than in a separate search service holding a second copy of everything.
+  A test organisation of a million components showed it fast enough, provided each search is planned for
+  the person asking and the heaviest ranking work is capped.
+- Results come back as one list, each marked as matching your words, the meaning of your query, or
+  both.
+- What you cannot read stays out of your results, counts and filters. The one thing it may influence
+  is the order of your results, and that is now stated openly rather than promised away.
+- A person who can see only a small part of a large organisation gets a full page of results by
+  meaning, where a common shortcut would have shown them nothing.
+- Very large result counts show as "1,000+" rather than slowing every search down.
+- A provisional time limit for a search, four new requirements, and the design for search.
+
 ## 0.2.13 - 2026-09-11 (PR #18)
 
 How Word documents get made, and what they promise.

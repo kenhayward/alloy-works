@@ -38,40 +38,51 @@ leaking through a count or a ranking.
 
 ## 4. Permissions
 
-| ID          | Requirement                                                                                                                             | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **SCH-005** | Results must be filtered by the requesting user's permissions at query time, not at index time                                          | Constraint | Specified |
-| **SCH-006** | A user must not be able to infer the existence of something they may not read - not from a result, a count, a facet value, or a ranking | Constraint | Specified |
-| **SCH-007** | Counts and facet totals must be computed over what the user may see, even where that is more expensive                                  | Constraint | Specified |
-| **SCH-008** | An index must be tenant-scoped (**IAM-005**), and a query must be incapable of addressing another tenant's index                        | Constraint | Specified |
-| **SCH-009** | A permission change must take effect in search promptly, and the delay must be stated rather than assumed                               | T2         | Specified |
-| **SCH-010** | Every access-filtering path must be covered by a test that searches as a user without permission and finds nothing                      | T1         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                        | Tranche    | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **SCH-005** | Results must be filtered by the requesting user's permissions at query time, not at index time                                                                                                                                                                                                     | Constraint | Specified             |
+| **SCH-006** | A user must not be able to infer the existence of something they may not read - not from a result, a count, a facet value, or a ranking                                                                                                                                                            | Constraint | Superseded by SCH-032 |
+| **SCH-007** | Counts and facet totals must be computed over what the user may see, even where that is more expensive                                                                                                                                                                                             | Constraint | Specified             |
+| **SCH-008** | An index must be tenant-scoped (**IAM-005**), and a query must be incapable of addressing another tenant's index                                                                                                                                                                                   | Constraint | Specified             |
+| **SCH-009** | A permission change must take effect in search promptly, and the delay must be stated rather than assumed                                                                                                                                                                                          | T2         | Specified             |
+| **SCH-010** | Every access-filtering path must be covered by a test that searches as a user without permission and finds nothing                                                                                                                                                                                 | T1         | Specified             |
+| **SCH-032** | A user must not be able to infer the existence of something they may not read from a result, a count or a facet value. Ranking may use statistics from the whole tenant, so the order of results can be influenced by content the user cannot read - a residual risk stated to tenants, not hidden | Constraint | Specified             |
 
-**SCH-006 is the requirement that is easiest to satisfy carelessly.** Filtering the result list while
+**SCH-032 is the requirement that is easiest to satisfy carelessly.** Filtering the result list while
 computing "about 40 results" over everything tells a user exactly how much they cannot see, and a
 facet listing a project name they have no access to has already leaked it.
 
+**It replaces SCH-006, which forbade inference from ranking too.** Ranking well means knowing how
+common a word is, and a word's commonness across a tenant includes content a given user cannot read.
+A determined user could compare the order of results for crafted queries and learn something
+statistical about what they cannot see - never a title, a count or a match. SCH-032 accepts that and
+requires it to be said; results, counts and facets remain strictly filtered.
+[ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) has the reasoning.
+
 ## 5. Querying
 
-| ID          | Requirement                                                                                                                          | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **SCH-011** | Full-text search must support phrases, exclusion and field-scoped terms                                                              | T1      | Specified |
-| **SCH-012** | Search must be tolerant of the character normalisation applied on ingest, so that two visually identical strings match (**CNT-056**) | T1      | Specified |
-| **SCH-013** | Semantic search must be available over the same corpus, sharing the same permission filter                                           | T5      | Specified |
-| **SCH-014** | Semantic and full-text results must be distinguishable, because they answer different questions and deserve different trust          | T5      | Specified |
-| **SCH-015** | Search must use a term's alternative labels and its broader and narrower terms (**LIB-026**)                                         | T6      | Specified |
-| **SCH-016** | Results must show enough context to judge relevance without opening each one                                                         | T1      | Specified |
-| **SCH-017** | A result must link to the exact place it was found, not merely to the document containing it (**STR-044**)                           | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                          | Tranche    | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **SCH-011** | Full-text search must support phrases, exclusion and field-scoped terms                                                                                                                                              | T1         | Specified |
+| **SCH-012** | Search must be tolerant of the character normalisation applied on ingest, so that two visually identical strings match (**CNT-056**)                                                                                 | T1         | Specified |
+| **SCH-013** | Semantic search must be available over the same corpus, sharing the same permission filter                                                                                                                           | T5         | Specified |
+| **SCH-014** | Semantic and full-text results must be distinguishable, because they answer different questions and deserve different trust                                                                                          | T5         | Specified |
+| **SCH-015** | Search must use a term's alternative labels and its broader and narrower terms (**LIB-026**)                                                                                                                         | T6         | Specified |
+| **SCH-016** | Results must show enough context to judge relevance without opening each one                                                                                                                                         | T1         | Specified |
+| **SCH-017** | A result must link to the exact place it was found, not merely to the document containing it (**STR-044**)                                                                                                           | T1         | Specified |
+| **SCH-033** | A search must return its first page within a stated budget - provisionally p95 of 250ms, never above 500ms - for a tenant of a million components, whatever the user may see. Embedding the query text is outside it | Constraint | Specified |
+| **SCH-035** | Semantic search must return a full page whenever the user may see enough matches to fill one, never a short or empty page because the nearest matches overall were ones the user may not read                        | T5         | Specified |
 
 ## 6. Facets and listings
 
-| ID          | Requirement                                                                                                         | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **SCH-018** | Results must be narrowable by type, space, metadata value, workflow state, owner, date and condition value          | T1      | Specified |
-| **SCH-019** | Listing views must exist for documents, components, publications, templates and cohorts, with sorting and filtering | T1      | Specified |
-| **SCH-020** | A search or a listing must be saveable, nameable and shareable, subject to the recipient's own permissions          | T3      | Specified |
-| **SCH-021** | A saved search must be re-evaluated when opened, never showing the results it had when it was saved                 | T3      | Specified |
-| **SCH-022** | Listings must page predictably, with a stable order, so that paging through a large set does not repeat or skip     | T1      | Specified |
+| ID          | Requirement                                                                                                                                 | Tranche | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **SCH-018** | Results must be narrowable by type, space, metadata value, workflow state, owner, date and condition value                                  | T1      | Specified |
+| **SCH-019** | Listing views must exist for documents, components, publications, templates and cohorts, with sorting and filtering                         | T1      | Specified |
+| **SCH-020** | A search or a listing must be saveable, nameable and shareable, subject to the recipient's own permissions                                  | T3      | Specified |
+| **SCH-021** | A saved search must be re-evaluated when opened, never showing the results it had when it was saved                                         | T3      | Specified |
+| **SCH-022** | Listings must page predictably, with a stable order, so that paging through a large set does not repeat or skip                             | T1      | Specified |
+| **SCH-034** | A count or facet total that stops at a stated cap must show itself as a lower bound, and the cap must be applied over what the user may see | T1      | Specified |
 
 ## 7. Structural queries
 
@@ -107,19 +118,21 @@ looking.
 
 ## 10. Open questions
 
-| ID          | Question                                                                                                                                                 | What would settle it                                                                                                                                                                                                                                                                                   |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **SCH-Q01** | **Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice   | A spike. [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) has since placed the vectors in Postgres beside the content, which rules out a separate vector service but leaves full-text and combined ranking open                                                             |
-| **SCH-Q02** | **How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale | The search infrastructure decision. It is the hardest engineering problem in this area                                                                                                                                                                                                                 |
-| **SCH-Q03** | **Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed               | Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not                                                                                                                                                                                              |
-| **SCH-Q04** | **Does semantic search need its own permission story?**                                                                                                  | **Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) |
+| ID          | Question                                                                                                                                                                                                                                                   | What would settle it                                                                                                                                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SCH-Q01** | **Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice                                                                                                     | **Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)                                                                                    |
+| **SCH-Q02** | **How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale                                                                                                   | **Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../Search_Spike_Findings.md) |
+| **SCH-Q03** | **Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed                                                                                                                 | Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not                                                                                                                                                                                                                         |
+| **SCH-Q04** | **Does semantic search need its own permission story?**                                                                                                                                                                                                    | **Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)                            |
+| **SCH-Q05** | **Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)) | Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system                                                                                                                               |
 
 ## 11. Traceability
 
-| This document | Rests on                                               |
-| ------------- | ------------------------------------------------------ |
-| Section 4     | Scope §7.11 permission-filtered at query time; IAM-005 |
-| SCH-012       | CNT-056, Unicode normalisation on ingest               |
-| SCH-015       | LIB-026, alternative labels and thesaurus relations    |
-| Section 7     | REU-006, REU-010                                       |
-| SCH-Q01       | Scope §10 open decision 5                              |
+| This document      | Rests on                                               |
+| ------------------ | ------------------------------------------------------ |
+| Section 4          | Scope §7.11 permission-filtered at query time; IAM-005 |
+| SCH-012            | CNT-056, Unicode normalisation on ingest               |
+| SCH-015            | LIB-026, alternative labels and thesaurus relations    |
+| Section 7          | REU-006, REU-010                                       |
+| SCH-Q01            | Scope §10 open decision 5                              |
+| SCH-032 to SCH-035 | ADR-0016, and the search spike's findings              |

@@ -18,6 +18,7 @@ understand the storage layer, rather than something to be thrown away.
 | [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                |
 | [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                |
 | [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement |
+| [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask      |
 
 ## Why these are not one per requirement area
 
