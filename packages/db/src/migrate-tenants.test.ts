@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type NewTenant } from './provision.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './test/database.js';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('migrate: tenant schemas', () => {
   let db: TestDatabase;

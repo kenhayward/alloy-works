@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/database.d.ts",
+      "default": "./dist/testing/database.js"
     }
   },
   "files": [
