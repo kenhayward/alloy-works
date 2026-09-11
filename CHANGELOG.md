@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.11 - 2026-09-11 (PR #16)
+
+How a theme looks the same in the editor, in the PDF and in Word.
+
+### Added
+
+- The design for themes. A theme is data in a fixed set of typed properties - never a stylesheet and
+  never code - worked out once into concrete values and then translated for each of the three places
+  a document appears. Nothing downstream decides anything about a style, so the editor and the
+  published document cannot disagree about which one applies.
+- A decision about the words that mean different things in each target. Space between two
+  paragraphs is the space after the first plus the space before the second, everywhere, because that
+  is how Word does it and Word is the one place a recipient can restyle the document. Line spacing is
+  a distance in points rather than a multiple, because "1.15" means three different things in the
+  three targets.
+- The editor sets text at the page's own text width, zoomable, the way Word's page view does - so an
+  image sized to the column is the width it will print, and line lengths look like the output.
+- In dark mode the document stays on paper: the application's chrome goes dark, the page does not.
+- A brand typeface that may not be embedded in Word names a permitted stand-in for Word, and every
+  publication says when it was used.
+- Five requirements for those, and a sixth: an automated suite that measures each style property in
+  all three targets and fails when they disagree, because agreeing on the values somebody thought to
+  test is not the same as agreeing.
+
 ## 0.2.10 - 2026-09-11 (PR #15)
 
 The publishing engine is chosen: Typst, fed the document as data rather than as code.

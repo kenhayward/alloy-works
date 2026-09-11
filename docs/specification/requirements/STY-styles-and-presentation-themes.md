@@ -42,12 +42,20 @@ until it had somewhere to live both ends were assuming it.
 
 ## 4. Paragraph and character styles
 
-| ID          | Requirement                                                                                                                                                                            | Tranche    | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **STY-008** | A paragraph style must be able to declare typeface, size, weight, colour, alignment, indentation, space before and after, line spacing, and keep-with-next and keep-together behaviour | T1         | Specified |
-| **STY-009** | A character style must declare how each mark in CNT-031 renders                                                                                                                        | T1         | Specified |
-| **STY-010** | That mapping must be per-theme, so that `strong` may render bold in one theme and as small capitals in a house style that says so                                                      | T1         | Specified |
-| **STY-011** | Alignment must be a property of a paragraph style and must not be offerable as a free per-block control (CNT-094)                                                                      | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                   | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **STY-008** | A paragraph style must be able to declare typeface, size, weight, colour, alignment, indentation, space before and after, line spacing, and keep-with-next and keep-together behaviour                        | T1         | Specified |
+| **STY-009** | A character style must declare how each mark in CNT-031 renders                                                                                                                                               | T1         | Specified |
+| **STY-010** | That mapping must be per-theme, so that `strong` may render bold in one theme and as small capitals in a house style that says so                                                                             | T1         | Specified |
+| **STY-011** | Alignment must be a property of a paragraph style and must not be offerable as a free per-block control (CNT-094)                                                                                             | Constraint | Specified |
+| **STY-050** | The vertical space between two blocks must be the first block's space after plus the second block's space before, in every output format - never the larger of the two in one format and their sum in another | Constraint | Specified |
+| **STY-051** | Line spacing must be declared as a minimum distance from baseline to baseline, and must mean that distance in every output format rather than a multiple each format interprets differently                   | Constraint | Specified |
+
+**STY-050 and STY-051 exist because the same words mean different things in each target.** CSS and
+Typst take the larger of two adjoining spaces; Word adds them. "Line spacing 1.15" multiplies the
+font's natural height in Word, the font size in CSS, and adds a gap in Typst. A theme that says the
+same number to all three gets three documents. Word's rule wins for spacing because Word is the one
+target that cannot be reprogrammed, and the one a recipient restyles. See [themes.md](../../design/themes.md).
 
 **STY-010 is what makes the closed mark set in CNT tolerable.** An author is choosing meaning and
 the theme is choosing appearance, so the constraint costs them nothing they actually wanted: they
@@ -119,12 +127,13 @@ one day, and a theme change months later re-renders something that was signed.
 
 ## 10. Resolution
 
-| ID          | Requirement                                                                                                                                           | Tranche    | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **STY-035** | The editor and the publisher must resolve the same style from the same catalogue, by the same rules                                                   | Constraint | Specified |
-| **STY-036** | The editor must render typefaces, sizes, colours and spacing as the theme declares (CNT-082, CNT-097)                                                 | T1         | Specified |
-| **STY-037** | Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-095) | T1         | Specified |
-| **STY-038** | Style resolution must be deterministic: the same content, style and theme version must always produce the same appearance                             | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                               | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **STY-035** | The editor and the publisher must resolve the same style from the same catalogue, by the same rules                                                                       | Constraint | Specified |
+| **STY-036** | The editor must render typefaces, sizes, colours and spacing as the theme declares (CNT-082, CNT-097)                                                                     | T1         | Specified |
+| **STY-037** | Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-095)                     | T1         | Specified |
+| **STY-038** | Style resolution must be deterministic: the same content, style and theme version must always produce the same appearance                                                 | Constraint | Specified |
+| **STY-053** | Every style property must be verified, by an automated suite, to render the same measured value in each output format that renders it - in the editor, in PDF and in Word | T1         | Specified |
 
 ## 11. Typefaces
 
@@ -139,6 +148,7 @@ one day, and a theme change months later re-renders something that was signed.
 | **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                        | Constraint | Specified |
 | **STY-048** | The default theme must cover the scripts LOC-004 admits and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                    | T1         | Specified |
 | **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box  | Constraint | Specified |
+| **STY-052** | A typeface whose licence does not permit embedding in Word must declare a permitted face for Word output, and every publication using it must report the substitution                   | T1         | Specified |
 
 **Section 11 was the open font question from the architecture work, and it is now settled.** The
 constraint that made it hard has not changed: one typographic system has to work in a browser tab,
@@ -177,15 +187,16 @@ The check has to be the pipeline's own. See
 | **STY-N02** | **No page geometry.** Size, margins, running heads and columns belong to the publishing layout                                                                                                                     |
 | **STY-N03** | **No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine |
 | **STY-N04** | **Not a design tool.** A theme is configured, not drawn                                                                                                                                                            |
+| **STY-N05** | **No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper                                  |
 
 ## 14. Open questions
 
-| ID          | Question                                                                                                                                                              | What would settle it                                                                                                                                                                                                 |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **STY-Q01** | **Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse                           | Whether early customers serve more than one end client from one tenant. Likely yes in this market                                                                                                                    |
-| **STY-Q02** | **Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on | The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch                                                                           |
-| **STY-Q03** | **Who supplies typefaces, and who holds the licence?**                                                                                                                | **Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md) |
-| **STY-Q04** | **Does a theme need variants - screen against print, light against dark?** Reading a document on screen and printing it may reasonably differ                         | Whether the editor's rendering of the theme (STY-036) turns out to be legible for long reading                                                                                                                       |
+| ID          | Question                                                                                                                                                              | What would settle it                                                                                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **STY-Q01** | **Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse                           | Whether early customers serve more than one end client from one tenant. Likely yes in this market                                                                                                                      |
+| **STY-Q02** | **Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on | The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch                                                                             |
+| **STY-Q03** | **Who supplies typefaces, and who holds the licence?**                                                                                                                | **Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)   |
+| **STY-Q04** | **Does a theme need variants - screen against print, light against dark?**                                                                                            | **Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md) |
 
 ## 15. Traceability
 
