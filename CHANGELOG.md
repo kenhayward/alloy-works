@@ -24,6 +24,11 @@ How the screen stays live, decided after measuring it - the last of the open arc
   leave.
 - The design for live updates, two new requirements, and one thing the product will not do.
 
+### Changed
+
+- The project scope now says what comes next, now that every open architecture decision is settled:
+  review the requirements, finish the designs the first release needs, then build it.
+
 ## 0.2.16 - 2026-09-11 (PR #21)
 
 How links between things are stored and followed, decided after measuring it.

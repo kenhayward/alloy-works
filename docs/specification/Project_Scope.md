@@ -714,12 +714,12 @@ Six tranches, ordered by dependency and by risk. Each is a usable increment, not
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate.
 
-Two things cut across the order:
+Four things cut across the order:
 
-- **The content model spike runs before T1 starts.**
-  [`Content_Model_Spike.md`](Content_Model_Spike.md) validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
-  against its ten hardest cases and settles the version store in the same pass. T1 builds on the
-  schema draft it produces.
+- **The content model spike ran before T1.**
+  [`Content_Model_Spike.md`](Content_Model_Spike.md) validated [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
+  against its ten hardest cases and, with [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md),
+  settled the version store. T1 builds on the schema draft it produced.
 - **The content model must accommodate reuse, conditions, translation and tracked changes from T1**,
   even where the user-facing capability lands in T4 or T6. Retrofitting any of the four is a
   rewrite, which is why cases 1, 6 and 7 of the spike exist.
@@ -771,16 +771,28 @@ Two things cut across the order:
 
 ## 15. What comes next
 
-1. **Run the content model spike** - [`Content_Model_Spike.md`](Content_Model_Spike.md) - which
-   validates [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) and settles the
-   version store in the same pass.
-2. **Detailed requirements**, one document per capability area in section 7, under
-   `docs/specification/requirements/`. Authoring, versioning and comparison, and publishing all
-   depend on what the spike finds; the rest do not, and can be written alongside it.
-3. **The publishing engine spike** - [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) -
-   against the open-source candidates ADR-0007 leaves, informed by what cases 3, 5 and 8 of the
-   content model spike turned up about what the engine has to provide.
-4. **A proposed architecture**, informed by all of it.
+The four steps this section first listed are done. The content model spike confirmed
+[ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md); the requirements are
+written, twenty-one areas under [`requirements/`](requirements/); the publishing engine spike chose
+Typst ([ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)); and
+the architecture is proposed, as the decision records in [`docs/decisions/`](../decisions/) and the
+design documents in [`docs/design/`](../design/). Every decision section 10 held is settled, most of
+them after a short spike measured the one risk the chosen shape carried.
 
-No implementation before the spike. The content model is decided once, and everything in section 7
-is downstream of it.
+What remains before T1 is built, in order:
+
+1. **Review the requirements.** They are still v1, for review. A requirement that changes before its
+   design is written costs an edit; after, it costs a design change as well.
+2. **Design what T1 needs.** In September 2026, 49 of T1's 276 requirements were claimed by a design,
+   in storage, themes, Word output and search. Most of the rest are authoring (CNT), publishing and
+   the resolved document (PUB), identity and tenancy (IAM), and structure and numbering (STR), which
+   suggests the documents still to write: the content model and editor, tenancy and access, outlines
+   and numbering, the publishing pipeline, and the API surface. `apps/desktop/src/design.test.ts`
+   builds the reverse index, so the gap is read off the repository rather than kept as a list. Later
+   tranches' designs wait for their tranche; a design written two tranches early is rewritten when it
+   arrives.
+3. **Build T1**, test-first, in the order its designs allow - storage, tenancy and identity first,
+   because everything else stands on them. The spikes' code is throwaway. Two prototypes graduate: the
+   schema draft in `packages/domain/src/content/` and the theme resolver in
+   `packages/domain/src/theme/`. Each spike's latencies are proxies, and its findings say what would
+   verify them; the conformance suites that do are part of the build, not an afterthought to it.
