@@ -50,6 +50,8 @@ until it had somewhere to live both ends were assuming it.
 | **STY-011** | Alignment must be a property of a paragraph style and must not be offerable as a free per-block control (CNT-094)                                                                                             | Constraint | Specified |
 | **STY-050** | The vertical space between two blocks must be the first block's space after plus the second block's space before, in every output format - never the larger of the two in one format and their sum in another | Constraint | Specified |
 | **STY-051** | Line spacing must be declared as a minimum distance from baseline to baseline, and must mean that distance in every output format rather than a multiple each format interprets differently                   | Constraint | Specified |
+| **STY-054** | A line's extra space must sit above it, with its baseline one descender above the foot of its line, in every output format; a typeface must therefore carry the vertical metrics that place its baseline      | Constraint | Specified |
+| **STY-055** | Word output must render every run as the theme resolves it, setting a run's formatting directly wherever Word's own rules for combining styles would compute otherwise                                        | Constraint | Specified |
 
 **STY-050 and STY-051 exist because the same words mean different things in each target.** CSS and
 Typst take the larger of two adjoining spaces; Word adds them. "Line spacing 1.15" multiplies the

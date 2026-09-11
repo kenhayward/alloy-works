@@ -13,11 +13,16 @@ describing something planned and starts describing something here.
 
 One pnpm workspace, one lock file, three packages.
 
-| Workspace         | Package                | Holds                                                                                   |
-| ----------------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `packages/domain` | `@alloy-works/domain`  | The content model and its rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
-| `apps/web`        | `@alloy-works/web`     | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries              |
-| `apps/desktop`    | `@alloy-works/desktop` | The Electron shell: main process and preload. No UI of its own                          |
+| Workspace         | Package                | Holds                                                                                                      |
+| ----------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `packages/domain` | `@alloy-works/domain`  | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
+| `apps/web`        | `@alloy-works/web`     | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                 |
+| `apps/desktop`    | `@alloy-works/desktop` | The Electron shell: main process and preload. No UI of its own                                             |
+
+The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
+exported from the package: a resolver and three projections - CSS for the editor, data for the
+Typst template, and Word styles. Like the content model draft, it is promoted when the editor or
+the publishing pipeline first needs it.
 
 Dependencies point one way: `apps/web` depends on `@alloy-works/domain`; `apps/desktop` depends on
 `@alloy-works/web` **for types only** (see the platform bridge below). The domain package depends on

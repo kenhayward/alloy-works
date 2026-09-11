@@ -9,6 +9,11 @@ follows [ADR-0010](../decisions/0010-open-licence-typefaces-only.md) on typeface
 engine, and sits beside [storage-and-versioning.md](storage-and-versioning.md), which stores a theme,
 its catalogues and its typefaces as versioned artifacts like everything else.
 
+**A prototype exists and has been measured.** The resolver and all three projections are in
+`packages/domain/src/theme/`, written test-first; `spikes/theme-conformance/` renders one fixture
+through Chromium, Typst and LibreOffice and compares every baseline. The claims below marked as
+measured were measured there, and the decision they support is [ADR-0014](../decisions/0014-themes-resolve-once-project-three-times.md).
+
 ## The shape in one paragraph
 
 A theme is data in a fixed, typed schema, never a stylesheet and never code. A resolver in
@@ -73,6 +78,8 @@ conformance suite.
 | **STY-051** | Line spacing is a minimum baseline-to-baseline distance in points, and means that distance in every output                                               |
 | **STY-052** | A typeface whose licence forbids embedding in Word declares a permitted face for Word output, and the publish report names the substitution              |
 | **STY-053** | The conformance suite below                                                                                                                              |
+| **STY-054** | A typeface artifact carries its ascent and descent; the CSS projection and the Typst template both use them to put a line's extra space above it         |
+| **STY-055** | `wordRun` computes Word's reading of each run and pins the canonical value directly wherever the two differ                                              |
 | **CNT-082** | The CSS projection renders block spacing by the same rule as the output (STY-050)                                                                        |
 | **CNT-091** | Image resolution derives the free dimension from the asset (STY-016)                                                                                     |
 | **CNT-092** | The maximum is declared in the style and applied at resolution (STY-017)                                                                                 |
@@ -136,22 +143,22 @@ does not arrive.
 
 ### Paragraph styles
 
-| Property                 | Canonical form                              | Editor (CSS)                     | PDF (Typst template)                                 | Word                                   |
-| ------------------------ | ------------------------------------------- | -------------------------------- | ---------------------------------------------------- | -------------------------------------- |
-| Typeface                 | Reference to a typeface artifact            | `font-family`, from `@font-face` | `text(font)`, from the pinned directory              | `w:rFonts`; the Word face if declared  |
-| Size                     | Points                                      | `font-size` in pt                | `text(size)`                                         | `w:sz`, half-points                    |
-| Weight, style            | Enumerations                                | `font-weight`, `font-style`      | `text(weight, style)`                                | `w:b`, `w:i`, stated explicitly        |
-| Colour                   | sRGB                                        | `color`                          | `text(fill)`                                         | `w:color`                              |
-| Alignment                | start, end, centre, justify                 | `text-align`                     | `par(justify)`, `align`                              | `w:jc`                                 |
-| Indentation              | Points: first line, start, end              | `text-indent`, `padding-inline`  | `par(first-line-indent)`, `pad`                      | `w:ind`                                |
-| Space before, after      | Points, **added together** (STY-050)        | `padding-block` - which adds     | An explicit gap: the template sets it between blocks | `w:spacing before/after` - which adds  |
-| Line spacing             | Minimum baseline distance, points (STY-051) | `line-height` in pt              | Fixed text edges, `leading` = distance minus 1em     | `w:spacing line`, `lineRule="atLeast"` |
-| Keep with next           | Boolean                                     | Not rendered (STY-037)           | `block(sticky)`                                      | `w:keepNext`                           |
-| Keep together            | Boolean                                     | Not rendered                     | `block(breakable: false)`                            | `w:keepLines`                          |
-| Widow and orphan control | Boolean - on means two lines, as Word       | Not rendered                     | Paragraph costs for widows and orphans               | `w:widowControl`                       |
-| Hyphenation              | Boolean                                     | Not rendered                     | `text(hyphenate)`                                    | Document setting, per style exclusion  |
-| Letter spacing           | Em                                          | `letter-spacing`                 | `text(tracking)`                                     | `w:spacing` in the run                 |
-| Small capitals           | Boolean                                     | `font-variant-caps`              | `smallcaps`                                          | `w:smallCaps`                          |
+| Property                 | Canonical form                              | Editor (CSS)                                  | PDF (Typst template)                                                 | Word                                   |
+| ------------------------ | ------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- |
+| Typeface                 | Reference to a typeface artifact            | `font-family`, from `@font-face`              | `text(font)`, from the pinned directory                              | `w:rFonts`; the Word face if declared  |
+| Size                     | Points                                      | `font-size` in pt                             | `text(size)`                                                         | `w:sz`, half-points                    |
+| Weight, style            | Enumerations                                | `font-weight`, `font-style`                   | `text(weight, style)`                                                | `w:b`, `w:i`, stated explicitly        |
+| Colour                   | sRGB                                        | `color`                                       | `text(fill)`                                                         | `w:color`                              |
+| Alignment                | start, end, centre, justify                 | `text-align`                                  | `par(justify)`, `align`                                              | `w:jc`                                 |
+| Indentation              | Points: first line, start, end              | `text-indent`, `padding-inline`               | `par(first-line-indent)`, `pad`                                      | `w:ind`                                |
+| Space before, after      | Points, **added together** (STY-050)        | `padding-block` - which adds                  | An explicit gap: the template sets it between blocks                 | `w:spacing before/after` - which adds  |
+| Line spacing             | Minimum baseline distance, points (STY-051) | `line-height` in pt, half-leading moved above | Text edges from the face's descender, `leading` = distance minus 1em | `w:spacing line`, `lineRule="atLeast"` |
+| Keep with next           | Boolean                                     | Not rendered (STY-037)                        | `block(sticky)`                                                      | `w:keepNext`                           |
+| Keep together            | Boolean                                     | Not rendered                                  | `block(breakable: false)`                                            | `w:keepLines`                          |
+| Widow and orphan control | Boolean - on means two lines, as Word       | Not rendered                                  | Paragraph costs for widows and orphans                               | `w:widowControl`                       |
+| Hyphenation              | Boolean                                     | Not rendered                                  | `text(hyphenate)`                                                    | Document setting, per style exclusion  |
+| Letter spacing           | Em                                          | `letter-spacing`                              | `text(tracking)`                                                     | `w:spacing` in the run                 |
+| Small capitals           | Boolean                                     | `font-variant-caps`                           | `smallcaps`                                                          | `w:smallCaps`                          |
 
 Two rows carry most of the difficulty, and they are covered in the next section. Hyphenation is not
 rendered in the editor even though a browser could: its dictionaries break words in different places
@@ -203,8 +210,28 @@ it can do because it walks the blocks in order anyway.
 CSS multiplies the font size, Typst adds a gap. So the canonical value is a distance - a minimum
 baseline-to-baseline distance in points (STY-051) - and each projection states it in its own terms.
 Word gets `atLeast`, not `exact`, because exact clips a line holding an inline equation or image, and
-CSS and Typst both let such a line grow. The Typst template fixes the text's top and bottom edges at
-the em box, so that leading is simply the distance minus one em and does not depend on the face.
+CSS and Typst both let such a line grow.
+
+**A distance is not enough on its own; where a line's extra space goes matters too, and it was
+measured.** Within a paragraph all three agree at once, because each gap is one line spacing. Between
+two blocks whose line spacings differ - a heading into body text - they do not, because each target
+puts the extra space somewhere else. Word puts it all above the line, with the baseline one descender
+above the line's foot, so the distance from the last baseline of one block to the first of the next is:
+
+> space after + space before + next line spacing + (previous descender - next descender)
+
+For an 18pt heading on 24pt into 11pt body on 14pt, Liberation Serif's descender being 0.216em, that is
+6 + 0 + 14 + 0.216 x 7 = **21.51pt**; LibreOffice measured 21.50. CSS puts half the extra space above
+and half below, and drifted by 1.1pt at every change of line spacing. So the canonical rule is
+**Word's placement** (STY-054), and matching it needs the face's own metrics:
+
+- **CSS** adds each block's half-leading - (line spacing - (ascent + descent) x size) / 2 - as padding
+  above, and takes it back below as a negative margin. Margin, because padding cannot go negative;
+  and a lone negative margin collapsing against the next block's zero leaves exactly that amount. It
+  is plain CSS, so it works in every browser.
+- **Typst** makes a line exactly one em tall with its baseline one descender above its foot, so that
+  the gap the template inserts between blocks is simply space after + space before + leading, with no
+  term that depends on the block before.
 
 **Space at the top of a page.** Typst drops space before a block that starts a page; the editor has no
 pages; Word's behaviour depends on the kind of break and a compatibility setting. The canonical rule
@@ -249,6 +276,9 @@ permit one and not the other.
   does not must name a permitted face to use instead (STY-052), which the Word projection uses and
   the publish report states. Declared in the theme and reported at publication, the substitution is
   not the silent kind STY-040 forbids.
+- **Vertical metrics** - ascent and descent, as fractions of the em - are read from the font file
+  when a typeface is ingested and carried on the artifact (STY-054). They are what place a baseline
+  inside a line, and both the CSS projection and the Typst template need them to match Word.
 - **Glyph coverage** is checked at resolution (STY-049): every character in the resolved document is
   looked up in the character maps of the faces its styles use, and a missing one fails the publish
   naming the character, the style and the face. The spike showed that no engine setting catches
@@ -258,25 +288,38 @@ permit one and not the other.
 
 Every catalogue style becomes a Word style: identifier from the catalogue (STY-005), name as the
 catalogue names it, and **every property stated explicitly on every style**. `basedOn` is kept, so
-the hierarchy shows in Word's styles pane, but no property is left for Word to inherit.
+the hierarchy shows in Word's styles pane, but no property is left for Word to inherit. Recipients
+restyle individual styles; a change to a parent does not cascade. That is a deliberate cost: Word's
+inheritance is not the resolver's, and a Word document that quietly disagrees with its PDF is the
+worse outcome.
 
-That is a choice with a cost, and it is made deliberately. Leaving inherited properties unstated would
-let a recipient restyle a parent and have the change flow down, which is what PUB-027 is for. It
-would also hand inheritance to Word's rules, which are not ours: Word treats bold and italic as toggle
-properties, so bold applied in a character style inside a bold paragraph style turns bold **off**. A
-Word document that disagrees with its PDF, and that nobody notices disagrees, is the worse outcome.
-Recipients restyle individual styles; a change to a parent does not cascade.
+**Stating every property is not enough on its own, and the first version of this design said it was.**
+Word's toggle rule does not act within one style's chain. It acts between a **paragraph style and a
+character style** on the same run: bold in both cancels, so a `strong` word in a bold heading comes out
+not bold however explicitly each style is written (ECMA-376 17.7.3). And Word lets a run name only
+**one** character style, so a word both strong and emphasised cannot be said with styles at all.
+
+Both are handled by `wordRun`, which computes Word's reading of each run - the paragraph style XOR the
+first mark's style - and, only where that differs from the canonical rendering, sets the value directly
+on the run, which Word treats as absolute (STY-055). Everywhere else the run names its character
+style and nothing more, so restyling `Strong` in Word still reaches every run it should.
+
+**Measured with a control.** The same Word document with every pin removed, rendered by LibreOffice:
+the strong word in the bold heading came out **regular**, and the strong-and-emphasised word lost its
+italic. With the pins, both are right. So the renderer implements Word's rule, the problem is real,
+and the pins are what fix it. Word itself was then checked by eye, as PUB-029 requires: the same
+two words bold and bold italic, and the spacing matching the PDF.
 
 ## Keeping the three in agreement
 
 **The conformance suite is how agreement is kept** (STY-053). For each property in the set, a fixture
 document exercises it at several values, and each projection's output is measured rather than read:
 
-| Target | How a value is measured                                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------------------- |
-| Typst  | From the PDF - text positions, sizes and spacing, as the publishing engine spike's harness already does       |
-| Word   | Read back from `styles.xml` and compared with the canonical value; confirmed in Word itself under PUB-029     |
-| Editor | Computed styles for the simple properties now; line boxes and spacing once the repository has a browser suite |
+| Target | How a value is measured                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Typst  | From the PDF: each character's text matrix gives its baseline, not its bounding box                                    |
+| Word   | LibreOffice renders the `.docx` to PDF and is measured the same way - a proxy; confirmed in Word itself under PUB-029  |
+| Editor | Chromium: a zero-size marker at each line's start gives the baseline, and computed styles give size, weight and colour |
 
 The fixtures are generated as well as hand-written: random valid property values, resolved and
 projected, with the three measurements compared. A projection that agrees on the values somebody
@@ -285,6 +328,34 @@ thought to try and disagrees on the rest is exactly the drift this suite exists 
 It runs when the schema or a projection changes. It does not need to run when a tenant edits a theme:
 tenant themes are data inside the property set, and a projection correct for every value in the set is
 correct for every theme.
+
+## What the prototype measured
+
+One fixture, seven blocks, three styles, rendered through all three targets. Positions are relative
+to the first line; tolerance is half a point.
+
+| Claim                                          | Editor | PDF   | Word (LibreOffice) |
+| ---------------------------------------------- | ------ | ----- | ------------------ |
+| Line spacing inside a paragraph, declared 14pt | 14.00  | 14.00 | 14.00              |
+| Body into quote: 6 after + 12 before + 14      | 32.00  | 32.00 | 32.00              |
+| Quote into body: 12 + 0 + 14                   | 26.00  | 26.00 | 26.00              |
+| Heading into body - Word's formula says 21.51  | 21.38  | 21.51 | 21.50              |
+| Body into heading - Word's formula says 40.49  | 40.63  | 40.49 | 40.50              |
+| Quote's first-line indent, 18pt                | 18.0   | 18.0  | 18.0               |
+| Strong word in a bold heading renders bold     | Yes    | Yes   | Yes, with the pin  |
+| Strong and emphasised word renders bold italic | Yes    | Yes   | Yes, with the pin  |
+
+**Every baseline agrees within 0.13pt**, and the PDF and the Word proxy within 0.01pt. Before the
+metrics were used, the editor drifted 1.1pt at each change of line spacing; before the template set
+its paragraphs explicitly, Typst dropped the quote's indent - since Typst 0.13, inline content alone in
+a block is not a paragraph, and first-line indent silently does nothing to it while leading still
+applies. Both were caught by the harness, which is also how it is known that the harness can fail.
+
+**Checked in Word, by eye:** the fixture's output opened in Word matches the PDF, including both
+pinned words and the spacing. **Still not measured:** Word to the point, and more than one face -
+one fixture with one face is not every theme.
+The conformance suite this becomes (STY-053) needs generated values, more faces - in particular faces
+whose metric tables disagree with each other, where renderers may choose different ones - and Word.
 
 ## Safety
 

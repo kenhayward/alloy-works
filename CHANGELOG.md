@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.12 - 2026-09-11 (PR #17)
+
+The theme model, built and measured: one theme now looks the same in the editor, the PDF and Word.
+
+### Added
+
+- A working prototype of the theme model: a theme checked against a fixed set of typed properties,
+  worked out once into concrete values, and translated for the editor, for the PDF and for Word - 41
+  tests, written before the code they test.
+- A harness that renders the same document all three ways and measures where every line sits. Every
+  line now lands within a fifth of a point of the others, and the PDF and Word within a hundredth.
+  Opened in Word itself, the document matches the PDF, including its bold and bold italic words.
+- A decision recording that shape, now that it has been tested against something real.
+
+### Changed
+
+- The design was wrong in one place, and the prototype found it before any user could. In Word, bold
+  in a heading and bold on a word inside it cancel each other out, and a word can carry only one
+  character style - so a bold word in a heading, or a word both bold and italic, came out wrong in
+  Word however carefully the styles were written. Word output now sets those words' formatting
+  directly, and only where Word would otherwise get them wrong.
+- Line spacing needed stating more precisely than "a distance". Where a heading meets body text,
+  Word puts a line's extra space above it and a web page splits it, so the editor sat a point off.
+  A typeface now carries the measurements of its letters, which is what lets all three agree.
+
 ## 0.2.11 - 2026-09-11 (PR #16)
 
 How a theme looks the same in the editor, in the PDF and in Word.
