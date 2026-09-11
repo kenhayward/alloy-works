@@ -54,9 +54,11 @@ pnpm --filter @alloy-works/desktop package
 apps/
   web/        @alloy-works/web      React + TS + Vite. The renderer, and the web app.
   desktop/    @alloy-works/desktop  Electron main + preload. No UI of its own.
+  service/    @alloy-works/service  Fastify web service: hostname to tenant, the API contract.
 packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
   db/         @alloy-works/db       Roles, tenants, migrations, withTenant. Node and pg.
+  api-contract/ @alloy-works/api-contract  Routes as zod schemas; the generated openapi.json.
 docs/         Architecture, development, testing, CI and decision records.
 ```
 

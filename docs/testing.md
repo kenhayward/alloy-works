@@ -103,3 +103,11 @@ Roles are shared by the whole server, so test tenants use ids beginning `test`, 
 removes with the database; the files run one at a time because they share the login roles. CI runs
 the same suite against a Postgres service container. Point `ALLOY_TEST_DATABASE_URL` at another
 server to use one.
+
+## The service suite and the contract
+
+`apps/service` is tested in process with Fastify's `inject`, against a real Postgres through the
+harness `@alloy-works/db/testing` exports - so it needs the database running, like the db suite.
+`packages/api-contract` has no database: its tests check the OpenAPI document it builds, and one of
+them fails when the committed `openapi.json` differs from what the contracts generate. Change a route,
+run `pnpm --filter @alloy-works/api-contract generate`, and commit both.
