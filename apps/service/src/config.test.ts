@@ -56,4 +56,29 @@ describe('configuration', () => {
     expect(described).not.toContain('secret-pw');
     expect(described).toContain('aw_service:***@127.0.0.1:5432/alloy_dev');
   });
+
+  it('offers the Google route only with both its client and the sign-in address', () => {
+    expect(loadConfig({ DATABASE_URL: url }).google).toBeUndefined();
+    expect(
+      loadConfig({
+        DATABASE_URL: url,
+        GOOGLE_CLIENT_ID: 'alloy',
+        SIGN_IN_HOST: 'signin.alloy.test',
+      }).google,
+    ).toEqual({
+      issuer: 'https://accounts.google.com',
+      clientId: 'alloy',
+      signInHost: 'signin.alloy.test',
+    });
+    expect(() => loadConfig({ DATABASE_URL: url, GOOGLE_CLIENT_ID: 'alloy' })).toThrow(
+      /GOOGLE_CLIENT_ID and SIGN_IN_HOST must be set together/,
+    );
+    expect(() =>
+      loadConfig({
+        DATABASE_URL: url,
+        GOOGLE_CLIENT_ID: 'alloy',
+        SIGN_IN_HOST: 'SignIn.Alloy.test',
+      }),
+    ).toThrow(/SIGN_IN_HOST/);
+  });
 });
