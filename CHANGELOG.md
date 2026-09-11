@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.13 - 2026-09-11 (PR #18)
+
+How Word documents get made, and what they promise.
+
+### Added
+
+- A decision that Word documents are written by our own code, from the same finished document the
+  PDF is made from, rather than by a converter or a library. The approach has already been opened
+  in Word twice - once for the content model, once for themes - and it is the only one that keeps
+  heading numbers, footnotes and cross-references as things Word understands rather than as text.
+- A decision that a Word document lays out its own pages. It carries exactly the same content,
+  numbering and cross-references as the PDF, but Word decides where pages break, and a recipient's
+  first edit moves them anyway. So a page number cites the PDF, and the publication says so.
+- Contents pages and "see page" references in Word are worked out by Word itself: the document asks
+  to refresh them when it is opened, rather than showing page numbers copied from the PDF that would
+  be wrong in Word.
+- Equations in Word are real Word equations, built from the same source as the PDF's.
+- The design for the Word output, and three requirements that make those promises binding.
+
 ## 0.2.12 - 2026-09-11 (PR #17)
 
 The theme model, built and measured: one theme now looks the same in the editor, the PDF and Word.

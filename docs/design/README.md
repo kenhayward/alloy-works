@@ -16,6 +16,7 @@ understand the storage layer, rather than something to be thrown away.
 | Document                                               | Subsystem                                                                                  |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                |
+| [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                |
 | [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement |
 
 ## Why these are not one per requirement area

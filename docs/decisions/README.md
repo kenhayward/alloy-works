@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                            | One renderer, two deliveries                                  | Accepted |
 | [0004](0004-brand-assets-and-packaging.md)                             | Brand assets and desktop packaging                            | Accepted |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)              | A purpose-built node-and-mark content model                   | Accepted |
+| [0015](0015-word-output-our-own-writer-reflowable.md)                  | Word output: our own writer, reflowable by design             | Accepted |
 | [0014](0014-themes-resolve-once-project-three-times.md)                | Themes: resolve once, project three times                     | Accepted |
 | [0013](0013-typst-rendering-resolved-data-through-a-fixed-template.md) | Typst, rendering resolved data through a fixed template       | Accepted |
 | [0012](0012-relational-version-chain-hashed-content.md)                | A relational version chain with hashed content                | Accepted |

@@ -79,15 +79,23 @@ exactly when it matters.
 
 ## 6. Word
 
-| ID          | Requirement                                                                                                                                                    | Tranche | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **PUB-023** | Word must be a first-class output, not a convenience export                                                                                                    | T1      | Specified |
-| **PUB-024** | Heading numbers must be carried as a numbering definition Word understands, never as literal text in a heading                                                 | T1      | Specified |
-| **PUB-025** | Footnotes must be real Word footnotes, numbered by Word                                                                                                        | T1      | Specified |
-| **PUB-026** | Cross-references must be fields Word can update, not the numbers they resolved to                                                                              | T1      | Specified |
-| **PUB-027** | Styles must map to Word styles, so that a recipient can restyle the document rather than receiving direct formatting                                           | T1      | Specified |
-| **PUB-028** | Suggestions should be exportable as Word tracked changes, and Word tracked changes should be importable as suggestions (**COL**, **IMP**)                      | T6      | Specified |
-| **PUB-029** | Word output must be verified by opening it in Word, as a standing practice rather than a one-off, and every material change to the emitter must be re-verified | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                            | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
+| **PUB-023** | Word must be a first-class output, not a convenience export                                                                                                                                            | T1         | Specified |
+| **PUB-024** | Heading numbers must be carried as a numbering definition Word understands, never as literal text in a heading                                                                                         | T1         | Specified |
+| **PUB-025** | Footnotes must be real Word footnotes, numbered by Word                                                                                                                                                | T1         | Specified |
+| **PUB-026** | Cross-references must be fields Word can update, not the numbers they resolved to                                                                                                                      | T1         | Specified |
+| **PUB-027** | Styles must map to Word styles, so that a recipient can restyle the document rather than receiving direct formatting                                                                                   | T1         | Specified |
+| **PUB-028** | Suggestions should be exportable as Word tracked changes, and Word tracked changes should be importable as suggestions (**COL**, **IMP**)                                                              | T6         | Specified |
+| **PUB-029** | Word output must be verified by opening it in Word, as a standing practice rather than a one-off, and every material change to the emitter must be re-verified                                         | T1         | Specified |
+| **PUB-065** | Word output must carry the resolved document's content, numbering and cross-references and leave pagination to Word; the PDF is the output a page number cites, and the publication record must say so | Constraint | Specified |
+| **PUB-066** | Contents, lists of figures and tables, and page references in Word output must be fields that Word refreshes when the document opens, never page numbers copied from the PDF                           | Constraint | Specified |
+| **PUB-067** | Equations in Word output must be native Word equations built from the same structure as the PDF's, never images and never a second conversion of the source                                            | T1         | Specified |
+
+**PUB-065 and PUB-066 are the price of Word being editable, stated rather than discovered.** Word lays
+out its own pages and a recipient's first edit reflows the rest, so the Word document can never be
+relied on to share the PDF's pages - and a page number copied across from the PDF would look finished
+and be wrong. See [ADR-0015](../../decisions/0015-word-output-our-own-writer-reflowable.md).
 
 **PUB-029 is a process requirement in a requirements document, deliberately.** The content model
 spike learned it the expensive way: a round-trip test that reads its own output can only prove that
