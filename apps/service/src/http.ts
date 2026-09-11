@@ -47,13 +47,11 @@ export function createHttp(options: HttpOptions): FastifyInstance {
   });
 
   app.setNotFoundHandler((request, reply) =>
-    reply
-      .status(404)
-      .send({
-        code: 'not_found',
-        message: 'There is nothing at this address.',
-        traceId: request.id,
-      }),
+    reply.status(404).send({
+      code: 'not_found',
+      message: 'There is nothing at this address.',
+      traceId: request.id,
+    }),
   );
 
   return app;

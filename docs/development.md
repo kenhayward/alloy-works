@@ -28,6 +28,28 @@ docker compose down                    # stop it; add -v to throw away its data
 The password is a development default for a container bound to `127.0.0.1`, never a credential for
 anything deployed. `pnpm test` fails with an instruction to start it when it is not running.
 
+## The service
+
+`apps/service` needs the database prepared once, then runs with reload on save:
+
+```bash
+pnpm --filter @alloy-works/db dev:setup           # database alloy_dev, two environments of "Acme"
+cp apps/service/.env.example apps/service/.env    # development settings; .env is git-ignored
+pnpm build                                        # the packages the service imports
+pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
+```
+
+The tenant comes from the hostname, so address it as one. `curl` can say it outright:
+
+```bash
+curl -H "Host: dev.acme.localhost" http://127.0.0.1:8080/v1/tenant
+```
+
+Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
+the service listens on the IPv4 address only - the same trap the renderer's dev server met. If
+anything else on the machine listens on port 8080 over IPv6, a browser can reach that instead. Set
+`PORT` in `.env` to a free port when that happens.
+
 ## Commands
 
 Everything below runs from the repo root.
