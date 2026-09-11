@@ -56,15 +56,22 @@ to be described by whoever writes the query.
 
 ## 5. Traversal
 
-| ID          | Requirement                                                                                                                         | Tranche    | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **REL-015** | Neighbours of an artifact must be queryable, by type and by direction                                                               | T4         | Specified |
-| **REL-016** | Paths between two artifacts must be queryable, to a bounded depth                                                                   | T4         | Specified |
-| **REL-017** | Every traversal must declare a maximum depth, and must fail rather than run unbounded                                               | Constraint | Specified |
-| **REL-018** | Traversal must terminate on a cycle rather than following it                                                                        | Constraint | Specified |
-| **REL-019** | Traversal must be filtered by the requesting user's permissions, and must not reveal the existence of an artifact they may not read | Constraint | Specified |
-| **REL-020** | Where a path is truncated by permissions, the result must say a path was truncated without saying what was in it                    | Constraint | Specified |
-| **REL-021** | Traversal must be available through the API and the MCP surface on the same terms (**API**)                                         | T5         | Specified |
+| ID          | Requirement                                                                                                                                                                                | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **REL-015** | Neighbours of an artifact must be queryable, by type and by direction                                                                                                                      | T4         | Specified             |
+| **REL-016** | Paths between two artifacts must be queryable, to a bounded depth                                                                                                                          | T4         | Superseded by REL-029 |
+| **REL-017** | Every traversal must declare a maximum depth, and must fail rather than run unbounded                                                                                                      | Constraint | Specified             |
+| **REL-018** | Traversal must terminate on a cycle rather than following it                                                                                                                               | Constraint | Specified             |
+| **REL-019** | Traversal must be filtered by the requesting user's permissions, and must not reveal the existence of an artifact they may not read                                                        | Constraint | Specified             |
+| **REL-020** | Where a path is truncated by permissions, the result must say a path was truncated without saying what was in it                                                                           | Constraint | Specified             |
+| **REL-021** | Traversal must be available through the API and the MCP surface on the same terms (**API**)                                                                                                | T5         | Specified             |
+| **REL-029** | A shortest path between two artifacts must be queryable, to a declared maximum depth, optionally along named relationship types                                                            | T4         | Specified             |
+| **REL-030** | An interactive traversal must stop at a stated number of results, nearest first, and must say whether there were more                                                                      | Constraint | Specified             |
+| **REL-031** | Neighbours, impact and shortest paths must return within a stated budget - provisionally p95 of 250ms, never above 500ms - for a tenant of a million components, whatever the user may see | Constraint | Specified             |
+
+**REL-029 replaces REL-016, which asked for every path.** The number of paths between two
+artifacts grows combinatorially with depth, and through a hub it has no useful limit; the question
+people ask is how two things are connected, which one shortest path answers.
 
 **REL-020 is the awkward middle case, and both simpler answers are wrong.** Hiding the truncation
 tells a user there is no path when there is; describing it tells them about artifacts they may not
@@ -73,11 +80,16 @@ disclosure a tenant may need to decide about.
 
 ## 6. Impact
 
-| ID          | Requirement                                                                                                                   | Tranche | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **REL-022** | "What would changing this affect" must be answerable, combining declared relationships with the references in **REU**         | T4      | Specified |
-| **REL-023** | Impact must distinguish a hard dependency - a reference that would break - from a declared relationship that is informational | T4      | Specified |
-| **REL-024** | Impact must be presentable before a change is made, not only afterwards (**REU-008**)                                         | T4      | Specified |
+| ID          | Requirement                                                                                                                                                                  | Tranche | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **REL-022** | "What would changing this affect" must be answerable, combining declared relationships with the references in **REU**                                                        | T4      | Specified |
+| **REL-023** | Impact must distinguish a hard dependency - a reference that would break - from a declared relationship that is informational                                                | T4      | Specified |
+| **REL-024** | Impact must be presentable before a change is made, not only afterwards (**REU-008**)                                                                                        | T4      | Specified |
+| **REL-032** | A complete impact list, beyond the interactive limit (REL-030), must be obtainable as a report produced in the background, still bounded by depth and filtered by permission | T4      | Specified |
+
+**REL-032 exists because the complete answer can be most of a tenant.** In the relationship spike,
+changing one widely used component affected 62% of a million-component tenant within eight hops.
+That answer is real, and a regulated customer may need it, but not on a screen and not in a request.
 
 **REL-023 is the requirement that keeps impact analysis usable.** A component referenced by a
 document will break it; a component related to another by "see also" will not. Presenting both as
@@ -103,12 +115,12 @@ document will break it; a component related to another by "see also" will not. P
 
 ## 9. Open questions
 
-| ID          | Question                                                                                                                                                               | What would settle it                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **REL-Q01** | **Does this need a graph store, or recursive queries over the primary one?** Open decision 6 in scope §10                                                              | Realistic traversal depth and volume. Two hops over thousands of edges is not a graph problem |
-| **REL-Q02** | **How is permission filtering done without traversing what the user cannot see?** Filtering after traversal is correct and leaks timing; filtering during it is harder | The storage decision, and a security review                                                   |
-| **REL-Q03** | **Should relationships be inferable from references?** A document using a component is a relationship in everything but name, and materialising it doubles the data    | Whether users expect to see references in the graph view                                      |
-| **REL-Q04** | **Do relationships cross spaces, and may they cross tenants?** Cross-space is useful and interacts with **IAM-016**; cross-tenant is forbidden by IAM-001              | The same decision as IAM-Q04 on cross-tenant collaboration                                    |
+| ID          | Question                                                                                                                                                               | What would settle it                                                                                                                                                                                                                                                                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REL-Q01** | **Does this need a graph store, or recursive queries over the primary one?** Open decision 6 in scope §10                                                              | **Settled.** Recursive queries over the primary store, de-duplicating so a hub cannot multiply the work, with every interactive traversal capped. See [ADR-0017](../../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md) and [`Relationship_Spike_Findings.md`](../Relationship_Spike_Findings.md) |
+| **REL-Q02** | **How is permission filtering done without traversing what the user cannot see?** Filtering after traversal is correct and leaks timing; filtering during it is harder | **Settled.** During: the permission test is inside each recursive step, so an unreadable artifact is counted and never expanded. What traversal time still says about unreadable neighbours is a stated residual risk in [relationships.md](../../design/relationships.md)                                               |
+| **REL-Q03** | **Should relationships be inferable from references?** A document using a component is a relationship in everything but name, and materialising it doubles the data    | **Settled.** References appear in traversal and the graph view, marked as hard dependencies, read from where they live rather than copied into the relationship table                                                                                                                                                    |
+| **REL-Q04** | **Do relationships cross spaces, and may they cross tenants?** Cross-space is useful and interacts with **IAM-016**; cross-tenant is forbidden by IAM-001              | **Settled.** Across spaces where the user may read both ends, as references may (IAM-016); never across tenants (IAM-001, [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))                                                                                                        |
 
 ## 10. Traceability
 
@@ -119,3 +131,4 @@ document will break it; a component related to another by "see also" will not. P
 | REL-022 to REL-024 | Scope §7.12 impact; REU-008                                 |
 | REL-N02            | Scope §7.12, a query surface rather than a reasoning system |
 | REL-Q01            | Scope §10 open decision 6                                   |
+| REL-029 to REL-032 | ADR-0017, and the relationship spike's findings             |

@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.16 - 2026-09-11 (PR #21)
+
+How links between things are stored and followed, decided after measuring it.
+
+### Added
+
+- A decision that relationships between artifacts - "derived from", "satisfies", "see also" and the
+  rest - live in each organisation's own part of the database, beside everything else, rather than
+  in a separate graph database. A test organisation of a million components and three and a half
+  million links answered every question well inside the time limit, once two rules were in place.
+- "What would changing this affect" shows the nearest thousand things first, and says when there are
+  more, rather than trying to list most of an organisation on one screen. The complete list is
+  available as a report that is prepared in the background.
+- The warning before you change a component used elsewhere only counts what would actually change:
+  the documents that use it and the publications that include them, kept separate from things that
+  are merely related.
+- "How are these two connected" finds the shortest connection rather than every possible one.
+- Following links never passes through something you cannot read, and says when a connection was
+  cut short for that reason without saying what was there.
+- The design for relationships, four new requirements, and a note to revisit the approach when the
+  database gains built-in graph queries that can follow links of any length.
+
 ## 0.2.15 - 2026-09-11 (PR #20)
 
 Word documents checked in Word itself.
