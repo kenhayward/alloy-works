@@ -88,3 +88,18 @@ would be testing jsdom's polyfill. When the product grows a surface that needs i
 suite as `pnpm test:browser` and run it as a separate CI step. Until then, do not fake it in jsdom.
 
 **There is no coverage gate.** Adding one before the product exists would measure the scaffolding.
+
+## The database suite
+
+`packages/db` is tested against a real Postgres, never a fake: the thing under test is what Postgres
+does with roles, grants and `SET LOCAL`. Start it before `pnpm test`:
+
+```bash
+docker compose up -d --wait postgres
+```
+
+Each test file creates a database of its own (`aw_test_` and random hex) and drops it afterwards.
+Roles are shared by the whole server, so test tenants use ids beginning `test`, which the harness
+removes with the database; the files run one at a time because they share the login roles. CI runs
+the same suite against a Postgres service container. Point `ALLOY_TEST_DATABASE_URL` at another
+server to use one.

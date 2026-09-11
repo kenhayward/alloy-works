@@ -21,11 +21,12 @@ Electron window loads. There is no per-delivery fork of a component, and there i
 the proposed system, with a TypeScript web service as the system of record, is drawn in
 [`docs/design/system.md`](docs/design/system.md).
 
-| Component                      | Stack                                                             | Path              |
-| ------------------------------ | ----------------------------------------------------------------- | ----------------- |
-| Renderer / UI                  | React + TS + Vite                                                 | `apps/web`        |
-| Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials | `apps/desktop`    |
-| Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                 | `packages/domain` |
+| Component                      | Stack                                                                      | Path              |
+| ------------------------------ | -------------------------------------------------------------------------- | ----------------- |
+| Renderer / UI                  | React + TS + Vite                                                          | `apps/web`        |
+| Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials          | `apps/desktop`    |
+| Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                          | `packages/domain` |
+| Database library               | TypeScript + `pg` + Kysely - roles, provisioning, migrations, `withTenant` | `packages/db`     |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -169,6 +170,7 @@ Everything from the repo root. One pnpm workspace, one lock file.
 
 ```bash
 pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lock file
+docker compose up -d --wait postgres   # the database the db suite needs (see docs/development.md)
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

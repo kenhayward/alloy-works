@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.3.0 - 2026-09-11 (PR #26)
+
+The first piece of the service: the database it will stand on.
+
+### Added
+
+- The database layer every part of the service will use. It sets up the database, creates each
+  customer environment with its own separate storage, and keeps every environment's structure up to
+  date, picking up where it left off if an update is interrupted.
+- The safeguard at the heart of it: code can reach an environment's data only by first becoming that
+  environment, and a mistake produces an error rather than someone else's information. Every part of
+  that promise is tested against a real database.
+- A local database for development, started with one command, and the same database in the checks
+  every change runs through.
+
 ## 0.2.20 - 2026-09-11 (PR #25)
 
 The plan for building the service's skeleton, before any of it is built.
