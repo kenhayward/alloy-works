@@ -4,6 +4,7 @@ import {
   type MarkName,
   type ParagraphProperties,
   type ParagraphStyle,
+  type Theme,
   type Typeface,
 } from './schema.js';
 
@@ -37,7 +38,8 @@ export class ThemeError extends Error {
   }
 }
 
-export type ResolvedProperties = Required<ParagraphProperties>;
+/** Every property stated - the same shape the schema demands of a theme's defaults. */
+export type ResolvedProperties = Theme['defaults'];
 
 export interface ResolvedParagraphStyle {
   readonly id: string;
