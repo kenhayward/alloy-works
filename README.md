@@ -56,6 +56,7 @@ apps/
   desktop/    @alloy-works/desktop  Electron main + preload. No UI of its own.
 packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
+  db/         @alloy-works/db       Roles, tenants, migrations, withTenant. Node and pg.
 docs/         Architecture, development, testing, CI and decision records.
 ```
 

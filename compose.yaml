@@ -1,0 +1,22 @@
+# Development only. Later scaffolding plans add the service, the worker and the object store.
+# The password is a local development default for a throwaway container bound to 127.0.0.1; it is
+# not a secret and must never be used for anything deployed.
+name: alloy-works
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  postgres-data:

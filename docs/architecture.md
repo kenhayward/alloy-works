@@ -15,13 +15,14 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, three packages.
+One pnpm workspace, one lock file, four packages.
 
-| Workspace         | Package                | Holds                                                                                                      |
-| ----------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `packages/domain` | `@alloy-works/domain`  | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
-| `apps/web`        | `@alloy-works/web`     | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                 |
-| `apps/desktop`    | `@alloy-works/desktop` | The Electron shell: main process and preload. No UI of its own                                             |
+| Workspace         | Package                | Holds                                                                                                                            |
+| ----------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain` | `@alloy-works/domain`  | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                       |
+| `apps/web`        | `@alloy-works/web`     | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                       |
+| `apps/desktop`    | `@alloy-works/desktop` | The Electron shell: main process and preload. No UI of its own                                                                   |
+| `packages/db`     | `@alloy-works/db`      | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -104,11 +105,14 @@ Rules that hold for every channel added later:
 
 ## Data flow today
 
-There is no storage layer, no server and no persistence yet. The renderer builds one `Component`
+There is no server and no persistence behind the renderer yet. The renderer builds one `Component`
 through the domain package at module load and renders it, and asks the bridge which delivery it is
-running under. That is the whole flow. The storage model is decided
-([ADR-0012](decisions/0012-relational-version-chain-hashed-content.md)) and the service that will
-hold it is proposed in [`design/system.md`](design/system.md); neither is built.
+running under.
+
+Beside it, `packages/db` can prepare a Postgres database, provision tenants and migrate them, and
+reach a tenant's data only through `withTenant`, which assumes the tenant's role for one transaction
+([ADR-0020](decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)). Nothing calls
+it yet: the service that will is proposed in [`design/system.md`](design/system.md).
 
 ## Build and packaging
 

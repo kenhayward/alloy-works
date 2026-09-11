@@ -34,6 +34,7 @@ describe('the version mirrors', () => {
   it('leaves the packages nothing publishes at 0.0.0', () => {
     expect(read('apps', 'web', 'package.json').version).toBe('0.0.0');
     expect(read('packages', 'domain', 'package.json').version).toBe('0.0.0');
+    expect(read('packages', 'db', 'package.json').version).toBe('0.0.0');
   });
 
   it('matches the newest changelog entry', () => {
