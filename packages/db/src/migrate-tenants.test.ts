@@ -35,7 +35,11 @@ describe('migrate: tenant schemas', () => {
 
   it('brings a new tenant to the current version, as its owner role', async () => {
     const tenant = await createTenant(db.adminUrl, db.migratorUrl, input(db.newTenantId()));
-    expect(await versions(tenant.schema)).toEqual(['0001_principals', '0002_profile']);
+    expect(await versions(tenant.schema)).toEqual([
+      '0001_principals',
+      '0002_profile',
+      '0003_sign_in',
+    ]);
     const owner = await queryAs(
       db.adminUrl,
       `select tableowner from pg_tables where schemaname = $1 and tablename = 'principal'`,
@@ -56,7 +60,11 @@ describe('migrate: tenant schemas', () => {
       ids.map((id) => createTenant(db.adminUrl, db.migratorUrl, input(id))),
     );
     for (const tenant of both) {
-      expect(await versions(tenant.schema)).toEqual(['0001_principals', '0002_profile']);
+      expect(await versions(tenant.schema)).toEqual([
+        '0001_principals',
+        '0002_profile',
+        '0003_sign_in',
+      ]);
     }
   });
 
@@ -69,12 +77,12 @@ describe('migrate: tenant schemas', () => {
     try {
       await cp(new URL('../migrations/', import.meta.url), dir, { recursive: true });
       await writeFile(
-        join(dir, 'tenant', '0003_widgets.sql'),
+        join(dir, 'tenant', '0004_widgets.sql'),
         'create table widget (id int primary key);',
       );
       const migrationsDir = pathToFileURL(`${dir}/`);
 
-      // Only the later tenant already has a widget table, so 0002 fails there and nowhere else.
+      // Only the later tenant already has a widget table, so 0004 fails there and nowhere else.
       await queryAs(db.adminUrl, `create table ${late.schema}.widget (id int)`);
 
       await expect(migrate(db.migratorUrl, { migrationsDir })).rejects.toThrow(
@@ -83,14 +91,19 @@ describe('migrate: tenant schemas', () => {
       expect(await versions(early.schema)).toEqual([
         '0001_principals',
         '0002_profile',
-        '0003_widgets',
+        '0003_sign_in',
+        '0004_widgets',
       ]);
-      expect(await versions(late.schema)).toEqual(['0001_principals', '0002_profile']);
+      expect(await versions(late.schema)).toEqual([
+        '0001_principals',
+        '0002_profile',
+        '0003_sign_in',
+      ]);
 
       await queryAs(db.adminUrl, `drop table ${late.schema}.widget`);
       const resumed = await migrate(db.migratorUrl, { migrationsDir });
       expect(resumed.tenants[early.id]).toEqual([]);
-      expect(resumed.tenants[late.id]).toEqual(['0003_widgets']);
+      expect(resumed.tenants[late.id]).toEqual(['0004_widgets']);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

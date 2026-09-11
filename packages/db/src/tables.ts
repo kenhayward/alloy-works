@@ -1,4 +1,4 @@
-import type { ColumnType, Generated } from 'kysely';
+import type { ColumnType, Generated, Transaction } from 'kysely';
 
 // Written by hand while there are two tenant tables; generated from a migrated template schema once
 // there are enough that keeping them in step by hand is a risk (service-foundations.md).
@@ -44,7 +44,45 @@ export interface ProfileTable {
   updated_at: Generated<Date>;
 }
 
+export interface IdentityProviderTable {
+  singleton: Generated<boolean>;
+  issuer: string;
+  client_id: string;
+  secret_name: string;
+}
+
+export interface SignInRouteTable {
+  route: 'organisation' | 'google';
+}
+
+export interface SignInAttemptTable {
+  id: Generated<string>;
+  state_hash: string;
+  nonce: string;
+  code_verifier: string;
+  route: 'organisation' | 'google';
+  expires_at: Date;
+}
+
+export interface SessionTable {
+  id: Generated<string>;
+  token_hash: string;
+  principal_id: string;
+  route: 'organisation' | 'google';
+  created_at: Generated<Date>;
+  last_seen_at: Generated<Date>;
+  idle_expires_at: Date;
+  expires_at: Date;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
+  identity_provider: IdentityProviderTable;
+  sign_in_route: SignInRouteTable;
+  sign_in_attempt: SignInAttemptTable;
+  session: SessionTable;
 }
+
+/** A transaction inside withTenant: what every read and write of tenant data is given. */
+export type TenantTransaction = Transaction<TenantTables>;
