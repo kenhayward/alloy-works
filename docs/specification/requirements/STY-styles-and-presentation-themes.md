@@ -138,6 +138,7 @@ one day, and a theme change months later re-renders something that was signed.
 | **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it | T2         | Specified |
 | **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                        | Constraint | Specified |
 | **STY-048** | The default theme must cover the scripts LOC-004 admits and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                    | T1         | Specified |
+| **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box  | Constraint | Specified |
 
 **Section 11 was the open font question from the architecture work, and it is now settled.** The
 constraint that made it hard has not changed: one typographic system has to work in a browser tab,
@@ -153,6 +154,13 @@ same document. Those two are compatible only if the files themselves are pinned 
 naming a typeface that has since been revised, or withdrawn, re-renders differently and says
 nothing. It is the failure mode this specification keeps meeting: not an error, an absence nobody
 notices.
+
+**STY-049 is here because no engine catches it.** STY-040 covers a typeface that cannot be
+loaded. The publishing engine spike found the neighbouring case, a face that loads and lacks the
+characters it is asked to set, and found that Typst either borrows the glyphs silently from a face
+nobody declared or, with only pinned fonts, sets empty boxes - exit code 0 and no warning either way.
+The check has to be the pipeline's own. See
+[ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).
 
 ## 12. Interchange
 

@@ -130,6 +130,7 @@ under time pressure.
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **VER-039** | Data derived from a version - an embedding above all - must record the model and the model version that produced it                         | T5         | Specified |
 | **VER-040** | Re-deriving must insert new derived data and must alter no version, so that changing model is an operation rather than a rewrite of history | Constraint | Specified |
+| **VER-041** | A baseline must remain re-publishable on the engine version recorded with its publication (**PUB-063**) for as long as the baseline exists  | Constraint | Specified |
 
 **VER-039 and VER-040 exist because a version is immutable and the things derived from it are not.**
 Models are replaced, and re-embedding a corpus is ordinary work rather than an exception. Storing a

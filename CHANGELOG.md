@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.2.10 - 2026-09-11 (PR #15)
+
+The publishing engine is chosen: Typst, fed the document as data rather than as code.
+
+### Added
+
+- A decision that Typst produces the PDF. It was the only one of four open-source engines to pass
+  all four gates, and it went on to pass the five remaining cases - mathematics in every position,
+  roman and restarted page numbering with running heads, embedded typefaces, a 300-page document in
+  1.3 seconds with every generated page number right, and byte-identical output on two different
+  kinds of server.
+- Typst is given the document as data, read by one fixed template, and never as Typst source. Typst's
+  language can run code, so writing content into it would turn every missed escape into code running
+  inside the publishing pipeline - the spike showed one line of content doing exactly that. As data,
+  the same line prints as the characters it is.
+- Seven requirements: a provisional budget for preview and for publishing, content reaching the
+  engine only as data, the engine version recorded with every publication and kept available for as
+  long as its baseline exists, untagged previews of part of a document but never an untagged
+  publication, and a publish that fails when any character has no glyph in the theme's typefaces.
+
+### Changed
+
+- XHTML is no longer the step between the content and the PDF, though it stays a first-class export.
+  The earlier decision about the content model is otherwise untouched.
+- The spike findings now cover all nine cases, including two more failures that make no noise: an
+  engine that sets unreadable empty boxes, or borrows letters from a font nobody chose, when a
+  typeface lacks a character; and a contents page that prints the wrong page number while its own
+  link goes to the right one.
+
 ## 0.2.9 - 2026-09-11 (PR #14)
 
 The publishing engine spike has run its four gates, and one engine passed all of them.

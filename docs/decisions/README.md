@@ -35,17 +35,18 @@ when a record is missing from it, when a row points at a file that is not there,
 disagree about a status. A stale index is worse than no index, because it says a decision does not
 exist.
 
-| #                                                                  | Decision                                                      | Status   |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- | -------- |
-| [0001](0001-record-architecture-decisions.md)                      | Record architecture decisions                                 | Accepted |
-| [0002](0002-pnpm-workspaces-and-turborepo.md)                      | pnpm workspaces with Turborepo                                | Accepted |
-| [0003](0003-one-renderer-two-deliveries.md)                        | One renderer, two deliveries                                  | Accepted |
-| [0004](0004-brand-assets-and-packaging.md)                         | Brand assets and desktop packaging                            | Accepted |
-| [0005](0005-purpose-built-node-and-mark-content-model.md)          | A purpose-built node-and-mark content model                   | Accepted |
-| [0012](0012-relational-version-chain-hashed-content.md)            | A relational version chain with hashed content                | Accepted |
-| [0011](0011-external-participation-guests-and-identified-links.md) | External participation: guest principals and identified links | Accepted |
-| [0010](0010-open-licence-typefaces-only.md)                        | Open-licence typefaces only                                   | Accepted |
-| [0009](0009-federation-and-google-accounts-no-local-passwords.md)  | Federation and Google accounts, no local passwords            | Accepted |
-| [0008](0008-schema-per-tenant-isolation.md)                        | Schema-per-tenant isolation                                   | Accepted |
-| [0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md) | No per-server licensing in the publishing pipeline            | Accepted |
-| [0006](0006-iteration-version-revision.md)                         | Iteration, version and revision                               | Accepted |
+| #                                                                      | Decision                                                      | Status   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------- | -------- |
+| [0001](0001-record-architecture-decisions.md)                          | Record architecture decisions                                 | Accepted |
+| [0002](0002-pnpm-workspaces-and-turborepo.md)                          | pnpm workspaces with Turborepo                                | Accepted |
+| [0003](0003-one-renderer-two-deliveries.md)                            | One renderer, two deliveries                                  | Accepted |
+| [0004](0004-brand-assets-and-packaging.md)                             | Brand assets and desktop packaging                            | Accepted |
+| [0005](0005-purpose-built-node-and-mark-content-model.md)              | A purpose-built node-and-mark content model                   | Accepted |
+| [0013](0013-typst-rendering-resolved-data-through-a-fixed-template.md) | Typst, rendering resolved data through a fixed template       | Accepted |
+| [0012](0012-relational-version-chain-hashed-content.md)                | A relational version chain with hashed content                | Accepted |
+| [0011](0011-external-participation-guests-and-identified-links.md)     | External participation: guest principals and identified links | Accepted |
+| [0010](0010-open-licence-typefaces-only.md)                            | Open-licence typefaces only                                   | Accepted |
+| [0009](0009-federation-and-google-accounts-no-local-passwords.md)      | Federation and Google accounts, no local passwords            | Accepted |
+| [0008](0008-schema-per-tenant-isolation.md)                            | Schema-per-tenant isolation                                   | Accepted |
+| [0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md)     | No per-server licensing in the publishing pipeline            | Accepted |
+| [0006](0006-iteration-version-revision.md)                             | Iteration, version and revision                               | Accepted |
