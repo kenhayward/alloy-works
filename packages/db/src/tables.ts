@@ -75,6 +75,24 @@ export interface SessionTable {
   expires_at: Date;
 }
 
+export interface InvitationTable {
+  email: string;
+  principal_id: string | null;
+  created_at: Generated<Date>;
+  accepted_at: Date | null;
+}
+
+export interface GoogleDomainTable {
+  domain: string;
+}
+
+export interface SignInHandoffTable {
+  code_hash: string;
+  principal_id: string;
+  attempt_hash: string;
+  expires_at: Date;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -82,6 +100,9 @@ export interface TenantTables {
   sign_in_route: SignInRouteTable;
   sign_in_attempt: SignInAttemptTable;
   session: SessionTable;
+  invitation: InvitationTable;
+  google_domain: GoogleDomainTable;
+  sign_in_handoff: SignInHandoffTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

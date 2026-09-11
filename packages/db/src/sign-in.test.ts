@@ -2,11 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { configureOrganisationSignIn } from './sign-in.js';
+import {
+  closeSignInRoute,
+  configureOrganisationSignIn,
+  inviteToTenant,
+  permitGoogleSignIn,
+} from './sign-in.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
-describe('organisation sign-in settings', () => {
+describe('sign-in settings', () => {
   let db: TestDatabase;
   let tenant: Tenant;
   let service: TenantDatabase;
@@ -65,5 +70,60 @@ describe('organisation sign-in settings', () => {
       trx.selectFrom('identity_provider').select(['issuer', 'client_id']).execute(),
     );
     expect(providers).toEqual([{ issuer: 'https://login.example', client_id: 'alloy-2' }]);
+  });
+
+  it('permits Google, recording the Workspace domains named in lower case, once', async () => {
+    await permitGoogleSignIn(db.adminUrl, tenant, { domains: ['Example.org'] });
+    await permitGoogleSignIn(db.adminUrl, tenant, { domains: ['example.org'] });
+    const { routes, domains } = await service.withTenant(tenant, async (trx) => ({
+      routes: await trx.selectFrom('sign_in_route').select('route').orderBy('route').execute(),
+      domains: await trx.selectFrom('google_domain').select('domain').execute(),
+    }));
+    expect(routes).toEqual([{ route: 'google' }, { route: 'organisation' }]);
+    expect(domains).toEqual([{ domain: 'example.org' }]);
+  });
+
+  it('records an invitation by address, in lower case, once', async () => {
+    await inviteToTenant(db.adminUrl, tenant, 'Ada@Example.com');
+    await inviteToTenant(db.adminUrl, tenant, 'ada@example.com');
+    const invitations = await service.withTenant(tenant, (trx) =>
+      trx.selectFrom('invitation').select(['email', 'principal_id']).execute(),
+    );
+    expect(invitations).toEqual([{ email: 'ada@example.com', principal_id: null }]);
+  });
+
+  it('ends the sessions a route issued when it is closed, and no others', async () => {
+    await service.withTenant(tenant, async (trx) => {
+      const principal = await trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: 'grace',
+          email: null,
+          display_name: null,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const later = new Date(Date.now() + 60 * 60 * 1000);
+      for (const route of ['organisation', 'google'] as const) {
+        await trx
+          .insertInto('session')
+          .values({
+            token_hash: `hash-of-a-${route}-token`,
+            principal_id: principal.id,
+            route,
+            idle_expires_at: later,
+            expires_at: later,
+          })
+          .execute();
+      }
+    });
+    await closeSignInRoute(db.adminUrl, tenant, 'google');
+    const { routes, sessions } = await service.withTenant(tenant, async (trx) => ({
+      routes: await trx.selectFrom('sign_in_route').select('route').execute(),
+      sessions: await trx.selectFrom('session').select('route').execute(),
+    }));
+    expect(routes).toEqual([{ route: 'organisation' }]);
+    expect(sessions).toEqual([{ route: 'organisation' }]);
   });
 });
