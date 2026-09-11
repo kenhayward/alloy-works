@@ -111,3 +111,7 @@ harness `@alloy-works/db/testing` exports - so it needs the database running, li
 `packages/api-contract` has no database: its tests check the OpenAPI document it builds, and one of
 them fails when the committed `openapi.json` differs from what the contracts generate. Change a route,
 run `pnpm --filter @alloy-works/api-contract generate`, and commit both.
+
+Signing in is tested against the stand-in provider, started in process on a free port, so the tests
+need no network and no real accounts. `cross-tenant.test.ts` presents a session from one environment
+to every authenticated route of another, and fails for any new route that would accept it.

@@ -10,7 +10,17 @@ describe('configuration', () => {
       port: 8080,
       host: '127.0.0.1',
       logLevel: 'info',
+      allowInsecureIssuers: false,
     });
+  });
+
+  it('allows providers over plain HTTP only when told to, for the stand-in', () => {
+    expect(
+      loadConfig({ DATABASE_URL: url, ALLOW_INSECURE_ISSUERS: 'true' }).allowInsecureIssuers,
+    ).toBe(true);
+    expect(() => loadConfig({ DATABASE_URL: url, ALLOW_INSECURE_ISSUERS: 'yes' })).toThrow(
+      /ALLOW_INSECURE_ISSUERS/,
+    );
   });
 
   it('reads the optional settings when given', () => {

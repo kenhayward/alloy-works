@@ -15,7 +15,7 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, six packages.
+One pnpm workspace, one lock file, seven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                            |
 | ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -25,6 +25,7 @@ One pnpm workspace, one lock file, six packages.
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
 | `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes. Not yet reached by the renderer                             |
+| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, for development and tests only                                               |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -116,8 +117,9 @@ platform table; the service reads that tenant's data only through `withTenant` i
 which assumes the tenant's role for one transaction
 ([ADR-0020](decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)); and every
 answer and every error follows the contract in `packages/api-contract`, from which the committed
-`openapi.json` is generated and checked. It has one tenant-scoped route, `GET /v1/tenant`, and nobody
-can sign in yet. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
+`openapi.json` is generated and checked. People sign in through their organisation's identity
+provider - in development and tests, the stand-in - and hold a session in their environment's own
+schema, which `GET /v1/me` and signing out use. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
 [`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
 ## Build and packaging

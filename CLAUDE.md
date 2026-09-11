@@ -29,6 +29,7 @@ the proposed system, with a TypeScript web service as the system of record, is d
 | Database library               | TypeScript + `pg` + Kysely - roles, provisioning, migrations, `withTenant`          | `packages/db`           |
 | API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked | `packages/api-contract` |
 | Web service                    | TypeScript + Fastify on Node - hostname to tenant, the contract's routes            | `apps/service`          |
+| Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only             | `packages/stand-in-idp` |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -175,6 +176,7 @@ pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lo
 docker compose up -d --wait postgres   # the database the db suite needs (see docs/development.md)
 pnpm --filter @alloy-works/db dev:setup           # prepare the development database
 pnpm --filter @alloy-works/service dev             # the service on :8080 (see docs/development.md)
+pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provider on :9090
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)

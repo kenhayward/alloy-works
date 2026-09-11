@@ -20,3 +20,18 @@ export const TenantProfile = z.object({
   name: z.string().describe('What this environment is called, as its own people see it'),
 });
 export type TenantProfile = z.infer<typeof TenantProfile>;
+
+export const Me = z.object({
+  id: z.string().describe('The principal, stable for as long as the environment exists'),
+  displayName: z.string().nullable(),
+  email: z.string().nullable(),
+  environment: z.string().describe('The environment signed in to, as its people see it'),
+});
+export type Me = z.infer<typeof Me>;
+
+export const SignInCallback = z.object({
+  code: z.string().optional(),
+  state: z.string().optional(),
+  error: z.string().optional(),
+});
+export type SignInCallback = z.infer<typeof SignInCallback>;

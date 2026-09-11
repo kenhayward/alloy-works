@@ -3,10 +3,17 @@
 import { createTenantDatabase } from '@alloy-works/db';
 import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
+import { createOidcClient } from './oidc.js';
+import { environmentSecrets } from './secrets.js';
 
 const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
-const app = buildApp({ db, logLevel: config.logLevel });
+const app = buildApp({
+  db,
+  logLevel: config.logLevel,
+  oidc: createOidcClient({ allowInsecureIssuers: config.allowInsecureIssuers }),
+  secrets: environmentSecrets(process.env),
+});
 
 const stop = async (signal: string) => {
   app.log.info({ signal }, 'stopping');

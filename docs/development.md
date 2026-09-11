@@ -45,6 +45,18 @@ The tenant comes from the hostname, so address it as one. `curl` can say it outr
 curl -H "Host: dev.acme.localhost" http://127.0.0.1:8080/v1/tenant
 ```
 
+Signing in needs the stand-in provider running beside it, which offers invented people to sign in
+as:
+
+```bash
+pnpm --filter @alloy-works/stand-in-idp start     # http://127.0.0.1:9090
+```
+
+Then open `http://dev.acme.localhost:8080/v1/sign-in/organisation` in a browser, choose someone,
+and `http://dev.acme.localhost:8080/v1/me` says who you are. On another port, tell the stand-in
+where the service is, since it only returns people to addresses it knows:
+`STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
+
 Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
 the service listens on the IPv4 address only - the same trap the renderer's dev server met. If
 anything else on the machine listens on port 8080 over IPv6, a browser can reach that instead. Set

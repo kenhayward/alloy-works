@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { RouteContract } from './contract.js';
-import { API_VERSION } from './routes.js';
+import type { RouteContract, RouteResponse } from './contract.js';
+import { API_VERSION, SESSION_COOKIE } from './routes.js';
 import { ErrorBody } from './schemas.js';
 
 type Json = Record<string, unknown>;
@@ -8,6 +8,7 @@ type Json = Record<string, unknown>;
 export interface OpenApiDocument {
   readonly openapi: '3.1.0';
   readonly info: { readonly title: string; readonly version: string };
+  readonly components: { readonly securitySchemes: Record<string, unknown> };
   readonly paths: Record<string, Record<string, unknown>>;
 }
 
@@ -39,6 +40,32 @@ function content(schema: z.ZodType) {
   return { 'application/json': { schema: responseSchema(schema) } };
 }
 
+function response(status: number, declared: RouteResponse): Json {
+  if (declared.schema) {
+    return { description: declared.description, content: content(declared.schema) };
+  }
+  if (status >= 300 && status < 400) {
+    return {
+      description: declared.description,
+      headers: { Location: { description: 'Where to go next', schema: { type: 'string' } } },
+    };
+  }
+  return { description: declared.description };
+}
+
+function queryParameters(query: z.ZodObject): Json[] {
+  const json = z.toJSONSchema(query, { io: 'input' }) as {
+    properties?: Record<string, Json>;
+    required?: string[];
+  };
+  return Object.entries(json.properties ?? {}).map(([name, schema]) => ({
+    name,
+    in: 'query',
+    required: (json.required ?? []).includes(name),
+    schema: open(schema),
+  }));
+}
+
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
   const ordered = [...routes].sort(
@@ -46,8 +73,8 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
   );
   for (const route of ordered) {
     const responses: Json = {};
-    for (const [status, response] of Object.entries(route.responses)) {
-      responses[status] = { description: response.description, content: content(response.schema) };
+    for (const [status, declared] of Object.entries(route.responses)) {
+      responses[status] = response(Number(status), declared);
     }
     responses.default = {
       description: 'An error, in the one shape every error takes',
@@ -56,8 +83,17 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     (paths[route.path] ??= {})[route.method.toLowerCase()] = {
       operationId: route.operationId,
       summary: route.summary,
+      security: route.authenticated ? [{ session: [] }] : [],
+      ...(route.query ? { parameters: queryParameters(route.query) } : {}),
       responses,
     };
   }
-  return { openapi: '3.1.0', info: { title: 'Alloy Works', version: API_VERSION }, paths };
+  return {
+    openapi: '3.1.0',
+    info: { title: 'Alloy Works', version: API_VERSION },
+    components: {
+      securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE } },
+    },
+    paths,
+  };
 }
