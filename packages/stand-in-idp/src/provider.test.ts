@@ -84,4 +84,20 @@ describe('the stand-in provider', () => {
     expect(page).toContain('Ada (ada@example.com)');
     expect(page).toContain('Grace (grace@example.com)');
   });
+
+  it('says which Workspace domain manages an account, as Google does, and nothing for a personal one', async () => {
+    for (const [user, domain] of [
+      ['alice', 'example.org'],
+      ['grace', undefined],
+    ] as const) {
+      const { url, codeVerifier, state, nonce } = await authorise({ login_hint: user });
+      const { landed } = await follow(url);
+      const tokens = await client.authorizationCodeGrant(config, landed!, {
+        pkceCodeVerifier: codeVerifier,
+        expectedState: state,
+        expectedNonce: nonce,
+      });
+      expect(tokens.claims()?.hd, user).toBe(domain);
+    }
+  });
 });
