@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 
 export interface Tenant {
@@ -62,4 +63,15 @@ export async function provisionTenant(adminUrl: string, input: NewTenant): Promi
   } finally {
     await client.end();
   }
+}
+
+/** Provisions a tenant and migrates it to the current version: the way a new tenant is made. */
+export async function createTenant(
+  adminUrl: string,
+  migratorUrl: string,
+  input: NewTenant,
+): Promise<Tenant> {
+  const tenant = await provisionTenant(adminUrl, input);
+  await migrate(migratorUrl);
+  return tenant;
 }
