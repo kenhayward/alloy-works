@@ -97,9 +97,11 @@ workers alike, so a rule cannot be implemented twice and drift.
 
 ### Signing in
 
-The service redirects to the tenant's identity provider over OIDC, or to Google where the tenant has
-none (ADR-0009), and holds no password of any kind. The session it issues names the principal and the
-tenant; every request and every realtime stream after that is authorised against it (API-016).
+The hostname names the tenant; the service redirects to the identity provider the tenant or its
+organisation configures, over OpenID Connect, or to Google where the tenant permits it (ADR-0009), and
+holds no password of any kind. The session it issues lives in that tenant's schema; every request and
+every realtime stream after that is authorised against it (API-016), and every database access
+assumes the tenant's role for one transaction. See [service-foundations.md](service-foundations.md).
 
 ### Authoring
 
@@ -216,20 +218,20 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 
 ## Where each part is designed
 
-| Part                                           | Design                                                                                         |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                         |
-| Themes and their three projections             | [themes.md](themes.md)                                                                         |
-| Word output                                    | [word-output.md](word-output.md)                                                               |
-| Search                                         | [search.md](search.md)                                                                         |
-| Relationships and traversal                    | [relationships.md](relationships.md)                                                           |
-| Realtime                                       | [realtime.md](realtime.md)                                                                     |
-| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point |
-| Tenancy, identity and access                   | Not yet designed; T1                                                                           |
-| Outlines, numbering and cross-references       | Not yet designed; T1                                                                           |
-| The publishing pipeline - resolve and template | Not yet designed; T1. ADR-0013 and the publishing spike fix its shape                          |
-| The API surface                                | Not yet designed; T1                                                                           |
-| Data, collaboration, reuse, AI, interchange    | Later tranches, designed when their tranche arrives                                            |
+| Part                                           | Design                                                                                                                     |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                                                     |
+| Themes and their three projections             | [themes.md](themes.md)                                                                                                     |
+| Word output                                    | [word-output.md](word-output.md)                                                                                           |
+| Search                                         | [search.md](search.md)                                                                                                     |
+| Relationships and traversal                    | [relationships.md](relationships.md)                                                                                       |
+| Realtime                                       | [realtime.md](realtime.md)                                                                                                 |
+| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                             |
+| Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1 |
+| Outlines, numbering and cross-references       | Not yet designed; T1                                                                                                       |
+| The publishing pipeline - resolve and template | Not yet designed; T1. ADR-0013 and the publishing spike fix its shape                                                      |
+| The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1             |
+| Data, collaboration, reuse, AI, interchange    | Later tranches, designed when their tranche arrives                                                                        |
 
 ## Open questions
 

@@ -29,14 +29,16 @@ requirements below say how something must be enforced rather than only what must
 
 ## 3. Tenancy
 
-| ID          | Requirement                                                                                                                       | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-001** | Every artifact must belong to exactly one tenant, and no artifact may be shared between tenants                                   | Constraint | Specified |
-| **IAM-002** | Tenant isolation must be enforced at the data layer, not by application code remembering to add a filter                          | Constraint | Specified |
-| **IAM-003** | The tenant a request acts within must be derived from the authenticated session, and never from a parameter the caller supplies   | Constraint | Specified |
-| **IAM-004** | Every read and write path must be covered by a test that attempts access from a second tenant and is refused                      | T1         | Specified |
-| **IAM-005** | Search indexes, caches, secrets, model endpoints, publications and the audit log must each be tenant-scoped, not only the content | T1         | Specified |
-| **IAM-006** | Deleting a tenant must render everything it owns unreadable on a stated timetable, and that timetable must be verifiable          | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                               | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-001** | Every artifact must belong to exactly one tenant, and no artifact may be shared between tenants                                                                                                                           | Constraint | Specified |
+| **IAM-002** | Tenant isolation must be enforced at the data layer, not by application code remembering to add a filter                                                                                                                  | Constraint | Specified |
+| **IAM-003** | The tenant a request acts within must be derived from the authenticated session, and never from a parameter the caller supplies                                                                                           | Constraint | Specified |
+| **IAM-004** | Every read and write path must be covered by a test that attempts access from a second tenant and is refused                                                                                                              | T1         | Specified |
+| **IAM-005** | Search indexes, caches, secrets, model endpoints, publications and the audit log must each be tenant-scoped, not only the content                                                                                         | T1         | Specified |
+| **IAM-006** | Deleting a tenant must render everything it owns unreadable on a stated timetable, and that timetable must be verifiable                                                                                                  | T3         | Specified |
+| **IAM-052** | A customer must be able to hold several tenants - production, a sandbox, a validation environment - grouped by an organisation that shares billing, administration and identity provider configuration, and never content | T1         | Specified |
+| **IAM-053** | Each tenant must be reachable at its own hostname, two-level names such as an environment under a customer's name included, and a customer's own domain must be addable without a code change                             | T1         | Specified |
 
 **IAM-002 and IAM-003 are written as enforcement rather than intent on purpose.** Multi-tenant
 leakage is named in scope §13 as one of the two most likely sources of a serious breach, and it never
