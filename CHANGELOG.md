@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.7.2 - 2026-09-12 (PR #38)
+## 0.7.2 - 2026-09-12 (PR #39)
 
 The content and authoring requirements, answered against their first review.
 
