@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.9 - 2026-09-12 (PR #NN)
+
+A language tag with a shape, and the publishing requirements answered against their first review.
+
+### Added
+
+- What typography fidelity means operationally: the lines a composition decided are the lines a
+  renderer draws, hyphenation follows the language of the passage, and a typeface substituted for a
+  licence is composed against rather than swapped in under finished pages.
+- Publishing fails wherever the resolved document cannot be faithfully rendered - content that
+  cannot flow at all, which the old failure list did not cover because it enumerated instead of
+  ruling.
+- What a publication is: one baseline, one act, a declared set of formats, and the PDF included
+  wherever anything cites a page.
+- Determinism that is checked rather than stated: pipeline and library changes tested against
+  recorded output, incremental and clean compilation held to the same bytes, and reproduction
+  verifying what was pinned.
+- What happens to retained publications when a tenant closes, and a preview that says it is untagged
+  to assistive technology as well as on screen.
+
+### Changed
+
+- A language tag is a BCP 47 tag with a region wherever the region changes the content, in the
+  document that owns it - CNT-083 recorded a language and left its shape open, which nothing that
+  formats a date or holds a Brazilian variant can build against.
+- Generated matter describing the resolved document is a constraint rather than a T4 item, and Word
+  reports anything it cannot carry faithfully rather than being exempt because it is first-class.
+
 ## 0.10.8 - 2026-09-12 (PR #51)
 
 The localisation requirements, answered against their first review.
