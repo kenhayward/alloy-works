@@ -44,7 +44,7 @@ retrofitting them onto a monolingual version model is a rewrite.
 | **LOC-027** | Every string the interface shows must be localisable, and must never be assembled from fragments by application code. Where a message varies by number or by gender it must use a locale-aware message format over the categories the locale itself declares, never concatenation                                                                                                  | Constraint | Specified             |
 | **LOC-028** | In the interface, dates, times, numbers and currency must be formatted for the user's own locale. In content and in published output they must be formatted for the locale of the language being published, because a published document has one locale and its reader may have another. A currency amount must carry the currency it is in; only its presentation is the locale's | Constraint | Specified             |
 | **LOC-029** | Layout must survive translated text 50% longer than its source, and 100% longer for strings under twenty characters, without truncation or overlap - verified by an automated suite running in pseudolocalisation (LOC-042) rather than by inspection                                                                                                                              | T6         | Specified             |
-| **LOC-034** | Every language tag in this product must be a BCP 47 tag, carrying a region wherever the region changes the content - `pt-BR` distinct from `pt-PT` - so that a regional variant is expressible at all (**CNT-083**)                                                                                                                                                                | Constraint | Specified             |
+| **LOC-034** | Every language tag in this product must be a BCP 47 tag, carrying a region wherever the region changes the content - `pt-BR` distinct from `pt-PT` - so that a regional variant is expressible at all (**CNT-140**)                                                                                                                                                                | Constraint | Specified             |
 | **LOC-038** | The languages and locales the product supports must be a declared list, and locale data - formats, collation, plural categories - must come from a named, versioned source, with the version recorded so that a change in it is a visible change rather than a drift in output (**LOC-Q05**)                                                                                       | T6         | Specified             |
 | **LOC-042** | Pseudolocalisation must be available as a mode - expanded, accented, bracketed strings - and the interface suite must run in it and in a right-to-left locale, so that LOC-004 and LOC-029 are verified rather than asserted                                                                                                                                                       | T6         | Specified             |
 
@@ -67,7 +67,9 @@ short strings, is the industry's own rule of thumb and is defensible; what matte
 checkable, because any amount of stretch can be declared acceptable by somebody looking at one
 screen.
 
-**LOC-034 states a dependency rather than assuming it.** CNT-083 records a language; LOC-002 and
+**LOC-034 states a dependency, and CNT now carries it.** CNT-083 recorded a language without a
+shape; it is superseded by **CNT-140**, which requires a BCP 47 tag with a region wherever the region
+changes the content. LOC-002 and
 LOC-003 are only implementable if that tag distinguishes `pt-BR` from `pt-PT`, and nothing said so.
 It says so here.
 
@@ -209,7 +211,7 @@ translator's permission, not an author's.
 | LOC-020            | LIB - terms as references rather than text                                                   |
 | LOC-024            | GEN-022, generated content marked until accepted                                             |
 | LOC-021            | IMP-007, nothing dropped without being reported                                              |
-| LOC-034            | CNT-083 - the language tag this area needs to be a BCP 47 locale                             |
+| LOC-034            | CNT-140 - the language tag, BCP 47 with a region, changed in CNT for this                    |
 | LOC-036            | ADM-001 - a tenant policy is configuration, declared and audited                             |
 | LOC-041            | GEN-024 - acceptance is an audited act naming a person; IAM carries the permission           |
 | LOC-043            | LIB - the vocabulary a resolved value is translated against; LOC-020 keeps the binding inert |

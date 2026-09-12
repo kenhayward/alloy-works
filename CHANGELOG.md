@@ -3,6 +3,42 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.9 - 2026-09-12 (PR #53)
+
+A language tag with a shape, and the publishing and relationship requirements answered against their
+first reviews.
+
+### Added
+
+- What typography fidelity means operationally: the lines a composition decided are the lines a
+  renderer draws, hyphenation follows the language of the passage, and a typeface substituted for a
+  licence is composed against rather than swapped in under finished pages.
+- Publishing fails wherever the resolved document cannot be faithfully rendered - content that
+  cannot flow at all, which the old failure list did not cover because it enumerated instead of
+  ruling.
+- What a publication is: one baseline, one act, a declared set of formats, and the PDF included
+  wherever anything cites a page.
+- Determinism that is checked rather than stated: pipeline and library changes tested against
+  recorded output, incremental and clean compilation held to the same bytes, and reproduction
+  verifying what was pinned.
+- What happens to retained publications when a tenant closes, and a preview that says it is untagged
+  to assistive technology as well as on screen.
+
+### Changed
+
+- A language tag is a BCP 47 tag with a region wherever the region changes the content, in the
+  document that owns it - CNT-083 recorded a language and left its shape open, which nothing that
+  formats a date or holds a Brazilian variant can build against.
+- Generated matter describing the resolved document is a constraint rather than a T4 item, and Word
+  reports anything it cannot carry faithfully rather than being exempt because it is first-class.
+- Relationships can be changed rather than only created and removed, and a change is audited like the
+  rest - an edit would otherwise have escaped the record by being neither. Creating or removing one
+  now requires standing at both ends, which the read side had and the write side did not.
+- A relationship type can be deprecated and renamed, so a misnamed one is not permanent merely
+  because it is in use; cardinality means something specific; a type can declare itself acyclic, so a
+  cycle is refused when it is created rather than stepped around at every traversal; and an impact
+  report follows the same job contract as any other long-running work.
+
 ## 0.10.8 - 2026-09-12 (PR #51)
 
 The localisation requirements, answered against their first review.
