@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.7.1 - 2026-09-12 (PR #36)
+
+The plan for the whole system in one command.
+
+### Added
+
+- The plan for images for the service and the worker, and a compose file that brings the whole
+  system up prepared and ready to sign in to.
+
 ## 0.7.0 - 2026-09-12 (PR #35)
 
 Work that runs in the background, and somewhere to keep what it makes.
