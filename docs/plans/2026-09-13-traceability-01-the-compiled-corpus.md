@@ -1168,12 +1168,20 @@ describe('searching statements', () => {
 });
 
 describe('the summary', () => {
-  it('counts each tranche against each state', () => {
-    const output = formatStats(model);
+  it('leads with the size of the corpus', () => {
+    expect(formatStats(model)).toContain('3 requirements, 0 non-requirements, 0 open questions');
+  });
 
-    expect(output).toContain('3');
-    expect(output).toContain('T1');
-    expect(output).toContain('Constraint');
+  it('counts each tranche against each state, in fixed-width columns', () => {
+    const lines = formatStats(model).split('
+');
+    const row = (tranche: string): string[] =>
+      lines.find((line) => line.startsWith(tranche))!.trim().split(/\s+/);
+
+    // Columns are Specified, Designed, Withdrawn, Superseded, in that order.
+    expect(row('T1')).toEqual(['T1', '0', '1', '0', '0']);
+    expect(row('T2')).toEqual(['T2', '1', '0', '0', '0']);
+    expect(row('Constraint')).toEqual(['Constraint', '1', '0', '0', '0']);
   });
 });
 
@@ -1593,9 +1601,15 @@ git show HEAD --stat
 pnpm test
 ```
 
-Then count the assertions deliberately: the two moved files had 25 and 7 tests. After the move, five
-are deleted as unfailable and one is added, so expect 21 and 7. If the numbers differ, find out why
-before committing.
+Then count the assertions deliberately. Vitest reported **25 and 7** for these two files before the
+move. Four `it()` calls go from `describe('the requirement identifiers')`, and one goes from
+`describe('the numbered non-requirements and open questions')` - but that block runs inside a `for`
+loop over both identifier kinds, so that single `it()` is **two** runtime tests. One test is added.
+
+    25 - 4 - 2 + 1 = 20
+
+So expect **20 and 7**. If the numbers differ, find out why before committing: the arithmetic is here
+precisely so that a test lost by accident cannot hide behind a test deleted on purpose.
 
 - [ ] **Step 8: Typecheck, lint and commit**
 
