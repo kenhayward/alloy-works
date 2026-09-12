@@ -1173,10 +1173,12 @@ describe('the summary', () => {
   });
 
   it('counts each tranche against each state, in fixed-width columns', () => {
-    const lines = formatStats(model).split('
-');
+    const lines = formatStats(model).split(/\r?\n/);
     const row = (tranche: string): string[] =>
-      lines.find((line) => line.startsWith(tranche))!.trim().split(/\s+/);
+      lines
+        .find((line) => line.startsWith(tranche))!
+        .trim()
+        .split(/\s+/);
 
     // Columns are Specified, Designed, Withdrawn, Superseded, in that order.
     expect(row('T1')).toEqual(['T1', '0', '1', '0', '0']);
