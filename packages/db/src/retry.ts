@@ -11,14 +11,17 @@ export async function retryOnRoleConflict<T>(
   work: () => Promise<T>,
   options: { readonly attempts?: number } = {},
 ): Promise<T> {
-  const attempts = options.attempts ?? 5;
+  const attempts = options.attempts ?? 12;
   for (let attempt = 1; ; attempt++) {
     try {
       return await work();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (attempt >= attempts || !CONFLICT.test(message)) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 25 * attempt * attempt));
+      // Random, not a fixed step: several databases prepared at once collide on the same rows, and
+      // retrying in step with each other is how they keep colliding.
+      const ceiling = Math.min(1000, 25 * 2 ** (attempt - 1));
+      await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * ceiling));
     }
   }
 }
