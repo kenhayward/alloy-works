@@ -1,6 +1,6 @@
 {
   "name": "@alloy-works/desktop",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "private": true,
   "description": "Alloy Works desktop shell",
   "productName": "Alloy Works",
