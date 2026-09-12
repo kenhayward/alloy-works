@@ -83,4 +83,11 @@ describe('the OpenAPI document', () => {
     expect(parameters).toHaveLength(1);
     expect(parameters?.[0]).toMatchObject({ name: 'sampleId', in: 'path', required: true });
   });
+
+  it('describes a stream by the type it sends, not by a body', () => {
+    const streamed = operation('/v1/stream', 'get').responses['200'] as {
+      content: Record<string, unknown>;
+    };
+    expect(Object.keys(streamed.content)).toEqual(['text/event-stream']);
+  });
 });

@@ -1,4 +1,4 @@
-import type { TenantDatabase } from '@alloy-works/db';
+import { notifyTenant, type TenantDatabase } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
@@ -34,8 +34,8 @@ export function sampleJob(deps: {
       );
       const stored = await found.store.put(pdf, 'application/pdf');
       const engine = await deps.typst.version();
-      await deps.db.withTenant(tenant, (trx) =>
-        trx
+      await deps.db.withTenant(tenant, async (trx) => {
+        await trx
           .updateTable('sample')
           .set({
             state: 'done',
@@ -47,19 +47,24 @@ export function sampleJob(deps: {
           })
           .where('id', '=', found.sample!.id)
           .where('state', '=', 'queued')
-          .execute(),
-      );
+          .execute();
+        // In the same transaction: nothing is announced that did not commit.
+        await notifyTenant(trx, { kind: 'sample', id: found.sample!.id, state: 'done' });
+      });
     },
 
     async failed(tenant, job) {
-      await deps.db.withTenant(tenant, (trx) =>
-        trx
+      await deps.db.withTenant(tenant, async (trx) => {
+        await trx
           .updateTable('sample')
           .set({ state: 'failed', finished_at: new Date() })
           .where('id', '=', job.subjectId)
           .where('state', '=', 'queued')
-          .execute(),
-      );
+          .execute();
+        if (job.subjectId) {
+          await notifyTenant(trx, { kind: 'sample', id: job.subjectId, state: 'failed' });
+        }
+      });
     },
   };
 }

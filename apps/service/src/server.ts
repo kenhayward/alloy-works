@@ -1,6 +1,6 @@
 // The process: read the configuration, connect, listen, and close cleanly when asked to stop. Every
 // decision it relies on lives in modules with tests of their own; this file only wires them.
-import { createTenantDatabase } from '@alloy-works/db';
+import { createTenantDatabase, listenToTenants } from '@alloy-works/db';
 import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
 import { createObjectStores, sealingKey } from '@alloy-works/objects';
@@ -9,6 +9,7 @@ import { environmentSecrets } from './secrets.js';
 
 const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
+const events = listenToTenants(config.databaseUrl);
 const secrets = environmentSecrets(process.env);
 const objects = config.objectStore
   ? createObjectStores(config.objectStore, sealingKey(secrets.get('object_store_key') ?? ''))
@@ -18,6 +19,7 @@ const app = buildApp({
   logLevel: config.logLevel,
   oidc: createOidcClient({ allowInsecureIssuers: config.allowInsecureIssuers }),
   secrets,
+  events,
   ...(config.google ? { google: config.google } : {}),
   ...(objects ? { objects } : {}),
 });
@@ -25,6 +27,7 @@ const app = buildApp({
 const stop = async (signal: string) => {
   app.log.info({ signal }, 'stopping');
   await app.close();
+  await events.close();
   await db.close();
 };
 process.once('SIGINT', () => void stop('SIGINT'));

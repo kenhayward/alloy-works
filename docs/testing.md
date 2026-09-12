@@ -123,6 +123,14 @@ The suites run against PostgreSQL and the object store, never against the whole 
 start the service in process, and the worker's own functions directly. The stack itself is checked by
 hand, and end to end in CI from plan 5.
 
+The stream's tests are the exception to testing the service with `inject`: a stream is the one thing
+`inject` cannot hold open, so they listen on a real socket. Their environments are named
+`127.0.0.1` and `localhost`, because a hostname is what names an environment and those are the two
+that resolve to the machine running the test. One of them builds a second service whose reads can be
+held open, so that an event can be committed while a snapshot is being read - the ordering the
+realtime spike paid for. `packages/api-client` regenerates its types in a test and compares them with
+the committed ones, as `packages/api-contract` does for the document itself.
+
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running

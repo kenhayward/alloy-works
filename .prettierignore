@@ -5,3 +5,7 @@ out/
 coverage/
 pnpm-lock.yaml
 packages/api-contract/openapi.json
+
+# Generated from openapi.json by `pnpm --filter @alloy-works/api-client generate`, and compared
+# with the generator's own output in a test: formatting it would make that comparison fail.
+packages/api-client/src/generated/

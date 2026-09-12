@@ -35,4 +35,11 @@ export {
   type JobQueue,
 } from './queue.js';
 export { recordStoreCredential, type SealedStoreCredential } from './object-store.js';
+export {
+  listenToTenants,
+  notifyTenant,
+  tenantChannel,
+  type TenantEvent,
+  type TenantListener,
+} from './realtime.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';

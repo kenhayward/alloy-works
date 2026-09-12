@@ -4,6 +4,7 @@ import {
   createTenant,
   createTenantDatabase,
   enqueueJob,
+  listenToTenants,
   migrate,
   type Job,
   type JobQueue,
@@ -104,6 +105,24 @@ describe('the sample job, from the queue to the store', () => {
     const pdf = await tenantStore.get(row.object_key!);
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(pdf.toString('latin1')).toContain('Development');
+  });
+
+  it("says so on the environment's channel, in the transaction that finishes it", async () => {
+    const listener = listenToTenants(db.serviceUrl);
+    try {
+      const id = await request();
+      const heard = new Promise<unknown>((resolve) => {
+        const stop = listener.subscribe(tenant.id, (event) => {
+          stop();
+          resolve(event);
+        });
+      });
+      // Subscribed before the work starts: what it announces must have committed by then.
+      expect(await work()).toBe('done');
+      expect(await heard).toEqual({ kind: 'sample', id, state: 'done' });
+    } finally {
+      await listener.close();
+    }
   });
 
   it('has nothing to do when the queue is empty', async () => {

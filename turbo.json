@@ -39,6 +39,11 @@
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
+    },
+    "@alloy-works/api-client#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
     }
   }
 }
