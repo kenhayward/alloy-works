@@ -20,6 +20,11 @@ The content and authoring requirements, answered against their first review.
 - `docs/reviews/`, holding the reviews of the specification documents verbatim, with an index saying
   which document each one reviews and where it was answered. They are inputs, not decisions: what
   was done about a review lives in the document it reviewed.
+- The administration requirements answered against their own review: the life of a tenant after
+  bootstrapping - suspension, an export offered before closure, a reversible grace period - a tenant
+  administrator's sight of their own audit trail, a floor under self-service diagnostics, where a
+  budget alert is delivered, what a configuration export carries in place of a secret, and what
+  consumes a secret before it is rotated.
 
 ### Changed
 
