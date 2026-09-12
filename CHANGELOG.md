@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.8.1 - 2026-09-12 (PR #40)
+
+The plan for live updates.
+
+### Added
+
+- The plan for watching an environment as it works: one live stream per environment, told what is
+  there on connecting and then what happens, and one generated way for anything to call the service.
+
 ## 0.8.0 - 2026-09-12 (PR #37)
 
 The whole system, from one command.
