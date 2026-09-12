@@ -170,6 +170,22 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   today - the scope, the detailed requirements, and the brief and findings for each spike that
   settles an irreversible decision. It is the one folder in `docs/` that is not true yet;
   [`docs/features.md`](docs/features.md) stays the honest account of the distance between them.
+- **`docs/reviews/` holds reviews of those documents, exactly as they arrived, and is never edited
+  to match what happened.** A review is evidence of what was visible when it was written. Answering
+  one follows a fixed shape, and it is worth following because it is what makes a requirement's
+  history readable years later:
+  - **Amend the requirements, never the review.** A material change gets a new identifier and marks
+    the old one `Superseded by XXX-NNN`; rewording for clarity is an edit. The rules are in
+    [the index](docs/specification/requirements/README.md).
+  - **End the document with a change history** - one row per change, naming the review point that
+    prompted it, and a row for anything the review raised that was deliberately **not** changed,
+    with why. Declining is a legitimate answer; declining silently is not.
+  - **Check a cross-document claim before repeating it.** Several reviews asserted that another
+    area owned something; some did and some did not, and both are worth recording as findings.
+  - **Update the index in the same PR**: `docs/reviews/README.md` says where each review was
+    answered, and the requirements index carries the counts.
+  - `docs/reviews/market/` is different in kind - assessments of where the product could sell,
+    which are input to a decision rather than scope, and are not written into the requirements.
 
 ## Commands
 

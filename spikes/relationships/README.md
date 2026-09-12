@@ -1,7 +1,7 @@
 # Relationship storage spike - harness
 
 > **Throwaway.** This is the harness behind
-> [`Relationship_Spike_Findings.md`](../../docs/specification/Relationship_Spike_Findings.md), which
+> [`Relationship_Spike_Findings.md`](../../docs/specification/spikes/Relationship_Spike_Findings.md), which
 > [ADR-0017](../../docs/decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md) rests
 > on. It is scaffolding to reach a decision; the traversal will be written for the product's own
 > schema, and the conformance suite that measures its budget (REL-031) with it.

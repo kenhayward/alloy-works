@@ -9,7 +9,7 @@ import { exportDocx, importDocx } from '../ooxml/index.js';
 
 /**
  * Case 8 of the content model spike - a GATE.
- * See docs/specification/Content_Model_Spike.md.
+ * See docs/specification/spikes/Content_Model_Spike.md.
  *
  * The fixture is a real Word document, not hand-written OOXML: a Heading 1, a paragraph carrying a
  * footnote and a REF cross-reference, and then track changes turned on for one insertion, one

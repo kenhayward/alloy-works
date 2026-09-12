@@ -5,7 +5,7 @@ the moment they ask, and returned as one list.
 
 This realises [SCH](../specification/requirements/SCH-search-navigation-and-discovery.md) under
 [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md), which rests on
-[`Search_Spike_Findings.md`](../specification/Search_Spike_Findings.md). It reads the version chain
+[`Search_Spike_Findings.md`](../specification/spikes/Search_Spike_Findings.md). It reads the version chain
 and the embedding store described in [storage-and-versioning.md](storage-and-versioning.md)
 (ADR-0012), inside each tenant's schema (ADR-0008).
 

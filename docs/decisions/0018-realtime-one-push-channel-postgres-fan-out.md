@@ -26,7 +26,7 @@ to break. For fan-out between instances, a broker such as Redis or NATS scales f
 of another service to run and isolate per tenant, and of events that are no longer atomic with the
 change they describe.
 
-[`Realtime_Spike_Findings.md`](../specification/Realtime_Spike_Findings.md) measured the chosen
+[`Realtime_Spike_Findings.md`](../specification/spikes/Realtime_Spike_Findings.md) measured the chosen
 shape's risk - `NOTIFY`, which serialises the commits that use it, with one queue per database and
 every tenant in one database (ADR-0008). With 5,000 viewers on two instances, it found:
 

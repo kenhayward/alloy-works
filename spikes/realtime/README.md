@@ -1,7 +1,7 @@
 # Realtime spike - harness
 
 > **Throwaway.** This is the harness behind
-> [`Realtime_Spike_Findings.md`](../../docs/specification/Realtime_Spike_Findings.md), which
+> [`Realtime_Spike_Findings.md`](../../docs/specification/spikes/Realtime_Spike_Findings.md), which
 > [ADR-0018](../../docs/decisions/0018-realtime-one-push-channel-postgres-fan-out.md) rests on. It is
 > scaffolding to reach a decision; the realtime service will be written in the product, and the
 > conformance suite that measures its budget (API-036) with it.

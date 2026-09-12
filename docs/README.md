@@ -12,7 +12,12 @@ describe how the repo works today, and a PR that changes how it works updates th
 | [features.md](features.md)               | The canonical inventory of what the product does                                  |
 | [decisions/](decisions/)                 | Architecture decision records - what was decided and what would change the answer |
 | [design/](design/)                       | How each subsystem will be built, and which requirements each one answers         |
-| [specification/](specification/)         | What the product is going to be - scope first, then detailed requirements         |
+| [specification/](specification/)         | What the product is going to be - scope, detailed requirements, and the spikes    |
+| [reviews/](reviews/)                     | Reviews of the specification, kept verbatim, and where each was answered          |
+
+`reviews/` is the only folder here holding documents this repository did not write. They are inputs:
+a review says what somebody found wrong or missing, and what was done about it lives in the document
+it reviewed, in its change history. They are never edited afterwards to match what happened.
 
 `specification/` and `design/` are the two folders that describe the product rather than the
 repository - what it must do, and how it will be built. Everything else here is true today; those two

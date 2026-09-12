@@ -17,11 +17,11 @@ from a version - three sections the purpose above had not named.
 
 ## 2. Depends on
 
-| Rests on                                                           | What it fixes                                     |
-| ------------------------------------------------------------------ | ------------------------------------------------- |
-| [ADR-0006](../../decisions/0006-iteration-version-revision.md)     | Iteration, version, revision and what each is for |
-| [Content model spike findings](../Content_Model_Spike_Findings.md) | Comparison needs block identity, not a step log   |
-| [`Project_Scope.md`](../Project_Scope.md) §6, §7.9                 | Baseline; the three levels of comparison          |
+| Rests on                                                                  | What it fixes                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------- |
+| [ADR-0006](../../decisions/0006-iteration-version-revision.md)            | Iteration, version, revision and what each is for |
+| [Content model spike findings](../spikes/Content_Model_Spike_Findings.md) | Comparison needs block identity, not a step log   |
+| [`Project_Scope.md`](../Project_Scope.md) §6, §7.9                        | Baseline; the three levels of comparison          |
 
 | Not here                                         | There            |
 | ------------------------------------------------ | ---------------- |

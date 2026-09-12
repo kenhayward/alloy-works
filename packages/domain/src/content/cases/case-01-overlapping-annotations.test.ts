@@ -11,7 +11,7 @@ import {
 
 /**
  * Case 1 of the content model spike - a GATE.
- * See docs/specification/Content_Model_Spike.md.
+ * See docs/specification/spikes/Content_Model_Spike.md.
  *
  * A reviewer's suggested deletion covers a range that begins inside a conditional block and ends
  * outside it. The two ranges overlap without nesting, which is the ordinary situation in review

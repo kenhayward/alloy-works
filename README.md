@@ -44,25 +44,30 @@ web publishing channel, an XML editor for arbitrary schemas, or offline-first.
 [`docs/specification/Project_Scope.md`](docs/specification/Project_Scope.md) carries the full
 argument: the market position, the personas, twenty-one capability areas, the non-goals, the
 decisions taken and still open, and the risks. The detailed requirements are in
-[`docs/specification/requirements/`](docs/specification/requirements/), and each subsystem design in
-[`docs/design/`](docs/design/) declares which of them it answers.
+[`docs/specification/requirements/`](docs/specification/requirements/) - one document per area, all
+twenty-one written, each reviewed, and then all of them read against each other in a cross-cutting
+pass. Every one ends with a change history saying what changed and why, and the reviews behind them
+are kept in [`docs/reviews/`](docs/reviews/). Each subsystem design in
+[`docs/design/`](docs/design/) declares which requirements it answers, so a requirement no design
+claims is work not yet designed.
 
 ### The order it gets built in
 
 Six tranches, each a usable increment rather than a layer:
 
-| Tranche                    | Contains                                                                                                                                                       |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, search, PDF and Word publishing, the API |
-| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, tabular presentation                                                                         |
-| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit                                                                               |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries                                                                 |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant, retrieval grounding, AI governance and cost controls                                                             |
-| **T6 - The interchange**   | Word import, citation styles, translation                                                                                                                      |
+| Tranche                    | Contains                                                                                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, tables and figures, styles and themes, templates, search, PDF and Word publishing, the API |
+| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, revising a value by hand, tabular presentation                                                                                                 |
+| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit, component lifecycles                                                                                                           |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries, diverging revisions                                                                                              |
+| **T5 - The intelligence**  | Template prompts, the assistant and interactive chat, retrieval grounding, AI governance and cost controls                                                                                                       |
+| **T6 - The interchange**   | Word import, citation styles, external reference sources, translation                                                                                                                                            |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
-what makes it a shippable increment rather than a foundation nobody can evaluate. **None of it is
-built yet** - what exists today is the scaffolding under it, listed below.
+what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
+than its name suggests, touching twelve of the twenty-one areas, because publishing at the fidelity
+bar needs themes, templates, assets and tables as well as an editor. **None of it is built yet** - what exists today is the scaffolding under it, listed below.
 
 ## Features
 
@@ -128,23 +133,24 @@ packages/
 tests/
   e2e/        @alloy-works/e2e      The whole system in containers, driven over HTTP.
 deploy/       The Dockerfile, its ignore list, and the compose stack. See deploy/README.md.
-docs/         Architecture, development, testing, CI, decisions and the specification.
+docs/         Architecture, development, testing, CI, decisions, the specification and its reviews.
 ```
 
 ## Documentation
 
-| Document                                           | What it covers                                                                                |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging |
-| [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                  |
-| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                        |
-| [deploy/README.md](deploy/README.md)               | The images, the compose stack, configuration, and what is not there yet                       |
-| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                     |
-| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                       |
-| [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                            |
-| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                 |
-| [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements                           |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                           |
+| Document                                           | What it covers                                                                                              |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging               |
+| [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                                |
+| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                                      |
+| [deploy/README.md](deploy/README.md)               | The images, the compose stack, configuration, and what is not there yet                                     |
+| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                                   |
+| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                                     |
+| [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                                          |
+| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                               |
+| [docs/specification/](docs/specification/)         | What the product is going to be - the scope, the detailed requirements, and the spikes behind the decisions |
+| [docs/reviews/](docs/reviews/)                     | The reviews of those requirements, kept as received, and what was done about each                           |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                                         |
 
 ## Platforms
 

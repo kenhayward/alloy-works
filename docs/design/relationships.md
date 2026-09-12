@@ -7,7 +7,7 @@ This realises [REL](../specification/requirements/REL-relationships-and-the-grap
 structural queries of [REU](../specification/requirements/REU-reuse-variants-and-conditional-profiling.md)
 and [SCH](../specification/requirements/SCH-search-navigation-and-discovery.md), under
 [ADR-0017](../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md), which rests on
-[`Relationship_Spike_Findings.md`](../specification/Relationship_Spike_Findings.md). It sits beside
+[`Relationship_Spike_Findings.md`](../specification/spikes/Relationship_Spike_Findings.md). It sits beside
 the version chain in [storage-and-versioning.md](storage-and-versioning.md), inside each tenant's
 schema.
 

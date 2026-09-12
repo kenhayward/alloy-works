@@ -1,7 +1,7 @@
 # Search spike - harness
 
 > **Throwaway.** This is the harness behind
-> [`Search_Spike_Findings.md`](../../docs/specification/Search_Spike_Findings.md), which
+> [`Search_Spike_Findings.md`](../../docs/specification/spikes/Search_Spike_Findings.md), which
 > [ADR-0016](../../docs/decisions/0016-search-in-postgres-behind-one-interface.md) rests on. It is
 > scaffolding to reach a decision and should not be built on; the conformance suite that measures the
 > search budget (SCH-033) will be written for the product's own schema.

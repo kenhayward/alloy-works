@@ -1692,8 +1692,8 @@ running under.
 
 Beside it, `packages/db` can prepare a Postgres database, provision tenants and migrate them, and
 reach a tenant's data only through `withTenant`, which assumes the tenant's role for one transaction
-([ADR-0020](decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)). Nothing calls
-it yet: the service that will is proposed in [`design/system.md`](design/system.md).
+([ADR-0020](../decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)). Nothing calls
+it yet: the service that will is proposed in [`design/system.md`](../design/system.md).
 ```
 
 - [ ] **Step 2: `docs/testing.md`**

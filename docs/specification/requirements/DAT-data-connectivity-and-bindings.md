@@ -16,11 +16,11 @@ must be enforced rather than only what must be true.
 
 ## 2. Depends on
 
-| Rests on                                                           | What it fixes                                                          |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| [`Project_Scope.md`](../Project_Scope.md) §6, §7.4                 | Connection, query definition, binding, binding mode, provenance record |
-| [Content model spike findings](../Content_Model_Spike_Findings.md) | A query feeding an anchorable table needs a primary key                |
-| [CNT](CNT-content-and-authoring.md) CNT-030, CNT-039               | The inline binding node; anchoring into generated content by data      |
+| Rests on                                                                  | What it fixes                                                          |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`Project_Scope.md`](../Project_Scope.md) §6, §7.4                        | Connection, query definition, binding, binding mode, provenance record |
+| [Content model spike findings](../spikes/Content_Model_Spike_Findings.md) | A query feeding an anchorable table needs a primary key                |
+| [CNT](CNT-content-and-authoring.md) CNT-030, CNT-039                      | The inline binding node; anchoring into generated content by data      |
 
 | Not here                                                       | There            |
 | -------------------------------------------------------------- | ---------------- |

@@ -86,7 +86,7 @@ Supporting choices that follow:
   existing customer corpus makes migration a sales motion, and the interchange value that is
   currently near zero becomes substantial.
 - **A spike gate fails.** Cases 1, 3, 7 or 8 in
-  [`Content_Model_Spike.md`](../specification/Content_Model_Spike.md) needing a workaround that
+  [`Content_Model_Spike.md`](../specification/spikes/Content_Model_Spike.md) needing a workaround that
   leaks into the schema means this record is superseded rather than patched.
 - **A standard appears that natively expresses overlapping ranges, tracked changes and data
   bindings together.** None does today. One that did would remove the argument above entirely.

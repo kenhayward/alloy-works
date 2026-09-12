@@ -5,7 +5,7 @@ import { assertPublishable, resolveBoundTable } from '../binding.js';
 
 /**
  * Case 3 of the content model spike - a GATE.
- * See docs/specification/Content_Model_Spike.md.
+ * See docs/specification/spikes/Content_Model_Spike.md.
  *
  * A table is produced by a block binding. A footnote is anchored to one cell. Then the parameter
  * set changes and the row that cell belonged to is no longer returned.

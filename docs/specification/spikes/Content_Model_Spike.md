@@ -1,13 +1,13 @@
 # Content model spike
 
 > **Status: proposed, not run.** This is the brief for the first spike named in
-> [`Project_Scope.md`](Project_Scope.md) section 15. It exists so the spike can be executed by
+> [`Project_Scope.md`](../Project_Scope.md) section 15. It exists so the spike can be executed by
 > somebody who was not in the conversation that produced it, and so that its outcome is a written
 > finding rather than an opinion.
 
 ## 1. What this spike is for
 
-[ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) has already decided the
+[ADR-0005](../../decisions/0005-purpose-built-node-and-mark-content-model.md) has already decided the
 **direction**: a purpose-built node-and-mark document model, JSON-serialised, identical to the
 editor's in-memory model, with standards at the boundary.
 

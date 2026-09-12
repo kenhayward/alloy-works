@@ -26,7 +26,7 @@ Three things had narrowed it before any measurement:
   variable-length paths nor shortest path, so the traversals REL needs would still be recursive SQL.
 
 So the risk the chosen shape carried was speed, and
-[`Relationship_Spike_Findings.md`](../specification/Relationship_Spike_Findings.md) measured it: a
+[`Relationship_Spike_Findings.md`](../specification/spikes/Relationship_Spike_Findings.md) measured it: a
 million components, 50,000 documents and 5,000 publications in 2,000 spaces, 3.5 million edges
 skewed so that one artifact had 23,202 edges into it, three users seeing little, some and everything.
 Every answer was checked against an independent graph library. It found:

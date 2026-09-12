@@ -1,7 +1,7 @@
 # Relationship storage spike - brief and findings
 
 > **Status: complete; decided in
-> [ADR-0017](../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md).** A short
+> [ADR-0017](../../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md).** A short
 > spike, run before the decision, on the one risk the chosen shape carries.
 
 ## The question
@@ -12,9 +12,9 @@ filtered without walking what the user cannot see (REL-Q02)?
 
 Before the spike, three things narrowed it. A separate graph store would be a second copy of every
 tenant's links, with REL-019 and REL-020 enforced again inside it - the argument that decided search
-in [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md). The links impact
+in [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md). The links impact
 analysis needs most are references, and those already live in Postgres
-([ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md)). And PostgreSQL 19's
+([ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)). And PostgreSQL 19's
 graph language, SQL/PGQ, is a view over ordinary tables whose first release has neither
 variable-length paths nor shortest path, so it would not change the answer yet.
 
@@ -149,7 +149,7 @@ establish.
 ## Findings
 
 **Postgres holds, given three rules** - now in
-[`docs/design/relationships.md`](../design/relationships.md):
+[`docs/design/relationships.md`](../../design/relationships.md):
 
 1. **Every interactive traversal is capped in size as well as depth.** Impact returns the nearest
    1,000 and says whether there are more, as search counts do. A complete list is a report produced

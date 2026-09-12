@@ -19,7 +19,7 @@ pipeline, which has to reproduce every permission rule again and whose lag SCH-0
 then have to state.
 
 The shape chosen - Postgres alone - had one risk, speed, and
-[`Search_Spike_Findings.md`](../specification/Search_Spike_Findings.md) measured it before this
+[`Search_Spike_Findings.md`](../specification/spikes/Search_Spike_Findings.md) measured it before this
 record was written: a million components in 2,000 spaces, three users seeing 0.25%, 10% and all of
 it, against a provisional budget. It found:
 
