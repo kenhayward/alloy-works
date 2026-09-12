@@ -18,5 +18,25 @@ services:
       timeout: 5s
       retries: 30
 
+  # The object store. `-s3.iam.readOnly=false` lets the service make a credential per tenant through
+  # the IAM API; `weed mini` ignores that flag, which is why this is the full server. Only the S3
+  # port is published: the filer's IAM gRPC service is unauthenticated inside the container.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.46
+    command: ['server', '-dir=/data', '-s3', '-s3.port=8333', '-s3.iam.readOnly=false']
+    environment:
+      AWS_ACCESS_KEY_ID: alloy-store-admin
+      AWS_SECRET_ACCESS_KEY: alloy-store-admin-dev-secret
+    ports:
+      - '127.0.0.1:8333:8333'
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/healthz']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
 volumes:
   postgres-data:
+  seaweedfs-data:
