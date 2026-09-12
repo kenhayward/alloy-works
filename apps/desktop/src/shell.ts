@@ -39,9 +39,16 @@ export interface RendererLocation {
   readonly packaged: boolean;
   readonly devServerUrl: string;
   readonly rendererIndexHtml: string;
+  /**
+   * The environment this window is for. A session is a cookie belonging to the service's own
+   * address, and a window loading a file from disk can hold none, so when there is a service the
+   * window loads it (ADR-0022).
+   */
+  readonly serviceUrl?: string | undefined;
 }
 
 export function resolveRendererTarget(location: RendererLocation): RendererTarget {
+  if (location.serviceUrl) return { kind: 'url', value: location.serviceUrl };
   return location.packaged
     ? { kind: 'file', value: location.rendererIndexHtml }
     : { kind: 'url', value: location.devServerUrl };
