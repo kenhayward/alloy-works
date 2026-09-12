@@ -3,6 +3,33 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.11 - 2026-09-12 (PR #NN)
+
+Styles and tables, answered against their first reviews.
+
+### Added
+
+- What an admonition style contains, which the styles document required a catalogue of and never
+  described - so a warning that must not look like a note now has somewhere to say so.
+- A draft keeps the appearance of the theme version it is bound to, and what a new theme version
+  would change is listable before anybody adopts it.
+- How a character style composes over a paragraph style, stated once and resolved once rather than
+  recomputed by each output format.
+- A contrast minimum for a theme's own text and paper, checked when the theme is saved, because a
+  published PDF has nothing left that can adjust it.
+- Tables: what carries each declaration and that it addresses a column by key rather than position,
+  what wins when a style and a column both declare formatting, a closed set of aggregations, caption
+  association and repeated headers for assistive technology, and group headings that stay with their
+  groups across a page break.
+
+### Changed
+
+- Style inheritance is a `must` rather than a `should`, and the editor renders every declared
+  property rather than a sample of them.
+- Unit conversion belongs to the query, which the tables document referred to and never granted; the
+  locale a table formats for is the one the document publishes in; and a named error carries a stable
+  identifier, not only a human message.
+
 ## 0.10.10 - 2026-09-12 (PR #54)
 
 Reuse, search and structure, answered against their first reviews.
