@@ -46,6 +46,25 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # The object store the objects and worker suites run against. A service container cannot take
+      # a command, and SeaweedFS needs one, so it is started as a step.
+      - name: Object store
+        run: |
+          docker run -d --name seaweedfs -p 8333:8333 \
+            -e AWS_ACCESS_KEY_ID=alloy-store-admin \
+            -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret \
+            chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
+          for attempt in $(seq 1 60); do
+            curl -fs http://127.0.0.1:8333/healthz > /dev/null && exit 0
+            sleep 1
+          done
+          docker logs seaweedfs
+          exit 1
+
+      # The pinned Typst, checked against its hash: the same version the tests, CI and the image use.
+      - name: Typst
+        run: pnpm --filter @alloy-works/worker fetch-typst
+
       # ---------------------------------------------------------------------------------------
       # TEMPORARY: every check below is continue-on-error while the repo is finding its baseline.
       # The run reports results without blocking a merge.

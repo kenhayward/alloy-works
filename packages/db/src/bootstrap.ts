@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { assertTenantRole } from './names.js';
+import { retryOnRoleConflict } from './retry.js';
 
 export interface LoginPasswords {
   readonly service: string;
@@ -21,6 +22,10 @@ const LOGIN_ROLES = [
  * tenant only by assuming its role inside a transaction (see tenant-database.ts).
  */
 export async function bootstrapCluster(adminUrl: string, passwords: LoginPasswords): Promise<void> {
+  await retryOnRoleConflict(() => bootstrapOnce(adminUrl, passwords));
+}
+
+async function bootstrapOnce(adminUrl: string, passwords: LoginPasswords): Promise<void> {
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
   try {

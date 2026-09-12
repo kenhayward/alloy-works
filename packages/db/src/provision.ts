@@ -1,6 +1,7 @@
 import pg from 'pg';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
+import { retryOnRoleConflict } from './retry.js';
 
 export interface Tenant {
   readonly id: string;
@@ -19,6 +20,10 @@ export interface NewTenant {
  * It does not create the tenant's tables: `migrate` does, as the tenant's owner role.
  */
 export async function provisionTenant(adminUrl: string, input: NewTenant): Promise<Tenant> {
+  return retryOnRoleConflict(() => provisionOnce(adminUrl, input));
+}
+
+async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant> {
   const names = tenantNames(input.tenant.id);
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();

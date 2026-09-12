@@ -15,7 +15,7 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, seven packages.
+One pnpm workspace, one lock file, nine packages.
 
 | Workspace               | Package                     | Holds                                                                                                                            |
 | ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,6 +26,8 @@ One pnpm workspace, one lock file, seven packages.
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
 | `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes. Not yet reached by the renderer                             |
 | `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only |
+| `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                      |
+| `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -122,7 +124,11 @@ provider - in development and tests, the stand-in - and hold a session in their 
 schema, which `GET /v1/me` and signing out use. An environment may also take Google accounts:
 Google returns to the one sign-in address, `signin.<domain>`, which checks the account against the
 environment's invitations and named Workspace domains and hands the sign-in back to the environment
-with a one-time code. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
+with a one-time code. Work a request should not wait for goes on a queue in the platform schema - a
+tenant, a kind and an id, never content - which a worker claims with `SKIP LOCKED` under a lease and
+then does inside that tenant's schema. The one kind there is renders a sample PDF with the pinned
+Typst and keeps it in the tenant's own corner of the object store, which its own credential is the
+only one that reaches. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
 [`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
 ## Build and packaging

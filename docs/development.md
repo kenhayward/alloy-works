@@ -15,14 +15,14 @@ pnpm install
 Always the plain install locally; CI uses `pnpm install --frozen-lockfile`. Never `npm install` or
 `yarn` - there is one lock file and it is `pnpm-lock.yaml`.
 
-## The database
+## The database and the object store
 
-The database suite - and, from later plans, the service - needs PostgreSQL 17 with pgvector. Docker
-runs it:
+The suites - and the service and the worker - need PostgreSQL 17 with pgvector, and an
+S3-compatible object store. Docker runs both:
 
 ```bash
-docker compose up -d --wait postgres   # 127.0.0.1:5432, superuser postgres / postgres
-docker compose down                    # stop it; add -v to throw away its data
+docker compose up -d --wait postgres seaweedfs   # Postgres on 5432, the object store on 8333
+docker compose down                              # stop them; add -v to throw away their data
 ```
 
 The password is a development default for a container bound to `127.0.0.1`, never a credential for
@@ -33,7 +33,7 @@ anything deployed. `pnpm test` fails with an instruction to start it when it is 
 `apps/service` needs the database prepared once, then runs with reload on save:
 
 ```bash
-pnpm --filter @alloy-works/db dev:setup           # database alloy_dev, two environments of "Acme"
+pnpm dev:setup                                    # database alloy_dev and a store for each environment
 cp apps/service/.env.example apps/service/.env    # development settings; .env is git-ignored
 pnpm build                                        # the packages the service imports
 pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
@@ -65,6 +65,28 @@ the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in `.env` a
 one issuer, so anyone who has signed in to the environment the organisation's way is already its
 principal, and comes straight in. Like Google, it remembers who signed in and does not ask again:
 restart it to choose someone else.
+
+## The worker
+
+Work a request should not wait for runs in `apps/worker`. It needs the pinned Typst, fetched once
+per machine, and the same object store the service signs links against:
+
+```bash
+pnpm --filter @alloy-works/worker fetch-typst     # Typst 0.15.1 into .tools/, checked against its hash
+cp apps/worker/.env.example apps/worker/.env
+pnpm --filter @alloy-works/worker dev
+```
+
+With the service signed in to (above), ask for a sample and follow it. The worker picks the job up
+within a second or two, and the answer then carries a link that fetches the PDF:
+
+```bash
+curl -X POST -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<from the browser>"   http://127.0.0.1:8080/v1/samples
+curl -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<the same>"   http://127.0.0.1:8080/v1/samples/<the id>
+```
+
+Each environment reaches only its own corner of the store, with a credential `pnpm dev:setup` made
+for it, so a link signed for one environment fetches nothing from another.
 
 Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
 the service listens on the IPv4 address only - the same trap the renderer's dev server met. If

@@ -236,8 +236,9 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 
 ## Open questions
 
-| ID  | Question                                                                                                                              |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| New | Hosting and self-hosting, open in scope §10                                                                                           |
-| New | How preview pages reach the renderer - rendered images, or the PDF's pages - which the publishing pipeline's design decides           |
-| New | Which email delivery service. Only the inbox is designed; a provider needs choosing before notifications by email (COL-033) are built |
+| ID  | Question                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | Hosting and self-hosting, open in scope §10                                                                                                             |
+| New | How preview pages reach the renderer - rendered images, or the PDF's pages - which the publishing pipeline's design decides                             |
+| New | How many tenants one account's object store credentials serve before short-lived credentials are needed instead: AWS caps IAM users at 5,000 (ADR-0021) |
+| New | Which email delivery service. Only the inbox is designed; a provider needs choosing before notifications by email (COL-033) are built                   |

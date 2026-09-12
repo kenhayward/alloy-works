@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.7.0 - 2026-09-12 (PR #35)
+
+Work that runs in the background, and somewhere to keep what it makes.
+
+### Added
+
+- The service can hand work to a worker instead of making people wait for it. The first kind is a
+  sample PDF of an environment, which a worker renders and stores, and which the person who asked
+  for it can then download.
+- Each environment's documents are kept in its own part of the object store, reached with a
+  credential that can reach nothing else, and downloaded through links that expire.
+- Expired sign-in attempts and sessions are now cleared away by the worker.
+
 ## 0.6.1 - 2026-09-11 (PR #34)
 
 The plan for workers and object storage.
