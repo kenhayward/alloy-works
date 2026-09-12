@@ -13,6 +13,9 @@ release
 out
 coverage
 *.tsbuildinfo
+*.env
 .env
 .env.*
-!.env.example
+# This directory itself: the Dockerfile is read from here rather than from the context, and nothing
+# in here is ever copied into an image - which is what keeps the settings files beside it out.
+deploy

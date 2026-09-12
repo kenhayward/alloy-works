@@ -14,8 +14,10 @@ together, and what the ignore list keeps out of a build.
 | File                      | What it is                                                                        |
 | ------------------------- | --------------------------------------------------------------------------------- |
 | `Dockerfile`              | Every image the system runs as, as four targets sharing one install and one build |
-| `Dockerfile.dockerignore` | What never enters a build context: `node_modules`, `dist`, the docs, any `.env`   |
+| `Dockerfile.dockerignore` | What never enters a build context: `node_modules`, `dist`, the docs, this folder  |
 | `compose.yaml`            | The whole system for development, and the shape a small installation takes        |
+| `service.env.example`     | Settings for running the service **from source**; copy to `service.env`           |
+| `worker.env.example`      | The same for the worker; copy to `worker.env`                                     |
 
 ## Running the stack
 
@@ -115,11 +117,28 @@ services:
 `!override` replaces the list rather than adding to it. The stand-in only returns people to
 addresses it has been told about, so a moved service needs its redirect address moved too.
 
+## Settings for running from source
+
+Running the service or the worker from source, rather than in a container, reads a file here:
+
+```bash
+cp deploy/service.env.example deploy/service.env   # then pnpm --filter @alloy-works/service dev
+cp deploy/worker.env.example deploy/worker.env     # then pnpm --filter @alloy-works/worker dev
+```
+
+Each `dev` script names its own file through Node's `--env-file-if-exists`, so a missing one is not
+an error - you get the configuration failure instead, naming the variable. `*.env` is git-ignored
+and `*.env.example` is not, so your copy stays yours and the example stays honest.
+
+**The containers read none of this.** `compose.yaml` gives each of them its own environment, so
+`docker compose up` needs no file here at all, and nothing in this folder ever enters an image -
+`Dockerfile.dockerignore` excludes the whole directory.
+
 ## Configuration
 
 Each image refuses to start without its configuration and says which variable is missing, rather
-than failing somewhere further in. The compose file sets all of them; these are the ones worth
-knowing:
+than failing somewhere further in. The compose file sets all of them, and the two `*.env.example`
+files above set the same ones for a run from source; these are the ones worth knowing:
 
 | Variable                           | Read by         | What it does                                                        |
 | ---------------------------------- | --------------- | ------------------------------------------------------------------- |

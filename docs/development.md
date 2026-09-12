@@ -54,7 +54,7 @@ anything deployed. `pnpm test` fails with an instruction to start it when it is 
 
 ```bash
 pnpm dev:setup                                    # database alloy_dev and a store for each environment
-cp apps/service/.env.example apps/service/.env    # development settings; .env is git-ignored
+cp deploy/service.env.example deploy/service.env  # development settings; the copy is ignored
 pnpm build                                        # the packages the service imports
 pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
 ```
@@ -80,7 +80,7 @@ where the service is, since it only returns people to addresses it knows:
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8080` as the one address it returns to. Open
 `http://dev.acme.localhost:8080/v1/sign-in/google`: Grace is invited and gets in; Alice is not, and
-the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in `.env` and
+the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in `deploy/service.env` and
 `STAND_IN_GOOGLE_REDIRECT_URI` for the stand-in to match. The stand-in plays both providers with
 one issuer, so anyone who has signed in to the environment the organisation's way is already its
 principal, and comes straight in. Like Google, it remembers who signed in and does not ask again:
@@ -118,7 +118,7 @@ per machine, and the same object store the service signs links against:
 
 ```bash
 pnpm --filter @alloy-works/worker fetch-typst     # Typst 0.15.1 into .tools/, checked against its hash
-cp apps/worker/.env.example apps/worker/.env
+cp deploy/worker.env.example deploy/worker.env
 pnpm --filter @alloy-works/worker dev
 ```
 
@@ -136,7 +136,7 @@ for it, so a link signed for one environment fetches nothing from another.
 Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
 the service listens on the IPv4 address only - the same trap the renderer's dev server met. If
 anything else on the machine listens on port 8080 over IPv6, a browser can reach that instead. Set
-`PORT` in `.env` to a free port when that happens.
+`PORT` in `deploy/service.env` to a free port when that happens.
 
 ## Commands
 
