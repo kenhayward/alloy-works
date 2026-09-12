@@ -3,9 +3,41 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.4 - 2026-09-12 (PR #NN)
+
+The generative AI and identity requirements, answered against their first reviews.
+
+### Added
+
+- Interactive chat with a model: a user may put their own prompt to it, choose between the endpoints
+  an administrator has configured, shape what is retrieved, create and update components through
+  tool use, and keep a personal prompt library only they can see. An open prompt is governed exactly
+  as a declared one is, and what gets refused is what guardrails forbid rather than what is
+  off-topic.
+- A prompt's context can be built from a combination of components - by outline position, by
+  relationship, by metadata, by the document's parameters - resolved to an enumerable set before the
+  model is called and recorded as what it resolved to.
+- A terminal state for generated content nobody wants: discarding is deliberate and recorded, the
+  record of what was proposed survives it, and a discarded draft no longer blocks publishing for
+  ever. With it: context overflow refused rather than silently truncated, embedding costed like any
+  other model call, and one context digest instead of two that could differ.
+- How the first administrator of a new tenant comes to exist: an invitation to a named address,
+  authenticated the way everybody else authenticates, audited into that tenant's own log, and no
+  standing vendor access afterwards.
+- What happens when a customer's identity provider is unavailable, how quickly a group membership
+  change takes effect, and a guest capability cap that now overrides any role that would breach it.
+
+### Changed
+
+- Tenant isolation names the decisions that enforce it - a schema per tenant, and a database role
+  assumed for one transaction - which were taken before the requirement was written and never cited.
+- Every permission is held through a role, a permission decision and the action it authorises are
+  one unit, and the terms this product uses normatively are defined or cross-referenced rather than
+  assumed.
+
 ## 0.10.3 - 2026-09-12 (PR #46)
 
-The assets and generative AI requirements, answered against their first reviews.
+The assets requirements, answered against their first review.
 
 ### Added
 
@@ -22,18 +54,6 @@ The assets and generative AI requirements, answered against their first reviews.
   a licence says it is.
 - Derivatives may be discarded and rebuilt, replacing an original invalidates them, alt text carries
   its language, and assets nothing references are listable.
-- Interactive chat with a model, which the AI requirements had ruled out by drawing a line in the
-  wrong place: a user may put their own prompt to a model, choose between the endpoints an
-  administrator has configured, shape what is retrieved, create and update components through tool
-  use, and keep a personal prompt library only they can see. An open prompt is governed exactly as a
-  declared one is, and what gets refused is what guardrails forbid rather than what is off-topic.
-- A prompt's context can be built from a combination of components - by outline position, by
-  relationship, by metadata, by the document's parameters - resolved to an enumerable set before the
-  model is called and recorded as what it resolved to.
-- A terminal state for generated content nobody wants: discarding is deliberate and recorded, the
-  record of what was proposed survives it, and a discarded draft no longer blocks publishing for
-  ever. With it: context overflow refused rather than silently truncated, embedding costed like any
-  other model call, and one context digest instead of two that could differ.
 
 ### Changed
 
