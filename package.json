@@ -1,6 +1,6 @@
 {
   "name": "alloy-works",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "description": "Component Content Management System - web and desktop delivery from one renderer",
@@ -12,6 +12,7 @@
   "scripts": {
     "app": "pnpm --filter @alloy-works/domain build && concurrently -k --success first -n web,shell -c blue,magenta \"pnpm --filter @alloy-works/web dev\" \"pnpm --filter @alloy-works/desktop dev\"",
     "dev:web": "pnpm --filter @alloy-works/web dev",
+    "dev:setup": "pnpm --filter @alloy-works/db dev:setup && pnpm --filter @alloy-works/objects dev:setup",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",

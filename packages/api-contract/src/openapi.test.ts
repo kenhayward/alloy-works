@@ -77,4 +77,10 @@ describe('the OpenAPI document', () => {
       { name: 'code', in: 'query', required: true, schema: { type: 'string' } },
     ]);
   });
+
+  it('lists a path parameter, always required', () => {
+    const parameters = operation('/v1/samples/{sampleId}', 'get').parameters;
+    expect(parameters).toHaveLength(1);
+    expect(parameters?.[0]).toMatchObject({ name: 'sampleId', in: 'path', required: true });
+  });
 });

@@ -118,3 +118,12 @@ to every authenticated route of another, and fails for any new route that would 
 
 The stand-in plays Google too, `hd` claim and all, so `google-sign-in.test.ts` drives the whole Google
 route - the sign-in address, the admission rules and the hand-off - with no Google account.
+
+## The objects and worker suites
+
+`packages/objects` and `apps/worker` need Postgres and the object store running
+(`docker compose up -d --wait postgres seaweedfs`), and the pinned Typst fetched once with
+`pnpm --filter @alloy-works/worker fetch-typst`. Each test file takes a bucket of its own and removes
+it afterwards, exactly as it takes a database of its own, so two files never see each other's
+objects. The worker's suite renders with the real Typst rather than a stand-in for it: the binary is
+the thing being pinned.

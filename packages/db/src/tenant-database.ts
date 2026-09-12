@@ -13,6 +13,10 @@ export interface TenantDatabase {
   withTenant<T>(tenant: Tenant, work: (db: Transaction<TenantTables>) => Promise<T>): Promise<T>;
   /** The tenant a hostname belongs to, from the platform table; undefined when none does. */
   resolveHostname(hostname: string): Promise<Tenant | undefined>;
+  /** Every tenant, for work that visits each in turn. */
+  tenants(): Promise<Tenant[]>;
+  /** The tenant a job names; undefined when it has gone. */
+  tenant(id: string): Promise<Tenant | undefined>;
   /** Who the connection is outside any tenant transaction. For tests and diagnostics. */
   whoAmI(): Promise<{ readonly user: string; readonly searchPath: string }>;
   close(): Promise<void>;
@@ -49,6 +53,24 @@ export function createTenantDatabase(
         .innerJoin('platform.tenant as t', 't.id', 'h.tenant_id')
         .select(['t.id', 't.schema_name', 't.role_name'])
         .where('h.hostname', '=', hostname.toLowerCase())
+        .executeTakeFirst();
+      return row && { id: row.id, schema: row.schema_name, role: row.role_name };
+    },
+
+    async tenants() {
+      const rows = await db
+        .selectFrom('platform.tenant')
+        .select(['id', 'schema_name', 'role_name'])
+        .orderBy('id')
+        .execute();
+      return rows.map((row) => ({ id: row.id, schema: row.schema_name, role: row.role_name }));
+    },
+
+    async tenant(id) {
+      const row = await db
+        .selectFrom('platform.tenant')
+        .select(['id', 'schema_name', 'role_name'])
+        .where('id', '=', id)
         .executeTakeFirst();
       return row && { id: row.id, schema: row.schema_name, role: row.role_name };
     },

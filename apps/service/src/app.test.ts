@@ -62,7 +62,8 @@ describe('the service', () => {
   it('serves every route the contract declares', async () => {
     await app.ready();
     for (const route of allRoutes) {
-      expect(app.hasRoute({ method: route.method, url: route.path }), route.operationId).toBe(true);
+      const url = route.path.replace(/\{(\w+)\}/g, ':$1');
+      expect(app.hasRoute({ method: route.method, url }), route.operationId).toBe(true);
     }
   });
 

@@ -1,6 +1,7 @@
 import pg from 'pg';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
+import { retryOnRoleConflict } from './retry.js';
 
 export interface Tenant {
   readonly id: string;
@@ -19,6 +20,10 @@ export interface NewTenant {
  * It does not create the tenant's tables: `migrate` does, as the tenant's owner role.
  */
 export async function provisionTenant(adminUrl: string, input: NewTenant): Promise<Tenant> {
+  return retryOnRoleConflict(() => provisionOnce(adminUrl, input));
+}
+
+async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant> {
   const names = tenantNames(input.tenant.id);
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
@@ -27,6 +32,9 @@ export async function provisionTenant(adminUrl: string, input: NewTenant): Promi
     await client.query('begin');
     await client.query(`create role ${id(names.owner)} nologin`);
     await client.query(`create role ${id(names.role)} nologin`);
+    // Inherited, unlike the login roles' membership: inside withTenant the tenant's role carries the
+    // rights every tenant has, which is how it puts its own work on the queue.
+    await client.query(`grant aw_tenant to ${id(names.role)}`);
     await client.query(`create schema ${id(names.schema)} authorization ${id(names.owner)}`);
     await client.query(`grant usage on schema ${id(names.schema)} to ${id(names.role)}`);
     await client.query(

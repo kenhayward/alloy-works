@@ -4,11 +4,14 @@ export { tenantNames, type TenantNames } from './names.js';
 export { createTenant, provisionTenant, type NewTenant, type Tenant } from './provision.js';
 export type {
   GoogleDomainTable,
+  JobTable,
   IdentityProviderTable,
   InvitationTable,
+  ObjectStoreCredentialTable,
   PlatformTables,
   PrincipalTable,
   ProfileTable,
+  SampleTable,
   SessionTable,
   SignInAttemptTable,
   SignInHandoffTable,
@@ -23,4 +26,13 @@ export {
   permitGoogleSignIn,
   type SignInRoute,
 } from './sign-in.js';
+export {
+  createJobQueue,
+  enqueueJob,
+  JOB_CHANNEL,
+  type Job,
+  type JobKind,
+  type JobQueue,
+} from './queue.js';
+export { recordStoreCredential, type SealedStoreCredential } from './object-store.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';

@@ -1,3 +1,4 @@
+import type { StoreSettings } from '@alloy-works/objects';
 import { z } from 'zod';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
@@ -19,6 +20,8 @@ export interface Config {
   readonly allowInsecureIssuers: boolean;
   /** Present only when the product's Google client is configured; without it, no Google route. */
   readonly google?: GoogleSettings;
+  /** Present only when the object store is configured; without it, no samples. */
+  readonly objectStore?: StoreSettings;
 }
 
 export class ConfigError extends Error {}
@@ -51,11 +54,24 @@ const Environment = z
         error: 'must be a lower-case hostname, with a port if needed',
       })
       .optional(),
+    OBJECT_STORE_ENDPOINT: z.url({ error: 'must be a URL' }).optional(),
+    OBJECT_STORE_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9.-]{2,62}$/, { error: 'must be a bucket name' })
+      .optional(),
+    OBJECT_STORE_REGION: z.string().min(1).default('us-east-1'),
   })
   .refine((env) => (env.GOOGLE_CLIENT_ID === undefined) === (env.SIGN_IN_HOST === undefined), {
     error: 'must be set together, or neither: the Google route needs both',
     path: ['GOOGLE_CLIENT_ID and SIGN_IN_HOST'],
-  });
+  })
+  .refine(
+    (env) => (env.OBJECT_STORE_ENDPOINT === undefined) === (env.OBJECT_STORE_BUCKET === undefined),
+    {
+      error: 'must be set together, or neither: the object store needs both',
+      path: ['OBJECT_STORE_ENDPOINT and OBJECT_STORE_BUCKET'],
+    },
+  );
 
 /**
  * Reads the service's configuration once, at start-up, and refuses to start on anything missing or
@@ -76,6 +92,9 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     GOOGLE_ISSUER,
     GOOGLE_CLIENT_ID,
     SIGN_IN_HOST,
+    OBJECT_STORE_ENDPOINT,
+    OBJECT_STORE_BUCKET,
+    OBJECT_STORE_REGION,
   } = result.data;
   return {
     databaseUrl: DATABASE_URL,
@@ -85,6 +104,15 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     allowInsecureIssuers: ALLOW_INSECURE_ISSUERS === 'true',
     ...(GOOGLE_CLIENT_ID !== undefined && SIGN_IN_HOST !== undefined
       ? { google: { issuer: GOOGLE_ISSUER, clientId: GOOGLE_CLIENT_ID, signInHost: SIGN_IN_HOST } }
+      : {}),
+    ...(OBJECT_STORE_ENDPOINT !== undefined && OBJECT_STORE_BUCKET !== undefined
+      ? {
+          objectStore: {
+            endpoint: OBJECT_STORE_ENDPOINT,
+            region: OBJECT_STORE_REGION,
+            bucket: OBJECT_STORE_BUCKET,
+          },
+        }
       : {}),
   };
 }
@@ -100,5 +128,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     logLevel: config.logLevel,
     allowInsecureIssuers: String(config.allowInsecureIssuers),
     signInHost: config.google?.signInHost ?? 'none',
+    objectStore: config.objectStore?.bucket ?? 'none',
   };
 }

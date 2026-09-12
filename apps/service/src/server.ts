@@ -3,17 +3,23 @@
 import { createTenantDatabase } from '@alloy-works/db';
 import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
+import { createObjectStores, sealingKey } from '@alloy-works/objects';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 
 const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
+const secrets = environmentSecrets(process.env);
+const objects = config.objectStore
+  ? createObjectStores(config.objectStore, sealingKey(secrets.get('object_store_key') ?? ''))
+  : undefined;
 const app = buildApp({
   db,
   logLevel: config.logLevel,
   oidc: createOidcClient({ allowInsecureIssuers: config.allowInsecureIssuers }),
-  secrets: environmentSecrets(process.env),
+  secrets,
   ...(config.google ? { google: config.google } : {}),
+  ...(objects ? { objects } : {}),
 });
 
 const stop = async (signal: string) => {

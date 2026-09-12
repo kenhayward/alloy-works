@@ -23,10 +23,27 @@ export interface TenantHostnameTable {
   tenant_id: string;
 }
 
+export interface JobTable {
+  id: Generated<string>;
+  tenant_id: string;
+  kind: string;
+  subject_id: string | null;
+  attempts: Generated<number>;
+  max_attempts: Generated<number>;
+  run_after: Generated<Date>;
+  locked_by: string | null;
+  locked_until: Date | null;
+  finished_at: Date | null;
+  failed_at: Date | null;
+  last_error: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface PlatformTables {
   'platform.organisation': OrganisationTable;
   'platform.tenant': TenantTable;
   'platform.tenant_hostname': TenantHostnameTable;
+  'platform.job': JobTable;
 }
 
 export interface PrincipalTable {
@@ -93,6 +110,25 @@ export interface SignInHandoffTable {
   expires_at: Date;
 }
 
+export interface ObjectStoreCredentialTable {
+  singleton: Generated<boolean>;
+  access_key_id: string;
+  sealed_secret: string;
+  created_at: Generated<Date>;
+}
+
+export interface SampleTable {
+  id: Generated<string>;
+  requested_by: string;
+  requested_at: Generated<Date>;
+  state: Generated<'queued' | 'done' | 'failed'>;
+  object_key: string | null;
+  sha256: string | null;
+  bytes: number | null;
+  engine: string | null;
+  finished_at: Date | null;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -103,6 +139,8 @@ export interface TenantTables {
   invitation: InvitationTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
+  object_store_credential: ObjectStoreCredentialTable;
+  sample: SampleTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

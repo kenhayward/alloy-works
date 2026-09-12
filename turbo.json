@@ -29,6 +29,16 @@
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
+    },
+    "@alloy-works/objects#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
+    },
+    "@alloy-works/worker#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
     }
   }
 }

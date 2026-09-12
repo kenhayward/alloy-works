@@ -55,11 +55,13 @@ apps/
   web/        @alloy-works/web      React + TS + Vite. The renderer, and the web app.
   desktop/    @alloy-works/desktop  Electron main + preload. No UI of its own.
   service/    @alloy-works/service  Fastify web service: hostname to tenant, the API contract.
+  worker/     @alloy-works/worker   Claims queued jobs and runs them; carries the pinned Typst.
 packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
   db/         @alloy-works/db       Roles, tenants, migrations, withTenant. Node and pg.
   api-contract/ @alloy-works/api-contract  Routes as zod schemas; the generated openapi.json.
   stand-in-idp/ @alloy-works/stand-in-idp  A sign-in provider with invented people, for development.
+  objects/    @alloy-works/objects  Object storage: a credential and a prefix per environment.
 docs/         Architecture, development, testing, CI and decision records.
 ```
 
