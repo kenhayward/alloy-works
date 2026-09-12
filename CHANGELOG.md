@@ -23,6 +23,12 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   statement that the matrix proves linkage and not correctness, so that nobody later mistakes it for
   a quality claim. Four staged pull requests are proposed, each useful alone.
 
+- The implementation plan for the first of its four stages, in
+  `docs/plans/2026-09-13-traceability-01-the-compiled-corpus.md`, and a Traceability section in the
+  plans index to hold it. Seven tasks, fifty-two steps, test first throughout: the parsers, the state
+  ladder, the committed index and its drift check, the query command, and the two requirement checks
+  moved out of `apps/desktop` into the workspace their own comments had been asking for.
+
 ### Fixed
 
 - Measuring the corpus to write the above turned up a requirement, `IAM-018`, that a test cites and
