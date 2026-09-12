@@ -17,6 +17,11 @@ missing; what was done about it lives in the document itself, in its change hist
 request that made the change. So a point raised here may have been acted on, deliberately declined,
 or turned into an open question - reading a review alone will not say which.
 
+**[`market/`](market/) holds two assessments of a different kind** - where the specification as
+written can sell, and what would extend its reach. They are for later consideration rather than for
+the early tranches, nothing in them has been written into the requirements, and
+[its own README](market/README.md) says why.
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.
