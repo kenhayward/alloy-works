@@ -14,6 +14,10 @@ The whole system, from one command.
 - Images for the service and the worker, built on every change so that a broken one is caught where
   it was broken.
 
+### Fixed
+
+- Preparing several environments at the same time no longer gives up too early when they collide.
+
 ## 0.7.1 - 2026-09-12 (PR #36)
 
 The plan for the whole system in one command.
