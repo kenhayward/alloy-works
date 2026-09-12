@@ -53,7 +53,7 @@ services:
     environment:
       STAND_IN_HOST: 0.0.0.0
       STAND_IN_ISSUER: http://idp.localhost:9090
-      STAND_IN_REDIRECT_URIS: http://acme.localhost:8080/v1/sign-in/organisation/callback,http://dev.acme.localhost:8080/v1/sign-in/organisation/callback
+      STAND_IN_REDIRECT_URIS: http://acme.localhost:8080/v1/sign-in/organisation/callback,http://dev.acme.localhost:8080/v1/sign-in/organisation/callback,http://127.0.0.1:8080/v1/sign-in/organisation/callback
       STAND_IN_GOOGLE_REDIRECT_URI: http://signin.localhost:8080/v1/sign-in/google/callback
     ports:
       - '127.0.0.1:9090:9090'
@@ -75,6 +75,9 @@ services:
       OBJECT_STORE_ENDPOINT: http://store.localhost:8333
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
+      # An address anything can reach, whatever it makes of *.localhost: the end-to-end
+      # suite drives the development environment by this one.
+      DEV_EXTRA_HOSTNAME: 127.0.0.1
     depends_on:
       postgres:
         condition: service_healthy

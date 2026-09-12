@@ -73,6 +73,36 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
   }
 }
 
+/**
+ * Gives an existing tenant more addresses to answer at, leaving the ones it already has. Safe to run
+ * again, which is what lets a development setup bring an environment's addresses up to date without
+ * making it afresh; an address another tenant already answers at is refused by the table itself.
+ */
+export async function addHostnames(
+  adminUrl: string,
+  tenantId: string,
+  hostnames: readonly string[],
+): Promise<void> {
+  const client = new pg.Client({ connectionString: adminUrl });
+  await client.connect();
+  try {
+    for (const hostname of hostnames) {
+      await client.query(
+        // An address this tenant already answers at is left alone; one another tenant answers at
+        // reaches the insert and is refused by the primary key, as taking it should be.
+        `insert into platform.tenant_hostname (hostname, tenant_id)
+         select $1, $2
+         where not exists (
+           select 1 from platform.tenant_hostname where hostname = $1 and tenant_id = $2
+         )`,
+        [hostname.toLowerCase(), tenantId],
+      );
+    }
+  } finally {
+    await client.end();
+  }
+}
+
 /** Provisions a tenant and migrates it to the current version: the way a new tenant is made. */
 export async function createTenant(
   adminUrl: string,

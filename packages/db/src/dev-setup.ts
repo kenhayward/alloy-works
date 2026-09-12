@@ -4,7 +4,7 @@ import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
-import { createTenant } from './provision.js';
+import { addHostnames, createTenant } from './provision.js';
 import { configureOrganisationSignIn, inviteToTenant, permitGoogleSignIn } from './sign-in.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
@@ -36,9 +36,15 @@ await bootstrapCluster(adminUrl, TEST_PASSWORDS);
 await migrate(migratorUrl);
 
 const organisation = { id: 'acme', name: 'Acme' };
+// A hostname anything can reach, whatever it makes of `*.localhost`: the end-to-end suite
+// uses it.
+const extra = process.env.DEV_EXTRA_HOSTNAME;
 const environments = [
   { tenant: { id: 'acme', name: 'Production' }, hostnames: ['acme.localhost'] },
-  { tenant: { id: 'acmedev', name: 'Development' }, hostnames: ['dev.acme.localhost'] },
+  {
+    tenant: { id: 'acmedev', name: 'Development' },
+    hostnames: extra ? ['dev.acme.localhost', extra] : ['dev.acme.localhost'],
+  },
 ];
 const check = new pg.Client({ connectionString: adminUrl });
 await check.connect();
@@ -49,6 +55,10 @@ for (const environment of environments) {
   if (found.rowCount === 0) {
     await createTenant(adminUrl, migratorUrl, { organisation, ...environment });
     console.log(`Created ${environment.hostnames[0]}`);
+  } else {
+    // An environment that is already here still takes any address it has not got yet, so running
+    // this again is how a development installation catches up rather than starting over.
+    await addHostnames(adminUrl, environment.tenant.id, environment.hostnames);
   }
 }
 await check.end();

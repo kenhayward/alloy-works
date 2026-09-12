@@ -18,6 +18,7 @@ COPY apps/desktop/package.json apps/desktop/
 COPY apps/service/package.json apps/service/
 COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
+COPY packages/api-client/package.json packages/api-client/
 COPY packages/api-contract/package.json packages/api-contract/
 COPY packages/db/package.json packages/db/
 COPY packages/domain/package.json packages/domain/
@@ -27,13 +28,16 @@ COPY packages/stand-in-idp/package.json packages/stand-in-idp/
 RUN pnpm install --frozen-lockfile \
       --filter "@alloy-works/service..." \
       --filter "@alloy-works/worker..." \
-      --filter "@alloy-works/stand-in-idp..."
+      --filter "@alloy-works/stand-in-idp..." \
+      --filter "@alloy-works/web..."
 COPY tsconfig.base.json ./
 COPY packages/ packages/
 COPY apps/service/ apps/service/
+COPY apps/web/ apps/web/
 COPY apps/worker/ apps/worker/
 RUN pnpm --filter "@alloy-works/service..." build \
- && pnpm --filter "@alloy-works/worker..." build
+ && pnpm --filter "@alloy-works/worker..." build \
+ && pnpm --filter "@alloy-works/web..." build
 # Each app, with its own production dependencies and nothing else.
 RUN pnpm deploy --filter @alloy-works/service --prod /prod/service \
  && pnpm deploy --filter @alloy-works/worker --prod /prod/worker
@@ -48,6 +52,9 @@ FROM base AS service
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/service ./
+# The renderer the service serves. One origin for the page and the API it calls.
+COPY --from=build --chown=node:node /repo/apps/web/dist /app/renderer
+ENV RENDERER_ROOT=/app/renderer
 USER node
 EXPOSE 8080
 CMD ["node", "dist/server.js"]
