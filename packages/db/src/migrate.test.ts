@@ -1,7 +1,14 @@
+import { readdir } from 'node:fs/promises';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+
+/** Every platform migration in the repository, in order: what a current database has applied. */
+const CURRENT = (await readdir(new URL('../migrations/platform/', import.meta.url)))
+  .filter((name) => name.endsWith('.sql'))
+  .map((name) => name.slice(0, -'.sql'.length))
+  .sort();
 
 describe('migrate: the platform schema', () => {
   let db: TestDatabase;
@@ -15,13 +22,13 @@ describe('migrate: the platform schema', () => {
 
   it('applies the platform migrations once and records them', async () => {
     const first = await migrate(db.migratorUrl);
-    expect(first.platform).toEqual(['0001_tenancy']);
+    expect(first.platform).toEqual(CURRENT);
 
     const second = await migrate(db.migratorUrl);
     expect(second.platform).toEqual([]);
 
     const { rows } = await queryAs(db.adminUrl, 'select version from platform.schema_migration');
-    expect(rows).toEqual([{ version: '0001_tenancy' }]);
+    expect(rows).toEqual(CURRENT.map((version) => ({ version })));
   });
 
   it('lets the service and worker read tenants and hostnames but change nothing', async () => {

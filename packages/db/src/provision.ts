@@ -27,6 +27,9 @@ export async function provisionTenant(adminUrl: string, input: NewTenant): Promi
     await client.query('begin');
     await client.query(`create role ${id(names.owner)} nologin`);
     await client.query(`create role ${id(names.role)} nologin`);
+    // Inherited, unlike the login roles' membership: inside withTenant the tenant's role carries the
+    // rights every tenant has, which is how it puts its own work on the queue.
+    await client.query(`grant aw_tenant to ${id(names.role)}`);
     await client.query(`create schema ${id(names.schema)} authorization ${id(names.owner)}`);
     await client.query(`grant usage on schema ${id(names.schema)} to ${id(names.role)}`);
     await client.query(

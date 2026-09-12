@@ -23,10 +23,27 @@ export interface TenantHostnameTable {
   tenant_id: string;
 }
 
+export interface JobTable {
+  id: Generated<string>;
+  tenant_id: string;
+  kind: string;
+  subject_id: string | null;
+  attempts: Generated<number>;
+  max_attempts: Generated<number>;
+  run_after: Generated<Date>;
+  locked_by: string | null;
+  locked_until: Date | null;
+  finished_at: Date | null;
+  failed_at: Date | null;
+  last_error: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface PlatformTables {
   'platform.organisation': OrganisationTable;
   'platform.tenant': TenantTable;
   'platform.tenant_hostname': TenantHostnameTable;
+  'platform.job': JobTable;
 }
 
 export interface PrincipalTable {
