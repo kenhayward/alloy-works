@@ -22,6 +22,7 @@ const app = buildApp({
   events,
   ...(config.google ? { google: config.google } : {}),
   ...(objects ? { objects } : {}),
+  ...(config.rendererRoot ? { rendererRoot: config.rendererRoot } : {}),
 });
 
 const stop = async (signal: string) => {

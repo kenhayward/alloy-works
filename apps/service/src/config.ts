@@ -22,6 +22,8 @@ export interface Config {
   readonly google?: GoogleSettings;
   /** Present only when the object store is configured; without it, no samples. */
   readonly objectStore?: StoreSettings;
+  /** Where the built renderer is; without it the service answers the API and nothing else. */
+  readonly rendererRoot?: string;
 }
 
 export class ConfigError extends Error {}
@@ -60,6 +62,7 @@ const Environment = z
       .regex(/^[a-z0-9][a-z0-9.-]{2,62}$/, { error: 'must be a bucket name' })
       .optional(),
     OBJECT_STORE_REGION: z.string().min(1).default('us-east-1'),
+    RENDERER_ROOT: z.string().min(1).optional(),
   })
   .refine((env) => (env.GOOGLE_CLIENT_ID === undefined) === (env.SIGN_IN_HOST === undefined), {
     error: 'must be set together, or neither: the Google route needs both',
@@ -95,6 +98,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     OBJECT_STORE_ENDPOINT,
     OBJECT_STORE_BUCKET,
     OBJECT_STORE_REGION,
+    RENDERER_ROOT,
   } = result.data;
   return {
     databaseUrl: DATABASE_URL,
@@ -114,6 +118,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
           },
         }
       : {}),
+    ...(RENDERER_ROOT !== undefined ? { rendererRoot: RENDERER_ROOT } : {}),
   };
 }
 
@@ -129,5 +134,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     allowInsecureIssuers: String(config.allowInsecureIssuers),
     signInHost: config.google?.signInHost ?? 'none',
     objectStore: config.objectStore?.bucket ?? 'none',
+    rendererRoot: config.rendererRoot ?? 'none',
   };
 }
