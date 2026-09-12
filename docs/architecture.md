@@ -131,6 +131,31 @@ Typst and keeps it in the tenant's own corner of the object store, which its own
 only one that reaches. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
 [`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
+## Containers and images
+
+One `Dockerfile` at the root holds every image the system runs as, so the install and the build are
+done once and shared:
+
+| Target    | Carries                                                                            | Runs                                                 |
+| --------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `build`   | The workspaces the containers need, installed and built                            | Nothing; the other targets copy from it              |
+| `tools`   | The whole workspace, `tsx` included                                                | The compose stack's setup, and the stand-in provider |
+| `service` | `apps/service` and its production dependencies, deployed by `pnpm deploy`          | `node dist/server.js` on 8080                        |
+| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash | `node dist/main.js`                                  |
+
+Neither image carries development tooling, test files or Electron: the install is filtered to the
+three workspaces the containers need, and `pnpm deploy` reduces each app to its own production tree.
+Both run as the `node` user. CI builds both on every pull request and runs each entry point; nothing
+is pushed anywhere, because where they would be pushed comes with hosting.
+
+`compose.yaml` runs the whole system: PostgreSQL, the object store, the stand-in provider, a one-shot
+`setup` that migrates and creates the development environments, then the service and the worker. Two
+of those services answer to a name rather than only a container: the object store is also
+`store.localhost` and the provider `idp.localhost`. Any `*.localhost` name resolves to the local
+machine in a browser and to the container inside the compose network, so **one address works on both
+sides** - which is what a signed download link and a sign-in redirect need, since each carries the
+address that made it. Their published ports must match the ports inside for the same reason.
+
 ## Build and packaging
 
 | Workspace         | Build                               | Output                                       |

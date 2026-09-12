@@ -12,6 +12,9 @@ const googleRedirectUri =
 
 const idp = await startStandInProvider({
   port,
+  // In a container it must listen on every address, and say the name it is reached by.
+  host: process.env.STAND_IN_HOST ?? '127.0.0.1',
+  ...(process.env.STAND_IN_ISSUER ? { issuer: process.env.STAND_IN_ISSUER } : {}),
   clients: [
     { clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret', redirectUris },
     // Plays the product's one Google client, returning only to the sign-in address.

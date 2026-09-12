@@ -119,6 +119,10 @@ to every authenticated route of another, and fails for any new route that would 
 The stand-in plays Google too, `hd` claim and all, so `google-sign-in.test.ts` drives the whole Google
 route - the sign-in address, the admission rules and the hand-off - with no Google account.
 
+The suites run against PostgreSQL and the object store, never against the whole compose stack: they
+start the service in process, and the worker's own functions directly. The stack itself is checked by
+hand, and end to end in CI from plan 5.
+
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running

@@ -17,8 +17,9 @@ const admin = {
 const key = sealingKey(
   process.env.SECRET_OBJECT_STORE_KEY ?? 'ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=',
 );
+// The database itself, not the server: `packages/db`'s setup uses DATABASE_ADMIN_URL for the server.
 const adminUrl =
-  process.env.DATABASE_ADMIN_URL ?? 'postgres://postgres:postgres@127.0.0.1:5432/alloy_dev';
+  process.env.DEV_DATABASE_URL ?? 'postgres://postgres:postgres@127.0.0.1:5432/alloy_dev';
 
 await ensureBucket(settings, admin);
 const db = createTenantDatabase(adminUrl);

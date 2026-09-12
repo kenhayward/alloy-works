@@ -175,7 +175,8 @@ Everything from the repo root. One pnpm workspace, one lock file.
 
 ```bash
 pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lock file
-docker compose up -d --wait postgres   # the database the db suite needs (see docs/development.md)
+docker compose up -d --build           # the whole system in containers (see docs/development.md)
+docker compose up -d --wait postgres seaweedfs   # just what the suites need
 pnpm dev:setup                                    # prepare the development database and object store
 pnpm --filter @alloy-works/service dev             # the service on :8080 (see docs/development.md)
 pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provider on :9090

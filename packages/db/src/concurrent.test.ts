@@ -8,24 +8,27 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/data
  * The login roles and every tenant role are cluster-wide, so suites in different databases work on
  * the same rows. Running the same preparation several times at once is what a test run does.
  */
+/** Enough at once to collide reliably, on a busy machine as well as a fast one. */
+const AT_ONCE = 12;
+
 describe('preparing a cluster from several places at once', () => {
   const databases: TestDatabase[] = [];
 
   beforeAll(async () => {
-    for (let index = 0; index < 4; index++) databases.push(await freshDatabase());
+    for (let index = 0; index < AT_ONCE; index++) databases.push(await freshDatabase());
   });
 
   afterAll(async () => {
     for (const db of databases) await db.drop();
   });
 
-  it('lets four databases bootstrap the shared roles at the same time', async () => {
+  it('lets many databases bootstrap the shared roles at the same time', async () => {
     await expect(
       Promise.all(databases.map((db) => bootstrapCluster(db.adminUrl, TEST_PASSWORDS))),
     ).resolves.toBeDefined();
   });
 
-  it('lets four tenants be provisioned at the same time, each joining the shared role', async () => {
+  it('lets a tenant in each be provisioned at the same time, joining the shared role', async () => {
     for (const db of databases) await migrate(db.migratorUrl);
     const tenants = await Promise.all(
       databases.map((db) =>
@@ -36,6 +39,6 @@ describe('preparing a cluster from several places at once', () => {
         }),
       ),
     );
-    expect(tenants).toHaveLength(4);
+    expect(tenants).toHaveLength(AT_ONCE);
   });
 });
