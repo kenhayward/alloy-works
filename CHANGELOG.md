@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.8 - 2026-09-12 (PR #NN)
+
+The localisation requirements, answered against their first review.
+
+### Added
+
+- What happens when a source document is edited while a translation vendor has it, and the
+  translation comes back against a version that has moved: the product notices, reports, and a person
+  chooses - it never applies it silently.
+- The set of translation statuses a variant can carry, who decides whether a source change needs
+  retranslation (the person making it, defaulting to yes), and the previous translation offered as
+  the starting point for a retranslation.
+- Whether a bound value gets translated, which had been a constraint and an open question
+  contradicting each other: the binding stays inert and the value is translated at resolution against
+  a declared lookup, or renders as the source gave it and is reported as untranslated.
+- A declared list of supported languages, locale data from a named versioned source, pseudolocalisation
+  as a test mode, and language tags that can tell Brazilian Portuguese from European.
+
+### Changed
+
+- Interface strings may be assembled by a locale-aware message format, which the old wording had
+  forbidden along with the thing it meant to forbid - application code doing grammar.
+- Dates, numbers and currency follow the reader in the interface and the published language in the
+  document, because a published document has one locale and its reader may have another.
+- Layout tolerance is a number that can fail rather than "substantially longer", and a missing
+  variant falls back by a policy declared for the document, with anything left in the source language
+  marked in the output.
+
 ## 0.10.7 - 2026-09-12 (PR #50)
 
 Components that can be approved on their own, revisions effective in more than one place, and the
