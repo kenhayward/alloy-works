@@ -7,9 +7,11 @@ export type {
   JobTable,
   IdentityProviderTable,
   InvitationTable,
+  ObjectStoreCredentialTable,
   PlatformTables,
   PrincipalTable,
   ProfileTable,
+  SampleTable,
   SessionTable,
   SignInAttemptTable,
   SignInHandoffTable,
@@ -32,4 +34,5 @@ export {
   type JobKind,
   type JobQueue,
 } from './queue.js';
+export { recordStoreCredential, type SealedStoreCredential } from './object-store.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
