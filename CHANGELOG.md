@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.3 - 2026-09-12 (PR #46)
+
+The assets requirements, answered against their first review.
+
+### Added
+
+- What an asset version covers, and what happens to a superseded one: alt text, source and licence
+  each carry their own history, a licence change is surfaced wherever the asset is used rather than
+  reaching a floating reference invisibly, and superseded versions are kept with the relationships
+  between them so an inspection can still ask which picture a report used.
+- The quarantined state an upload was already in while it waited to be scanned, with a declared
+  timeout and the uploader told either way.
+- Validation of what a file expands to rather than only what it arrives as, and a content hash
+  recorded at ingest as the identity everything else uses.
+- An unknown licence now means internal use only rather than sailing through, attribution is
+  recordable as something a licence requires, and converting a format is treated as the modification
+  a licence says it is.
+- Derivatives may be discarded and rebuilt, replacing an original invalidates them, alt text carries
+  its language, and assets nothing references are listable.
+
+### Changed
+
+- The Tranche column's two kinds of value are explained where a reader of one document will see
+  them, the dependency table names the areas it was already citing, and `duration` no longer commits
+  a T1 implementation to formats the platform may never admit.
+
 ## 0.10.2 - 2026-09-12 (PR #45)
 
 ### Changed
