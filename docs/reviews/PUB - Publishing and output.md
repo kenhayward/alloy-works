@@ -1,0 +1,28 @@
+## Gaps and issues, in priority order
+
+The fidelity bar is asserted but typography has no requirement under it. Purpose names "typography, pagination, table breaking and footnote placement" as the test a prospect runs. Sections 5/6 cover pagination-adjacent mechanics (footnote placement, table breaks, widow/orphan control) and embedding - but nothing requires that rendered text be faithful to the composition: line breaking, hyphenation, justification, glyph substitution when metrics differ. PUB-015 delegates the bar to Scope §4, which is correct boundary work, yet this document owns the claim without any row stating what typography fidelity means operationally. Suggested addition: the rendered output must be faithful to the paginated composition - line breaks, hyphenation and justification as declared by layout and typography (STY/TPL) - so that what pagination decided is what rendering draws.
+
+PUB-051's failure list looks exhaustive but isn't, and no requirement covers layout impossibility. The enumerated cases are right, but nothing fails when content simply cannot flow: an unbreakable table taller than a page, a figure with no room, a malformed equation that neither format can render. For a compliance-grade product this is the dangerous case - it silently violates the fidelity bar instead of refusing to publish. Fix in two moves: add overflow and equation-render failure to PUB-051, and add a catch-all clause from which the list becomes examples rather than an enumeration: publishing must fail wherever the resolved document cannot be faithfully rendered under its declared layout, styles and engine.
+
+"Publication" as a multi-format unit is never defined. A publication's content across formats is nowhere specified - does one publish action bundle PDF + Word? Can you publish Word-only? This matters because PUB-065 makes the PDF "the output a page number cites": in a Word-only publication that rule is silently broken. Define the unit (one baseline, one action, which formats) and state whether PDF membership is mandatory whenever any artifact carries page-citation semantics.
+
+Determinism is stated but never required to be verified. PUB-003 got "covered by a test" for exactly this reason; PUB-043/PUB-046 have no equivalent clause, so a toolchain or library update that changes output bytes goes undetected until a customer re-publishes. Suggested: a pipeline change whose output differs from the recorded bytes of a fixed baseline must be detected by test before release. Two related items: (a) reproducibility depends on font files being identified immutably - check STY pins them by hash or version, not just licence; if it doesn't, PUB-045's promise is unenforceable. (b) Q04/ADR-0013 makes incremental compilation reuse layout between compiles; add incremental and clean compilations of identical input must be byte-identical, or a stale-cache bug violates PUB-043 with no requirement to catch it.
+
+Tranche inconsistency: PUB-042 is T4 while PUB-037 (TOC) is T1. If tranches ship in order, early TOCs are generated from the unresolved document and violate PUB-042 until T4 lands. Either PUB-042 is a Constraint, or its tranche must not lag the generated-matter features it governs. The same oddity sits around 039/040/041 being T6 while their governing rule is T4 - deliberate sequencing is fine, but it should be visible as intentional.
+
+Word's "first-class" claim collides with the lossy-export philosophy. PUB-055 requires any lossy export to report what it couldn't carry; Word is defined as not lossy; yet some product styles may have no faithful Word equivalent, in which case the output is partially lossy without a label. Either STY guarantees a closed, exhaustively-mapped style inventory per declared format (then PUB-014's refusal rule closes the gap), or Word must report unmappable styles like GDocs does. Worth settling explicitly rather than leaving it to implementation.
+
+## Cross-document checks against the other twenty
+
+STY: font-file identity for reproducibility; closed style mapping per output format (issue 6).
+VER: PUB-013 pins layout version in a baseline one-way - confirm VER's side of that pin is stated symmetrically.
+IAM / LIF-026: the identified-link mechanics behind PUB-057/058/060 live there; also tenant deletion/offboarding - what happens to retained publications (PUB-047) when a tenant goes away is not covered here and needs an owner.
+CNT-095, CNT-096, CNT-022, CNT-083/084 are cited as load-bearing - confirm they exist with matching semantics (Q04 settles against them).
+N02 vs PUB-057: "no web publishing channel" and "identified external links" coexist fine on paper; make sure both documents draw the line at the same place.
+
+## Craft notes (minor)
+
+Section 15 traces only six requirements and omits most cross-document IDs actually cited in the tables (CNT, LIF, COL, IMP, LIB). Either complete it or rename to "Selected dependencies" so readers don't mistake it for the record.
+No requirement covers degenerate inputs - a resolved document of zero content against a layout that declares cover and approval page: success with front matter only, or failure? One sentence prevents the first test suite from deciding for you.
+
+One ownership question to resolve rather than fix here: preview accessibility. PUB-061 permits untagged partial previews by design, so they are screen-reader-hostile on purpose; nothing requires telling a keyboard or screen-reader user that in the reading context (PUB-005 covers approval status only). If preview UX is owned elsewhere, add it to Not-here; if not, this document should carry at least the labelling requirement.
