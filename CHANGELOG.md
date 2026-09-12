@@ -3,6 +3,33 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.10 - 2026-09-12 (PR #54)
+
+Reuse, search and structure, answered against their first reviews.
+
+### Added
+
+- Which document a variable resolves against when a component is reused: the referring one, the same
+  rule its conditions already followed - so a component in two reports picks up each report's
+  parameters.
+- A cohort that cannot drift under its own generation: floating references resolve once at the start
+  of a run, so forty documents built over an hour are one document forty times over.
+- What a reader sees when a reference points at something deleted or something they may not read,
+  cycles refused when they are created, and a bound on how much one reference can pull in.
+- Search gets a budget for embedding a query, thread indexing semantics, a defined answer to an empty
+  or malformed query, completion and correction, a tie-break that makes paging honest, and structural
+  counts filtered exactly as text results are.
+- Structure gets one constraint for the order everything else assumed, numbering reproducible from a
+  baseline's pinned inputs so a cited section number survives, an implicit root, and a rule for a
+  page reference in a format with no pages.
+
+### Changed
+
+- Excluded conditional content now carries its own enforcement: every publication is scanned, text
+  and metadata, for content that should not be in it.
+- A cycle check names the graph it walks, a deep link that has dangled lands somewhere with an
+  explanation, and the indexing interval has a provisional number like every other budget.
+
 ## 0.10.9 - 2026-09-12 (PR #53)
 
 A language tag with a shape, and the publishing and relationship requirements answered against their
