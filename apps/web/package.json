@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@alloy-works/api-client": "workspace:^",
     "@alloy-works/domain": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

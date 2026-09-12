@@ -1,6 +1,7 @@
 import { createComponent } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 
+import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
 
 // A single component, built through the domain package, so the scaffold proves the whole path:
@@ -14,9 +15,14 @@ const sample = createComponent({
 
 interface AppProps {
   bridge?: PlatformBridge;
+  /** The environment panel, which calls the service; given by tests that are not about it. */
+  environment?: React.ReactNode;
 }
 
-export function App({ bridge = resolveBridge() }: AppProps): React.JSX.Element {
+export function App({
+  bridge = resolveBridge(),
+  environment = <Environment />,
+}: AppProps): React.JSX.Element {
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
 
   useEffect(() => {
@@ -37,6 +43,7 @@ export function App({ bridge = resolveBridge() }: AppProps): React.JSX.Element {
           ? 'Checking which delivery this is...'
           : `Running as ${platform.delivery} on ${platform.runtime}`}
       </p>
+      {environment}
       <article>
         <h2>{sample.title}</h2>
         <p>{sample.body}</p>

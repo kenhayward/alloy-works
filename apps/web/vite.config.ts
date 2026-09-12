@@ -10,7 +10,16 @@ export default defineConfig({
   // default host binds the IPv6 loopback only and the desktop shell's wait-on never sees the
   // server come up. The shell's DEV_SERVER_URL names this same address, and a test pins them
   // together.
-  server: { host: '127.0.0.1', port: 5173, strictPort: true },
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    strictPort: true,
+    // Everything the API owns goes to the service, with the Host header as the browser sent it, so
+    // the service resolves the environment from the address in the browser's bar. Open the renderer
+    // at http://dev.acme.localhost:5173 and it is the development environment; at another
+    // environment's hostname it is that one.
+    proxy: { '/v1': { target: 'http://127.0.0.1:8080' } },
+  },
   build: { outDir: 'dist', emptyOutDir: true },
   test: {
     environment: 'jsdom',
