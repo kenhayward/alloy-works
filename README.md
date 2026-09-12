@@ -14,6 +14,7 @@ application and a desktop application**.
 
 | Feature                      | Description                                                                                                      |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| An environment you can open  | Sign in, ask for a sample document, and watch it arrive without asking again, in a browser or the desktop app    |
 | One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                       |
 | Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                       |
 | Content model                | A typed, titled, independently versioned `Component`, validated on creation, on change and on read-back          |

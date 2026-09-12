@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.0 - 2026-09-12 (PR #NN)
+
+The first thing you can do.
+
+### Added
+
+- Open an environment in a browser and it shows itself: sign in, ask for a sample document, and
+  watch it arrive without asking again.
+- The desktop app opens the same environment as the browser does, and signs in the same way.
+- Every change is now checked against the whole system running in containers, not only its parts.
+
 ## 0.9.1 - 2026-09-12 (PR #42)
 
 The plan for the last of the scaffolding.

@@ -23,16 +23,17 @@ the proposed system, with a TypeScript web service as the system of record, is d
 
 | Component                      | Stack                                                                               | Path                    |
 | ------------------------------ | ----------------------------------------------------------------------------------- | ----------------------- |
-| Renderer / UI                  | React + TS + Vite                                                                   | `apps/web`              |
+| Renderer / UI                  | React + TS + Vite - calls the service only through the API client                   | `apps/web`              |
 | Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials                   | `apps/desktop`          |
 | Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                                   | `packages/domain`       |
 | Database library               | TypeScript + `pg` + Kysely - roles, provisioning, migrations, `withTenant`          | `packages/db`           |
 | API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked | `packages/api-contract` |
-| Web service                    | TypeScript + Fastify on Node - hostname to tenant, the contract's routes            | `apps/service`          |
+| Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer     | `apps/service`          |
 | Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only             | `packages/stand-in-idp` |
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash          | `packages/objects`      |
 | Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them            | `apps/worker`           |
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader             | `packages/api-client`   |
+| End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                       | `tests/e2e`             |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -177,6 +178,7 @@ Everything from the repo root. One pnpm workspace, one lock file.
 ```bash
 pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lock file
 docker compose up -d --build           # the whole system in containers (see docs/development.md)
+docker compose up -d --build --wait              # the whole system, on :8080
 docker compose up -d --wait postgres seaweedfs   # just what the suites need
 pnpm dev:setup                                    # prepare the development database and object store
 pnpm --filter @alloy-works/service dev             # the service on :8080 (see docs/development.md)
@@ -189,7 +191,8 @@ pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite: domain (node), web (jsdom), desktop (node)
+pnpm test          # every suite but the end-to-end one, which needs a running stack
+pnpm test:e2e      # the whole system, after `docker compose up -d --build --wait`
 pnpm dev:web       # the renderer alone, in a browser, on :5173
 pnpm app           # the dev server and the Electron shell together
 ```

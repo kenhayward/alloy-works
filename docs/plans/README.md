@@ -26,8 +26,13 @@ a worker, and a live update.
 | 4a  | [Workers and object storage](2026-09-11-scaffolding-04a-workers-and-object-storage.md)                               | The job queue in the platform schema, `apps/worker` claiming and running jobs, a store credential per tenant, and one job kind end to end: a sample PDF rendered by the pinned Typst   | Built (PR #35) |
 | 4b  | [Images and the full stack](2026-09-12-scaffolding-04b-images-and-the-full-stack.md)                                 | Images for the service and the worker, the whole compose stack, and the image build in CI                                                                                              | Built (PR #37) |
 | 5a  | [Live updates and the client](2026-09-12-scaffolding-05a-live-updates-and-the-client.md)                             | One Server-Sent Events stream per environment, fanned out through Postgres, and the client generated from the committed document                                                       | Built (PR #41) |
-| 5b  | [The renderer, the desktop app and the end-to-end check](2026-09-12-scaffolding-05b-the-renderer-and-the-desktop.md) | The service serving the renderer, the renderer talking to it, the desktop window on the service, and an end-to-end check in CI                                                         | Written        |
+| 5b  | [The renderer, the desktop app and the end-to-end check](2026-09-12-scaffolding-05b-the-renderer-and-the-desktop.md) | The service serving the renderer, the renderer talking to it, the desktop window on the service, and an end-to-end check in CI                                                         | Built (PR #NN) |
 
 Each plan leaves the repository working and tested on its own: plan 1 is a library with no service,
 plan 2 a service nobody can sign in to, and so on, each a smaller thing that is finished rather than
 a larger thing that is not.
+
+**The scaffolding is finished.** A person can open an environment, sign in, ask for something, watch
+it happen and download the result, in a browser or the desktop app, with the whole system checked on
+every change. What comes next is the first real feature, which is a product conversation rather than
+a plan.
