@@ -3,7 +3,13 @@
 Reviews of the documents in [`../specification/`](../specification/), kept verbatim as they were
 received. One file per document reviewed, named for the area code and the document it covers.
 
-**All twenty-one areas have now been reviewed and answered.** Each requirements document ends with a
+**A cross-cutting pass has read all twenty-one against each other.**
+[XXX - Cross Cutting Review.md](<XXX - Cross Cutting Review.md>) asks whether the areas are the right
+set, where the seams between documents are, and where they contradict each other;
+[XXX - Response.md](<XXX - Response.md>) answers it section by section, and each amended requirements
+document carries a **From the cross-cutting review** row in its change history.
+
+**All twenty-one areas have been reviewed and answered.** Each requirements document ends with a
 change history naming what changed against which review point, and what was deliberately left alone.
 
 **They are inputs, not records of what was decided.** A review says what somebody found wrong or

@@ -1,9 +1,11 @@
 # Detailed requirements
 
 > **Status: v1, reviewed.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written, and all twenty-one
-> now carrying a change history against their first review. 1257 requirements, 112 non-requirements
-> and 130 numbered questions, twenty-seven of which have since been settled. These say
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written, all twenty-one
+> reviewed, and all twenty-one read against each other in a
+> [cross-cutting pass](../../reviews/) whose answers are in
+> [`XXX - Response.md`](<../../reviews/XXX - Response.md>). 1303 requirements, 112 non-requirements
+> and 131 numbered questions, twenty-nine of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.
@@ -60,12 +62,12 @@ numbering, the known vocabularies and this index, for all three identifier kinds
 
 ### Columns
 
-| Column          | Meaning                                                                                                                                                                       |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ID**          | As above                                                                                                                                                                      |
-| **Requirement** | One statement of what must be true. `must` is binding; `should` is a strong default that an implementer may argue against in a decision record                                |
-| **Tranche**     | `T1`-`T6` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `Constraint` where the requirement governs how something is built rather than naming a thing to build |
-| **Status**      | `Specified`, `Withdrawn`, or `Superseded by XXX-NNN`. Nothing here tracks build progress - that is what citations are for                                                     |
+| Column          | Meaning                                                                                                                                                                                                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ID**          | As above                                                                                                                                                                                                                                                                                           |
+| **Requirement** | One statement of what must be true. `must` is binding; `should` is a strong default that an implementer may argue against in a decision record. **A `should` that a tranche does not deliver needs a decision record citing it and saying why**, so that a strong default is never quietly dropped |
+| **Tranche**     | `T1`-`T6` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `Constraint` where the requirement governs how something is built rather than naming a thing to build                                                                                                                      |
+| **Status**      | `Specified`, `Withdrawn`, or `Superseded by XXX-NNN`. Nothing here tracks build progress - that is what citations are for                                                                                                                                                                          |
 
 ## Areas
 

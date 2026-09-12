@@ -3,6 +3,39 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.13 - 2026-09-12 (PR #57)
+
+The twenty-one areas read against each other, and the seams between them closed.
+
+### Added
+
+- A third reference mode - tracking a component's latest approved revision - in the documents that
+  define references, which until now described two while lifecycle described three.
+- What a baseline pins that a document also depends on: the bibliography entries, terms and
+  vocabulary values it cites, and the template version it was created against.
+- A rule that every requirement saying an action is audited must name the event it produces and be
+  tested, and the event types nine areas were already producing without one.
+- The operational layer several documents assumed and none owned: notification channels and their
+  delivery guarantee, webhook subscriptions, scheduled work visible per tenant with its state and
+  last failure, and one place a tenant can see everything that can leave its boundary.
+- Backup and restore rehearsal, integrity re-verification, a register for every performance budget,
+  support access as an administrative control, organisation administrators, and high-risk
+  administrative acts named separately from `administer`.
+- What happens to an open connection or an open shared publication when somebody signs out or a share
+  is revoked, and what happens to an outline when two people reorder it at once.
+
+### Changed
+
+- Tenant isolation states the rule behind its list, so every derived copy - index, embedding,
+  derivative, export, notification, webhook payload, backup - is covered rather than only the six
+  named stores.
+- Accepting an AI-proposed edit obeys the lock and the version precondition like any other edit, and
+  where-used distinguishes live references from pins a change can never reach.
+- Image-style resolution now has one owner: CNT-091 to CNT-093 are superseded by their STY
+  equivalents, settling CNT-Q15.
+- Nine stale citations to superseded requirements corrected, and every area's status line now reads
+  reviewed.
+
 ## 0.10.12 - 2026-09-12 (PR #56)
 
 Templates and versioning, answered against their first reviews - and with them, all twenty-one

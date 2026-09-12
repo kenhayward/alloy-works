@@ -1,6 +1,6 @@
 # TPL - Templates and document instantiation
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -102,15 +102,16 @@ an API where wrong values arrive without a form to check them.
 
 ## 7. Instantiation
 
-| ID          | Requirement                                                                                                                                                                       | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **TPL-022** | Creating a document must materialise the starting outline, seed its metadata, resolve its variables, and establish its bindings                                                   | T2         | Specified |
-| **TPL-023** | Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting                          | T2         | Specified |
-| **TPL-024** | A failure during instantiation must leave no partial document behind                                                                                                              | Constraint | Specified |
-| **TPL-025** | Instantiation must record which template, and which template version, produced the document                                                                                       | T2         | Specified |
-| **TPL-026** | Instantiation must be available through the API as well as the interface, since creating documents is the commonest thing another system will want to do                          | T2         | Specified |
-| **TPL-050** | Creating a document must record who created it and when, on the document and in the audit log (**LIF-026**, **LIF-027**), alongside the template version TPL-025 records          | T2         | Specified |
-| **TPL-048** | A throwaway test document (TPL-005) must be discarded when the test ends and must never become reachable. Anything it produced - a binding run, a derived asset - must go with it | T2         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                      | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
+| **TPL-022** | Creating a document must materialise the starting outline, seed its metadata, resolve its variables, and establish its bindings                                                                                                                                                                  | T2         | Specified |
+| **TPL-051** | A template must be able to declare default values for a document's profile axes, and which axes a document from it must set. Instantiation must establish the profile from those defaults, from parameters or from a declared incomplete state, and must never leave it undeclared (**REU-022**) | T4         | Specified |
+| **TPL-023** | Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting                                                                                                                                         | T2         | Specified |
+| **TPL-024** | A failure during instantiation must leave no partial document behind                                                                                                                                                                                                                             | Constraint | Specified |
+| **TPL-025** | Instantiation must record which template, and which template version, produced the document                                                                                                                                                                                                      | T2         | Specified |
+| **TPL-026** | Instantiation must be available through the API as well as the interface, since creating documents is the commonest thing another system will want to do                                                                                                                                         | T2         | Specified |
+| **TPL-050** | Creating a document must record who created it and when, on the document and in the audit log (**LIF-026**, **LIF-027**), alongside the template version TPL-025 records                                                                                                                         | T2         | Specified |
+| **TPL-048** | A throwaway test document (TPL-005) must be discarded when the test ends and must never become reachable. Anything it produced - a binding run, a derived asset - must go with it                                                                                                                | T2         | Specified |
 
 ## 8. Divergence
 
@@ -249,3 +250,12 @@ rules for what gets a new identifier are in [the index](README.md#how-a-requirem
 | Requirements     | 40     | 50    |
 | Non-requirements | 4      | 4     |
 | Open questions   | 4      | 4     |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections | Change                                                                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.4             | **TPL-051** lets a template declare default profile values and required axes, and requires instantiation to establish the profile rather than leaving it undeclared |

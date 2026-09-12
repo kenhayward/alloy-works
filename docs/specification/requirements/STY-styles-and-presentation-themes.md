@@ -1,6 +1,6 @@
 # STY - Styles and presentation themes
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -214,7 +214,7 @@ day earlier.
 | **STY-045** | Typefaces supplied with the product must be open-licence, on terms that permit embedding in published output and redistribution with the software                                                                                                                        | Constraint | Specified |
 | **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it                                                                                  | T2         | Specified |
 | **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                                                                                                         | Constraint | Specified |
-| **STY-048** | The default theme must cover the scripts LOC-004 admits and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                                                                                     | T1         | Specified |
+| **STY-048** | The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                  | T1         | Specified |
 | **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box                                                                                   | Constraint | Specified |
 | **STY-052** | A typeface whose licence does not permit embedding in Word must declare a permitted face for Word output, and every publication using it must report the substitution                                                                                                    | T1         | Specified |
 | **STY-062** | A typeface must be validated on ingest for the vertical metrics STY-054 depends on - ascent, descent and line gap - product faces when the product is built and tenant faces when they are supplied (STY-046). A face without them must be refused rather than tolerated | Constraint | Specified |
@@ -272,19 +272,19 @@ The check has to be the pipeline's own. See
 
 ## 16. Traceability
 
-| This document      | Rests on                                                                                                        |
-| ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Section 3          | Scope §7.18                                                                                                     |
-| STY-010, STY-011   | CNT-031, CNT-035, CNT-094 - the closed mark set and named styles                                                |
-| STY-015 to STY-019 | CNT-088, CNT-091, CNT-092; asset dimensions from §7.20                                                          |
-| STY-027, STY-040   | Scope §11 and this repository's own icon rule: never substitute in silence                                      |
-| Section 12         | The open typography question carried from the architecture work                                                 |
-| STY-N01            | CNT-N08, no per-document override                                                                               |
-| STY-050 to STY-055 | The publishing engine and Word spikes; ADR-0013 and ADR-0015 - which is why their numbers sit below their topic |
-| Section 7          | CNT-120 - the admonition vocabulary content takes from here                                                     |
-| STY-069            | PUB-030, CNT-078 - accessibility of output and of the editor                                                    |
-| STY-061            | API-005 - a stable machine-readable code beside the message                                                     |
-| STY-056 to STY-073 | [The v1 review](<../../reviews/STY - Styles and presentation themes.md>); section 17                            |
+| This document      | Rests on                                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Section 3          | Scope §7.18                                                                                                                               |
+| STY-010, STY-011   | CNT-031, CNT-035, CNT-094 - the closed mark set and named styles                                                                          |
+| STY-015 to STY-019 | CNT-121, CNT-122, CNT-123 - an image reference carries a named style and no absolute dimension; asset dimensions from §7.20 (**CNT-Q15**) |
+| STY-027, STY-040   | Scope §11 and this repository's own icon rule: never substitute in silence                                                                |
+| Section 12         | The open typography question carried from the architecture work                                                                           |
+| STY-N01            | CNT-N08, no per-document override                                                                                                         |
+| STY-050 to STY-055 | The publishing engine and Word spikes; ADR-0013 and ADR-0015 - which is why their numbers sit below their topic                           |
+| Section 7          | CNT-120 - the admonition vocabulary content takes from here                                                                               |
+| STY-069            | PUB-030, CNT-078 - accessibility of output and of the editor                                                                              |
+| STY-061            | API-005 - a stable machine-readable code beside the message                                                                               |
+| STY-056 to STY-073 | [The v1 review](<../../reviews/STY - Styles and presentation themes.md>); section 17                                                      |
 
 ## 17. Change history
 
@@ -333,3 +333,12 @@ what gets a new identifier are in [the index](README.md#how-a-requirement-is-wri
 | Requirements     | 55     | 73, of which 2 superseded |
 | Non-requirements | 5      | 5                         |
 | Open questions   | 4      | 5                         |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections     | Change                                                                                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1.8, 3.1.9, 3.2.6 | The image-style traceability row now cites CNT-121 to CNT-123 rather than a typo and two requirements since superseded into this area. **STY-048** cites the supported locales and CNT-059's bidirectional text rather than LOC-004, which is about interface layout |

@@ -1,6 +1,6 @@
 # VER - Versioning, baselines and comparison
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -67,6 +67,12 @@ somebody who does not trust the system holding it, which is the situation an aud
 [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md), which already hashes
 content for other reasons.
 
+**VER-054 completes the pin list rather than replacing it.** VER-018 names the artifacts a document
+is made of; a resolved document also depends on the bibliography entries it cites, the terms and
+vocabulary values it uses, and the template definitions it was created against. LIB-047 already says
+a change never reaches a baseline - which is only true if the baseline pinned the record in the first
+place.
+
 **VER-011 is the requirement that keeps a baseline honest.** Pinning component versions while a
 theme, a layout or a query definition moves underneath means an approved document can still change,
 and the failure is invisible until somebody re-publishes.
@@ -83,20 +89,21 @@ and the failure is invisible until somebody re-publishes.
 
 ## 6. Baselines
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                   | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                                                                                                                                                             | T3         | Specified |
-| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, typeface, layout and citation style the document used, and the outline itself (**STY-047** is what makes a typeface pinnable)                                                                       | Constraint | Specified |
-| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                                                                                                                                                      | Constraint | Specified |
-| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                                                                                                                                                               | T4         | Specified |
-| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                                                                                                                                                           | T3         | Specified |
-| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                                                                                                                                                | Constraint | Specified |
-| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                                                                                                                                                  | Constraint | Specified |
-| **VER-043** | A baseline must record a digest over the set of versions it pins, so that "these are the exact inputs" is one value somebody can check rather than a list they must compare by hand (VER-042)                                                                                                 | Constraint | Specified |
-| **VER-046** | A baseline's name must be unique within its document and must not be changeable after creation, because the name is part of what an immutable record is cited by                                                                                                                              | T3         | Specified |
-| **VER-049** | A baseline must be markable as superseded, recording what superseded it, and a superseded baseline must remain retrievable. Baselines accumulate by design - nothing deletes one (VER-023) - so the controls are that creating one is a positive act and that a list can be filtered by state | T3         | Specified |
-| **VER-050** | Who may read a version history, run a comparison or export a redline must follow the permissions of what is being compared (**IAM**), and an export must carry no content its requester may not read                                                                                          | Constraint | Specified |
-| **VER-051** | Comparison must meet a stated budget for a document of several hundred components with a history of hundreds of versions - provisional, confirmed against real content, measured in production like every other budget (**ADM-016**)                                                          | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                       | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                                                                                                                                                                 | T3         | Specified |
+| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, typeface, layout and citation style the document used, and the outline itself (**STY-047** is what makes a typeface pinnable)                                                                           | Constraint | Specified |
+| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                                                                                                                                                          | Constraint | Specified |
+| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                                                                                                                                                                   | T4         | Specified |
+| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                                                                                                                                                               | T3         | Specified |
+| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                                                                                                                                                    | Constraint | Specified |
+| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                                                                                                                                                      | Constraint | Specified |
+| **VER-054** | A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), and the template version recorded on it with the definitions that version owned (**TPL-025**, **TPL-043**) | Constraint | Specified |
+| **VER-043** | A baseline must record a digest over the set of versions it pins, so that "these are the exact inputs" is one value somebody can check rather than a list they must compare by hand (VER-042)                                                                                                     | Constraint | Specified |
+| **VER-046** | A baseline's name must be unique within its document and must not be changeable after creation, because the name is part of what an immutable record is cited by                                                                                                                                  | T3         | Specified |
+| **VER-049** | A baseline must be markable as superseded, recording what superseded it, and a superseded baseline must remain retrievable. Baselines accumulate by design - nothing deletes one (VER-023) - so the controls are that creating one is a positive act and that a list can be filtered by state     | T3         | Specified |
+| **VER-050** | Who may read a version history, run a comparison or export a redline must follow the permissions of what is being compared (**IAM**), and an export must carry no content its requester may not read                                                                                              | Constraint | Specified |
+| **VER-051** | Comparison must meet a stated budget for a document of several hundred components with a history of hundreds of versions - provisional, confirmed against real content, measured in production like every other budget (**ADM-016**)                                                              | T3         | Specified |
 
 **VER-018 and VER-023 are the same requirement seen from two ends.** A baseline is only a promise
 that a document can be reproduced; a pin to something deletable is not a pin.
@@ -261,3 +268,12 @@ rules for what gets a new identifier are in [the index](README.md#how-a-requirem
 | Requirements     | 41     | 53, of which 2 superseded |
 | Non-requirements | 4      | 4                         |
 | Open questions   | 4      | 5                         |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections | Change                                                                                                                                                                                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.2             | **VER-054** completes the pin list: the bibliography entries, terms and vocabulary values a document references, and the template version with the definitions it owned. VER-018 named what a document is made of; a resolved document depends on more than that |

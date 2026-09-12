@@ -1,6 +1,6 @@
 # AST - Assets and media
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -107,13 +107,13 @@ place everybody looks at first.
 
 ## 5. Alt text
 
-| ID          | Requirement                                                                                                                                                                                                                                                 | Tranche    | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **AST-012** | An asset must be able to carry default alternative text                                                                                                                                                                                                     | T1         | Specified |
-| **AST-013** | A figure placing an asset must be able to override it, because the same photograph means different things in two documents (**CNT-017**)                                                                                                                    | T1         | Specified |
-| **AST-014** | Publishing must fail where neither the asset nor the figure supplies alternative text (**CNT-022**, **PUB-033**)                                                                                                                                            | Constraint | Specified |
-| **AST-015** | An asset that is purely decorative must be markable as such, so that it can be correctly given no alternative text                                                                                                                                          | T1         | Specified |
-| **AST-039** | Default alternative text must carry the language it is written in (**CNT-083**), so that it publishes as text in a known language (**CNT-084**). Where a figure overrides it (AST-013), the override takes the language of the component holding the figure | T1         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                  | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **AST-012** | An asset must be able to carry default alternative text                                                                                                                                                                                                                      | T1         | Specified |
+| **AST-013** | A figure placing an asset must be able to override it, because the same photograph means different things in two documents (**CNT-017**)                                                                                                                                     | T1         | Specified |
+| **AST-014** | Publishing must fail where neither the asset nor the figure supplies alternative text (**CNT-022**, **PUB-033**)                                                                                                                                                             | Constraint | Specified |
+| **AST-015** | An asset that is purely decorative must be markable as such, so that it can be correctly given no alternative text                                                                                                                                                           | T1         | Specified |
+| **AST-039** | Default alternative text must carry the language it is written in, as a BCP 47 tag (**CNT-140**), so that it publishes as text in a known language (**CNT-084**). Where a figure overrides it (AST-013), the override takes the language of the component holding the figure | T1         | Specified |
 
 **AST-039 was worth checking against CNT rather than assuming, and the check came back yes.**
 CNT-083 makes language a property of content rather than of a reader, and CNT-084 carries it into
@@ -222,7 +222,7 @@ made publishing easy.
 | AST-024            | Scope §7.20 content credentials                                               |
 | AST-016, AST-019   | VER-011, VER-023 - versioning and what a baseline pins                        |
 | AST-018            | REU-006 - where a reused thing is used                                        |
-| AST-039            | CNT-083, CNT-084 - language is a property of content, carried to every output |
+| AST-039            | CNT-140, CNT-084 - language is a property of content, carried to every output |
 | AST-031 to AST-050 | [The v1 review](<../../reviews/AST - Assets and media.md>); section 12        |
 
 ## 12. Change history
@@ -263,3 +263,12 @@ it. The rules for what gets a new identifier are in
 | Requirements     | 30     | 50    |
 | Non-requirements | 4      | 4     |
 | Open questions   | 4      | 6     |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections | Change                                                                                                                                              |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1.3           | AST-039 and its traceability row now cite **CNT-140** - the BCP 47 tag - rather than superseded CNT-083, and the row's identifier typo is corrected |
