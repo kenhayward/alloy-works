@@ -44,8 +44,12 @@ web publishing channel, an XML editor for arbitrary schemas, or offline-first.
 [`docs/specification/Project_Scope.md`](docs/specification/Project_Scope.md) carries the full
 argument: the market position, the personas, twenty-one capability areas, the non-goals, the
 decisions taken and still open, and the risks. The detailed requirements are in
-[`docs/specification/requirements/`](docs/specification/requirements/), and each subsystem design in
-[`docs/design/`](docs/design/) declares which of them it answers.
+[`docs/specification/requirements/`](docs/specification/requirements/) - one document per area, all
+twenty-one written, each reviewed, and then all of them read against each other in a cross-cutting
+pass. Every one ends with a change history saying what changed and why, and the reviews behind them
+are kept in [`docs/reviews/`](docs/reviews/). Each subsystem design in
+[`docs/design/`](docs/design/) declares which requirements it answers, so a requirement no design
+claims is work not yet designed.
 
 ### The order it gets built in
 
@@ -128,7 +132,7 @@ packages/
 tests/
   e2e/        @alloy-works/e2e      The whole system in containers, driven over HTTP.
 deploy/       The Dockerfile, its ignore list, and the compose stack. See deploy/README.md.
-docs/         Architecture, development, testing, CI, decisions and the specification.
+docs/         Architecture, development, testing, CI, decisions, the specification and its reviews.
 ```
 
 ## Documentation
@@ -144,6 +148,7 @@ docs/         Architecture, development, testing, CI, decisions and the specific
 | [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                            |
 | [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                 |
 | [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements                           |
+| [docs/reviews/](docs/reviews/)                     | The reviews of those requirements, kept as received, and what was done about each             |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                           |
 
 ## Platforms

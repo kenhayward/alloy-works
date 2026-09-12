@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.15 - 2026-09-12 (PR #NN)
+
+### Changed
+
+- The README, the documentation index and CONTRIBUTING now know that `docs/reviews/` exists: what it
+  holds, that its documents are kept as they arrived, and where each review was answered. A folder
+  nothing points at is a folder the next person does not find.
+- `CLAUDE.md` carries the convention this session established for answering a review - amend the
+  requirements rather than the review, supersede rather than edit, end the document with a change
+  history that also records what was deliberately not changed, and check a cross-document claim
+  before repeating it.
+
 ## 0.10.14 - 2026-09-12 (PR #58)
 
 ### Added

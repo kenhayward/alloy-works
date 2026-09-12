@@ -29,6 +29,22 @@ desktop deliveries.
 4. Bump the version and add a changelog entry.
 5. Push the branch and open a PR. Never merge locally.
 
+## Working on the specification rather than the code
+
+Some changes here are to `docs/specification/` rather than to code: the scope, and one requirements
+document per capability area. Those have rules of their own, in
+[the requirements index](docs/specification/requirements/README.md), and the two that matter most are
+that **an identifier is allocated once and never reused**, and that **a requirement which materially
+changes gets a new identifier while the old one is marked superseded** - so a citation in an old
+commit never comes to mean something else.
+
+Reviews of those documents live in [`docs/reviews/`](docs/reviews/), kept exactly as they arrived.
+Answering one means amending the requirements and ending the document with a change history: a row
+per change naming the review point behind it, and a row for anything raised that was deliberately not
+changed, with the reason. Declining a review point is a legitimate answer; declining it silently is
+not. `docs/specification/` still needs a version bump and a changelog entry like any other PR, and
+`apps/desktop/src/requirements.test.ts` checks the identifiers, the numbering and the index.
+
 ## Test-driven development
 
 **This project uses TDD.** Write the failing test first, watch it fail, then write the minimal code
