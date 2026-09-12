@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.6.1 - 2026-09-11 (PR #34)
+
+The plan for workers and object storage.
+
+### Added
+
+- The plan for running work in the background: a queue only a tenant's own environment can add to,
+  a worker that does each job inside that environment, and somewhere to keep what it makes that no
+  other environment can reach.
+
 ## 0.6.0 - 2026-09-11 (PR #33)
 
 Signing in with a Google account.
