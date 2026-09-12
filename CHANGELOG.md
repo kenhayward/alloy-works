@@ -14,6 +14,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   requirements rather than the review, supersede rather than edit, end the document with a change
   history that also records what was deliberately not changed, and check a cross-document claim
   before repeating it.
+- The seven spike briefs and findings move into `docs/specification/spikes/`, so the scope and the
+  requirements are what a reader meets first. Every reference to them across the decisions, designs,
+  requirements, plans, the domain package and the spike code was rewritten, and three links that had
+  been broken since they were written are fixed.
 - The six tranches now say what they actually contain. The shape was right and the contents had
   fallen behind a year of requirements: T1 was described as an editor and a publisher while it also
   needs themes, templates, assets and tables, and the later tranches had each gained a capability
@@ -962,7 +966,7 @@ How documents will be turned into PDF, decided in part.
   that reliably meet the fidelity bar are priced per server, and keeping them out keeps the cost of
   running the product independent of what it charges. The price is that whatever the free engines do
   not do becomes something to build, and accessible tagging is the likeliest candidate.
-- `docs/specification/Publishing_Engine_Spike.md`, the brief that chooses between the open engines
+- `docs/specification/spikes/Publishing_Engine_Spike.md`, the brief that chooses between the open engines
   that decision leaves. Nine cases, four of them gates, and one of them a question the requirements
   had quietly left contradictory: a preview must be quick and must come from the same machinery as a
   finished document, and an engine that has to lay out every page before it can show the fortieth
@@ -1186,7 +1190,7 @@ product is going to be, and how its content will be represented.
   profiling condition and a reviewer's redline routinely cover overlapping ranges of the same
   sentence, and no tree markup can represent that without abandoning its own model - whereas marks
   applied to ranges make it the ordinary case.
-- `docs/specification/Content_Model_Spike.md`, the brief that validates that decision before
+- `docs/specification/spikes/Content_Model_Spike.md`, the brief that validates that decision before
   anything is built on it. Ten deliberately hard cases - among them a redline crossing a
   conditional boundary, a footnote anchored to a cell in a table that a query might not return, and
   a round-trip through Word with track changes on - of which four are gates that supersede the

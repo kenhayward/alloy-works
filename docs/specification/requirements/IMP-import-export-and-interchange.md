@@ -14,11 +14,11 @@ poisoned repositories do not recover.
 
 ## 2. Depends on
 
-| Rests on                                                           | What it fixes                                                                 |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| [`Project_Scope.md`](../Project_Scope.md) §7.13                    | Assisted import, the export guarantee                                         |
-| [Content model spike findings](../Content_Model_Spike_Findings.md) | Import must split into an outline plus components; and the silent-drop defect |
-| [CNT](CNT-content-and-authoring.md) CNT-060 to CNT-065             | Paste at the editor, and its normalisation report                             |
+| Rests on                                                                  | What it fixes                                                                 |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`Project_Scope.md`](../Project_Scope.md) §7.13                           | Assisted import, the export guarantee                                         |
+| [Content model spike findings](../spikes/Content_Model_Spike_Findings.md) | Import must split into an outline plus components; and the silent-drop defect |
+| [CNT](CNT-content-and-authoring.md) CNT-060 to CNT-065                    | Paste at the editor, and its normalisation report                             |
 
 | Not here                                                     | There   |
 | ------------------------------------------------------------ | ------- |

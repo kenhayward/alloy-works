@@ -1,7 +1,7 @@
 # Content model spike - findings
 
 > **Status: gates complete.** All four gate cases in [`Content_Model_Spike.md`](Content_Model_Spike.md)
-> have run. **[ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md) is
+> have run. **[ADR-0005](../../decisions/0005-purpose-built-node-and-mark-content-model.md) is
 > confirmed** - no gate needed a workaround that leaks into the schema, so the record stands rather
 > than being superseded.
 >
@@ -14,7 +14,7 @@
 > the fix.
 
 > **Terminology note, added later.** This document says "revision" throughout for an immutable
-> snapshot of a component. [ADR-0006](../decisions/0006-iteration-version-revision.md) has since
+> snapshot of a component. [ADR-0006](../../decisions/0006-iteration-version-revision.md) has since
 > split that into three - iteration, version, revision - and what is called a revision here is what
 > is now called a **version**. The wording is left as it was written rather than rewritten, because
 > this is a record of what a spike found.

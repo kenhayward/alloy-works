@@ -1,7 +1,7 @@
 # Realtime spike - brief and findings
 
 > **Status: complete; decided in
-> [ADR-0018](../decisions/0018-realtime-one-push-channel-postgres-fan-out.md).** A short spike, run
+> [ADR-0018](../../decisions/0018-realtime-one-push-channel-postgres-fan-out.md).** A short spike, run
 > before the decision, on the one risk the chosen shape carries.
 
 ## The question
@@ -102,7 +102,7 @@ That ceiling is per database, so it is shared by every tenant in it.
 
 ## Findings
 
-**The shape holds, given three rules** - now in [`docs/design/realtime.md`](../design/realtime.md):
+**The shape holds, given three rules** - now in [`docs/design/realtime.md`](../../design/realtime.md):
 
 1. **Presence is batched; locks and nudges are not.** Presence is most of the traffic and needs no
    atomicity with anything, so each instance gathers the presence changes it receives and notifies

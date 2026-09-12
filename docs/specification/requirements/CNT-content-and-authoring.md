@@ -21,7 +21,7 @@ the document doing the resolving. That is what makes one component usable in for
 | Rests on                                                                      | What it fixes                                                                            |
 | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | [ADR-0005](../../decisions/0005-purpose-built-node-and-mark-content-model.md) | Nodes and marks, JSON, editor model as storage model, standards at the boundary          |
-| [Content model spike findings](../Content_Model_Spike_Findings.md)            | Block ids, mark ids, resolution preserving ids, the settled position on empty paragraphs |
+| [Content model spike findings](../spikes/Content_Model_Spike_Findings.md)     | Block ids, mark ids, resolution preserving ids, the settled position on empty paragraphs |
 | [`Project_Scope.md`](../Project_Scope.md) §6, §7.1                            | The vocabulary, and the intent this document makes precise                               |
 
 Boundaries with neighbouring areas:

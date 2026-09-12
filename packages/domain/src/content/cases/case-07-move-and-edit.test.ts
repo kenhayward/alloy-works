@@ -5,7 +5,7 @@ import { compareBlocks, stripBlockIds } from '../compare.js';
 
 /**
  * Case 7 of the content model spike - a GATE.
- * See docs/specification/Content_Model_Spike.md.
+ * See docs/specification/spikes/Content_Model_Spike.md.
  *
  * A paragraph is moved into a different position and reworded in the same version. A positional
  * diff calls that a delete plus an insert, which is the single most common way comparison becomes

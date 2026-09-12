@@ -1794,7 +1794,7 @@ platform table; the service reads that tenant's data only through `withTenant` i
 every answer and every error follows the contract in `packages/api-contract`, from which the committed
 `openapi.json` is generated and checked. It has one tenant-scoped route, `GET /v1/tenant`, and nobody
 can sign in yet. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
-[`plans/`](plans/)).
+[`plans/`](../plans/)).
 ```
 
 - [ ] **Step 2: `docs/testing.md`**

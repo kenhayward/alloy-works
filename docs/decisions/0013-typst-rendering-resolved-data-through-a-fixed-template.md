@@ -8,9 +8,9 @@
 [`Project_Scope.md`](../specification/Project_Scope.md) §10 carried the pagination and PDF engine as
 the last irreversible decision. [ADR-0007](0007-no-per-server-licensing-in-the-publishing-pipeline.md)
 had limited it to open-source engines, and
-[`Publishing_Engine_Spike.md`](../specification/Publishing_Engine_Spike.md) set nine cases against
+[`Publishing_Engine_Spike.md`](../specification/spikes/Publishing_Engine_Spike.md) set nine cases against
 four of them - WeasyPrint, PagedJS, Typst and headless Chrome. The findings are in
-[`Publishing_Engine_Spike_Findings.md`](../specification/Publishing_Engine_Spike_Findings.md); what
+[`Publishing_Engine_Spike_Findings.md`](../specification/spikes/Publishing_Engine_Spike_Findings.md); what
 follows is what they decided.
 
 **Typst was the only engine to pass all four gates, and nothing else passed more than two.** Its

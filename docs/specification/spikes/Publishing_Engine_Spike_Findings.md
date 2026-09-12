@@ -1,6 +1,6 @@
 # Publishing engine spike - findings
 
-> **Status: complete, and decided in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** All nine cases in
+> **Status: complete, and decided in [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** All nine cases in
 > [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) have run. The four gates ran against all
 > four candidates; **Typst was the only one to pass all four**, and nothing else passed more than two.
 > Cases 5 to 9 then ran against the two finalists, Typst and WeasyPrint, and so did the gates again
@@ -441,7 +441,7 @@ Three more came out of cases 4 to 8, and are now written down:
 ## Decision
 
 **Typst, rendering the resolved document as data through one fixed template.** Recorded in
-[ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), which narrows ADR-0005: XHTML stays a first-class export, and stops being the thing
+[ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), which narrows ADR-0005: XHTML stays a first-class export, and stops being the thing
 between the content model and the PDF.
 
 **ADR-0007 is confirmed, not sent back.** The brief said a gate failed by every candidate would be the

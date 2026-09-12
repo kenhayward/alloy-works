@@ -1,8 +1,8 @@
 # Publishing engine spike
 
-> **Status: complete; decided in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** Findings are in
+> **Status: complete; decided in [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md).** Findings are in
 > [`Publishing_Engine_Spike_Findings.md`](Publishing_Engine_Spike_Findings.md). The brief for the
-> second irreversible decision named in [`Project_Scope.md`](Project_Scope.md) §10. It follows the shape of
+> second irreversible decision named in [`Project_Scope.md`](../Project_Scope.md) §10. It follows the shape of
 > [`Content_Model_Spike.md`](Content_Model_Spike.md), which worked: hard cases, named gates, a
 > written finding per case, and a decision record either way.
 
@@ -11,7 +11,7 @@
 Which open-source engine paginates and renders this product's PDF, and what has to be built around
 whichever one wins.
 
-[ADR-0007](../decisions/0007-no-per-server-licensing-in-the-publishing-pipeline.md) has already
+[ADR-0007](../../decisions/0007-no-per-server-licensing-in-the-publishing-pipeline.md) has already
 removed the commercial options. So the question is not "which engine is best" - it is:
 
 > **Which of WeasyPrint, PagedJS, Typst and headless Chrome gets closest to the fidelity bar, what
@@ -33,9 +33,9 @@ own is a legitimate outcome, and it is the finding most likely to send ADR-0007 
 
 - **ADR-0005**: XHTML is the defined publishing intermediate.
 - **ADR-0007**: no per-server licence.
-- **[PUB](requirements/PUB-publishing-and-output.md)**, particularly PUB-002 (resolution order),
+- **[PUB](../requirements/PUB-publishing-and-output.md)**, particularly PUB-002 (resolution order),
   PUB-006 (preview shares the pipeline), PUB-016 to PUB-022 and PUB-030 to PUB-036.
-- **[STY](requirements/STY-styles-and-presentation-themes.md)** §11: typefaces available in a
+- **[STY](../requirements/STY-styles-and-presentation-themes.md)** §11: typefaces available in a
   browser, in the desktop shell, and in the pipeline, and failing rather than substituting.
 
 ## 4. The cases

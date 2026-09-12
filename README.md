@@ -138,19 +138,19 @@ docs/         Architecture, development, testing, CI, decisions, the specificati
 
 ## Documentation
 
-| Document                                           | What it covers                                                                                |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging |
-| [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                  |
-| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                        |
-| [deploy/README.md](deploy/README.md)               | The images, the compose stack, configuration, and what is not there yet                       |
-| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                     |
-| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                       |
-| [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                            |
-| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                 |
-| [docs/specification/](docs/specification/)         | What the product is going to be - scope, then detailed requirements                           |
-| [docs/reviews/](docs/reviews/)                     | The reviews of those requirements, kept as received, and what was done about each             |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                           |
+| Document                                           | What it covers                                                                                              |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging               |
+| [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                                |
+| [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                                      |
+| [deploy/README.md](deploy/README.md)               | The images, the compose stack, configuration, and what is not there yet                                     |
+| [docs/testing.md](docs/testing.md)                 | TDD, the suites, the pristine-output gate                                                                   |
+| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The pipeline, versioning, the changelog                                                                     |
+| [docs/plans/](docs/plans/)                         | Implementation plans, written and committed as each piece is built                                          |
+| [docs/decisions/](docs/decisions/)                 | Architecture decision records                                                                               |
+| [docs/specification/](docs/specification/)         | What the product is going to be - the scope, the detailed requirements, and the spikes behind the decisions |
+| [docs/reviews/](docs/reviews/)                     | The reviews of those requirements, kept as received, and what was done about each                           |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                 | How to work on this                                                                                         |
 
 ## Platforms
 

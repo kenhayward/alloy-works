@@ -655,10 +655,10 @@ Each becomes an architecture decision record when it is taken. The content repre
 head this list; it is now settled in [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md).
 The storage and version model used to head this list too; it is now settled in
 [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md), which case 7 of
-[`Content_Model_Spike.md`](Content_Model_Spike.md) largely decided by finding that comparison needs
+[`Content_Model_Spike.md`](spikes/Content_Model_Spike.md) largely decided by finding that comparison needs
 no step log. The pagination and PDF engine was the last irreversible decision; it is now settled
 in [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), after
-[`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md) ran all nine of its cases. What remains
+[`Publishing_Engine_Spike.md`](spikes/Publishing_Engine_Spike.md) ran all nine of its cases. What remains
 below is reversible. Search infrastructure has since been settled too, in
 [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md), after a short spike on
 the one risk the chosen shape carried, and relationship storage the same way, in
@@ -733,7 +733,7 @@ between publishing and publishing something a customer would send to a regulator
 Five things cut across the order:
 
 - **The content model spike ran before T1.**
-  [`Content_Model_Spike.md`](Content_Model_Spike.md) validated [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
+  [`Content_Model_Spike.md`](spikes/Content_Model_Spike.md) validated [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
   against its ten hardest cases and, with [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md),
   settled the version store. T1 builds on the schema draft it produced.
 - **The content model must accommodate reuse, conditions, translation and tracked changes from T1**,

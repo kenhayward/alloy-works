@@ -6,7 +6,7 @@ notification arrived - and how a model's output reaches the person who asked for
 This realises the realtime requirements of [COL](../specification/requirements/COL-collaboration-and-review.md)
 and [API](../specification/requirements/API-api-mcp-and-extensibility.md), under
 [ADR-0018](../decisions/0018-realtime-one-push-channel-postgres-fan-out.md), which rests on
-[`Realtime_Spike_Findings.md`](../specification/Realtime_Spike_Findings.md). Everything below is
+[`Realtime_Spike_Findings.md`](../specification/spikes/Realtime_Spike_Findings.md). Everything below is
 per tenant (ADR-0008) and runs in the web service; the desktop app loads the same renderer
 (ADR-0003) and so uses the same stream.
 

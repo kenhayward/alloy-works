@@ -1,8 +1,8 @@
 # Publishing engine spike - harness
 
 > **Throwaway, except the cases.** This is the harness for
-> [`Publishing_Engine_Spike.md`](../../docs/specification/Publishing_Engine_Spike.md). The findings
-> are in [`Publishing_Engine_Spike_Findings.md`](../../docs/specification/Publishing_Engine_Spike_Findings.md).
+> [`Publishing_Engine_Spike.md`](../../docs/specification/spikes/Publishing_Engine_Spike.md). The findings
+> are in [`Publishing_Engine_Spike_Findings.md`](../../docs/specification/spikes/Publishing_Engine_Spike_Findings.md).
 > The brief keeps the case set as a regression suite for whichever engine wins; everything else here
 > is scaffolding to reach a decision and should not be built on.
 

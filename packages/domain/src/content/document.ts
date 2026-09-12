@@ -11,7 +11,7 @@ import { z } from 'zod';
  * several fragments is still one annotation, and accepting or excluding it is one action.
  *
  * This is a spike draft. It covers what the gate cases in
- * docs/specification/Content_Model_Spike.md need and deliberately nothing else.
+ * docs/specification/spikes/Content_Model_Spike.md need and deliberately nothing else.
  */
 
 /**

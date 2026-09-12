@@ -1,7 +1,7 @@
 # Search spike - brief and findings
 
 > **Status: complete; decided in
-> [ADR-0016](../decisions/0016-search-in-postgres-behind-one-interface.md).** A short spike, run
+> [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md).** A short spike, run
 > before the decision rather than after it, on the one risk the chosen shape carries.
 
 ## The question
@@ -9,7 +9,7 @@
 Scope §10 left search infrastructure open, and SCH-Q01 and SCH-Q02 framed it: are full-text and
 semantic search one system or two, and how is query-time permission filtering made fast enough,
 given that "filtering after retrieval is correct and slow; filtering inside the index is fast and
-stale". [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md) had already put the
+stale". [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) had already put the
 vectors in Postgres beside the content.
 
 The shape chosen before the spike was **Postgres only, behind one interface**: full-text, trigram and
@@ -113,7 +113,7 @@ never have to be made comparable - with each result labelled words, meaning or b
 ## Findings
 
 **Postgres holds across the realistic range, given four rules** - each now in
-[`docs/design/search.md`](../design/search.md):
+[`docs/design/search.md`](../../design/search.md):
 
 1. **The vector strategy follows the size of what the user may see.** Exact search over the visible
    rows below a threshold - about 3 microseconds a row when the rows are scattered through the table, as
