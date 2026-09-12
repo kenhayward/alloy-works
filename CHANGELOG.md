@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.8.0 - 2026-09-12 (PR #37)
+
+The whole system, from one command.
+
+### Added
+
+- `docker compose up` now brings up everything: the database, the object store, a sign-in provider
+  for development, the service and a worker, prepared and ready to sign in to.
+- Images for the service and the worker, built on every change so that a broken one is caught where
+  it was broken.
+
 ## 0.7.1 - 2026-09-12 (PR #36)
 
 The plan for the whole system in one command.
