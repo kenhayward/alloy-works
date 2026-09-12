@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.7 - 2026-09-12 (PR #NN)
+
+Components that can be approved on their own, revisions effective in more than one place, and the
+lifecycle requirements answered against their first review.
+
+### Added
+
+- Components have lifecycles of their own, which customers were unambiguous about: a component is
+  approvable on its own, stays approved while the report around it is still being polished, and a
+  document can reference a component at its latest approved revision - a third choice beside pinned
+  and floating, because one is frozen and the other picks up drafts. Approving a component does not
+  stop it being improved for the next report.
+- Branch and merge as a regulated fact: more than one revision effective at once, each in a declared
+  scope, so a procedure can be at revision 4 in one plant and revision 3 in another, and centrally
+  approved labelling can wait for an affiliate to accept it. Convergence says what was left behind
+  and is never a silent overwrite.
+- What happens when an approver says no: rejection recorded with its reason, a rework path declared
+  in the workflow rather than improvised, and an audit event of its own.
+- An audit export a recipient can verify without trusting the exporter, holds and archival and
+  deletion named in the event list rather than inferred, and every recorded time an absolute instant.
+
+### Changed
+
+- Where state lives is now stated: state belongs to the artifact, a revision is an immutable
+  designation, and reworking an approved artifact leaves that revision effective until the next gate.
+- A publication is named as PUB's artifact rather than audited as something this area never defined,
+  and every version of a workflow definition survives as long as anything references it.
+
 ## 0.10.6 - 2026-09-12 (PR #49)
 
 Citing the literature from inside the document, and the reference libraries answered against their
