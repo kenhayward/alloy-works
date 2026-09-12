@@ -1,8 +1,9 @@
 # Detailed requirements
 
-> **Status: v1, for review.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written. 1235 requirements,
-> 112 non-requirements and 129 numbered questions, twenty-seven of which have since been settled. These say
+> **Status: v1, reviewed.** One document per capability area in
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written, and all twenty-one
+> now carrying a change history against their first review. 1257 requirements, 112 non-requirements
+> and 130 numbered questions, twenty-seven of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.
