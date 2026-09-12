@@ -15,6 +15,23 @@ pnpm install
 Always the plain install locally; CI uses `pnpm install --frozen-lockfile`. Never `npm install` or
 `yarn` - there is one lock file and it is `pnpm-lock.yaml`.
 
+To see the whole system running, rather than to work on it:
+
+```bash
+docker compose up -d --build     # database, object store, sign-in provider, service and worker
+```
+
+The `setup` container migrates the database and makes two environments of an invented customer before
+the service and worker start. Then `http://dev.acme.localhost:8080/v1/tenant` answers, and
+`http://dev.acme.localhost:8080/v1/sign-in/organisation` signs you in. `docker compose down` stops it,
+and `-v` throws the data away too. If something else on your machine holds port 8080, put the service
+on another one with a `compose.override.yaml` of your own (`ports: !override` replaces the list rather
+than adding to it), and give the stand-in the matching `STAND_IN_REDIRECT_URIS`.
+
+**Working on the code, rather than watching it run, needs only two of those containers** -
+`docker compose up -d --wait postgres seaweedfs` - with the service and worker run from source, as
+below.
+
 ## The database and the object store
 
 The suites - and the service and the worker - need PostgreSQL 17 with pgvector, and an

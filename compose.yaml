@@ -1,6 +1,5 @@
-# Development only. Later scaffolding plans add the service, the worker and the object store.
-# The password is a local development default for a throwaway container bound to 127.0.0.1; it is
-# not a secret and must never be used for anything deployed.
+# Development, and the small installations ADR-0019 describes. Every password here is a local
+# default for containers bound to 127.0.0.1; none is a credential for anything deployed.
 name: alloy-works
 
 services:
@@ -18,9 +17,13 @@ services:
       timeout: 5s
       retries: 30
 
-  # The object store. `-s3.iam.readOnly=false` lets the service make a credential per tenant through
+  # The object store. `-s3.iam.readOnly=false` lets provisioning make a credential per tenant through
   # the IAM API; `weed mini` ignores that flag, which is why this is the full server. Only the S3
-  # port is published: the filer's IAM gRPC service is unauthenticated inside the container.
+  # port is published: the filer's IAM service is unauthenticated inside the container.
+  #
+  # `store.localhost` is the name both sides use. A signed link carries the address that signed it,
+  # so the browser must be able to follow the same one the service used - which is why the published
+  # port is the same number as the one inside.
   seaweedfs:
     image: chrislusf/seaweedfs:4.46
     command: ['server', '-dir=/data', '-s3', '-s3.port=8333', '-s3.iam.readOnly=false']
@@ -31,11 +34,94 @@ services:
       - '127.0.0.1:8333:8333'
     volumes:
       - seaweedfs-data:/data
+    networks:
+      default:
+        aliases: [store.localhost]
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/healthz']
       interval: 2s
       timeout: 5s
       retries: 30
+
+  # Development only: it stands in for an organisation's provider and for Google. It binds every
+  # address inside its container and calls itself the name both sides reach it by.
+  stand-in-idp:
+    build:
+      context: .
+      target: tools
+    command: ['pnpm', '--filter', '@alloy-works/stand-in-idp', 'start']
+    environment:
+      STAND_IN_HOST: 0.0.0.0
+      STAND_IN_ISSUER: http://idp.localhost:9090
+      STAND_IN_REDIRECT_URIS: http://acme.localhost:8080/v1/sign-in/organisation/callback,http://dev.acme.localhost:8080/v1/sign-in/organisation/callback
+      STAND_IN_GOOGLE_REDIRECT_URI: http://signin.localhost:8080/v1/sign-in/google/callback
+    ports:
+      - '127.0.0.1:9090:9090'
+    networks:
+      default:
+        aliases: [idp.localhost]
+
+  # Runs once: migrations, two invented environments, and a store credential for each. The service
+  # and the worker wait for it to finish.
+  setup:
+    build:
+      context: .
+      target: tools
+    command: ['pnpm', 'dev:setup']
+    environment:
+      DATABASE_ADMIN_URL: postgres://postgres:postgres@postgres:5432/postgres
+      DEV_DATABASE_URL: postgres://postgres:postgres@postgres:5432/alloy_dev
+      STAND_IN_ISSUER: http://idp.localhost:9090
+      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      OBJECT_STORE_BUCKET: alloy-dev
+      SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+    restart: 'no'
+
+  service:
+    build:
+      context: .
+      target: service
+    environment:
+      DATABASE_URL: postgres://aw_service:aw_service_dev@postgres:5432/alloy_dev
+      HOST: 0.0.0.0
+      PORT: '8080'
+      LOG_LEVEL: info
+      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      OBJECT_STORE_BUCKET: alloy-dev
+      SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
+      SECRET_STAND_IN: stand-in-dev-secret
+      SECRET_GOOGLE: stand-in-google-secret
+      SECRET_SIGN_IN_STATE: development-only-state-key-not-a-secret
+      GOOGLE_ISSUER: http://idp.localhost:9090
+      GOOGLE_CLIENT_ID: alloy-google-dev
+      SIGN_IN_HOST: signin.localhost:8080
+      ALLOW_INSECURE_ISSUERS: 'true'
+    ports:
+      - '127.0.0.1:8080:8080'
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      stand-in-idp:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      DATABASE_URL: postgres://aw_worker:aw_worker_dev@postgres:5432/alloy_dev
+      LOG_LEVEL: info
+      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      OBJECT_STORE_BUCKET: alloy-dev
+      SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
+    depends_on:
+      setup:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

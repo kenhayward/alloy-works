@@ -3,51 +3,70 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.7.2 - 2026-09-12 (PR #39)
+## 0.8.2 - 2026-09-12 (PR #39)
 
-The content and authoring requirements, answered against their first review.
+Five specification areas, answered against their first review.
 
 ### Added
 
-- Hyperlinks, which the inline vocabulary did not have: a mark carrying an external target, a
-  scheme allowlist, sanitisation of pasted HTML, and dropped links named in the paste report.
-- Copying within the product: every pasted block gets a new identifier, annotations that cannot
-  travel are dropped and reported, and content from an older schema version is migrated or refused.
-- Three accessibility requirements - suggestions and comments announced to assistive technology,
-  redlines distinguishable without colour, and what verifying WCAG 2.2 AA actually takes.
-- A minimum shape for a component, the set of blocks a cross-reference can address, and four open
-  questions the review exposed.
 - `docs/reviews/`, holding the reviews of the specification documents verbatim, with an index saying
   which document each one reviews and where it was answered. They are inputs, not decisions: what
-  was done about a review lives in the document it reviewed.
-- The collaboration requirements answered against their own review: accepting a suggestion is an
-  edit and needs the lock, what happens to the loser of a claim race and to work under a lock that
-  is taken, two idle periods rather than one, review history nobody can delete, suggestions made
-  stale by another being accepted, and what a date means to a reviewer in another country.
-- The API requirements answered against their own review: a version precondition and no
-  unconditional overwrite, the component lock holding at the API as it does in the interface, jobs
-  for work that outlives a request, stable event identifiers and stated ordering for webhooks, a
-  request identifier on every response, and what happens when an extension is updated or removed.
-- The data requirements answered against their own review, and against customer feedback it carried:
-  a value can be revised by hand, and a revised value is a person's value that says so everywhere it
-  appears, keeps what the query returned, stays refreshable with an accept-or-reject when the source
-  moves, and is surfaced for review before a document is issued. With it: connection deletion
-  refused rather than cascaded, key-based row selection for inline bindings, an empty result told
-  apart from a failure, a floating binding flagged when its query definition advances, and a limit
-  on how much may run at once.
-- The administration requirements answered against their own review: the life of a tenant after
-  bootstrapping - suspension, an export offered before closure, a reversible grace period - a tenant
-  administrator's sight of their own audit trail, a floor under self-service diagnostics, where a
-  budget alert is delivered, what a configuration export carries in place of a secret, and what
-  consumes a secret before it is rotated.
+  was done about a review lives in the document it reviewed, in a change history.
+- Content and authoring: hyperlinks, which the inline vocabulary did not have, with a scheme
+  allowlist and sanitisation of pasted HTML; copying within the product, where every pasted block
+  gets a new identifier; suggestions and comments announced to assistive technology; redlines
+  distinguishable without colour; a minimum shape for a component.
+- Collaboration and review: accepting a suggestion is an edit and needs the lock, what happens to
+  the loser of a claim race and to work under a lock that is taken, two idle periods rather than
+  one, review history nobody can delete, suggestions made stale by another being accepted, and what
+  a date means to a reviewer in another country.
+- API and extensibility: a version precondition and no unconditional overwrite, the component lock
+  holding at the API as it does in the interface, jobs for work that outlives a request, stable
+  event identifiers and stated ordering for webhooks, a request identifier on every response, and
+  what happens when an extension is updated or removed.
+- Data connectivity: a value can be revised by hand, and a revised value is a person's value that
+  says so everywhere it appears, keeps what the query returned, stays refreshable with an
+  accept-or-reject when the source moves, and is surfaced for review before a document is issued.
+  With it: connection deletion refused rather than cascaded, key-based row selection for inline
+  bindings, an empty result told apart from a failure, a floating binding flagged when its query
+  definition advances, and a limit on how much may run at once.
+- Administration: the life of a tenant after bootstrapping - suspension, an export offered before
+  closure, a reversible grace period - a tenant administrator's sight of their own audit trail, a
+  floor under self-service diagnostics, where a budget alert is delivered, what a configuration
+  export carries in place of a secret, and what consumes a secret before it is rotated.
 
 ### Changed
 
-- Five bundled requirements split into the facets they were hiding, each superseded rather than
-  edited: lists, image styles, footnote content, the admonition vocabulary and the preview budget.
+- Eight bundled or imprecise requirements split or sharpened, each superseded rather than edited:
+  lists, image styles, footnote content, the admonition vocabulary, the preview budget, cost trends,
+  silent failures, and where rate limits are declared.
 - The preview budget now names a reference configuration, so it can be confirmed or refuted.
-- Sections reorganised for navigability, and a change history added to the document recording every
-  change against the review point that prompted it.
+- Sections reorganised for navigability, and each of the five documents ends with a change history
+  recording every change against the review point that prompted it.
+
+## 0.8.1 - 2026-09-12 (PR #40)
+
+The plan for live updates.
+
+### Added
+
+- The plan for watching an environment as it works: one live stream per environment, told what is
+  there on connecting and then what happens, and one generated way for anything to call the service.
+
+## 0.8.0 - 2026-09-12 (PR #37)
+
+The whole system, from one command.
+
+### Added
+
+- `docker compose up` now brings up everything: the database, the object store, a sign-in provider
+  for development, the service and a worker, prepared and ready to sign in to.
+- Images for the service and the worker, built on every change so that a broken one is caught where
+  it was broken.
+
+### Fixed
+
+- Preparing several environments at the same time no longer gives up too early when they collide.
 
 ## 0.7.1 - 2026-09-12 (PR #36)
 
