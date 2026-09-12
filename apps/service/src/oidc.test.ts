@@ -1,7 +1,7 @@
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createOidcClient, SCOPES, SignInFailed, type ProviderSettings } from './oidc.js';
-import { completeAtStandIn } from './test/stand-in.js';
+import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 
 const REDIRECT = 'http://acme.alloy.test/v1/sign-in/organisation/callback';
 

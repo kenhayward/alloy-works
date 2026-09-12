@@ -110,3 +110,41 @@ jobs:
             { echo 'the service image did not reach its configuration'; exit 1; }
           docker run --rm alloy-works-worker 2>&1 | grep 'The worker cannot start' || \
             { echo 'the worker image did not reach its configuration'; exit 1; }
+
+  # The whole system, as a person's browser would meet it. Its own job because the stack publishes
+  # the same ports the job above gives to a Postgres service container and a SeaweedFS step, and
+  # two things cannot hold one port.
+  end-to-end:
+    name: The whole system
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: The stack
+        run: docker compose up -d --build --wait
+
+      # Through turbo, which builds what the suite imports before running it.
+      - name: End to end
+        run: pnpm test:e2e
+
+      - name: Stop the stack
+        if: always()
+        run: |
+          docker compose logs --no-color > compose-logs.txt 2>&1 || true
+          docker compose down -v
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: compose-logs
+          path: compose-logs.txt

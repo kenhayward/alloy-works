@@ -330,6 +330,24 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@24.13.4)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
 
+  tests/e2e:
+    devDependencies:
+      '@alloy-works/api-client':
+        specifier: workspace:^
+        version: link:../../packages/api-client
+      '@alloy-works/stand-in-idp':
+        specifier: workspace:^
+        version: link:../../packages/stand-in-idp
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.13.4
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@24.13.4)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@24.13.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+
 packages:
 
   '@adobe/css-tools@4.5.0':
