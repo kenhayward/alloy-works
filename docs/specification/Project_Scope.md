@@ -709,19 +709,28 @@ the web delivery. Where a platform lags, say so plainly rather than implying par
 
 Six tranches, ordered by dependency and by risk. Each is a usable increment, not a layer.
 
-| Tranche                    | Contains                                                                                                                                                                                       |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 - The spine**         | Tenancy, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, search, PDF and Word publishing, the OpenAPI surface |
-| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, tabular presentation and field formatting                                                                   |
-| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit                                                                                 |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries                                                                  |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                    |
-| **T6 - The interchange**   | Word import and breakout, citation styles, translation and XLIFF                                                                                                                               |
+| Tranche                    | Contains                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **T1 - The spine**         | Tenancy and organisations, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, authored tables and figures with alternative text, style catalogues and themes, templates with their metadata schema and structure outline, search, PDF and Word publishing, the OpenAPI surface |
+| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, revising a bound value by hand, tabular presentation and field formatting                                                                                                                                                                                                 |
+| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit, and lifecycles for components as well as documents                                                                                                                                                                                           |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries, and revisions that diverge - more than one effective at once, and bringing a line back                                                                                                                                        |
+| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant and interactive chat, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                                                                                                                                                             |
+| **T6 - The interchange**   | Word import and breakout, citation styles, external reference sources, translation and XLIFF                                                                                                                                                                                                                                                                 |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate.
 
-Four things cut across the order:
+**T1 is larger than its name suggests, and that is worth knowing before designing it.** It touches
+twelve of the twenty-one areas, because publishing at the fidelity bar pulls in more than the
+editor: a document takes its theme and layout from a template (**TPL**), the theme resolves every
+style the editor renders and the publisher draws (**STY**), a figure needs an asset whose intrinsic
+dimensions an image style resolves against and whose alternative text publishing fails without
+(**AST**, **CNT-022**, **PUB-033**), and an authored table needs its caption, its header association
+and its behaviour at a page break (**TAB**). None of those is optional in T1: each is the difference
+between publishing and publishing something a customer would send to a regulator.
+
+Five things cut across the order:
 
 - **The content model spike ran before T1.**
   [`Content_Model_Spike.md`](Content_Model_Spike.md) validated [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md)
@@ -737,6 +746,12 @@ Four things cut across the order:
 - **A thin AI slice rides along from T2** - draft assistance in the editor, grounded in the current
   document - so the governance model in 7.6 is exercised against real use early rather than designed
   in the abstract and discovered to be wrong at T5.
+- **Some of the model exists before the capability that uses it does.** A reference records which of
+  three modes it takes from T1, including tracking a component's latest approved revision - but
+  nothing can be approved until lifecycle arrives in T3. The same is true of the marks for
+  conditions, suggestions and comments. The model carries them from T1 because retrofitting one is a
+  migration of everything already stored; T1 does not build the capability behind them, and a design
+  that tries to is designing T3 early.
 
 ## 13. Risks
 

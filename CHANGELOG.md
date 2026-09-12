@@ -14,6 +14,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   requirements rather than the review, supersede rather than edit, end the document with a change
   history that also records what was deliberately not changed, and check a cross-document claim
   before repeating it.
+- The six tranches now say what they actually contain. The shape was right and the contents had
+  fallen behind a year of requirements: T1 was described as an editor and a publisher while it also
+  needs themes, templates, assets and tables, and the later tranches had each gained a capability
+  nobody had written into the summary - revising a value by hand, component lifecycles, diverging
+  revisions, interactive chat and external reference sources.
 
 ## 0.10.14 - 2026-09-12 (PR #58)
 

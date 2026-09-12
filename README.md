@@ -55,18 +55,19 @@ claims is work not yet designed.
 
 Six tranches, each a usable increment rather than a layer:
 
-| Tranche                    | Contains                                                                                                                                                       |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, search, PDF and Word publishing, the API |
-| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, tabular presentation                                                                         |
-| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit                                                                               |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries                                                                 |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant, retrieval grounding, AI governance and cost controls                                                             |
-| **T6 - The interchange**   | Word import, citation styles, translation                                                                                                                      |
+| Tranche                    | Contains                                                                                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, tables and figures, styles and themes, templates, search, PDF and Word publishing, the API |
+| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, revising a value by hand, tabular presentation                                                                                                 |
+| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit, component lifecycles                                                                                                           |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries, diverging revisions                                                                                              |
+| **T5 - The intelligence**  | Template prompts, the assistant and interactive chat, retrieval grounding, AI governance and cost controls                                                                                                       |
+| **T6 - The interchange**   | Word import, citation styles, external reference sources, translation                                                                                                                                            |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
-what makes it a shippable increment rather than a foundation nobody can evaluate. **None of it is
-built yet** - what exists today is the scaffolding under it, listed below.
+what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
+than its name suggests, touching twelve of the twenty-one areas, because publishing at the fidelity
+bar needs themes, templates, assets and tables as well as an editor. **None of it is built yet** - what exists today is the scaffolding under it, listed below.
 
 ## Features
 
