@@ -92,3 +92,21 @@ jobs:
       - name: Test
         run: pnpm test
         continue-on-error: true
+
+      # The images are built on every pull request so a broken Dockerfile is found by the change
+      # that broke it. They are never pushed: a registry comes with hosting.
+      - name: Images
+        run: |
+          docker build --target service -t alloy-works-service .
+          docker build --target worker -t alloy-works-worker .
+
+      # Each image refuses to start without its configuration, which is what a working entry point
+      # looks like: the alternative is a stack trace about a missing module.
+      - name: Image entry points
+        run: |
+          set -e
+          docker run --rm alloy-works-worker typst --version | grep '0.15.1'
+          docker run --rm alloy-works-service 2>&1 | grep 'The service cannot start' || \
+            { echo 'the service image did not reach its configuration'; exit 1; }
+          docker run --rm alloy-works-worker 2>&1 | grep 'The worker cannot start' || \
+            { echo 'the worker image did not reach its configuration'; exit 1; }
