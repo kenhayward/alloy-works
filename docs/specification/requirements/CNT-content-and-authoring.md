@@ -519,28 +519,28 @@ is the thing this editor can most easily get wrong.
 
 ## 16. Traceability
 
-| This document               | Rests on                                                          |
-| --------------------------- | ----------------------------------------------------------------- |
-| Section 3                   | ADR-0005; spike findings cases 1, 3, 7                            |
-| CNT-023, CNT-082            | Spike findings, "Settled: a Word round-trip is lossy by design"   |
-| CNT-039                     | Spike findings case 3                                             |
-| CNT-064                     | Spike findings, the silent-drop defect found under symptom three  |
-| CNT-041, CNT-047, CNT-081   | Scope §6, "numbering is a property of the outline"                |
-| CNT-022, CNT-078 to CNT-080 | Scope §11, accessibility                                          |
-| CNT-083, CNT-084            | Scope §7.16 and §11; PDF/UA requires the language of a passage    |
-| Sections 4, 5               | Scope §7.1                                                        |
-| CNT-116 to CNT-139          | The v1 review, in section 17                                      |
-| CNT-N09, CNT-N10            | The v1 review, in section 17                                      |
-| CNT-126 to CNT-128, CNT-130 | The v1 review, "Missing areas": hyperlinks and their sanitisation |
-| CNT-132 to CNT-135          | The v1 review, "Missing areas": internal copy and paste           |
-| CNT-137 to CNT-139          | The v1 review, "Accessibility is thin"                            |
+| This document               | Rests on                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Section 3                   | ADR-0005; spike findings cases 1, 3, 7                                                                              |
+| CNT-023, CNT-082            | Spike findings, "Settled: a Word round-trip is lossy by design"                                                     |
+| CNT-039                     | Spike findings case 3                                                                                               |
+| CNT-064                     | Spike findings, the silent-drop defect found under symptom three                                                    |
+| CNT-041, CNT-047, CNT-081   | Scope §6, "numbering is a property of the outline"                                                                  |
+| CNT-022, CNT-078 to CNT-080 | Scope §11, accessibility                                                                                            |
+| CNT-083, CNT-084            | Scope §7.16 and §11; PDF/UA requires the language of a passage                                                      |
+| Sections 4, 5               | Scope §7.1                                                                                                          |
+| CNT-116 to CNT-139          | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), section 17                                         |
+| CNT-N09, CNT-N10            | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), section 17                                         |
+| CNT-126 to CNT-128, CNT-130 | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), "Missing areas": hyperlinks and their sanitisation |
+| CNT-132 to CNT-135          | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), "Missing areas": internal copy and paste           |
+| CNT-137 to CNT-139          | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), "Accessibility is thin"                            |
 
 ## 17. Change history
 
-One row per change, against the review that prompted it. A material change to a requirement gets a
-new identifier and supersedes the old one rather than editing it in place, which is why the count
-grows faster than the content does - the rules for that are in
-[the index](README.md#how-a-requirement-is-written).
+One row per change, against [the review](<../../reviews/CNT - Content and Authoring.md>) that
+prompted it. A material change to a requirement gets a new identifier and supersedes the old one
+rather than editing it in place, which is why the count grows faster than the content does - the
+rules for that are in [the index](README.md#how-a-requirement-is-written).
 
 ### From the v1 review
 

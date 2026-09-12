@@ -17,6 +17,9 @@ The content and authoring requirements, answered against their first review.
   redlines distinguishable without colour, and what verifying WCAG 2.2 AA actually takes.
 - A minimum shape for a component, the set of blocks a cross-reference can address, and four open
   questions the review exposed.
+- `docs/reviews/`, holding the reviews of the specification documents verbatim, with an index saying
+  which document each one reviews and where it was answered. They are inputs, not decisions: what
+  was done about a review lives in the document it reviewed.
 
 ### Changed
 
