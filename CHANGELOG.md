@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.7.2 - 2026-09-12 (PR #38)
+
+The content and authoring requirements, answered against their first review.
+
+### Added
+
+- Hyperlinks, which the inline vocabulary did not have: a mark carrying an external target, a
+  scheme allowlist, sanitisation of pasted HTML, and dropped links named in the paste report.
+- Copying within the product: every pasted block gets a new identifier, annotations that cannot
+  travel are dropped and reported, and content from an older schema version is migrated or refused.
+- Three accessibility requirements - suggestions and comments announced to assistive technology,
+  redlines distinguishable without colour, and what verifying WCAG 2.2 AA actually takes.
+- A minimum shape for a component, the set of blocks a cross-reference can address, and four open
+  questions the review exposed.
+
+### Changed
+
+- Five bundled requirements split into the facets they were hiding, each superseded rather than
+  edited: lists, image styles, footnote content, the admonition vocabulary and the preview budget.
+- The preview budget now names a reference configuration, so it can be confirmed or refuted.
+- Sections reorganised for navigability, and a change history added to the document recording every
+  change against the review point that prompted it.
+
 ## 0.7.1 - 2026-09-12 (PR #36)
 
 The plan for the whole system in one command.
