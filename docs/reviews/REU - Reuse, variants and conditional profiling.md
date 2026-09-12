@@ -1,0 +1,35 @@
+## Gaps worth closing inside REU's remit
+
+1. Variables do not say which document they resolve from across a reference edge — and REU-030 makes the omission visible. REU-030 explicitly resolves conditions of transcluded content in "the referring document's profile". Nothing says this for variables: if a component contains a variable, does it resolve against the referrer's parameter set (symmetry with conditions) or is that forbidden? REU-016 says "the document's parameter set" without defining which document. Two sub-gaps follow:
+
+state explicitly whether transcluded content resolves variables in the referring document's context (I'd expect yes, by symmetry with REU-030 — a component reused in two reports should pick up each report's parameters), or say it may not contain unresolved variables;
+a collision policy when both documents declare a variable of the same name (REU-018 makes declaration mandatory but says nothing about shadowing). Fail-loudly at publish fits the house style.
+This is the single biggest semantic hole in the document because every other boundary-crossing behaviour has its rule stated except this one.
+
+2. No determinism or provenance requirement for what actually gets produced. The doc's own framing (regulator, "the recipient may have a text extractor") implies published output should be reproducible and auditable, but:
+
+REU-027 records only profile on each publication, not the component versions resolved or the parameter values used; with floating references (REU-002) you cannot reconstruct what a publication contained after the fact.
+Worse for bulk generation: a cohort run of forty documents over an hour can resolve different component versions per row if anything floats mid-run. REU-034's purpose — "reviewed, approved and published together" — presumes the cohort is consistent, but nothing pins or records the inputs to the run. A cohort that drifts under its own generation is not reviewable as a set.
+Suggested constraint row: resolution output must be fully determined by (component version, referring document's profile, parameter set) — no ambient state — which simultaneously makes REU-031–REU-035 testable and forces the provenance question to be answered deliberately rather than by accident of implementation.
+
+3. Read-time failure states for references are undefined. REU-004 says a reference resolves "at read time and at publish time"; REU-005 prescribes only the publish behaviour (named error) when the target is deleted or no longer readable. What does an editor or reader see mid-document? A silent blank would violate the spirit of both REU-N01 and REU-017, but nothing says it can't happen. The same hole exists for the permission case: user B may read document X but not component C referenced inside it — publish fails per REU-005, but the read experience is unspecified. One requirement covering both (deleted target, denied target) would do it: render an explicit named error state in the editor and viewer; never empty.
+
+4. Nothing about cycles or resolution depth in the reference graph. Component A referencing B referencing A is expressible today — REU-003 permits a component to be referenced multiple times, nothing bounds transitive depth or detects loops. DITA has shipped conref-cycle failures for twenty years; since §5 commits this product to earning that comparison, reviewers should expect the question here rather than in CNT. At minimum: cycle detection with a named error at read and publish time (fits REU-005's pattern), plus an optional bound or at least reporting on resolved expansion size so a reference into a fifty-component subtree doesn't silently explode a document.
+
+5. The model expresses per-profile exclusion but per-profile wording is only reachable indirectly — and that path isn't documented. If one document publishes once per profile (REU-027), how does the transcluded component's text differ between its own publications? The mechanism is conditional pairs inside the component, both variants marked with conditions that resolve against the referrer's profile per REU-030 — expressible, but it requires the component author to anticipate every profile's wording needs, and nothing in §5 or §7 tells an author this path exists. Conversely, whether parameter sets can be per-profile (making variables do the job) is unanswered by REU-016 as written. This deserves either a short worked example in §7 or a new open question alongside REU-Q03 — which asks how many profiles, but not what varies between them.
+
+6. REU-023 needs a verifiable clause. "Must not be present in the output in any form" is correct and deliberately total, but as written it isn't testable: "present" differs per format (hidden HTML attributes, PDF metadata, embedded comments, collapsed elements). Given your own stated threat model — a regulator running a text extractor — add the enforcement mechanism to the requirement itself, e.g. every publication must pass an automated scan of output text and metadata for excluded content strings, with failure blocking publish. The prose note already argues this; the row should carry it so it survives into the test suite unparaphrased.
+
+## Confirm these live in sibling documents (boundary checks)
+
+- Publication input provenance (versions + parameters recorded per publication): if VER or TPL owns snapshotting, add a pointer here the way REU-014 points at VER for comparison; otherwise it belongs to REU-027.
+- Deleting a referenced component: REU-005 makes pinned references die with lineage deletion ("target deleted"), which implies deletion removes the whole version history — check VER states that tombstoning is required, or pinned references get orphaned by an ordinary delete.
+- Read-time error marker (finding 3): if CNT owns how marks render in-editor, confirm; otherwise REU should carry it.
+
+## Minor notes
+
+- Terminology: the title and §8 say transclusion, every requirement row says reference. Pin one sentence in §1 — "a reference is a transclusion of a component" — so the other 20 docs have something to anchor to.
+- REU-016 lists three sources (parameter set, metadata, query result) with no precedence when more than one can supply a value; resolution order gets a whole section for conditions and nothing here.
+- §5's prose concedes this block is "specified rather than proven", but the table still marks REU-011–REU-015 Specified identically to better-established rows — a status nuance (e.g. Specified, unproven) would keep the machine-readable column honest with your own Q01.
+- No non-functional anchor anywhere; REU-032's "forty sites" is the only scale number in the document. If performance expectations live in another spec that's fine — just confirm they do, since T4 ships the entire area at once and reviewers will ask what "bulk generation" means in practice for a four-hundred-site case.
+  Everything except constraints is tranche T4 with no internal sequencing noted; where-used (REU-006–010) is clearly a prerequisite for the override warnings (REU-008/009), so if intra-T4 ordering matters, say so — otherwise flag it as a conscious non-decision.
