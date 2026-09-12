@@ -24,38 +24,72 @@ import { signIn } from './test/sign-in.js';
 const A = '127.0.0.1';
 const B = 'localhost';
 
-/** Reads frames off a live stream, and gives up rather than hanging for ever. */
-async function framesFrom(url: string, cookie: string, wanted: number, within = 5000) {
+interface Frame {
+  readonly event: string;
+  readonly data: unknown;
+}
+
+/**
+ * A stream, read frame by frame. Tests wait for the frame they expect rather than for a length of
+ * time: a machine busier than this one takes longer to connect, and a sleep would race it.
+ */
+function openStream(url: string, cookie: string) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), within);
-  const response = await fetch(url, {
+  const arrived: Frame[] = [];
+  const waiting: ((frame: Frame) => void)[] = [];
+  const deliver = (frame: Frame) => {
+    const next = waiting.shift();
+    if (next) next(frame);
+    else arrived.push(frame);
+  };
+
+  const response = fetch(url, {
     headers: { cookie, accept: 'text/event-stream' },
     signal: controller.signal,
   });
-  const frames: { event: string; data: unknown }[] = [];
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  try {
-    while (frames.length < wanted) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let boundary = buffer.indexOf('\n\n');
-      while (boundary !== -1) {
-        const frame = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-        const event = /^event: (.+)$/m.exec(frame)?.[1];
-        const data = /^data: (.+)$/m.exec(frame)?.[1];
-        if (event && data) frames.push({ event, data: JSON.parse(data) });
-        boundary = buffer.indexOf('\n\n');
+
+  void response
+    .then(async (answer) => {
+      if (!answer.body) return;
+      const reader = answer.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return;
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf('\n\n');
+        while (boundary !== -1) {
+          const frame = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const event = /^event: (.+)$/m.exec(frame)?.[1];
+          const data = /^data: (.+)$/m.exec(frame)?.[1];
+          if (event && data) deliver({ event, data: JSON.parse(data) });
+          boundary = buffer.indexOf('\n\n');
+        }
       }
-    }
-  } finally {
-    clearTimeout(timer);
-    controller.abort();
-  }
-  return { frames, contentType: response.headers.get('content-type') };
+    })
+    .catch(() => {
+      // The test closes the stream when it is done, which ends the read.
+    });
+
+  return {
+    response,
+    next: (within = 10_000) =>
+      new Promise<Frame>((resolve, reject) => {
+        const held = arrived.shift();
+        if (held) {
+          resolve(held);
+          return;
+        }
+        const timer = setTimeout(() => reject(new Error(`no frame within ${within}ms`)), within);
+        waiting.push((frame) => {
+          clearTimeout(timer);
+          resolve(frame);
+        });
+      }),
+    close: () => controller.abort(),
+  };
 }
 
 describe('what an environment is doing, as it happens', () => {
@@ -70,6 +104,7 @@ describe('what an environment is doing, as it happens', () => {
   let holding: Promise<void> | undefined;
   /** A stream reads twice: the session, then the snapshot. Only the snapshot is held. */
   let letThrough = 0;
+  let onHold: (() => void) | undefined;
   let production: Tenant;
   let development: Tenant;
   let cookie = '';
@@ -124,7 +159,11 @@ describe('what an environment is doing, as it happens', () => {
       async withTenant(tenant, work) {
         if (holding) {
           if (letThrough > 0) letThrough -= 1;
-          else await holding;
+          else {
+            onHold?.();
+            onHold = undefined;
+            await holding;
+          }
         }
         return tenantDb.withTenant(tenant, work);
       },
@@ -174,32 +213,48 @@ describe('what an environment is doing, as it happens', () => {
 
   it('opens with what there is now', async () => {
     const id = await sampleIn(production);
-    const { frames, contentType } = await framesFrom(`${address}/v1/stream`, cookie, 1);
-    expect(contentType).toContain('text/event-stream');
-    expect(frames[0]?.event).toBe('snapshot');
-    expect((frames[0]?.data as { samples: { id: string }[] }).samples.map((s) => s.id)).toContain(
-      id,
-    );
+    const stream = openStream(`${address}/v1/stream`, cookie);
+    try {
+      const snapshot = await stream.next();
+      expect((await stream.response).headers.get('content-type')).toContain('text/event-stream');
+      expect(snapshot.event).toBe('snapshot');
+      expect((snapshot.data as { samples: { id: string }[] }).samples.map((s) => s.id)).toContain(
+        id,
+      );
+    } finally {
+      stream.close();
+    }
   });
 
   it('then says what happens', async () => {
     const id = await sampleIn(production);
-    const reading = framesFrom(`${address}/v1/stream`, cookie, 2);
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    await announce(production, id);
-    const { frames } = await reading;
-    expect(frames[1]).toEqual({ event: 'sample', data: { kind: 'sample', id, state: 'done' } });
+    const stream = openStream(`${address}/v1/stream`, cookie);
+    try {
+      // Its snapshot has arrived, so it is subscribed: what happens now must reach it.
+      expect((await stream.next()).event).toBe('snapshot');
+      await announce(production, id);
+      expect(await stream.next()).toEqual({
+        event: 'sample',
+        data: { kind: 'sample', id, state: 'done' },
+      });
+    } finally {
+      stream.close();
+    }
   });
 
   it("hears another environment's events not at all", async () => {
     const mine = await sampleIn(production);
     const theirs = await sampleIn(development);
-    const reading = framesFrom(`${address}/v1/stream`, cookie, 2);
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    await announce(development, theirs);
-    await announce(production, mine);
-    const { frames } = await reading;
-    expect(frames[1]).toMatchObject({ data: { id: mine } });
+    const stream = openStream(`${address}/v1/stream`, cookie);
+    try {
+      expect((await stream.next()).event).toBe('snapshot');
+      await announce(development, theirs);
+      await announce(production, mine);
+      // The next frame is this environment's, not the one announced first.
+      expect(await stream.next()).toMatchObject({ data: { id: mine } });
+    } finally {
+      stream.close();
+    }
   });
 
   it('loses nothing that happens while its snapshot is being read', async () => {
@@ -207,18 +262,30 @@ describe('what an environment is doing, as it happens', () => {
     // read must arrive after it, not before it and then be undone by older state (ADR-0018).
     const id = await sampleIn(production);
     let release = () => {};
+    let reached = () => {};
+    const held = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
     letThrough = 1;
+    onHold = reached;
     holding = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const reading = framesFrom(`${slowAddress}/v1/stream`, cookie, 2);
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    await announce(production, id);
-    release();
-    holding = undefined;
-    const { frames } = await reading;
-    expect(frames[0]?.event).toBe('snapshot');
-    expect(frames[1]).toEqual({ event: 'sample', data: { kind: 'sample', id, state: 'done' } });
+    const stream = openStream(`${slowAddress}/v1/stream`, cookie);
+    try {
+      // Waiting for the read to be held, rather than for a length of time.
+      await held;
+      await announce(production, id);
+      release();
+      holding = undefined;
+      expect((await stream.next()).event).toBe('snapshot');
+      expect(await stream.next()).toEqual({
+        event: 'sample',
+        data: { kind: 'sample', id, state: 'done' },
+      });
+    } finally {
+      stream.close();
+    }
   });
 
   it('is refused without a session', async () => {
