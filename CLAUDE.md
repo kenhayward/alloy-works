@@ -177,9 +177,8 @@ Everything from the repo root. One pnpm workspace, one lock file.
 
 ```bash
 pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lock file
-docker compose up -d --build           # the whole system in containers (see docs/development.md)
-docker compose up -d --build --wait              # the whole system, on :8080
-docker compose up -d --wait postgres seaweedfs   # just what the suites need
+docker compose -f deploy/compose.yaml up -d --build --wait   # the whole system, on :8080
+docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs   # just what the suites need
 pnpm dev:setup                                    # prepare the development database and object store
 pnpm --filter @alloy-works/service dev             # the service on :8080 (see docs/development.md)
 pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provider on :9090
@@ -192,7 +191,7 @@ pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
 pnpm test          # every suite but the end-to-end one, which needs a running stack
-pnpm test:e2e      # the whole system, after `docker compose up -d --build --wait`
+pnpm test:e2e      # the whole system, after the stack is up (see deploy/README.md)
 pnpm dev:web       # the renderer alone, in a browser, on :5173
 pnpm app           # the dev server and the Electron shell together
 ```

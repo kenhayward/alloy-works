@@ -18,19 +18,22 @@ Always the plain install locally; CI uses `pnpm install --frozen-lockfile`. Neve
 To see the whole system running, rather than to work on it:
 
 ```bash
-docker compose up -d --build     # database, object store, sign-in provider, service and worker
+docker compose -f deploy/compose.yaml up -d --build
 ```
 
 The `setup` container migrates the database and makes two environments of an invented customer before
 the service and worker start. Then `http://dev.acme.localhost:8080/v1/tenant` answers, and
-`http://dev.acme.localhost:8080/v1/sign-in/organisation` signs you in. `docker compose down` stops it,
-and `-v` throws the data away too. If something else on your machine holds port 8080, put the service
-on another one with a `compose.override.yaml` of your own (`ports: !override` replaces the list rather
-than adding to it), and give the stand-in the matching `STAND_IN_REDIRECT_URIS`.
+`http://dev.acme.localhost:8080/v1/sign-in/organisation` signs you in. Add `down` in place of `up` to
+stop it, and `-v` to throw the data away too. If something else on your machine holds port 8080, put
+the service on another one with a `deploy/compose.override.yaml` of your own - beside the compose
+file, which is where Compose looks for it, and git-ignored (`ports: !override` replaces the list
+rather than adding to it) - and give the stand-in the matching `STAND_IN_REDIRECT_URIS`.
 
-**Working on the code, rather than watching it run, needs only two of those containers** -
-`docker compose up -d --wait postgres seaweedfs` - with the service and worker run from source, as
-below.
+[`deploy/README.md`](../deploy/README.md) is the rest of it: what each container is for, every
+address and password, and how to stop typing `-f deploy/compose.yaml`.
+
+**Working on the code, rather than watching it run, needs only two of those containers**, with the
+service and worker run from source, as below.
 
 ## The database and the object store
 
@@ -38,8 +41,8 @@ The suites - and the service and the worker - need PostgreSQL 17 with pgvector, 
 S3-compatible object store. Docker runs both:
 
 ```bash
-docker compose up -d --wait postgres seaweedfs   # Postgres on 5432, the object store on 8333
-docker compose down                              # stop them; add -v to throw away their data
+docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs
+docker compose -f deploy/compose.yaml down   # add -v to throw their data away too
 ```
 
 The password is a development default for a container bound to `127.0.0.1`, never a credential for
@@ -88,7 +91,7 @@ restart it to choose someone else.
 **Everything in containers**, which is what CI drives and the nearest thing to a small installation:
 
 ```bash
-docker compose up -d --build --wait
+docker compose -f deploy/compose.yaml up -d --build --wait
 ```
 
 Open `http://dev.acme.localhost:8080`: the page says **Development**, offers **Sign in**, and after
@@ -145,7 +148,7 @@ pnpm format        # prettier --check (use `pnpm exec prettier --write .` to fix
 pnpm typecheck     # tsc --noEmit in every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
 pnpm test          # every suite in every workspace, apart from the end-to-end one
-pnpm test:e2e      # the whole system, which needs `docker compose up` first
+pnpm test:e2e      # the whole system, which needs the stack up first
 ```
 
 `build`, `typecheck` and `test` run through Turborepo, which builds `@alloy-works/domain` first
@@ -226,14 +229,21 @@ buy back room, but a very deep path can still exceed it.
    `--if-present` is not needed because the task graph skips what does not exist.
 3. Extend `tsconfig.base.json` rather than restating compiler options.
 4. Update the workspace table in [architecture.md](architecture.md) in the same PR.
+5. **If a container needs it, add its `package.json` to the manifest list in
+   [`deploy/Dockerfile`](../deploy/Dockerfile)** and to the install filter beside it. The manifests
+   are copied one by one, before the source, so that a source change does not reinstall the world -
+   which means a workspace missing from that list is simply absent from the image, and the failure
+   is a type error inside the build rather than anything that names the workspace.
 
 ## Layout
 
 ```
-apps/
-  web/        @alloy-works/web      React + TS + Vite. The renderer, and the web app.
-  desktop/    @alloy-works/desktop  Electron main + preload. No UI of its own.
-packages/
-  domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
-docs/         This documentation.
+apps/         web, desktop, service, worker
+packages/     domain, db, api-contract, api-client, objects, stand-in-idp
+tests/        e2e - the whole system, driven over HTTP
+deploy/       The Dockerfile, its ignore list, and the compose stack
+docs/         This documentation
 ```
+
+[`README.md`](../README.md) has the same layout with a line about each one, and
+[`deploy/README.md`](../deploy/README.md) covers that folder on its own.

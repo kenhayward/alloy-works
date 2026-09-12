@@ -16,6 +16,9 @@ coverage/
 
 # Python bytecode, from the spike harnesses
 __pycache__/
+
+# A local override of the stack: your ports, your secrets, nobody else's business.
+deploy/compose.override.yaml
 *.pyc
 
 # Editor / OS

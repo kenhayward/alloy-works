@@ -36,7 +36,7 @@ export async function testObjectStore(): Promise<TestObjectStore> {
     await ensureBucket(settings, ADMIN);
   } catch (error) {
     throw new Error(
-      `No object store at ${ENDPOINT}. Start it with \`docker compose up -d --wait seaweedfs\`, ` +
+      `No object store at ${ENDPOINT}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait seaweedfs\`, ` +
         `or point ALLOY_TEST_OBJECT_STORE at one. (${(error as Error).message})`,
       { cause: error },
     );
