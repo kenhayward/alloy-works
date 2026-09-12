@@ -60,6 +60,7 @@ packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
   db/         @alloy-works/db       Roles, tenants, migrations, withTenant. Node and pg.
   api-contract/ @alloy-works/api-contract  Routes as zod schemas; the generated openapi.json.
+  api-client/ @alloy-works/api-client  The generated client, and the live stream reader.
   stand-in-idp/ @alloy-works/stand-in-idp  A sign-in provider with invented people, for development.
   objects/    @alloy-works/objects  Object storage: a credential and a prefix per environment.
 docs/         Architecture, development, testing, CI and decision records.

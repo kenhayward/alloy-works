@@ -32,6 +32,7 @@ the proposed system, with a TypeScript web service as the system of record, is d
 | Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only             | `packages/stand-in-idp` |
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash          | `packages/objects`      |
 | Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them            | `apps/worker`           |
+| API client                     | TypeScript - types generated from `openapi.json`, and the stream reader             | `packages/api-client`   |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -183,6 +184,7 @@ pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provide
 pnpm --filter @alloy-works/worker dev             # the worker, claiming jobs (see docs/development.md)
 pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per machine
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
+pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

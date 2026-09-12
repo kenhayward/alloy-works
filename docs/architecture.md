@@ -15,7 +15,7 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, nine packages.
+One pnpm workspace, one lock file, ten packages.
 
 | Workspace               | Package                     | Holds                                                                                                                            |
 | ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,6 +28,7 @@ One pnpm workspace, one lock file, nine packages.
 | `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only |
 | `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                      |
 | `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                |
+| `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                          |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
@@ -128,7 +129,13 @@ with a one-time code. Work a request should not wait for goes on a queue in the 
 tenant, a kind and an id, never content - which a worker claims with `SKIP LOCKED` under a lease and
 then does inside that tenant's schema. The one kind there is renders a sample PDF with the pinned
 Typst and keeps it in the tenant's own corner of the object store, which its own credential is the
-only one that reaches. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
+only one that reaches. A signed-in viewer can hold one stream open on their environment,
+`GET /v1/stream`: it sends a snapshot of what is there, then ids as things happen. A worker's own
+transaction notifies a channel named for its tenant, so nothing is announced that did not commit and
+a tenant can speak on no other channel; one listening connection in the service fans that out to the
+streams it holds. A stream registers with the fan-out before its snapshot is read and holds what
+arrives until the snapshot has gone, so nothing committed in between is lost or overtaken by older
+state. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
 [`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
 
 ## Containers and images

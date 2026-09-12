@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.9.0 - 2026-09-12 (PR #41)
+
+Watching an environment as it works.
+
+### Added
+
+- A signed-in person can watch their environment: they are told what is there when they connect, and
+  then hear when a document they asked for is ready, without asking again.
+- One way for anything to call the service, generated from the published description of it, so a
+  client and the service cannot drift apart unnoticed.
+
 ## 0.8.2 - 2026-09-12 (PR #39)
 
 Five specification areas, answered against their first review.
