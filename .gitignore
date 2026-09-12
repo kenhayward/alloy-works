@@ -26,7 +26,11 @@ deploy/compose.override.yaml
 Thumbs.db
 *.local
 
-# Environment
+# Environment. The settings for running from source live in deploy/ as <app>.env, copied from the
+# committed <app>.env.example beside them - so the names are ignored by shape, not by being called
+# `.env`, and an example is exempt.
 .env
 .env.*
 !.env.example
+*.env
+!*.env.example

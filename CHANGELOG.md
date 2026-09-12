@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.2 - 2026-09-12 (PR #NN)
+
+### Changed
+
+- The settings for running the service or the worker from source now live in `deploy/` with
+  everything else you need to run the system, as `service.env.example` and `worker.env.example`
+  rather than a hidden file inside each app. Copy one to `service.env` or `worker.env` beside it;
+  the copies stay out of git, and the containers still read none of them.
+
 ## 0.10.1 - 2026-09-12 (PR #44)
 
 ### Changed
