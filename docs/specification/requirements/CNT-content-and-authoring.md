@@ -162,27 +162,28 @@ the separation rather than losing it. The blank lines go; the gap they were maki
 
 ## 5. Inline content and marks
 
-| ID          | Requirement                                                                                                                                                                                             | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **CNT-024** | Text must be the base inline node                                                                                                                                                                       | T1      | Specified |
-| **CNT-025** | Inline equations must be supported                                                                                                                                                                      | T1      | Specified |
-| **CNT-026** | Footnote anchors must be inline nodes (section 6)                                                                                                                                                       | T1      | Specified |
-| **CNT-027** | Cross-references must be inline nodes carrying a target identity and what to display, never a resolved number or title                                                                                  | T1      | Specified |
-| **CNT-028** | Citations must be inline nodes (section 8)                                                                                                                                                              | T1      | Specified |
-| **CNT-029** | Variables must be supported, carrying a name resolved at publish time (**REU** owns resolution)                                                                                                         | T1      | Specified |
-| **CNT-030** | Inline data bindings must be supported, carrying a query reference (**DAT** owns resolution)                                                                                                            | T1      | Specified |
-| **CNT-031** | Character-level marks must be supported: **emphasis, strong, underline, subscript, superscript**, inline code, defined term and quoted phrase                                                           | T1      | Specified |
-| **CNT-032** | Condition marks must be supported, carrying an axis and permitted values (**REU** owns evaluation)                                                                                                      | T1      | Specified |
-| **CNT-033** | Suggestion marks must be supported, carrying an operation and an author (**COL** owns the review workflow)                                                                                              | T1      | Specified |
-| **CNT-034** | Comment anchor marks must be supported, carrying a thread identity (**COL** owns the thread)                                                                                                            | T1      | Specified |
-| **CNT-035** | The author must be able to apply and remove every mark in CNT-031 directly, from a toolbar and by keyboard shortcut. The editor must offer no control over typeface, font size or colour                | T1      | Specified |
-| **CNT-083** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag                                                           | T1      | Specified |
-| **CNT-084** | A run's language must be carried through to every output format as the language of that passage                                                                                                         | T1      | Specified |
-| **CNT-085** | An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning                                                                            | T1      | Specified |
-| **CNT-087** | An image must be placeable inline within a run of text                                                                                                                                                  | T1      | Specified |
-| **CNT-126** | Hyperlinks must be supported, as a mark over a range of text carrying an absolute target and an optional title                                                                                          | T1      | Specified |
-| **CNT-127** | A hyperlink's target must be validated against a declared allowlist of schemes - `http`, `https` and `mailto` at minimum - and a target with any other scheme must be refused on entry and never stored | T1      | Specified |
-| **CNT-128** | A hyperlink must be carried to every output format: as a live link where the format has one, and otherwise as the rendering the theme declares (**STY**, **PUB**)                                       | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                          | Tranche | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **CNT-024** | Text must be the base inline node                                                                                                                                                                                                                                                                                    | T1      | Specified             |
+| **CNT-025** | Inline equations must be supported                                                                                                                                                                                                                                                                                   | T1      | Specified             |
+| **CNT-026** | Footnote anchors must be inline nodes (section 6)                                                                                                                                                                                                                                                                    | T1      | Specified             |
+| **CNT-027** | Cross-references must be inline nodes carrying a target identity and what to display, never a resolved number or title                                                                                                                                                                                               | T1      | Specified             |
+| **CNT-028** | Citations must be inline nodes (section 8)                                                                                                                                                                                                                                                                           | T1      | Specified             |
+| **CNT-029** | Variables must be supported, carrying a name resolved at publish time (**REU** owns resolution)                                                                                                                                                                                                                      | T1      | Specified             |
+| **CNT-030** | Inline data bindings must be supported, carrying a query reference (**DAT** owns resolution)                                                                                                                                                                                                                         | T1      | Specified             |
+| **CNT-031** | Character-level marks must be supported: **emphasis, strong, underline, subscript, superscript**, inline code, defined term and quoted phrase                                                                                                                                                                        | T1      | Specified             |
+| **CNT-032** | Condition marks must be supported, carrying an axis and permitted values (**REU** owns evaluation)                                                                                                                                                                                                                   | T1      | Specified             |
+| **CNT-033** | Suggestion marks must be supported, carrying an operation and an author (**COL** owns the review workflow)                                                                                                                                                                                                           | T1      | Specified             |
+| **CNT-034** | Comment anchor marks must be supported, carrying a thread identity (**COL** owns the thread)                                                                                                                                                                                                                         | T1      | Specified             |
+| **CNT-035** | The author must be able to apply and remove every mark in CNT-031 directly, from a toolbar and by keyboard shortcut. The editor must offer no control over typeface, font size or colour                                                                                                                             | T1      | Specified             |
+| **CNT-083** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag                                                                                                                                                                        | T1      | Superseded by CNT-140 |
+| **CNT-084** | A run's language must be carried through to every output format as the language of that passage                                                                                                                                                                                                                      | T1      | Specified             |
+| **CNT-140** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag. Every such tag must be a **BCP 47** language tag, carrying a region wherever the region changes the content - `pt-BR` distinct from `pt-PT`, `zh-Hans` from `zh-Hant` | T1      | Specified             |
+| **CNT-085** | An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning                                                                                                                                                                                         | T1      | Specified             |
+| **CNT-087** | An image must be placeable inline within a run of text                                                                                                                                                                                                                                                               | T1      | Specified             |
+| **CNT-126** | Hyperlinks must be supported, as a mark over a range of text carrying an absolute target and an optional title                                                                                                                                                                                                       | T1      | Specified             |
+| **CNT-127** | A hyperlink's target must be validated against a declared allowlist of schemes - `http`, `https` and `mailto` at minimum - and a target with any other scheme must be refused on entry and never stored                                                                                                              | T1      | Specified             |
+| **CNT-128** | A hyperlink must be carried to every output format: as a live link where the format has one, and otherwise as the rendering the theme declares (**STY**, **PUB**)                                                                                                                                                    | T1      | Specified             |
 
 **CNT-031 and CNT-035 answer the strongest objection in review, and it was right.** "Appearance is
 the theme's, always" is true of blocks and false of characters. An author writing a report must be
@@ -209,7 +210,14 @@ hostile, not merely ugly.
 appearance, and it is here because house styles in this market require it. Calling it `emphasis-2`
 and pretending otherwise would fool nobody.
 
-**CNT-083 answers a review point precisely: there is no such thing as a foreign language.** The
+**CNT-140 replaces CNT-083 to say what shape a language tag is.** The original recorded a language
+and left the form of it open, which is enough for spelling (CNT-099) and not enough for anything that
+distinguishes one region from another: **LOC-002** formats a date, **LOC-003** collates a list, and
+**LOC-007** holds a Brazilian variant beside a European one. None of those is implementable against a
+bare two-letter code, and a tag's shape cannot be narrowed after content has been stored against it -
+which is why this is a change made now rather than when translation ships in T6.
+
+**CNT-140 answers a review point precisely: there is no such thing as a foreign language.** The
 earlier wording said "foreign phrase", which describes a relation to a reader rather than a property
 of text. The model records **language**, never foreignness: a component declares its base language,
 and a run that differs declares its own. This is not decoration - tagged PDF and accessible Word
@@ -527,7 +535,7 @@ is the thing this editor can most easily get wrong.
 | CNT-064                     | Spike findings, the silent-drop defect found under symptom three                                                    |
 | CNT-041, CNT-047, CNT-081   | Scope §6, "numbering is a property of the outline"                                                                  |
 | CNT-022, CNT-078 to CNT-080 | Scope §11, accessibility                                                                                            |
-| CNT-083, CNT-084            | Scope §7.16 and §11; PDF/UA requires the language of a passage                                                      |
+| CNT-083, CNT-084, CNT-140   | Scope §7.16 and §11; PDF/UA requires the language of a passage; LOC-002, LOC-003 and LOC-007 need the region        |
 | Sections 4, 5               | Scope §7.1                                                                                                          |
 | CNT-116 to CNT-139          | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), section 17                                         |
 | CNT-N09, CNT-N10            | [The v1 review](<../../reviews/CNT - Content and Authoring.md>), section 17                                         |
@@ -569,10 +577,18 @@ rules for that are in [the index](README.md#how-a-requirement-is-written).
 | ID allocation follows review rounds rather than topics | Identifiers are contiguous as a set and deliberately out of order down the page; renumbering would break every citation. The fix for navigability is document structure, and that is what changed |
 | CNT-091 to CNT-093 move to STY                         | CNT-Q15. It is a decision with STY and with the design that already claims them, not an edit to this document                                                                                     |
 
+### From the LOC review
+
+A later review, of [LOC](LOC-localisation-and-translation.md), reached back into this document.
+
+| Point                                | Change                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A language tag has no declared shape | **CNT-083 superseded by CNT-140**: the tag must be BCP 47, with a region wherever the region changes the content. LOC stated the dependency in LOC-034 because this document did not carry it; it carries it now, and LOC-034 cites CNT-140. A tag's shape cannot be narrowed once content has been stored against it, which is why it changed at T1 rather than when translation ships |
+
 ### Counts
 
 |                  | Before | After                      |
 | ---------------- | ------ | -------------------------- |
-| Requirements     | 115    | 139, of which 5 superseded |
+| Requirements     | 115    | 140, of which 6 superseded |
 | Non-requirements | 8      | 10                         |
 | Open questions   | 11     | 15, of which 7 settled     |
