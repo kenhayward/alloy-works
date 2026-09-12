@@ -66,6 +66,16 @@ function queryParameters(query: z.ZodObject): Json[] {
   }));
 }
 
+function pathParameters(params: z.ZodObject): Json[] {
+  const json = z.toJSONSchema(params, { io: 'input' }) as { properties?: Record<string, Json> };
+  return Object.entries(json.properties ?? {}).map(([name, schema]) => ({
+    name,
+    in: 'path',
+    required: true,
+    schema: open(schema),
+  }));
+}
+
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
   const ordered = [...routes].sort(
@@ -80,11 +90,15 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
       description: 'An error, in the one shape every error takes',
       content: content(ErrorBody),
     };
+    const parameters = [
+      ...(route.params ? pathParameters(route.params) : []),
+      ...(route.query ? queryParameters(route.query) : []),
+    ];
     (paths[route.path] ??= {})[route.method.toLowerCase()] = {
       operationId: route.operationId,
       summary: route.summary,
       security: route.authenticated ? [{ session: [] }] : [],
-      ...(route.query ? { parameters: queryParameters(route.query) } : {}),
+      ...(parameters.length > 0 ? { parameters } : {}),
       responses,
     };
   }

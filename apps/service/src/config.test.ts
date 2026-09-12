@@ -81,4 +81,18 @@ describe('configuration', () => {
       }),
     ).toThrow(/SIGN_IN_HOST/);
   });
+
+  it('takes the object store as an address and a bucket, or neither', () => {
+    expect(loadConfig({ DATABASE_URL: url }).objectStore).toBeUndefined();
+    expect(
+      loadConfig({
+        DATABASE_URL: url,
+        OBJECT_STORE_ENDPOINT: 'http://127.0.0.1:8333',
+        OBJECT_STORE_BUCKET: 'alloy-dev',
+      }).objectStore,
+    ).toEqual({ endpoint: 'http://127.0.0.1:8333', region: 'us-east-1', bucket: 'alloy-dev' });
+    expect(() =>
+      loadConfig({ DATABASE_URL: url, OBJECT_STORE_ENDPOINT: 'http://127.0.0.1:8333' }),
+    ).toThrow(/OBJECT_STORE_ENDPOINT and OBJECT_STORE_BUCKET must be set together/);
+  });
 });

@@ -1,5 +1,14 @@
 import type { RouteContract } from './contract.js';
-import { ErrorBody, GoogleHandoff, Health, Me, SignInCallback, TenantProfile } from './schemas.js';
+import {
+  ErrorBody,
+  GoogleHandoff,
+  Health,
+  Me,
+  Sample,
+  SampleParams,
+  SignInCallback,
+  TenantProfile,
+} from './schemas.js';
 
 /** The API's major version, as in `/v1`. It changes only with a breaking change (API-010). */
 export const API_VERSION = '1';
@@ -132,6 +141,36 @@ export const routes = {
     responses: {
       200: { description: 'The signed-in principal', schema: Me },
       401: unauthenticated,
+    },
+  },
+  requestSample: {
+    operationId: 'requestSample',
+    method: 'POST',
+    path: '/v1/samples',
+    summary: 'Ask for a sample PDF of this environment, which a worker makes',
+    tenantScoped: true,
+    authenticated: true,
+    responses: {
+      202: { description: 'Asked for; a worker will make it', schema: Sample },
+      401: unauthenticated,
+      503: {
+        description: 'This environment has nowhere to keep documents yet',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getSample: {
+    operationId: 'getSample',
+    method: 'GET',
+    path: '/v1/samples/{sampleId}',
+    summary: 'How a sample is coming along, and where to fetch it',
+    tenantScoped: true,
+    authenticated: true,
+    params: SampleParams,
+    responses: {
+      200: { description: 'The sample', schema: Sample },
+      401: unauthenticated,
+      404: { description: 'No such sample in this environment', schema: ErrorBody },
     },
   },
 } as const satisfies Record<string, RouteContract>;

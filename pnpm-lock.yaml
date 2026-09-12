@@ -71,6 +71,9 @@ importers:
       '@alloy-works/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@alloy-works/objects':
+        specifier: workspace:^
+        version: link:../../packages/objects
       '@fastify/cookie':
         specifier: ^11.1.2
         version: 11.1.2

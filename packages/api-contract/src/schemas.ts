@@ -38,3 +38,16 @@ export type SignInCallback = z.infer<typeof SignInCallback>;
 
 export const GoogleHandoff = z.object({ code: z.string() });
 export type GoogleHandoff = z.infer<typeof GoogleHandoff>;
+
+export const Sample = z.object({
+  id: z.string(),
+  state: z.enum(['queued', 'done', 'failed']),
+  download: z
+    .string()
+    .nullable()
+    .describe('A link to the PDF, good for a few minutes, once a worker has made it'),
+});
+export type Sample = z.infer<typeof Sample>;
+
+export const SampleParams = z.object({ sampleId: z.uuid() });
+export type SampleParams = z.infer<typeof SampleParams>;

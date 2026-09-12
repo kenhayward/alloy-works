@@ -5,9 +5,12 @@ import {
   SESSION_COOKIE,
   type GoogleHandoff,
   type RouteContract,
+  type Sample,
+  type SampleParams,
   type SignInCallback,
 } from '@alloy-works/api-contract';
-import type { SignInRoute, Tenant, TenantDatabase } from '@alloy-works/db';
+import { enqueueJob, type SignInRoute, type Tenant, type TenantDatabase } from '@alloy-works/db';
+import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import type { GoogleSettings } from './config.js';
@@ -49,6 +52,8 @@ export interface AppOptions extends HttpOptions {
   readonly secrets: SecretStore;
   /** The product's one Google client and the sign-in address it returns to; without, no Google route. */
   readonly google?: GoogleSettings;
+  /** Where this environment's documents are kept; without it, samples are refused. */
+  readonly objects?: ObjectStores;
   readonly tenantCacheMs?: number;
 }
 
@@ -61,6 +66,8 @@ const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
 /** How long a hand-off code lives: one redirect's worth. */
 const HANDOFF_MS = 60 * 1000;
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
+/** Long enough to follow a link, short enough that a copied one is worth little. */
+const DOWNLOAD_SECONDS = 300;
 
 type Success<R extends RouteContract> = R['responses'] extends {
   200: { schema: infer S extends z.ZodType };
@@ -103,6 +110,13 @@ const routeClosed = () =>
   );
 
 const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
+
+const storageUnavailable = () =>
+  new AppError(
+    503,
+    'storage_unavailable',
+    'This environment has nowhere to keep documents yet. Try again later.',
+  );
 
 /**
  * The service: the contract's routes and nothing else. Every route in `routes` must have a handler
@@ -401,6 +415,57 @@ export function buildApp(options: AppOptions): FastifyInstance {
         environment: profile.display_name,
       };
     },
+
+    requestSample: async (request, reply) => {
+      const tenant = tenantOf(request);
+      const principal = principalOf(request);
+      const { objects } = options;
+      if (!objects) throw storageUnavailable();
+      const sample = await db.withTenant(tenant, async (trx) => {
+        const stored = await trx
+          .selectFrom('object_store_credential')
+          .select('access_key_id')
+          .executeTakeFirst();
+        if (!stored) throw storageUnavailable();
+        const row = await trx
+          .insertInto('sample')
+          .values({ requested_by: principal.principalId })
+          .returning(['id', 'state'])
+          .executeTakeFirstOrThrow();
+        // In the same transaction as the row it is about: the job exists exactly when the sample
+        // does, and the queue checks that a tenant enqueues only its own work.
+        await enqueueJob(trx, 'sample_pdf', row.id);
+        return row;
+      });
+      return reply.status(202).send({ id: sample.id, state: sample.state, download: null });
+    },
+
+    getSample: async (request) => {
+      const tenant = tenantOf(request);
+      const { sampleId } = request.params as SampleParams;
+      const answer = await db.withTenant(tenant, async (trx): Promise<Sample | undefined> => {
+        const sample = await trx
+          .selectFrom('sample')
+          .select(['id', 'state', 'object_key'])
+          .where('id', '=', sampleId)
+          .executeTakeFirst();
+        if (!sample) return undefined;
+        if (sample.state !== 'done' || !sample.object_key) {
+          return { id: sample.id, state: sample.state, download: null };
+        }
+        if (!options.objects) throw storageUnavailable();
+        const store = await options.objects.forTenant(trx, tenant);
+        return {
+          id: sample.id,
+          state: sample.state,
+          download: await store.signedLink(sample.object_key, DOWNLOAD_SECONDS),
+        };
+      });
+      if (!answer) {
+        throw new AppError(404, 'sample_not_found', 'There is no such sample in this environment.');
+      }
+      return answer;
+    },
   };
 
   const http = app.withTypeProvider<ZodTypeProvider>();
@@ -410,43 +475,43 @@ export function buildApp(options: AppOptions): FastifyInstance {
         declared.schema ? [[status, declared.schema]] : [],
       ),
     );
+    const onRequest: ((request: FastifyRequest, reply: FastifyReply) => Promise<void>)[] = [];
+    if (route.tenantScoped) {
+      onRequest.push(async (request, reply) => {
+        const tenant = await tenants.resolve(request.hostname);
+        if (!tenant) {
+          throw new AppError(404, 'tenant_not_found', 'No environment is served at this address.');
+        }
+        request.tenant = tenant;
+        // Both loggers: the reply's was captured before this hook ran, and it writes the
+        // "request completed" line.
+        request.log = request.log.child({ tenant: tenant.id });
+        reply.log = request.log;
+      });
+    }
+    if (route.authenticated) {
+      // After the tenant is known, and before the request's own parameters are looked at: a session
+      // is found only in the tenant whose hostname this is, so another environment's is simply not
+      // there (IAM-003).
+      onRequest.push(async (request) => {
+        const token = request.cookies[SESSION_COOKIE];
+        const principal = token
+          ? await db.withTenant(tenantOf(request), (trx) => findSession(trx, token))
+          : undefined;
+        if (!principal) throw new AppError(401, 'unauthenticated', 'Sign in to continue.');
+        request.principal = principal;
+      });
+    }
     http.route({
       method: route.method,
-      url: route.path,
-      schema: { response, ...(route.query ? { querystring: route.query } : {}) },
-      ...(route.tenantScoped
-        ? {
-            onRequest: async (request: FastifyRequest, reply: FastifyReply) => {
-              const tenant = await tenants.resolve(request.hostname);
-              if (!tenant) {
-                throw new AppError(
-                  404,
-                  'tenant_not_found',
-                  'No environment is served at this address.',
-                );
-              }
-              request.tenant = tenant;
-              // Both loggers: the reply's was captured before this hook ran, and it writes the
-              // "request completed" line.
-              request.log = request.log.child({ tenant: tenant.id });
-              reply.log = request.log;
-            },
-          }
-        : {}),
-      ...(route.authenticated
-        ? {
-            // After onRequest has found the tenant: a session is looked up only in the tenant whose
-            // hostname this is, so another environment's token is simply not found (IAM-003).
-            preHandler: async (request: FastifyRequest) => {
-              const token = request.cookies[SESSION_COOKIE];
-              const principal = token
-                ? await db.withTenant(tenantOf(request), (trx) => findSession(trx, token))
-                : undefined;
-              if (!principal) throw new AppError(401, 'unauthenticated', 'Sign in to continue.');
-              request.principal = principal;
-            },
-          }
-        : {}),
+      // OpenAPI names a path parameter `{like this}`; Fastify names it `:like_this`.
+      url: route.path.replace(/\{(\w+)\}/g, ':$1'),
+      schema: {
+        response,
+        ...(route.query ? { querystring: route.query } : {}),
+        ...(route.params ? { params: route.params } : {}),
+      },
+      ...(onRequest.length > 0 ? { onRequest } : {}),
       handler: handlers[name],
     });
   }

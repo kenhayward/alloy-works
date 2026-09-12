@@ -22,6 +22,8 @@ export interface RouteContract {
   readonly tenantScoped: boolean;
   /** Whether the route needs a session; the cross-tenant harness tests every one that does. */
   readonly authenticated: boolean;
+  /** Path parameters, named as the path names them. The service validates them before a handler. */
+  readonly params?: z.ZodObject;
   readonly query?: z.ZodObject;
   readonly responses: Readonly<Record<number, RouteResponse>>;
 }
