@@ -3,9 +3,10 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.10.9 - 2026-09-12 (PR #52)
+## 0.10.9 - 2026-09-12 (PR #NN)
 
-A language tag with a shape, and the publishing requirements answered against their first review.
+A language tag with a shape, and the publishing and relationship requirements answered against their
+first reviews.
 
 ### Added
 
@@ -30,6 +31,13 @@ A language tag with a shape, and the publishing requirements answered against th
   formats a date or holds a Brazilian variant can build against.
 - Generated matter describing the resolved document is a constraint rather than a T4 item, and Word
   reports anything it cannot carry faithfully rather than being exempt because it is first-class.
+- Relationships can be changed rather than only created and removed, and a change is audited like the
+  rest - an edit would otherwise have escaped the record by being neither. Creating or removing one
+  now requires standing at both ends, which the read side had and the write side did not.
+- A relationship type can be deprecated and renamed, so a misnamed one is not permanent merely
+  because it is in use; cardinality means something specific; a type can declare itself acyclic, so a
+  cycle is refused when it is created rather than stepped around at every traversal; and an impact
+  report follows the same job contract as any other long-running work.
 
 ## 0.10.8 - 2026-09-12 (PR #51)
 
