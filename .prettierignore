@@ -13,3 +13,8 @@ packages/api-client/src/generated/
 # Received documents, kept exactly as they arrived: one is a Word file with no parser, and the other
 # uses attribute annotations Prettier rewrites into table cells.
 docs/reviews/market/
+
+# Scratch space for in-flight implementation runs: briefs, reports and review packages, generated
+# from a plan and deleted when it lands. Git-ignored, but Prettier reads this file rather than
+# .gitignore, and an unformatted brief must not fail `pnpm format`.
+.superpowers/
