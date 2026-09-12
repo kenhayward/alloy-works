@@ -55,4 +55,28 @@ describe('parsing a design document', () => {
 
     expect(() => parseDesignDocument(document, text)).toThrow(/invented-subsystem\.md:3/);
   });
+
+  it('does not claim a row of the wrong width, even with a valid identifier in it', () => {
+    const text = [
+      '## Requirements owned',
+      '',
+      '| **ZZZ-007** | A third column | That should not be here |',
+    ].join('\n');
+
+    expect(parseDesignDocument(document, text).owns).toEqual([]);
+  });
+
+  it('does not claim a non-requirement or an open question, which cannot be owned by a design', () => {
+    const text = [
+      '## Requirements owned',
+      '',
+      '| **ZZZ-N01** | A non-requirement has nothing to meet |',
+      '| **ZZZ-Q01** | An open question has nothing to meet |',
+      '| **ZZZ-008** | The only real claim |',
+    ].join('\n');
+
+    expect(parseDesignDocument(document, text).owns).toEqual([
+      { id: 'ZZZ-008', howItIsMet: 'The only real claim' },
+    ]);
+  });
 });
