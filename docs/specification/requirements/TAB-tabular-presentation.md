@@ -1,6 +1,6 @@
 # TAB - Tabular presentation
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 

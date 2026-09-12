@@ -1,6 +1,6 @@
 # LOC - Localisation and translation
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -189,7 +189,7 @@ translator's permission, not an author's.
 | **LOC-N01** | **Not a translation management system.** Vendor selection, quoting and translator workbenches belong to a TMS                                                                                                                                |
 | **LOC-N02** | **No translation memory of its own.** That belongs with the vendor's tooling                                                                                                                                                                 |
 | **LOC-N03** | **No automatic publication of machine translation** (LOC-024)                                                                                                                                                                                |
-| **LOC-N04** | **No mixed-language output by accident** (LOC-011)                                                                                                                                                                                           |
+| **LOC-N04** | **No mixed-language output by accident.** A fallback is a document-level policy and is marked in the output (LOC-037, which superseded LOC-011)                                                                                              |
 | **LOC-N05** | **No translating a binding.** A bound value is translated at resolution against a declared lookup, or it is not translated at all (LOC-043). Editing a resolved value inside a variant is how a document comes to disagree with its own data |
 
 ## 9. Open questions
@@ -261,3 +261,12 @@ what gets a new identifier are in [the index](README.md#how-a-requirement-is-wri
 | Requirements     | 26     | 43, of which 5 superseded          |
 | Non-requirements | 4      | 5                                  |
 | Open questions   | 4      | 5, of which LOC-Q03 is now settled |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections | Change                                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1.6           | LOC-N04 now cites **LOC-037**, which makes fallback a document-level policy and marks it in the output, rather than superseded LOC-011 |
