@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.9.1 - 2026-09-12 (PR #42)
+
+The plan for the last of the scaffolding.
+
+### Added
+
+- The plan for the renderer showing an environment, the desktop app opening the same one as a
+  browser does, and every change being checked against the whole system running.
+
 ## 0.9.0 - 2026-09-12 (PR #41)
 
 Watching an environment as it works.
