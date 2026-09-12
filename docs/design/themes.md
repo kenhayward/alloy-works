@@ -81,9 +81,6 @@ conformance suite.
 | **STY-054** | A typeface artifact carries its ascent and descent; the CSS projection and the Typst template both use them to put a line's extra space above it         |
 | **STY-055** | `wordRun` computes Word's reading of each run and pins the canonical value directly wherever the two differ                                              |
 | **CNT-082** | The CSS projection renders block spacing by the same rule as the output (STY-050)                                                                        |
-| **CNT-091** | Image resolution derives the free dimension from the asset (STY-016)                                                                                     |
-| **CNT-092** | The maximum is declared in the style and applied at resolution (STY-017)                                                                                 |
-| **CNT-093** | Catalogues are data an administrator edits (STY-029, STY-030)                                                                                            |
 | **CNT-094** | A block's appearance is its paragraph style; the editor has no free spacing or alignment control                                                         |
 | **CNT-097** | The editor loads the theme's typefaces and sets text at the theme's sizes                                                                                |
 | **CNT-115** | The editor sets text at the layout's measure, scaled, with zoom                                                                                          |

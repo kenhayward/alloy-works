@@ -1,6 +1,6 @@
 # DAT - Data connectivity and bindings
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -46,7 +46,7 @@ must be enforced rather than only what must be true.
 | **DAT-008** | A connection must declare how queries against it authenticate: as a tenant service account, or as the end user                                                                                                                                                                           | T2         | Specified |
 | **DAT-064** | A connection must record where it is used - which query definitions, and through them which documents - and deleting one must show that before it proceeds, as DAT-016 does for a query definition                                                                                       | T2         | Specified |
 | **DAT-065** | Deleting a connection that a query definition still references must be refused, naming what depends on it. It must never cascade, and must never leave a query pointing at nothing                                                                                                       | Constraint | Specified |
-| **DAT-066** | Rotating a connection's credentials must not change what any query resolves to. Where a rotation leaves queries unable to authenticate, the connection must be reported as failing once, naming every dependent query, rather than surfacing one broken document at a time (**ADM-032**) | T2         | Specified |
+| **DAT-066** | Rotating a connection's credentials must not change what any query resolves to. Where a rotation leaves queries unable to authenticate, the connection must be reported as failing once, naming every dependent query, rather than surfacing one broken document at a time (**ADM-047**) | T2         | Specified |
 
 **DAT-064 to DAT-066 give a connection the lifecycle a query definition already had.** DAT-016
 protects a query definition from being changed without seeing what it affects; nothing protected the
@@ -339,3 +339,12 @@ because the published lineage would then be describing numbers nobody took from 
 | Requirements     | 56     | 73    |
 | Non-requirements | 4      | 6     |
 | Open questions   | 4      | 6     |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections | Change                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------- |
+| 2.22            | DAT-066 now cites **ADM-047**, which covers every outbound service credential, rather than superseded ADM-032 |

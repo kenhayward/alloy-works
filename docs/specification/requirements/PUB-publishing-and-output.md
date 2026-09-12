@@ -1,6 +1,6 @@
 # PUB - Publishing and output
 
-> **Status: v1, for review.**
+> **Status: v1, reviewed.**
 
 ## 1. Purpose
 
@@ -167,6 +167,7 @@ contents list and a list of figures need only the outline.
 | **PUB-064** | A 300-page document must publish in under thirty seconds - a provisional budget, to be confirmed against real content                                                                                                                                                   | T1         | Specified |
 | **PUB-044** | Anything that cannot be deterministic - a generation timestamp, an internal identifier - must be confined to places the layout declares                                                                                                                                 | T3         | Specified |
 | **PUB-045** | A publication must record the versions of everything that produced it: the baseline, the layout, the theme, the citation style, the pipeline itself                                                                                                                     | T3         | Specified |
+| **PUB-082** | A publication's record must be no weaker than the baseline's pins (VER-018, **VER-054**) and must additionally identify any accepted generated content it contains, with the prompt, model and context digest retained for it (**GEN-023**, **GEN-046**)                | T3         | Specified |
 | **PUB-046** | Re-publishing a baseline years later must be possible and must produce the same document                                                                                                                                                                                | T3         | Specified |
 | **PUB-075** | A change to the pipeline, the engine, or any library either depends on must be checked against the recorded output of a fixed set of baselines, and a difference must fail before release rather than being found by a customer re-publishing (PUB-043, PUB-046)        | T3         | Specified |
 | **PUB-076** | An incremental compilation and a clean compilation of the same input must produce byte-identical output, so that reusing layout between compiles cannot introduce a difference nobody would look for (**PUB-Q05**)                                                      | T3         | Specified |
@@ -193,19 +194,21 @@ answers it - a publication that does not record what made it cannot be reproduce
 
 ## 10. Publications
 
-| ID          | Requirement                                                                                                                                                                                                                                                                        | Tranche    | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **PUB-047** | A publication must be retained, addressable by URL, and permissioned (**IAM**)                                                                                                                                                                                                     | T1         | Specified |
-| **PUB-048** | A publication must be listed alongside the document that produced it, with who published it and when                                                                                                                                                                               | T1         | Specified |
-| **PUB-049** | A publication must be accompanied by the provenance of every bound value in it (**DAT-042**)                                                                                                                                                                                       | T2         | Specified |
-| **PUB-050** | A publication must be immutable; correcting one must produce another rather than replacing it                                                                                                                                                                                      | Constraint | Specified |
-| **PUB-057** | A publication must be shareable outside the tenant only to a named recipient who has proved who they are, and never anonymously                                                                                                                                                    | Constraint | Specified |
-| **PUB-058** | Such a share must expire, and must be revocable with immediate effect                                                                                                                                                                                                              | T4         | Specified |
-| **PUB-059** | A recipient opening a publication that a later one has superseded must be told so, rather than reading a corrected document's predecessor without knowing                                                                                                                          | Constraint | Specified |
-| **PUB-060** | Every access to a shared publication must be recorded - who, when, and which publication - and must be reportable to the tenant that shared it (**LIF-026**)                                                                                                                       | T4         | Specified |
-| **PUB-073** | A publication must be one baseline published by one act into a declared set of formats, and that set must be recorded with it. Publishing the same baseline to other formats later must produce another publication rather than extending this one (PUB-050)                       | Constraint | Specified |
-| **PUB-074** | A publication must include the PDF wherever anything in it cites a page (PUB-065). A Word-only publication must be refused where page citations exist, and must otherwise record that it carries no page-cited output                                                              | Constraint | Specified |
-| **PUB-081** | What becomes of retained publications when a tenant closes must follow **ADM-029** and **ADM-030** - offered in the export before closure, deleted with everything else after the grace period - and a share outside the tenant (PUB-057) must stop resolving when the tenant does | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                      | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **PUB-047** | A publication must be retained, addressable by URL, and permissioned (**IAM**)                                                                                                                                                                                                                                                                                   | T1         | Specified |
+| **PUB-048** | A publication must be listed alongside the document that produced it, with who published it and when                                                                                                                                                                                                                                                             | T1         | Specified |
+| **PUB-049** | A publication must be accompanied by the provenance of every bound value in it (**DAT-042**)                                                                                                                                                                                                                                                                     | T2         | Specified |
+| **PUB-050** | A publication must be immutable; correcting one must produce another rather than replacing it                                                                                                                                                                                                                                                                    | Constraint | Specified |
+| **PUB-057** | A publication must be shareable outside the tenant only to a named recipient who has proved who they are, and never anonymously                                                                                                                                                                                                                                  | Constraint | Specified |
+| **PUB-058** | Such a share must expire, and must be revocable with immediate effect                                                                                                                                                                                                                                                                                            | T4         | Specified |
+| **PUB-059** | A recipient opening a publication that a later one has superseded must be told so, rather than reading a corrected document's predecessor without knowing                                                                                                                                                                                                        | Constraint | Specified |
+| **PUB-060** | Every access to a shared publication must be recorded - who, when, and which publication - and must be reportable to the tenant that shared it (**LIF-026**)                                                                                                                                                                                                     | T4         | Specified |
+| **PUB-073** | A publication must be one baseline published by one act into a declared set of formats, and that set must be recorded with it. Publishing the same baseline to other formats later must produce another publication rather than extending this one (PUB-050)                                                                                                     | Constraint | Specified |
+| **PUB-074** | A publication must include the PDF wherever anything in it cites a page (PUB-065). A Word-only publication must be refused where page citations exist, and must otherwise record that it carries no page-cited output                                                                                                                                            | Constraint | Specified |
+| **PUB-081** | What becomes of retained publications when a tenant closes must follow **ADM-029** and **ADM-030** - offered in the export before closure, deleted with everything else after the grace period - and a share outside the tenant (PUB-057) must stop resolving when the tenant does                                                                               | Constraint | Specified |
+| **PUB-083** | Expiry or revocation of a share (PUB-058) must stop further access within a stated bound, including a session already open: subsequent page loads, asset fetches and API calls must be refused rather than served from a session established while the share was live                                                                                            | Constraint | Specified |
+| **PUB-084** | Sharing a publication outside the tenant must create a named, time-bounded grant scoped to that publication alone unless the tenant grants more through the ordinary model (**IAM-071**). The recipient must prove identity before first access, the grant must appear in the external-access listing (**IAM-051**), and every access must be recorded (PUB-060) | Constraint | Specified |
 
 **PUB-073 and PUB-074 define the thing this document had been auditing, retaining and sharing
 without ever saying what it is.** One baseline, one act, a declared set of formats - which makes
@@ -281,24 +284,24 @@ fails by name. Either answer is defensible and the silence was not.
 
 ## 15. Traceability
 
-| This document      | Rests on                                                                        |
-| ------------------ | ------------------------------------------------------------------------------- |
-| PUB-002, PUB-003   | STR-020 and STR-030 - conditions before numbering and references                |
-| PUB-029            | Content model spike findings, the standing lesson about self-consistent tests   |
-| PUB-019, PUB-051   | STY-040 to STY-042, typefaces and their licences                                |
-| PUB-030 to PUB-036 | Scope §11 accessibility, tested rather than asserted                            |
-| Section 9          | Scope §7.10 deterministic publishing                                            |
-| PUB-054 to PUB-056 | Scope §9 decision 7, Google Docs as a labelled lossy export                     |
-| PUB-005, PUB-006   | CNT-095, CNT-096 - preview in the editor, and its budget                        |
-| PUB-013            | VER-018 - the baseline's side of the same pin                                   |
-| PUB-028            | COL - suggestions; IMP - tracked changes arriving as them                       |
-| PUB-033, PUB-034   | CNT-022 alternative text; CNT-140 and CNT-084, the language of a passage        |
-| PUB-039, PUB-040   | LIB - the terms and citations generated matter is built from                    |
-| PUB-060            | LIF-026 - access to a shared publication in the audit log                       |
-| PUB-068 to PUB-070 | STY-049, STY-052, STY-053 - glyphs, substitution, and the conformance suite     |
-| PUB-077            | STY-047, VER-018, VER-022 - what a baseline pins, and that it stays retrievable |
-| PUB-081            | ADM-029, ADM-030 - the export before closure, and the grace period after it     |
-| PUB-068 to PUB-081 | [The v1 review](<../../reviews/PUB - Publishing and output.md>); section 16     |
+| This document      | Rests on                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| PUB-002, PUB-003   | STR-020 and STR-030 - conditions before numbering and references                                                      |
+| PUB-029            | Content model spike findings, the standing lesson about self-consistent tests                                         |
+| PUB-019, PUB-072   | STY-040 to STY-042, typefaces and their licences; PUB-072 carries the unavailable-typeface and missing-glyph failures |
+| PUB-030 to PUB-036 | Scope §11 accessibility, tested rather than asserted                                                                  |
+| Section 9          | Scope §7.10 deterministic publishing                                                                                  |
+| PUB-054 to PUB-056 | Scope §9 decision 7, Google Docs as a labelled lossy export                                                           |
+| PUB-005, PUB-006   | CNT-095, CNT-096 - preview in the editor, and its budget                                                              |
+| PUB-013            | VER-018 - the baseline's side of the same pin                                                                         |
+| PUB-028            | COL - suggestions; IMP - tracked changes arriving as them                                                             |
+| PUB-033, PUB-034   | CNT-022 alternative text; CNT-140 and CNT-084, the language of a passage                                              |
+| PUB-039, PUB-040   | LIB - the terms and citations generated matter is built from                                                          |
+| PUB-060            | LIF-026 - access to a shared publication in the audit log                                                             |
+| PUB-068 to PUB-070 | STY-049, STY-052, STY-053 - glyphs, substitution, and the conformance suite                                           |
+| PUB-077            | STY-047, VER-018, VER-022 - what a baseline pins, and that it stays retrievable                                       |
+| PUB-081            | ADM-029, ADM-030 - the export before closure, and the grace period after it                                           |
+| PUB-068 to PUB-081 | [The v1 review](<../../reviews/PUB - Publishing and output.md>); section 16                                           |
 
 ## 16. Change history
 
@@ -343,3 +346,12 @@ prompted it. The rules for what gets a new identifier are in
 | Requirements     | 67     | 81, of which 1 superseded |
 | Non-requirements | 4      | 4                         |
 | Open questions   | 4      | 5                         |
+
+### From the cross-cutting review
+
+A later review read all twenty-one documents against each other. Its sections are answered in
+[XXX - Response.md](<../../reviews/XXX - Response.md>); what changed here:
+
+| Review sections       | Change                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.2, 2.9, 2.17, 3.1.7 | **PUB-082** makes a publication's record no weaker than the baseline's pins and identifies the accepted generated content it carries. **PUB-083** stops a revoked share serving a session already open. **PUB-084** gives publication sharing an artifact-scoped grant model tied to IAM-071. A traceability row now cites PUB-072 rather than superseded PUB-051 |
