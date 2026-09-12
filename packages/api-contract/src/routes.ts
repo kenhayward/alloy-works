@@ -119,6 +119,19 @@ export const routes = {
       401: signInFailed,
     },
   },
+  openStream: {
+    operationId: 'openStream',
+    method: 'GET',
+    path: '/v1/stream',
+    summary: 'What is happening in this environment, as it happens',
+    tenantScoped: true,
+    authenticated: true,
+    responses: {
+      200: { description: 'The stream: a snapshot, then what happens next', stream: true },
+      401: unauthenticated,
+      503: { description: 'This environment cannot stream yet', schema: ErrorBody },
+    },
+  },
   signOut: {
     operationId: 'signOut',
     method: 'POST',

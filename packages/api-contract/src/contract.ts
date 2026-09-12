@@ -6,6 +6,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface RouteResponse {
   readonly description: string;
   readonly schema?: z.ZodType;
+  /** A stream of events rather than a body: `text/event-stream`, which no schema describes. */
+  readonly stream?: true;
 }
 
 /**

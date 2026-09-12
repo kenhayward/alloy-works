@@ -41,6 +41,12 @@ function content(schema: z.ZodType) {
 }
 
 function response(status: number, declared: RouteResponse): Json {
+  if (declared.stream) {
+    return {
+      description: declared.description,
+      content: { 'text/event-stream': { schema: { type: 'string' } } },
+    };
+  }
   if (declared.schema) {
     return { description: declared.description, content: content(declared.schema) };
   }
