@@ -3,6 +3,9 @@
 Reviews of the documents in [`../specification/`](../specification/), kept verbatim as they were
 received. One file per document reviewed, named for the area code and the document it covers.
 
+**All twenty-one areas have now been reviewed and answered.** Each requirements document ends with a
+change history naming what changed against which review point, and what was deliberately left alone.
+
 **They are inputs, not records of what was decided.** A review says what somebody found wrong or
 missing; what was done about it lives in the document itself, in its change history, and in the pull
 request that made the change. So a point raised here may have been acted on, deliberately declined,
@@ -21,6 +24,8 @@ the answer is in the reply, not in a correction here.
 | [IAM - Identity, tenancy and access control](<IAM - Identity, tenancy and access control.md>)           | [IAM](../specification/requirements/IAM-identity-tenancy-and-access-control.md)      | [IAM section 15](../specification/requirements/IAM-identity-tenancy-and-access-control.md#15-change-history)      |
 | [IMP - Import, export and interchange](<IMP - Import, export and interchange.md>)                       | [IMP](../specification/requirements/IMP-import-export-and-interchange.md)            | [IMP section 12](../specification/requirements/IMP-import-export-and-interchange.md#12-change-history)            |
 | [LIF - Lifecycle, workflow and audit](<LIF - Lifecycle, workflow and audit.md>)                         | [LIF](../specification/requirements/LIF-lifecycle-workflow-and-audit.md)             | [LIF section 14](../specification/requirements/LIF-lifecycle-workflow-and-audit.md#14-change-history)             |
+| [TPL - Templates and document instantiation](<TPL - Templates and document instantiation.md>)           | [TPL](../specification/requirements/TPL-templates-and-document-instantiation.md)     | [TPL section 15](../specification/requirements/TPL-templates-and-document-instantiation.md#15-change-history)     |
+| [VER - Versioning, baselines and comparison](<VER - Versioning, baselines and comparison.md>)           | [VER](../specification/requirements/VER-versioning-baselines-and-comparison.md)      | [VER section 14](../specification/requirements/VER-versioning-baselines-and-comparison.md#14-change-history)      |
 | [STY - Styles and presentation themes](<STY - Styles and presentation themes.md>)                       | [STY](../specification/requirements/STY-styles-and-presentation-themes.md)           | [STY section 17](../specification/requirements/STY-styles-and-presentation-themes.md#17-change-history)           |
 | [TAB - Tabular presentation](<TAB - Tabular presentation.md>)                                           | [TAB](../specification/requirements/TAB-tabular-presentation.md)                     | [TAB section 13](../specification/requirements/TAB-tabular-presentation.md#13-change-history)                     |
 | [REU - Reuse, variants and conditional profiling](<REU - Reuse, variants and conditional profiling.md>) | [REU](../specification/requirements/REU-reuse-variants-and-conditional-profiling.md) | [REU section 13](../specification/requirements/REU-reuse-variants-and-conditional-profiling.md#13-change-history) |

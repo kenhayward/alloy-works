@@ -1,0 +1,21 @@
+## Substantive issues, by priority
+
+1. The seeding/resolution mapping has no home. TPL-019 says a parameter "must be usable to seed metadata, to resolve variables, and to supply arguments," and TPL-022 says instantiation does those things — but no requirement states where the rules live: which parameter seeds which field, which variable references which parameter. As written, an implementer can satisfy every listed requirement while declaring no mapping at all. It needs a requirement that the template declares its parameter-to-metadata / -to-variable / -to-query bindings (or explicitly hands query arguments to DAT).
+
+2. "Variables" is used but unowned. The term appears in TPL-019, TPL-022 and Q03's framing, yet it is defined nowhere — not in Depends on, not in Not here. In a document whose stated reason for existing is to eliminate exactly this kind of ownership seam, an undefined term with no named owner is the most on-theme gap in the doc.
+
+3. Version pinning is implied, never stated. TPL-011 says schema changes must not invalidate existing documents; TPL-025 records which version created each document — but TPL-036 reads "satisfy the metadata schema its template binds," present tense, current binding. The only reconciliation is that validation runs against the recorded creation-time version, and the same logic applies to required sections after an outline change (TPL-031). One sentence or one requirement closes it: validation enforces definitions as they were in the recorded version. Without it, a reader can build a compliant-but-broken system where every existing document suddenly fails publish when its template's schema tightens.
+
+4. Required components are under-enforced. TPL-014 declares components that every document includes, but TPL-029 (stated reason to remove) and TPL-030 (publish failure) cover only sections. As written, an author can presumably drop the standard methodology statement with no recorded reason and no publish gate. Q04 addresses whether such a component floats — its content updates everywhere — but not whether it's removable at all. It needs a TPL-029/-030 analogue for components, or an explicit note that they're non-removable by construction.
+
+5. Parameter errors are asymmetric with metadata errors. TPL-037 requires validation failures to name field, rule and document; TPL-018 only blocks creation while a required parameter is missing. Nothing states that present-but-invalid values (wrong type, outside range) must be rejected and named — notably on the API path that TPL-026 explicitly opens.
+
+## Smaller gaps
+
+Binding optionality. TPL-002 requires exactly one of each definition, with no provision for a lightweight template that has no prompt library or query set to speak of. Q01's anticipated answer — "a minimal default template rather than no template" — never appears as an allowance anywhere in the requirements. Either permit empty/builtin defaults explicitly or accept consciously that every template carries all six.
+Bulk run policy. TPL-039 reports per row and guarantees state (no partial documents), but never says whether a failing row aborts the remaining rows or continues. That's behaviour, not state.
+Throwaway disposal. TPL-005 keeps test documents out of the space; what happens to them afterwards is unstated. Minor.
+Component placement. TPL-014 declares which components every document includes but not where they sit in the outline — section-attached or document-level (header/footer). Small, but it matters for a component CMS specifically.
+Nit: LIB is load-bearing in TPL-008 yet appears only in Not here, not Depends on; one row there would be more accurate than the current split.
+Confirm with the other 20
+Since this doc owns only its own area, three things are plausibly fine but should be verified as owned somewhere: authorization for instantiation (TPL-006 splits design vs writing at template level; who may create from a template is an IAM question the doc leaves to implication), cross-cutting audit of creation events themselves (parameters and moves are auditable here, but "who created this document, when" appears nowhere in the 21-doc set as far as this one shows), and whether LIB's vocabulary service actually exists at T2 for TPL-008.

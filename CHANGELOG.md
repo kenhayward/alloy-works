@@ -3,6 +3,33 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.12 - 2026-09-12 (PR #56)
+
+Templates and versioning, answered against their first reviews - and with them, all twenty-one
+capability areas.
+
+### Added
+
+- What immutability actually promises: a version records a digest anybody holding the content can
+  recompute, so tampering is detectable rather than only forbidden, and a baseline records one over
+  everything it pins.
+- What happens to a version chain when the thing it belonged to is deleted, whether a baseline can be
+  superseded, who may read a history or export a redline, and how long old publishing engines must
+  stay runnable.
+- Where a template writes down what each parameter feeds - which metadata field, which variable,
+  which query argument - without which a template could satisfy every other requirement and do
+  nothing.
+- Required components that cannot quietly leave a document, invalid parameter values refused by name
+  through the API, and a record of who created a document and when.
+
+### Changed
+
+- A document is validated against the template definitions as they were when it was created, so
+  tightening a schema no longer makes every existing document fail at its next publish.
+- Restore refuses for the reason it actually can - content pointing at something since deleted -
+  rather than a case that cannot arise, and comparison across a template change says which two things
+  are being compared.
+
 ## 0.10.11 - 2026-09-12 (PR #55)
 
 Styles and tables, answered against their first reviews.
