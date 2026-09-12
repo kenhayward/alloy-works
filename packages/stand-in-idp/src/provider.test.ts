@@ -101,3 +101,23 @@ describe('the stand-in provider', () => {
     }
   });
 });
+
+describe('a stand-in reached by another name', () => {
+  it('calls itself what it was told, wherever it is bound', async () => {
+    const idp = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      host: '127.0.0.1',
+      issuer: 'http://idp.alloy.test:9090',
+    });
+    try {
+      expect(idp.issuer).toBe('http://idp.alloy.test:9090');
+      const port = new URL(idp.boundTo).port;
+      const discovered = await fetch(
+        `http://127.0.0.1:${port}/.well-known/openid-configuration`,
+      ).then((response) => response.json() as Promise<{ issuer: string }>);
+      expect(discovered.issuer).toBe('http://idp.alloy.test:9090');
+    } finally {
+      await idp.close();
+    }
+  });
+});

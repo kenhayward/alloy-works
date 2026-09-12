@@ -28,10 +28,17 @@ export interface StandInOptions {
   /** 0, the default, asks the operating system for a free port. */
   readonly port?: number;
   readonly host?: string;
+  /**
+   * What it calls itself. Inside a container it binds one address and is reached by another, and
+   * OpenID Connect requires the issuer it advertises to be the one its clients expect.
+   */
+  readonly issuer?: string;
 }
 
 export interface StandInProvider {
   readonly issuer: string;
+  /** Where it is actually listening, which is not the issuer when it was given one. */
+  readonly boundTo: string;
   close(): Promise<void>;
 }
 
@@ -102,7 +109,8 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   const server = createServer();
   await new Promise<void>((resolve) => server.listen(options.port ?? 0, host, resolve));
   const { port } = server.address() as AddressInfo;
-  const issuer = `http://${host}:${port}`;
+  const boundTo = `http://${host}:${port}`;
+  const issuer = options.issuer ?? boundTo;
 
   // Keys and lifetimes of its own, so oidc-provider has nothing to warn about on the console.
   const { privateKey } = await generateKeyPair('RS256', { extractable: true });
@@ -188,6 +196,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   server.on('request', provider.callback());
   return {
     issuer,
+    boundTo,
     close: () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
