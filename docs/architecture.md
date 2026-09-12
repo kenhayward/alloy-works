@@ -166,8 +166,10 @@ state. Nothing in the renderer calls it: that arrives with the scaffolding's las
 
 ## Containers and images
 
-One `Dockerfile` at the root holds every image the system runs as, so the install and the build are
-done once and shared:
+One `Dockerfile`, in [`deploy/`](../deploy/) with everything else the system is deployed by, holds
+every image the system runs as, so the install and the build are done once and shared. Its build
+context is the repository root, and the ignore list beside it, `deploy/Dockerfile.dockerignore`, is
+what keeps `node_modules` and the tests out of that context:
 
 | Target    | Carries                                                                                    | Runs                                                 |
 | --------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
@@ -183,9 +185,9 @@ the page and the API it calls have to be one origin.
 Both run as the `node` user. CI builds both on every pull request and runs each entry point; nothing
 is pushed anywhere, because where they would be pushed comes with hosting.
 
-`compose.yaml` runs the whole system: PostgreSQL, the object store, the stand-in provider, a one-shot
-`setup` that migrates and creates the development environments, then the service and the worker. Two
-of those services answer to a name rather than only a container: the object store is also
+`deploy/compose.yaml` runs the whole system: PostgreSQL, the object store, the stand-in provider, a
+one-shot `setup` that migrates and creates the development environments, then the service and the
+worker. Two of those services answer to a name rather than only a container: the object store is also
 `store.localhost` and the provider `idp.localhost`. Any `*.localhost` name resolves to the local
 machine in a browser and to the container inside the compose network, so **one address works on both
 sides** - which is what a signed download link and a sign-in redirect need, since each carries the

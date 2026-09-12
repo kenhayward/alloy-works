@@ -34,7 +34,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **A service, and the environments it serves.** One web service answers for every environment,
   telling them apart by the address in the browser's bar, and keeps each one's data in a schema only
   that environment's database role may reach. It serves the renderer beside its API, so a page and
-  the calls it makes are one address. `docker compose up` runs the whole of it: the database, the
+  the calls it makes are one address. One command runs the whole of it: the database, the
   object store, a stand-in sign-in provider, the service and a worker.
 
 - **A packaged desktop build.** `pnpm --filter @alloy-works/desktop package` produces a Windows

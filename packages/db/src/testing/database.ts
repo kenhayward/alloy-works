@@ -59,7 +59,7 @@ export async function freshDatabase(): Promise<TestDatabase> {
     await admin.connect();
   } catch (error) {
     throw new Error(
-      `No Postgres at ${new URL(server).host}. Start it with \`docker compose up -d --wait postgres\`, ` +
+      `No Postgres at ${new URL(server).host}. Start it with \`docker compose -f deploy/compose.yaml up -d --wait postgres\`, ` +
         `or point ALLOY_TEST_DATABASE_URL at one. (${(error as Error).message})`,
       { cause: error },
     );

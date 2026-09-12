@@ -15,7 +15,7 @@ jobs:
     name: Lint, typecheck, build and test
     runs-on: ubuntu-latest
     # The db suite runs against a real Postgres, as in development. PostgreSQL 16 or later is
-    # required (role membership granted WITH INHERIT FALSE); the image matches compose.yaml.
+    # required (role membership granted WITH INHERIT FALSE); the image matches deploy/compose.yaml.
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -97,8 +97,8 @@ jobs:
       # that broke it. They are never pushed: a registry comes with hosting.
       - name: Images
         run: |
-          docker build --target service -t alloy-works-service .
-          docker build --target worker -t alloy-works-worker .
+          docker build -f deploy/Dockerfile --target service -t alloy-works-service .
+          docker build -f deploy/Dockerfile --target worker -t alloy-works-worker .
 
       # Each image refuses to start without its configuration, which is what a working entry point
       # looks like: the alternative is a stack trace about a missing module.
@@ -131,7 +131,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: The stack
-        run: docker compose up -d --build --wait
+        run: docker compose -f deploy/compose.yaml up -d --build --wait
 
       # Through turbo, which builds what the suite imports before running it.
       - name: End to end
@@ -140,8 +140,8 @@ jobs:
       - name: Stop the stack
         if: always()
         run: |
-          docker compose logs --no-color > compose-logs.txt 2>&1 || true
-          docker compose down -v
+          docker compose -f deploy/compose.yaml logs --no-color > compose-logs.txt 2>&1 || true
+          docker compose -f deploy/compose.yaml down -v
 
       - uses: actions/upload-artifact@v5
         if: always()

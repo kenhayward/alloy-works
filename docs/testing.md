@@ -97,7 +97,7 @@ suite as `pnpm test:browser` and run it as a separate CI step. Until then, do no
 does with roles, grants and `SET LOCAL`. Start it before `pnpm test`:
 
 ```bash
-docker compose up -d --wait postgres
+docker compose -f deploy/compose.yaml up -d --wait postgres
 ```
 
 Each test file creates a database of its own (`aw_test_` and random hex) and drops it afterwards.
@@ -136,11 +136,11 @@ the committed ones, as `packages/api-contract` does for the document itself.
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running
-(`docker compose up -d --wait postgres seaweedfs`), and the pinned Typst fetched once with
-`pnpm --filter @alloy-works/worker fetch-typst`. Each test file takes a bucket of its own and removes
-it afterwards, exactly as it takes a database of its own, so two files never see each other's
-objects. The worker's suite renders with the real Typst rather than a stand-in for it: the binary is
-the thing being pinned.
+(`docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs`), and the pinned Typst
+fetched once with `pnpm --filter @alloy-works/worker fetch-typst`. Each test file takes a bucket of
+its own and removes it afterwards, exactly as it takes a database of its own, so two files never see
+each other's objects. The worker's suite renders with the real Typst rather than a stand-in for it:
+the binary is the thing being pinned.
 
 ## The end-to-end suite
 
@@ -148,11 +148,11 @@ the thing being pinned.
 service, a worker, the database, the object store and the sign-in provider, all in containers.
 
 ```bash
-docker compose up -d --build --wait
+docker compose -f deploy/compose.yaml up -d --build --wait
 pnpm test:e2e
 ```
 
-It is **left out of `pnpm test` on purpose**, because a suite that needs `docker compose up` first
+It is **left out of `pnpm test` on purpose**, because a suite that needs the whole stack up first
 would otherwise fail on every machine that has not run it. CI runs it as its own job, which is also
 where the stack's logs are kept when it fails.
 

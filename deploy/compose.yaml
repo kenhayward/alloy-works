@@ -1,5 +1,8 @@
 # Development, and the small installations ADR-0019 describes. Every password here is a local
 # default for containers bound to 127.0.0.1; none is a credential for anything deployed.
+#
+# Run it from anywhere with `docker compose -f deploy/compose.yaml ...`; deploy/README.md has the
+# rest, including how to stop typing that.
 name: alloy-works
 
 services:
@@ -47,7 +50,10 @@ services:
   # address inside its container and calls itself the name both sides reach it by.
   stand-in-idp:
     build:
-      context: .
+      # The repo root, because the images are built from the whole workspace; this file and the
+      # Dockerfile live here, one level down.
+      context: ..
+      dockerfile: deploy/Dockerfile
       target: tools
     command: ['pnpm', '--filter', '@alloy-works/stand-in-idp', 'start']
     environment:
@@ -65,7 +71,10 @@ services:
   # and the worker wait for it to finish.
   setup:
     build:
-      context: .
+      # The repo root, because the images are built from the whole workspace; this file and the
+      # Dockerfile live here, one level down.
+      context: ..
+      dockerfile: deploy/Dockerfile
       target: tools
     command: ['pnpm', 'dev:setup']
     environment:
@@ -87,7 +96,10 @@ services:
 
   service:
     build:
-      context: .
+      # The repo root, because the images are built from the whole workspace; this file and the
+      # Dockerfile live here, one level down.
+      context: ..
+      dockerfile: deploy/Dockerfile
       target: service
     environment:
       DATABASE_URL: postgres://aw_service:aw_service_dev@postgres:5432/alloy_dev
@@ -114,7 +126,10 @@ services:
 
   worker:
     build:
-      context: .
+      # The repo root, because the images are built from the whole workspace; this file and the
+      # Dockerfile live here, one level down.
+      context: ..
+      dockerfile: deploy/Dockerfile
       target: worker
     environment:
       DATABASE_URL: postgres://aw_worker:aw_worker_dev@postgres:5432/alloy_dev

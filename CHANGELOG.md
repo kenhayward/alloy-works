@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.1 - 2026-09-12 (PR #NN)
+
+### Changed
+
+- Everything the system is deployed by now lives in one folder, `deploy/`, with a README of its own
+  covering what each container is for, every address, the configuration, and what is not there yet.
+  Commands that run the stack name it: `docker compose -f deploy/compose.yaml ...`.
+- The README now says what the product is for and the order it gets built in, drawn from the scope.
+
 ## 0.10.0 - 2026-09-12 (PR #43)
 
 The first thing you can do.
