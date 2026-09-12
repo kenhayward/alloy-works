@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.6 - 2026-09-12 (PR #49)
+
+Citing the literature from inside the document, and the reference libraries answered against their
+first review.
+
+### Added
+
+- External reference sources: search PubMed, Crossref and their like from inside the editor and
+  insert a citation from a result, with the entry copied local at that moment so publishing never
+  depends on reaching a network. The product confirms a cited source still says what it said,
+  surfaces a retraction wherever the entry is used, and can refuse to issue a document that cites a
+  retracted one. Searching is available to the assistant as a tool, and the product mirrors no
+  registry.
+- What a record's identity means when a glossary is shared between spaces, duplicate detection when
+  somebody keys an entry in by hand, and the canonical identifiers - DOI, PubMed identifier, ISBN -
+  that detection uses.
+- A term's status values, what a missing translation falls back to, a thesaurus that cannot acquire
+  a cycle, vocabulary values that can carry a description, be ordered deterministically and be
+  deprecated before they are retired.
+- A deprecated term or value flagged when somebody inserts one, not only where it is already used.
+
+### Changed
+
+- A change to a record reaches unpinned references at the next publish and no baseline ever, and
+  records that changed since a document last published are listable for it.
+- Creating, changing, deprecating and retiring a record is audited, rather than left to be inferred
+  from whether a library record counts as content.
+
 ## 0.10.5 - 2026-09-12 (PR #48)
 
 The import and export requirements, answered against their first review.
