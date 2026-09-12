@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.5 - 2026-09-12 (PR #NN)
+
+The import and export requirements, answered against their first review.
+
+### Added
+
+- What happens when a source document is imported again next quarter: an import records what it came
+  from, a second one recognises it, shows what has changed and offers to apply it to the components
+  that came from it. Nothing owned this before.
+- A proposal that can be checked at size: each proposed component reviewable without reading the
+  whole source document, the proposal navigable and resumable, and how much of it a person accepted
+  unchanged recorded so proposal quality is a number rather than an argument.
+- What happens to a reference whose target was never in the file - listed before acceptance, then
+  retargeted, converted to plain text and named in the report, or the import refused - and what
+  happens when an import dies half way.
+- What a space-level export contains when it references something outside itself, and an export
+  artifact that is tenant-scoped, expirable and audited on download.
+
+### Changed
+
+- The product's own export format is importable, so an export is a route back in as well as a
+  guarantee against lock-in - the attended rule exists for a split judgement that components do not
+  need.
+- The export read-back test uses a reader written against the documented format rather than the
+  product's own importer, because those prove different things.
+- Acceptance validates what a person's adjustments produced, not only what the importer proposed;
+  identities are shown during review and the tenant's policy applied once, at acceptance; and the two
+  questions about scale now name the measurement that settles them and when.
+
 ## 0.10.4 - 2026-09-12 (PR #47)
 
 The generative AI and identity requirements, answered against their first reviews.
