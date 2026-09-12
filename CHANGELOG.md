@@ -28,6 +28,13 @@ The content and authoring requirements, answered against their first review.
   unconditional overwrite, the component lock holding at the API as it does in the interface, jobs
   for work that outlives a request, stable event identifiers and stated ordering for webhooks, a
   request identifier on every response, and what happens when an extension is updated or removed.
+- The data requirements answered against their own review, and against customer feedback it carried:
+  a value can be revised by hand, and a revised value is a person's value that says so everywhere it
+  appears, keeps what the query returned, stays refreshable with an accept-or-reject when the source
+  moves, and is surfaced for review before a document is issued. With it: connection deletion
+  refused rather than cascaded, key-based row selection for inline bindings, an empty result told
+  apart from a failure, a floating binding flagged when its query definition advances, and a limit
+  on how much may run at once.
 - The administration requirements answered against their own review: the life of a tenant after
   bootstrapping - suspension, an export offered before closure, a reversible grace period - a tenant
   administrator's sight of their own audit trail, a floor under self-service diagnostics, where a
