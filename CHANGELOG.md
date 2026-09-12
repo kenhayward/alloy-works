@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.14 - 2026-09-12 (PR #58)
+
+### Added
+
+- Two market assessments in `docs/reviews/market/`: where the specification as written can sell, and
+  which capabilities would extend its reach. They are input for a later decision rather than scope -
+  nothing in them is written into the requirements, and the folder's README says which boundaries
+  they would touch and which open questions they bear on.
+
+### Changed
+
+- `docs/reviews/market/` is excluded from formatting, so documents received from elsewhere stay
+  exactly as they arrived.
+
 ## 0.10.13 - 2026-09-12 (PR #57)
 
 The twenty-one areas read against each other, and the seams between them closed.

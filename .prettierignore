@@ -9,3 +9,7 @@ packages/api-contract/openapi.json
 # Generated from openapi.json by `pnpm --filter @alloy-works/api-client generate`, and compared
 # with the generator's own output in a test: formatting it would make that comparison fail.
 packages/api-client/src/generated/
+
+# Received documents, kept exactly as they arrived: one is a Word file with no parser, and the other
+# uses attribute annotations Prettier rewrites into table cells.
+docs/reviews/market/
