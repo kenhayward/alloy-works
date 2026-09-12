@@ -30,6 +30,7 @@ import {
   type ProviderSettings,
   type SignInStart,
 } from './oidc.js';
+import { rendererFallback, serveRenderer } from './renderer.js';
 import type { SecretStore } from './secrets.js';
 import {
   createSession,
@@ -63,6 +64,8 @@ export interface AppOptions extends HttpOptions {
   readonly objects?: ObjectStores;
   /** Where this environment's events come from; without it, no stream. */
   readonly events?: TenantListener;
+  /** Where the built renderer is; without it the service answers the API and nothing else. */
+  readonly rendererRoot?: string;
   readonly tenantCacheMs?: number;
 }
 
@@ -134,8 +137,9 @@ const storageUnavailable = () =>
  */
 export function buildApp(options: AppOptions): FastifyInstance {
   const { db, oidc, secrets } = options;
-  const app = createHttp(options);
+  const app = createHttp(options, options.rendererRoot ? rendererFallback : undefined);
   void app.register(cookie);
+  if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });

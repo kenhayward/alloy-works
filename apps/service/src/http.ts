@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { Writable } from 'node:stream';
-import Fastify, { LogController, type FastifyInstance } from 'fastify';
+import Fastify, {
+  LogController,
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
 import type { z } from 'zod';
 import type { LogLevel } from './config.js';
 import { toErrorBody } from './errors.js';
@@ -11,11 +16,24 @@ export interface HttpOptions {
   readonly logStream?: Writable;
 }
 
+/** What answers an address no route claims: the API saying, in its own shape, that there is none. */
+export function apiNotFound(request: FastifyRequest, reply: FastifyReply): FastifyReply {
+  return reply.status(404).send({
+    code: 'not_found',
+    message: 'There is nothing at this address.',
+    traceId: request.id,
+  });
+}
+
 /**
  * The HTTP layer every route shares: structured logs labelled with a trace id per request, zod for
  * validating requests and serialising responses, and one error shape for every failure.
  */
-export function createHttp(options: HttpOptions): FastifyInstance {
+export function createHttp(
+  options: HttpOptions,
+  /** Answers an address no route claims; the API's own refusal unless the renderer is served too. */
+  notFound: (request: FastifyRequest, reply: FastifyReply) => unknown = apiNotFound,
+): FastifyInstance {
   const app = Fastify({
     logger: {
       level: options.logLevel,
@@ -55,13 +73,7 @@ export function createHttp(options: HttpOptions): FastifyInstance {
     return reply.status(status).send(body);
   });
 
-  app.setNotFoundHandler((request, reply) =>
-    reply.status(404).send({
-      code: 'not_found',
-      message: 'There is nothing at this address.',
-      traceId: request.id,
-    }),
-  );
+  app.setNotFoundHandler(notFound);
 
   return app;
 }

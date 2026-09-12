@@ -44,6 +44,17 @@
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
+    },
+    "@alloy-works/e2e#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "passThroughEnv": [
+        "ALLOY_E2E_SERVICE",
+        "ALLOY_E2E_IDP",
+        "ALLOY_E2E_IDP_ISSUER",
+        "ALLOY_E2E_STORE_AT"
+      ]
     }
   }
 }

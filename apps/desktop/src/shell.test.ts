@@ -35,6 +35,33 @@ describe('resolveRendererTarget', () => {
       }),
     ).toEqual({ kind: 'file', value: WINDOWS_INDEX });
   });
+
+  it('loads the service when it has one, whether packaged or not', () => {
+    const location = {
+      packaged: true,
+      devServerUrl: DEV_SERVER_URL,
+      rendererIndexHtml: WINDOWS_INDEX,
+      serviceUrl: 'https://dev.acme.example',
+    };
+    expect(resolveRendererTarget(location)).toEqual({
+      kind: 'url',
+      value: 'https://dev.acme.example',
+    });
+    expect(resolveRendererTarget({ ...location, packaged: false })).toEqual({
+      kind: 'url',
+      value: 'https://dev.acme.example',
+    });
+  });
+
+  it('falls back to what it did before when it has no service to load', () => {
+    expect(
+      resolveRendererTarget({
+        packaged: true,
+        devServerUrl: DEV_SERVER_URL,
+        rendererIndexHtml: WINDOWS_INDEX,
+      }),
+    ).toEqual({ kind: 'file', value: WINDOWS_INDEX });
+  });
 });
 
 describe('describePlatform', () => {

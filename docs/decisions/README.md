@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                   | One renderer, two deliveries                                              | Accepted |
 | [0004](0004-brand-assets-and-packaging.md)                                    | Brand assets and desktop packaging                                        | Accepted |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                     | A purpose-built node-and-mark content model                               | Accepted |
+| [0022](0022-the-desktop-window-loads-the-service.md)                          | The desktop window loads the service                                      | Accepted |
 | [0021](0021-object-storage-a-credential-per-tenant.md)                        | Object storage: a credential per tenant, scoped to its own prefix         | Accepted |
 | [0020](0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)        | Service foundations: tenants by hostname and role, zod-first APIs, Kysely | Accepted |
 | [0019](0019-platform-typescript-service-publishing-workers-object-storage.md) | The platform: a TypeScript service, publishing workers, object storage    | Accepted |

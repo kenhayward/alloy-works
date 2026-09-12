@@ -24,20 +24,23 @@ One pnpm workspace, one lock file, ten packages.
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                   |
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
-| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes. Not yet reached by the renderer                             |
+| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes, and the built renderer beside them                          |
 | `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only |
 | `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                      |
 | `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                |
 | `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                          |
+| `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                   |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
 Typst template, and Word styles. Like the content model draft, it is promoted when the editor or
 the publishing pipeline first needs it.
 
-Dependencies point one way: `apps/web` depends on `@alloy-works/domain`; `apps/desktop` depends on
-`@alloy-works/web` **for types only** (see the platform bridge below). The domain package depends on
-neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI along.
+Dependencies point one way: `apps/web` depends on `@alloy-works/domain` and on
+`@alloy-works/api-client`, which is the only way it calls the service (API-001); `apps/desktop`
+depends on `@alloy-works/web` **for types only** (see the platform bridge below). The domain package
+depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
+along.
 
 ## One renderer, two deliveries
 
@@ -58,6 +61,11 @@ The shell decides where to load the renderer from, and that decision is a pure f
 (`resolveRendererTarget` in `apps/desktop/src/shell.ts`) so it can be tested without booting
 Electron:
 
+- **Given an environment's address** - loads it, packaged or not
+  ([ADR-0022](decisions/0022-the-desktop-window-loads-the-service.md)). A session is a `__Host-`
+  cookie belonging to the service's own hostname, and a window loading `file://` is a different
+  origin that can hold none, so a desktop delivery without this could not sign in at all. The
+  address comes from `ALLOY_SERVICE_URL`; there is no screen to ask for it yet.
 - **Unpackaged** - loads `http://127.0.0.1:5173`, the Vite dev server, so a renderer edit
   hot-reloads inside the desktop window. The address is pinned to the **IPv4 loopback**, not
   `localhost`: Node 17+ resolves `localhost` to `::1` first, so a Vite server left on the default
@@ -67,6 +75,24 @@ Electron:
 - **Packaged** - loads `apps/web/dist/index.html` from disk. The renderer is built with
   `base: './'` for exactly this reason: an absolute `/assets/...` URL resolves against the
   filesystem root under `file://` and the window comes up blank.
+
+### The service serves the renderer
+
+The page and the API it calls are one origin, which is what lets the session cookie work in a
+browser tab and in an Electron window alike.
+
+- **In the image**, the service stage carries `apps/web/dist` at `/app/renderer` and `RENDERER_ROOT`
+  names it. Without that variable the service answers the API and nothing else, which is what every
+  service test does.
+- **Anything under `/v1` stays the API's**, including its own "there is nothing here" as JSON.
+  Anything else that matches no file is answered with the renderer's page, because the addresses a
+  single-page interface owns exist only in the browser. That is `apps/service/src/renderer.ts`.
+- **In development** the renderer keeps its own server on 5173 and proxies `/v1` to the service,
+  passing the `Host` header through, so the environment resolves from the address in the browser's
+  bar exactly as it does in production.
+- **Not yet:** the renderer is built with `base: './'` for the packaged desktop fallback, so a deep
+  link served by the fallback would resolve its assets relative to that path. Nothing produces a
+  deep link yet - there is no routing - and this is settled when there is.
 
 ## The platform bridge
 
@@ -143,15 +169,17 @@ state. Nothing in the renderer calls it: that arrives with the scaffolding's las
 One `Dockerfile` at the root holds every image the system runs as, so the install and the build are
 done once and shared:
 
-| Target    | Carries                                                                            | Runs                                                 |
-| --------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `build`   | The workspaces the containers need, installed and built                            | Nothing; the other targets copy from it              |
-| `tools`   | The whole workspace, `tsx` included                                                | The compose stack's setup, and the stand-in provider |
-| `service` | `apps/service` and its production dependencies, deployed by `pnpm deploy`          | `node dist/server.js` on 8080                        |
-| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash | `node dist/main.js`                                  |
+| Target    | Carries                                                                                    | Runs                                                 |
+| --------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `build`   | The workspaces the containers need, installed and built                                    | Nothing; the other targets copy from it              |
+| `tools`   | The whole workspace, `tsx` included                                                        | The compose stack's setup, and the stand-in provider |
+| `service` | `apps/service` and its production dependencies, plus the built renderer at `/app/renderer` | `node dist/server.js` on 8080                        |
+| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash         | `node dist/main.js`                                  |
 
 Neither image carries development tooling, test files or Electron: the install is filtered to the
-three workspaces the containers need, and `pnpm deploy` reduces each app to its own production tree.
+workspaces the containers need, and `pnpm deploy` reduces each app to its own production tree. The
+service image is the exception to "no renderer": it carries `apps/web/dist` as static files, because
+the page and the API it calls have to be one origin.
 Both run as the `node` user. CI builds both on every pull request and runs each entry point; nothing
 is pushed anywhere, because where they would be pushed comes with hosting.
 
@@ -162,6 +190,10 @@ of those services answer to a name rather than only a container: the object stor
 machine in a browser and to the container inside the compose network, so **one address works on both
 sides** - which is what a signed download link and a sign-in redirect need, since each carries the
 address that made it. Their published ports must match the ports inside for the same reason.
+
+The development environment also answers at `127.0.0.1`, given by `DEV_EXTRA_HOSTNAME`, so a tool
+that makes nothing of `*.localhost` still reaches it - `tests/e2e` is the reason. Running the setup
+again brings an environment's addresses up to date rather than only creating what is missing.
 
 ## Build and packaging
 

@@ -95,4 +95,11 @@ describe('configuration', () => {
       loadConfig({ DATABASE_URL: url, OBJECT_STORE_ENDPOINT: 'http://127.0.0.1:8333' }),
     ).toThrow(/OBJECT_STORE_ENDPOINT and OBJECT_STORE_BUCKET must be set together/);
   });
+
+  it('serves the renderer only when it is told where it is', () => {
+    expect(loadConfig({ DATABASE_URL: url }).rendererRoot).toBeUndefined();
+    expect(loadConfig({ DATABASE_URL: url, RENDERER_ROOT: '/app/renderer' }).rendererRoot).toBe(
+      '/app/renderer',
+    );
+  });
 });

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { completeAtStandIn } from './stand-in.js';
+import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 
 /** Signs `user` in to the environment at `host`, and returns the cookie header that carries it. */
 export async function signIn(

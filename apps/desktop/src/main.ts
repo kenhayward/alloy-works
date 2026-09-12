@@ -49,6 +49,7 @@ function createWindow(): void {
     packaged: app.isPackaged,
     devServerUrl: DEV_SERVER_URL,
     rendererIndexHtml: rendererIndexHtml(app.getAppPath(), app.isPackaged),
+    serviceUrl: process.env.ALLOY_SERVICE_URL,
   });
 
   if (target.kind === 'url') {

@@ -1,0 +1,17 @@
+{
+  "name": "@alloy-works/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@alloy-works/api-client": "workspace:^",
+    "@alloy-works/stand-in-idp": "workspace:^",
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

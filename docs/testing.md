@@ -19,8 +19,10 @@ Exceptions - throwaway spikes, generated code, pure configuration - need a human
 | `packages/domain` | Vitest | node        | The content model and its rules                                     |
 | `apps/web`        | Vitest | jsdom       | The renderer, via Testing Library                                   |
 | `apps/desktop`    | Vitest | node        | The shell's pure decisions - target resolution, the bridge contract |
+| `tests/e2e`       | Vitest | node        | The whole system in containers, driven over HTTP                    |
 
-`pnpm test` runs all three. The reporter is **pinned explicitly** in every `vitest.config`: left
+`pnpm test` runs every suite but the last, which needs a running stack; `pnpm test:e2e` runs that
+one. The reporter is **pinned explicitly** in every `vitest.config`: left
 implicit, some runners print nothing a test logged on Windows while the identical run on Linux
 prints all of it, which makes a local run look pristine while CI drowns.
 
@@ -139,3 +141,31 @@ the committed ones, as `packages/api-contract` does for the document itself.
 it afterwards, exactly as it takes a database of its own, so two files never see each other's
 objects. The worker's suite renders with the real Typst rather than a stand-in for it: the binary is
 the thing being pinned.
+
+## The end-to-end suite
+
+`tests/e2e` drives the whole system as a person's browser would meet it, and nothing else does: the
+service, a worker, the database, the object store and the sign-in provider, all in containers.
+
+```bash
+docker compose up -d --build --wait
+pnpm test:e2e
+```
+
+It is **left out of `pnpm test` on purpose**, because a suite that needs `docker compose up` first
+would otherwise fail on every machine that has not run it. CI runs it as its own job, which is also
+where the stack's logs are kept when it fails.
+
+Two things it deliberately does not ask of the machine running it:
+
+- **It addresses the stack as `127.0.0.1`**, not `dev.acme.localhost`, because how a machine
+  resolves `*.localhost` is not a thing worth testing. The compose stack gives the development
+  environment that extra address.
+- **It follows a signed link without resolving the store's name.** The store signs the name it calls
+  itself by, so that name stays in the `Host` header and only the socket is pointed somewhere
+  reachable. `completeAtStandIn` does the same for the sign-in provider. Every address it uses can
+  be overridden: `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`.
+
+What it does **not** cover, and where that lives instead: refusing another environment's session,
+which is `cross-tenant.test.ts` in the service, because Node's `fetch` will not let a test set the
+`Host` header; and anything a browser does, which waits for an interface with something to click.

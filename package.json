@@ -1,6 +1,6 @@
 {
   "name": "alloy-works",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "description": "Component Content Management System - web and desktop delivery from one renderer",
@@ -15,9 +15,10 @@
     "dev:setup": "pnpm --filter @alloy-works/db dev:setup && pnpm --filter @alloy-works/objects dev:setup",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test --filter=!@alloy-works/e2e",
     "lint": "eslint .",
-    "format": "prettier --check ."
+    "format": "prettier --check .",
+    "test:e2e": "turbo run test --filter=@alloy-works/e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

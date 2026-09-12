@@ -23,7 +23,7 @@ import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 import { hashToken } from './sessions.js';
 import { signState, verifyState } from './sign-in-state.js';
-import { completeAtStandIn } from './test/stand-in.js';
+import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 
 const SIGN_IN = 'signin.alloy.test';
 const DEV = 'dev.acme.alloy.test';

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
-import { provisionTenant, type NewTenant } from './provision.js';
+import { addHostnames, provisionTenant, type NewTenant } from './provision.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('provisionTenant', () => {
@@ -79,5 +79,68 @@ describe('provisionTenant', () => {
       `t_${second}%`,
     ]);
     expect(roles.rowCount).toBe(0);
+  });
+});
+
+describe('addHostnames', () => {
+  let db: TestDatabase;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await migrate(db.migratorUrl);
+  });
+
+  afterAll(() => db.drop());
+
+  const hostnamesOf = async (id: string) =>
+    (
+      await queryAs(
+        db.adminUrl,
+        'select hostname from platform.tenant_hostname where tenant_id = $1 order by hostname',
+        [id],
+      )
+    ).rows;
+
+  it('gives an environment another address, and says so again without complaining', async () => {
+    const id = db.newTenantId();
+    await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
+    });
+
+    await addHostnames(db.adminUrl, id, ['127.0.0.1']);
+    expect(await hostnamesOf(id)).toEqual([
+      { hostname: '127.0.0.1' },
+      { hostname: 'dev.acme.alloy.test' },
+    ]);
+
+    // Run again: the same addresses, and nothing said about it.
+    await addHostnames(db.adminUrl, id, ['dev.acme.alloy.test', '127.0.0.1']);
+    expect(await hostnamesOf(id)).toEqual([
+      { hostname: '127.0.0.1' },
+      { hostname: 'dev.acme.alloy.test' },
+    ]);
+  });
+
+  it('refuses an address another environment already answers at', async () => {
+    const mine = db.newTenantId();
+    const theirs = db.newTenantId();
+    for (const [id, hostname] of [
+      [mine, 'mine.acme.alloy.test'],
+      [theirs, 'theirs.acme.alloy.test'],
+    ] as const) {
+      await provisionTenant(db.adminUrl, {
+        organisation: { id: 'acme', name: 'Acme' },
+        tenant: { id, name: 'Production' },
+        hostnames: [hostname],
+      });
+    }
+
+    await expect(addHostnames(db.adminUrl, mine, ['theirs.acme.alloy.test'])).rejects.toThrow(
+      /tenant_hostname_pkey/,
+    );
+    expect(await hostnamesOf(mine)).toEqual([{ hostname: 'mine.acme.alloy.test' }]);
   });
 });

@@ -83,6 +83,31 @@ one issuer, so anyone who has signed in to the environment the organisation's wa
 principal, and comes straight in. Like Google, it remembers who signed in and does not ask again:
 restart it to choose someone else.
 
+## Two ways to see the whole thing
+
+**Everything in containers**, which is what CI drives and the nearest thing to a small installation:
+
+```bash
+docker compose up -d --build --wait
+```
+
+Open `http://dev.acme.localhost:8080`: the page says **Development**, offers **Sign in**, and after
+signing in as Ada says who you are. **Make a sample** adds one as `queued`, and it becomes `done` on
+its own a second or two later, because the stream said so rather than the page asking again. The
+same environment also answers at `http://127.0.0.1:8080`, which is what `tests/e2e` uses.
+
+**The renderer from source**, when you are changing it:
+
+```bash
+pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
+pnpm dev:web                                      # http://dev.acme.localhost:5173
+```
+
+The dev server sends everything under `/v1` to the service with the `Host` header as the browser
+sent it, so open it at `http://dev.acme.localhost:5173` rather than `localhost:5173`: the
+environment is resolved from the address in the bar, exactly as in production, and `localhost` is no
+environment.
+
 ## The worker
 
 Work a request should not wait for runs in `apps/worker`. It needs the pinned Typst, fetched once
@@ -119,7 +144,8 @@ pnpm lint          # eslint, flat config at the root, across every workspace
 pnpm format        # prettier --check (use `pnpm exec prettier --write .` to fix)
 pnpm typecheck     # tsc --noEmit in every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
-pnpm test          # every suite in every workspace
+pnpm test          # every suite in every workspace, apart from the end-to-end one
+pnpm test:e2e      # the whole system, which needs `docker compose up` first
 ```
 
 `build`, `typecheck` and `test` run through Turborepo, which builds `@alloy-works/domain` first
@@ -142,6 +168,14 @@ pnpm dev:web       # http://localhost:5173
 
 ```bash
 pnpm app
+```
+
+**Desktop, against an environment** - the window loads the service rather than the dev server, which
+is how it signs in
+([ADR-0022](decisions/0022-the-desktop-window-loads-the-service.md)):
+
+```bash
+ALLOY_SERVICE_URL=http://dev.acme.localhost:8080 pnpm app
 ```
 
 The shell waits for `127.0.0.1:5173`, then opens a window pointed at the dev server, so editing the
