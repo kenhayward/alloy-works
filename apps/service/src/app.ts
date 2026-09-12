@@ -9,7 +9,13 @@ import {
   type SampleParams,
   type SignInCallback,
 } from '@alloy-works/api-contract';
-import { enqueueJob, type SignInRoute, type Tenant, type TenantDatabase } from '@alloy-works/db';
+import {
+  enqueueJob,
+  type SignInRoute,
+  type Tenant,
+  type TenantDatabase,
+  type TenantListener,
+} from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
@@ -34,6 +40,7 @@ import {
   type SessionPrincipal,
 } from './sessions.js';
 import { signState, verifyState } from './sign-in-state.js';
+import { streamToViewer } from './stream.js';
 import { cachedResolver } from './tenants.js';
 import type { ZodTypeProvider } from './type-provider.js';
 
@@ -54,6 +61,8 @@ export interface AppOptions extends HttpOptions {
   readonly google?: GoogleSettings;
   /** Where this environment's documents are kept; without it, samples are refused. */
   readonly objects?: ObjectStores;
+  /** Where this environment's events come from; without it, no stream. */
+  readonly events?: TenantListener;
   readonly tenantCacheMs?: number;
 }
 
@@ -465,6 +474,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
         throw new AppError(404, 'sample_not_found', 'There is no such sample in this environment.');
       }
       return answer;
+    },
+
+    openStream: async (request, reply) => {
+      const tenant = tenantOf(request);
+      const { events } = options;
+      if (!events) {
+        throw new AppError(
+          503,
+          'stream_unavailable',
+          'This environment cannot stream yet. Try again later.',
+        );
+      }
+      await streamToViewer({ request, reply, db, events, tenant });
+      return reply;
     },
   };
 
