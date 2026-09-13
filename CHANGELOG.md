@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.3 - 2026-09-13 (PR #76)
+
+### Added
+
+- `docs/specification/spikes/Editor_Framework_Spike.md` - the brief for the one decision CNT-001
+  names and no decision record makes. Twenty-two records, none of them chooses an editor, and
+  ADR-0005 rests its whole argument on the stored model being the editor's model. Four gates: a
+  document of 300 components in one scroll with per-component editability and component-scoped undo;
+  overlapping annotations keeping one identifier each through ordinary editing; an authored table with
+  merged cells, a cell-anchored footnote and an image in a cell, surviving a row insert; and the
+  editor reachable from the keyboard alone and legible to assistive technology. Six further cases are
+  measured rather than gating.
+
+### Changed
+
+- The spike runs **before** the content model becomes code rather than with the editor design. A
+  migration fixture written at schema version 1 is permanent, because CNT-012 keeps every version ever
+  written readable - so if the editor imposes a shape on the stored model, the cheap moment to find
+  out is while there are no fixtures.
+- The candidate order is argued from the corpus and is explicitly a premise rather than a finding:
+  CNT-003 and CNT-007 rule out any editor whose range annotation is an element that must split at an
+  overlap, and ADR-0005 describes a transform step log without naming one. Checking that narrowing
+  against current versions is the spike's first task, not its assumption.
+
 ## 0.15.2 - 2026-09-13 (PR #75)
 
 ### Added
