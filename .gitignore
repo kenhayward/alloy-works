@@ -14,6 +14,10 @@ release/
 # Test output
 coverage/
 
+# Per-package Vitest JSON reports, read by `pnpm trace verify`. A build artifact of a test run,
+# never committed.
+.trace-results/
+
 # Python bytecode, from the spike harnesses
 __pycache__/
 

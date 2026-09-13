@@ -17,20 +17,20 @@ describing something planned and starts describing something here.
 
 One pnpm workspace, one lock file, eleven packages.
 
-| Workspace               | Package                     | Holds                                                                                                                            |
-| ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `@alloy-works/domain`       | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                       |
-| `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                       |
-| `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                   |
-| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI |
-| `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                     |
-| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes, and the built renderer beside them                          |
-| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only |
-| `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                      |
-| `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                |
-| `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                          |
-| `packages/trace`        | `@alloy-works/trace`        | The requirement corpus compiled: the parsers, the state ladder, the committed `trace.json`, and the query command                |
-| `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                   |
+| Workspace               | Package                     | Holds                                                                                                                                                         |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | `@alloy-works/domain`       | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                    |
+| `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                    |
+| `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                |
+| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI                              |
+| `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                                                  |
+| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes, and the built renderer beside them                                                       |
+| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only                              |
+| `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                                                   |
+| `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                                             |
+| `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                                                       |
+| `packages/trace`        | `@alloy-works/trace`        | The requirement corpus compiled: the parsers, the citation scanner, the state ladder, `check` and `verify`, the committed `trace.json`, and the query command |
+| `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                                                |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet
 exported from the package: a resolver and three projections - CSS for the editor, data for the
