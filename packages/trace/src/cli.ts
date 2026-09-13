@@ -6,9 +6,11 @@ import { dirname, join } from 'node:path';
 
 import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
+import { draftRequirement } from './draft.js';
 import {
   formatArea,
   formatBaseline,
+  formatDraft,
   formatGate,
   formatProblems,
   formatSearch,
@@ -19,6 +21,8 @@ import {
 } from './format.js';
 import { gate } from './gate.js';
 import { parseBaseline } from './parse/baseline.js';
+import type { FiledRequirement } from './parse/issue.js';
+import { parseIssue } from './parse/issue.js';
 import { packDocuments } from './pack.js';
 import { dirtyTreeRefusal } from './pack-guard.js';
 import {
@@ -66,6 +70,11 @@ const USAGE = `pnpm trace <command>
   next <XXX>         the next free identifier in an area
   stats              the whole corpus, by tranche and state
   check              every problem in the corpus: holes, double claims, citations naming nothing
+  draft <issue>      read GitHub issue <issue> and draft a row from it
+  draft --area XXX --statement "..." [--tranche T1] [--issue 42]
+                     draft a row from the command line - no gh required. Prints only; never
+                     writes - paste the row yourself and put \`Fixes #<issue>\` in the pull
+                     request body
   verify [dir]       states, with Verified computed from the JSON reports in dir
                      (default .trace-results)
   baseline [name]    a committed baseline: name, date, included count, exclusions and
@@ -127,6 +136,100 @@ function loadResults(repoRoot: string, relative: string): LoadedResults | undefi
   return { problems, outcomes };
 }
 
+const DRAFT_FLAG_FORM = 'draft --area XXX --statement "..." [--tranche T1] [--issue 42]';
+
+interface DraftInput {
+  readonly filed: FiledRequirement;
+  readonly issue: number | undefined;
+}
+
+interface DraftInputError {
+  readonly error: string;
+}
+
+/**
+ * One of `draft`'s two ways in, read into a `FiledRequirement` and, if known, the issue number the
+ * pull request will close. The numeric form shells out to `gh`, which may be missing or
+ * unauthenticated - that failure is reported as one sentence naming the flag form, never a stack
+ * trace. The flag form builds a `FiledRequirement` by hand, the same "somebody built it by hand
+ * rather than through the issue form" case `draft.ts` already documents its own belt-and-braces
+ * check against.
+ */
+function readDraftInput(args: string[]): DraftInput | DraftInputError {
+  const first = args[0];
+
+  if (first !== undefined && !first.startsWith('--')) {
+    const issue = Number.parseInt(first, 10);
+    if (!Number.isInteger(issue) || issue <= 0) {
+      return { error: `"${first}" is not an issue number. Usage: pnpm trace ${DRAFT_FLAG_FORM}` };
+    }
+
+    let body: string;
+    try {
+      body = execFileSync(
+        'gh',
+        ['issue', 'view', String(issue), '--json', 'body', '--jq', '.body'],
+        { cwd: REPO_ROOT, encoding: 'utf8' },
+      );
+    } catch {
+      return {
+        error:
+          `Could not read issue #${issue} with \`gh\` - it may not be installed, you may not be ` +
+          `signed in, or the issue may not exist. Use the flag form instead: pnpm trace ${DRAFT_FLAG_FORM}`,
+      };
+    }
+    try {
+      return { filed: parseIssue(body), issue };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return {
+        error: `Issue #${issue} is not a filed requirement: ${reason} Use the flag form instead: pnpm trace ${DRAFT_FLAG_FORM}`,
+      };
+    }
+  }
+
+  const flags = new Map<string, string>();
+  for (let index = 0; index < args.length; index += 2) {
+    const key = args[index];
+    if (key?.startsWith('--')) flags.set(key.slice(2), args[index + 1] ?? '');
+  }
+
+  const area = flags.get('area');
+  const statement = flags.get('statement');
+  if (area === undefined || statement === undefined) {
+    return { error: `draft needs --area and --statement. Usage: pnpm trace ${DRAFT_FLAG_FORM}` };
+  }
+
+  const issueFlag = flags.get('issue');
+  const issue = issueFlag === undefined ? undefined : Number.parseInt(issueFlag, 10);
+  if (issueFlag !== undefined && (issue === undefined || !Number.isInteger(issue))) {
+    return { error: `--issue must be a number, not "${issueFlag}".` };
+  }
+
+  return {
+    filed: {
+      area: area.toUpperCase(),
+      statement,
+      why: '(given on the command line, not filed as an issue)',
+      howWeWouldKnow: undefined,
+      tranche: flags.get('tranche'),
+      whoAsked: undefined,
+    },
+    issue,
+  };
+}
+
+/** The area document `draft` should read candidate sections from - `AAA-whatever.md` in the
+ * requirements directory, the same naming convention `compile.ts` reads by. `undefined` when the
+ * area has no document at all yet. */
+function areaDocumentPath(repoRoot: string, area: string): string | undefined {
+  const dir = join(repoRoot, 'docs', 'specification', 'requirements');
+  const match = readdirSync(dir).find(
+    (name) => name.startsWith(`${area}-`) && name.endsWith('.md'),
+  );
+  return match === undefined ? undefined : join(dir, match);
+}
+
 function main(argv: string[]): number {
   try {
     const [command, argument] = argv;
@@ -167,6 +270,21 @@ function main(argv: string[]): number {
         const found = problems(model);
         console.log(formatProblems(found));
         return found.length > 0 ? 1 : 0;
+      }
+      case 'draft': {
+        const input = readDraftInput(argv.slice(1));
+        if ('error' in input) return fail(input.error);
+
+        const documentPath = areaDocumentPath(REPO_ROOT, input.filed.area);
+        if (documentPath === undefined) {
+          return fail(
+            `No requirements document for area ${input.filed.area} in docs/specification/requirements.`,
+          );
+        }
+
+        const draft = draftRequirement(input.filed, model, readFileSync(documentPath, 'utf8'));
+        console.log(formatDraft(draft, input.issue));
+        return 0;
       }
       case 'baseline': {
         const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);

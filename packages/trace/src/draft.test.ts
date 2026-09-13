@@ -61,13 +61,13 @@ function documentContaining(row: string): string {
 
 describe('drafting a candidate requirement', () => {
   it('allocates the next free identifier for the filed area', () => {
-    const draft = draftRequirement(filedComplete, model, areaDocumentText, 62);
+    const draft = draftRequirement(filedComplete, model, areaDocumentText);
 
     expect(draft.id).toBe('ZZZ-004');
   });
 
   it('formats a row that parseAreaDocument reads back with the same id, statement and tranche', () => {
-    const draft = draftRequirement(filedComplete, model, areaDocumentText, 62);
+    const draft = draftRequirement(filedComplete, model, areaDocumentText);
 
     const parsed = parseAreaDocument(document, documentContaining(draft.row));
 
@@ -83,14 +83,14 @@ describe('drafting a candidate requirement', () => {
   it('carries the literal T? placeholder when the filer gave no tranche, rather than guessing one', () => {
     const filedNoTranche: FiledRequirement = { ...filedComplete, tranche: undefined };
 
-    const draft = draftRequirement(filedNoTranche, model, areaDocumentText, 62);
+    const draft = draftRequirement(filedNoTranche, model, areaDocumentText);
 
     expect(draft.row).toContain('T?');
   });
 
   it('is refused by the parser once the T? row is placed in a document, so it cannot be forgotten', () => {
     const filedNoTranche: FiledRequirement = { ...filedComplete, tranche: undefined };
-    const draft = draftRequirement(filedNoTranche, model, areaDocumentText, 62);
+    const draft = draftRequirement(filedNoTranche, model, areaDocumentText);
 
     expect(() => parseAreaDocument(document, documentContaining(draft.row))).toThrow();
   });
@@ -117,7 +117,7 @@ describe('drafting a candidate requirement', () => {
       '',
     ].join('\n');
 
-    const draft = draftRequirement(filedComplete, model, text, 62);
+    const draft = draftRequirement(filedComplete, model, text);
 
     expect(draft.sections).toEqual(['2. Widgets', '2.1 Gadgets']);
   });
@@ -132,7 +132,7 @@ describe('drafting a candidate requirement', () => {
       whoAsked: undefined,
     };
 
-    const draft = draftRequirement(filedBare, model, areaDocumentText, 62);
+    const draft = draftRequirement(filedBare, model, areaDocumentText);
 
     expect(draft.id).toBe('ZZZ-004');
     expect(draft.warnings).toHaveLength(3);

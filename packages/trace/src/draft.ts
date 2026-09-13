@@ -77,19 +77,15 @@ export interface Draft {
  * reused, and a table row the requirement parser will accept. Pure - no `node:fs` - so `cli.ts`
  * reads both the issue and the area document and hands this function their text.
  *
- * Takes the issue number too (named `_issue`, unused, per this package's convention for a
- * parameter kept for a caller's shape rather than this function's own use - see
- * `eslint.config.js`'s `argsIgnorePattern`), because the CLI's two ways in (a filed GitHub issue, or
- * the flag form) both already have it before they get here. Task 4's CLI prints the `Fixes #<issue>`
- * reminder from that same number; nothing here needs it to compute `id`, `row`, `sections` or
- * `warnings`, and the caller passing it once here rather than threading it separately keeps the
- * whole pipeline - read the issue or the flags, read the document, draft, print - to one call each.
+ * Takes no issue number: the requirements table has exactly four columns (ID, Requirement, Tranche,
+ * Status), so there is nowhere in a row for one, and the link belongs in the pull request body
+ * instead. `cli.ts` prints the `Fixes #<issue>` reminder itself, from whichever of the two ways in
+ * supplied a number.
  */
 export function draftRequirement(
   filed: FiledRequirement,
   model: TraceModel,
   areaDocumentText: string,
-  _issue: number,
 ): Draft {
   const id = nextIdentifier(model, filed.area);
   const tranche = filed.tranche ?? UNKNOWN_TRANCHE;
