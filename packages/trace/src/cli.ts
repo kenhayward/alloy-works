@@ -8,6 +8,7 @@ import { REPO_ROOT, compile } from './compile.js';
 import {
   formatArea,
   formatBaseline,
+  formatGate,
   formatProblems,
   formatSearch,
   formatStats,
@@ -15,8 +16,9 @@ import {
   nextIdentifier,
   search,
 } from './format.js';
+import { gate } from './gate.js';
 import { parseBaseline } from './parse/baseline.js';
-import { checkCoherence, parseResults } from './results.js';
+import { type NamedReport, type TestOutcome, checkCoherence, parseResults } from './results.js';
 import { allTraces, traceOf } from './state.js';
 
 const DEFAULT_RESULTS_DIR = '.trace-results';
@@ -60,6 +62,9 @@ const USAGE = `pnpm trace <command>
   baseline [name]    a committed baseline: name, date, included count, exclusions and
                      verification declarations (default: the newest by filename). Reads and
                      reports only - never writes the document
+  gate [name]        pass or fail a baseline (default: the newest by filename) against the JSON
+                     reports in .trace-results. Exits 0 when every included requirement is met
+                     and the declaration itself has no problems, 1 otherwise
 `;
 
 /**
@@ -72,6 +77,34 @@ function baselineFiles(repoRoot: string): string[] {
   return readdirSync(dir)
     .filter((name) => BASELINE_DOCUMENT.test(name) && name !== 'README.md')
     .sort();
+}
+
+/**
+ * The JSON reports in `dir`, and whether they agree with each other - the same coherence check
+ * `verify` has always used, shared here so `gate` answers the exact same question about staleness
+ * and completeness rather than a second copy that could quietly drift from it. `undefined` means the
+ * directory itself does not exist; a non-empty `problems` list means it exists but cannot be trusted.
+ */
+interface LoadedResults {
+  readonly problems: string[];
+  readonly outcomes: Map<string, TestOutcome>;
+}
+
+function loadResults(repoRoot: string, relative: string): LoadedResults | undefined {
+  const dir = join(repoRoot, relative);
+  if (!existsSync(dir)) return undefined;
+  const named: NamedReport[] = readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => ({
+      name: name.slice(0, -'.json'.length),
+      report: JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown,
+    }));
+  const problems = checkCoherence(named, packagesWithVitestConfig(repoRoot));
+  const outcomes =
+    problems.length > 0
+      ? new Map<string, TestOutcome>()
+      : parseResults(named.map(({ report }) => report));
+  return { problems, outcomes };
 }
 
 function main(argv: string[]): number {
@@ -132,32 +165,58 @@ function main(argv: string[]): number {
       }
       case 'verify': {
         const relative = argument ?? DEFAULT_RESULTS_DIR;
-        const dir = join(REPO_ROOT, relative);
-        if (!existsSync(dir)) {
+        const results = loadResults(REPO_ROOT, relative);
+        if (results === undefined) {
           return fail(
             `No ${relative} directory. Run \`pnpm test\` first - it writes the JSON reports verify reads.`,
           );
         }
-        const named = readdirSync(dir)
-          .filter((name) => name.endsWith('.json'))
-          .map((name) => ({
-            name: name.slice(0, -'.json'.length),
-            report: JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown,
-          }));
-        const problems = checkCoherence(named, packagesWithVitestConfig(REPO_ROOT));
-        if (problems.length > 0) {
+        if (results.problems.length > 0) {
           console.log(
             [
-              `${problems.length} problem(s) with the reports in ${relative} - refusing to compute Verified:`,
+              `${results.problems.length} problem(s) with the reports in ${relative} - refusing to compute Verified:`,
               '',
-              ...problems,
+              ...results.problems,
             ].join('\n'),
           );
           return 1;
         }
-        const verifications = parseResults(named.map(({ report }) => report));
-        console.log(formatStats(model, verifications));
+        console.log(formatStats(model, results.outcomes));
         return 0;
+      }
+      case 'gate': {
+        const files = baselineFiles(REPO_ROOT);
+        if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
+
+        const file = argument === undefined ? files[files.length - 1]! : `${argument}.md`;
+        const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);
+        const path = join(dir, file);
+        if (!existsSync(path)) {
+          return fail(`No baseline ${file} in docs/specification/${BASELINES_DIR}.`);
+        }
+        const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
+
+        const results = loadResults(REPO_ROOT, DEFAULT_RESULTS_DIR);
+        if (results === undefined) {
+          return fail(
+            `No ${DEFAULT_RESULTS_DIR} directory. Run \`pnpm test\` first - it writes the JSON reports the gate reads.`,
+          );
+        }
+        if (results.problems.length > 0) {
+          console.log(
+            [
+              `${results.problems.length} problem(s) with the reports in ${DEFAULT_RESULTS_DIR} - refusing to run the gate:`,
+              '',
+              ...results.problems,
+            ].join('\n'),
+          );
+          return 1;
+        }
+
+        const result = gate(baseline, model, results.outcomes);
+        const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
+        console.log(formatGate(result, includedIds));
+        return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
       }
       default:
         console.log(USAGE);

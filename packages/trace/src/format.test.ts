@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import type { Problem } from './check.js';
+import type { GateResult } from './gate.js';
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import { TraceModel as TraceModelSchema } from './model.js';
 import {
   STATES,
   formatArea,
   formatBaseline,
+  formatGate,
   formatProblems,
   formatSearch,
   formatStats,
@@ -340,5 +342,184 @@ describe('formatting an area', () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]).toBe('ZZZ-001  Designed    A widget must carry a footnote');
     expect(rows[1]).toBe('ZZZ-002  Specified   A gadget must spin freely');
+  });
+});
+
+describe('formatting the gate', () => {
+  const gateResult = (over: Partial<GateResult>): GateResult => ({
+    baseline: '0.0.0-invented',
+    declaredAt: '2026-09-13',
+    total: 1,
+    met: 1,
+    unmet: [],
+    declarationProblems: [],
+    problems: [],
+    ...over,
+  });
+
+  it('leads with the baseline name and its declared date', () => {
+    const output = formatGate(gateResult({}), new Set(['ZZZ-001']));
+
+    expect(output.split(/\r?\n/)[0]).toBe('0.0.0-invented  declared 2026-09-13');
+  });
+
+  it('states how many included requirements are met, out of how many', () => {
+    const output = formatGate(gateResult({ total: 7, met: 7 }), new Set());
+
+    expect(output).toContain('7 of 7 included requirement(s) met');
+  });
+
+  it('prints one line per unmet requirement, naming the rule it broke', () => {
+    const output = formatGate(
+      gateResult({
+        total: 2,
+        met: 0,
+        unmet: [
+          { id: 'ZZZ-001', kind: 'test', why: 'ZZZ-001 is included but no test names it' },
+          {
+            id: 'ZZZ-002',
+            kind: 'inherited',
+            why: 'ZZZ-002 inherits from ZZZ-003, which is not met',
+          },
+        ],
+      }),
+      new Set(['ZZZ-001', 'ZZZ-002']),
+    );
+
+    expect(output).toContain('ZZZ-001 is included but no test names it');
+    expect(output).toContain('ZZZ-002 inherits from ZZZ-003, which is not met');
+  });
+
+  // Trap 1: a declaration problem silently shortens `total`. The met/total line must never be
+  // printed alone when that happened - the reader needs to be told, right there, that rows were
+  // dropped, not left to notice `total` is smaller than the baseline's own Included table.
+  it('says how many rows were dropped from the declaration when total is short', () => {
+    const output = formatGate(
+      gateResult({
+        total: 1,
+        met: 1,
+        declarationProblems: [
+          {
+            kind: 'both-included-and-excluded',
+            id: 'ZZZ-002',
+            detail: 'ZZZ-002 is both included and excluded in baseline 0.0.0-invented',
+          },
+        ],
+      }),
+      new Set(['ZZZ-001', 'ZZZ-002']),
+    );
+
+    expect(output).toMatch(/1 of 1 included requirement\(s\) met.*dropped/);
+  });
+
+  it('says nothing about dropped rows when the declaration accounts for every included id', () => {
+    const output = formatGate(gateResult({ total: 2, met: 2 }), new Set(['ZZZ-001', 'ZZZ-002']));
+
+    expect(output).not.toContain('dropped');
+  });
+
+  // Trap 1, the other half: a declaration problem that does not shorten `total` at all (a blank
+  // attestation, or a verification row naming an id outside the baseline) still has to be reported,
+  // not silently absorbed because the met/total arithmetic happened to come out whole.
+  it('reports every declaration problem under its own heading, even when no rows were dropped', () => {
+    const output = formatGate(
+      gateResult({
+        declarationProblems: [
+          {
+            kind: 'verification-outside-baseline',
+            id: 'ZZZ-404',
+            detail: 'ZZZ-404 has a verification row but is not included in baseline 0.0.0-invented',
+          },
+        ],
+      }),
+      new Set(['ZZZ-001']),
+    );
+
+    expect(output).toContain('ZZZ-404 has a verification row but is not included');
+  });
+
+  it('says the declaration problems are defects in the declaration, not the code', () => {
+    const output = formatGate(
+      gateResult({
+        declarationProblems: [
+          { kind: 'blank-attestation', id: 'ZZZ-001', detail: 'ZZZ-001 declares a blank by' },
+        ],
+      }),
+      new Set(['ZZZ-001']),
+    );
+    const heading = output.split(/\r?\n/).find((line) => /declaration/i.test(line));
+
+    expect(heading).toBeDefined();
+    expect(heading).not.toContain('corpus problem');
+    expect(heading!.toLowerCase()).toMatch(/not the code|baseline document/);
+  });
+
+  it('says nothing about declaration problems when there are none', () => {
+    const output = formatGate(gateResult({}), new Set(['ZZZ-001']));
+
+    expect(output.toLowerCase()).not.toContain('declaration problem');
+  });
+
+  it('counts corpus problems outside the baseline as information, not failure', () => {
+    const problems: Problem[] = [
+      { kind: 'claims-superseded', id: 'REL-002', detail: 'invented for the fixture' },
+    ];
+    const output = formatGate(gateResult({ problems }), new Set(['ZZZ-001']));
+
+    expect(output).toContain('1 corpus problem(s) outside this baseline');
+  });
+
+  it('says plainly when there are no corpus problems outside the baseline', () => {
+    const output = formatGate(gateResult({}), new Set(['ZZZ-001']));
+
+    expect(output).toContain('No corpus problems outside this baseline');
+  });
+
+  // Rule 5's sharpest case, mirrored for display: a `not-contiguous` problem's id is an AREA CODE,
+  // not a requirement, so it touches the baseline (and must NOT be counted as "outside") whenever
+  // the baseline includes any requirement from that area.
+  it('does not count a contiguity hole as outside the baseline when the baseline includes that area', () => {
+    const problems: Problem[] = [
+      { kind: 'not-contiguous', id: 'ZZZ', detail: 'invented for the fixture' },
+    ];
+    const output = formatGate(gateResult({ problems }), new Set(['ZZZ-001']));
+
+    expect(output).toContain('No corpus problems outside this baseline');
+  });
+
+  it('does count a contiguity hole in an area the baseline never touches', () => {
+    const problems: Problem[] = [
+      { kind: 'not-contiguous', id: 'QQQ', detail: 'invented for the fixture' },
+    ];
+    const output = formatGate(gateResult({ problems }), new Set(['ZZZ-001']));
+
+    expect(output).toContain('1 corpus problem(s) outside this baseline');
+  });
+
+  it('orders the sections: name and date, then met/total, then unmet, then declaration problems, then the outside-baseline count', () => {
+    const output = formatGate(
+      gateResult({
+        total: 1,
+        met: 0,
+        unmet: [{ id: 'ZZZ-001', kind: 'test', why: 'ZZZ-001 is included but no test names it' }],
+        declarationProblems: [
+          { kind: 'blank-attestation', id: 'ZZZ-002', detail: 'ZZZ-002 declares a blank by' },
+        ],
+        problems: [{ kind: 'claims-superseded', id: 'REL-002', detail: 'invented' }],
+      }),
+      new Set(['ZZZ-001', 'ZZZ-002']),
+    );
+
+    const nameIndex = output.indexOf('0.0.0-invented');
+    const metIndex = output.indexOf('of 1 included requirement(s) met');
+    const unmetIndex = output.indexOf('ZZZ-001 is included but no test names it');
+    const declarationIndex = output.indexOf('ZZZ-002 declares a blank by');
+    const outsideIndex = output.indexOf('corpus problem(s) outside this baseline');
+
+    expect(nameIndex).toBeGreaterThanOrEqual(0);
+    expect(metIndex).toBeGreaterThan(nameIndex);
+    expect(unmetIndex).toBeGreaterThan(metIndex);
+    expect(declarationIndex).toBeGreaterThan(unmetIndex);
+    expect(outsideIndex).toBeGreaterThan(declarationIndex);
   });
 });
