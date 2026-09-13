@@ -10,6 +10,7 @@ import { TraceModel as TraceModelSchema } from './model.js';
 import {
   STATES,
   formatArea,
+  formatTranche,
   formatBaseline,
   formatDraft,
   formatGate,
@@ -50,6 +51,44 @@ const model: TraceModel = {
   ],
   citations: [],
 };
+
+describe('the tranche listing', () => {
+  // The question this answers is "what is left to design in this tranche", which `stats` answers
+  // only as a number and `area` answers only for one area across every tranche. Designing a tranche
+  // starts by knowing which areas it reaches and how much of each is still undesigned.
+  it('summarises a tranche by area, with a count per state', () => {
+    const output = formatTranche(model, 'T1');
+
+    expect(output).toContain('T1');
+    expect(output).toContain('ZZZ');
+    expect(output).toContain('Designed');
+  });
+
+  it('counts only the tranche asked for', () => {
+    const output = formatTranche(model, 'T2');
+
+    // ZZZ-002 is the only T2 requirement, and no design claims it, so the Designed column is 0 and
+    // the Specified column is 1. A summary that counted the whole area would say otherwise.
+    expect(output).toContain('1 requirement(s)');
+  });
+
+  it('says so plainly when a tranche holds nothing', () => {
+    expect(formatTranche(model, 'T6')).toBe('No requirement is in tranche T6.');
+  });
+
+  it('lists the requirements themselves when an area is named', () => {
+    const output = formatTranche(model, 'T1', 'ZZZ');
+
+    expect(output).toContain('ZZZ-001');
+    expect(output).toContain('A widget must carry a footnote');
+    // ZZZ-002 is in the same area but a different tranche, so it must not appear.
+    expect(output).not.toContain('ZZZ-002');
+  });
+
+  it('says so plainly when a tranche holds nothing in the area named', () => {
+    expect(formatTranche(model, 'T1', 'CNT')).toBe('No requirement in CNT is in tranche T1.');
+  });
+});
 
 describe('formatting one requirement', () => {
   it('names the statement, the tranche, the state and the owning design', () => {

@@ -64,6 +64,66 @@ export function formatArea(traces: Trace[]): string {
     .join('\n');
 }
 
+/**
+ * A tranche, by area, or one area of it in full. This is the listing designing a tranche starts from:
+ * `stats` gives a tranche one number per state and `area` gives an area every tranche at once, and
+ * neither answers "which areas does T1 reach, and how much of each has no design yet".
+ *
+ * Superseded and Withdrawn columns are carried rather than filtered out, because a tranche whose
+ * remaining work looks small can look that way from exits rather than from progress, and that is
+ * worth seeing in the same table rather than inferring from a smaller total.
+ */
+export function formatTranche(
+  model: TraceModel,
+  tranche: string,
+  area?: string,
+  verifications?: Map<string, TestOutcome>,
+): string {
+  const inTranche = allTraces(model, verifications).filter(
+    (trace) => trace.requirement.tranche === tranche,
+  );
+
+  if (area !== undefined) {
+    const here = inTranche.filter((trace) => trace.requirement.area === area);
+    if (here.length === 0) return `No requirement in ${area} is in tranche ${tranche}.`;
+    return [
+      `${here.length} requirement(s) in ${area}, tranche ${tranche}:`,
+      '',
+      formatArea(here),
+    ].join('\n');
+  }
+
+  if (inTranche.length === 0) return `No requirement is in tranche ${tranche}.`;
+
+  const areas = [...new Set(inTranche.map((trace) => trace.requirement.area))].sort();
+  // The same rule as `formatStats`: without a test run there is no Verified count, and a column of
+  // zeroes would read as "nothing is verified" rather than "verification was not computed". STY has
+  // verified requirements in T1, so printing 0 there would be a plain untruth.
+  const states =
+    verifications === undefined ? STATES.filter((state) => state !== 'Verified') : STATES;
+  const header = ['Area'.padEnd(8), ...states.map((state) => state.padStart(11))].join('');
+  const rows = areas.map((code) => {
+    const here = inTranche.filter((trace) => trace.requirement.area === code);
+    const counts = states.map((state) =>
+      String(here.filter((trace) => trace.state === state).length).padStart(11),
+    );
+    return [code.padEnd(8), ...counts].join('');
+  });
+
+  const lines = [
+    `${inTranche.length} requirement(s) in tranche ${tranche}, across ${areas.length} area(s):`,
+    '',
+    header,
+    ...rows,
+    '',
+    `\`pnpm trace tranche ${tranche} <XXX>\` lists one area's requirements in full.`,
+  ];
+  if (verifications === undefined) {
+    lines.push('`pnpm trace verify` adds the Verified column.');
+  }
+  return lines.join('\n');
+}
+
 export function formatSearch(results: Requirement[], term: string): string {
   if (results.length === 0) return `Nothing in the corpus mentions "${term}".`;
   const rows = results.map(

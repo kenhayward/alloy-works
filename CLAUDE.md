@@ -47,6 +47,50 @@ anything that crosses a process boundary, [`docs/design/system.md`](docs/design/
 system being built towards, and [`docs/decisions/`](docs/decisions/) for why the boundaries are
 where they are.
 
+## Requirements, designs and the trace (required)
+
+There are 1,303 requirements in 21 documents under
+[`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
+out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
+tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements
+in one area in full, `show <ID>` for one requirement with its design and its tests, `search <term>`
+across every statement, `area <XXX>` for a whole area. The commands are listed under
+[Commands](#commands).
+
+Open a requirement document directly to **edit** it - add a row, mark one superseded, answer a
+review. To find out what a thing must do, query. The query is faster, it cannot go stale, and it
+reports the design and the tests alongside the statement, which reading never does.
+
+**The chain, and who writes each link:**
+
+| Link                          | Where it lives                                             | Written by                           |
+| ----------------------------- | ---------------------------------------------------------- | ------------------------------------ |
+| The requirement               | a row in `docs/specification/requirements/XXX-*.md`        | a person, through the issue form     |
+| The design that answers it    | a row in a `## Requirements owned` table in `docs/design/` | whoever designs that subsystem       |
+| The test that demonstrates it | the identifier in a `describe` or `it` title               | whoever implements it                |
+| The result                    | `.trace-results/*.json`, rewritten by every `pnpm test`    | the test run                         |
+| What a release answers for    | `docs/specification/baselines/<version>.md`                | a person, by hand. Never a tool      |
+| The evidence                  | `docs/trace/<version>/`                                    | `pnpm trace pack`, from a clean tree |
+
+`pnpm trace check` checks the first three links against each other and `pnpm trace gate` checks the
+baseline in CI, so a broken link fails a build rather than waiting for an audit to find it.
+
+**A design claims only what it answers.** A claim in `## Requirements owned` says this design
+answers that requirement, in full. Claiming one it partly answers is the single failure this whole
+apparatus exists to prevent, and it happens by accident: a review supersedes a requirement with a
+broader one, and repointing the claim at the replacement looks like tidying up. Where the
+replacement asks for more than the design has, **drop the claim and say in prose beside the table
+what is missing.** A named gap is worth more than a claim that reads well - `relationships.md`,
+`search.md` and `storage-and-versioning.md` each carry one.
+
+**A baseline and its evidence pack are frozen to a tag and never edited afterwards.** When today's
+corpus disagrees with a shipped baseline, that is the record doing its job, not untidiness to fix.
+
+[`docs/guides/reading-the-trace.md`](docs/guides/reading-the-trace.md) is the full account, for a
+developer and for an auditor: the citation convention, the six states, what makes the gate fail, how
+to reproduce a pack, what the trace does not prove, and a worked example following one requirement
+from its statement to its row in a release's evidence.
+
 ## Test-driven development (required)
 
 **Write the failing test first, watch it fail, then write the minimal code to pass.** No production
@@ -226,6 +270,11 @@ pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per m
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design
+pnpm trace show <ID>                              # one requirement: statement, tranche, state, design, tests
+pnpm trace search <term>                          # every requirement whose statement mentions the term
+pnpm trace area <XXX>                             # a whole area, with each requirement's state
+pnpm trace tranche <Tn> [XXX]                     # a tranche by area, or one area of it in full
+pnpm trace next <XXX>                             # the next free identifier in an area
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest
 pnpm trace check                                  # every problem in the corpus: holes, double claims, citations naming nothing
 pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
