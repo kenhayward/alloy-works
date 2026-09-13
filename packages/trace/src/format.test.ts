@@ -1,14 +1,21 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
+import type { Problem } from './check.js';
 import type { Requirement, TraceModel } from './model.js';
+import { TraceModel as TraceModelSchema } from './model.js';
 import {
+  STATES,
   formatArea,
+  formatProblems,
   formatSearch,
   formatStats,
   formatTrace,
   nextIdentifier,
   search,
 } from './format.js';
+import type { RequirementState } from './state.js';
 import { allTraces, traceOf } from './state.js';
 
 const requirement = (
@@ -89,6 +96,31 @@ describe('formatting one requirement', () => {
     expect(output).toContain('superseded by ZZZ-006');
     expect(output).not.toContain('no design claims it');
   });
+
+  it('lists the tests that cite a requirement, so show answers what verifies it', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 3, kind: 'title' }],
+    };
+
+    expect(formatTrace(traceOf('ZZZ-001', cited)!)).toContain('a.test.ts:3');
+  });
+
+  it('names the verification outcome when a run supplied one', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 3, kind: 'title' }],
+    };
+    const passed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+
+    expect(formatTrace(traceOf('ZZZ-001', cited, passed)!)).toContain('passed');
+  });
+
+  it('says nothing about verification when no run was supplied', () => {
+    expect(formatTrace(traceOf('ZZZ-002', model)!)).not.toContain('verified');
+  });
 });
 
 describe('searching statements', () => {
@@ -121,17 +153,87 @@ describe('the summary', () => {
   });
 
   it('counts each tranche against each state, in fixed-width columns', () => {
-    const lines = formatStats(model).split(/\r?\n/);
+    const withCoverageAndVerification: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-002', file: 'a.test.ts', line: 1, kind: 'title' }],
+    };
+    const verifications = new Map([
+      ['ZZZ-002', { id: 'ZZZ-002', outcome: 'passed' as const, tests: ['a (ZZZ-002)'] }],
+    ]);
+
+    const lines = formatStats(withCoverageAndVerification, verifications).split(/\r?\n/);
     const row = (tranche: string): string[] =>
       lines
         .find((line) => line.startsWith(tranche))!
         .trim()
         .split(/\s+/);
 
-    // Columns are Specified, Designed, Withdrawn, Superseded, in that order.
-    expect(row('T1')).toEqual(['T1', '0', '1', '0', '0']);
-    expect(row('T2')).toEqual(['T2', '1', '0', '0', '0']);
-    expect(row('Constraint')).toEqual(['Constraint', '1', '0', '0', '0']);
+    // Columns are Specified, Designed, Covered, Verified, Withdrawn, Superseded, in that order.
+    expect(row('T1')).toEqual(['T1', '0', '1', '0', '0', '0', '0']);
+    expect(row('T2')).toEqual(['T2', '0', '0', '0', '1', '0', '0']);
+    expect(row('Constraint')).toEqual(['Constraint', '1', '0', '0', '0', '0', '0']);
+  });
+});
+
+describe('pinning STATES against RequirementState', () => {
+  // STATES drives every column of the stats table, and it fell out of step with RequirementState
+  // once already - silently, because a missing state just makes the columns stop summing to the
+  // total.
+  it('counts every state a requirement can be in, so the columns sum to the total', () => {
+    const everyState: Record<RequirementState, true> = {
+      Specified: true,
+      Designed: true,
+      Covered: true,
+      Verified: true,
+      Withdrawn: true,
+      Superseded: true,
+    };
+
+    expect([...STATES].sort()).toEqual(Object.keys(everyState).sort());
+  });
+
+  it('sums every tranche row to that tranche total, over the real compiled model', () => {
+    const committed: unknown = JSON.parse(
+      readFileSync(new URL('../trace.json', import.meta.url), 'utf8'),
+    );
+    const real = TraceModelSchema.parse(committed);
+    const lines = formatStats(real).split(/\r?\n/);
+    const dataRows = lines.slice(3).filter((line) => line.trim() !== '');
+
+    expect(dataRows.length).toBeGreaterThan(0);
+
+    for (const line of dataRows) {
+      const [tranche, ...counts] = line.trim().split(/\s+/);
+      const total = real.requirements.filter(
+        (requirement) => requirement.tranche === tranche,
+      ).length;
+      const sum = counts.reduce((runningTotal, count) => runningTotal + Number(count), 0);
+
+      expect(sum, `tranche ${tranche}`).toBe(total);
+    }
+  });
+});
+
+describe('formatting problems', () => {
+  it('says plainly when a corpus has none', () => {
+    expect(formatProblems([])).toBe('No problems in the corpus.');
+  });
+
+  it('leads with the count, then one line per problem, kind first', () => {
+    const found: Problem[] = [
+      {
+        kind: 'cited-undesigned',
+        id: 'ZZZ-001',
+        detail: 'is named by a.test.ts:1 and claimed by no design',
+      },
+    ];
+
+    const output = formatProblems(found);
+
+    expect(output).toContain('1 problem');
+    expect(output).toContain('cited-undesigned');
+    expect(output).toContain('ZZZ-001');
+    expect(output).toContain('a.test.ts:1');
   });
 });
 

@@ -1,15 +1,23 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
 import {
   formatArea,
+  formatProblems,
   formatSearch,
   formatStats,
   formatTrace,
   nextIdentifier,
   search,
 } from './format.js';
+import { parseResults } from './results.js';
 import { allTraces, traceOf } from './state.js';
+
+const DEFAULT_RESULTS_DIR = '.trace-results';
 
 const USAGE = `pnpm trace <command>
 
@@ -18,6 +26,9 @@ const USAGE = `pnpm trace <command>
   area <XXX>         every requirement in an area, with its state
   next <XXX>         the next free identifier in an area
   stats              the whole corpus, by tranche and state
+  check              every problem in the corpus: holes, double claims, citations naming nothing
+  verify [dir]       states, with Verified computed from the JSON reports in dir
+                     (default .trace-results)
 `;
 
 function main(argv: string[]): number {
@@ -54,6 +65,26 @@ function main(argv: string[]): number {
       }
       case 'stats': {
         console.log(formatStats(model));
+        return 0;
+      }
+      case 'check': {
+        const found = problems(model);
+        console.log(formatProblems(found));
+        return found.length > 0 ? 1 : 0;
+      }
+      case 'verify': {
+        const relative = argument ?? DEFAULT_RESULTS_DIR;
+        const dir = join(REPO_ROOT, relative);
+        if (!existsSync(dir)) {
+          return fail(
+            `No ${relative} directory. Run \`pnpm test\` first - it writes the JSON reports verify reads.`,
+          );
+        }
+        const reports = readdirSync(dir)
+          .filter((name) => name.endsWith('.json'))
+          .map((name) => JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown);
+        const verifications = parseResults(reports);
+        console.log(formatStats(model, verifications));
         return 0;
       }
       default:
