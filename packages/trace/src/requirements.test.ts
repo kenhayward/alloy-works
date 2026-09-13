@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { REPO_ROOT, compile } from './compile.js';
-import { SUPERSEDED_BY } from './model.js';
+import { RESERVED_AREA, SUPERSEDED_BY } from './model.js';
 
 /**
  * The detailed requirements, and the identifiers work is tracked against.
@@ -135,6 +135,13 @@ describe('the requirements index', () => {
     // asserted rather than counted from the scope so that adding an area is a deliberate act in
     // two places, not a silent one in either.
     expect(indexRows).toHaveLength(21);
+  });
+
+  // Fixtures across this package use ZZZ identifiers, and the citation scan ignores that area on
+  // purpose. Allocating it to a real area would silently make every fixture look like a real
+  // citation, and every real ZZZ requirement invisible to the scan.
+  it('never allocates the area code reserved for fixtures', () => {
+    expect(indexRows.map((row) => row.area)).not.toContain(RESERVED_AREA);
   });
 });
 

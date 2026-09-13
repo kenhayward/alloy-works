@@ -9,6 +9,15 @@ export const QUESTION_ID = /^[A-Z]{3}-Q\d{2}$/;
 export const AREA_CODE = /^[A-Z]{3}$/;
 export const SUPERSEDED_BY = /^Superseded by ([A-Z]{3}-\d{3})$/;
 
+/**
+ * The area code fixtures use, permanently reserved and never allocated to a real area.
+ *
+ * Without it the rule "every identifier a test cites must exist" would refuse this package's own
+ * parser fixtures, and excluding the package from the scan would blind the scan to its real tests.
+ * Reserving one code keeps the scan honest everywhere and makes the fixture convention explicit.
+ */
+export const RESERVED_AREA = 'ZZZ';
+
 export const TRANCHES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'Constraint'] as const;
 
 /** `must` is binding, `should` is a strong default an implementer may argue against in a decision
@@ -56,6 +65,15 @@ export const DesignClaim = z.object({
   howItIsMet: z.string().min(1),
 });
 export type DesignClaim = z.infer<typeof DesignClaim>;
+
+/** Where a test names a requirement: in its own title, or in the `rule:` field of a refusal. */
+export const Citation = z.object({
+  id: z.string().regex(REQUIREMENT_ID),
+  file: z.string().min(1),
+  line: z.number().int().positive(),
+  kind: z.enum(['title', 'rule']),
+});
+export type Citation = z.infer<typeof Citation>;
 
 export const Design = z.object({
   document: z.string().min(1),
