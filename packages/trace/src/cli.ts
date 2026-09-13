@@ -1,7 +1,8 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
@@ -18,6 +19,7 @@ import {
 } from './format.js';
 import { gate } from './gate.js';
 import { parseBaseline } from './parse/baseline.js';
+import { packDocuments } from './pack.js';
 import {
   type NamedReport,
   type TestOutcome,
@@ -71,6 +73,10 @@ const USAGE = `pnpm trace <command>
   gate [name]        pass or fail a baseline (default: the newest by filename) against the JSON
                      reports in .trace-results. Exits 0 when every included requirement is met
                      and the declaration itself has no problems, 1 otherwise
+  pack <version>     write the evidence pack for baseline <version> to docs/trace/<version>/ -
+                     the matrix, the gaps and the test results a release is handed off with.
+                     Refuses when the gate fails: an evidence pack for a release that does not
+                     meet its own baseline is worse than none
 `;
 
 /**
@@ -230,6 +236,65 @@ function main(argv: string[]): number {
         const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
         console.log(formatGate(result, includedIds));
         return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
+      }
+      case 'pack': {
+        if (argument === undefined) return fail('pack needs a version, such as 0.13.0.');
+
+        const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);
+        const file = `${argument}.md`;
+        const path = join(dir, file);
+        if (!existsSync(path)) {
+          return fail(`No baseline ${file} in docs/specification/${BASELINES_DIR}.`);
+        }
+        const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
+
+        const results = loadResults(REPO_ROOT, DEFAULT_RESULTS_DIR);
+        if (results === undefined) {
+          return fail(
+            `No ${DEFAULT_RESULTS_DIR} directory. Run \`pnpm test\` first - it writes the JSON reports the gate reads.`,
+          );
+        }
+        if (results.problems.length > 0) {
+          console.log(
+            [
+              `${results.problems.length} problem(s) with the reports in ${DEFAULT_RESULTS_DIR} - refusing to run the gate:`,
+              '',
+              ...results.problems,
+            ].join('\n'),
+          );
+          return 1;
+        }
+
+        const result = gate(baseline, model, results.outcomes);
+        if (result.met !== result.total || result.declarationProblems.length > 0) {
+          const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
+          console.log(
+            [
+              `Baseline ${baseline.name} does not pass its own gate - refusing to pack an evidence` +
+                ' pack for a release that does not meet its own baseline. Run `pnpm trace gate` for' +
+                ' the detail:',
+              '',
+              formatGate(result, includedIds),
+            ].join('\n'),
+          );
+          return 1;
+        }
+
+        const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+        }).trim();
+        const documents = packDocuments({ version: argument, commit, baseline, result, model });
+        for (const document of documents) {
+          const absolute = join(REPO_ROOT, document.path);
+          mkdirSync(dirname(absolute), { recursive: true });
+          writeFileSync(absolute, document.body);
+        }
+        console.log(
+          `Wrote the evidence pack for ${argument} to docs/trace/${argument}/` +
+            ` (${documents.length} file(s)).`,
+        );
+        return 0;
       }
       default:
         console.log(USAGE);
