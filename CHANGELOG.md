@@ -59,6 +59,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   uncommitted, so the commit it recorded was the wrong one - evidence that could never be reproduced
   from the tag it named, on the very first pack. `pnpm trace pack` now refuses to run on a dirty
   working tree, and names why.
+- The `0.13.0` baseline's `STY-050` cell said CSS passes the resolved space-before value unchanged
+  into padding, which is not what `css.ts` does - it adds a half-leading correction there and cancels
+  it with a negative bottom margin, so the space a reader actually sees is still the sum `STY-050`
+  requires. The cell now names that mechanism instead of the wrong one.
 
 ## 0.12.0 - 2026-09-13 (PR #63)
 
