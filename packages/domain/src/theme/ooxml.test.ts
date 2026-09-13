@@ -37,7 +37,7 @@ function attrs(id: string, name: string): Readonly<Record<string, string>> | und
 }
 
 describe('projectStylesXml', () => {
-  it('states spacing and line spacing in twentieths of a point, line spacing as a minimum', () => {
+  it('states spacing and line spacing in twentieths of a point, line spacing as a minimum (STY-050, STY-051)', () => {
     expect(attrs('heading', 'w:spacing')).toEqual({
       'w:before': '240',
       'w:after': '120',

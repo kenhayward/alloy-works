@@ -1,6 +1,6 @@
 # Evidence pack: 0.13.0
 
-Generated at commit `2153aa5ad7c042055b76cc096027f14d0570cdcb`, against baseline `0.13.0` (declared 2026-09-13).
+Generated at commit `c2514717c237c2b8d0b845c4d23c175078f6a106`, against baseline `0.13.0` (declared 2026-09-13).
 
 **PASSED** - `pnpm trace gate` reports 7 of 7 included requirement(s) met, with 0 problem(s) in the baseline's own declaration.
 

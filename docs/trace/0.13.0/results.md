@@ -14,4 +14,8 @@ Baseline `0.13.0`, declared 2026-09-13. One row per piece of evidence behind the
 | **STY-027** | title | packages/domain/src/theme/resolve.test.ts:72 | Met |
 | **STY-038** | title | packages/domain/src/theme/resolve.test.ts:76 | Met |
 | **STY-050** | title | packages/domain/src/theme/css.test.ts:19 | Met |
+| **STY-050** | title | packages/domain/src/theme/ooxml.test.ts:40 | Met |
+| **STY-050** | title | packages/domain/src/theme/typst.test.ts:14 | Met |
 | **STY-051** | title | packages/domain/src/theme/css.test.ts:23 | Met |
+| **STY-051** | title | packages/domain/src/theme/ooxml.test.ts:40 | Met |
+| **STY-051** | title | packages/domain/src/theme/typst.test.ts:14 | Met |

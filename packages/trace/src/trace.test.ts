@@ -47,6 +47,15 @@ describe('the citations in the committed model', () => {
     expect(cited.size).toBeGreaterThan(5);
   });
 
+  // A hard number, not a lower bound: `cited.size` above only counts distinct identifiers, so a
+  // citation added to a requirement already cited elsewhere - as STY-050 and STY-051 gained a second
+  // and third one in the Word and Typst projection tests - would move this count without moving
+  // that one. Pinned so a citation quietly lost (a test renamed, a title's identifier dropped) fails
+  // here rather than nowhere.
+  it('cites exactly as many times as the corpus currently does', () => {
+    expect(model.citations).toHaveLength(19);
+  });
+
   it('cites no identifier the corpus does not hold', () => {
     const known = new Set(model.requirements.map((requirement) => requirement.id));
     const unknown = model.citations.map((citation) => citation.id).filter((id) => !known.has(id));
