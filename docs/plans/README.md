@@ -44,9 +44,9 @@ the test that verifies it into something computed rather than remembered. Design
 the plans below argue from. Four stages, each useful alone; stages 2 to 4 are written when their turn
 comes.
 
-| #   | Plan                                                                     | Builds                                                                                                                                                                        | Status  |
-| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | [The compiled corpus](2026-09-13-traceability-01-the-compiled-corpus.md) | `packages/trace`: the parsers, the state ladder, the committed and drift-checked `trace.json`, the query and search command, and the two repository-wide checks moved into it | Planned |
+| #   | Plan                                                                     | Builds                                                                                                                                                                        | Status         |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | [The compiled corpus](2026-09-13-traceability-01-the-compiled-corpus.md) | `packages/trace`: the parsers, the state ladder, the committed and drift-checked `trace.json`, the query and search command, and the two repository-wide checks moved into it | Built (PR #NN) |
 
 This is tooling rather than product, which is why it has no document in [`../design/`](../design/):
 every document there declares the product requirements it owns, and this owns none. The first real

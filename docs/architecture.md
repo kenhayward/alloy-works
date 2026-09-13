@@ -15,7 +15,7 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, ten packages.
+One pnpm workspace, one lock file, eleven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                            |
 | ----------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,6 +29,7 @@ One pnpm workspace, one lock file, ten packages.
 | `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                      |
 | `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                |
 | `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                          |
+| `packages/trace`        | `@alloy-works/trace`        | The requirement corpus compiled: the parsers, the state ladder, the committed `trace.json`, and the query command                |
 | `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                   |
 
 The theme model (`src/theme/`) is a prototype, measured and recorded in ADR-0014 but not yet

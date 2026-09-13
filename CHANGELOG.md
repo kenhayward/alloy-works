@@ -3,6 +3,36 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.11.0 - 2026-09-13 (PR #NN)
+
+### Added
+
+- `packages/trace` compiles the requirement corpus. 1,303 requirements across twenty-one areas, the
+  112 non-requirements and the 131 open questions beside them, and every requirement a design claims,
+  are parsed into one `trace.json` that is committed and checked against a fresh compile, in the same
+  way `openapi.json` already is. A requirement now has a state computed from what cites it -
+  `Specified`, `Designed`, or off the ladder entirely as `Withdrawn` or `Superseded` - rather than
+  from a column somebody maintains.
+- `pnpm trace` answers the question the corpus was too large to answer: `show CNT-014` for one
+  requirement with its tranche, its state and the design that claims it; `search footnote` across
+  every statement; `area VER` for a whole area; `next CNT` for the next free identifier; and `stats`
+  for the shape of the whole.
+
+### Changed
+
+- The two repository-wide checks over the requirements move from `apps/desktop` into
+  `packages/trace`, which is the workspace both files' own comments asked for once there were three or
+  four of them. Nothing they asserted is lost: the identifier shapes, the tranche vocabulary and the
+  status vocabulary are now refused by the parser at the document and line holding the offending row,
+  which is a better failure than a test naming a value, and five tests that could no longer fail were
+  deleted rather than left as decoration.
+
+### Fixed
+
+- `pnpm format` was failing on scratch files under `.superpowers/`, a git-ignored working area for
+  in-flight implementation plans. Prettier reads its own ignore list rather than `.gitignore`, so that
+  directory is now excluded there too.
+
 ## 0.10.16 - 2026-09-13 (PR #60)
 
 ### Added
