@@ -105,7 +105,7 @@ requirement row  ->  design claim  ->  test title  ->  test result at a commit
 | ---------------------- | -------------------------------------------------------------------- | ---------------------------------- |
 | requirement -> design  | the `## Requirements owned` table                                    | enforced by `design.test.ts`       |
 | design -> test         | the identifier in a `describe` or `it` title, or a `rule:` assertion | convention in 8 places, unenforced |
-| test -> result         | a Vitest reporter records passing titles, identifiers extracted      | does not exist                     |
+| test -> result         | the built-in JSON reporter records outcomes, identifiers extracted   | does not exist                     |
 | requirement -> runtime | `rule: 'IAM-043'` in an error payload                                | exists, in the service             |
 
 The test-title convention is not invented here. It is already how this repository writes them, as in
@@ -197,13 +197,17 @@ and an assistant working on an implementation can read one index instead of twen
     },
   ],
   "citations": [{ "id": "IAM-043", "file": "apps/service/src/...", "line": 139, "kind": "title" }],
-  "results": [{ "id": "IAM-043", "outcome": "passed", "test": "refuses to start where..." }],
 }
 ```
 
 The model deliberately carries no commit hash and no timestamp. The commit that holds the file is its
 provenance, and a hash inside it would change on every commit, which would make the drift check
 impossible to pass. The evidence pack in stage 3 records the tag and the commit it was built from.
+
+The model carries no test results either, for the same reason it carries no commit hash: a result is
+a function of a run, not of the documents, so committing one would churn on every run and make the
+drift check impossible. Citations are committed because they are a function of the source. Results
+are read at query time from the JSON report every suite already writes.
 
 `pnpm trace pack --tag vX.Y.Z` writes the evidence pack: the trace matrix, the gap report, the model,
 the raw test results, and the commit they were computed from. It is **committed at the tag**. A few
@@ -299,12 +303,12 @@ Two traps this repository has already paid for, and this work must not walk back
 Each stage is one pull request, with its own version bump and changelog entry. Each is useful alone,
 and the work can stop after any of them.
 
-| Stage | Delivers                                                                                                                         | Bump  |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| **1** | the parsers, the model, a committed drift-checked `trace.json`, the query and search CLI, and the two tests moved                | Minor |
-| **2** | the citation scanner, the Vitest reporter, the `Covered` and `Verified` states, and the check that every cited identifier exists | Minor |
-| **3** | baselines, the verification kinds, the CI gate over the baseline, and the evidence pack                                          | Minor |
-| **4** | the issue form and `trace draft`                                                                                                 | Minor |
+| Stage | Delivers                                                                                                                                                                   | Bump  |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **1** | the parsers, the model, a committed drift-checked `trace.json`, the query and search CLI, and the two tests moved                                                          | Minor |
+| **2** | the citation scanner, the built-in JSON reporter wired into each `vitest.config.ts`, the `Covered` and `Verified` states, and the check that every cited identifier exists | Minor |
+| **3** | baselines, the verification kinds, the CI gate over the baseline, and the evidence pack                                                                                    | Minor |
+| **4** | the issue form and `trace draft`                                                                                                                                           | Minor |
 
 Stage 1 alone solves query and search, which is the daily cost being paid today. Stage 3 is the one
 the audit needs, and it is deliberately last of the three because a baseline declared before the trace
