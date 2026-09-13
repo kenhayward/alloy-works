@@ -126,7 +126,9 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
-    expect(total((document) => document.requirements)).toBe(1303);
+    // 1306: CNT-142 to CNT-144, the component's own title and the closed structural set, added
+    // when designing the content model found scope section 6 asserting a title no area specified.
+    expect(total((document) => document.requirements)).toBe(1306);
     expect(total((document) => document.nonRequirements)).toBe(112);
     expect(total((document) => document.questions)).toBe(131);
   });

@@ -4,8 +4,8 @@
 > [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written, all twenty-one
 > reviewed, and all twenty-one read against each other in a
 > [cross-cutting pass](../../reviews/) whose answers are in
-> [`XXX - Response.md`](<../../reviews/XXX - Response.md>). 1303 requirements, 112 non-requirements
-> and 131 numbered questions, twenty-nine of which have since been settled. These say
+> [`XXX - Response.md`](<../../reviews/XXX - Response.md>). 1306 requirements, 112 non-requirements
+> and 131 numbered questions, twenty-nine of which have since been settled and one half settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.

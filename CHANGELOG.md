@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.1 - 2026-09-13 (PR #74)
+
+### Added
+
+- A component has a title of its own. CNT-142 gives every component a title distinct from the
+  heading of whatever outline section places it, CNT-143 carries that title in versioned content so
+  a version records what the component was called when it was cut, and CNT-144 closes the set of
+  attributes every component carries whatever its type. The specification had asserted this from the
+  beginning - `Project_Scope.md` calls a component "a small, typed, titled, independently revisable
+  piece of content" - and none of the twenty-one requirement areas had written it down. The only
+  title in the corpus belonged to an outline section, so a component would have taken its name from
+  the heading above it: wrong the first time the component is reused under a different heading, and
+  wrong immediately for search, which covers titles and had nothing to cover in a space with no
+  documents in it yet.
+
+### Changed
+
+- **CNT-Q12 is half settled.** The structural half is answered by the three requirements above. The
+  other half - a component is also _typed_, and a type declares the metadata its components carry -
+  stays open, because it is a subsystem rather than a row and a component cannot take its type from
+  a document it is reused into. The open question now records the split and says what would settle
+  the rest.
+- The corpus is 1,306 requirements, from 1,303. The counts in `CLAUDE.md`, the trace guide, the
+  requirements index and the baselines guide move with it.
+
 ## 0.15.0 - 2026-09-13 (PR #70)
 
 ### Added
