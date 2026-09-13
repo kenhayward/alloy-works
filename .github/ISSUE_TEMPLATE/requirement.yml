@@ -1,0 +1,104 @@
+name: Requirement
+description: Propose something the product must or should do.
+title: '[Requirement]: '
+labels:
+  - requirement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when the product cannot do something you need it to do. You do not need to
+        know the internal terms below - fill in what you can, and leave the rest blank.
+
+        This is not a bug report. If something is broken rather than missing, open a bug report
+        instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: >-
+        Which part of the product this is about. Pick the closest one - a reviewer can move it
+        later if you guess wrong.
+      options:
+        - CNT - Content and authoring
+        - STR - Structure, numbering and cross-references
+        - REU - Reuse, variants and conditional profiling
+        - DAT - Data connectivity and bindings
+        - TAB - Tabular presentation
+        - GEN - Generative AI
+        - COL - Collaboration and review
+        - LIF - Lifecycle, workflow and audit
+        - VER - Versioning, baselines and comparison
+        - PUB - Publishing and output
+        - SCH - Search, navigation and discovery
+        - REL - Relationships and the graph
+        - IMP - Import, export and interchange
+        - IAM - Identity, tenancy and access control
+        - API - API, MCP and extensibility
+        - LOC - Localisation and translation
+        - ADM - Administration, cost and observability
+        - STY - Styles and presentation themes
+        - TPL - Templates and document instantiation
+        - AST - Assets and media
+        - LIB - Reference libraries
+    validations:
+      required: true
+  - type: textarea
+    id: requirement
+    attributes:
+      label: The requirement
+      description: >-
+        One sentence saying what the product must do. Use the word "must" for something that has
+        to be true, or "should" for something that is a strong default but could reasonably be
+        argued against later. A sentence with neither word will be sent back before it is accepted
+        as a requirement.
+      placeholder: The product must ...
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: >-
+        What goes wrong, or who is stuck, if this is never built. A specific example is more
+        useful here than a general principle.
+    validations:
+      required: true
+  - type: textarea
+    id: how-we-would-know
+    attributes:
+      label: How we would know
+      description: >-
+        What you would see, click or measure that would show this is done. Leave it blank if you
+        are not sure - whoever designs it will work this out.
+    validations:
+      required: false
+  - type: dropdown
+    id: suggested-tranche
+    attributes:
+      label: Suggested tranche
+      description: >-
+        A tranche is one of the delivery phases the roadmap is broken into, or "Constraint" for a
+        rule about how the product is built rather than a thing to build. Choose "Not sure" if you
+        do not know - somebody who owns the roadmap will place it.
+      options:
+        - T1
+        - T2
+        - T3
+        - T4
+        - T5
+        - T6
+        - Constraint
+        - Not sure
+    validations:
+      required: false
+  - type: input
+    id: who-asked
+    attributes:
+      label: Who asked
+      description: >-
+        A name, a role, or a short description such as "a reviewer on the pilot". Not an email
+        address.
+      placeholder: e.g. a tester on the pilot
+    validations:
+      required: false
