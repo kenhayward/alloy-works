@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.2 - 2026-09-13 (PR #75)
+
+### Added
+
+- `docs/design/content-model.md` - the first design document for tranche T1. It describes the
+  canonical stored shape of a component: the root a version holds, seven block nodes, eight inline
+  nodes, thirteen closed marks, required identifiers on every block and every mark, and one admission
+  pipeline that everything entering the model goes through. It claims 81 requirements, which moves
+  CNT from 112 undesigned in T1 to 46 and AST from 6 to 2.
+- Decisions the document takes rather than inherits. **MathML is the canonical stored form of an
+  equation**, with the LaTeX an author typed kept beside it as a non-authoritative input record -
+  every consumer except a human reads MathML, and Word import arrives as OMML, which converts to
+  MathML losslessly and to LaTeX badly. **Migration is a read-time projection, never a rewrite**,
+  because versions are immutable and the content hash is the hash of what was written. **A figure
+  alternative text is a three-state** - its own, inherited from the asset, or decorative - because an
+  optional string makes empty mean both "nobody supplied it" and "deliberately none", which is how an
+  inaccessible document passes its own check. And **a canonical serialisation**, which nothing
+  previously stated and which the content hash needs to be sound.
+
+### Changed
+
+- `docs/design/word-output.md` now says MathML rather than LaTeX comes from the content model, which
+  shortens its equation route by a step.
+- Five gaps are named in prose beside the new document rather than papered over with a claim that
+  reads well: component typed metadata, how CNT-001 is read while no editor framework is chosen,
+  CNT-Q14, CNT-Q04, and the two things the document requires of STR. Twelve requirements are left
+  deliberately unclaimed because the model answers one clause of them and the outline or the
+  publisher answers the other.
+
 ## 0.15.1 - 2026-09-13 (PR #74)
 
 ### Added

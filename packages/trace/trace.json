@@ -13350,6 +13350,335 @@
   ],
   "designs": [
     {
+      "document": "content-model.md",
+      "owns": [
+        {
+          "id": "CNT-001",
+          "howItIsMet": "A tree of typed block nodes, JSON-serialised, validated in `packages/domain`. Read as same-family with the editor rather than object-identical - see \"How CNT-001 is read\""
+        },
+        {
+          "id": "CNT-002",
+          "howItIsMet": "`id` is required on every block, allocated at creation and unique within the component"
+        },
+        {
+          "id": "CNT-003",
+          "howItIsMet": "A mark is a member of a set on a text node, never an element, so two marks cover overlapping ranges with nothing between them"
+        },
+        {
+          "id": "CNT-004",
+          "howItIsMet": "`id` is required on every mark; an annotation fragmented across text nodes repeats one id"
+        },
+        {
+          "id": "CNT-005",
+          "howItIsMet": "Resolution acts on a mark id rather than a position, so every fragment of one annotation resolves in one operation"
+        },
+        {
+          "id": "CNT-006",
+          "howItIsMet": "The mark schema is a closed discriminated union. A new type is a schema version with a migration and a fixture, not a setting"
+        },
+        {
+          "id": "CNT-007",
+          "howItIsMet": "No milestone, no range-start, no range-end, no standoff table. The overlap needs no construct because marks are sets"
+        },
+        {
+          "id": "CNT-008",
+          "howItIsMet": "No node and no mark has a member for a typeface, a size, a colour or spacing. There is nowhere to put one"
+        },
+        {
+          "id": "CNT-009",
+          "howItIsMet": "Resolution rewrites content and preserves `id` on every block it keeps"
+        },
+        {
+          "id": "CNT-010",
+          "howItIsMet": "One parse entry point validates on creation, on change and on read-back. No other path constructs a document"
+        },
+        {
+          "id": "CNT-011",
+          "howItIsMet": "`schemaVersion` is a member of the root, so content describes itself once it leaves the database. VER-010's column is derived from it at insert and the two must agree"
+        },
+        {
+          "id": "CNT-012",
+          "howItIsMet": "A fixture directory per schema version, never deleted, and one test migrating every fixture to current"
+        },
+        {
+          "id": "CNT-013",
+          "howItIsMet": "A failed read returns a named quarantine result identifying the artifact, the version and the failure. No path yields partial content"
+        },
+        {
+          "id": "CNT-142",
+          "howItIsMet": "`title` is a member of the root"
+        },
+        {
+          "id": "CNT-143",
+          "howItIsMet": "`title` and `language` are inside the versioned content, so they are inside `content_hash` and a version records what the component was called when it was cut"
+        },
+        {
+          "id": "CNT-144",
+          "howItIsMet": "The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and the identifier belongs to the artifact. Adding a member is a schema version"
+        },
+        {
+          "id": "CNT-014",
+          "howItIsMet": "`paragraph`, the default block"
+        },
+        {
+          "id": "CNT-117",
+          "howItIsMet": "`list` carries `kind`: ordered, unordered or definition"
+        },
+        {
+          "id": "CNT-118",
+          "howItIsMet": "A list item holds block content, so a list nests by construction and six levels is a floor rather than a limit, in any mixture of kinds"
+        },
+        {
+          "id": "CNT-119",
+          "howItIsMet": "An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering"
+        },
+        {
+          "id": "CNT-016",
+          "howItIsMet": "`table` declares header rows and header columns, carries cell spans, and carries a caption"
+        },
+        {
+          "id": "CNT-017",
+          "howItIsMet": "`figure` carries an asset reference and a caption, and never asset bytes"
+        },
+        {
+          "id": "CNT-018",
+          "howItIsMet": "`preformatted` holds text with whitespace significant and an optional language label"
+        },
+        {
+          "id": "CNT-019",
+          "howItIsMet": "`blockquote` holds block content and an optional attribution, which may carry a citation inline"
+        },
+        {
+          "id": "CNT-021",
+          "howItIsMet": "`equation` as a block"
+        },
+        {
+          "id": "CNT-022",
+          "howItIsMet": "Alternative text is a three-state and absent is not one of them, so publishing cannot find it missing because it cannot be missing"
+        },
+        {
+          "id": "CNT-023",
+          "howItIsMet": "There is no spacer construct, and validation refuses two adjacent empty paragraphs - see \"What CNT-023 forbids, exactly\""
+        },
+        {
+          "id": "CNT-124",
+          "howItIsMet": "Validation requires at least one block, and a newly created component is exactly one empty paragraph"
+        },
+        {
+          "id": "CNT-081",
+          "howItIsMet": "A caption-bearing block carries the same required `id` as any other block, which is the identity the outline numbers by"
+        },
+        {
+          "id": "CNT-125",
+          "howItIsMet": "Every block carries `id` whether or not it carries a caption, so any block can be a cross-reference target"
+        },
+        {
+          "id": "CNT-086",
+          "howItIsMet": "A table cell holds inline content and `image` is an inline node, so an image in a cell needs no construct of its own"
+        },
+        {
+          "id": "CNT-121",
+          "howItIsMet": "A figure and an inline image each carry `imageStyle`, a name drawn from the catalogue STY owns"
+        },
+        {
+          "id": "CNT-123",
+          "howItIsMet": "Neither carries a width, a height or a unit of any kind. There is no member to hold one"
+        },
+        {
+          "id": "CNT-024",
+          "howItIsMet": "`text` is the only leaf node, and marks apply to it"
+        },
+        {
+          "id": "CNT-025",
+          "howItIsMet": "`equation` inline"
+        },
+        {
+          "id": "CNT-026",
+          "howItIsMet": "`footnote` is an inline node placed at the span it annotates, carrying the note's content"
+        },
+        {
+          "id": "CNT-027",
+          "howItIsMet": "`crossReference` carries a target and a display kind, and has no member for a number or a title"
+        },
+        {
+          "id": "CNT-028",
+          "howItIsMet": "`citation` inline"
+        },
+        {
+          "id": "CNT-029",
+          "howItIsMet": "`variable` carries a name and no value"
+        },
+        {
+          "id": "CNT-030",
+          "howItIsMet": "`binding` carries a query reference and no value"
+        },
+        {
+          "id": "CNT-031",
+          "howItIsMet": "Eight character marks: emphasis, strong, underline, subscript, superscript, inline code, defined term, quoted phrase"
+        },
+        {
+          "id": "CNT-032",
+          "howItIsMet": "`condition` carries an axis and permitted values, present in the first schema version stored as CNT-116 requires"
+        },
+        {
+          "id": "CNT-033",
+          "howItIsMet": "`suggestion` carries an operation and an author, present from the first schema version"
+        },
+        {
+          "id": "CNT-034",
+          "howItIsMet": "`comment` carries a thread identity, present from the first schema version"
+        },
+        {
+          "id": "CNT-140",
+          "howItIsMet": "The root carries a BCP 47 base language; a `language` mark carries a BCP 47 tag, validated on entry rather than on use"
+        },
+        {
+          "id": "CNT-085",
+          "howItIsMet": "`underline` is in the set, and this document says plainly that it is the one mark named for its appearance"
+        },
+        {
+          "id": "CNT-087",
+          "howItIsMet": "`image` is an inline node, so it sits inside a run of text"
+        },
+        {
+          "id": "CNT-126",
+          "howItIsMet": "`hyperlink` is a mark rather than a node, so it overlaps a condition or a suggestion exactly as the others do"
+        },
+        {
+          "id": "CNT-127",
+          "howItIsMet": "The scheme allowlist is enforced in validation and again in the pipeline's sanitise stage, so a target with another scheme is refused before it can be stored"
+        },
+        {
+          "id": "CNT-036",
+          "howItIsMet": "A `footnote` inline node sits at the span it annotates"
+        },
+        {
+          "id": "CNT-037",
+          "howItIsMet": "A cell holds inline content, so a cell-anchored note is the same construct as a span-anchored one"
+        },
+        {
+          "id": "CNT-038",
+          "howItIsMet": "`table` carries an optional table-level note. It is not an inline anchor, because a table is not a span"
+        },
+        {
+          "id": "CNT-107",
+          "howItIsMet": "A table may declare key columns. Where declared an anchor names the key value; where not, it names row and column and is marked as the weaker form"
+        },
+        {
+          "id": "CNT-129",
+          "howItIsMet": "Footnote content is a restricted block sequence, and the schema admits no table and no image inside it"
+        },
+        {
+          "id": "CNT-043",
+          "howItIsMet": "MathML is the one stored representation, whatever the entry route"
+        },
+        {
+          "id": "CNT-044",
+          "howItIsMet": "LaTeX entry converts to MathML at the boundary, the same discipline CNT-056 applies to Unicode. The LaTeX typed is kept beside it as a non-authoritative input record"
+        },
+        {
+          "id": "CNT-050",
+          "howItIsMet": "`citation` carries an entry identity and has no text member, so typed citation text is not representable"
+        },
+        {
+          "id": "CNT-051",
+          "howItIsMet": "The entry is an artifact in the space; a citation holds its identity and never a copy of it"
+        },
+        {
+          "id": "CNT-052",
+          "howItIsMet": "`citation` carries an optional locator beside its reference"
+        },
+        {
+          "id": "CNT-055",
+          "howItIsMet": "Text is JSON strings, so the whole Unicode range is storable, astral planes included"
+        },
+        {
+          "id": "CNT-056",
+          "howItIsMet": "NFC is applied in the pipeline's normalise stage and asserted by validation, so no un-normalised string can be stored"
+        },
+        {
+          "id": "CNT-059",
+          "howItIsMet": "Direction is explicit on the root and on any run that differs, never derived from the language tag - see \"Why direction is not derived\""
+        },
+        {
+          "id": "CNT-060",
+          "howItIsMet": "An OOXML reader feeds the pipeline, producing structure rather than styled runs"
+        },
+        {
+          "id": "CNT-061",
+          "howItIsMet": "A Markdown reader feeds the same pipeline"
+        },
+        {
+          "id": "CNT-062",
+          "howItIsMet": "An HTML reader feeds the same pipeline"
+        },
+        {
+          "id": "CNT-063",
+          "howItIsMet": "The report is a collector threaded through all six stages, returned with the admitted content rather than logged"
+        },
+        {
+          "id": "CNT-064",
+          "howItIsMet": "A stage that discards or rewrites must append to the report; the verification rule below requires every admission test to assert the report as well as the output"
+        },
+        {
+          "id": "CNT-065",
+          "howItIsMet": "The normalise stage drops typeface, size and colour, and there is no member in the model for any of them to survive into"
+        },
+        {
+          "id": "CNT-130",
+          "howItIsMet": "The sanitise stage runs before normalise, so scripts, event handlers, embedded objects and disallowed link targets are gone before anything else touches the content"
+        },
+        {
+          "id": "CNT-131",
+          "howItIsMet": "Each dropped or rewritten hyperlink is a report entry of its own, naming the target it had"
+        },
+        {
+          "id": "CNT-132",
+          "howItIsMet": "The re-identify stage allocates a new `id` for every block, so copying cannot duplicate an identifier"
+        },
+        {
+          "id": "CNT-133",
+          "howItIsMet": "The re-identify stage drops annotations whose owning artifact does not travel, and appends one report entry each"
+        },
+        {
+          "id": "CNT-134",
+          "howItIsMet": "The migrate stage runs before validate: content at an earlier schema version is brought to current or refused with a named error, and is never stored unmigrated"
+        },
+        {
+          "id": "CNT-135",
+          "howItIsMet": "One pipeline serves a foreign paste and an internal copy, so the report is to one standard because it is one implementation"
+        },
+        {
+          "id": "LIB-015",
+          "howItIsMet": "The defined-term mark carries a term identity and has no text member, so a term cannot be typed as text"
+        },
+        {
+          "id": "LOC-009",
+          "howItIsMet": "A component declares a base language and any run may declare its own, so a language variant is a component in its own right rather than a shape the model has to gain later"
+        },
+        {
+          "id": "LOC-020",
+          "howItIsMet": "Structure, marks, references, bindings and terms are nodes and members rather than text, so a round-trip has nothing to lose and nothing translatable to mistake them for"
+        },
+        {
+          "id": "AST-012",
+          "howItIsMet": "A figure's alternative text may be inherited, which is the state that reads the asset's default"
+        },
+        {
+          "id": "AST-013",
+          "howItIsMet": "A figure's own text is one of the three states, and it overrides the asset's default"
+        },
+        {
+          "id": "AST-015",
+          "howItIsMet": "Decorative is a state of its own rather than an empty string, so no alternative text is a declaration rather than an omission"
+        },
+        {
+          "id": "AST-039",
+          "howItIsMet": "Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it"
+        }
+      ]
+    },
+    {
       "document": "realtime.md",
       "owns": [
         {
