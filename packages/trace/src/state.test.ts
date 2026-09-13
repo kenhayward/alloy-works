@@ -122,6 +122,14 @@ describe('the state of a requirement', () => {
     expect(traceOf('ZZZ-001', cited, failed)?.state).toBe('Covered');
   });
 
+  it('does not award Verified from a passing result with no citation', () => {
+    const passed = new Map([
+      ['ZZZ-002', { id: 'ZZZ-002', outcome: 'passed' as const, tests: ['a (ZZZ-002)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-002', model, passed)?.state).toBe('Designed');
+  });
+
   it('does not let a passing test resurrect a superseded requirement', () => {
     const cited: TraceModel = {
       ...model,

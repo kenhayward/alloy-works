@@ -14,10 +14,34 @@ import {
   nextIdentifier,
   search,
 } from './format.js';
-import { parseResults } from './results.js';
+import { checkCoherence, parseResults } from './results.js';
 import { allTraces, traceOf } from './state.js';
 
 const DEFAULT_RESULTS_DIR = '.trace-results';
+const WORKSPACE_GROUPS = ['apps', 'packages', 'tests'];
+const VITEST_CONFIG = /^vitest\.config\.(ts|mts|cts|js|mjs|cjs)$/;
+
+/**
+ * The workspace directory name of every package that declares a `vitest.config.*` - which, by the
+ * convention every config in this repo follows, is also the basename of the JSON report it writes
+ * to `.trace-results`. `verify` uses this to notice a package whose tests never ran, not just one
+ * whose report looks wrong.
+ */
+function packagesWithVitestConfig(repoRoot: string): string[] {
+  const names: string[] = [];
+  for (const group of WORKSPACE_GROUPS) {
+    const groupDir = join(repoRoot, group);
+    if (!existsSync(groupDir)) continue;
+    for (const entry of readdirSync(groupDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const hasVitestConfig = readdirSync(join(groupDir, entry.name)).some((file) =>
+        VITEST_CONFIG.test(file),
+      );
+      if (hasVitestConfig) names.push(entry.name);
+    }
+  }
+  return names;
+}
 
 const USAGE = `pnpm trace <command>
 
@@ -80,10 +104,24 @@ function main(argv: string[]): number {
             `No ${relative} directory. Run \`pnpm test\` first - it writes the JSON reports verify reads.`,
           );
         }
-        const reports = readdirSync(dir)
+        const named = readdirSync(dir)
           .filter((name) => name.endsWith('.json'))
-          .map((name) => JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown);
-        const verifications = parseResults(reports);
+          .map((name) => ({
+            name: name.slice(0, -'.json'.length),
+            report: JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown,
+          }));
+        const problems = checkCoherence(named, packagesWithVitestConfig(REPO_ROOT));
+        if (problems.length > 0) {
+          console.log(
+            [
+              `${problems.length} problem(s) with the reports in ${relative} - refusing to compute Verified:`,
+              '',
+              ...problems,
+            ].join('\n'),
+          );
+          return 1;
+        }
+        const verifications = parseResults(named.map(({ report }) => report));
         console.log(formatStats(model, verifications));
         return 0;
       }

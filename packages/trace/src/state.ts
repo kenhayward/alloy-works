@@ -48,13 +48,13 @@ function trace(
     };
   }
   const state: RequirementState =
-    verification?.outcome === 'passed'
-      ? 'Verified'
-      : citations.length > 0
-        ? 'Covered'
-        : design === undefined
-          ? 'Specified'
-          : 'Designed';
+    citations.length === 0
+      ? design === undefined
+        ? 'Specified'
+        : 'Designed'
+      : verification?.outcome === 'passed'
+        ? 'Verified'
+        : 'Covered';
   return { requirement, state, design, supersededBy: undefined, citations, verification };
 }
 

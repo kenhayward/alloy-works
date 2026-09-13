@@ -173,6 +173,24 @@ describe('the summary', () => {
     expect(row('T2')).toEqual(['T2', '0', '0', '0', '1', '0', '0']);
     expect(row('Constraint')).toEqual(['Constraint', '1', '0', '0', '0', '0', '0']);
   });
+
+  // Only `verify` ever supplies a verification map. Without one, a `Verified` column of all zeros
+  // reads as "nothing is verified" when the truth is "verification was not computed" - the two
+  // must never look the same.
+  it('omits the Verified column when no verification map is given, and says why', () => {
+    const output = formatStats(model);
+    const header = output.split(/\r?\n/)[2];
+
+    expect(header).not.toContain('Verified');
+    expect(output).toContain('Verification not computed');
+    expect(output).toContain('pnpm trace verify');
+  });
+
+  it('prints the Verified column once a verification map is given, even an empty one', () => {
+    const header = formatStats(model, new Map()).split(/\r?\n/)[2];
+
+    expect(header).toContain('Verified');
+  });
 });
 
 describe('pinning STATES against RequirementState', () => {
@@ -192,26 +210,35 @@ describe('pinning STATES against RequirementState', () => {
     expect([...STATES].sort()).toEqual(Object.keys(everyState).sort());
   });
 
-  it('sums every tranche row to that tranche total, over the real compiled model', () => {
-    const committed: unknown = JSON.parse(
-      readFileSync(new URL('../trace.json', import.meta.url), 'utf8'),
-    );
-    const real = TraceModelSchema.parse(committed);
-    const lines = formatStats(real).split(/\r?\n/);
-    const dataRows = lines.slice(3).filter((line) => line.trim() !== '');
+  it.each([
+    ['without a verification map', undefined],
+    ['with a verification map', new Map()],
+  ])(
+    'sums every tranche row to that tranche total, over the real compiled model (%s)',
+    (_label, verifications) => {
+      const committed: unknown = JSON.parse(
+        readFileSync(new URL('../trace.json', import.meta.url), 'utf8'),
+      );
+      const real = TraceModelSchema.parse(committed);
+      const tranches = [...new Set(real.requirements.map((requirement) => requirement.tranche))];
+      const lines = formatStats(real, verifications).split(/\r?\n/);
+      // Found by tranche name, not by position, so a trailing note (added when no verification
+      // map is given) is never mistaken for a data row.
+      const dataRows = tranches.map((tranche) => lines.find((line) => line.startsWith(tranche))!);
 
-    expect(dataRows.length).toBeGreaterThan(0);
+      expect(dataRows.length).toBeGreaterThan(0);
 
-    for (const line of dataRows) {
-      const [tranche, ...counts] = line.trim().split(/\s+/);
-      const total = real.requirements.filter(
-        (requirement) => requirement.tranche === tranche,
-      ).length;
-      const sum = counts.reduce((runningTotal, count) => runningTotal + Number(count), 0);
+      for (const line of dataRows) {
+        const [tranche, ...counts] = line.trim().split(/\s+/);
+        const total = real.requirements.filter(
+          (requirement) => requirement.tranche === tranche,
+        ).length;
+        const sum = counts.reduce((runningTotal, count) => runningTotal + Number(count), 0);
 
-      expect(sum, `tranche ${tranche}`).toBe(total);
-    }
-  });
+        expect(sum, `tranche ${tranche}`).toBe(total);
+      }
+    },
+  );
 });
 
 describe('formatting problems', () => {
