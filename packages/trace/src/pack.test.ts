@@ -258,4 +258,70 @@ describe('packing the evidence pack', () => {
 
     expect(matrix?.body).toMatch(/no test names it/);
   });
+
+  // Important fix-round finding: `parse/citations.ts` keeps one citation per identifier per kind per
+  // file, so a second test in the same file naming the same requirement in its title never gets a
+  // citation of its own - the matrix's Evidence column, and the old results.md built from the same
+  // citations, both go quiet about it. `TestOutcome.tests` already carries every test name the JSON
+  // report recorded, unused until now; results.md must list all of them, not just the deduplicated
+  // citation.
+  it('results.md lists every test name that named a requirement, not only the deduplicated citation', () => {
+    const b = baseline({});
+    const m = model({
+      designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    });
+    const testOutcomes = new Map([
+      [
+        'ZZZ-001',
+        {
+          id: 'ZZZ-001',
+          outcome: 'passed' as const,
+          tests: [
+            'the first thing it proves (ZZZ-001)',
+            'the second thing it proves, uncited because the file already has a title citation (ZZZ-001)',
+          ],
+        },
+      ],
+    ]);
+    const result = gate(b, m, testOutcomes);
+
+    const [, , , results] = packDocuments({
+      version: '9.9.9',
+      commit: 'deadbeefcafe',
+      baseline: b,
+      result,
+      model: m,
+      outcomes: testOutcomes,
+    });
+
+    expect(results?.body).toContain('the first thing it proves (ZZZ-001)');
+    expect(results?.body).toContain(
+      'the second thing it proves, uncited because the file already has a title citation (ZZZ-001)',
+    );
+  });
+
+  it('matrix.md declares its Evidence column an index, and points to results.md for the complete list', () => {
+    const b = baseline({});
+    const m = model({
+      designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    });
+    const result = gate(
+      b,
+      m,
+      new Map([['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a'] }]]),
+    );
+
+    const [, matrix] = packDocuments({
+      version: '9.9.9',
+      commit: 'deadbeefcafe',
+      baseline: b,
+      result,
+      model: m,
+    });
+
+    expect(matrix?.body).toMatch(/results\.md/);
+    expect(matrix?.body).toMatch(/complete list/i);
+  });
 });

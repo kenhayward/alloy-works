@@ -46,6 +46,13 @@ const HEADING = /^#\s+(.+?)\s*$/;
 /** The banner: `> **Declared:** YYYY-MM-DD. <what this release is answerable for>`. */
 const DECLARED = /^>\s*\*\*Declared:\*\*\s*(\d{4}-\d{2}-\d{2})\./;
 
+/** A markdown table separator cell - only dashes, with optional alignment colons. Distinguishes the
+ * separator row from a header row (neither has a bolded identifier) and from a genuine data row
+ * missing one, which must be refused rather than silently skipped alongside the other two. */
+const SEPARATOR_CELL = /^:?-+:?$/;
+const isSeparatorRow = (cells: string[]): boolean =>
+  cells.every((cell) => SEPARATOR_CELL.test(cell.trim()));
+
 /**
  * One `##` section's rows, each with a bolded identifier in its first cell. Stops at the next
  * heading, the same boundary `parse/design.ts` uses for `## Requirements owned` - a table under an
@@ -59,8 +66,22 @@ function readSection<T>(
   expectedCells: number,
   build: (id: string, cells: string[], where: string) => T,
 ): T[] {
-  const start = lines.findIndex((line) => line.trim() === heading);
-  if (start === -1) return [];
+  // `Array.prototype.findIndex` only ever finds the first match, so a second heading of the same
+  // name would otherwise have its rows read into nothing, silently - refused here instead, at the
+  // second occurrence, naming both what and where.
+  const headingIndices: number[] = [];
+  lines.forEach((line, index) => {
+    if (line.trim() === heading) headingIndices.push(index);
+  });
+  const second = headingIndices[1];
+  if (second !== undefined) {
+    throw new Error(
+      `${document}:${second + 1}: a second "${heading}" heading appears here. Only the first is` +
+        ' ever read, so every row below this one would be silently ignored.',
+    );
+  }
+  const start = headingIndices[0];
+  if (start === undefined) return [];
 
   const rows: T[] = [];
   // Where each identifier was first declared in this section, so a second row for the same
@@ -68,6 +89,12 @@ function readSection<T>(
   // declaring the same identifier twice in one section is a malformed document, not something a
   // later stage should have to notice and resolve.
   const firstSeenAt = new Map<string, string>();
+  // Whether the table's separator row (`| --- | --- |`) has been seen yet. Every row up to and
+  // including it - the header and the separator itself - has no bolded identifier by construction,
+  // so it is skipped without complaint; every row after it is a data row, and one without a bolded
+  // identifier is refused rather than silently dropped, which is the whole failure
+  // baselines/README.md names this section for preventing.
+  let seenSeparator = false;
   for (let index = start + 1; index < lines.length; index += 1) {
     const line = lines[index]!;
     if (line.startsWith('## ')) break;
@@ -76,10 +103,21 @@ function readSection<T>(
     if (cells === undefined) continue;
     const first = cells[0];
     if (first === undefined) continue;
-    const id = boldIdentifier(first);
-    if (id === undefined) continue;
+
+    if (!seenSeparator) {
+      if (isSeparatorRow(cells)) seenSeparator = true;
+      continue;
+    }
 
     const where = `${document}:${index + 1}`;
+    const id = boldIdentifier(first);
+    if (id === undefined) {
+      throw new Error(
+        `${where}: a ${noun} row's first cell must be a bolded identifier such as **ZZZ-001** -` +
+          ` "${first}" is not one. A row like this drops silently out of the declaration otherwise.`,
+      );
+    }
+
     if (cells.length !== expectedCells) {
       throw new Error(
         `${where}: ${id} is a bolded identifier in a row of ${cells.length} cells. A ${noun} row has ${expectedCells}.`,

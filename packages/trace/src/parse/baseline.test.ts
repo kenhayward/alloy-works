@@ -244,6 +244,36 @@ describe('parsing a baseline document', () => {
     );
   });
 
+  // Critical fix-round finding: a table row whose first cell was not a bolded identifier was
+  // silently skipped, on the same code path that skips the header and separator rows - so
+  // `| IAM-043 | ... |`, missing its asterisks, parsed to one fewer inclusion with no error at all.
+  // baselines/README.md names exactly this as the failure the document exists to prevent.
+  it('refuses a table row that is not the header or separator and has no bolded identifier', () => {
+    const text = doc(...included, '| IAM-043    | Not bolded, so it would silently drop out |');
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*bolded identifier/is,
+    );
+  });
+
+  // `readSection` takes the first heading it finds and silently ignores the rest - `Array.findIndex`
+  // never looks past its match. A second `## Included` heading would then have its rows read into
+  // nothing, with no error.
+  it('refuses a second "## Included" heading, since only the first would otherwise be read', () => {
+    const text = doc(
+      ...included,
+      '## Included',
+      '',
+      '| ID          | Why it is in force  |',
+      '| ----------- | ------------------- |',
+      '| **ZZZ-002** | Sneaks in unnoticed |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*second.*## Included/is,
+    );
+  });
+
   it('stops each section at the next heading, so a table below one is not read into it', () => {
     const parsed = parseBaseline(
       document,

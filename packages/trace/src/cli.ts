@@ -296,7 +296,14 @@ function main(argv: string[]): number {
           cwd: REPO_ROOT,
           encoding: 'utf8',
         }).trim();
-        const documents = packDocuments({ version: argument, commit, baseline, result, model });
+        const documents = packDocuments({
+          version: argument,
+          commit,
+          baseline,
+          result,
+          model,
+          outcomes: results.outcomes,
+        });
         for (const document of documents) {
           const absolute = join(REPO_ROOT, document.path);
           mkdirSync(dirname(absolute), { recursive: true });

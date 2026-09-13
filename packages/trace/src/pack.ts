@@ -1,6 +1,7 @@
 import type { Problem } from './check.js';
 import type { GateResult } from './gate.js';
 import { TRANCHES, type Baseline, type TraceModel } from './model.js';
+import type { TestOutcome } from './results.js';
 import { type Trace, traceOf } from './state.js';
 
 export interface PackDocument {
@@ -14,6 +15,13 @@ export interface PackInput {
   readonly baseline: Baseline;
   readonly result: GateResult;
   readonly model: TraceModel;
+  /**
+   * The JSON reports' own record of every test name that named a requirement - the same map `gate`
+   * was computed from. Optional so a caller with nothing to report (a fixture, a dry declaration
+   * problem) need not fabricate one; `results()` then falls back to the deduplicated citations, the
+   * same as before this field existed.
+   */
+  readonly outcomes?: ReadonlyMap<string, TestOutcome>;
 }
 
 /**
@@ -131,6 +139,9 @@ function matrix(input: PackInput): PackDocument {
       ' release is answerable for - nothing outside it appears here; see `gaps.md` for what is not' +
       ' claimed.',
     '',
+    'The Evidence column indexes the citations `pnpm trace check` scans for - one file:line per' +
+      ' kind, not every test that names a requirement. `results.md` carries the complete list.',
+    '',
     table(['ID', 'Statement', 'Tranche', 'Design', 'Evidence', 'Verdict'], rows),
   ];
 
@@ -204,7 +215,7 @@ function gaps(input: PackInput): PackDocument {
 }
 
 function results(input: PackInput): PackDocument {
-  const { version, baseline, result, model } = input;
+  const { version, baseline, result, model, outcomes } = input;
 
   const rows = [...baseline.included]
     .sort((a, b) => a.id.localeCompare(b.id))
@@ -223,6 +234,17 @@ function results(input: PackInput): PackDocument {
           ],
         ];
       }
+
+      // Important fix-round finding: `parse/citations.ts` keeps one citation per identifier per
+      // kind per file, so a second test in the same file naming the same requirement in its title
+      // gets no citation of its own - an auditor following the matrix's Evidence column then finds
+      // half the evidence behind a claim. `TestOutcome.tests` already carries every test name the
+      // JSON report recorded for this identifier, with no such deduplication, so this document lists
+      // all of them rather than the citations alone.
+      const testNames = outcomes?.get(inclusion.id)?.tests ?? [];
+      if (testNames.length > 0) {
+        return testNames.map((name) => [`**${inclusion.id}**`, 'test', name, verdict]);
+      }
       if (trace === undefined || trace.citations.length === 0) {
         return [[`**${inclusion.id}**`, 'test', 'No test names it', verdict]];
       }
@@ -238,10 +260,11 @@ function results(input: PackInput): PackDocument {
     `# Test results: ${version}`,
     '',
     `Baseline \`${baseline.name}\`, declared ${baseline.declaredAt}. One row per piece of evidence` +
-      ' behind the matrix: a citation naming a requirement in its test title or a `rule:` field, or' +
-      " the baseline's own declaration for a requirement no test reaches. The verdict is the" +
-      " gate's, computed from whether every test naming that requirement passed - not a per-test" +
-      ' status, because a requirement is verified only when all of its evidence is.',
+      ' behind the matrix: every test name the JSON report recorded against a requirement, or the' +
+      " baseline's own declaration for a requirement no test reaches - the complete list, unlike" +
+      " matrix.md's Evidence column, which indexes only the deduplicated citations. The verdict is" +
+      " the gate's, computed from whether every test naming that requirement passed - not a" +
+      ' per-test status, because a requirement is verified only when all of its evidence is.',
     '',
     table(['ID', 'Kind', 'Evidence', 'Verdict'], rows),
   ];
