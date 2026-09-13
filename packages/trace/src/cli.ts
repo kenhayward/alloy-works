@@ -18,7 +18,13 @@ import {
 } from './format.js';
 import { gate } from './gate.js';
 import { parseBaseline } from './parse/baseline.js';
-import { type NamedReport, type TestOutcome, checkCoherence, parseResults } from './results.js';
+import {
+  type NamedReport,
+  type TestOutcome,
+  checkCoherence,
+  parseResults,
+  reportsForEvidence,
+} from './results.js';
 import { allTraces, traceOf } from './state.js';
 
 const DEFAULT_RESULTS_DIR = '.trace-results';
@@ -84,6 +90,11 @@ function baselineFiles(repoRoot: string): string[] {
  * `verify` has always used, shared here so `gate` answers the exact same question about staleness
  * and completeness rather than a second copy that could quietly drift from it. `undefined` means the
  * directory itself does not exist; a non-empty `problems` list means it exists but cannot be trusted.
+ *
+ * Coherence is checked over every report, the tool's own included - a report that failed or went
+ * stale is still evidence something is wrong, however that report is treated below. But the
+ * identifiers fed to `parseResults` come only from `reportsForEvidence`: the tool's own report
+ * verifies the tool, not the product, so it must never mark a product requirement's homework.
  */
 interface LoadedResults {
   readonly problems: string[];
@@ -93,17 +104,19 @@ interface LoadedResults {
 function loadResults(repoRoot: string, relative: string): LoadedResults | undefined {
   const dir = join(repoRoot, relative);
   if (!existsSync(dir)) return undefined;
-  const named: NamedReport[] = readdirSync(dir)
-    .filter((name) => name.endsWith('.json'))
-    .map((name) => ({
-      name: name.slice(0, -'.json'.length),
-      report: JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown,
-    }));
+  const filenames = readdirSync(dir).filter((name) => name.endsWith('.json'));
+  const reportByFile = new Map<string, unknown>(
+    filenames.map((name) => [name, JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown]),
+  );
+  const named: NamedReport[] = filenames.map((name) => ({
+    name: name.slice(0, -'.json'.length),
+    report: reportByFile.get(name),
+  }));
   const problems = checkCoherence(named, packagesWithVitestConfig(repoRoot));
   const outcomes =
     problems.length > 0
       ? new Map<string, TestOutcome>()
-      : parseResults(named.map(({ report }) => report));
+      : parseResults(reportsForEvidence(filenames).map((name) => reportByFile.get(name)));
   return { problems, outcomes };
 }
 

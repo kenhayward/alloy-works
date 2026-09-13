@@ -158,6 +158,13 @@ requirement as **Verified** when a test whose title carries its identifier actua
 `rule:` citation alone is Covered, not Verified, unless the test's own title also carries the
 identifier, since verification matches on the test's full name, not its body.
 
+`.trace-results/trace.json` - `packages/trace`'s own report - is read for coherence like every other
+report (a failed or stale run there still refuses the whole computation) but is excluded from the
+identifiers `parseResults` extracts. Its tests verify the tool, not the product, the same reasoning
+`compile.ts` already applies by excluding `packages/trace` from the citation scan; without the same
+exclusion here, a trace test titled with a product identifier would let the tool verify that
+requirement from its own suite.
+
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running

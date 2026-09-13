@@ -68,6 +68,20 @@ export function parseResults(reports: unknown[]): Map<string, TestOutcome> {
   );
 }
 
+/**
+ * Which report files contribute verification evidence.
+ *
+ * The tool's own report does not. `compile.ts` already excludes `packages/trace` from the citation
+ * scan, because its tests verify the tool rather than the product - and a test named for a
+ * requirement, written to check how this tool reports that requirement, would otherwise verify it.
+ * That is not evidence about the product; it is the tool marking its own homework.
+ */
+export const OWN_REPORT = 'trace.json';
+
+export function reportsForEvidence(filenames: string[]): string[] {
+  return filenames.filter((name) => name !== OWN_REPORT).sort();
+}
+
 export interface NamedReport {
   readonly name: string;
   readonly report: unknown;
