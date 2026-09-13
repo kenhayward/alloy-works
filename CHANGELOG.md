@@ -3,6 +3,38 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.5 - 2026-09-13 (PR #78)
+
+### Added
+
+- The implementation plan for the content model's schema, in
+  [`docs/plans/`](docs/plans/2026-09-13-content-model-01-the-schema.md) - the first tranche T1 build.
+  Eight tasks, each test-first and each ending in a commit: the thirteen closed marks, the eight inline
+  nodes, the seven blocks and the root a version holds, the canonical serialisation the content hash
+  rests on, migration as a read-time projection with a fixture directory per schema version, the output
+  mapping no node may lack a row in, and the deliberate promotion of the model to the domain package's
+  public surface.
+- A **Content model** section in the plans index, naming what plan 1 leaves for later rather than
+  leaving the next reader to find it in a diff: the spike schema and its four gate-case tests still
+  standing beside the new model, the admission pipeline, and resolution.
+
+### Changed
+
+- Three decisions the plan takes and records before the work starts, so a reviewer can disagree with
+  them cheaply. The new model goes **beside** the spike code rather than through it, because rewriting
+  `document.ts` in place breaks `compare.ts`, `resolve.ts`, the OOXML pair and the four gate-case tests
+  at once and no task in between would leave the repository green. The **hash is the caller's** and this
+  package produces its canonical input, because hashing here would mean either a Node builtin that is
+  not platform-free or an async parse for no gain. And an **inline image carries an alternative the same
+  way a figure does**, because CNT-087 admits an image inline and says nothing about alternative text,
+  which would leave an image with no accessible name representable.
+
+### Fixed
+
+- The plans index still said the corpus "carries the seven known problems `pnpm trace check` reports".
+  They were fixed in PR #69 and `pnpm trace check` now reports none. The `0.13.0` baseline and its
+  evidence pack stay frozen and still record them, which is the record working rather than untidiness.
+
 ## 0.15.4 - 2026-09-13 (PR #77)
 
 ### Added
