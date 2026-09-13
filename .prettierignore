@@ -18,3 +18,8 @@ docs/reviews/market/
 # from a plan and deleted when it lands. Git-ignored, but Prettier reads this file rather than
 # .gitignore, and an unformatted brief must not fail `pnpm format`.
 .superpowers/
+
+# Generated from the requirement and design documents by
+# `pnpm --filter @alloy-works/trace generate`, and compared with a fresh compile in a test:
+# formatting it would make that comparison fail.
+packages/trace/trace.json
