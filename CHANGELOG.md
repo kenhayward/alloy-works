@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.0 - 2026-09-13 (PR #70)
+
+### Added
+
+- `pnpm trace tranche <Tn>` reports a tranche by area, with a count per state, and
+  `pnpm trace tranche <Tn> <XXX>` lists one area of it in full. This is the listing that designing a
+  tranche starts from, and neither existing command gave it: `stats` reduces a tranche to one number
+  per state, and `area` gives one area across every tranche at once. T1, for instance, is 322
+  requirements across twelve areas, of which CNT holds 112 still unanswered by any design.
+- The Verified column is omitted, with a line saying `pnpm trace verify` adds it, exactly as `stats`
+  does. A column of zeroes would read as "nothing is verified" rather than "verification was not
+  computed", and STY has verified requirements in T1, so printing 0 there would have been untrue.
+
+### Changed
+
+- `CLAUDE.md` now says how requirements, designs, implementation and the trace fit together, because
+  it did not, and it is the only thing a new session reads. Four things were missing. The commands
+  that query the corpus - `show`, `search`, `area`, `next` - appeared nowhere, so a new session had no
+  way to know the 1,303 requirements in 21 documents are meant to be queried rather than read. The
+  guide at `docs/guides/reading-the-trace.md` was not named. The chain from a requirement through a
+  design and a test to a release's evidence was scattered across four sections and is now one table
+  naming who writes each link. And the discipline that a design claims only what it answers in full,
+  with a gap named in prose rather than papered over by repointing a claim, was recorded nowhere.
+- `docs/guides/reading-the-trace.md` carries the new command in both of its command listings.
+
 ## 0.14.2 - 2026-09-13 (PR #69)
 
 ### Fixed

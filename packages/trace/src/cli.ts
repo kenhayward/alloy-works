@@ -17,11 +17,12 @@ import {
   formatSearch,
   formatStats,
   formatTrace,
+  formatTranche,
   nextIdentifier,
   search,
 } from './format.js';
 import { gate } from './gate.js';
-import { validate } from './model.js';
+import { TRANCHES, validate } from './model.js';
 import { parseBaseline } from './parse/baseline.js';
 import { FiledRequirement, normalizeTranche, parseIssue } from './parse/issue.js';
 import { packDocuments } from './pack.js';
@@ -68,6 +69,8 @@ const USAGE = `pnpm trace <command>
   show <ID>          one requirement: its statement, tranche, state and owning design
   search <term>      every requirement whose statement mentions the term
   area <XXX>         every requirement in an area, with its state
+  tranche <Tn> [XXX]  a tranche by area, with a count per state; with an area, that area's
+                     requirements in full - the listing designing a tranche starts from
   next <XXX>         the next free identifier in an area
   stats              the whole corpus, by tranche and state
   check              every problem in the corpus: holes, double claims, citations naming nothing
@@ -267,6 +270,19 @@ function main(argv: string[]): number {
         const traces = allTraces(model).filter((trace) => trace.requirement.area === area);
         if (traces.length === 0) return fail(`No area ${area} in the corpus.`);
         console.log(formatArea(traces));
+        return 0;
+      }
+      case 'tranche': {
+        if (argument === undefined) {
+          return fail(`tranche needs a name, one of ${TRANCHES.join(', ')}.`);
+        }
+        const named = TRANCHES.find((name) => name.toLowerCase() === argument.toLowerCase());
+        if (named === undefined) {
+          return fail(`No tranche ${argument}. The tranches are ${TRANCHES.join(', ')}.`);
+        }
+        const second = argv[2];
+        const area = second === undefined ? undefined : second.toUpperCase();
+        console.log(formatTranche(model, named, area));
         return 0;
       }
       case 'next': {
