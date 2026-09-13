@@ -81,4 +81,11 @@ describe('scanning the repository for test files', () => {
     expect(files.some((file) => file.startsWith('apps/service/'))).toBe(true);
     expect(files.some((file) => file.startsWith('packages/domain/'))).toBe(true);
   });
+
+  it('scans React test files too, since the renderer will cite requirements as it grows', () => {
+    const files = testFilesIn(REPO_ROOT);
+
+    expect(files).toContain('apps/web/src/App.test.tsx');
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(2);
+  });
 });

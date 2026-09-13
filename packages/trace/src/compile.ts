@@ -22,7 +22,7 @@ const read = (...parts: string[]): string => readFileSync(join(...parts), 'utf8'
 const documentsIn = (directory: string, matches: (name: string) => boolean): string[] =>
   readdirSync(directory).filter(matches).sort();
 
-const TEST_FILE = /\.test\.ts$/;
+const TEST_FILE = /\.test\.tsx?$/;
 const SKIP = new Set(['node_modules', 'dist', '.turbo', 'coverage', '.superpowers']);
 
 /**
