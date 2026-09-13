@@ -10,8 +10,8 @@ body:
         Use this form when the product cannot do something you need it to do. You do not need to
         know the internal terms below - fill in what you can, and leave the rest blank.
 
-        This is not a bug report. If something is broken rather than missing, open a bug report
-        instead.
+        This is not a bug report. If something is broken rather than missing, open a blank issue
+        instead - there is no bug report template yet.
   - type: dropdown
     id: area
     attributes:
@@ -102,3 +102,9 @@ body:
       placeholder: e.g. a tester on the pilot
     validations:
       required: false
+  - type: markdown
+    attributes:
+      value: |
+        What happens next: a maintainer allocates the identifier once this is reviewed, since none
+        is assigned yet. This issue stays as the record of who asked and why. It closes once the
+        requirement lands in the corpus.

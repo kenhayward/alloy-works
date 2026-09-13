@@ -54,4 +54,20 @@ describe('the requirement issue form', () => {
   it('uses no em or en dash, because a tester reads this copy', () => {
     expect(form).not.toMatch(/[–—]/);
   });
+
+  // .github/ISSUE_TEMPLATE holds only requirement.yml and config.yml, so GitHub's issue chooser
+  // offers "Requirement" and a blank issue - never a bug report template. Sending a non-developer to
+  // open one that does not exist is a dead end with no error.
+  it('sends someone reporting a bug to a blank issue, not a bug report template that does not exist', () => {
+    expect(form).not.toMatch(/open a bug report/i);
+    expect(form).toMatch(/blank issue/i);
+  });
+
+  // Nothing told the filer what happens after they submit - the thing an audience in regulatory
+  // affairs most wants to know before they will use the form at all.
+  it('tells the filer what happens next: a maintainer allocates the identifier and the issue is the record', () => {
+    expect(form).toMatch(/allocates the identifier/i);
+    expect(form).toMatch(/record of who asked and why/i);
+    expect(form).toMatch(/closes once the\s+requirement lands/i);
+  });
 });
