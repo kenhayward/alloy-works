@@ -1,47 +1,72 @@
-import { type Requirement, SUPERSEDED_BY, type TraceModel } from './model.js';
+import { type Citation, type Requirement, SUPERSEDED_BY, type TraceModel } from './model.js';
+import type { Verification } from './results.js';
 
 /**
- * The rungs stage 1 can compute. `Covered` and `Verified` arrive in stage 2, when citations and test
- * results exist to compute them from.
+ * The full ladder. `Covered` means a test names the requirement; `Verified` means that test actually
+ * passed - stage 1 could only compute the first two rungs, from documents alone.
  *
  * `Withdrawn` and `Superseded` are not rungs but exits: a requirement in either state has left the
- * ladder, and counting it as a gap would be the opposite of what keeping its row is for.
+ * ladder, and counting it as a gap would be the opposite of what keeping its row is for. A passing
+ * test naming an exited requirement does not resurrect it.
  */
-export type RequirementState = 'Specified' | 'Designed' | 'Withdrawn' | 'Superseded';
+export type RequirementState =
+  'Specified' | 'Designed' | 'Covered' | 'Verified' | 'Withdrawn' | 'Superseded';
 
 export interface Trace {
   readonly requirement: Requirement;
   readonly state: RequirementState;
   readonly design: string | undefined;
   readonly supersededBy: string | undefined;
+  readonly citations: Citation[];
+  readonly verification: Verification | undefined;
 }
 
 function designClaiming(id: string, model: TraceModel): string | undefined {
   return model.designs.find((design) => design.owns.some((claim) => claim.id === id))?.document;
 }
 
-function trace(requirement: Requirement, model: TraceModel): Trace {
+function trace(
+  requirement: Requirement,
+  model: TraceModel,
+  verifications: Map<string, Verification> | undefined,
+): Trace {
   const design = designClaiming(requirement.id, model);
+  const citations = model.citations.filter((citation) => citation.id === requirement.id);
+  const verification = verifications?.get(requirement.id);
   const supersededBy = SUPERSEDED_BY.exec(requirement.status)?.[1];
   if (supersededBy !== undefined) {
-    return { requirement, state: 'Superseded', design, supersededBy };
+    return { requirement, state: 'Superseded', design, supersededBy, citations, verification };
   }
   if (requirement.status === 'Withdrawn') {
-    return { requirement, state: 'Withdrawn', design, supersededBy: undefined };
+    return {
+      requirement,
+      state: 'Withdrawn',
+      design,
+      supersededBy: undefined,
+      citations,
+      verification,
+    };
   }
-  return {
-    requirement,
-    state: design === undefined ? 'Specified' : 'Designed',
-    design,
-    supersededBy: undefined,
-  };
+  const state: RequirementState =
+    verification?.outcome === 'passed'
+      ? 'Verified'
+      : citations.length > 0
+        ? 'Covered'
+        : design === undefined
+          ? 'Specified'
+          : 'Designed';
+  return { requirement, state, design, supersededBy: undefined, citations, verification };
 }
 
-export function traceOf(id: string, model: TraceModel): Trace | undefined {
+export function traceOf(
+  id: string,
+  model: TraceModel,
+  verifications?: Map<string, Verification>,
+): Trace | undefined {
   const requirement = model.requirements.find((candidate) => candidate.id === id);
-  return requirement === undefined ? undefined : trace(requirement, model);
+  return requirement === undefined ? undefined : trace(requirement, model, verifications);
 }
 
-export function allTraces(model: TraceModel): Trace[] {
-  return model.requirements.map((requirement) => trace(requirement, model));
+export function allTraces(model: TraceModel, verifications?: Map<string, Verification>): Trace[] {
+  return model.requirements.map((requirement) => trace(requirement, model, verifications));
 }

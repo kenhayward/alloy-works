@@ -96,4 +96,41 @@ describe('the state of a requirement', () => {
       supersededBy: 'ZZZ-002',
     });
   });
+
+  it('is Covered when a test names it, even where no design claims it', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    };
+
+    expect(traceOf('ZZZ-001', cited)?.state).toBe('Covered');
+  });
+
+  it('is Verified only once the test that names it has actually passed', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    };
+    const passed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+    const failed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'failed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-001', cited, passed)?.state).toBe('Verified');
+    expect(traceOf('ZZZ-001', cited, failed)?.state).toBe('Covered');
+  });
+
+  it('does not let a passing test resurrect a superseded requirement', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-004', file: 'a.test.ts', line: 1, kind: 'title' }],
+    };
+    const passed = new Map([
+      ['ZZZ-004', { id: 'ZZZ-004', outcome: 'passed' as const, tests: ['a (ZZZ-004)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-004', cited, passed)?.state).toBe('Superseded');
+  });
 });
