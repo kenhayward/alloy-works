@@ -144,7 +144,7 @@ export const outputMapping: {
     condition: {
       ooxml: 'None: resolved before output, so the text is either written or it is not',
       tagged: 'None: resolved before output, for the same reason',
-      note: 'Being resolved away is this mark's way out. Nothing in an output ever names an axis',
+      note: 'Being resolved away is the way out for this mark. Nothing in an output ever names an axis',
     },
     suggestion: {
       ooxml: 'w:ins or w:del carrying author and date',
