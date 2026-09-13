@@ -1,7 +1,10 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+
+import { REPO_ROOT, compile } from './compile.js';
+import { SUPERSEDED_BY } from './model.js';
 
 /**
  * The detailed requirements, and the identifiers work is tracked against.
@@ -11,67 +14,28 @@ import { describe, expect, it } from 'vitest';
  * exists, and breaks it quietly - the citation still reads fine, it just now points somewhere else.
  * So the properties that make an identifier trustworthy are pinned here rather than left to care.
  *
- * Second of the repository-wide checks living in this package alongside `version.test.ts` and
- * `decisions.test.ts`. At three or four they want a workspace of their own rather than a corner of
- * the desktop app.
+ * One of the two checks over the requirement corpus, which now has the workspace those comments in
+ * `apps/desktop` kept asking for. `version.test.ts`, `decisions.test.ts` and `icons.test.ts` stay
+ * there: they do not parse requirements.
+ *
+ * The shapes and vocabularies these used to assert are now refused by the parser itself, at the
+ * document and line that holds the offending row, which is a better failure than a test naming a
+ * value. What is left here is everything the parser cannot see from one row: uniqueness across the
+ * corpus, contiguity within an area, and the index agreeing with the documents.
  */
-const repoRoot = join(process.cwd(), '..', '..');
-const requirementsDir = join(repoRoot, 'docs', 'specification', 'requirements');
-
+const requirementsDir = join(REPO_ROOT, 'docs', 'specification', 'requirements');
 const read = (name: string): string => readFileSync(join(requirementsDir, name), 'utf8');
 
-const areaDocuments = readdirSync(requirementsDir)
-  .filter((name) => /^[A-Z]{3}-.+\.md$/.test(name))
-  .sort();
-
-/** `| **CNT-001** | statement | T1 | Specified |` - bold identifier is what marks a real row. */
-const REQUIREMENT_ROW =
-  /^\|\s*\*\*([A-Z]{3}-\d{3})\*\*\s*\|\s*(.+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
-
-/** `| **CNT** | Content and authoring | 7.1 | [file](file) |` in the index. */
-const INDEX_ROW =
-  /^\|\s*\*\*([A-Z]{3})\*\*\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
-
-/**
- * Non-requirements and open questions are numbered too, in their own sequences, so a reviewer can
- * cite one without quoting it. `CNT-N02` and `CNT-Q05` cannot be mistaken for `CNT-002`.
- */
-const NON_REQUIREMENT_ROW = /^\|\s*\*\*([A-Z]{3}-N\d{2})\*\*\s*\|\s*(.+?)\s*\|\s*$/gm;
-const OPEN_QUESTION_ROW = /^\|\s*\*\*([A-Z]{3}-Q\d{2})\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*$/gm;
-
-interface Requirement {
-  readonly id: string;
-  readonly statement: string;
-  readonly tranche: string;
-  readonly status: string;
-  readonly document: string;
-}
-
-function requirementsIn(name: string): Requirement[] {
-  return [...read(name).matchAll(REQUIREMENT_ROW)].map((match) => ({
-    id: match[1]!,
-    statement: match[2]!,
-    tranche: match[3]!,
-    status: match[4]!,
-    document: name,
-  }));
-}
-
-const allRequirements = areaDocuments.flatMap(requirementsIn);
-
-const KNOWN_TRANCHE = /^(T[1-6]|Constraint)$/;
-const KNOWN_STATUS = /^(Specified|Withdrawn|Superseded by [A-Z]{3}-\d{3})$/;
+const model = compile(REPO_ROOT);
+const allRequirements = model.requirements;
+const areaDocuments = [
+  ...new Set(allRequirements.map((requirement) => requirement.document)),
+].sort();
 
 describe('the requirement identifiers', () => {
   it('has requirements to check', () => {
     expect(areaDocuments.length).toBeGreaterThan(0);
     expect(allRequirements.length).toBeGreaterThan(0);
-  });
-
-  it('gives every requirement an identifier of the one permitted shape', () => {
-    for (const requirement of allRequirements) {
-      expect(requirement.id).toMatch(/^[A-Z]{3}-\d{3}$/);
-    }
   });
 
   it('never issues the same identifier twice', () => {
@@ -83,7 +47,9 @@ describe('the requirement identifiers', () => {
   it('keeps every requirement under the area code of the document holding it', () => {
     for (const name of areaDocuments) {
       const area = name.slice(0, 3);
-      for (const requirement of requirementsIn(name)) {
+      for (const requirement of allRequirements.filter(
+        (requirement) => requirement.document === name,
+      )) {
         expect(requirement.id.slice(0, 3), `${requirement.id} sits in ${name}`).toBe(area);
       }
     }
@@ -99,7 +65,8 @@ describe('the requirement identifiers', () => {
    */
   it('numbers each area from 001 with no gap and no repeat', () => {
     for (const name of areaDocuments) {
-      const numbers = requirementsIn(name)
+      const numbers = allRequirements
+        .filter((requirement) => requirement.document === name)
         .map((requirement) => Number.parseInt(requirement.id.slice(4), 10))
         .sort((left, right) => left - right);
 
@@ -107,35 +74,28 @@ describe('the requirement identifiers', () => {
     }
   });
 
-  it('gives every requirement a tranche we recognise', () => {
-    for (const requirement of allRequirements) {
-      expect(requirement.tranche, `${requirement.id} tranche`).toMatch(KNOWN_TRANCHE);
-    }
-  });
-
-  it('gives every requirement a status we recognise', () => {
-    for (const requirement of allRequirements) {
-      expect(requirement.status, `${requirement.id} status`).toMatch(KNOWN_STATUS);
-    }
-  });
-
   it('points every superseding status at a requirement that exists', () => {
     const known = new Set(allRequirements.map((requirement) => requirement.id));
     for (const requirement of allRequirements) {
-      const target = /^Superseded by ([A-Z]{3}-\d{3})$/.exec(requirement.status)?.[1];
+      const target = SUPERSEDED_BY.exec(requirement.status)?.[1];
       if (target === undefined) continue;
       expect(known, `${requirement.id} is superseded by something real`).toContain(target);
     }
   });
 
-  it('states something binding in every requirement', () => {
-    for (const requirement of allRequirements) {
-      expect(requirement.statement, `${requirement.id} says must or should`).toMatch(
-        /\b(must|should)\b/,
-      );
-    }
+  it('refuses a malformed row at the document and line holding it', async () => {
+    const { parseAreaDocument } = await import('./parse/requirements.js');
+
+    expect(() =>
+      parseAreaDocument('ZZZ-invented.md', '| **ZZZ-001** | No verb here | T1 | Specified |'),
+    ).toThrow(/ZZZ-invented\.md:1/);
   });
 });
+
+/** `| **CNT** | Content and authoring | 7.1 | [file](file) |` in the index. Not something the
+ * parser produces - it belongs to the README, not to an area document. */
+const INDEX_ROW =
+  /^\|\s*\*\*([A-Z]{3})\*\*\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
 
 describe('the requirements index', () => {
   const indexRows = [...read('README.md').matchAll(INDEX_ROW)].map((match) => ({
@@ -179,18 +139,11 @@ describe('the requirements index', () => {
 });
 
 describe('the numbered non-requirements and open questions', () => {
-  const collect = (pattern: RegExp): { id: string; document: string }[] =>
-    areaDocuments.flatMap((name) =>
-      [...read(name).matchAll(pattern)].map((match) => ({ id: match[1]!, document: name })),
-    );
-
-  for (const [label, pattern, prefix] of [
-    ['non-requirement', NON_REQUIREMENT_ROW, 'N'],
-    ['open question', OPEN_QUESTION_ROW, 'Q'],
+  for (const [label, rows, offset] of [
+    ['non-requirement', model.nonRequirements, 5],
+    ['open question', model.questions, 5],
   ] as const) {
     describe(`${label}s`, () => {
-      const rows = collect(pattern);
-
       it('exist to be checked', () => {
         expect(rows.length).toBeGreaterThan(0);
       });
@@ -213,23 +166,13 @@ describe('the numbered non-requirements and open questions', () => {
         for (const name of areaDocuments) {
           const numbers = rows
             .filter((row) => row.document === name)
-            .map((row) => Number.parseInt(row.id.slice(5), 10))
+            .map((row) => Number.parseInt(row.id.slice(offset), 10))
             .sort((left, right) => left - right);
           if (numbers.length === 0) continue;
 
           expect(numbers, `${name} ${label} numbering`).toEqual(
             numbers.map((_, index) => index + 1),
           );
-        }
-      });
-
-      // Literals rather than a constructed pattern: `\d` inside a template literal collapses to a
-      // bare `d`, which would leave this asserting almost nothing while still passing.
-      const SHAPE = prefix === 'N' ? /^[A-Z]{3}-N\d{2}$/ : /^[A-Z]{3}-Q\d{2}$/;
-
-      it('cannot be mistaken for a requirement identifier', () => {
-        for (const row of rows) {
-          expect(row.id).toMatch(SHAPE);
         }
       });
     });
@@ -246,7 +189,7 @@ describe('the numbered non-requirements and open questions', () => {
  * went unnoticed.
  */
 describe('the ownership map', () => {
-  const scope = readFileSync(join(repoRoot, 'docs', 'specification', 'Project_Scope.md'), 'utf8');
+  const scope = readFileSync(join(REPO_ROOT, 'docs', 'specification', 'Project_Scope.md'), 'utf8');
 
   const between = (text: string, from: string, to: string): string => {
     const start = text.indexOf(from);

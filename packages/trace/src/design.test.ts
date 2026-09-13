@@ -1,7 +1,9 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+
+import { REPO_ROOT, compile } from './compile.js';
 
 /**
  * The design documents, and the requirements each of them claims.
@@ -16,56 +18,24 @@ import { describe, expect, it } from 'vitest';
  * builds the reverse index. Nothing is hand-maintained inside the requirements themselves, because
  * a coverage column edited by a person is a coverage column that drifts.
  *
- * Third of the repository-wide checks in this package. At four they want a workspace of their own.
+ * One of the two checks over the requirement corpus, which now has the workspace those comments in
+ * `apps/desktop` kept asking for. `version.test.ts`, `decisions.test.ts` and `icons.test.ts` stay
+ * there: they do not parse requirements.
  */
-const repoRoot = join(process.cwd(), '..', '..');
-const designDir = join(repoRoot, 'docs', 'design');
-const requirementsDir = join(repoRoot, 'docs', 'specification', 'requirements');
+const designDir = join(REPO_ROOT, 'docs', 'design');
 
 const read = (...parts: string[]): string => readFileSync(join(designDir, ...parts), 'utf8');
 
-const designDocuments = existsSync(designDir)
-  ? readdirSync(designDir)
-      .filter((name) => name.endsWith('.md') && name !== 'README.md')
-      .sort()
-  : [];
-
-/** Every identifier that exists to be claimed, gathered from the requirements documents. */
-const REQUIREMENT_ROW = /^\|\s*\*\*([A-Z]{3}-\d{3})\*\*\s*\|/gm;
-
-const knownRequirements = new Set(
-  readdirSync(requirementsDir)
-    .filter((name) => /^[A-Z]{3}-.+\.md$/.test(name))
-    .flatMap((name) => [
-      ...readFileSync(join(requirementsDir, name), 'utf8').matchAll(REQUIREMENT_ROW),
-    ])
-    .map((match) => match[1]!),
-);
-
-/**
- * `| **VER-001** | how it is met |` inside the Requirements owned section. Only that section
- * counts: a design document mentions plenty of identifiers in prose, and mentioning one is not
- * claiming it.
- */
-const OWNED_ROW = /^\|\s*\*\*([A-Z]{3}-\d{3})\*\*\s*\|/gm;
-
-function between(text: string, startHeading: string, endPattern: RegExp): string {
-  const start = text.indexOf(startHeading);
-  if (start === -1) return '';
-  const rest = text.slice(start + startHeading.length);
-  const end = rest.search(endPattern);
-  return end === -1 ? rest : rest.slice(0, end);
-}
-
-function ownedBy(document: string): string[] {
-  const section = between(read(document), '## Requirements owned', /^## /m);
-  return [...section.matchAll(OWNED_ROW)].map((match) => match[1]!);
-}
+const model = compile(REPO_ROOT);
+const knownRequirements = new Set(model.requirements.map((requirement) => requirement.id));
+const designDocuments = model.designs.map((design) => design.document);
+const ownedBy = (document: string): string[] =>
+  model.designs.find((design) => design.document === document)?.owns.map((claim) => claim.id) ?? [];
 
 const ownership = new Map<string, string[]>();
-for (const document of designDocuments) {
-  for (const id of ownedBy(document)) {
-    ownership.set(id, [...(ownership.get(id) ?? []), document]);
+for (const design of model.designs) {
+  for (const claim of design.owns) {
+    ownership.set(claim.id, [...(ownership.get(claim.id) ?? []), design.document]);
   }
 }
 
