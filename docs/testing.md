@@ -135,6 +135,29 @@ the committed ones, as `packages/api-contract` does for the document itself. `pa
 the same pattern a third time: a test recompiles the requirements and design documents and fails when
 the result differs from the committed `trace.json`.
 
+## Naming the requirement a test verifies
+
+A test that verifies a requirement says so, in one of two ways `packages/trace` scans for:
+
+- **Its `describe` or `it` title names the identifier**, such as `it('IAM-004 refuses a second
+tenant's session', ...)`. This is the load-bearing convention: it is how a passing test becomes
+  that requirement's evidence, not just a mention of it.
+- **A `rule:` field in an assertion names it**, such as `{ code: 'forbidden', rule: 'IAM-018' }` -
+  the product citing the requirement it is enforcing, in its own refusal payload.
+
+An identifier anywhere else in a test file - a comment, an ordinary variable - is not a citation.
+Mentioning a requirement is not claiming to verify it, and `packages/trace` only counts the two
+forms above so that the honest count of cited requirements stays smaller than a grep of the test
+tree would suggest.
+
+`pnpm trace check` reports a citation naming a requirement no design claims, and a design claiming a
+requirement that no longer exists, as problems in the corpus. `pnpm trace verify` goes one step
+further than a citation: it reads the JSON reports every `vitest.config.ts` writes to
+`.trace-results/` (`git`- and `prettier`-ignored, rebuilt by every `pnpm test`) and only counts a
+requirement as **Verified** when a test whose title carries its identifier actually passed - a
+`rule:` citation alone is Covered, not Verified, unless the test's own title also carries the
+identifier, since verification matches on the test's full name, not its body.
+
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running

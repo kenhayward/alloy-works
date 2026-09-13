@@ -1,9 +1,9 @@
 # Requirements traceability
 
-> **Status: designed, not built.** Rests on
+> **Status: stages 1 and 2 built; stages 3 and 4 remain.** Rests on
 > [`docs/specification/requirements/README.md`](../../specification/requirements/README.md) for the
-> identifier scheme, and on `apps/desktop/src/requirements.test.ts` and
-> `apps/desktop/src/design.test.ts` for the checks that already exist. Nothing here changes a
+> identifier scheme, and on `packages/trace/src/requirements.test.ts` and
+> `packages/trace/src/design.test.ts` for the checks that already exist. Nothing here changes a
 > requirement, a design or an identifier.
 
 ## 1. Purpose
@@ -104,8 +104,8 @@ requirement row  ->  design claim  ->  test title  ->  test result at a commit
 | Edge                   | Mechanism                                                            | State today                        |
 | ---------------------- | -------------------------------------------------------------------- | ---------------------------------- |
 | requirement -> design  | the `## Requirements owned` table                                    | enforced by `design.test.ts`       |
-| design -> test         | the identifier in a `describe` or `it` title, or a `rule:` assertion | convention in 8 places, unenforced |
-| test -> result         | a Vitest reporter records passing titles, identifiers extracted      | does not exist                     |
+| design -> test         | the identifier in a `describe` or `it` title, or a `rule:` assertion | enforced by `pnpm trace check`     |
+| test -> result         | the built-in JSON reporter records outcomes, identifiers extracted   | built, read by `pnpm trace verify` |
 | requirement -> runtime | `rule: 'IAM-043'` in an error payload                                | exists, in the service             |
 
 The test-title convention is not invented here. It is already how this repository writes them, as in
@@ -120,6 +120,15 @@ New enforcement is symmetrical with what exists. Every identifier a test cites m
 catches a renumbering. Every requirement **in the declared baseline** must be cited by at least one
 test, which catches the gap. Requirements outside the baseline are exempt, which is what stops the
 gate being unpassable at 8 of 1,303.
+
+**A `rule:` citation reaches `Covered`, never `Verified`, and that is deliberate.** The `test -> result`
+edge identifies a result by its test's name, because that is what the JSON reporter records; a
+`rule:` assertion lives in a test's body, not its name, so no result ever carries it. Treating every
+test in a `rule:` citation's file as verification, on the reasoning that the file passed, would be
+weaker evidence wearing the same word as the title-based rung; stage 2 declines that for exactly the
+reason section 6 exists to name - two different strengths of evidence sharing one name is the
+dishonesty this design exists to prevent. A `rule:` citation earning its own, weaker, named rung is a
+verification kind, and building that is stage 3's.
 
 ## 6. Constraints, and the three verification kinds
 
@@ -197,13 +206,17 @@ and an assistant working on an implementation can read one index instead of twen
     },
   ],
   "citations": [{ "id": "IAM-043", "file": "apps/service/src/...", "line": 139, "kind": "title" }],
-  "results": [{ "id": "IAM-043", "outcome": "passed", "test": "refuses to start where..." }],
 }
 ```
 
 The model deliberately carries no commit hash and no timestamp. The commit that holds the file is its
 provenance, and a hash inside it would change on every commit, which would make the drift check
 impossible to pass. The evidence pack in stage 3 records the tag and the commit it was built from.
+
+The model carries no test results either, for the same reason it carries no commit hash: a result is
+a function of a run, not of the documents, so committing one would churn on every run and make the
+drift check impossible. Citations are committed because they are a function of the source. Results
+are read at query time from the JSON report every suite already writes.
 
 `pnpm trace pack --tag vX.Y.Z` writes the evidence pack: the trace matrix, the gap report, the model,
 the raw test results, and the commit they were computed from. It is **committed at the tag**. A few
@@ -265,7 +278,7 @@ packages/trace/src/
   baseline.ts             the baseline manifest, and the verification kinds
   compile.ts              the only module that touches the filesystem
   cli.ts                  the query commands
-  reporter.ts             the Vitest reporter
+  results.ts              parses the JSON reports the built-in reporter writes into a verification map
 ```
 
 Every parser takes **text and returns a model**, never a path, so each parser test is an inline string
@@ -287,11 +300,13 @@ source of truth that drifts from the first.
 
 Two traps this repository has already paid for, and this work must not walk back into:
 
-- **The Vitest reporter is added alongside the explicitly pinned reporter in each config, never
-  instead of it.** The pinning exists because an implicit reporter prints nothing a test logged on
-  Windows while the identical run on Linux prints all of it. Replacing it to add trace output would
-  trade a real property for a convenience.
-- **The reporter must not write through `console.error` or `console.warn`**, which `consoleGate`
+- **The built-in `json` reporter is added alongside the explicitly pinned `default` reporter in each
+  config, never instead of it - `'default'` must stay first in the `reporters` array.** The pinning
+  exists because an implicit reporter prints nothing a test logged on Windows while the identical run
+  on Linux prints all of it. Replacing it to add trace output would trade a real property for a
+  convenience. Stage 2 declined a custom Vitest reporter for exactly this reason: the built-in `json`
+  reporter, declared in each `vitest.config.ts`, already writes what `results.ts` needs.
+- **Nothing in this pipeline writes through `console.error` or `console.warn`**, which `consoleGate`
   throws from by design.
 
 ## 13. Staging
@@ -299,12 +314,12 @@ Two traps this repository has already paid for, and this work must not walk back
 Each stage is one pull request, with its own version bump and changelog entry. Each is useful alone,
 and the work can stop after any of them.
 
-| Stage | Delivers                                                                                                                         | Bump  |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| **1** | the parsers, the model, a committed drift-checked `trace.json`, the query and search CLI, and the two tests moved                | Minor |
-| **2** | the citation scanner, the Vitest reporter, the `Covered` and `Verified` states, and the check that every cited identifier exists | Minor |
-| **3** | baselines, the verification kinds, the CI gate over the baseline, and the evidence pack                                          | Minor |
-| **4** | the issue form and `trace draft`                                                                                                 | Minor |
+| Stage | Delivers                                                                                                                                                                   | Bump  |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **1** | the parsers, the model, a committed drift-checked `trace.json`, the query and search CLI, and the two tests moved                                                          | Minor |
+| **2** | the citation scanner, the built-in JSON reporter wired into each `vitest.config.ts`, the `Covered` and `Verified` states, and the check that every cited identifier exists | Minor |
+| **3** | baselines, the verification kinds, the CI gate over the baseline, and the evidence pack                                                                                    | Minor |
+| **4** | the issue form and `trace draft`                                                                                                                                           | Minor |
 
 Stage 1 alone solves query and search, which is the daily cost being paid today. Stage 3 is the one
 the audit needs, and it is deliberately last of the three because a baseline declared before the trace

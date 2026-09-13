@@ -11,14 +11,16 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "@alloy-works/desktop#test": {
-      "dependsOn": ["^build", "build"]
+      "dependsOn": ["^build", "build"],
+      "cache": false
     },
     "@alloy-works/db#test": {
       "dependsOn": ["^build"],

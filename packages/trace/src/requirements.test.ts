@@ -3,8 +3,9 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
-import { SUPERSEDED_BY } from './model.js';
+import { RESERVED_AREA } from './model.js';
 
 /**
  * The detailed requirements, and the identifiers work is tracked against.
@@ -39,20 +40,11 @@ describe('the requirement identifiers', () => {
   });
 
   it('never issues the same identifier twice', () => {
-    const seen = allRequirements.map((requirement) => requirement.id);
-
-    expect(seen).toEqual([...new Set(seen)]);
+    expect(problems(model).filter((problem) => problem.kind === 'issued-twice')).toEqual([]);
   });
 
   it('keeps every requirement under the area code of the document holding it', () => {
-    for (const name of areaDocuments) {
-      const area = name.slice(0, 3);
-      for (const requirement of allRequirements.filter(
-        (requirement) => requirement.document === name,
-      )) {
-        expect(requirement.id.slice(0, 3), `${requirement.id} sits in ${name}`).toBe(area);
-      }
-    }
+    expect(problems(model).filter((problem) => problem.kind === 'wrong-document')).toEqual([]);
   });
 
   /**
@@ -64,23 +56,11 @@ describe('the requirement identifiers', () => {
    * The hole is what this catches: deleting a requirement instead of marking it withdrawn.
    */
   it('numbers each area from 001 with no gap and no repeat', () => {
-    for (const name of areaDocuments) {
-      const numbers = allRequirements
-        .filter((requirement) => requirement.document === name)
-        .map((requirement) => Number.parseInt(requirement.id.slice(4), 10))
-        .sort((left, right) => left - right);
-
-      expect(numbers, `${name} numbers contiguously`).toEqual(numbers.map((_, index) => index + 1));
-    }
+    expect(problems(model).filter((problem) => problem.kind === 'not-contiguous')).toEqual([]);
   });
 
   it('points every superseding status at a requirement that exists', () => {
-    const known = new Set(allRequirements.map((requirement) => requirement.id));
-    for (const requirement of allRequirements) {
-      const target = SUPERSEDED_BY.exec(requirement.status)?.[1];
-      if (target === undefined) continue;
-      expect(known, `${requirement.id} is superseded by something real`).toContain(target);
-    }
+    expect(problems(model).filter((problem) => problem.kind === 'supersedes-unknown')).toEqual([]);
   });
 
   it('refuses a malformed row at the document and line holding it', async () => {
@@ -135,6 +115,13 @@ describe('the requirements index', () => {
     // asserted rather than counted from the scope so that adding an area is a deliberate act in
     // two places, not a silent one in either.
     expect(indexRows).toHaveLength(21);
+  });
+
+  // Fixtures across this package use ZZZ identifiers, and the citation scan ignores that area on
+  // purpose. Allocating it to a real area would silently make every fixture look like a real
+  // citation, and every real ZZZ requirement invisible to the scan.
+  it('never allocates the area code reserved for fixtures', () => {
+    expect(indexRows.map((row) => row.area)).not.toContain(RESERVED_AREA);
   });
 });
 

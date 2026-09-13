@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { REPO_ROOT, compile } from './compile.js';
-import { TraceModel } from './model.js';
+import { REPO_ROOT, compile, testFilesIn } from './compile.js';
+import { RESERVED_AREA, TraceModel } from './model.js';
 
 describe('the committed trace.json', () => {
   const committed: unknown = JSON.parse(
@@ -27,5 +27,65 @@ describe('the committed trace.json', () => {
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
     ).toBe(175);
+  });
+});
+
+describe('the citations in the committed model', () => {
+  const model = TraceModel.parse(
+    JSON.parse(readFileSync(new URL('../trace.json', import.meta.url), 'utf8')),
+  );
+
+  it('found the identifiers this repository already cites in its test titles', () => {
+    const cited = new Set(model.citations.map((citation) => citation.id));
+
+    // Thirteen requirement identifiers appear anywhere in a test file; these are the ones that
+    // appear in a title or a rule, which is the only kind that counts as coverage.
+    expect(cited.has('IAM-043')).toBe(true);
+    expect(cited.has('IAM-054')).toBe(true);
+    expect(cited.has('IAM-018')).toBe(true);
+    expect(cited.has('STY-050')).toBe(true);
+    expect(cited.size).toBeGreaterThan(5);
+  });
+
+  it('cites no identifier the corpus does not hold', () => {
+    const known = new Set(model.requirements.map((requirement) => requirement.id));
+    const unknown = model.citations.map((citation) => citation.id).filter((id) => !known.has(id));
+
+    expect(unknown).toEqual([]);
+  });
+
+  it('never cites the reserved fixture area', () => {
+    const reserved = model.citations.filter(
+      (citation) => citation.id.slice(0, 3) === RESERVED_AREA,
+    );
+
+    expect(reserved).toEqual([]);
+  });
+
+  it('records a path a person can open, relative to the repository root', () => {
+    for (const citation of model.citations) {
+      expect(citation.file, `${citation.id} path`).toMatch(/^(apps|packages|tests)\//);
+      expect(citation.file).not.toContain('\\');
+    }
+  });
+});
+
+describe('scanning the repository for test files', () => {
+  it('does not scan its own tests, whose fixtures name identifiers on purpose', () => {
+    expect(testFilesIn(REPO_ROOT).filter((file) => file.startsWith('packages/trace/'))).toEqual([]);
+  });
+
+  it('does scan the other workspaces, so the exclusion is narrow', () => {
+    const files = testFilesIn(REPO_ROOT);
+
+    expect(files.some((file) => file.startsWith('apps/service/'))).toBe(true);
+    expect(files.some((file) => file.startsWith('packages/domain/'))).toBe(true);
+  });
+
+  it('scans React test files too, since the renderer will cite requirements as it grows', () => {
+    const files = testFilesIn(REPO_ROOT);
+
+    expect(files).toContain('apps/web/src/App.test.tsx');
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(2);
   });
 });

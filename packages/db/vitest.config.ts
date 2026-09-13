@@ -11,6 +11,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
     // that swallows console output on Windows makes a noisy suite look pristine locally.
-    reporters: ['default'],
+    reporters: ['default', 'json'],
+    outputFile: { json: '../../.trace-results/db.json' },
   },
 });

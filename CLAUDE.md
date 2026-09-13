@@ -71,6 +71,12 @@ Two traps already paid for, worth not re-learning:
 - **Reproduce CI locally on CI's OS** when a result differs. CI runs Linux; if you are on Windows,
   run the suite in a container before concluding the failure is a flake.
 
+**Name the requirement a test verifies in its `describe` or `it` title**, such as `it('IAM-004
+refuses a second tenant's session', ...)`. This is load-bearing, not incidental: `packages/trace`
+scans test titles for requirement identifiers to compute `Covered`, and `pnpm trace verify` matches a
+passing test's title against those identifiers to compute `Verified`. An identifier that appears only
+in a comment or an ordinary variable is a mention, not a citation, and verifies nothing.
+
 Where tests belong, and why there is no browser suite yet: [`docs/testing.md`](docs/testing.md).
 
 ## Continuous integration (required)
@@ -205,6 +211,8 @@ pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after c
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest
+pnpm trace check                                  # every problem in the corpus: holes, double claims, citations naming nothing
+pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

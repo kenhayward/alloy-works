@@ -19,6 +19,20 @@ the run, because every step after it would be testing a tree nobody agreed to. A
 `--frozen-lockfile`, never a loose install - a loose install can resolve a different tree than the
 lock file names, which is the entire reason for committing one.
 
+### Every `test` task is uncacheable, on purpose
+
+Every workspace's `test` task in `turbo.json` carries `cache: false`. This looks like an oversight -
+Turborepo exists to skip work that has not changed - but it is load-bearing, not an accident. Each
+`vitest.config.ts` writes its JSON report to `.trace-results/`, a directory outside the package's own
+output that Turborepo cannot hash or restore. A cached hit would replay a task's old logs without
+running Vitest at all, leaving that package's report missing or stale in `.trace-results/` -
+`packages/trace/src/results.ts`'s coherence check now refuses to compute `Verified` from a stale
+report for exactly this reason, but a cache hit prevents that check from ever running rather than
+tripping it. This is not hypothetical: the generic `test` task and desktop's override were missing
+`cache: false` until this was found, and the cache silently left `packages/domain`'s report stale on
+a warm run. Do not add caching back to a `test` task without giving it its own way to produce a
+`.trace-results` report Turborepo can account for.
+
 ## Why the checks are advisory right now
 
 The repo has no baseline. Turning a check into a gate before there is agreement on what it should

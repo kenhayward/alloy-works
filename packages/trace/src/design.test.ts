@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
 
 /**
@@ -27,17 +28,9 @@ const designDir = join(REPO_ROOT, 'docs', 'design');
 const read = (...parts: string[]): string => readFileSync(join(designDir, ...parts), 'utf8');
 
 const model = compile(REPO_ROOT);
-const knownRequirements = new Set(model.requirements.map((requirement) => requirement.id));
 const designDocuments = model.designs.map((design) => design.document);
 const ownedBy = (document: string): string[] =>
   model.designs.find((design) => design.document === document)?.owns.map((claim) => claim.id) ?? [];
-
-const ownership = new Map<string, string[]>();
-for (const design of model.designs) {
-  for (const claim of design.owns) {
-    ownership.set(claim.id, [...(ownership.get(claim.id) ?? []), design.document]);
-  }
-}
 
 describe('design documents', () => {
   it('has a design folder with at least one document in it', () => {
@@ -54,15 +47,11 @@ describe('design documents', () => {
   });
 
   it('claims only requirements that exist', () => {
-    for (const [id, documents] of ownership) {
-      expect(knownRequirements.has(id), `${documents.join(', ')} claims unknown ${id}`).toBe(true);
-    }
+    expect(problems(model).filter((problem) => problem.kind === 'claims-unknown')).toEqual([]);
   });
 
   it('gives every requirement at most one owning design', () => {
-    for (const [id, documents] of ownership) {
-      expect(documents, `${id} is owned by more than one design`).toHaveLength(1);
-    }
+    expect(problems(model).filter((problem) => problem.kind === 'claimed-twice')).toEqual([]);
   });
 
   it('claims something in every design document', () => {

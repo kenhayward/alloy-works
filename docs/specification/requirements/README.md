@@ -34,8 +34,19 @@ CNT-014
 - **A requirement that changes materially gets a new identifier**, and the old one is marked
   `Superseded by XXX-NNN`. Rewording for clarity is an edit; changing what the product must do is a
   new requirement.
-- **Cite the identifier in whatever verifies it.** A test named for `CNT-014` is what makes that
-  requirement demonstrably met, and it is how coverage will be reported later.
+- **Cite the identifier in whatever verifies it.** A test named for `CNT-014` in its `describe` or
+  `it` title, or a `rule:` field naming it in an assertion, is what makes that requirement
+  demonstrably met. `packages/trace` reads those citations: `pnpm trace check` reports a citation
+  that names a requirement no design claims, along with the corpus's other structural problems; a
+  requirement that no test cites at all is not yet a reported gap - that is the baseline gate,
+  arriving with stage 3. `pnpm trace verify` reads the JSON reports every suite writes and reports a
+  citation whose test actually passed as `Verified`, not just `Covered`.
+- **`ZZZ` is a reserved area code**, never allocated to a real area. Fixtures and examples that need
+  an identifier shape without claiming a real requirement use `ZZZ-NNN`, and `packages/trace` ignores
+  it wherever a citation or a test result is scanned for a requirement identifier, so a fixture can
+  never be mistaken for coverage. A design document's `## Requirements owned` table is deliberately
+  not filtered: a stray `ZZZ` claim there is recorded and reported as `claims-unknown`, because a real
+  design document claiming a fixture identifier is a mistake worth surfacing, not one worth hiding.
 
 ### Non-requirements and open questions are numbered too
 

@@ -14062,5 +14062,97 @@
         }
       ]
     }
+  ],
+  "citations": [
+    {
+      "id": "IAM-004",
+      "file": "apps/service/src/cross-tenant.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-043",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 142,
+      "kind": "rule"
+    },
+    {
+      "id": "IAM-043",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-054",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 218,
+      "kind": "rule"
+    },
+    {
+      "id": "IAM-054",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 214,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-054",
+      "file": "apps/service/src/google.test.ts",
+      "line": 26,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-018",
+      "file": "apps/service/src/http.test.ts",
+      "line": 79,
+      "kind": "rule"
+    },
+    {
+      "id": "IAM-043",
+      "file": "apps/service/src/sign-in.test.ts",
+      "line": 153,
+      "kind": "rule"
+    },
+    {
+      "id": "STY-037",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
+      "id": "STY-050",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 19,
+      "kind": "title"
+    },
+    {
+      "id": "STY-051",
+      "file": "packages/domain/src/theme/css.test.ts",
+      "line": 23,
+      "kind": "title"
+    },
+    {
+      "id": "STY-052",
+      "file": "packages/domain/src/theme/ooxml.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "STY-027",
+      "file": "packages/domain/src/theme/resolve.test.ts",
+      "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "STY-038",
+      "file": "packages/domain/src/theme/resolve.test.ts",
+      "line": 76,
+      "kind": "title"
+    },
+    {
+      "id": "STY-009",
+      "file": "packages/domain/src/theme/runs.test.ts",
+      "line": 36,
+      "kind": "title"
+    }
   ]
 }

@@ -3,6 +3,57 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.12.0 - 2026-09-13 (PR #63)
+
+### Added
+
+- A citation scanner reads every test file outside `packages/trace` for the requirement identifiers a
+  test's `describe` or `it` title names, or a `rule:` field cites in a refusal payload. Fifteen
+  citations across eleven requirements, found across 64 test files (62 `.test.ts` and 2 `.test.tsx`),
+  now join the committed `trace.json` alongside what the requirement and design documents already
+  said.
+- Two rungs complete the ladder: `Covered` means a test names the requirement, and `Verified` means
+  that test actually passed. Every `vitest.config.ts` now writes its own JSON test report to
+  `.trace-results/` (ignored by git and Prettier, rebuilt by every `pnpm test`), and `pnpm trace
+verify` reads them to compute `Verified`. Ten of the eleven currently-`Covered` requirements verify
+  this way; the eleventh, IAM-018, is cited only by a `rule:` field with no matching test title, so it
+  stays `Covered` rather than `Verified` - a result is identified by its test's name, a `rule:`
+  assertion is not in the name, and that is deliberate rather than a bug: a weaker kind of evidence
+  answering to the same word as `Verified` would be the dishonesty this design exists to prevent, and
+  a named kind for it is stage 3's to define.
+- `pnpm trace check` reports every problem in the corpus: a design claiming a requirement that no
+  longer exists, or a citation naming a requirement no design claims. Run against the real corpus for
+  the first time, it finds seven: six requirements claimed by a design after being superseded, in
+  every case by a replacement that no design has claimed either (REL-002, REL-009, SCH-027, VER-034,
+  STY-007, STY-036), and one requirement cited by a test but claimed by no design at all (IAM-018).
+  Finding these is the tool doing its job, not a regression - fixing them is a separate, later
+  conversation.
+- `ZZZ` is now a reserved area code, alongside the twenty-one real ones: fixtures and examples use it
+  for a requirement-shaped identifier that must never be mistaken for real coverage, and a test
+  enforces that the corpus never allocates it.
+
+### Changed
+
+- `docs/architecture.md`, `docs/testing.md`, `docs/specification/requirements/README.md` and
+  `CLAUDE.md` now describe the citation convention, `pnpm trace check` and `pnpm trace verify` -
+  naming the requirement a test verifies in its `describe` or `it` title is load-bearing, not
+  incidental, and somebody writing a test needs to know that.
+
+### Fixed
+
+- `pnpm trace stats` no longer prints a `Verified` count of zero for every tranche when verification
+  was never computed. Only `pnpm trace verify` supplies that count, so `stats` and `show` now say
+  plainly that verification was not computed instead of showing a column that reads as "nothing is
+  verified" when the truth is "nobody asked yet".
+- `pnpm trace verify` no longer trusts whatever happens to be sitting in `.trace-results/`. Nothing
+  cleans that directory, so it could hold a report from a run that failed, a report far older than the
+  others (a stale `tests/e2e` report, or a suite that never finished its last run), or be missing a
+  report entirely for a package that has tests. `verify` now refuses to report a count in any of those
+  cases, naming the report at fault, rather than quietly folding a bad report into the numbers.
+- A requirement could previously be reported as `Verified` from a passing test result even when no
+  test actually named it, because a passing result was checked before a citation was. `Verified` now
+  requires both: a test that names the requirement, and that test having passed.
+
 ## 0.11.0 - 2026-09-13 (PR #61)
 
 ### Added
