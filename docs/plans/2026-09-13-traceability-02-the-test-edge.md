@@ -53,6 +53,15 @@ blind the scan to the package's real tests, so instead `ZZZ` becomes a permanent
 that may never be allocated, the scanner ignores it, and a test enforces that it is never allocated.
 That keeps the scan honest everywhere and makes the fixture convention explicit rather than tacit.
 
+**3b, found while executing Task 1 rather than while planning.** Reserving `ZZZ` is necessary but not
+sufficient. The citation scanner's own tests cannot use `ZZZ` - the scanner ignores that area, so a
+test asserting it finds something would assert it finds nothing. They therefore use `ABC-`
+identifiers, which look real on purpose, and a repository-wide scan picks those up and reports five
+citations of requirements that do not exist. So `testFilesIn` also skips `packages/trace` itself: the
+tool's tests verify the tool, not the product, and cite no product requirement. Running the scanner
+over the real repository before wiring it in is what found this; it would otherwise have surfaced as
+Task 2's citation check failing on its own fixtures.
+
 ## Global Constraints
 
 - **Test first, always.** Write the failing test, run it, watch it fail, then the minimal code to
@@ -446,6 +455,15 @@ const TEST_FILE = /\.test\.ts$/;
 const SKIP = new Set(['node_modules', 'dist', '.turbo', 'coverage', '.superpowers']);
 
 /**
+ * This package's own tests are not scanned. They verify the tool, not the product, so they cite no
+ * product requirement - and their fixtures deliberately use identifiers shaped like real ones,
+ * including an area the scanner must NOT ignore, because otherwise the scanner's own tests could not
+ * check that it finds anything. Scanning them would report those fixtures as citations of
+ * requirements that do not exist, which is the one thing the citation check exists to catch.
+ */
+const SELF = 'packages/trace';
+
+/**
  * Every test file in the workspaces, as repository-relative POSIX paths, sorted - so that the
  * committed model is a function of the files and not of directory order, on any platform.
  */
@@ -457,8 +475,10 @@ export function testFilesIn(repoRoot: string): string[] {
       if (SKIP.has(entry.name)) continue;
       const nextRelative = relative === '' ? entry.name : `${relative}/${entry.name}`;
       const nextAbsolute = join(directory, entry.name);
-      if (entry.isDirectory()) walk(nextAbsolute, nextRelative);
-      else if (TEST_FILE.test(entry.name)) found.push(nextRelative);
+      if (entry.isDirectory()) {
+        if (nextRelative === SELF) continue;
+        walk(nextAbsolute, nextRelative);
+      } else if (TEST_FILE.test(entry.name)) found.push(nextRelative);
     }
   };
 
@@ -478,6 +498,25 @@ Add `existsSync` and `readdirSync` to the `node:fs` import, then in `compile`:
       parseCitations(file, read(repoRoot, ...file.split('/'))),
     ),
 ```
+
+- [ ] **Step 4b: Pin the self-exclusion**
+
+A skip that no test pins is a skip somebody deletes. Add to `packages/trace/src/trace.test.ts`:
+
+```ts
+it('does not scan its own tests, whose fixtures name identifiers on purpose', () => {
+  expect(testFilesIn(REPO_ROOT).filter((file) => file.startsWith('packages/trace/'))).toEqual([]);
+});
+
+it('does scan the other workspaces, so the exclusion is narrow', () => {
+  const files = testFilesIn(REPO_ROOT);
+
+  expect(files.some((file) => file.startsWith('apps/service/'))).toBe(true);
+  expect(files.some((file) => file.startsWith('packages/domain/'))).toBe(true);
+});
+```
+
+The second test is what stops the exclusion being widened into "skip everything" by a later edit.
 
 - [ ] **Step 5: Regenerate and run**
 
