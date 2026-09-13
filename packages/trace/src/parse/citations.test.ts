@@ -66,6 +66,17 @@ describe('scanning a test file for citations', () => {
     expect(parseCitations(file, text).map((citation) => citation.id)).toEqual(['ABC-009']);
   });
 
+  it('reports the line the identifier is on, not the line the call starts on', () => {
+    const text = [
+      'it(',
+      `  'a widget must do a great many things, enough that the title does not fit (ABC-009)',`,
+      '  () => {},',
+      ');',
+    ].join('\n');
+
+    expect(parseCitations(file, text)[0]?.line).toBe(2);
+  });
+
   // ZZZ is reserved for fixtures. This package's own parser tests are full of ZZZ identifiers, and
   // the rule that every cited identifier must exist would otherwise refuse all of them.
   it('ignores the reserved fixture area entirely', () => {

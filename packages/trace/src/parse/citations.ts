@@ -41,8 +41,12 @@ export function parseCitations(file: string, text: string): Citation[] {
 
   for (const match of text.matchAll(TITLE)) {
     const title = match[2] ?? '';
+    // The title body ends one character before the end of the whole match, which is the closing
+    // quote. That gives the title's absolute offset exactly, without searching for it - and searching
+    // would be wrong, since the same text can appear earlier in the match.
+    const titleStart = match.index + match[0].length - 1 - title.length;
     for (const identifier of title.matchAll(IDENTIFIER)) {
-      add(identifier[0], match.index, 'title');
+      add(identifier[0], titleStart + identifier.index, 'title');
     }
   }
 
