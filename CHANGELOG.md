@@ -3,6 +3,29 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.14.0 - 2026-09-13 (PR #NN)
+
+### Added
+
+- A requirement can now be **filed as a GitHub issue**, through a form that asks for the area, the
+  statement, why it matters, how somebody would know it is done, and a suggested tranche - never an
+  identifier, because none is allocated yet. The form offers all 21 area codes, kept in step with the
+  requirements index by a test.
+- `pnpm trace draft` reads a filed issue, or the same information from flags with no issue and no
+  `gh` required, allocates the next free identifier in that area, and prints a table row along with
+  every section of the area document that already introduces a requirements table, as candidates for
+  where it might go. It never inserts the row: a requirement added later belongs beside the ones it
+  relates to, and that is a judgement about meaning that a tool would get wrong silently, because the
+  corpus would still parse with a technically valid row filed in the wrong place. A person places the
+  row, in the pull request that lands it.
+- The requirements traceability design's four stages are now all built. Every requirement in the
+  corpus is compiled from committed documents into one queryable, drift-checked model. Whether a
+  requirement is actually covered by a test, and whether that test passed, is computed rather than
+  remembered, and a baseline can now declare exactly which requirements a release is answerable for
+  with a gate in CI that fails when that claim does not hold. A requirement can also now arrive from
+  outside as a GitHub issue and be drafted into a row for a person to place, closing the loop from
+  proposal to corpus.
+
 ## 0.13.0 - 2026-09-13 (PR #64)
 
 ### Added

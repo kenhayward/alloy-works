@@ -24,6 +24,17 @@ CNT-014
  +------ the three-letter area code, from the table below
 ```
 
+A requirement now **arrives** as a GitHub issue, filed through the issue form
+(`.github/ISSUE_TEMPLATE/requirement.yml`), which asks for the area, the statement, why it matters,
+how somebody would know it is done, and a suggested tranche - never an identifier, because none
+exists yet. `pnpm trace draft <issue>` (or the same from flags, with no issue to read) allocates the
+next free one in that area and prints a table row, along with every section of the area document
+that already introduces a requirements table, as candidates for where it might go. **It never
+inserts the row.** A requirement added later belongs beside the ones it relates to, and which
+section that is is a judgement about meaning - a tool that guessed would place a footnote
+requirement under the wrong table, silently, because the corpus would still parse. A person places
+the row, in the pull request that lands it.
+
 **Rules, which exist so the identifier stays worth citing:**
 
 - **An identifier is allocated once and never reused**, even if the requirement it named is
