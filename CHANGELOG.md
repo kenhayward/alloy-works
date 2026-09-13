@@ -3,6 +3,67 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.13.0 - 2026-09-13 (PR #64)
+
+### Added
+
+- A **baseline** now declares which requirements a release is actually answerable for: a hand-written
+  document, committed alongside the release, naming what is in force and why, what is deliberately
+  excluded and why, and how anything not proven by a passing test is verified instead. The first one,
+  `0.13.0` (`docs/specification/baselines/0.13.0.md`), declares 7 requirements in force - the
+  tenant-isolation and sign-in rules in the service, and the style-resolution and cross-format
+  spacing rules in the theme model - and excludes 4 more by name, each with a stated reason.
+- `pnpm trace gate` checks a release against its baseline, and is now the first check in CI that is
+  not `continue-on-error`. That is safe rather than reckless: the baseline declares only what this
+  release actually implements, so the gate passes on the day it lands. It fails outright when the
+  test run it reads has failed, because it cannot verify anything from a broken run - so a red
+  `pnpm test` now fails the build too, through the gate, even though the `Test` step itself keeps
+  `continue-on-error`. Beyond that it says nothing about the other checks in CI - lint, format,
+  typecheck and build keep the temporary flag they already had, until the whole switch-over described
+  in `docs/ci-and-releases.md` happens together. The gate proves linkage between a requirement and a
+  passing test; it does not audit whether a baseline's claims are true of the code, which is what
+  caught the overstatement described below.
+- The gate reports the corpus's other known problems - 7 of them, mostly a superseded requirement
+  still claimed by a design whose replacement nobody claims - as informational rather than failing on
+  them, because none names a requirement this release's baseline declares itself answerable for. A
+  gate that failed on a problem outside its own declared scope would be checking the wrong thing.
+- `pnpm trace pack` writes an **evidence pack** for a baseline that passes its own gate: the trace
+  matrix, the gap report, the compiled requirement model and the raw test results, as a record of the
+  exact run that produced them, for an auditor to read from a release tag without running anything.
+  The first one is committed at `docs/trace/0.13.0/`.
+
+### Fixed
+
+- The first draft of the `0.13.0` baseline declared ten requirements, not seven. Auditing all ten
+  against the code and its tests - rather than against the design documents describing what is being
+  built - found that three of those claims were not true of the repository as it stands: it described
+  licence-embedding fields, a publish report and editor preview behaviour that do not exist, and a
+  mark catalogue covering eight character marks where the theme implements two. The baseline was cut
+  to the seven requirements the code actually supports before it was committed. Recorded here rather
+  than smoothed over, because the next person writing a baseline needs the warning it leaves: `docs/design/`
+  describes what a subsystem is being built towards, not what is built, and a baseline that cites it
+  instead of the source will overstate what a release delivers.
+- `Verified` was computed from any citation at all, including a `rule:` field naming a requirement
+  inside a test's body rather than its title - so a requirement cited only that way reached `Verified`
+  the moment its test passed, even though no test result is ever identified by a `rule:` field's text.
+  `IAM-018`, cited only this way, now correctly stays `Covered`. `Verified` is still 10 and the gate
+  is still 7 of 7, because every requirement the baseline actually includes has a title citation.
+- An attestation - the declared way to verify a requirement no test reaches - accepted any non-blank
+  text at all, so a one-character `by` passed the gate cleanly. The parser now refuses a baseline
+  document whose attestation does not name a person and a date in `YYYY-MM-DD` form, in at least 30
+  characters, so the honest escape hatch stays as expensive to use as the design always said it
+  should be. The gate applies the same bar to a baseline built programmatically rather than parsed
+  from a document, since the gate decides CI and must not assume every caller went through the parser.
+- The first evidence pack said "Generated at commit `c251471`", but that commit's own `matrix.md`
+  held neither citation this branch had already made. It was packed while those edits were still
+  uncommitted, so the commit it recorded was the wrong one - evidence that could never be reproduced
+  from the tag it named, on the very first pack. `pnpm trace pack` now refuses to run on a dirty
+  working tree, and names why.
+- The `0.13.0` baseline's `STY-050` cell said CSS passes the resolved space-before value unchanged
+  into padding, which is not what `css.ts` does - it adds a half-leading correction there and cancels
+  it with a negative bottom margin, so the space a reader actually sees is still the sum `STY-050`
+  requires. The cell now names that mechanism instead of the wrong one.
+
 ## 0.12.0 - 2026-09-13 (PR #63)
 
 ### Added

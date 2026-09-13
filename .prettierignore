@@ -27,3 +27,10 @@ docs/reviews/market/
 # `pnpm --filter @alloy-works/trace generate`, and compared with a fresh compile in a test:
 # formatting it would make that comparison fail.
 packages/trace/trace.json
+
+# The evidence packs `pnpm trace pack <version>` writes. Generated, and committed - but never
+# compared against a fresh run the way trace.json is: a pack records a run, not a document, and
+# regenerating it later (a different commit, a rerun of the same tests) legitimately produces a
+# different file. Reformatting it in place would misrepresent it as the document it was written
+# from, rather than the run it actually was.
+docs/trace/

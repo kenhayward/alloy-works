@@ -1,0 +1,292 @@
+import { describe, expect, it } from 'vitest';
+
+import { parseBaseline } from './baseline.js';
+
+const document = '0.0.0-invented.md';
+
+const doc = (...sections: string[]): string =>
+  ['# 0.0.0-invented', '', '> **Declared:** 2026-09-13. For testing.', '', ...sections].join('\n');
+
+const included = [
+  '## Included',
+  '',
+  '| ID          | Why it is in force |',
+  '| ----------- | ------------------ |',
+  '| **ZZZ-001** | Because it is      |',
+  '',
+];
+
+describe('parsing a baseline document', () => {
+  it('reads the version and the declaration date from the heading and the banner', () => {
+    const parsed = parseBaseline(document, doc(...included));
+
+    expect(parsed.name).toBe('0.0.0-invented');
+    expect(parsed.declaredAt).toBe('2026-09-13');
+  });
+
+  it('reads the included requirements', () => {
+    expect(parseBaseline(document, doc(...included)).included).toEqual([
+      { id: 'ZZZ-001', why: 'Because it is' },
+    ]);
+  });
+
+  it('reads an exclusion with its reason', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Excluded',
+        '',
+        '| ID          | Reason        |',
+        '| ----------- | ------------- |',
+        '| **ZZZ-002** | Not built yet |',
+      ),
+    );
+
+    expect(parsed.excluded).toEqual([{ id: 'ZZZ-002', reason: 'Not built yet' }]);
+  });
+
+  // The one thing the design document insists on: an exclusion without a reason is how a requirement
+  // gets quietly dropped, so it is an error rather than a warning.
+  it('refuses an exclusion with no reason, naming the document and line', () => {
+    const text = doc(
+      ...included,
+      '## Excluded',
+      '',
+      '| ID          | Reason |',
+      '| ----------- | ------ |',
+      '| **ZZZ-002** |        |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(/0\.0\.0-invented\.md:\d+/);
+  });
+
+  it('reads a verification kind and what it rests on', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind        | By                                |',
+        '| ----------- | ----------- | --------------------------------- |',
+        '| **ZZZ-001** | attestation | Ada Lovelace, checked 2026-09-13  |',
+      ),
+    );
+
+    expect(parsed.verification).toEqual([
+      { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, checked 2026-09-13' },
+    ]);
+  });
+
+  it('refuses a verification kind it does not know', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind    | By  |',
+      '| ----------- | ------- | --- |',
+      '| **ZZZ-001** | vibes   | Ada |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(/vibes|kind/i);
+  });
+
+  it('refuses a verification row whose By cell is empty, whatever the kind', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind      | By  |',
+      '| ----------- | --------- | --- |',
+      '| **ZZZ-001** | inherited |     |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(/0\.0\.0-invented\.md:\d+/);
+  });
+
+  // Critical fix-round finding: an attestation was accepted with any non-blank `by`, so a
+  // one-character declaration was sufficient evidence - the cheapest way to widen a baseline was the
+  // one meant to be most expensive. The design's section 6 says an attestation "names a person and a
+  // date" and is "deliberately expensive to use"; nothing had enforced either.
+  it('refuses an attestation whose `by` is shorter than 30 characters', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By          |',
+      '| ----------- | ----------- | ----------- |',
+      '| **ZZZ-001** | attestation | Ada, 09-13  |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*attestation.*30/is,
+    );
+  });
+
+  it('refuses an attestation whose `by` names no date in YYYY-MM-DD form', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By                                    |',
+      '| ----------- | ----------- | ------------------------------------- |',
+      '| **ZZZ-001** | attestation | Ada Lovelace signed off on this one   |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*date/is,
+    );
+  });
+
+  it('accepts an attestation that names a person and a date, at least 30 characters', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind        | By                                |',
+        '| ----------- | ----------- | --------------------------------- |',
+        '| **ZZZ-001** | attestation | Ada Lovelace, checked 2026-09-13  |',
+      ),
+    );
+
+    expect(parsed.verification).toEqual([
+      { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, checked 2026-09-13' },
+    ]);
+  });
+
+  it('refuses an inherited row whose `by` is not a bare requirement identifier', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind      | By                     |',
+      '| ----------- | --------- | ---------------------- |',
+      '| **ZZZ-001** | inherited | see ZZZ-002 for detail |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*identifier/is,
+    );
+  });
+
+  it('accepts an inherited row whose `by` is a bare requirement identifier', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind      | By      |',
+        '| ----------- | --------- | ------- |',
+        '| **ZZZ-001** | inherited | ZZZ-002 |',
+      ),
+    );
+
+    expect(parsed.verification).toEqual([{ id: 'ZZZ-001', kind: 'inherited', by: 'ZZZ-002' }]);
+  });
+
+  it('treats the three sections as independent, so a baseline may exclude nothing', () => {
+    const parsed = parseBaseline(document, doc(...included));
+
+    expect(parsed.excluded).toEqual([]);
+    expect(parsed.verification).toEqual([]);
+  });
+
+  it('refuses a baseline that includes nothing, which is not a declaration', () => {
+    expect(() =>
+      parseBaseline(document, doc('## Included', '', '| ID | Why |', '| -- | --- |')),
+    ).toThrow(/includes nothing/i);
+  });
+
+  // Critical fix-round finding: a second row for the same identifier was silently resolved
+  // last-wins, which let an appended attestation launder a requirement no test actually verified.
+  // Refusing it here, once, is why the gate never has to detect it again.
+  it('refuses a duplicate identifier in Included, naming the document and the second line', () => {
+    const text = doc(...included, '| **ZZZ-001** | Because it is again |');
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*already declared/i,
+    );
+  });
+
+  it('refuses a duplicate identifier in Excluded, naming the document and the second line', () => {
+    const text = doc(
+      ...included,
+      '## Excluded',
+      '',
+      '| ID          | Reason        |',
+      '| ----------- | ------------- |',
+      '| **ZZZ-002** | Not built yet |',
+      '| **ZZZ-002** | Also this     |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-002.*already declared/i,
+    );
+  });
+
+  it('refuses a duplicate identifier in Verification, naming the document and the second line', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By                       |',
+      '| ----------- | ----------- | ------------------------ |',
+      '| **ZZZ-001** | test        | n/a                      |',
+      '| **ZZZ-001** | attestation | Ada Lovelace, 2026-09-13 |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*already declared/i,
+    );
+  });
+
+  // Critical fix-round finding: a table row whose first cell was not a bolded identifier was
+  // silently skipped, on the same code path that skips the header and separator rows - so
+  // `| IAM-043 | ... |`, missing its asterisks, parsed to one fewer inclusion with no error at all.
+  // baselines/README.md names exactly this as the failure the document exists to prevent.
+  it('refuses a table row that is not the header or separator and has no bolded identifier', () => {
+    const text = doc(...included, '| IAM-043    | Not bolded, so it would silently drop out |');
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*bolded identifier/is,
+    );
+  });
+
+  // `readSection` takes the first heading it finds and silently ignores the rest - `Array.findIndex`
+  // never looks past its match. A second `## Included` heading would then have its rows read into
+  // nothing, with no error.
+  it('refuses a second "## Included" heading, since only the first would otherwise be read', () => {
+    const text = doc(
+      ...included,
+      '## Included',
+      '',
+      '| ID          | Why it is in force  |',
+      '| ----------- | ------------------- |',
+      '| **ZZZ-002** | Sneaks in unnoticed |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*second.*## Included/is,
+    );
+  });
+
+  it('stops each section at the next heading, so a table below one is not read into it', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Notes',
+        '',
+        '| ID          | Something |',
+        '| ----------- | --------- |',
+        '| **ZZZ-009** | Not a row |',
+      ),
+    );
+
+    expect(parsed.included).toEqual([{ id: 'ZZZ-001', why: 'Because it is' }]);
+  });
+});

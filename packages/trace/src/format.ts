@@ -1,6 +1,7 @@
 import type { Problem } from './check.js';
-import type { Requirement, TraceModel } from './model.js';
-import type { Verification } from './results.js';
+import type { GateResult } from './gate.js';
+import type { Baseline, Requirement, TraceModel } from './model.js';
+import type { TestOutcome } from './results.js';
 import { type RequirementState, type Trace, allTraces } from './state.js';
 
 /**
@@ -77,7 +78,7 @@ export function formatSearch(results: Requirement[], term: string): string {
  * So the column is omitted entirely when there is no verification map to back it, and the gap is
  * named rather than left to be misread.
  */
-export function formatStats(model: TraceModel, verifications?: Map<string, Verification>): string {
+export function formatStats(model: TraceModel, verifications?: Map<string, TestOutcome>): string {
   const traces = allTraces(model, verifications);
   const tranches = [...new Set(traces.map((trace) => trace.requirement.tranche))].sort();
   const states =
@@ -102,10 +103,97 @@ export function formatStats(model: TraceModel, verifications?: Map<string, Verif
   return lines.join('\n');
 }
 
+/**
+ * Reads and reports only - never writes. A baseline is a declaration a person committed; the whole
+ * value of that is lost the moment a tool can rewrite it, so this prints exactly what is on disk:
+ * name, date, how many are included, every exclusion with its reason, and any verification rows.
+ */
+export function formatBaseline(baseline: Baseline): string {
+  const lines = [
+    `${baseline.name}  declared ${baseline.declaredAt}`,
+    '',
+    `${baseline.included.length} requirement(s) included`,
+  ];
+
+  if (baseline.excluded.length > 0) {
+    lines.push('', `${baseline.excluded.length} excluded:`);
+    for (const exclusion of baseline.excluded) {
+      lines.push(`  ${exclusion.id}  ${exclusion.reason}`);
+    }
+  }
+
+  if (baseline.verification.length > 0) {
+    lines.push('', 'Verification:');
+    for (const row of baseline.verification) {
+      lines.push(`  ${row.id}  ${row.kind}  ${row.by}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 export function formatProblems(found: Problem[]): string {
   if (found.length === 0) return 'No problems in the corpus.';
   const rows = found.map((problem) => `${problem.kind}  ${problem.id}  ${problem.detail}`);
   return [`${found.length} problem(s) in the corpus:`, '', ...rows].join('\n');
+}
+
+/**
+ * Whether a corpus problem touches the baseline - the same attribution `gate.ts`'s rule 5 uses to
+ * decide eligibility, recomputed here only for the informational count `formatGate` prints below.
+ * This does not change what the gate decides; it only decides whether a problem is worth counting as
+ * "outside" it. A `not-contiguous` problem's id is an AREA CODE, not a requirement - `check.ts`
+ * reports one hole per area, not per identifier - so it touches the baseline whenever the baseline
+ * includes ANY requirement from that area, not just when its id happens to equal one.
+ */
+function touchesBaseline(problem: Problem, includedIds: ReadonlySet<string>): boolean {
+  if (problem.kind === 'not-contiguous') {
+    return [...includedIds].some((id) => id.slice(0, 3) === problem.id);
+  }
+  return includedIds.has(problem.id);
+}
+
+/**
+ * The gate's decision, for a person debugging a red CI build. Order matters: the baseline's name and
+ * date first, so a reader knows within one line whether they are looking at the right document; the
+ * met/total count next; then one line per unmet requirement, naming the rule it broke, since
+ * `pnpm trace verify` computes `Verified` differently and a reader seeing that elsewhere needs to
+ * know why the gate disagrees; then every declaration problem, under a heading that says plainly
+ * these are defects in the baseline document itself and not in the code; and last, as information
+ * that never affects the exit code, how many corpus problems lie outside the declared scope.
+ *
+ * `total` counts only identifiers a declaration problem did not remove (rule 3/4 in `gate.ts`), so a
+ * baseline with two malformed rows can print "5 of 5 met" while two were silently dropped. The
+ * met/total line is never printed alone when that happened - it says how many rows were dropped, and
+ * the declaration problems themselves are always listed below, whether or not they caused a drop.
+ */
+export function formatGate(result: GateResult, includedIds: ReadonlySet<string>): string {
+  const lines = [`${result.baseline}  declared ${result.declaredAt}`, ''];
+
+  const dropped = includedIds.size - result.total;
+  const droppedNote =
+    dropped > 0 ? ` (${dropped} row(s) dropped from the declaration - see below)` : '';
+  lines.push(`${result.met} of ${result.total} included requirement(s) met${droppedNote}`);
+
+  if (result.unmet.length > 0) {
+    lines.push('', 'Unmet:');
+    for (const item of result.unmet) lines.push(`  ${item.why}`);
+  }
+
+  if (result.declarationProblems.length > 0) {
+    lines.push('', 'Declaration problems - defects in the baseline document, not the code:');
+    for (const problem of result.declarationProblems) lines.push(`  ${problem.detail}`);
+  }
+
+  const outside = result.problems.filter((problem) => !touchesBaseline(problem, includedIds));
+  lines.push(
+    '',
+    outside.length === 0
+      ? 'No corpus problems outside this baseline.'
+      : `${outside.length} corpus problem(s) outside this baseline (informational - does not affect the gate).`,
+  );
+
+  return lines.join('\n');
 }
 
 /**

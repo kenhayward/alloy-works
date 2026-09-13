@@ -4,7 +4,7 @@ import { RESERVED_AREA, validate } from './model.js';
 
 export type Outcome = 'passed' | 'failed' | 'skipped';
 
-export interface Verification {
+export interface TestOutcome {
   readonly id: string;
   readonly outcome: Outcome;
   readonly tests: string[];
@@ -41,7 +41,7 @@ const outcomeOf = (status: string): Outcome =>
  * Several JSON reports to what each requirement's tests did. One report per package, because each
  * `vitest.config.ts` writes its own.
  */
-export function parseResults(reports: unknown[]): Map<string, Verification> {
+export function parseResults(reports: unknown[]): Map<string, TestOutcome> {
   const perIdentifier = new Map<string, { outcomes: Outcome[]; tests: string[] }>();
 
   for (const [index, raw] of reports.entries()) {
@@ -66,6 +66,20 @@ export function parseResults(reports: unknown[]): Map<string, Verification> {
       { id, outcome: worst(entry.outcomes), tests: entry.tests },
     ]),
   );
+}
+
+/**
+ * Which report files contribute verification evidence.
+ *
+ * The tool's own report does not. `compile.ts` already excludes `packages/trace` from the citation
+ * scan, because its tests verify the tool rather than the product - and a test named for a
+ * requirement, written to check how this tool reports that requirement, would otherwise verify it.
+ * That is not evidence about the product; it is the tool marking its own homework.
+ */
+export const OWN_REPORT = 'trace.json';
+
+export function reportsForEvidence(filenames: string[]): string[] {
+  return filenames.filter((name) => name !== OWN_REPORT).sort();
 }
 
 export interface NamedReport {

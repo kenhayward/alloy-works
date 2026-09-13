@@ -92,6 +92,14 @@ remove the existing ones without doing the whole switch-over -
 [`docs/ci-and-releases.md`](docs/ci-and-releases.md) has the checklist, which ends with branch
 protection on `main`.
 
+**The traceability gate, `pnpm trace gate`, is the one exception - it is not `continue-on-error`.**
+A release's baseline (`docs/specification/baselines/`) declares only the requirements that release
+implements, so the gate passes on the day it lands; a check that is allowed to fail is not a gate.
+It also fails outright when the test run it reads has failed, because it cannot verify anything from
+a broken run - so a red `pnpm test` now fails the build too, through the gate, even though the `Test`
+step itself keeps `continue-on-error`. Otherwise it says nothing about the checks above it, which
+keep the temporary flag until the switch-over above happens.
+
 Once it is a gate: a PR that does not go green does not merge - no exceptions, no local merges to
 route around it. If a job is flaky, fix or quarantine it in its own PR with an issue; never rerun
 until green and merge on the second roll.
@@ -213,6 +221,8 @@ pnpm --filter @alloy-works/trace generate         # rewrite trace.json after cha
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest
 pnpm trace check                                  # every problem in the corpus: holes, double claims, citations naming nothing
 pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
+pnpm trace gate                                   # pass or fail a baseline; the CI step of the same name
+pnpm trace pack 0.13.0                            # write that baseline's evidence pack to docs/trace/0.13.0/
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

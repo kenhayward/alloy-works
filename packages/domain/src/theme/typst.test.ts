@@ -11,7 +11,7 @@ import { projectTypst } from './typst.js';
 const typst = projectTypst(resolveTheme(exampleTheme()));
 
 describe('projectTypst', () => {
-  it('states every property of a style at its resolved value', () => {
+  it('states every property of a style at its resolved value (STY-050, STY-051)', () => {
     expect(typst.styles['heading']).toEqual({
       font: 'Liberation Serif',
       size: 18,

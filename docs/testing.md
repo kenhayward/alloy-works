@@ -158,6 +158,27 @@ requirement as **Verified** when a test whose title carries its identifier actua
 `rule:` citation alone is Covered, not Verified, unless the test's own title also carries the
 identifier, since verification matches on the test's full name, not its body.
 
+`.trace-results/trace.json` - `packages/trace`'s own report - is read for coherence like every other
+report (a failed or stale run there still refuses the whole computation) but is excluded from the
+identifiers `parseResults` extracts. Its tests verify the tool, not the product, the same reasoning
+`compile.ts` already applies by excluding `packages/trace` from the citation scan; without the same
+exclusion here, a trace test titled with a product identifier would let the tool verify that
+requirement from its own suite.
+
+## The baseline gate
+
+`pnpm trace gate` decides pass or fail over a hand-written baseline
+(`docs/specification/baselines/<version>.md`) - the requirements a release declares itself
+answerable for - rather than over the whole corpus. It reads the same `.trace-results/` reports
+`verify` does, with the same exclusion of the tool's own `trace.json` from the evidence a requirement
+can be verified by, so a baseline can never pass on the strength of a test that merely exercises
+`packages/trace` itself. The gate fails closed on a stale or missing report the way `verify` does,
+never on a guess. `pnpm trace pack` runs the identical decision before writing anything, and refuses
+to write an evidence pack for a baseline that does not pass its own gate.
+
+See [`docs/specification/baselines/README.md`](specification/baselines/README.md) for what a baseline
+is and [`docs/trace/0.13.0/`](trace/0.13.0/README.md) for the evidence pack `pack` produces.
+
 ## The objects and worker suites
 
 `packages/objects` and `apps/worker` need Postgres and the object store running

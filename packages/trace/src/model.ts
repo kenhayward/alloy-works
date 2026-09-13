@@ -98,6 +98,69 @@ export const TraceModel = z.object({
 });
 export type TraceModel = z.infer<typeof TraceModel>;
 
+/** Why a requirement somebody might expect in the baseline is not in it. A reason is mandatory. */
+export const Exclusion = z.object({
+  id: z.string().regex(REQUIREMENT_ID),
+  reason: z.string().min(1),
+});
+export type Exclusion = z.infer<typeof Exclusion>;
+
+export const VERIFICATION_KINDS = ['test', 'inherited', 'attestation'] as const;
+
+/**
+ * How a requirement is shown to be met. `test` is the default and needs no declaration: a test names
+ * it and passes. The other two exist because a constraint that governs how everything is built often
+ * cannot be reached by a test named after it, and pretending otherwise is how a traceability matrix
+ * becomes a lie that passes.
+ */
+export const Verification = z.object({
+  id: z.string().regex(REQUIREMENT_ID),
+  kind: z.enum(VERIFICATION_KINDS),
+  by: z.string().min(1),
+});
+export type Verification = z.infer<typeof Verification>;
+
+/** A date in `YYYY-MM-DD` form, anywhere in the text - an attestation's `by` cell is prose ("Ada
+ * Lovelace, checked 2026-09-13"), not a bare date, so this is not anchored. */
+const ATTESTATION_DATE = /\d{4}-\d{2}-\d{2}/;
+
+/** The floor the design's section 6 demands: an attestation "names a person and a date" and is
+ * "deliberately expensive to use". Below this, "Ada" plus a date is indistinguishable from a
+ * placeholder - the cheapest way to widen a baseline must not also be the easiest. */
+export const ATTESTATION_MIN_LENGTH = 30;
+
+/**
+ * Whether an attestation's `by` field clears the bar the design demands. Shared between
+ * `parse/baseline.ts`, which refuses a malformed document outright at parse time, and `gate.ts`,
+ * which must not trust a `Baseline` built programmatically - bypassing the parser entirely - to have
+ * already been checked. One predicate, one bar, so the two can never quietly disagree about what
+ * counts as substantial.
+ */
+export function attestationIsSubstantial(by: string): boolean {
+  return by.length >= ATTESTATION_MIN_LENGTH && ATTESTATION_DATE.test(by);
+}
+
+export const Inclusion = z.object({
+  id: z.string().regex(REQUIREMENT_ID),
+  why: z.string().min(1),
+});
+export type Inclusion = z.infer<typeof Inclusion>;
+
+/**
+ * The set of requirements a release is answerable for.
+ *
+ * Hand-written and committed. No command may rewrite it: a baseline a tool can edit is not a
+ * declaration, and the whole value of one is that a person put their name to it.
+ */
+export const Baseline = z.object({
+  name: z.string().min(1),
+  declaredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  included: z.array(Inclusion).min(1),
+  excluded: z.array(Exclusion),
+  verification: z.array(Verification),
+});
+export type Baseline = z.infer<typeof Baseline>;
+
 /** Wraps a schema failure in the one thing a person fixing the corpus needs: where it is. */
 export function validate<T>(schema: z.ZodType<T>, value: unknown, where: string): T {
   const result = schema.safeParse(value);

@@ -1,6 +1,6 @@
 # Requirements traceability
 
-> **Status: stages 1 and 2 built; stages 3 and 4 remain.** Rests on
+> **Status: stages 1 through 3 built; stage 4 remains.** Rests on
 > [`docs/specification/requirements/README.md`](../../specification/requirements/README.md) for the
 > identifier scheme, and on `packages/trace/src/requirements.test.ts` and
 > `packages/trace/src/design.test.ts` for the checks that already exist. Nothing here changes a
@@ -154,23 +154,47 @@ expires with the release it was made for.
 ## 7. Baselines
 
 A baseline is the set of requirements a release is answerable for. It is the mechanism that makes an
-incomplete corpus defensible: 620 requirements in T2 to T6 are specified and deliberately out of
-baseline, which is a clean statement to an auditor and the opposite of an unexplained gap. A matrix
-that is 13% populated across everything is worse evidence than one that is complete across a declared
-subset.
+incomplete corpus defensible: the first baseline, `0.13.0`, declares 7 of the corpus's 1,264
+in-force requirements, excludes 4 more by name with a stated reason each, and leaves the rest simply
+outside its scope - a clean statement to an auditor, and the opposite of an unexplained gap. A matrix
+that is a few percent populated across the whole corpus is worse evidence than one that is complete
+across a declared subset.
 
-`docs/specification/baselines/<name>.yaml`:
+Built as `docs/specification/baselines/<version>.md`, a markdown document with three tables, not the
+YAML this section originally proposed: there is no YAML parser anywhere in this repository's
+dependency tree, so YAML would mean a new runtime dependency in a product whose whole point is
+auditability, and `parse/table.ts` already reads a table row for every other document in the corpus.
+A markdown table is reviewable as a diff in exactly the way `CLAUDE.md` asks of a requirement; a new
+dependency is not.
 
-```yaml
-name: T1
-declaredAt: 2026-09-13
-tranches: [T1]
-exclude:
-  - { id: CNT-087, reason: 'Deferred to T2 with the conditional profiling it depends on' }
-verification:
-  - { id: CNT-140, kind: inherited, by: CNT-012 }
-  - { id: ADM-031, kind: attestation, by: 'Ken Hayward', date: 2026-09-13, checked: '...' }
+```markdown
+# 0.13.0
+
+> **Declared:** 2026-09-13. What this release is answerable for.
+
+## Included
+
+| ID          | Why it is in force                   |
+| ----------- | ------------------------------------ |
+| **IAM-004** | Enforced by the environment boundary |
+
+## Excluded
+
+| ID          | Reason                                 |
+| ----------- | -------------------------------------- |
+| **IAM-018** | Cited only by a `rule:` field, and ... |
+
+## Verification
+
+| ID          | Kind        | By                          |
+| ----------- | ----------- | --------------------------- |
+| **ADM-031** | attestation | Ken Hayward, 2026-09-13 ... |
 ```
+
+`packages/trace/src/parse/baseline.ts` reads this; nothing writes it -
+[`docs/specification/baselines/README.md`](../../specification/baselines/README.md) is the fuller
+account, including why the first baseline declares what the release implements rather than a
+tranche.
 
 Every exclusion carries a reason, and the absence of one is an error. An exclusion without a reason
 is how a requirement gets quietly dropped, which is the failure this whole document exists to
@@ -218,10 +242,14 @@ a function of a run, not of the documents, so committing one would churn on ever
 drift check impossible. Citations are committed because they are a function of the source. Results
 are read at query time from the JSON report every suite already writes.
 
-`pnpm trace pack --tag vX.Y.Z` writes the evidence pack: the trace matrix, the gap report, the model,
-the raw test results, and the commit they were computed from. It is **committed at the tag**. A few
-hundred kilobytes of text per release is the cost; the alternative is audit evidence that cannot be
-reproduced, which is not an alternative.
+`pnpm trace pack <version>` writes the evidence pack: the trace matrix, the gap report, the raw test
+results, and the commit they were computed from. It refuses to run on a dirty working tree, because
+it stamps the pack with `git rev-parse HEAD` - the commit that will hold the pack's own inputs does
+not exist yet while anything is uncommitted, so a pack built from a dirty tree is stamped with a
+commit that cannot reproduce it. It is committed as `docs/trace/<version>/`, by hand, in the same pull
+request as the release it describes - nothing ties this to a git tag. A few hundred kilobytes of text
+per release is the cost; the alternative is audit evidence that cannot be reproduced, which is not an
+alternative.
 
 ## 9. Intake
 

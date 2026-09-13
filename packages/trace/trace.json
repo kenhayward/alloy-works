@@ -14131,6 +14131,18 @@
       "kind": "title"
     },
     {
+      "id": "STY-050",
+      "file": "packages/domain/src/theme/ooxml.test.ts",
+      "line": 40,
+      "kind": "title"
+    },
+    {
+      "id": "STY-051",
+      "file": "packages/domain/src/theme/ooxml.test.ts",
+      "line": 40,
+      "kind": "title"
+    },
+    {
       "id": "STY-052",
       "file": "packages/domain/src/theme/ooxml.test.ts",
       "line": 78,
@@ -14152,6 +14164,18 @@
       "id": "STY-009",
       "file": "packages/domain/src/theme/runs.test.ts",
       "line": 36,
+      "kind": "title"
+    },
+    {
+      "id": "STY-050",
+      "file": "packages/domain/src/theme/typst.test.ts",
+      "line": 14,
+      "kind": "title"
+    },
+    {
+      "id": "STY-051",
+      "file": "packages/domain/src/theme/typst.test.ts",
+      "line": 14,
       "kind": "title"
     }
   ]

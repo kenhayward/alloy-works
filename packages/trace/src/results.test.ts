@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkCoherence, parseResults } from './results.js';
+import { checkCoherence, parseResults, reportsForEvidence } from './results.js';
 
 const NOW = 1_800_000_000_000;
 
@@ -69,6 +69,44 @@ describe('reading a Vitest JSON report', () => {
 
   it('refuses a report that is not a Vitest report, rather than silently finding nothing', () => {
     expect(() => parseResults([{ nope: true }])).toThrow(/report/i);
+  });
+});
+
+// The tool's own report (`trace.json`) verifies the tool, not the product - `compile.ts` already
+// excludes `packages/trace` from the citation scan on the same grounds. Without a matching exclusion
+// here, a trace test titled with a product identifier (one was: see the fix-round note in
+// docs/testing.md) would let the tool mark its own homework as verification.
+describe('choosing which reports contribute verification evidence', () => {
+  it("drops the tool's own report and keeps the others, sorted", () => {
+    expect(reportsForEvidence(['service.json', 'trace.json', 'db.json'])).toEqual([
+      'db.json',
+      'service.json',
+    ]);
+  });
+
+  // An exact-match filter, not a substring one: a report legitimately named with "trace" inside it
+  // (an API tracing package, say) must not be swept out along with the tool's own report.
+  it('keeps a file whose name merely contains "trace"', () => {
+    expect(reportsForEvidence(['api-trace.json', 'trace.json'])).toEqual(['api-trace.json']);
+  });
+
+  it("finds no verification in a set containing only the tool's own report, but does once another package's report names the same identifier", () => {
+    const own = report([{ fullName: 'names it (ABC-043)', status: 'passed' }]);
+    const other = report([{ fullName: 'names it (ABC-043)', status: 'passed' }]);
+    const byFile = new Map<string, unknown>([
+      ['trace.json', own],
+      ['service.json', other],
+    ]);
+
+    const fromOwnReportAlone = parseResults(
+      reportsForEvidence(['trace.json']).map((name) => byFile.get(name)),
+    );
+    const fromBoth = parseResults(
+      reportsForEvidence(['trace.json', 'service.json']).map((name) => byFile.get(name)),
+    );
+
+    expect(fromOwnReportAlone.size).toBe(0);
+    expect(fromBoth.get('ABC-043')?.outcome).toBe('passed');
   });
 });
 

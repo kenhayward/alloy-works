@@ -5,19 +5,41 @@
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request. A second push to the
 same branch cancels the first, so no minutes go to a commit nobody is waiting on.
 
-| Step      | Command                          | Blocking today?          |
-| --------- | -------------------------------- | ------------------------ |
-| Install   | `pnpm install --frozen-lockfile` | **Yes**                  |
-| Lint      | `pnpm lint`                      | No - `continue-on-error` |
-| Format    | `pnpm format`                    | No - `continue-on-error` |
-| Typecheck | `pnpm typecheck`                 | No - `continue-on-error` |
-| Build     | `pnpm build`                     | No - `continue-on-error` |
-| Test      | `pnpm test`                      | No - `continue-on-error` |
+| Step              | Command                          | Blocking today?          |
+| ----------------- | -------------------------------- | ------------------------ |
+| Install           | `pnpm install --frozen-lockfile` | **Yes**                  |
+| Lint              | `pnpm lint`                      | No - `continue-on-error` |
+| Format            | `pnpm format`                    | No - `continue-on-error` |
+| Typecheck         | `pnpm typecheck`                 | No - `continue-on-error` |
+| Build             | `pnpm build`                     | No - `continue-on-error` |
+| Test              | `pnpm test`                      | No - `continue-on-error` |
+| Traceability gate | `pnpm trace gate`                | **Yes**                  |
 
 Install is deliberately **not** `continue-on-error`: a lock file that will not install should stop
 the run, because every step after it would be testing a tree nobody agreed to. And it is
 `--frozen-lockfile`, never a loose install - a loose install can resolve a different tree than the
 lock file names, which is the entire reason for committing one.
+
+### The traceability gate is the first real check in this pipeline
+
+`pnpm trace gate` runs after `Test`, because it reads the JSON reports that step writes to
+`.trace-results/`, and it is the first step in this file that is **not** `continue-on-error`. That is
+safe precisely because of what the gate checks: `docs/specification/baselines/` declares the
+requirements this release is answerable for, each with its own evidence, so the gate passes on the
+day the baseline lands - it fails only when a later change breaks a requirement the baseline already
+claims, breaks the declaration itself, or when the test run it reads failed outright, since it
+cannot verify anything from a broken run. A check that starts red the day it is added is not a gate,
+it is a chore nobody will get to; this one starts green because the scope it enforces was chosen to
+match what is already true.
+
+This is **not** the beginning of the switch-over described below. Lint, format, typecheck and build
+are still advisory, under their own temporary comment, and turning them into gates still follows the
+checklist in "Turning CI into a gate", ending in branch protection on `main`. `Test` is a partial
+exception: the traceability gate reads `Test`'s own JSON reports and refuses to compute anything from
+a run that failed - evidence from a broken run is not evidence - so a red `pnpm test` now fails the
+build too, through the gate, even though the `Test` step itself keeps `continue-on-error`. Beyond
+that, the gate says nothing about lint, format, typecheck or build, and does not shorten that
+checklist.
 
 ### Every `test` task is uncacheable, on purpose
 

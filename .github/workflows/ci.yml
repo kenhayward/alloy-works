@@ -93,6 +93,13 @@ jobs:
         run: pnpm test
         continue-on-error: true
 
+      # NOT continue-on-error. The baseline declares what this release is answerable for, so the
+      # gate passes on the day it lands - and a traceability gate that is allowed to fail is not a
+      # gate. This is deliberately narrow: it says nothing about the checks above it, and does not
+      # begin the switch-over in docs/ci-and-releases.md.
+      - name: Traceability gate
+        run: pnpm trace gate
+
       # The images are built on every pull request so a broken Dockerfile is found by the change
       # that broke it. They are never pushed: a registry comes with hosting.
       - name: Images
