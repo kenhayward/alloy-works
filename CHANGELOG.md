@@ -3,6 +3,36 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.14.2 - 2026-09-13 (PR #69)
+
+### Fixed
+
+- `pnpm trace check` reports no problems in the requirement corpus. It had reported seven since the
+  tooling could see them, and none of them was about a requirement the `0.13.0` release claims, which is
+  why the gate stayed green while they stood.
+- Six of the seven were the same shape: a cross-cutting review replaced a requirement with a broader
+  one, and the design still claimed the requirement no longer in force while the one in force was
+  claimed by nothing. Three of those designs now claim the replacement - `relationships.md` claims
+  REL-052, `themes.md` claims STY-056 and STY-058 - because the replacement asks for what the design
+  already answers, and in one case the design answers it more generally than the requirement it
+  replaced did.
+- The other three claims were **dropped rather than repointed**, and each design now says in prose why:
+  REL-047 asks a relationship type to declare whether it is acyclic, whether it permits self-reference,
+  and the permission required at each end, none of which `relationships.md` designs; SCH-050 names a
+  freshness interval that `search.md`'s own open question still calls unchosen; and VER-044 asks for a
+  check over a restored version's references that `storage-and-versioning.md` does not have, having
+  answered a case VER-044 itself points out cannot arise. Moving those claims would have made four
+  designs look complete where they are not, which is the failure this tooling exists to catch.
+- The seventh was not a missing design. `apps/service/src/http.test.ts` used `IAM-018` as the sample
+  rule in a fixture refusal, so a test asserting the shape of an error envelope read as coverage of a
+  permission requirement. The fixture names `ZZZ-001` now, the area reserved for exactly this, which
+  the citation scan ignores. The repository cites eighteen requirements rather than nineteen as a
+  result, and the count is the honest one.
+- `docs/specification/baselines/0.13.0.md` and `docs/trace/0.13.0/` are deliberately unchanged. A
+  baseline declares what a release was answerable for and a pack is its evidence, both fixed to a tag;
+  rewriting either so that today's corpus agrees with them would destroy the thing an audit is
+  checking. `gaps.md` still records the seven problems, and `pnpm trace check` now reports none.
+
 ## 0.14.1 - 2026-09-13 (PR #66)
 
 ### Added

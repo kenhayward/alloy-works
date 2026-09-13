@@ -39,8 +39,11 @@ function testApp() {
     { schema: { params: z.object({ id: z.uuid() }), response: { 200: Named } } },
     async (request) => ({ name: request.params.id }),
   );
+  // The rule identifier is invented: ZZZ is the area reserved for fixtures, and the traceability
+  // scan ignores it. A real one here would read as a citation - this test verifies the shape of a
+  // refusal, not whatever requirement the identifier names.
   app.get('/refused', async () => {
-    throw new AppError(403, 'forbidden', 'You may not do that here.', 'IAM-018');
+    throw new AppError(403, 'forbidden', 'You may not do that here.', 'ZZZ-001');
   });
   app.get('/broken', async () => {
     throw new Error('connection to postgres://aw_service:hunter2@db failed');
@@ -76,7 +79,7 @@ describe('the HTTP layer', () => {
     expect(response.json()).toMatchObject({
       code: 'forbidden',
       message: 'You may not do that here.',
-      rule: 'IAM-018',
+      rule: 'ZZZ-001',
     });
   });
 

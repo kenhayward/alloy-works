@@ -13371,10 +13371,6 @@
           "howItIsMet": "`relationship.type_id` is a foreign key to `relationship_type`; a relationship of an undeclared type cannot be inserted"
         },
         {
-          "id": "REL-002",
-          "howItIsMet": "`relationship_type` carries name, direction and cardinality; `relationship_type_endpoint` lists the kinds permitted at each end"
-        },
-        {
           "id": "REL-003",
           "howItIsMet": "`relationship_type.metadata_schema` is a JSON Schema the instances' metadata must satisfy"
         },
@@ -13395,8 +13391,8 @@
           "howItIsMet": "A composite foreign key ties each end's artifact and kind to a kind the type permits"
         },
         {
-          "id": "REL-009",
-          "howItIsMet": "Every kind listed is an artifact, so each can be declared as an endpoint without a special case"
+          "id": "REL-052",
+          "howItIsMet": "The endpoint table's kind is an artifact kind, and a composite foreign key ties each end to `artifact(id, kind)`, so any kind the product defines can be an endpoint and the permitted set is drawn from the artifact kinds rather than a list repeated here"
         },
         {
           "id": "REL-010",
@@ -13518,10 +13514,6 @@
         {
           "id": "SCH-014",
           "howItIsMet": "Every result carries a label: matched words, meaning, or both"
-        },
-        {
-          "id": "SCH-027",
-          "howItIsMet": "Words are indexed in the transaction that creates the version, so they are findable at once; meaning follows when the block is embedded"
         },
         {
           "id": "SCH-029",
@@ -13746,10 +13738,6 @@
           "howItIsMet": "The new version records the version it was restored from, so the chain reads as a decision"
         },
         {
-          "id": "VER-034",
-          "howItIsMet": "A restore that would leave a pinned version unreachable is refused by the same constraint as VER-023"
-        },
-        {
           "id": "VER-035",
           "howItIsMet": "Preview resolves the restore without inserting, using the same code path as the write"
         },
@@ -13812,7 +13800,7 @@
           "howItIsMet": "Every style declares the node types it applies to; the resolver refuses a style applied outside them, naming both"
         },
         {
-          "id": "STY-007",
+          "id": "STY-056",
           "howItIsMet": "`basedOn` inheritance, resolved by the resolver alone; the chain is walked with a visited set and a cycle is a named error"
         },
         {
@@ -13912,8 +13900,8 @@
           "howItIsMet": "One resolver, in `packages/domain`, used by the editor and the publisher alike; the projections never resolve anything"
         },
         {
-          "id": "STY-036",
-          "howItIsMet": "The CSS projection renders every property the editor can show, at the theme's values"
+          "id": "STY-058",
+          "howItIsMet": "The CSS projection is generic over the property set (STY-030), so it renders every declared paragraph and character property at the theme's values rather than a chosen few; the pagination-bound properties are the only omission, marked as such in the set and shown by preview instead of approximated (STY-037)"
         },
         {
           "id": "STY-037",
@@ -14099,12 +14087,6 @@
       "file": "apps/service/src/google.test.ts",
       "line": 26,
       "kind": "title"
-    },
-    {
-      "id": "IAM-018",
-      "file": "apps/service/src/http.test.ts",
-      "line": 79,
-      "kind": "rule"
     },
     {
       "id": "IAM-043",

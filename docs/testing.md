@@ -142,8 +142,10 @@ A test that verifies a requirement says so, in one of two ways `packages/trace` 
 - **Its `describe` or `it` title names the identifier**, such as `it('IAM-004 refuses a second
 tenant's session', ...)`. This is the load-bearing convention: it is how a passing test becomes
   that requirement's evidence, not just a mention of it.
-- **A `rule:` field in an assertion names it**, such as `{ code: 'forbidden', rule: 'IAM-018' }` -
-  the product citing the requirement it is enforcing, in its own refusal payload.
+- **A `rule:` field in an assertion names it**, such as `{ code: 'forbidden', rule: 'IAM-019' }` -
+  the product citing the requirement it is enforcing, in its own refusal payload. Only where the code
+  under test really does enforce it: a fixture that needs a rule identifier for sample data uses
+  `ZZZ-001`, the reserved area the scan ignores, because a real one there reads as a citation.
 
 An identifier anywhere else in a test file - a comment, an ordinary variable - is not a citation.
 Mentioning a requirement is not claiming to verify it, and `packages/trace` only counts the two
