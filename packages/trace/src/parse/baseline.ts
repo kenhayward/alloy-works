@@ -24,6 +24,11 @@ function readSection<T>(
   if (start === -1) return [];
 
   const rows: T[] = [];
+  // Where each identifier was first declared in this section, so a second row for the same
+  // identifier is refused at parse time rather than silently overriding the first - a baseline
+  // declaring the same identifier twice in one section is a malformed document, not something a
+  // later stage should have to notice and resolve.
+  const firstSeenAt = new Map<string, string>();
   for (let index = start + 1; index < lines.length; index += 1) {
     const line = lines[index]!;
     if (line.startsWith('## ')) break;
@@ -41,6 +46,13 @@ function readSection<T>(
         `${where}: ${id} is a bolded identifier in a row of ${cells.length} cells. A ${noun} row has ${expectedCells}.`,
       );
     }
+    const firstAt = firstSeenAt.get(id);
+    if (firstAt !== undefined) {
+      throw new Error(
+        `${where}: ${id} is already declared in this ${noun} table, at ${firstAt}. Exactly one row per identifier is allowed.`,
+      );
+    }
+    firstSeenAt.set(id, where);
     rows.push(build(id, cells, where));
   }
   return rows;

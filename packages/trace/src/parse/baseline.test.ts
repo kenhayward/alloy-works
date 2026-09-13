@@ -118,6 +118,49 @@ describe('parsing a baseline document', () => {
     ).toThrow(/includes nothing/i);
   });
 
+  // Critical fix-round finding: a second row for the same identifier was silently resolved
+  // last-wins, which let an appended attestation launder a requirement no test actually verified.
+  // Refusing it here, once, is why the gate never has to detect it again.
+  it('refuses a duplicate identifier in Included, naming the document and the second line', () => {
+    const text = doc(...included, '| **ZZZ-001** | Because it is again |');
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*already declared/i,
+    );
+  });
+
+  it('refuses a duplicate identifier in Excluded, naming the document and the second line', () => {
+    const text = doc(
+      ...included,
+      '## Excluded',
+      '',
+      '| ID          | Reason        |',
+      '| ----------- | ------------- |',
+      '| **ZZZ-002** | Not built yet |',
+      '| **ZZZ-002** | Also this     |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-002.*already declared/i,
+    );
+  });
+
+  it('refuses a duplicate identifier in Verification, naming the document and the second line', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By                       |',
+      '| ----------- | ----------- | ------------------------ |',
+      '| **ZZZ-001** | test        | n/a                      |',
+      '| **ZZZ-001** | attestation | Ada Lovelace, 2026-09-13 |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*already declared/i,
+    );
+  });
+
   it('stops each section at the next heading, so a table below one is not read into it', () => {
     const parsed = parseBaseline(
       document,
