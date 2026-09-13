@@ -169,6 +169,11 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
 - **`docs/plans/`** holds implementation plans: how a design becomes code, task by task, test
   first. A plan is written when its turn comes, committed before the work it describes starts, and
   its status in `docs/plans/README.md` updated when that work lands.
+- **`docs/guides/`** is for a procedure somebody has to follow, written for a reader who has not
+  followed it before, and it is the only place in `docs/` addressed to somebody outside the team. A
+  guide may restate what a reference document says once; what it must not do is become the place a
+  fact lives, because then two documents disagree and the guide is the one nobody updates. Every
+  factual claim in a guide is checked against the code or the tool before it is written.
 - **`docs/decisions/`** gets a new record when a choice constrains later work **and** its reasoning
   would otherwise have to be reconstructed from the diff. Both halves matter: a choice nobody will
   question needs no record, and a record that states only the conclusion is an opinion with a date
