@@ -1,9 +1,9 @@
 # Requirements traceability
 
-> **Status: designed, not built.** Rests on
+> **Status: stages 1 and 2 built; stages 3 and 4 remain.** Rests on
 > [`docs/specification/requirements/README.md`](../../specification/requirements/README.md) for the
-> identifier scheme, and on `apps/desktop/src/requirements.test.ts` and
-> `apps/desktop/src/design.test.ts` for the checks that already exist. Nothing here changes a
+> identifier scheme, and on `packages/trace/src/requirements.test.ts` and
+> `packages/trace/src/design.test.ts` for the checks that already exist. Nothing here changes a
 > requirement, a design or an identifier.
 
 ## 1. Purpose
@@ -104,8 +104,8 @@ requirement row  ->  design claim  ->  test title  ->  test result at a commit
 | Edge                   | Mechanism                                                            | State today                        |
 | ---------------------- | -------------------------------------------------------------------- | ---------------------------------- |
 | requirement -> design  | the `## Requirements owned` table                                    | enforced by `design.test.ts`       |
-| design -> test         | the identifier in a `describe` or `it` title, or a `rule:` assertion | convention in 8 places, unenforced |
-| test -> result         | the built-in JSON reporter records outcomes, identifiers extracted   | does not exist                     |
+| design -> test         | the identifier in a `describe` or `it` title, or a `rule:` assertion | enforced by `pnpm trace check`     |
+| test -> result         | the built-in JSON reporter records outcomes, identifiers extracted   | built, read by `pnpm trace verify` |
 | requirement -> runtime | `rule: 'IAM-043'` in an error payload                                | exists, in the service             |
 
 The test-title convention is not invented here. It is already how this repository writes them, as in
@@ -278,7 +278,7 @@ packages/trace/src/
   baseline.ts             the baseline manifest, and the verification kinds
   compile.ts              the only module that touches the filesystem
   cli.ts                  the query commands
-  reporter.ts             the Vitest reporter
+  results.ts              parses the JSON reports the built-in reporter writes into a verification map
 ```
 
 Every parser takes **text and returns a model**, never a path, so each parser test is an inline string
@@ -300,11 +300,13 @@ source of truth that drifts from the first.
 
 Two traps this repository has already paid for, and this work must not walk back into:
 
-- **The Vitest reporter is added alongside the explicitly pinned reporter in each config, never
-  instead of it.** The pinning exists because an implicit reporter prints nothing a test logged on
-  Windows while the identical run on Linux prints all of it. Replacing it to add trace output would
-  trade a real property for a convenience.
-- **The reporter must not write through `console.error` or `console.warn`**, which `consoleGate`
+- **The built-in `json` reporter is added alongside the explicitly pinned `default` reporter in each
+  config, never instead of it - `'default'` must stay first in the `reporters` array.** The pinning
+  exists because an implicit reporter prints nothing a test logged on Windows while the identical run
+  on Linux prints all of it. Replacing it to add trace output would trade a real property for a
+  convenience. Stage 2 declined a custom Vitest reporter for exactly this reason: the built-in `json`
+  reporter, declared in each `vitest.config.ts`, already writes what `results.ts` needs.
+- **Nothing in this pipeline writes through `console.error` or `console.warn`**, which `consoleGate`
   throws from by design.
 
 ## 13. Staging
