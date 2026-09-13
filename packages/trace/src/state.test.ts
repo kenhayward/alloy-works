@@ -66,4 +66,32 @@ describe('the state of a requirement', () => {
       ['ZZZ-004', 'Superseded'],
     ]);
   });
+
+  // The precedence that makes an exit real. A design that still claims a withdrawn or superseded
+  // requirement must not resurrect it: a stale claim is a fact about the design, not about whether
+  // the requirement is live work.
+  it('keeps an exit state even where a design still claims the requirement', () => {
+    const stillClaimed: TraceModel = {
+      ...model,
+      designs: [
+        {
+          document: 'invented-subsystem.md',
+          owns: [
+            { id: 'ZZZ-003', howItIsMet: 'A stale claim on a withdrawn requirement' },
+            { id: 'ZZZ-004', howItIsMet: 'A stale claim on a superseded requirement' },
+          ],
+        },
+      ],
+    };
+
+    expect(traceOf('ZZZ-003', stillClaimed)).toMatchObject({
+      state: 'Withdrawn',
+      design: undefined,
+    });
+    expect(traceOf('ZZZ-004', stillClaimed)).toMatchObject({
+      state: 'Superseded',
+      design: undefined,
+      supersededBy: 'ZZZ-002',
+    });
+  });
 });
