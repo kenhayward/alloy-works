@@ -20,7 +20,6 @@ describe('parsing an area document', () => {
 
     const parsed = parseAreaDocument(document, text);
 
-    expect(parsed.area).toBe('ZZZ');
     expect(parsed.requirements).toEqual([
       {
         id: 'ZZZ-001',
@@ -119,7 +118,10 @@ describe('the real corpus', () => {
   const total = (pick: (document: AreaDocument) => unknown[]): number =>
     parsed.reduce((count, document) => count + pick(document).length, 0);
 
-  it('parses every area document without refusing a row', () => {
+  // Parsing every document without refusing a row is not asserted here: it happens above, at
+  // collection time, when `parsed` is built - a throw there fails the whole file, not this test.
+  // This just pins the count of area documents the corpus is expected to hold.
+  it('finds all 21 area documents on disk', () => {
     expect(areas).toHaveLength(21);
   });
 

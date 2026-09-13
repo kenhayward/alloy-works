@@ -10,7 +10,6 @@ import {
 import { boldIdentifier, tableCells } from './table.js';
 
 export interface AreaDocument {
-  readonly area: string;
   readonly requirements: Requirement[];
   readonly nonRequirements: NonRequirement[];
   readonly questions: Question[];
@@ -25,7 +24,6 @@ export interface AreaDocument {
  * identifier - the ownership map in the index being the one that matters.
  */
 export function parseAreaDocument(document: string, text: string): AreaDocument {
-  const area = document.slice(0, 3);
   const requirements: Requirement[] = [];
   const nonRequirements: NonRequirement[] = [];
   const questions: Question[] = [];
@@ -77,5 +75,5 @@ export function parseAreaDocument(document: string, text: string): AreaDocument 
     }
   }
 
-  return { area, requirements, nonRequirements, questions };
+  return { requirements, nonRequirements, questions };
 }

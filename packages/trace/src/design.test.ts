@@ -9,7 +9,7 @@ import { REPO_ROOT, compile } from './compile.js';
  * The design documents, and the requirements each of them claims.
  *
  * Requirements say what the product must do; design documents say how. The link between them is
- * the only thing that turns 869 identifiers into a tracker rather than a list, and it is exactly
+ * the only thing that turns 1,303 identifiers into a tracker rather than a list, and it is exactly
  * the kind of cross-reference that rots - a requirement gets renumbered, a design doc gets renamed,
  * and the citation still reads fine while pointing at nothing.
  *

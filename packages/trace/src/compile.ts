@@ -1,12 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { TraceModel } from './model.js';
 import { parseDesignDocument } from './parse/design.js';
 import { parseAreaDocument } from './parse/requirements.js';
 
-/** `packages/trace` is two levels down, and every command runs from its own package directory. */
-export const REPO_ROOT = join(process.cwd(), '..', '..');
+/**
+ * `packages/trace/src` is three levels down from the repository root. Derived from this module's
+ * own URL rather than `process.cwd()`, so it is correct no matter where the CLI is invoked from -
+ * cwd only happens to be right when the caller runs it from the package directory.
+ */
+export const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 
 const AREA_DOCUMENT = /^[A-Z]{3}-.+\.md$/;
 
