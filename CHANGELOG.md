@@ -39,6 +39,21 @@ verify` reads them to compute `Verified`. Ten of the eleven currently-`Covered` 
   naming the requirement a test verifies in its `describe` or `it` title is load-bearing, not
   incidental, and somebody writing a test needs to know that.
 
+### Fixed
+
+- `pnpm trace stats` no longer prints a `Verified` count of zero for every tranche when verification
+  was never computed. Only `pnpm trace verify` supplies that count, so `stats` and `show` now say
+  plainly that verification was not computed instead of showing a column that reads as "nothing is
+  verified" when the truth is "nobody asked yet".
+- `pnpm trace verify` no longer trusts whatever happens to be sitting in `.trace-results/`. Nothing
+  cleans that directory, so it could hold a report from a run that failed, a report far older than the
+  others (a stale `tests/e2e` report, or a suite that never finished its last run), or be missing a
+  report entirely for a package that has tests. `verify` now refuses to report a count in any of those
+  cases, naming the report at fault, rather than quietly folding a bad report into the numbers.
+- A requirement could previously be reported as `Verified` from a passing test result even when no
+  test actually named it, because a passing result was checked before a citation was. `Verified` now
+  requires both: a test that names the requirement, and that test having passed.
+
 ## 0.11.0 - 2026-09-13 (PR #61)
 
 ### Added
