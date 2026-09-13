@@ -68,14 +68,14 @@ describe('parsing a baseline document', () => {
         ...included,
         '## Verification',
         '',
-        '| ID          | Kind        | By                      |',
-        '| ----------- | ----------- | ----------------------- |',
-        '| **ZZZ-001** | attestation | Ada Lovelace, 2026-09-13 |',
+        '| ID          | Kind        | By                                |',
+        '| ----------- | ----------- | --------------------------------- |',
+        '| **ZZZ-001** | attestation | Ada Lovelace, checked 2026-09-13  |',
       ),
     );
 
     expect(parsed.verification).toEqual([
-      { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, 2026-09-13' },
+      { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, checked 2026-09-13' },
     ]);
   });
 
@@ -103,6 +103,89 @@ describe('parsing a baseline document', () => {
     );
 
     expect(() => parseBaseline(document, text)).toThrow(/0\.0\.0-invented\.md:\d+/);
+  });
+
+  // Critical fix-round finding: an attestation was accepted with any non-blank `by`, so a
+  // one-character declaration was sufficient evidence - the cheapest way to widen a baseline was the
+  // one meant to be most expensive. The design's section 6 says an attestation "names a person and a
+  // date" and is "deliberately expensive to use"; nothing had enforced either.
+  it('refuses an attestation whose `by` is shorter than 30 characters', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By          |',
+      '| ----------- | ----------- | ----------- |',
+      '| **ZZZ-001** | attestation | Ada, 09-13  |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*attestation.*30/is,
+    );
+  });
+
+  it('refuses an attestation whose `by` names no date in YYYY-MM-DD form', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind        | By                                    |',
+      '| ----------- | ----------- | ------------------------------------- |',
+      '| **ZZZ-001** | attestation | Ada Lovelace signed off on this one   |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*date/is,
+    );
+  });
+
+  it('accepts an attestation that names a person and a date, at least 30 characters', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind        | By                                |',
+        '| ----------- | ----------- | --------------------------------- |',
+        '| **ZZZ-001** | attestation | Ada Lovelace, checked 2026-09-13  |',
+      ),
+    );
+
+    expect(parsed.verification).toEqual([
+      { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, checked 2026-09-13' },
+    ]);
+  });
+
+  it('refuses an inherited row whose `by` is not a bare requirement identifier', () => {
+    const text = doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind      | By                     |',
+      '| ----------- | --------- | ---------------------- |',
+      '| **ZZZ-001** | inherited | see ZZZ-002 for detail |',
+    );
+
+    expect(() => parseBaseline(document, text)).toThrow(
+      /0\.0\.0-invented\.md:\d+.*ZZZ-001.*identifier/is,
+    );
+  });
+
+  it('accepts an inherited row whose `by` is a bare requirement identifier', () => {
+    const parsed = parseBaseline(
+      document,
+      doc(
+        ...included,
+        '## Verification',
+        '',
+        '| ID          | Kind      | By      |',
+        '| ----------- | --------- | ------- |',
+        '| **ZZZ-001** | inherited | ZZZ-002 |',
+      ),
+    );
+
+    expect(parsed.verification).toEqual([{ id: 'ZZZ-001', kind: 'inherited', by: 'ZZZ-002' }]);
   });
 
   it('treats the three sections as independent, so a baseline may exclude nothing', () => {

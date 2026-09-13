@@ -69,4 +69,13 @@ describe('the 0.13.0 baseline', () => {
   it('declares seven included requirements', () => {
     expect(baseline.included).toHaveLength(7);
   });
+
+  // Canary, matching the ones above: the 0.13.0 baseline declares zero verification rows, because
+  // every included requirement is verified by its own passing test rather than an attestation or an
+  // inheritance. An attestation entering this table is deliberately expensive to make (see
+  // parse/baseline.ts and docs/specification/baselines/README.md), and it is a change somebody
+  // should have to look at, not something this test should let through silently.
+  it('declares zero verification rows, because every included requirement is verified by a test', () => {
+    expect(baseline.verification).toHaveLength(0);
+  });
 });

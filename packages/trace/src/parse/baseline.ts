@@ -1,5 +1,44 @@
-import { Baseline, Exclusion, Inclusion, Verification, validate } from '../model.js';
+import {
+  Baseline,
+  Exclusion,
+  Inclusion,
+  REQUIREMENT_ID,
+  Verification,
+  validate,
+} from '../model.js';
 import { boldIdentifier, tableCells } from './table.js';
+
+/** A date in `YYYY-MM-DD` form, anywhere in the text - not anchored, since an attestation's `by`
+ * cell is prose ("Ada Lovelace, checked 2026-09-13"), not a bare date. */
+const DATE = /\d{4}-\d{2}-\d{2}/;
+
+/** The floor the design's section 6 demands: an attestation "names a person and a date" and is
+ * "deliberately expensive to use". Below this, "Ada" plus a date is indistinguishable from a
+ * placeholder - the cheapest way to widen a baseline must not also be the easiest. */
+const ATTESTATION_MIN_LENGTH = 30;
+
+/**
+ * Refuses a malformed `Verification` row the schema alone cannot catch: `Verification.by` is just a
+ * non-empty string, so an attestation's `by` and an inherited row's `by` need their own shape checks
+ * here, in the parser, so a malformed declaration can never enter the model at all.
+ */
+function checkVerificationRow(row: Verification, id: string, where: string): void {
+  if (row.kind === 'attestation') {
+    if (row.by.length < ATTESTATION_MIN_LENGTH || !DATE.test(row.by)) {
+      throw new Error(
+        `${where}: ${id}'s attestation \`by\` must name a person and a date in YYYY-MM-DD form, ` +
+          `and be at least ${ATTESTATION_MIN_LENGTH} characters - an attestation is deliberately ` +
+          `expensive to make. "${row.by}" is not enough.`,
+      );
+    }
+  }
+  if (row.kind === 'inherited' && !REQUIREMENT_ID.test(row.by)) {
+    throw new Error(
+      `${where}: ${id} inherits from "${row.by}", which must be a bare requirement identifier ` +
+        'such as IAM-004, checked at parse time rather than discovered later.',
+    );
+  }
+}
 
 /** The heading line: `# <version>`, not `## <section>` - the leading `#` must stand alone. */
 const HEADING = /^#\s+(.+?)\s*$/;
@@ -93,7 +132,11 @@ export function parseBaseline(document: string, text: string): Baseline {
     '## Verification',
     'verification',
     3,
-    (id, cells, where) => validate(Verification, { id, kind: cells[1], by: cells[2] }, where),
+    (id, cells, where) => {
+      const row = validate(Verification, { id, kind: cells[1], by: cells[2] }, where);
+      checkVerificationRow(row, id, where);
+      return row;
+    },
   );
 
   return validate(Baseline, { name, declaredAt, included, excluded, verification }, document);
