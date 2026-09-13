@@ -140,6 +140,7 @@ docs/         Architecture, development, testing, CI, decisions, the specificati
 
 | Document                                           | What it covers                                                                                              |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [docs/guides/](docs/guides/)                       | How to run the traceability tooling and read what it says, for a developer and for an auditor               |
 | [docs/architecture.md](docs/architecture.md)       | The repository as built: workspaces, the renderer/shell split, the platform bridge, packaging               |
 | [docs/design/](docs/design/)                       | How the product will be built: the system map, then one design per subsystem                                |
 | [docs/development.md](docs/development.md)         | Setup, commands, running each delivery                                                                      |

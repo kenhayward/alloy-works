@@ -3,6 +3,27 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.14.1 - 2026-09-13 (PR #66)
+
+### Added
+
+- A guide, `docs/guides/reading-the-trace.md`, on how to run the traceability tooling and how to read
+  what it tells you. It has two reading paths, because it has two audiences with different questions: a
+  developer needs the commands, the convention for citing a requirement from a test, and what makes the
+  CI gate fail; somebody assessing this product needs to know which artifact answers which question,
+  how to reproduce an evidence pack from the commit it names, and what the evidence does not prove. It
+  ends by following one requirement, IAM-043, from its statement through the design that answers it and
+  the three tests that demonstrate it to the row in the release's evidence pack.
+- `docs/guides/` is a new folder, and `CLAUDE.md` says what belongs in it: a procedure written for
+  somebody who has not followed it before, and the only place in `docs/` addressed to a reader outside
+  the team. It may restate a fact once; what it must not become is the place that fact lives, because
+  then two documents disagree and the guide is the one nobody updates.
+
+### Fixed
+
+- Writing the guide meant checking every claim in it against the tool, which found one wrong before
+  anybody read it: the requirements mentioning footnotes span six areas, not four.
+
 ## 0.14.0 - 2026-09-13 (PR #65)
 
 ### Added
