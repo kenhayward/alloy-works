@@ -52,7 +52,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   text at all, so a one-character `by` passed the gate cleanly. The parser now refuses a baseline
   document whose attestation does not name a person and a date in `YYYY-MM-DD` form, in at least 30
   characters, so the honest escape hatch stays as expensive to use as the design always said it
-  should be.
+  should be. The gate applies the same bar to a baseline built programmatically rather than parsed
+  from a document, since the gate decides CI and must not assume every caller went through the parser.
 - The first evidence pack said "Generated at commit `c251471`", but that commit's own `matrix.md`
   held neither citation this branch had already made. It was packed while those edits were still
   uncommitted, so the commit it recorded was the wrong one - evidence that could never be reproduced

@@ -120,6 +120,26 @@ export const Verification = z.object({
 });
 export type Verification = z.infer<typeof Verification>;
 
+/** A date in `YYYY-MM-DD` form, anywhere in the text - an attestation's `by` cell is prose ("Ada
+ * Lovelace, checked 2026-09-13"), not a bare date, so this is not anchored. */
+const ATTESTATION_DATE = /\d{4}-\d{2}-\d{2}/;
+
+/** The floor the design's section 6 demands: an attestation "names a person and a date" and is
+ * "deliberately expensive to use". Below this, "Ada" plus a date is indistinguishable from a
+ * placeholder - the cheapest way to widen a baseline must not also be the easiest. */
+export const ATTESTATION_MIN_LENGTH = 30;
+
+/**
+ * Whether an attestation's `by` field clears the bar the design demands. Shared between
+ * `parse/baseline.ts`, which refuses a malformed document outright at parse time, and `gate.ts`,
+ * which must not trust a `Baseline` built programmatically - bypassing the parser entirely - to have
+ * already been checked. One predicate, one bar, so the two can never quietly disagree about what
+ * counts as substantial.
+ */
+export function attestationIsSubstantial(by: string): boolean {
+  return by.length >= ATTESTATION_MIN_LENGTH && ATTESTATION_DATE.test(by);
+}
+
 export const Inclusion = z.object({
   id: z.string().regex(REQUIREMENT_ID),
   why: z.string().min(1),

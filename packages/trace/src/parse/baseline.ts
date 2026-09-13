@@ -1,21 +1,14 @@
 import {
+  ATTESTATION_MIN_LENGTH,
   Baseline,
   Exclusion,
   Inclusion,
   REQUIREMENT_ID,
   Verification,
+  attestationIsSubstantial,
   validate,
 } from '../model.js';
 import { boldIdentifier, tableCells } from './table.js';
-
-/** A date in `YYYY-MM-DD` form, anywhere in the text - not anchored, since an attestation's `by`
- * cell is prose ("Ada Lovelace, checked 2026-09-13"), not a bare date. */
-const DATE = /\d{4}-\d{2}-\d{2}/;
-
-/** The floor the design's section 6 demands: an attestation "names a person and a date" and is
- * "deliberately expensive to use". Below this, "Ada" plus a date is indistinguishable from a
- * placeholder - the cheapest way to widen a baseline must not also be the easiest. */
-const ATTESTATION_MIN_LENGTH = 30;
 
 /**
  * Refuses a malformed `Verification` row the schema alone cannot catch: `Verification.by` is just a
@@ -23,14 +16,12 @@ const ATTESTATION_MIN_LENGTH = 30;
  * here, in the parser, so a malformed declaration can never enter the model at all.
  */
 function checkVerificationRow(row: Verification, id: string, where: string): void {
-  if (row.kind === 'attestation') {
-    if (row.by.length < ATTESTATION_MIN_LENGTH || !DATE.test(row.by)) {
-      throw new Error(
-        `${where}: ${id}'s attestation \`by\` must name a person and a date in YYYY-MM-DD form, ` +
-          `and be at least ${ATTESTATION_MIN_LENGTH} characters - an attestation is deliberately ` +
-          `expensive to make. "${row.by}" is not enough.`,
-      );
-    }
+  if (row.kind === 'attestation' && !attestationIsSubstantial(row.by)) {
+    throw new Error(
+      `${where}: ${id}'s attestation \`by\` must name a person and a date in YYYY-MM-DD form, ` +
+        `and be at least ${ATTESTATION_MIN_LENGTH} characters - an attestation is deliberately ` +
+        `expensive to make. "${row.by}" is not enough.`,
+    );
   }
   if (row.kind === 'inherited' && !REQUIREMENT_ID.test(row.by)) {
     throw new Error(

@@ -1,5 +1,12 @@
 import { problems as corpusProblems, type Problem } from './check.js';
-import type { Baseline, TraceModel, VERIFICATION_KINDS, Verification } from './model.js';
+import {
+  ATTESTATION_MIN_LENGTH,
+  attestationIsSubstantial,
+  type Baseline,
+  type TraceModel,
+  type VERIFICATION_KINDS,
+  type Verification,
+} from './model.js';
 import type { TestOutcome } from './results.js';
 import { traceOf } from './state.js';
 
@@ -160,7 +167,10 @@ export function gate(
    */
   function hasOwnEvidence(id: string): boolean {
     const declared = verificationById.get(id);
-    if (declared?.kind === 'attestation') return declared.by.trim().length > 0;
+    // Shared with the parser, which refuses an insubstantial attestation at parse time - but `gate`
+    // is exported and decides CI, so it must not trust a `Baseline` built programmatically to have
+    // already gone through that check.
+    if (declared?.kind === 'attestation') return attestationIsSubstantial(declared.by);
     if (declared?.kind === 'inherited') return false;
     return traceOf(id, model, outcomes)?.state === 'Verified';
   }
@@ -237,13 +247,29 @@ export function gate(
       continue;
     }
     if (kind === 'attestation') {
-      // Only reachable when `hasOwnEvidence` found nothing to accept - a blank `by` (Minor 5).
+      // Only reachable when `hasOwnEvidence` found nothing to accept - either a blank `by` (Minor 5)
+      // or one that fails `attestationIsSubstantial` (a hand-built `Baseline` bypassing the parser's
+      // own check). The two get distinct wording, so the detail says what was actually wrong rather
+      // than merely that something was.
+      const declaredBy = verificationById.get(id)?.by ?? '';
+      const isBlank = declaredBy.trim().length === 0;
       declarationProblems.push({
         kind: 'blank-attestation',
         id,
-        detail: `${id} declares an attestation with a blank \`by\` field in baseline ${baseline.name}`,
+        detail: isBlank
+          ? `${id} declares an attestation with a blank \`by\` field in baseline ${baseline.name}`
+          : `${id} declares an attestation whose \`by\` field does not name a person and a date ` +
+            `in YYYY-MM-DD form, at least ${ATTESTATION_MIN_LENGTH} characters, in baseline ` +
+            `${baseline.name}`,
       });
-      unmet.push({ id, kind, why: `${id} declares an attestation with no \`by\` text` });
+      unmet.push({
+        id,
+        kind,
+        why: isBlank
+          ? `${id} declares an attestation with no \`by\` text`
+          : `${id}'s attestation \`by\` does not name a person and a date in YYYY-MM-DD form, at ` +
+            `least ${ATTESTATION_MIN_LENGTH} characters`,
+      });
       continue;
     }
 

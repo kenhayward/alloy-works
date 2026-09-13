@@ -155,7 +155,9 @@ describe('deciding a baseline', () => {
   it('meets an attested requirement, and records who attested', () => {
     const result = gate(
       baseline({
-        verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'Ada, 2026-09-13' }],
+        verification: [
+          { id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, checked 2026-09-13' },
+        ],
       }),
       model({}),
       outcomes([]),
@@ -163,6 +165,30 @@ describe('deciding a baseline', () => {
 
     expect(result.unmet).toEqual([]);
     expect(result.met).toBe(1);
+  });
+
+  // Coordinator follow-up to the fix-round finding above: the parser refuses an insubstantial
+  // attestation at read time, but `gate` is exported and decides CI - it must not trust a `Baseline`
+  // built programmatically (bypassing the parser entirely) to have gone through that check. Proved by
+  // hand: a hand-built `| **CNT-001** | attestation | x |` yielded `met 1 of 1` before this fix.
+  it('refuses a hand-built Baseline whose attestation `by` is a single character, non-blank though it is', () => {
+    const result = gate(
+      baseline({ verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'x' }] }),
+      model({}),
+      outcomes([]),
+    );
+
+    expect(result.met).toBe(0);
+    expect(result.unmet).toEqual([
+      { id: 'ZZZ-001', kind: 'attestation', why: expect.stringContaining('YYYY-MM-DD') },
+    ]);
+    expect(result.declarationProblems).toEqual([
+      {
+        kind: 'blank-attestation',
+        id: 'ZZZ-001',
+        detail: expect.stringContaining('ZZZ-001'),
+      },
+    ]);
   });
 
   // Rule 3's contradiction is a declaration problem, not an ordinary miss: the fixture is otherwise
