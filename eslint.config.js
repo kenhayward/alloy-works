@@ -5,9 +5,28 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/.turbo/**', '**/coverage/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.turbo/**',
+      '**/coverage/**',
+      // Spike build output, on the same terms as dist: a bundle nobody wrote.
+      'spikes/**/out/**',
+    ],
   },
   js.configs.recommended,
+  {
+    // This spike's programs are throwaway and outside CI, and they are .mjs, which the block below
+    // does not match. Some run in a browser and some in node, so they get both. Scoped to this spike
+    // rather than to spikes/**, because another one declares `document` itself and a blanket global
+    // collides with it.
+    files: ['spikes/editor-framework/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,ts,tsx}'],

@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.15.4 - 2026-09-13 (PR #77)
+
+### Added
+
+- **The editor is ProseMirror** - [ADR-0023](docs/decisions/0023-prosemirror-as-the-editor-and-its-model.md),
+  after the spike briefed in 0.15.3 ran. All four gates pass and no cost leaks into the stored schema,
+  so `docs/design/content-model.md` does not change: the vocabulary survived contact with an editor,
+  which is what the spike ran to find out.
+- The architecture is **one editor view per component**, stitched into one scrolling container - and
+  it is chosen by two requirements rather than by preference. CNT-069 scopes undo to the component
+  being edited and the history plugin keeps one stack per editor, and CNT-074 wants per-component
+  editability as a flag rather than as a filter on every transaction forever. 300 components mount in
+  26 to 34ms, so clearing CNT-076 needs no virtualised scroll.
+- [The findings](docs/specification/spikes/Editor_Framework_Spike_Findings.md), and the throwaway code
+  in `spikes/editor-framework/`.
+
+### Fixed
+
+- Nothing in the product. Three defects were found in the spike and are recorded rather than shipped:
+  a block identifier cannot be a **required** attribute in the editor schema, so it takes a default
+  and a plugin fills it; splitting a block **duplicates its identifier silently**; and the obvious fix
+  for that renames the wrong block, breaking cross-references to stored content. The rule that works
+  is descent rather than arrival, and one argument to the position mapping decides it.
+- The accessibility finding worth reading twice: **axe reported zero violations against a table whose
+  caption was not associated with it.** CNT-139 requires an automated suite in CI and a recorded
+  manual audit, and the suite missed a real defect in the first thing that tested it. The manual audit
+  has not been done and no claim here stands in for it.
+
 ## 0.15.3 - 2026-09-13 (PR #76)
 
 ### Added
