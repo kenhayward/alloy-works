@@ -17,8 +17,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   `.trace-results/` (ignored by git and Prettier, rebuilt by every `pnpm test`), and `pnpm trace
 verify` reads them to compute `Verified`. Ten of the eleven currently-`Covered` requirements verify
   this way; the eleventh, IAM-018, is cited only by a `rule:` field with no matching test title, so it
-  stays `Covered` rather than `Verified` - a real gap between citing a requirement and a test's title
-  naming it, not a flaw in the tool.
+  stays `Covered` rather than `Verified` - a result is identified by its test's name, a `rule:`
+  assertion is not in the name, and that is deliberate rather than a bug: a weaker kind of evidence
+  answering to the same word as `Verified` would be the dishonesty this design exists to prevent, and
+  a named kind for it is stage 3's to define.
 - `pnpm trace check` reports every problem in the corpus: a design claiming a requirement that no
   longer exists, or a citation naming a requirement no design claims. Run against the real corpus for
   the first time, it finds seven: six requirements claimed by a design after being superseded, in

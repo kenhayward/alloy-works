@@ -1345,6 +1345,13 @@ cannot hide behind a test rewritten on purpose.
 - **No evidence pack.** Stage 3.
 - **No intake.** Stage 4.
 - **`IAM-018` is reported, not fixed.** Which design should claim it is a design conversation.
+- **A `rule:` citation cannot reach `Verified`, only `Covered`, and that is deliberate rather than a
+  gap in this plan.** `IAM-018`'s only citation is `rule: 'IAM-018'` in `apps/service/src/http.test.ts`,
+  not a test title, and a result is identified by its test's name - a `rule:` assertion is not in the
+  name, so no result ever matches it. Treating "every test in that file passed" as verification would
+  be weaker evidence answering to the same word as a title-based `Verified`, which is exactly the
+  conflation this design exists to prevent. A second, honestly-named kind of evidence for a `rule:`
+  citation is a verification kind, and that is stage 3's to define.
 - **`Verified` is only as honest as the tests are.** A test named for a requirement that asserts
   nothing still reads as verifying it. The matrix proves linkage; the test-driven discipline is what
   makes linkage mean something, and stage 1's design document says so out loud.

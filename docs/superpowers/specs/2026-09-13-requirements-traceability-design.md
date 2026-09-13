@@ -121,6 +121,15 @@ catches a renumbering. Every requirement **in the declared baseline** must be ci
 test, which catches the gap. Requirements outside the baseline are exempt, which is what stops the
 gate being unpassable at 8 of 1,303.
 
+**A `rule:` citation reaches `Covered`, never `Verified`, and that is deliberate.** The `test -> result`
+edge identifies a result by its test's name, because that is what the JSON reporter records; a
+`rule:` assertion lives in a test's body, not its name, so no result ever carries it. Treating every
+test in a `rule:` citation's file as verification, on the reasoning that the file passed, would be
+weaker evidence wearing the same word as the title-based rung; stage 2 declines that for exactly the
+reason section 6 exists to name - two different strengths of evidence sharing one name is the
+dishonesty this design exists to prevent. A `rule:` citation earning its own, weaker, named rung is a
+verification kind, and building that is stage 3's.
+
 ## 6. Constraints, and the three verification kinds
 
 361 requirements carry the tranche `Constraint`. They govern how something is built rather than

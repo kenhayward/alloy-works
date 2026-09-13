@@ -27,6 +27,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // Pinned rather than left implicit: the default reporter varies by platform, and a run that
     // swallows console output on Windows makes a noisy suite look pristine locally.
-    reporters: ['default'],
+    reporters: ['default', 'json'],
+    outputFile: { json: '../../.trace-results/web.json' },
   },
 });
