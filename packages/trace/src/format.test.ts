@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import type { Problem } from './check.js';
-import type { Requirement, TraceModel } from './model.js';
+import type { Baseline, Requirement, TraceModel } from './model.js';
 import { TraceModel as TraceModelSchema } from './model.js';
 import {
   STATES,
   formatArea,
+  formatBaseline,
   formatProblems,
   formatSearch,
   formatStats,
@@ -261,6 +262,50 @@ describe('formatting problems', () => {
     expect(output).toContain('cited-undesigned');
     expect(output).toContain('ZZZ-001');
     expect(output).toContain('a.test.ts:1');
+  });
+});
+
+describe('formatting a baseline', () => {
+  const baseline = (over: Partial<Baseline>): Baseline => ({
+    name: '0.0.0-invented',
+    declaredAt: '2026-09-13',
+    included: [{ id: 'ZZZ-001', why: 'invented for the fixture' }],
+    excluded: [],
+    verification: [],
+    ...over,
+  });
+
+  it('leads with the name and date, then the included count, and says nothing about exclusions when there are none', () => {
+    const output = formatBaseline(baseline({}));
+
+    expect(output).toContain('0.0.0-invented');
+    expect(output).toContain('2026-09-13');
+    expect(output).toContain('1 requirement(s) included');
+    expect(output).not.toContain('excluded');
+    expect(output).not.toContain('Verification');
+  });
+
+  it('lists every exclusion with its reason', () => {
+    const output = formatBaseline(
+      baseline({ excluded: [{ id: 'ZZZ-002', reason: 'Not built yet' }] }),
+    );
+
+    expect(output).toContain('1 excluded:');
+    expect(output).toContain('ZZZ-002');
+    expect(output).toContain('Not built yet');
+  });
+
+  it('lists every verification row, with its kind and who or what it rests on', () => {
+    const output = formatBaseline(
+      baseline({
+        verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, 2026-09-13' }],
+      }),
+    );
+
+    expect(output).toContain('Verification:');
+    expect(output).toContain('ZZZ-001');
+    expect(output).toContain('attestation');
+    expect(output).toContain('Ada Lovelace, 2026-09-13');
   });
 });
 

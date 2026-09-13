@@ -37,6 +37,19 @@ describe('the 0.13.0 baseline', () => {
     }
   });
 
+  // A reason a schema accepts and a reason a reader would accept are different things: `min(1)` at
+  // parse time lets "later" through, which is exactly how an exclusion gets waved through without
+  // anyone having actually named what is missing. This is a floor, not a style rule - every reason
+  // in the real document should clear it by a wide margin.
+  it('gives every exclusion a reason substantial enough to not be a placeholder', () => {
+    for (const exclusion of baseline.excluded) {
+      expect(
+        exclusion.reason.trim().length,
+        `${exclusion.id}'s reason should be a real explanation, not a placeholder`,
+      ).toBeGreaterThanOrEqual(40);
+    }
+  });
+
   it('excludes nothing it also includes', () => {
     const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
     const excludedIds = baseline.excluded.map((exclusion) => exclusion.id);
@@ -53,7 +66,7 @@ describe('the 0.13.0 baseline', () => {
     expect(exclusion?.reason).toMatch(/never.*Verified|Verified/);
   });
 
-  it('declares ten included requirements', () => {
-    expect(baseline.included).toHaveLength(10);
+  it('declares seven included requirements', () => {
+    expect(baseline.included).toHaveLength(7);
   });
 });
