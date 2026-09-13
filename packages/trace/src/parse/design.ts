@@ -21,13 +21,21 @@ export function parseDesignDocument(document: string, text: string): Design {
     if (line.startsWith('## ')) break;
 
     const cells = tableCells(line);
-    if (cells === undefined || cells.length !== 2) continue;
+    if (cells === undefined) continue;
     const first = cells[0];
     if (first === undefined) continue;
     const id = boldIdentifier(first);
-    if (id === undefined || !REQUIREMENT_ID.test(id)) continue;
+    if (id === undefined) continue;
 
-    owns.push(validate(DesignClaim, { id, howItIsMet: cells[1] }, `${document}:${index + 1}`));
+    const where = `${document}:${index + 1}`;
+
+    if (cells.length === 2 && REQUIREMENT_ID.test(id)) {
+      owns.push(validate(DesignClaim, { id, howItIsMet: cells[1] }, where));
+    } else if (REQUIREMENT_ID.test(id)) {
+      throw new Error(
+        `${where}: ${id} is a bolded identifier in a row of ${cells.length} cells. A design claim row has 2.`,
+      );
+    }
   }
 
   return { document, owns };

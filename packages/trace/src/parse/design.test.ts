@@ -56,14 +56,14 @@ describe('parsing a design document', () => {
     expect(() => parseDesignDocument(document, text)).toThrow(/invented-subsystem\.md:3/);
   });
 
-  it('does not claim a row of the wrong width, even with a valid identifier in it', () => {
+  it('refuses a claim row of the wrong width instead of silently dropping it', () => {
     const text = [
       '## Requirements owned',
       '',
       '| **ZZZ-007** | A third column | That should not be here |',
     ].join('\n');
 
-    expect(parseDesignDocument(document, text).owns).toEqual([]);
+    expect(() => parseDesignDocument(document, text)).toThrow(/invented-subsystem\.md:3/);
   });
 
   it('does not claim a non-requirement or an open question, which cannot be owned by a design', () => {

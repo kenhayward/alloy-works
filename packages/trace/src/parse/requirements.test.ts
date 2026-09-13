@@ -95,6 +95,12 @@ describe('parsing an area document', () => {
 
     expect(parseAreaDocument(document, text).requirements[0]?.status).toBe('Superseded by ZZZ-007');
   });
+
+  it('refuses a bolded identifier in a row of the wrong width instead of silently dropping it', () => {
+    const text = '| **ZZZ-008** | A widget must exist | T1 |';
+
+    expect(() => parseAreaDocument(document, text)).toThrow(/ZZZ-invented-area\.md:1/);
+  });
 });
 
 /**

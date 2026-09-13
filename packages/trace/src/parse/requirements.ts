@@ -70,6 +70,10 @@ export function parseAreaDocument(document: string, text: string): AreaDocument 
           where,
         ),
       );
+    } else {
+      throw new Error(
+        `${where}: ${id} is a bolded identifier in a row of ${cells.length} cells. A requirement row has 4, a non-requirement 2, an open question 3.`,
+      );
     }
   }
 
