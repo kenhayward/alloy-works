@@ -3,6 +3,19 @@ import { type RequirementState, type Trace, allTraces } from './state.js';
 
 const STATES: RequirementState[] = ['Specified', 'Designed', 'Withdrawn', 'Superseded'];
 
+/**
+ * The design line must never claim a false absence: a requirement can be Withdrawn or Superseded
+ * and still be claimed by a design that has not caught up. Say both facts rather than picking one.
+ */
+function designLine(trace: Trace): string {
+  if (trace.design === undefined) return 'no design claims it';
+  if (trace.state === 'Withdrawn') return `claimed by ${trace.design}, but withdrawn`;
+  if (trace.state === 'Superseded') {
+    return `claimed by ${trace.design}, but superseded by ${trace.supersededBy}`;
+  }
+  return trace.design;
+}
+
 export function formatTrace(trace: Trace): string {
   const { requirement } = trace;
   const lines = [
@@ -11,7 +24,7 @@ export function formatTrace(trace: Trace): string {
     requirement.statement,
     '',
     `  specified  ${requirement.document}:${requirement.line}`,
-    `  design     ${trace.design ?? 'no design claims it'}`,
+    `  design     ${designLine(trace)}`,
   ];
   if (trace.supersededBy !== undefined) lines.push(`  superseded by ${trace.supersededBy}`);
   return lines.join('\n');

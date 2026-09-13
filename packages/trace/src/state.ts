@@ -21,14 +21,14 @@ function designClaiming(id: string, model: TraceModel): string | undefined {
 }
 
 function trace(requirement: Requirement, model: TraceModel): Trace {
+  const design = designClaiming(requirement.id, model);
   const supersededBy = SUPERSEDED_BY.exec(requirement.status)?.[1];
   if (supersededBy !== undefined) {
-    return { requirement, state: 'Superseded', design: undefined, supersededBy };
+    return { requirement, state: 'Superseded', design, supersededBy };
   }
   if (requirement.status === 'Withdrawn') {
-    return { requirement, state: 'Withdrawn', design: undefined, supersededBy: undefined };
+    return { requirement, state: 'Withdrawn', design, supersededBy: undefined };
   }
-  const design = designClaiming(requirement.id, model);
   return {
     requirement,
     state: design === undefined ? 'Specified' : 'Designed',

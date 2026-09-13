@@ -53,6 +53,41 @@ describe('formatting one requirement', () => {
   it('says plainly that nothing designs a specified requirement', () => {
     expect(formatTrace(traceOf('ZZZ-002', model)!)).toContain('no design claims it');
   });
+
+  // A stale claim on a superseded requirement is a fact about the design, not a reason to print a
+  // false "no design claims it" - the reviewer's REL-002 case, reproduced with invented identifiers.
+  it('states both facts when a design still claims a superseded requirement', () => {
+    const supersededAndClaimed: TraceModel = {
+      ...model,
+      requirements: [
+        ...model.requirements,
+        {
+          id: 'ZZZ-005',
+          area: 'ZZZ',
+          statement: 'A widget must chime',
+          tranche: 'T1',
+          status: 'Superseded by ZZZ-006',
+          document: 'ZZZ-invented-area.md',
+          line: 9,
+        },
+      ],
+      designs: [
+        {
+          document: 'invented-subsystem.md',
+          owns: [
+            { id: 'ZZZ-001', howItIsMet: 'A column' },
+            { id: 'ZZZ-005', howItIsMet: 'A stale claim on a superseded requirement' },
+          ],
+        },
+      ],
+    };
+
+    const output = formatTrace(traceOf('ZZZ-005', supersededAndClaimed)!);
+
+    expect(output).toContain('claimed by invented-subsystem.md');
+    expect(output).toContain('superseded by ZZZ-006');
+    expect(output).not.toContain('no design claims it');
+  });
 });
 
 describe('searching statements', () => {
