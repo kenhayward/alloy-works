@@ -280,6 +280,48 @@ describe('parsing a filed requirement issue', () => {
     expect(parsed.statement).toContain('more detail.');
   });
 
+  it.each(['must', 'MUST', 'should', 'Should'])(
+    'accepts a statement that says %s, regardless of case - RFC 2119 uppercase is house style for this audience',
+    (word) => {
+      const body = [
+        '### Area',
+        '',
+        'CNT - Content and authoring',
+        '',
+        '### The requirement',
+        '',
+        `A footnote ${word} carry a citation.`,
+        '',
+        '### Why',
+        '',
+        'Reviewers put sources in footnotes, and losing them makes the footnote useless.',
+      ].join('\n');
+
+      expect(parseIssue(body).statement).toBe(`A footnote ${word} carry a citation.`);
+    },
+  );
+
+  it('treats a tranche heading present but left blank as absent, not the empty string', () => {
+    const body = [
+      '### Area',
+      '',
+      'CNT - Content and authoring',
+      '',
+      '### The requirement',
+      '',
+      'A footnote must be able to carry a citation.',
+      '',
+      '### Why',
+      '',
+      'Reviewers put sources in footnotes, and losing them makes the footnote useless.',
+      '',
+      '### Suggested tranche',
+      '',
+    ].join('\n');
+
+    expect(parseIssue(body).tranche).toBeUndefined();
+  });
+
   it('reads "Not sure" as tranche as undefined, not the string itself', () => {
     const body = [
       '### Area',

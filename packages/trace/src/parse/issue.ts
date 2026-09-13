@@ -9,8 +9,14 @@ const NO_RESPONSE = '_No response_';
 /** `must` is binding, `should` is a strong default an author may argue against later; the same rule
  * `model.ts`'s `Requirement` schema applies to a corpus row. A statement that says neither commits
  * to nothing, and catching that here - at intake - means it can be sent back to the person who filed
- * it, rather than discovered later inside the corpus. */
-const BINDING = /\b(must|should)\b/;
+ * it, rather than discovered later inside the corpus.
+ *
+ * Case-insensitive at intake only - RFC 2119 uppercase (`MUST`, `SHOULD`) is house style in standards
+ * and regulated work, precisely this form's audience, and refusing it here with a message telling the
+ * filer to do exactly what they already did would contradict their own screen. `model.ts`'s corpus
+ * rule stays case-sensitive: lowercase mid-sentence is the corpus convention, a separate decision from
+ * what intake accepts. */
+const BINDING = /\b(must|should)\b/i;
 
 /** The tranche dropdown's escape hatch for someone who does not know - a placement the corpus should
  * record as absent, not as the literal word "Not sure". */
@@ -31,7 +37,7 @@ const HEADING = {
 } as const;
 
 export const FiledRequirement = z.object({
-  area: z.string().regex(AREA_CODE),
+  area: z.string().regex(AREA_CODE, 'must be a three-letter area code, such as CNT'),
   statement: z.string().min(1).regex(BINDING, 'must say must or should'),
   why: z.string().min(1),
   howWeWouldKnow: z.string().optional(),
@@ -39,6 +45,19 @@ export const FiledRequirement = z.object({
   whoAsked: z.string().optional(),
 });
 export type FiledRequirement = z.infer<typeof FiledRequirement>;
+
+/**
+ * An empty or whitespace-only tranche, treated as absent - the same as never answering the question.
+ * Two routes can produce one without the filer ever meaning to leave it blank: a "Suggested tranche"
+ * heading present with a blank answer (GitHub only writes `_No response_` for a field skipped through
+ * its own control, not for one left empty by hand), and `cli.ts`'s flag form, where a trailing
+ * `--tranche` with no value after it becomes `''`. Left as `''`, `draft.ts`'s `??` fallback lets it
+ * through unchanged, so the row carries a blank tranche column and the missing-tranche warning never
+ * fires - exported so `cli.ts` applies the same rule to its own route.
+ */
+export function normalizeTranche(value: string | undefined): string | undefined {
+  return value === undefined || value.trim() === '' ? undefined : value;
+}
 
 /** A `### <label>` heading line, capturing the label. Matching `^### ` alone is not enough to keep
  * an occurrence inside an answer - a quoted markdown snippet, say - from being mistaken for a field
@@ -149,7 +168,7 @@ export function parseIssue(body: string): FiledRequirement {
 
   const howWeWouldKnow = optionalAnswer(answers, HEADING.howWeWouldKnow);
   const rawTranche = optionalAnswer(answers, HEADING.tranche);
-  const tranche = rawTranche === TRANCHE_NOT_SURE ? undefined : rawTranche;
+  const tranche = rawTranche === TRANCHE_NOT_SURE ? undefined : normalizeTranche(rawTranche);
   const whoAsked = optionalAnswer(answers, HEADING.whoAsked);
 
   return validate(

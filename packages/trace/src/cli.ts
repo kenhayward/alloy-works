@@ -3,6 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
@@ -20,9 +21,9 @@ import {
   search,
 } from './format.js';
 import { gate } from './gate.js';
+import { validate } from './model.js';
 import { parseBaseline } from './parse/baseline.js';
-import type { FiledRequirement } from './parse/issue.js';
-import { parseIssue } from './parse/issue.js';
+import { FiledRequirement, normalizeTranche, parseIssue } from './parse/issue.js';
 import { packDocuments } from './pack.js';
 import { dirtyTreeRefusal } from './pack-guard.js';
 import {
@@ -153,9 +154,12 @@ interface DraftInputError {
  * unauthenticated - that failure is reported as one sentence naming the flag form, never a stack
  * trace. The flag form builds a `FiledRequirement` by hand, the same "somebody built it by hand
  * rather than through the issue form" case `draft.ts` already documents its own belt-and-braces
- * check against.
+ * check against - and, because it never goes through `parseIssue`'s own `validate(FiledRequirement,
+ * ...)` call, is passed through that same schema here. Without this the two ways in disagreed about
+ * what is acceptable: `--area zz9` became `ZZ9` unrefused, and a statement with no must/should was
+ * only warned about rather than refused, exactly as the issue-form path refuses it.
  */
-function readDraftInput(args: string[]): DraftInput | DraftInputError {
+export function readDraftInput(args: string[]): DraftInput | DraftInputError {
   const first = args[0];
 
   if (first !== undefined && !first.startsWith('--')) {
@@ -206,17 +210,25 @@ function readDraftInput(args: string[]): DraftInput | DraftInputError {
     return { error: `--issue must be a number, not "${issueFlag}".` };
   }
 
-  return {
-    filed: {
-      area: area.toUpperCase(),
-      statement,
-      why: '(given on the command line, not filed as an issue)',
-      howWeWouldKnow: undefined,
-      tranche: flags.get('tranche'),
-      whoAsked: undefined,
-    },
-    issue,
-  };
+  try {
+    return {
+      filed: validate(
+        FiledRequirement,
+        {
+          area: area.toUpperCase(),
+          statement,
+          why: '(given on the command line, not filed as an issue)',
+          howWeWouldKnow: undefined,
+          tranche: normalizeTranche(flags.get('tranche')),
+          whoAsked: undefined,
+        },
+        'the draft flags',
+      ),
+      issue,
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 /** The area document `draft` should read candidate sections from - `AAA-whatever.md` in the
@@ -451,4 +463,14 @@ function fail(message: string): number {
   return 1;
 }
 
-process.exitCode = main(process.argv.slice(2));
+/**
+ * Runs `main` only when this file is the script Node was asked to execute - never when it is
+ * imported, which `cli.test.ts` does to reach `readDraftInput` directly. Without this guard,
+ * importing the module for a unit test would run the real CLI against the test runner's own
+ * `process.argv`, reading the real corpus and setting `process.exitCode` as a side effect of import.
+ */
+const isMain =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  process.exitCode = main(process.argv.slice(2));
+}
