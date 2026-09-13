@@ -121,23 +121,25 @@ describe('the content document', () => {
   });
 
   it('CNT-017 and CNT-022 make a figure reference an asset and carry an alternative', () => {
-    const figure = {
+    const withoutAlternative = {
       type: 'figure',
       id: 'b6',
       asset: 'asset-1',
       imageStyle: 'column-width',
       caption: 'Figure',
-      alternative: { kind: 'inherited' },
     };
+    const figure = { ...withoutAlternative, alternative: { kind: 'inherited' } };
     expect(parseContentDocument(doc([figure])).content[0]).toMatchObject({ asset: 'asset-1' });
-    const { alternative: _dropped, ...withoutAlternative } = figure;
     expect(() => contentDocumentSchema.parse(doc([withoutAlternative]))).toThrow();
   });
 
-  it('CNT-021 and CNT-047 make a block equation numbered or explicitly unnumbered', () => {
-    const equation = { type: 'equation', id: 'b7', mathml: '<math/>', numbered: false };
+  // Not CNT-047, deliberately. Its second clause - that an unnumbered equation consumes no
+  // number - belongs to STR, which owns the sequence, so content-model.md declines the claim.
+  // Citing it here would compute Covered for a requirement no design answers in full.
+  it('CNT-021 stores a block equation as numbered or explicitly unnumbered', () => {
+    const withoutNumbered = { type: 'equation', id: 'b7', mathml: '<math/>' };
+    const equation = { ...withoutNumbered, numbered: false };
     expect(parseContentDocument(doc([equation])).content[0]).toMatchObject({ numbered: false });
-    const { numbered: _dropped, ...withoutNumbered } = equation;
     expect(() => contentDocumentSchema.parse(doc([withoutNumbered]))).toThrow();
   });
 
