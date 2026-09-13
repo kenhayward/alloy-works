@@ -26,6 +26,26 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   outside as a GitHub issue and be drafted into a row for a person to place, closing the loop from
   proposal to corpus.
 
+### Fixed
+
+- A requirement written across two paragraphs, as the issue form's textarea allows, produced a
+  drafted row that vanished from the corpus with no error at all once pasted in - the row's second
+  line broke the table, so the parser silently read zero requirements from it. The statement is now
+  normalised to one line before it is drafted, so this cannot happen.
+- A statement that quoted a markdown snippet containing a heading such as `### Area` could hijack that
+  field, replacing the filer's real answer and truncating another one, with no error. Only a heading
+  naming one of the form's own fields is recognised, one inside a fenced code block never is, and a
+  genuine duplicate heading is now refused rather than silently picked.
+- An uppercase `MUST` or `SHOULD` in a filed statement was refused, contradicting the wording on the
+  filer's own screen. Both cases are now accepted when filing, alongside the lowercase form.
+- An empty or blank suggested tranche no longer slips past the placeholder that would otherwise warn
+  that a tranche still needs to be chosen.
+- Drafting from the command line with `--area` and `--statement` now applies the same checks as
+  drafting from a filed issue, instead of only warning about a problem the issue form would refuse
+  outright.
+- The requirement form pointed a bug report at a template that does not exist. It now points to a
+  blank issue instead, and tells the filer what happens after they submit.
+
 ## 0.13.0 - 2026-09-13 (PR #64)
 
 ### Added
