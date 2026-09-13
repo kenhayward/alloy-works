@@ -20,6 +20,7 @@ import {
 import { gate } from './gate.js';
 import { parseBaseline } from './parse/baseline.js';
 import { packDocuments } from './pack.js';
+import { dirtyTreeRefusal } from './pack-guard.js';
 import {
   type NamedReport,
   type TestOutcome,
@@ -239,6 +240,17 @@ function main(argv: string[]): number {
       }
       case 'pack': {
         if (argument === undefined) return fail('pack needs a version, such as 0.13.0.');
+
+        // Refused before anything else, and before anything is written: a pack is stamped with
+        // `git rev-parse HEAD`, which names the *parent* of whatever gets committed next, so a pack
+        // built from a dirty tree is stamped with a commit that cannot reproduce it. See
+        // pack-guard.ts.
+        const status = execFileSync('git', ['status', '--porcelain'], {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+        });
+        const refusal = dirtyTreeRefusal(status);
+        if (refusal !== undefined) return fail(refusal);
 
         const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);
         const file = `${argument}.md`;
