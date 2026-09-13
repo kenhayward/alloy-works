@@ -2,6 +2,8 @@
 
 Baseline `0.13.0`, declared 2026-09-13. One row per requirement this release is answerable for - nothing outside it appears here; see `gaps.md` for what is not claimed.
 
+The Evidence column indexes the citations `pnpm trace check` scans for - one file:line per kind, not every test that names a requirement. `results.md` carries the complete list.
+
 | ID | Statement | Tranche | Design | Evidence | Verdict |
 | --- | --- | --- | --- | --- | --- |
 | **IAM-004** | Every read and write path must be covered by a test that attempts access from a second tenant and is refused | T1 | service-foundations.md | apps/service/src/cross-tenant.test.ts:59 | Met |

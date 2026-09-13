@@ -29,11 +29,11 @@ Requirements somebody would reasonably expect to find in this baseline, and why 
 
 ## Everything else out of baseline
 
-1257 in-force requirement(s) this release does not claim at all, named nowhere in this pack because a baseline for an early release does not need one row per requirement it has not reached yet. Counted by tranche, not by identifier:
+1253 in-force requirement(s) this release does not claim at all, named nowhere in this pack because a baseline for an early release does not need one row per requirement it has not reached yet. Counted by tranche, not by identifier:
 
 | Tranche | In force, out of baseline |
 | --- | --- |
-| T1 | 307 |
+| T1 | 303 |
 | T2 | 175 |
 | T3 | 196 |
 | T4 | 88 |

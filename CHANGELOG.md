@@ -43,6 +43,21 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   than smoothed over, because the next person writing a baseline needs the warning it leaves: `docs/design/`
   describes what a subsystem is being built towards, not what is built, and a baseline that cites it
   instead of the source will overstate what a release delivers.
+- `Verified` was computed from any citation at all, including a `rule:` field naming a requirement
+  inside a test's body rather than its title - so a requirement cited only that way reached `Verified`
+  the moment its test passed, even though no test result is ever identified by a `rule:` field's text.
+  `IAM-018`, cited only this way, now correctly stays `Covered`. `Verified` is still 10 and the gate
+  is still 7 of 7, because every requirement the baseline actually includes has a title citation.
+- An attestation - the declared way to verify a requirement no test reaches - accepted any non-blank
+  text at all, so a one-character `by` passed the gate cleanly. The parser now refuses a baseline
+  document whose attestation does not name a person and a date in `YYYY-MM-DD` form, in at least 30
+  characters, so the honest escape hatch stays as expensive to use as the design always said it
+  should be.
+- The first evidence pack said "Generated at commit `c251471`", but that commit's own `matrix.md`
+  held neither citation this branch had already made. It was packed while those edits were still
+  uncommitted, so the commit it recorded was the wrong one - evidence that could never be reproduced
+  from the tag it named, on the very first pack. `pnpm trace pack` now refuses to run on a dirty
+  working tree, and names why.
 
 ## 0.12.0 - 2026-09-13 (PR #63)
 
