@@ -3,6 +3,38 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.10.16 - 2026-09-13 (PR #60)
+
+### Added
+
+- A design for requirements traceability, in
+  `docs/superpowers/specs/2026-09-13-requirements-traceability-design.md`. The corpus is now 1,303
+  requirements across twenty-one areas, and the chain an audit asks for - requirement to design to
+  test to result - exists only for its first link. The design keeps markdown as the source of truth
+  and adds a `packages/trace` workspace that compiles it: a real parser in place of the regular
+  expressions currently embedded in two test files, a committed and drift-checked `trace.json` in the
+  same spirit as `openapi.json`, a query and search command for finding the handful of requirements
+  that govern a piece of work, and a four-state ladder - Specified, Designed, Covered, Verified -
+  computed from what cites a requirement rather than from a column somebody maintains.
+- The design also settles the three things that make such a matrix honest rather than decorative: a
+  baseline, so that the 620 requirements deliberately deferred to later tranches read as deferred
+  instead of missing; three verification kinds, so that the 361 constraints which no single test can
+  cover are answered by inheritance or a named attestation rather than pretended over; and a plain
+  statement that the matrix proves linkage and not correctness, so that nobody later mistakes it for
+  a quality claim. Four staged pull requests are proposed, each useful alone.
+
+- The implementation plan for the first of its four stages, in
+  `docs/plans/2026-09-13-traceability-01-the-compiled-corpus.md`, and a Traceability section in the
+  plans index to hold it. Seven tasks, fifty-two steps, test first throughout: the parsers, the state
+  ladder, the committed index and its drift check, the query command, and the two requirement checks
+  moved out of `apps/desktop` into the workspace their own comments had been asking for.
+
+### Fixed
+
+- Measuring the corpus to write the above turned up a requirement, `IAM-018`, that a test cites and
+  no design claims. Recorded in the design document; the check that would have caught it arrives with
+  the work.
+
 ## 0.10.15 - 2026-09-12 (PR #59)
 
 ### Changed

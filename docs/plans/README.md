@@ -34,5 +34,20 @@ a larger thing that is not.
 
 **The scaffolding is finished.** A person can open an environment, sign in, ask for something, watch
 it happen and download the result, in a browser or the desktop app, with the whole system checked on
-every change. What comes next is the first real feature, which is a product conversation rather than
-a plan.
+every change.
+
+## Traceability
+
+The layer that turns 1,303 requirements into something queryable, and the chain from a requirement to
+the test that verifies it into something computed rather than remembered. Designed in
+[the traceability design](../superpowers/specs/2026-09-13-requirements-traceability-design.md), which
+the plans below argue from. Four stages, each useful alone; stages 2 to 4 are written when their turn
+comes.
+
+| #   | Plan                                                                     | Builds                                                                                                                                                                        | Status  |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [The compiled corpus](2026-09-13-traceability-01-the-compiled-corpus.md) | `packages/trace`: the parsers, the state ladder, the committed and drift-checked `trace.json`, the query and search command, and the two repository-wide checks moved into it | Planned |
+
+This is tooling rather than product, which is why it has no document in [`../design/`](../design/):
+every document there declares the product requirements it owns, and this owns none. The first real
+feature is still a product conversation rather than a plan.
