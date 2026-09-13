@@ -32,6 +32,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - `pnpm format` was failing on scratch files under `.superpowers/`, a git-ignored working area for
   in-flight implementation plans. Prettier reads its own ignore list rather than `.gitignore`, so that
   directory is now excluded there too.
+- `turbo.json` gave the trace package's drift check no override, so a cached run could replay a
+  passing log and print `FULL TURBO` without re-running the check, even after the requirement or
+  design documents it reads had changed - a local run could look green while trusting a stale
+  answer. The task now sets `cache: false`, like every other check that reads state outside its own
+  directory.
 
 ## 0.10.16 - 2026-09-13 (PR #60)
 
