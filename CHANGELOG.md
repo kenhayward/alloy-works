@@ -3,6 +3,49 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.14.0 - 2026-09-13 (PR #65)
+
+### Added
+
+- A requirement can now be **filed as a GitHub issue**, through a form that asks for the area, the
+  statement, why it matters, how somebody would know it is done, and a suggested tranche - never an
+  identifier, because none is allocated yet. The form offers all 21 area codes, kept in step with the
+  requirements index by a test.
+- `pnpm trace draft` reads a filed issue, or the same information from flags with no issue and no
+  `gh` required, allocates the next free identifier in that area, and prints a table row along with
+  every section of the area document that already introduces a requirements table, as candidates for
+  where it might go. It never inserts the row: a requirement added later belongs beside the ones it
+  relates to, and that is a judgement about meaning that a tool would get wrong silently, because the
+  corpus would still parse with a technically valid row filed in the wrong place. A person places the
+  row, in the pull request that lands it.
+- The requirements traceability design's four stages are now all built. Every requirement in the
+  corpus is compiled from committed documents into one queryable, drift-checked model. Whether a
+  requirement is actually covered by a test, and whether that test passed, is computed rather than
+  remembered, and a baseline can now declare exactly which requirements a release is answerable for
+  with a gate in CI that fails when that claim does not hold. A requirement can also now arrive from
+  outside as a GitHub issue and be drafted into a row for a person to place, closing the loop from
+  proposal to corpus.
+
+### Fixed
+
+- A requirement written across two paragraphs, as the issue form's textarea allows, produced a
+  drafted row that vanished from the corpus with no error at all once pasted in - the row's second
+  line broke the table, so the parser silently read zero requirements from it. The statement is now
+  normalised to one line before it is drafted, so this cannot happen.
+- A statement that quoted a markdown snippet containing a heading such as `### Area` could hijack that
+  field, replacing the filer's real answer and truncating another one, with no error. Only a heading
+  naming one of the form's own fields is recognised, one inside a fenced code block never is, and a
+  genuine duplicate heading is now refused rather than silently picked.
+- An uppercase `MUST` or `SHOULD` in a filed statement was refused, contradicting the wording on the
+  filer's own screen. Both cases are now accepted when filing, alongside the lowercase form.
+- An empty or blank suggested tranche no longer slips past the placeholder that would otherwise warn
+  that a tranche still needs to be chosen.
+- Drafting from the command line with `--area` and `--statement` now applies the same checks as
+  drafting from a filed issue, instead of only warning about a problem the issue form would refuse
+  outright.
+- The requirement form pointed a bug report at a template that does not exist. It now points to a
+  blank issue instead, and tells the filer what happens after they submit.
+
 ## 0.13.0 - 2026-09-13 (PR #64)
 
 ### Added

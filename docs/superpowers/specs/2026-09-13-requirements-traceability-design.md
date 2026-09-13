@@ -1,6 +1,6 @@
 # Requirements traceability
 
-> **Status: stages 1 through 3 built; stage 4 remains.** Rests on
+> **Status: all four stages built.** Rests on
 > [`docs/specification/requirements/README.md`](../../specification/requirements/README.md) for the
 > identifier scheme, and on `packages/trace/src/requirements.test.ts` and
 > `packages/trace/src/design.test.ts` for the checks that already exist. Nothing here changes a
@@ -258,9 +258,10 @@ and land as rows by pull request, so that the issue is the change-control record
 who proposed a change, against what reasoning, who approved it, when, at which commit.
 
 `.github/ISSUE_TEMPLATE/requirement.yml` is an issue form with the area (a dropdown of the 21 codes),
-the statement, the reasoning, a suggested tranche, and who asked. `pnpm trace draft <issue>` then
-allocates the next free identifier in that area, inserts the row in the section named, and links the
-issue. The pull request closes it.
+the statement, the reasoning, a suggested tranche, and who asked. `pnpm trace draft <issue>` allocates
+the next free identifier in that area and prints the row and the candidate sections, and a person
+places it: where a requirement belongs is a judgement about meaning that a tool would get wrong
+silently, since the corpus would still parse. The pull request that places the row closes the issue.
 
 **Known limitation.** Two concurrent branches can both claim the next free identifier. The contiguity
 check catches the collision, and resolution is renumbering the later one before merge. Locking it
@@ -271,16 +272,22 @@ through.
 
 ```bash
 pnpm trace show CNT-014            # statement, tranche, owning design, citing tests, state
-pnpm trace gaps --baseline T1      # in the baseline, not yet Verified
 pnpm trace search 'footnote'       # full text over statements
-pnpm trace area CNT --state Designed
+pnpm trace area CNT                # every requirement in an area, with its state
 pnpm trace next CNT                # the next free identifier
-pnpm trace matrix --format md
 ```
 
 This is the half of the work that pays off immediately and has nothing to do with audit: it is how a
 person, or an assistant, finds the four requirements that govern the thing they are about to build,
 out of 1,303.
+
+**Reconciled against what was actually built.** `show`, `search`, `area` and `next` above are real;
+`stats`, `check`, `draft`, `verify`, `baseline`, `gate` and `pack` exist too, built beyond what this
+section originally listed. Three convenience forms this section once showed never got a command of
+their own: `gaps` and `matrix` became documents in the evidence pack instead (`pnpm trace pack`
+writes `gaps.md` and `matrix.md` alongside `results.md` - see `pack.ts`), and `--state` as a filter on
+`pnpm trace area` was not built. None of the three is worth holding up a PR that declares this design
+delivered.
 
 ## 11. Where it lives
 

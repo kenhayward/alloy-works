@@ -127,6 +127,9 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   later comment. Verify the issue actually closed after the merge.
 - Issues and PRs share one number sequence, so the PR number is usually the issue number + 1 -
   confirm rather than assume.
+- **A requirement arrives the same way.** It is filed through the issue form
+  (`.github/ISSUE_TEMPLATE/requirement.yml`), drafted into a row with `pnpm trace draft`, and lands
+  in the corpus as a row by the pull request that closes it.
 
 ## Versioning & the changelog (required)
 
@@ -223,6 +226,8 @@ pnpm trace check                                  # every problem in the corpus:
 pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
 pnpm trace gate                                   # pass or fail a baseline; the CI step of the same name
 pnpm trace pack 0.13.0                            # write that baseline's evidence pack to docs/trace/0.13.0/
+pnpm trace draft <issue>                          # draft a row from a filed GitHub issue; prints, never inserts
+pnpm trace draft --area XXX --statement "..."     # the same, from flags - no gh required
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

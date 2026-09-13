@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import type { Problem } from './check.js';
+import type { Draft } from './draft.js';
 import type { GateResult } from './gate.js';
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import { TraceModel as TraceModelSchema } from './model.js';
@@ -10,6 +11,7 @@ import {
   STATES,
   formatArea,
   formatBaseline,
+  formatDraft,
   formatGate,
   formatProblems,
   formatSearch,
@@ -521,5 +523,39 @@ describe('formatting the gate', () => {
     expect(unmetIndex).toBeGreaterThan(metIndex);
     expect(declarationIndex).toBeGreaterThan(unmetIndex);
     expect(outsideIndex).toBeGreaterThan(declarationIndex);
+  });
+});
+
+const draft = (overrides: Partial<Draft> = {}): Draft => ({
+  id: 'ZZZ-004',
+  row: '| **ZZZ-004** | A widget must remember its own name | T1 | Specified |',
+  sections: ['2. Widgets', '2.1 Gadgets'],
+  warnings: [],
+  ...overrides,
+});
+
+describe('formatting a draft', () => {
+  it('names the identifier, prints the row on its own line, lists the candidate sections and warnings, and reminds to close the issue', () => {
+    const output = formatDraft(
+      draft({ warnings: ['No tranche given - the row carries the placeholder "T?".'] }),
+      62,
+    );
+    const lines = output.split('\n');
+
+    expect(output).toContain('ZZZ-004');
+    expect(lines).toContain(
+      '| **ZZZ-004** | A widget must remember its own name | T1 | Specified |',
+    );
+    expect(output).toContain('2. Widgets');
+    expect(output).toContain('2.1 Gadgets');
+    expect(output).toContain('No tranche given - the row carries the placeholder "T?".');
+    expect(output).toContain('Fixes #62');
+  });
+
+  it('says plainly when no issue number is known, rather than printing a broken Fixes #undefined', () => {
+    const output = formatDraft(draft(), undefined);
+
+    expect(output).not.toContain('undefined');
+    expect(output).not.toContain('Fixes #');
   });
 });

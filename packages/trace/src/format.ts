@@ -1,4 +1,5 @@
 import type { Problem } from './check.js';
+import type { Draft } from './draft.js';
 import type { GateResult } from './gate.js';
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import type { TestOutcome } from './results.js';
@@ -191,6 +192,44 @@ export function formatGate(result: GateResult, includedIds: ReadonlySet<string>)
     outside.length === 0
       ? 'No corpus problems outside this baseline.'
       : `${outside.length} corpus problem(s) outside this baseline (informational - does not affect the gate).`,
+  );
+
+  return lines.join('\n');
+}
+
+/**
+ * A drafted requirement, for a person to copy into the corpus by hand - the tool never writes. Names
+ * the identifier, prints the row on its own line so it can be copied whole, lists the sections that
+ * already hold a requirements table (never picking among them - see `draft.ts`), and states any
+ * warnings before the two things left to do: paste the row where it belongs, and - the reason this
+ * whole intake exists - name the issue in the pull request body so it closes.
+ *
+ * `issue` is `undefined` for the flag form used without `--issue`, when there is no issue to close.
+ * Saying so plainly is the point: a template that printed `Fixes #${issue}` regardless would read
+ * as `Fixes #undefined`, which looks like a bug rather than an honest "not applicable".
+ */
+export function formatDraft(draft: Draft, issue: number | undefined): string {
+  const lines = [`Drafted ${draft.id}.`, '', draft.row, ''];
+
+  if (draft.sections.length === 0) {
+    lines.push(
+      'No section in this document already holds a requirements table - add the row under a new one.',
+    );
+  } else {
+    lines.push('Candidate sections:');
+    for (const section of draft.sections) lines.push(`  ${section}`);
+  }
+
+  if (draft.warnings.length > 0) {
+    lines.push('', 'Warnings:');
+    for (const warning of draft.warnings) lines.push(`  ${warning}`);
+  }
+
+  lines.push('', 'Next: paste the row above into the section it belongs in.');
+  lines.push(
+    issue === undefined
+      ? 'No issue number given, so there is nothing to close - pass --issue <n> if this came from one.'
+      : `Then put \`Fixes #${issue}\` in the pull request body so the issue closes.`,
   );
 
   return lines.join('\n');
