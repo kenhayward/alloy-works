@@ -57,8 +57,10 @@ read `CNT-014 ... CNT-023, CNT-081, CNT-086`. Requiring document order would mea
 every insertion, which is exactly what the never-reuse rule forbids. The set has no holes, which is
 what catches a requirement deleted instead of withdrawn.
 
-`apps/desktop/src/requirements.test.ts` enforces the format, the uniqueness, the contiguous
-numbering, the known vocabularies and this index, for all three identifier kinds.
+The parser in `packages/trace/src/parse/requirements.ts` refuses a row that breaks the format or
+uses an unknown vocabulary, failing with the document and line the offending row is on rather than
+dropping it silently; `packages/trace/src/requirements.test.ts` enforces the uniqueness, the
+contiguous numbering and this index, for all three identifier kinds.
 
 ### Columns
 
@@ -105,7 +107,7 @@ ones, or is explicitly unowned. The third case is the reason this table exists: 
 both found by somebody asking "is this covered elsewhere?" rather than by anyone looking, and an
 artifact nobody owns is one that quietly fails to be specified.
 
-`apps/desktop/src/requirements.test.ts` checks that every concept defined in
+`packages/trace/src/requirements.test.ts` checks that every concept defined in
 [`Project_Scope.md`](../Project_Scope.md) §6 appears below. A concept may be listed as unowned; it
 may not be missing.
 

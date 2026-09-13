@@ -142,7 +142,7 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   edit.
 - **`docs/design/`** describes how the product will be built: `system.md` is the container-level
   map, and each other document is one subsystem, declaring the requirements it answers in a
-  `## Requirements owned` section that `apps/desktop/src/design.test.ts` checks. Update `system.md`
+  `## Requirements owned` section that `packages/trace/src/design.test.ts` checks. Update `system.md`
   when a decision changes a container or a flow; when something is built, its description moves to
   `docs/architecture.md`.
 - **`README.md` and `docs/features.md` move in lockstep.** The README's Features section is a short
