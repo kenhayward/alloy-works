@@ -37,11 +37,14 @@ CNT-014
 - **Cite the identifier in whatever verifies it.** A test named for `CNT-014` in its `describe` or
   `it` title, or a `rule:` field naming it in an assertion, is what makes that requirement
   demonstrably met. `packages/trace` reads those citations: `pnpm trace check` reports a citation
-  that names a requirement no design claims, along with the corpus's other structural problems; a
-  requirement that no test cites at all is not yet a reported gap - that is
-  [the baseline gate](../baselines/README.md), arriving with stage 3. `pnpm trace verify` reads the
-  JSON reports every suite writes and reports a
-  citation whose test actually passed as `Verified`, not just `Covered`.
+  that names a requirement no design claims, along with the corpus's other structural problems.
+  `pnpm trace verify` reads the JSON reports every suite writes and reports a citation whose test
+  actually passed as `Verified`, not just `Covered`. A requirement that no test cites at all is not,
+  by itself, a reported gap - whether it needs to be one for a given release is
+  [what a baseline decides](../baselines/README.md): a requirement outside every baseline a release
+  has declared is simply not something that release is answerable for, which is a different fact
+  from `Specified`, `Covered` or `Verified`, all of which describe the corpus and none of which
+  describe a release.
 - **`ZZZ` is a reserved area code**, never allocated to a real area. Fixtures and examples that need
   an identifier shape without claiming a real requirement use `ZZZ-NNN`, and `packages/trace` ignores
   it wherever a citation or a test result is scanned for a requirement identifier, so a fixture can

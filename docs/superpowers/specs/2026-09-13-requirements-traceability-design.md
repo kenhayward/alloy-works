@@ -154,23 +154,47 @@ expires with the release it was made for.
 ## 7. Baselines
 
 A baseline is the set of requirements a release is answerable for. It is the mechanism that makes an
-incomplete corpus defensible: 620 requirements in T2 to T6 are specified and deliberately out of
-baseline, which is a clean statement to an auditor and the opposite of an unexplained gap. A matrix
-that is 13% populated across everything is worse evidence than one that is complete across a declared
-subset.
+incomplete corpus defensible: the first baseline, `0.13.0`, declares 7 of the corpus's 1,264
+in-force requirements, excludes 4 more by name with a stated reason each, and leaves the rest simply
+outside its scope - a clean statement to an auditor, and the opposite of an unexplained gap. A matrix
+that is a few percent populated across the whole corpus is worse evidence than one that is complete
+across a declared subset.
 
-`docs/specification/baselines/<name>.yaml`:
+Built as `docs/specification/baselines/<version>.md`, a markdown document with three tables, not the
+YAML this section originally proposed: there is no YAML parser anywhere in this repository's
+dependency tree, so YAML would mean a new runtime dependency in a product whose whole point is
+auditability, and `parse/table.ts` already reads a table row for every other document in the corpus.
+A markdown table is reviewable as a diff in exactly the way `CLAUDE.md` asks of a requirement; a new
+dependency is not.
 
-```yaml
-name: T1
-declaredAt: 2026-09-13
-tranches: [T1]
-exclude:
-  - { id: CNT-087, reason: 'Deferred to T2 with the conditional profiling it depends on' }
-verification:
-  - { id: CNT-140, kind: inherited, by: CNT-012 }
-  - { id: ADM-031, kind: attestation, by: 'Ken Hayward', date: 2026-09-13, checked: '...' }
+```markdown
+# 0.13.0
+
+> **Declared:** 2026-09-13. What this release is answerable for.
+
+## Included
+
+| ID          | Why it is in force                   |
+| ----------- | ------------------------------------ |
+| **IAM-004** | Enforced by the environment boundary |
+
+## Excluded
+
+| ID          | Reason                                 |
+| ----------- | -------------------------------------- |
+| **IAM-018** | Cited only by a `rule:` field, and ... |
+
+## Verification
+
+| ID          | Kind        | By                          |
+| ----------- | ----------- | --------------------------- |
+| **ADM-031** | attestation | Ken Hayward, 2026-09-13 ... |
 ```
+
+`packages/trace/src/parse/baseline.ts` reads this; nothing writes it -
+[`docs/specification/baselines/README.md`](../../specification/baselines/README.md) is the fuller
+account, including why the first baseline declares what the release implements rather than a
+tranche.
 
 Every exclusion carries a reason, and the absence of one is an error. An exclusion without a reason
 is how a requirement gets quietly dropped, which is the failure this whole document exists to

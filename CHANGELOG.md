@@ -3,6 +3,43 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.13.0 - 2026-09-13 (PR #NN)
+
+### Added
+
+- A **baseline** now declares which requirements a release is actually answerable for: a hand-written
+  document, committed alongside the release, naming what is in force and why, what is deliberately
+  excluded and why, and how anything not proven by a passing test is verified instead. The first one,
+  `0.13.0` (`docs/specification/baselines/0.13.0.md`), declares 7 requirements in force - the
+  tenant-isolation and sign-in rules in the service, and the style-resolution and cross-format
+  spacing rules in the theme model - and excludes 4 more by name, each with a stated reason.
+- `pnpm trace gate` checks a release against its baseline, and is now the first check in CI that is
+  not `continue-on-error`. That is safe rather than reckless: the baseline declares only what this
+  release actually implements, so the gate passes on the day it lands, and it would have failed
+  before merging had the baseline overstated what the release delivers. This says nothing about the
+  other checks in CI - lint, format, typecheck, build and test keep the temporary flag they already
+  had, until the whole switch-over described in `docs/ci-and-releases.md` happens together.
+- The gate reports the corpus's other known problems - 7 of them, mostly a superseded requirement
+  still claimed by a design whose replacement nobody claims - as informational rather than failing on
+  them, because none names a requirement this release's baseline declares itself answerable for. A
+  gate that failed on a problem outside its own declared scope would be checking the wrong thing.
+- `pnpm trace pack` writes an **evidence pack** for a baseline that passes its own gate: the trace
+  matrix, the gap report, the compiled requirement model and the raw test results, as a record of the
+  exact run that produced them, for an auditor to read from a release tag without running anything.
+  The first one is committed at `docs/trace/0.13.0/`.
+
+### Fixed
+
+- The first draft of the `0.13.0` baseline declared ten requirements, not seven. Auditing all ten
+  against the code and its tests - rather than against the design documents describing what is being
+  built - found that three of those claims were not true of the repository as it stands: it described
+  licence-embedding fields, a publish report and editor preview behaviour that do not exist, and a
+  mark catalogue covering eight character marks where the theme implements two. The baseline was cut
+  to the seven requirements the code actually supports before it was committed. Recorded here rather
+  than smoothed over, because the next person writing a baseline needs the warning it leaves: `docs/design/`
+  describes what a subsystem is being built towards, not what is built, and a baseline that cites it
+  instead of the source will overstate what a release delivers.
+
 ## 0.12.0 - 2026-09-13 (PR #63)
 
 ### Added
