@@ -103,4 +103,35 @@ describe('the problems in a corpus', () => {
     expect(found.map((problem) => problem.kind)).toEqual(['cited-undesigned']);
     expect(found[0]?.id).toBe('ZZZ-001');
   });
+
+  it('reports a design still claiming a requirement that is no longer in force', () => {
+    const found = problems({
+      ...model({}),
+      requirements: [requirement('ZZZ-001', 'Superseded by ZZZ-002'), requirement('ZZZ-002')],
+      designs: [{ document: 'one.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'a' }] }],
+    });
+
+    expect(found.map((problem) => problem.kind)).toEqual(['claims-superseded']);
+    expect(found[0]?.detail).toContain('ZZZ-002');
+    expect(found[0]?.detail).toContain('claimed by no design');
+  });
+
+  it('says so when the replacement is claimed as well, which is the healthy case', () => {
+    const found = problems({
+      ...model({}),
+      requirements: [requirement('ZZZ-001', 'Superseded by ZZZ-002'), requirement('ZZZ-002')],
+      designs: [
+        {
+          document: 'one.md',
+          owns: [
+            { id: 'ZZZ-001', howItIsMet: 'a' },
+            { id: 'ZZZ-002', howItIsMet: 'b' },
+          ],
+        },
+      ],
+    });
+
+    expect(found.map((problem) => problem.kind)).toEqual(['claims-superseded']);
+    expect(found[0]?.detail).toContain('claimed as well');
+  });
 });

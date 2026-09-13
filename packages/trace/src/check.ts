@@ -6,6 +6,7 @@ export type ProblemKind =
   | 'not-contiguous'
   | 'supersedes-unknown'
   | 'claims-unknown'
+  | 'claims-superseded'
   | 'claimed-twice'
   | 'cites-unknown'
   | 'cited-undesigned';
@@ -23,10 +24,17 @@ export interface Problem {
  * corpus was sound was to run Vitest. `state.ts` depends on one of them - that a requirement has at
  * most one owning design - without being able to see it. Here they are data, the tests assert this
  * list is empty, and `pnpm trace check` gives a person the same answer.
+ *
+ * `claims-superseded` earned its own kind rather than folding into `claims-unknown`: the claimed
+ * identifier still exists, so nothing else here notices anything wrong, and the design document
+ * reads as if it covers that ground. But the requirement in force there - the one the status points
+ * at - may be claimed by nobody. A design that looks complete while the real obligation goes
+ * undesigned is exactly the kind of gap this file exists to stop hiding.
  */
 export function problems(model: TraceModel): Problem[] {
   const found: Problem[] = [];
   const known = new Set(model.requirements.map((requirement) => requirement.id));
+  const byId = new Map(model.requirements.map((requirement) => [requirement.id, requirement]));
 
   const seen = new Set<string>();
   for (const requirement of model.requirements) {
@@ -80,11 +88,33 @@ export function problems(model: TraceModel): Problem[] {
   for (const design of model.designs) {
     for (const claim of design.owns) {
       claimedBy.set(claim.id, [...(claimedBy.get(claim.id) ?? []), design.document]);
+    }
+  }
+
+  for (const design of model.designs) {
+    for (const claim of design.owns) {
       if (!known.has(claim.id)) {
         found.push({
           kind: 'claims-unknown',
           id: claim.id,
           detail: `is claimed by ${design.document} but does not exist`,
+        });
+        continue;
+      }
+
+      const target = byId.get(claim.id);
+      if (target !== undefined && target.status !== 'Specified') {
+        const replacement = SUPERSEDED_BY.exec(target.status)?.[1];
+        const fate =
+          replacement === undefined
+            ? ''
+            : claimedBy.has(replacement)
+              ? `, and ${replacement} is claimed as well`
+              : `, and ${replacement}, which is in force, is claimed by no design`;
+        found.push({
+          kind: 'claims-superseded',
+          id: claim.id,
+          detail: `is claimed by ${design.document} but its status is "${target.status}"${fate}`,
         });
       }
     }
