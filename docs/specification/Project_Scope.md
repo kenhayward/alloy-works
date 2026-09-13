@@ -811,7 +811,7 @@ What remains before T1 is built, in order:
    in storage, themes, Word output and search. Most of the rest are authoring (CNT), publishing and
    the resolved document (PUB), identity and tenancy (IAM), and structure and numbering (STR), which
    suggests the documents still to write: the content model and editor, tenancy and access, outlines
-   and numbering, the publishing pipeline, and the API surface. `apps/desktop/src/design.test.ts`
+   and numbering, the publishing pipeline, and the API surface. `packages/trace/src/design.test.ts`
    builds the reverse index, so the gap is read off the repository rather than kept as a list. Later
    tranches' designs wait for their tranche; a design written two tranches early is rewritten when it
    arrives.

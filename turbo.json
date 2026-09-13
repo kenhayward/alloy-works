@@ -45,6 +45,11 @@
       "outputs": [],
       "cache": false
     },
+    "@alloy-works/trace#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
+    },
     "@alloy-works/e2e#test": {
       "dependsOn": ["^build"],
       "outputs": [],

@@ -177,8 +177,6 @@ and an assistant working on an implementation can read one index instead of twen
 
 ```jsonc
 {
-  "sha": "e11aab3",
-  "generatedAt": "2026-09-13T00:00:00Z",
   "requirements": [
     {
       "id": "VER-001",
@@ -202,6 +200,10 @@ and an assistant working on an implementation can read one index instead of twen
   "results": [{ "id": "IAM-043", "outcome": "passed", "test": "refuses to start where..." }],
 }
 ```
+
+The model deliberately carries no commit hash and no timestamp. The commit that holds the file is its
+provenance, and a hash inside it would change on every commit, which would make the drift check
+impossible to pass. The evidence pack in stage 3 records the tag and the commit it was built from.
 
 `pnpm trace pack --tag vX.Y.Z` writes the evidence pack: the trace matrix, the gap report, the model,
 the raw test results, and the commit they were computed from. It is **committed at the tag**. A few

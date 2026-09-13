@@ -41,7 +41,7 @@ coverage column maintained by hand is a coverage column that drifts.
 
 **Owning is not mentioning.** A design document refers to requirements from all over the
 specification; it owns the ones it is the realisation of. A requirement has **at most one owning
-design**, and `apps/desktop/src/design.test.ts` fails when two claim the same one, when a claimed
+design**, and `packages/trace/src/design.test.ts` fails when two claim the same one, when a claimed
 identifier does not exist, or when a document is missing from the table above.
 
 Requirements nothing yet owns are the work not yet designed. That is the intended reading, and it is

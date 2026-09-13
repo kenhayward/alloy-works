@@ -43,7 +43,7 @@ Answering one means amending the requirements and ending the document with a cha
 per change naming the review point behind it, and a row for anything raised that was deliberately not
 changed, with the reason. Declining a review point is a legitimate answer; declining it silently is
 not. `docs/specification/` still needs a version bump and a changelog entry like any other PR, and
-`apps/desktop/src/requirements.test.ts` checks the identifiers, the numbering and the index.
+`packages/trace/src/requirements.test.ts` checks the identifiers, the numbering and the index.
 
 ## Test-driven development
 

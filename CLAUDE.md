@@ -33,6 +33,7 @@ the proposed system, with a TypeScript web service as the system of record, is d
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash          | `packages/objects`      |
 | Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them            | `apps/worker`           |
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader             | `packages/api-client`   |
+| Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                    | `packages/trace`        |
 | End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                       | `tests/e2e`             |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
@@ -141,7 +142,7 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   edit.
 - **`docs/design/`** describes how the product will be built: `system.md` is the container-level
   map, and each other document is one subsystem, declaring the requirements it answers in a
-  `## Requirements owned` section that `apps/desktop/src/design.test.ts` checks. Update `system.md`
+  `## Requirements owned` section that `packages/trace/src/design.test.ts` checks. Update `system.md`
   when a decision changes a container or a flow; when something is built, its description moves to
   `docs/architecture.md`.
 - **`README.md` and `docs/features.md` move in lockstep.** The README's Features section is a short
@@ -202,6 +203,8 @@ pnpm --filter @alloy-works/worker dev             # the worker, claiming jobs (s
 pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per machine
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
+pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design
+pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest
 pnpm lint          # eslint, flat config at the root
 pnpm format        # prettier --check (pnpm exec prettier --write . to fix)
 pnpm typecheck     # tsc --noEmit across every workspace

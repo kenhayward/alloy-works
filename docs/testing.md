@@ -131,7 +131,9 @@ The stream's tests are the exception to testing the service with `inject`: a str
 that resolve to the machine running the test. One of them builds a second service whose reads can be
 held open, so that an event can be committed while a snapshot is being read - the ordering the
 realtime spike paid for. `packages/api-client` regenerates its types in a test and compares them with
-the committed ones, as `packages/api-contract` does for the document itself.
+the committed ones, as `packages/api-contract` does for the document itself. `packages/trace` follows
+the same pattern a third time: a test recompiles the requirements and design documents and fails when
+the result differs from the committed `trace.json`.
 
 ## The objects and worker suites
 
