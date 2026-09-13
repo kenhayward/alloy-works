@@ -21,7 +21,10 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
-    expect(model.requirements).toHaveLength(1303);
+    // 1306, not 1303: designing the content model found the specification calling a component
+    // "titled" in scope section 6 while no area gave one a title. CNT-142 to CNT-144 add the
+    // title, carry it in versioned content, and close the set of attributes every component has.
+    expect(model.requirements).toHaveLength(1306);
     expect(model.nonRequirements).toHaveLength(112);
     expect(model.questions).toHaveLength(131);
     // 172, not 175: three designs stopped claiming a requirement a later review superseded, and

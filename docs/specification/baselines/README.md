@@ -11,7 +11,7 @@ it is not a filter over the corpus computed from a tranche or a date - it is a *
 by a person, of exactly which requirements this release can be checked against.
 
 That declaration is what turns an incomplete matrix into evidence rather than an embarrassment.
-`packages/trace` compiles 1,303 requirements; most releases answer for a fraction of them. Reported
+`packages/trace` compiles 1,306 requirements; most releases answer for a fraction of them. Reported
 against the whole corpus, that fraction reads as "13% covered", which is indistinguishable from a
 project that has barely started. Reported against a baseline of the requirements this release
 actually claims, the same numbers read as "complete, over a declared scope, with 620 requirements
@@ -97,8 +97,8 @@ How a requirement is shown to be met, for the requirements that need saying beyo
 | `attestation` | A person checked it for this release.                 | Who, and when, in the `By` column.           |
 
 `test` is the default precisely so that the common case costs nothing: most requirements are
-verified by a test naming them, and a table with 1,303 rows saying so would be the "new column in
-1,303 rows" this document exists to avoid. `Verification` only needs an entry for a requirement whose
+verified by a test naming them, and a table with 1,306 rows saying so would be the "new column in
+1,306 rows" this document exists to avoid. `Verification` only needs an entry for a requirement whose
 evidence is something other than its own passing test - most often a `Constraint`, which governs how
 everything is built rather than naming one thing to build, and where "which test verifies it" is
 often "all of them" or "a review, not a test". `inherited` and `attestation` exist for exactly that
