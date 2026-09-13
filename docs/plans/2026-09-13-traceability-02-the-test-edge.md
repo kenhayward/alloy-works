@@ -83,6 +83,12 @@ Task 2's citation check failing on its own fixtures.
   `STY-009`, `STY-027`, `STY-035`, `STY-037`, `STY-038`, `STY-050`, `STY-051`, `STY-052`. Only some
   of those are in a `describe`/`it` title or a `rule:` field; the rest are in comments and **must not
   count**.
+- **Measured citation figures, for the tasks that assert them:** the scan covers the **62** test files
+  outside `packages/trace` (71 `*.test.ts` plus 2 `*.test.tsx`, less this package's 9) and finds **15**
+  citations - **11** of kind `title` and **4** of kind `rule` - across exactly **11** distinct
+  requirements: `IAM-004`, `IAM-018`, `IAM-043`, `IAM-054`, `STY-009`, `STY-027`, `STY-037`, `STY-038`,
+  `STY-050`, `STY-051`, `STY-052`. Thirteen identifiers appear somewhere in a test file; the two that
+  appear only in a comment are correctly not counted, which is the scanner's whole purpose.
 - **`IAM-018` is cited by a test and claimed by no design.** This is a real gap, found in stage 1. It
   must be reported by `pnpm trace check`, not worked around.
 - **Version bump for the whole plan:** Minor, `0.11.0` to `0.12.0`. One bump, one changelog entry, in
@@ -451,7 +457,7 @@ Keep the comment above `TraceModel` and extend it:
 - [ ] **Step 4: Walk the repository's test files in `compile.ts`**
 
 ```ts
-const TEST_FILE = /\.test\.ts$/;
+const TEST_FILE = /\.test\.tsx?$/;
 const SKIP = new Set(['node_modules', 'dist', '.turbo', 'coverage', '.superpowers']);
 
 /**
