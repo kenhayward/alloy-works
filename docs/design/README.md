@@ -18,6 +18,7 @@ understand the storage layer, rather than something to be thrown away.
 | [system.md](system.md)                                 | The whole system: containers, languages, and the data flowing between them                           |
 | [service-foundations.md](service-foundations.md)       | How a request reaches one tenant, and how an endpoint is written                                     |
 | [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                          |
+| [content-model.md](content-model.md)                   | The stored shape of a component: nodes, marks, identity, and what may enter the model                |
 | [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                          |
 | [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement           |
 | [realtime.md](realtime.md)                             | Presence, locks and notifications on one stream, and model output on its own request                 |

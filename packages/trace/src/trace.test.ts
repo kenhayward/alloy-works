@@ -27,12 +27,15 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1306);
     expect(model.nonRequirements).toHaveLength(112);
     expect(model.questions).toHaveLength(131);
-    // 172, not 175: three designs stopped claiming a requirement a later review superseded, and
-    // the replacement in each of those three cases is broader than what the design answers, so the
-    // claim was dropped rather than repointed. docs/design/ says so in prose beside each table.
+    // 253, from 172: docs/design/content-model.md claims 81 - the first design document for
+    // tranche T1. Twelve more of CNT's were left deliberately unclaimed because the model answers
+    // one clause and the outline or the publisher answers the other; that document names them.
+    // The 172 before it: three designs stopped claiming a requirement a later review superseded,
+    // the replacement being broader than what the design answers, so the claim was dropped rather
+    // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(172);
+    ).toBe(253);
   });
 });
 

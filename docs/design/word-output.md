@@ -79,7 +79,8 @@ outcome worse than a prompt.
 ## Equations
 
 Word's equations are OMML, and they are built from the same structural maths tree the Typst template
-assembles (ADR-0013): LaTeX from the content model, MathML, then the tree. Neither Microsoft's
+assembles (ADR-0013): MathML from the content model ([content-model.md](content-model.md)), then the
+tree. Neither Microsoft's
 MathML-to-OMML stylesheet - not redistributable - nor an image of the equation is used.
 
 | Tree node                          | OMML                                                                         |
