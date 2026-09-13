@@ -63,9 +63,10 @@ resize handle.
   selection cannot span two. The spike did not test it and the editor design has to decide whether
   that is correct for a component CMS or a defect. If it is a defect, the single-view shape returns
   and CNT-069 needs a custom history rather than the library's.
-- **The manual accessibility audit failing.** CNT-139 requires it alongside the automated suite, it
-  has not been done, and the spike's own finding is that the suite passed a real defect. A manual
-  audit that finds the surface unusable reopens this.
+- **CNT-139's release audit failing.** A screen reader pass over the spike's surface, with Narrator
+  and NVDA, found nothing - but that is narrower than the recorded audit against the full WCAG 2.2 AA
+  criteria which that requirement binds to a release, over the product rather than a throwaway editor.
+  An audit that finds the real surface unusable reopens this.
 - **ADR-0005 being superseded.** Node-and-mark is what makes this candidate the right family. If the
   content model changed family, this record goes with it.
 
@@ -76,13 +77,16 @@ reversible choice about components and commands, not about the document model.
 
 - **The editor design (CNT sections 11 to 13) is unblocked**, and inherits four named costs: the
   identity plugin, a `toDOM` override for header cell scope, a decision between column resizing and a
-  `<caption>`, and the manual accessibility audit.
+  `<caption>`, and CNT-139's release audit, which a screen reader pass over a spike surface does not
+  discharge.
 - **`docs/design/content-model.md` does not change.** No node, no mark and no member of the root moves.
   The vocabulary survived contact with an editor, which is what the spike ran to find out.
 - **The round-trip test CNT-001 is satisfied by now has a definition** and belongs with the editor's
   implementation. `content-model.md` names it as arriving then.
 - **A green automated accessibility run is not conformance, and this is now evidence rather than
-  policy.** axe reported zero violations against a table whose caption was not associated with it.
+  policy.** axe reported zero violations against a table whose caption was not associated with it. The
+  screen reader pass that followed found nothing wrong, which is the point: the two halves catch
+  different things and neither substitutes for the other.
 - **We own the accessible DOM of anything a ProseMirror plugin renders.** That is the price of using
   its table editing, and it applies to every plugin adopted later.
 - **No DITA, no ecosystem, and now no editor ecosystem either** - the consequence ADR-0005 already

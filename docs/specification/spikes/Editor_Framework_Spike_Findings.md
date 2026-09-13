@@ -141,6 +141,34 @@ not belt and braces. The suite did not catch a real accessibility defect in this
 anybody treating a green axe run as conformance would have shipped it. The requirement is vindicated
 by the first thing that tested it.
 
+## The manual pass, and what it does and does not establish
+
+The automated result above was reported first, and the surface was then **driven with Narrator and
+with NVDA, on Windows**. Both were run because they report ARIA and table semantics differently, so a
+pass in one is not a pass in the other.
+
+**Nothing failed, and nothing read wrongly.** Structure was announced as structure, suggestions and
+comments were announced when inserted and resolved, footnotes were reachable and carried their note,
+read-only components announced their state with the reason, and nothing depended on colour to be
+distinguishable. That covers the cases gate 4 sets: CNT-077, CNT-079, CNT-080, CNT-137 and CNT-138.
+
+**What this does not establish, stated plainly because a clean result is exactly where a claim gets
+stretched:**
+
+- **It is not CNT-139's audit.** That requirement binds a recorded audit against the full WCAG 2.2 AA
+  criteria to a release, and there is no release here. This exercised gate 4's cases, not the criteria.
+- **It tested the spike's surface, not the product.** The throwaway editor has no toolbar, no menus,
+  no dialogs and no error states, and those are where editor accessibility usually fails.
+- **Windows only.** No VoiceOver, no macOS, no mobile. The browser the page was driven in was not
+  recorded, and it should be next time - a screen reader's behaviour is the pair, not the reader.
+- **It does not retire the finding above it.** The suite still passed a table with no caption
+  association. A person caught the things a person catches; that is the argument for both, not for
+  either.
+
+What it does establish is that the shape gate 1 chose - one editor view per component, 300 of them in
+one scroll - is legible to a screen reader rather than a wall of unlabelled regions, which was the
+open question a suite could not answer.
+
 ## The identity plugin, and three wrong versions
 
 CNT-002 costs one `appendTransaction` plugin. The cost is small; the **rule inside it is not obvious**,
@@ -188,9 +216,10 @@ an editor.
 
 ## What is still unproven
 
-- **The manual accessibility audit has not been done.** CNT-139 requires it alongside the suite, and
-  gate 4's own finding is that the suite is not sufficient. The automated half is reported above; the
-  other half is outstanding and no claim here stands in for it.
+- **CNT-139's audit is still outstanding.** A screen reader pass was made and is recorded above, but
+  that requirement binds a recorded audit against the full WCAG 2.2 AA criteria to a release, over the
+  product rather than over a throwaway surface. What was done is narrower than what is required, and
+  the section above says how.
 - **Whether 300 components _read_ as one document is a person's judgement**, and it has not been
   made. The structure is continuous - no cards, no borders, no gaps between components beyond
   paragraph spacing - but "continuous" measured in the DOM is not the same claim.
@@ -211,5 +240,6 @@ one finding that touches the schema is already answered by how `content-model.md
 
 The costs to carry into the editor design, none of them large and all of them named above: one
 identity plugin with a rule that must be written down rather than re-derived; a `toDOM` override for
-header cell scope; a decision between column resizing and a `<caption>`; and a manual accessibility
-audit that the requirement already demands and this spike has shown cannot be replaced by a suite.
+header cell scope; a decision between column resizing and a `<caption>`; and the release-bound accessibility
+audit that CNT-139 demands, which this spike has shown cannot be replaced by a suite - a screen reader
+pass over the spike's own surface found nothing, and is narrower than what that requirement asks for.

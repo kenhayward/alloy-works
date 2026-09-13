@@ -36,6 +36,7 @@ Two switches on the page:
 
 ## What it does not do
 
-No manual accessibility audit, which CNT-139 requires alongside the automated suite - and the
-findings record that the suite passed a defect the spike found by other means. No IME composition, no
-real screen reader, no real document. Cases 7 to 10 of the brief did not run.
+Not CNT-139's audit: that requirement binds a recorded audit against the full WCAG 2.2 AA criteria to
+a release, over the product. A screen reader pass with Narrator and NVDA over this surface found
+nothing, and is recorded in the findings along with what it does not establish. No VoiceOver, no IME
+composition, no real document. Cases 7 to 10 of the brief did not run.

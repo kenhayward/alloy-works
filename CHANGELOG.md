@@ -28,8 +28,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   is descent rather than arrival, and one argument to the position mapping decides it.
 - The accessibility finding worth reading twice: **axe reported zero violations against a table whose
   caption was not associated with it.** CNT-139 requires an automated suite in CI and a recorded
-  manual audit, and the suite missed a real defect in the first thing that tested it. The manual audit
-  has not been done and no claim here stands in for it.
+  manual audit, and the suite missed a real defect in the first thing that tested it. A screen reader
+  pass with Narrator and NVDA followed and found nothing wrong - which is the point rather than a
+  contradiction: the two halves catch different things. It is still narrower than CNT-139, which binds
+  its audit to a release and to the product rather than to a throwaway surface.
 
 ## 0.15.3 - 2026-09-13 (PR #76)
 
