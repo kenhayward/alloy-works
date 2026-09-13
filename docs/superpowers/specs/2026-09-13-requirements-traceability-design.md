@@ -55,6 +55,13 @@ stricter number is the one worth reporting.
 **`IAM-018` is cited by a test and claimed by no design.** That is the first finding this work
 produces, before any of it is built, and it is exactly the class of gap nobody finds by reading.
 
+The counts in this section are the survey's, taken before any of the tooling existed, and they are
+left as they were measured. `IAM-018` turned out not to be a missing design: the citation was a
+fixture's sample rule in the service's error-envelope test, which now names `ZZZ-001`. Since that was
+resolved, along with six designs claiming a superseded requirement, `pnpm trace check` reports nothing
+and the repository cites eighteen requirements rather than nineteen. `pnpm trace verify` is the
+current number; this section is a record of where it started.
+
 ## 3. What already exists, and is not being rebuilt
 
 The identifier scheme is already audit-grade, and it is the reason no external tool is adopted below.

@@ -46,13 +46,22 @@ off the version, because a version is immutable and the things derived from it a
 | **VER-023** | `baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check                   |
 | **VER-032** | Restore reads an earlier version and inserts a new one with matching content. The earlier row is untouched                                                |
 | **VER-033** | The new version records the version it was restored from, so the chain reads as a decision                                                                |
-| **VER-034** | A restore that would leave a pinned version unreachable is refused by the same constraint as VER-023                                                      |
 | **VER-035** | Preview resolves the restore without inserting, using the same code path as the write                                                                     |
 | **VER-036** | Versions, revisions and baselines have no expiry of their own; retention is a policy decision applied above this layer                                    |
 | **VER-037** | Legal hold marks an artifact, and the mark is checked by the same constraint path that refuses a pinned deletion                                          |
 | **VER-038** | The author of a version is a reference to a principal, never a copy of their details, so erasure acts in one place and the record of the act survives     |
 | **VER-039** | Derived data records the model and model version that produced it                                                                                         |
 | **VER-040** | Re-deriving inserts new derived rows and alters no version                                                                                                |
+
+**VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
+restore be refused where it would leave a baseline unable to resolve, and this design answered that
+with VER-023's foreign key. VER-044 records why that answer was aimed at nothing: a restore inserts a
+version rather than rewriting one (VER-032), so no existing baseline's pins can be disturbed by it.
+What VER-044 asks instead is the opposite direction - that a restore be refused when the content being
+restored points at something since deleted, a component version or an asset, and that the refusal name
+what is missing. That is a check over the restored content's references, and this design has none:
+nothing here reads the reference index, and VER-035's preview resolves the restore without validating
+it. The requirement stays specified and undesigned until a revision adds that check.
 
 Comparison (VER-024 to VER-031) reads this store but is not designed here - it is an algorithm, it
 was prototyped in the content model spike, and it deserves its own document.

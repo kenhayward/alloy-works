@@ -22,22 +22,28 @@ are never in it.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **SCH-005** | The permission set is computed for each search and applied as a predicate inside the query, never to a result list afterwards           |
-| **SCH-007** | Counts and facets are aggregates over the same predicate as the results, in the same query                                              |
-| **SCH-008** | The projection lives in the tenant's schema, and the search role can reach no other (ADR-0008)                                          |
-| **SCH-009** | Permissions are read at each search, so a change applies to the next one. The stated delay is none                                      |
-| **SCH-010** | Every filtering path has a test that searches as a user who may read nothing matching, and asserts empty results and zero counts        |
-| **SCH-013** | Meaning is searched in the same query as words, restricted by the same predicate                                                        |
-| **SCH-014** | Every result carries a label: matched words, meaning, or both                                                                           |
-| **SCH-027** | Words are indexed in the transaction that creates the version, so they are findable at once; meaning follows when the block is embedded |
-| **SCH-029** | The projection is rebuilt from current versions and the embedding store; nothing in it exists anywhere else                             |
-| **SCH-031** | Without the embedding model, search returns the words half and says meaning is unavailable; without the database, it says so            |
-| **SCH-032** | Ranking may use tenant-wide statistics; the predicate still applies before results, counts and facets are computed                      |
-| **SCH-033** | The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user             |
-| **SCH-034** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound                                  |
-| **SCH-035** | The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little         |
+| ID          | How it is met                                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **SCH-005** | The permission set is computed for each search and applied as a predicate inside the query, never to a result list afterwards    |
+| **SCH-007** | Counts and facets are aggregates over the same predicate as the results, in the same query                                       |
+| **SCH-008** | The projection lives in the tenant's schema, and the search role can reach no other (ADR-0008)                                   |
+| **SCH-009** | Permissions are read at each search, so a change applies to the next one. The stated delay is none                               |
+| **SCH-010** | Every filtering path has a test that searches as a user who may read nothing matching, and asserts empty results and zero counts |
+| **SCH-013** | Meaning is searched in the same query as words, restricted by the same predicate                                                 |
+| **SCH-014** | Every result carries a label: matched words, meaning, or both                                                                    |
+| **SCH-029** | The projection is rebuilt from current versions and the embedding store; nothing in it exists anywhere else                      |
+| **SCH-031** | Without the embedding model, search returns the words half and says meaning is unavailable; without the database, it says so     |
+| **SCH-032** | Ranking may use tenant-wide statistics; the predicate still applies before results, counts and facets are computed               |
+| **SCH-033** | The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user      |
+| **SCH-034** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound                           |
+| **SCH-035** | The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little  |
+
+**SCH-050 is not claimed here.** It replaces SCH-027 and names the interval that SCH-027 only asked
+for - provisionally p95 within 60 seconds, never above five minutes. Half of it is already met, and
+by construction: words are indexed in the transaction that creates the version, so a new or changed
+block is findable by words at once. Meaning is the half without a number, because it waits on a model
+call and a queue that do not exist yet - the open question below is that number, and until it is
+answered the requirement is specified and undesigned rather than partly claimed.
 
 ## The projection
 
@@ -57,7 +63,7 @@ accepted: the store exists so an embedding is never computed twice, which is wha
 the copy is what lets a passage be filtered where it is indexed.
 
 Rows are written when a version is created, in the same transaction, so the words are findable at
-once (SCH-027). The vector arrives when the block's embedding does, which is a model call and
+once (SCH-050). The vector arrives when the block's embedding does, which is a model call and
 asynchronous; until then the passage is not searchable by meaning and the entry is still findable by
 words. A new version replaces its artifact's rows, so search sees the current version. SCH-003 makes
 earlier versions searchable on request, which is not designed here.
@@ -148,8 +154,8 @@ before, or the point at which counting stopped would itself be a signal.
 
 ## Open questions
 
-| ID          | Question                                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **SCH-Q05** | Whether guests should be ranked with statistics that include content they cannot see. If not, their searches rank without corpus statistics |
-| New         | How long a block may wait to be embedded. SCH-027 wants the interval stated; it depends on an embedding model and its queue, not chosen yet |
-| New         | Whether relevance is good enough on real content. The spike measured speed; relevance needs real queries, judged by people                  |
+| ID          | Question                                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SCH-Q05** | Whether guests should be ranked with statistics that include content they cannot see. If not, their searches rank without corpus statistics                                                                               |
+| New         | How long a block may wait to be embedded. SCH-050 states the interval provisionally - p95 within 60 seconds, never above five minutes - and holding to it depends on an embedding model and its queue, neither chosen yet |
+| New         | Whether relevance is good enough on real content. The spike measured speed; relevance needs real queries, judged by people                                                                                                |
