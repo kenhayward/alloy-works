@@ -1,5 +1,5 @@
 import type { Problem } from './check.js';
-import type { Requirement, TraceModel } from './model.js';
+import type { Baseline, Requirement, TraceModel } from './model.js';
 import type { TestOutcome } from './results.js';
 import { type RequirementState, type Trace, allTraces } from './state.js';
 
@@ -99,6 +99,35 @@ export function formatStats(model: TraceModel, verifications?: Map<string, TestO
   if (verifications === undefined) {
     lines.push('', 'Verification not computed. Run `pnpm trace verify` for a Verified count.');
   }
+  return lines.join('\n');
+}
+
+/**
+ * Reads and reports only - never writes. A baseline is a declaration a person committed; the whole
+ * value of that is lost the moment a tool can rewrite it, so this prints exactly what is on disk:
+ * name, date, how many are included, every exclusion with its reason, and any verification rows.
+ */
+export function formatBaseline(baseline: Baseline): string {
+  const lines = [
+    `${baseline.name}  declared ${baseline.declaredAt}`,
+    '',
+    `${baseline.included.length} requirement(s) included`,
+  ];
+
+  if (baseline.excluded.length > 0) {
+    lines.push('', `${baseline.excluded.length} excluded:`);
+    for (const exclusion of baseline.excluded) {
+      lines.push(`  ${exclusion.id}  ${exclusion.reason}`);
+    }
+  }
+
+  if (baseline.verification.length > 0) {
+    lines.push('', 'Verification:');
+    for (const row of baseline.verification) {
+      lines.push(`  ${row.id}  ${row.kind}  ${row.by}`);
+    }
+  }
+
   return lines.join('\n');
 }
 

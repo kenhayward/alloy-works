@@ -7,6 +7,7 @@ import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
 import {
   formatArea,
+  formatBaseline,
   formatProblems,
   formatSearch,
   formatStats,
@@ -14,12 +15,15 @@ import {
   nextIdentifier,
   search,
 } from './format.js';
+import { parseBaseline } from './parse/baseline.js';
 import { checkCoherence, parseResults } from './results.js';
 import { allTraces, traceOf } from './state.js';
 
 const DEFAULT_RESULTS_DIR = '.trace-results';
 const WORKSPACE_GROUPS = ['apps', 'packages', 'tests'];
 const VITEST_CONFIG = /^vitest\.config\.(ts|mts|cts|js|mjs|cjs)$/;
+const BASELINES_DIR = 'baselines';
+const BASELINE_DOCUMENT = /\.md$/;
 
 /**
  * The workspace directory name of every package that declares a `vitest.config.*` - which, by the
@@ -53,7 +57,22 @@ const USAGE = `pnpm trace <command>
   check              every problem in the corpus: holes, double claims, citations naming nothing
   verify [dir]       states, with Verified computed from the JSON reports in dir
                      (default .trace-results)
+  baseline [name]    a committed baseline: name, date, included count, exclusions and
+                     verification declarations (default: the newest by filename). Reads and
+                     reports only - never writes the document
 `;
+
+/**
+ * The committed baseline documents, sorted by filename - the same convention `compile.ts` uses for
+ * the requirement and design documents it reads, so that "newest" is a function of what is on disk
+ * rather than of directory order. `README.md` explains the format; it is not itself a baseline.
+ */
+function baselineFiles(repoRoot: string): string[] {
+  const dir = join(repoRoot, 'docs', 'specification', BASELINES_DIR);
+  return readdirSync(dir)
+    .filter((name) => BASELINE_DOCUMENT.test(name) && name !== 'README.md')
+    .sort();
+}
 
 function main(argv: string[]): number {
   try {
@@ -95,6 +114,21 @@ function main(argv: string[]): number {
         const found = problems(model);
         console.log(formatProblems(found));
         return found.length > 0 ? 1 : 0;
+      }
+      case 'baseline': {
+        const dir = join(REPO_ROOT, 'docs', 'specification', BASELINES_DIR);
+        const files = baselineFiles(REPO_ROOT);
+        if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
+
+        const file = argument === undefined ? files[files.length - 1]! : `${argument}.md`;
+        const path = join(dir, file);
+        if (!existsSync(path)) {
+          return fail(`No baseline ${file} in docs/specification/${BASELINES_DIR}.`);
+        }
+
+        const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
+        console.log(formatBaseline(baseline));
+        return 0;
       }
       case 'verify': {
         const relative = argument ?? DEFAULT_RESULTS_DIR;
