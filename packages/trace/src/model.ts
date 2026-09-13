@@ -82,15 +82,19 @@ export const Design = z.object({
 export type Design = z.infer<typeof Design>;
 
 /**
- * Deliberately carries no commit hash and no timestamp. The file is committed, so the commit that
- * holds it IS its provenance - and a hash inside it would change on every commit, which would make
- * the drift check in `trace.test.ts` fail permanently.
+ * Deliberately carries no commit hash, no timestamp, and no test results. The commit that holds the
+ * file is its provenance; a hash or a timestamp would change on every commit, and a result changes
+ * on every RUN - all three would make the drift check in `trace.test.ts` impossible to pass.
+ *
+ * Citations are here because they are a function of the source, exactly like a requirement or a
+ * design claim. Results are read at query time from a Vitest JSON report instead.
  */
 export const TraceModel = z.object({
   requirements: z.array(Requirement),
   nonRequirements: z.array(NonRequirement),
   questions: z.array(Question),
   designs: z.array(Design),
+  citations: z.array(Citation),
 });
 export type TraceModel = z.infer<typeof TraceModel>;
 

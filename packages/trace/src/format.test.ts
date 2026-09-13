@@ -36,6 +36,7 @@ const model: TraceModel = {
   designs: [
     { document: 'invented-subsystem.md', owns: [{ id: 'ZZZ-001', howItIsMet: 'A column' }] },
   ],
+  citations: [],
 };
 
 describe('formatting one requirement', () => {
