@@ -1,6 +1,6 @@
 # Requirements traceability
 
-> **Status: stages 1 and 2 built; stages 3 and 4 remain.** Rests on
+> **Status: stages 1 through 3 built; stage 4 remains.** Rests on
 > [`docs/specification/requirements/README.md`](../../specification/requirements/README.md) for the
 > identifier scheme, and on `packages/trace/src/requirements.test.ts` and
 > `packages/trace/src/design.test.ts` for the checks that already exist. Nothing here changes a
@@ -242,10 +242,14 @@ a function of a run, not of the documents, so committing one would churn on ever
 drift check impossible. Citations are committed because they are a function of the source. Results
 are read at query time from the JSON report every suite already writes.
 
-`pnpm trace pack --tag vX.Y.Z` writes the evidence pack: the trace matrix, the gap report, the model,
-the raw test results, and the commit they were computed from. It is **committed at the tag**. A few
-hundred kilobytes of text per release is the cost; the alternative is audit evidence that cannot be
-reproduced, which is not an alternative.
+`pnpm trace pack <version>` writes the evidence pack: the trace matrix, the gap report, the raw test
+results, and the commit they were computed from. It refuses to run on a dirty working tree, because
+it stamps the pack with `git rev-parse HEAD` - the commit that will hold the pack's own inputs does
+not exist yet while anything is uncommitted, so a pack built from a dirty tree is stamped with a
+commit that cannot reproduce it. It is committed as `docs/trace/<version>/`, by hand, in the same pull
+request as the release it describes - nothing ties this to a git tag. A few hundred kilobytes of text
+per release is the cost; the alternative is audit evidence that cannot be reproduced, which is not an
+alternative.
 
 ## 9. Intake
 
