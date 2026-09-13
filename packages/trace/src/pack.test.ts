@@ -201,6 +201,29 @@ describe('packing the evidence pack', () => {
     expect(gaps?.body).toContain('invented exclusion reason');
   });
 
+  // Important fix-round finding: `pack.ts` filtered `outOfBaseline` on included identifiers only,
+  // never on `baseline.excluded`, so an excluded requirement was counted twice - once by name in the
+  // Excluded table, once again inside the "everything else out of baseline" tally, which then told
+  // the reader an untrue number of requirements this pack names nowhere.
+  it('does not double-count an excluded requirement in the out-of-baseline remainder', () => {
+    const b = baseline({ excluded: [{ id: 'ZZZ-002', reason: 'invented exclusion reason' }] });
+    const m = model({
+      requirements: [requirement('ZZZ-001'), requirement('ZZZ-002')],
+    });
+    const result = gate(b, m, outcomes());
+
+    const [, , gaps] = packDocuments({
+      version: '9.9.9',
+      commit: 'deadbeefcafe',
+      baseline: b,
+      result,
+      model: m,
+    });
+
+    expect(gaps?.body).toMatch(/0 in-force requirement\(s\) this release does not claim at all/);
+    expect(gaps?.body).toMatch(/None\./);
+  });
+
   it('matrix.md prints who attested, and to what, for an attestation-verified requirement', () => {
     const b = baseline({
       verification: [{ id: 'ZZZ-001', kind: 'attestation', by: 'Ada Lovelace, 2026-09-13' }],

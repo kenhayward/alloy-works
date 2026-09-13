@@ -140,6 +140,7 @@ function matrix(input: PackInput): PackDocument {
 function gaps(input: PackInput): PackDocument {
   const { version, baseline, result, model } = input;
   const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
+  const excludedIds = new Set(baseline.excluded.map((exclusion) => exclusion.id));
 
   const problemRows = result.problems.map((problem: Problem) => [
     problem.kind,
@@ -151,8 +152,14 @@ function gaps(input: PackInput): PackDocument {
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((exclusion) => [`**${exclusion.id}**`, exclusion.reason]);
 
+  // Excluded requirements are named above, in the Excluded table - counting them again here would
+  // double-count them: once by name, once inside a tally that claims to be everything named nowhere
+  // in this pack.
   const outOfBaseline = model.requirements.filter(
-    (requirement) => requirement.status === 'Specified' && !includedIds.has(requirement.id),
+    (requirement) =>
+      requirement.status === 'Specified' &&
+      !includedIds.has(requirement.id) &&
+      !excludedIds.has(requirement.id),
   );
   const tallyRows = TRANCHES.map((tranche) => [
     tranche,

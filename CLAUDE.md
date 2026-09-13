@@ -95,8 +95,10 @@ protection on `main`.
 **The traceability gate, `pnpm trace gate`, is the one exception - it is not `continue-on-error`.**
 A release's baseline (`docs/specification/baselines/`) declares only the requirements that release
 implements, so the gate passes on the day it lands; a check that is allowed to fail is not a gate.
-This says nothing about the checks above it, which keep the temporary flag until the switch-over
-above happens.
+It also fails outright when the test run it reads has failed, because it cannot verify anything from
+a broken run - so a red `pnpm test` now fails the build too, through the gate, even though the `Test`
+step itself keeps `continue-on-error`. Otherwise it says nothing about the checks above it, which
+keep the temporary flag until the switch-over above happens.
 
 Once it is a gate: a PR that does not go green does not merge - no exceptions, no local merges to
 route around it. If a job is flaky, fix or quarantine it in its own PR with an issue; never rerun

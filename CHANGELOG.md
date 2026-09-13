@@ -15,10 +15,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   spacing rules in the theme model - and excludes 4 more by name, each with a stated reason.
 - `pnpm trace gate` checks a release against its baseline, and is now the first check in CI that is
   not `continue-on-error`. That is safe rather than reckless: the baseline declares only what this
-  release actually implements, so the gate passes on the day it lands, and it would have failed
-  before merging had the baseline overstated what the release delivers. This says nothing about the
-  other checks in CI - lint, format, typecheck, build and test keep the temporary flag they already
-  had, until the whole switch-over described in `docs/ci-and-releases.md` happens together.
+  release actually implements, so the gate passes on the day it lands. It fails outright when the
+  test run it reads has failed, because it cannot verify anything from a broken run - so a red
+  `pnpm test` now fails the build too, through the gate, even though the `Test` step itself keeps
+  `continue-on-error`. Beyond that it says nothing about the other checks in CI - lint, format,
+  typecheck and build keep the temporary flag they already had, until the whole switch-over described
+  in `docs/ci-and-releases.md` happens together. The gate proves linkage between a requirement and a
+  passing test; it does not audit whether a baseline's claims are true of the code, which is what
+  caught the overstatement described below.
 - The gate reports the corpus's other known problems - 7 of them, mostly a superseded requirement
   still claimed by a design whose replacement nobody claims - as informational rather than failing on
   them, because none names a requirement this release's baseline declares itself answerable for. A
