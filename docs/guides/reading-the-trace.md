@@ -97,7 +97,8 @@ Two things not to do:
 
 - **Do not name a requirement in a title that does not exercise it.** The gate will believe you.
 - **Do not use a real identifier as sample data.** Use `ZZZ-001`. A real one in a fixture reads as a
-  citation, which is how `IAM-018` came to look verified by a test about error envelopes.
+  citation: the service's error-envelope test named `IAM-018` as its sample refusal rule, and the scan
+  read a test about envelope shape as coverage of a permission requirement. It names `ZZZ-001` now.
 
 ### The states, and what each one means
 
@@ -219,8 +220,10 @@ baseline a tool can edit is not a declaration, it is a cache.
 resolve a theme, and those are the things it can demonstrate end to end. A matrix that is complete
 across a declared scope of seven is better evidence than one 13% populated across everything.
 
-Each exclusion says why. `IAM-018` is excluded because it is named only by a `rule:` field and claimed
-by no design, so it cannot be traced end to end - not because it is inconvenient.
+Each exclusion says why. `IAM-018` is excluded because, at that release, it was named only by a
+`rule:` field and claimed by no design, so it could not be traced end to end - not because it was
+inconvenient. A baseline is never rewritten afterwards, so it still reads that way: the citation it
+refers to was a fixture's sample data and has since been removed, which a later baseline will say.
 
 ### Reading an evidence pack
 
@@ -255,11 +258,14 @@ code or that the test is a good one. The discipline that makes the linkage meani
 [test-driven development](../testing.md), applied by people - and every tool in this space has this
 property. The ones implying otherwise are less honest, not more capable.
 
-**The corpus has seven known problems**, reported by `pnpm trace check` and listed in every pack's
-`gaps.md`. Six are designs still claiming a requirement that has been superseded, where the
-replacement is claimed by no design; one is `IAM-018`. None is about a requirement `0.13.0` claims,
-which is why the gate passes while they remain visible. They are recorded rather than resolved, and a
-pack will not hide them.
+**`pnpm trace check` reports no problems today**, and the `0.13.0` pack's `gaps.md` records the seven
+it found at that release - six designs still claiming a requirement a review had superseded, and one
+requirement cited by a fixture's sample data. Both facts matter. A pack is evidence for its own tag
+and is never regenerated, so `gaps.md` keeps saying what was true then; `check` says what is true now.
+Three of the six superseded claims moved to their replacement, and three were dropped instead, because
+the replacement asked for more than the design answers. Each of those three designs says so in prose
+beside its table, which is the honest outcome: a gap named is not a gap hidden, and claiming a
+requirement a design only partly answers is the one failure this whole apparatus exists to prevent.
 
 ### The gate is enforced, not advisory
 

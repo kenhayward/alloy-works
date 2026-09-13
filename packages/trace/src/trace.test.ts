@@ -24,9 +24,12 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1303);
     expect(model.nonRequirements).toHaveLength(112);
     expect(model.questions).toHaveLength(131);
+    // 172, not 175: three designs stopped claiming a requirement a later review superseded, and
+    // the replacement in each of those three cases is broader than what the design answers, so the
+    // claim was dropped rather than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(175);
+    ).toBe(172);
   });
 });
 
@@ -38,12 +41,16 @@ describe('the citations in the committed model', () => {
   it('found the identifiers this repository already cites in its test titles', () => {
     const cited = new Set(model.citations.map((citation) => citation.id));
 
-    // Thirteen requirement identifiers appear anywhere in a test file; these are the ones that
+    // Twelve requirement identifiers appear anywhere in a test file; these are the ones that
     // appear in a title or a rule, which is the only kind that counts as coverage.
     expect(cited.has('IAM-043')).toBe(true);
     expect(cited.has('IAM-054')).toBe(true);
-    expect(cited.has('IAM-018')).toBe(true);
     expect(cited.has('STY-050')).toBe(true);
+
+    // IAM-018 is deliberately absent. apps/service/src/http.test.ts used it as the sample rule in a
+    // fixture refusal, so the scan read a test about error envelopes as verification of a permission
+    // requirement. The fixture names ZZZ-001 now, which the scan ignores.
+    expect(cited.has('IAM-018')).toBe(false);
     expect(cited.size).toBeGreaterThan(5);
   });
 
@@ -53,7 +60,7 @@ describe('the citations in the committed model', () => {
   // that one. Pinned so a citation quietly lost (a test renamed, a title's identifier dropped) fails
   // here rather than nowhere.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(19);
+    expect(model.citations).toHaveLength(18);
   });
 
   it('cites no identifier the corpus does not hold', () => {
