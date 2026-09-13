@@ -192,6 +192,94 @@ describe('parsing a filed requirement issue', () => {
     expect(() => parseIssue(body)).toThrow(/The requirement/);
   });
 
+  it('does not let a quoted ### Area heading inside a fenced code block hijack the area or truncate the statement', () => {
+    const body = [
+      '### Area',
+      '',
+      'CNT - Content and authoring',
+      '',
+      '### The requirement',
+      '',
+      'The exported markdown must look like this example:',
+      '',
+      '```',
+      '### Area',
+      '',
+      'STR - Structure, numbering and cross-references',
+      '```',
+      '',
+      'and nothing else.',
+      '',
+      '### Why',
+      '',
+      'Reviewers put sources in footnotes, and losing them makes the footnote useless.',
+    ].join('\n');
+
+    const parsed = parseIssue(body);
+
+    expect(parsed.area).toBe('CNT');
+    expect(parsed.statement).toBe(
+      [
+        'The exported markdown must look like this example:',
+        '',
+        '```',
+        '### Area',
+        '',
+        'STR - Structure, numbering and cross-references',
+        '```',
+        '',
+        'and nothing else.',
+      ].join('\n'),
+    );
+  });
+
+  it('refuses a genuinely duplicated heading rather than silently picking one', () => {
+    const body = [
+      '### Area',
+      '',
+      'CNT - Content and authoring',
+      '',
+      '### The requirement',
+      '',
+      'A footnote must be able to carry a citation.',
+      '',
+      '### Why',
+      '',
+      'Reviewers put sources in footnotes, and losing them makes the footnote useless.',
+      '',
+      '### Area',
+      '',
+      'STR - Structure, numbering and cross-references',
+    ].join('\n');
+
+    expect(() => parseIssue(body)).toThrow(/Area/);
+  });
+
+  it('does not treat #### inside an answer as a boundary', () => {
+    const body = [
+      '### Area',
+      '',
+      'CNT - Content and authoring',
+      '',
+      '### The requirement',
+      '',
+      'A footnote must carry a citation, as in:',
+      '',
+      '#### Example heading',
+      '',
+      'more detail.',
+      '',
+      '### Why',
+      '',
+      'Reviewers put sources in footnotes, and losing them makes the footnote useless.',
+    ].join('\n');
+
+    const parsed = parseIssue(body);
+
+    expect(parsed.statement).toContain('#### Example heading');
+    expect(parsed.statement).toContain('more detail.');
+  });
+
   it('reads "Not sure" as tranche as undefined, not the string itself', () => {
     const body = [
       '### Area',

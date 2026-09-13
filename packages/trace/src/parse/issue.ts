@@ -40,21 +40,68 @@ export const FiledRequirement = z.object({
 });
 export type FiledRequirement = z.infer<typeof FiledRequirement>;
 
-/** A `### <label>` heading line, capturing the label. Matches on its own line so an occurrence of
- * `### ` inside an answer - a quoted markdown snippet, say - is never mistaken for a field boundary;
- * every field boundary in a filed issue's body starts a line. */
+/** A `### <label>` heading line, capturing the label. Matching `^### ` alone is not enough to keep
+ * an occurrence inside an answer - a quoted markdown snippet, say - from being mistaken for a field
+ * boundary: a filer can legitimately type a line that starts with `### ` as part of an example. Two
+ * further checks in `readAnswers` do the rest: only a heading whose text is one of the six known
+ * labels is a candidate at all, and one inside a fenced code block - the responsible way to quote a
+ * markdown snippet - is never a candidate, fenced or not. */
 const FIELD_HEADING = /^### (.+?)\s*$/gm;
+
+/** The six field labels a real field boundary can ever be - see `HEADING` above. A `### ` line
+ * whose text is anything else is never a boundary, however it got there. */
+const KNOWN_LABELS: readonly string[] = Object.values(HEADING);
+
+/** A fenced code block's delimiter line, opening or closing. Content between an odd-numbered and the
+ * next even-numbered occurrence is fenced. */
+const FENCE_LINE = /^```.*$/gm;
+
+/** The character ranges of every fenced code block in `body`, each `[start, end)` running from the
+ * opening fence line to the end of its closing fence line. An unterminated fence (no closing line) is
+ * not a range at all - the odd fence line left over is simply ignored, the same as CommonMark treats
+ * an unterminated fence as running to the end of the document, which has no bearing here since there
+ * is nothing left in the body to protect. */
+function fencedRanges(body: string): Array<readonly [number, number]> {
+  const fenceLines = [...body.matchAll(FENCE_LINE)];
+  const ranges: Array<readonly [number, number]> = [];
+  for (let index = 0; index + 1 < fenceLines.length; index += 2) {
+    const open = fenceLines[index]!;
+    const close = fenceLines[index + 1]!;
+    ranges.push([open.index, close.index + close[0].length]);
+  }
+  return ranges;
+}
+
+function isFenced(position: number, ranges: Array<readonly [number, number]>): boolean {
+  return ranges.some(([start, end]) => position >= start && position < end);
+}
 
 /**
  * A filed issue's body to the answer under each `### <label>` heading, trimmed. Reads every heading
  * present regardless of order, because GitHub preserves the form's order but a hand-edited issue may
  * not - a parser that depended on order would fail on a perfectly good issue.
+ *
+ * Only a `### ` line whose text is one of the six known labels, and that is not inside a fenced code
+ * block, counts as a field boundary. A real duplicate of a known heading - not explained by fencing -
+ * is refused outright: this parser has no way to tell which of two answers under the same label is
+ * the real one, and guessing (by taking the first or the last) would silently accept a malformed
+ * issue instead of sending it back.
  */
 function readAnswers(body: string): Map<string, string> {
-  const matches = [...body.matchAll(FIELD_HEADING)];
+  const ranges = fencedRanges(body);
+  const matches = [...body.matchAll(FIELD_HEADING)].filter(
+    (match) => KNOWN_LABELS.includes(match[1]!) && !isFenced(match.index, ranges),
+  );
+
   const answers = new Map<string, string>();
   for (const [index, match] of matches.entries()) {
     const label = match[1]!;
+    if (answers.has(label)) {
+      throw new Error(
+        `the filed issue has more than one "### ${label}" heading - this parser cannot tell which ` +
+          'answer is the real one, so it is refusing rather than guessing.',
+      );
+    }
     const start = match.index + match[0].length;
     const end = matches[index + 1]?.index ?? body.length;
     answers.set(label, body.slice(start, end).trim());
