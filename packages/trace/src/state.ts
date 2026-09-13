@@ -47,12 +47,16 @@ function trace(
       verification,
     };
   }
+  // A `rule:` citation reaches `Covered`, never `Verified`: a result is identified by its test's
+  // name, and a `rule:` assertion lives in a test's body, not its title, so no result ever carries
+  // it. Only a `title` citation can be matched to a passed outcome and earn the top rung.
   const state: RequirementState =
     citations.length === 0
       ? design === undefined
         ? 'Specified'
         : 'Designed'
-      : verification?.outcome === 'passed'
+      : verification?.outcome === 'passed' &&
+          citations.some((citation) => citation.kind === 'title')
         ? 'Verified'
         : 'Covered';
   return { requirement, state, design, supersededBy: undefined, citations, verification };

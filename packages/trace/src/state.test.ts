@@ -130,6 +130,49 @@ describe('the state of a requirement', () => {
     expect(traceOf('ZZZ-002', model, passed)?.state).toBe('Designed');
   });
 
+  // Critical fix-round finding: `state.ts` ignored `Citation.kind` entirely, so a `rule:` citation
+  // plus a passing outcome yielded `Verified` - contradicting design section 5's absolute rule that
+  // a `rule:` citation reaches `Covered`, never `Verified`, because no test result is ever identified
+  // by a `rule:` field's text. Proved on the real corpus: IAM-018 has only a `rule:` citation.
+  it('stays Covered, never Verified, when the only citation is a rule field - even with a passing outcome', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'rule' }],
+    };
+    const passed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-001', cited, passed)?.state).toBe('Covered');
+  });
+
+  it('is Verified from a title citation and a passing outcome', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }],
+    };
+    const passed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-001', cited, passed)?.state).toBe('Verified');
+  });
+
+  it('is Verified when both a rule citation and a title citation are present and the test passed', () => {
+    const cited: TraceModel = {
+      ...model,
+      citations: [
+        { id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'rule' },
+        { id: 'ZZZ-001', file: 'b.test.ts', line: 2, kind: 'title' },
+      ],
+    };
+    const passed = new Map([
+      ['ZZZ-001', { id: 'ZZZ-001', outcome: 'passed' as const, tests: ['a (ZZZ-001)'] }],
+    ]);
+
+    expect(traceOf('ZZZ-001', cited, passed)?.state).toBe('Verified');
+  });
+
   it('does not let a passing test resurrect a superseded requirement', () => {
     const cited: TraceModel = {
       ...model,
