@@ -1,5 +1,5 @@
 import { type Citation, type Requirement, SUPERSEDED_BY, type TraceModel } from './model.js';
-import type { Verification } from './results.js';
+import type { TestOutcome } from './results.js';
 
 /**
  * The full ladder. `Covered` means a test names the requirement; `Verified` means that test actually
@@ -18,7 +18,7 @@ export interface Trace {
   readonly design: string | undefined;
   readonly supersededBy: string | undefined;
   readonly citations: Citation[];
-  readonly verification: Verification | undefined;
+  readonly verification: TestOutcome | undefined;
 }
 
 function designClaiming(id: string, model: TraceModel): string | undefined {
@@ -28,7 +28,7 @@ function designClaiming(id: string, model: TraceModel): string | undefined {
 function trace(
   requirement: Requirement,
   model: TraceModel,
-  verifications: Map<string, Verification> | undefined,
+  verifications: Map<string, TestOutcome> | undefined,
 ): Trace {
   const design = designClaiming(requirement.id, model);
   const citations = model.citations.filter((citation) => citation.id === requirement.id);
@@ -61,12 +61,12 @@ function trace(
 export function traceOf(
   id: string,
   model: TraceModel,
-  verifications?: Map<string, Verification>,
+  verifications?: Map<string, TestOutcome>,
 ): Trace | undefined {
   const requirement = model.requirements.find((candidate) => candidate.id === id);
   return requirement === undefined ? undefined : trace(requirement, model, verifications);
 }
 
-export function allTraces(model: TraceModel, verifications?: Map<string, Verification>): Trace[] {
+export function allTraces(model: TraceModel, verifications?: Map<string, TestOutcome>): Trace[] {
   return model.requirements.map((requirement) => trace(requirement, model, verifications));
 }

@@ -38,8 +38,9 @@ CNT-014
   `it` title, or a `rule:` field naming it in an assertion, is what makes that requirement
   demonstrably met. `packages/trace` reads those citations: `pnpm trace check` reports a citation
   that names a requirement no design claims, along with the corpus's other structural problems; a
-  requirement that no test cites at all is not yet a reported gap - that is the baseline gate,
-  arriving with stage 3. `pnpm trace verify` reads the JSON reports every suite writes and reports a
+  requirement that no test cites at all is not yet a reported gap - that is
+  [the baseline gate](../baselines/README.md), arriving with stage 3. `pnpm trace verify` reads the
+  JSON reports every suite writes and reports a
   citation whose test actually passed as `Verified`, not just `Covered`.
 - **`ZZZ` is a reserved area code**, never allocated to a real area. Fixtures and examples that need
   an identifier shape without claiming a real requirement use `ZZZ-NNN`, and `packages/trace` ignores

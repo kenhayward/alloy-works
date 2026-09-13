@@ -1,6 +1,6 @@
 import type { Problem } from './check.js';
 import type { Requirement, TraceModel } from './model.js';
-import type { Verification } from './results.js';
+import type { TestOutcome } from './results.js';
 import { type RequirementState, type Trace, allTraces } from './state.js';
 
 /**
@@ -77,7 +77,7 @@ export function formatSearch(results: Requirement[], term: string): string {
  * So the column is omitted entirely when there is no verification map to back it, and the gap is
  * named rather than left to be misread.
  */
-export function formatStats(model: TraceModel, verifications?: Map<string, Verification>): string {
+export function formatStats(model: TraceModel, verifications?: Map<string, TestOutcome>): string {
   const traces = allTraces(model, verifications);
   const tranches = [...new Set(traces.map((trace) => trace.requirement.tranche))].sort();
   const states =

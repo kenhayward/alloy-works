@@ -4,7 +4,7 @@ import { RESERVED_AREA, validate } from './model.js';
 
 export type Outcome = 'passed' | 'failed' | 'skipped';
 
-export interface Verification {
+export interface TestOutcome {
   readonly id: string;
   readonly outcome: Outcome;
   readonly tests: string[];
@@ -41,7 +41,7 @@ const outcomeOf = (status: string): Outcome =>
  * Several JSON reports to what each requirement's tests did. One report per package, because each
  * `vitest.config.ts` writes its own.
  */
-export function parseResults(reports: unknown[]): Map<string, Verification> {
+export function parseResults(reports: unknown[]): Map<string, TestOutcome> {
   const perIdentifier = new Map<string, { outcomes: Outcome[]; tests: string[] }>();
 
   for (const [index, raw] of reports.entries()) {
