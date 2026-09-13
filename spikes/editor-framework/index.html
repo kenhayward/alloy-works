@@ -1,0 +1,151 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Editor framework spike</title>
+<style>
+  body {
+    font:
+      16px/1.5 Georgia,
+      serif;
+    margin: 0;
+    background: #f6f6f4;
+    color: #111;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    padding: 8px 16px;
+    font:
+      13px/1.4 ui-monospace,
+      monospace;
+    z-index: 5;
+  }
+  /* CNT-115: the measure of the publishing layout, scaled. 6.5in at 96dpi. */
+  #scroll {
+    max-width: 624px;
+    margin: 0 auto;
+    padding: 24px 0 120px;
+  }
+  /* CNT-072: one continuous scroll. No gap, no card, no chrome between components. */
+  .component {
+    position: relative;
+  }
+  .boundary {
+    position: absolute;
+    left: -14px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+    font:
+      11px/1 ui-monospace,
+      monospace;
+    color: transparent;
+    overflow: visible;
+    white-space: nowrap;
+  }
+  /* CNT-073: revealed on hover and by a toggle, never permanent. */
+  .component:hover > .boundary,
+  body.show-boundaries .boundary {
+    background: #7a7a7a;
+    color: #555;
+  }
+  .component:hover > .boundary::after,
+  body.show-boundaries .boundary::after {
+    content: attr(data-label);
+    position: absolute;
+    left: -6px;
+    top: -2px;
+    transform: translateX(-100%);
+  }
+  /* CNT-073 says no permanent chrome; CNT-074 says show whether you may edit it right now. This is
+     the tension, and this is the compromise: a hairline rule, not a filled box. */
+  .component[data-editable='false'] .ProseMirror {
+    border-left: 2px solid #bbb;
+    margin-left: -8px;
+    padding-left: 6px;
+  }
+  .ProseMirror {
+    outline: none;
+  }
+  .ProseMirror p {
+    margin: 0 0 0.75em;
+  }
+  /* CNT-138: distinguishable without colour, and in high contrast. Border and marker, not hue alone. */
+  .suggestion {
+    border-bottom: 2px dotted currentColor;
+  }
+  .suggestion-delete {
+    text-decoration: line-through;
+  }
+  .suggestion-delete::after {
+    content: '\2212';
+    font-size: 0.7em;
+    vertical-align: super;
+  }
+  .condition {
+    border-bottom: 1px solid currentColor;
+  }
+  .condition::before {
+    content: '\25C7';
+    font-size: 0.7em;
+    vertical-align: super;
+  }
+  .comment {
+    outline: 1px dashed currentColor;
+    outline-offset: 1px;
+  }
+  .comment::after {
+    content: '\275D';
+    font-size: 0.7em;
+    vertical-align: super;
+  }
+  table {
+    border-collapse: collapse;
+    margin: 1em 0;
+  }
+  th,
+  td {
+    border: 1px solid #888;
+    padding: 4px 8px;
+  }
+  th {
+    background: #e8e8e6;
+  }
+  .inline-image {
+    height: 1em;
+  }
+  #table-case {
+    max-width: 624px;
+    margin: 0 auto 80px;
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  @media (forced-colors: active) {
+    .suggestion,
+    .condition {
+      border-color: CanvasText;
+    }
+  }
+</style>
+<header>
+  <span id="status" data-ready="false">mounting…</span>
+  <button id="toggle">toggle boundaries</button>
+</header>
+<div id="announce" class="sr" aria-live="polite" role="status"></div>
+<h2 style="max-width: 624px; margin: 16px auto 0">Gate 3 - an authored table</h2>
+<div id="table-case"></div>
+<h2 style="max-width: 624px; margin: 16px auto 0">Gate 1 - a document of many components</h2>
+<div id="scroll"></div>
+<script>
+  document
+    .getElementById('toggle')
+    .addEventListener('click', () => document.body.classList.toggle('show-boundaries'));
+</script>
+<script src="out/bundle.js"></script>

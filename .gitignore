@@ -38,3 +38,6 @@ Thumbs.db
 !.env.example
 *.env
 !*.env.example
+
+# Spike build output. The bundle is 2MB and is rebuilt by one esbuild command.
+spikes/editor-framework/out/
