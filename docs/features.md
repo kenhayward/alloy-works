@@ -40,21 +40,32 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **A packaged desktop build.** `pnpm --filter @alloy-works/desktop package` produces a Windows
   installer. Nothing is signed, notarised or published.
 
-- **A content model.** `packages/domain` defines a `Component` - a typed, titled, independently
-  versioned piece of content - with validation on creation, on change and on anything read back
-  from storage. It is pure TypeScript: no React, no Electron, no filesystem.
+- **A content model.** `packages/domain` defines the shape a component's content is stored in: seven
+  kinds of block, eight kinds of inline content, and thirteen annotations that can overlap each other
+  without splitting the text underneath. Every block and every annotation carries an identifier of its
+  own, which is what lets a comment or a suggestion survive the text around it being edited. Content
+  records the schema version it was written against, so content written today stays readable when the
+  schema changes, and it is checked on the way in and on the way back out - content that fails the check
+  is set aside and reported rather than quietly repaired. Every construct has a checked route into Word
+  and into tagged PDF. It is pure TypeScript: no React, no Electron, no filesystem.
+
+  **This is the shape, not the product.** Nothing authors this content, stores it, imports it from
+  another format or publishes it yet.
 
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
 
-- No content storage, persistence, import or export. The one sample document is a fixed template
-  with no content of yours in it.
+- No content storage, persistence, import or export. The content model above defines the shape; nothing
+  writes it to a database, reads it from a Word file or sends it anywhere. The one sample document is a
+  fixed template with no content of yours in it.
 - No authoring UI - no editor, no component tree, no reuse or transclusion.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata, no taxonomy, no workflow, no versioning of content beyond the `version`
-  counter on a single component.
+  counter on a single component. Numbering, cross-reference resolution, conditional text and suggestion
+  handling are all described in the content model and none of them runs: content can say a paragraph
+  refers to a figure, and nothing resolves it.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

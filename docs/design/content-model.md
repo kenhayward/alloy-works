@@ -13,6 +13,14 @@ validated against its four gate cases. It is stored by
 [word-output.md](word-output.md) (ADR-0015) and PDF through the Typst template
 ([ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)).
 
+> **Part of this is built.** The stored shape - the nodes, the marks, the root a version holds, the
+> canonical serialisation, the migration chain and the output mapping - is in
+> `packages/domain/src/content/model/`, and [`../architecture.md`](../architecture.md) describes it as
+> it stands rather than as it was planned. What is still design here: the admission boundary (section 10
+> of CNT), resolution, and the round-trip test CNT-001 is satisfied by, which needs an editor. This
+> document keeps the argument and the requirements it owns, because the reasoning is not a thing the
+> code records.
+
 ## The shape in one paragraph
 
 A component's content is one JSON document: a root carrying the schema version, the title, the base
@@ -413,9 +421,12 @@ rules, none needs a parser, and the package already forbids React, Electron, `fs
 right home for the one part of the product that has to be testable without booting anything
 (ADR-0005).
 
-The spike schema is not exported from the package's public surface today, and the findings say
-promoting it "is a deliberate act for whoever starts the authoring work, not something that should
-happen by drift". **This design is that act**, and `index.test.ts`'s pin moves with it.
+The spike schema was not exported from the package's public surface, and the findings say promoting a
+schema "is a deliberate act for whoever starts the authoring work, not something that should happen by
+drift". **That act has happened**, and it promoted this model rather than the spike's:
+`packages/domain/src/content/model/index.ts` is the barrel, the package root re-exports it, and
+`index.test.ts` pins the whole surface so the next export is a decision and not an accident. The spike
+schema stays where it was, unexported.
 
 **Every format reader and writer moves out.** The spike recommended it for the OOXML pair - "an OOXML
 adapter is a boundary translator that happens to need the model" - and the admission pipeline makes it
@@ -436,12 +447,19 @@ lets all six stages be tested with no parser in the room.
   case is re-pointed at an authored table rather than kept green against a node the T1 vocabulary does
   not contain.
 - **A fixture directory per schema version**, never deleted, with one test migrating every fixture to
-  current (CNT-012).
+  current (CNT-012). **Built**, at schema version 1, with a second test asserting the every-node fixture
+  really does carry every construct - without which its name is a claim rather than a property, and a
+  node added to the schema and forgotten in the fixture would leave the next migration untested against
+  a shape that by then has stored content in it.
 - **A canonical-serialisation test**: two documents differing only in construction order produce one
-  hash.
+  hash. **Built**, over the string rather than a hash, because the property is the string and hashing
+  here would cost the package its platform-freedom.
 - **Every admission test asserts the report as well as the output** (CNT-064). A test that asserts only
   what came through is the spike's silent-drop defect waiting to happen again.
-- **A completeness test** over the mapping table: every node and mark type has a row.
+- **A completeness test** over the mapping table: every node and mark type has a row. **Built**, and it
+  fails on a blank cell as well as a missing row. Filling it found one thing worth recording: `Em` and
+  `Strong` are PDF 2.0 structure types, so under PDF/UA-1 emphasis is a `Span` carrying the face the
+  theme declares.
 - **A round-trip test for CNT-001's mapping** arrives with the editor design, because it needs an
   editor. Named here so it is not forgotten.
 
