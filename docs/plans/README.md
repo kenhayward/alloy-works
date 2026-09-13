@@ -60,5 +60,28 @@ with `pnpm trace draft`, and landed by the pull request that closes it - and onc
 corpus, anybody can ask what a release actually answers for, and have that answer computed from a
 committed baseline and a passing test run rather than remembered. What it does not give anybody: the
 gate proves that a requirement is cited by a test that passed, not that the requirement is true of
-the code or that the test is a good one, and the corpus still carries the seven known problems
-`pnpm trace check` reports, which the baseline deliberately does not claim to have fixed.
+the code or that the test is a good one. The seven problems it found on its first run were fixed in
+PR #69 and `pnpm trace check` now reports none; the `0.13.0` baseline and its evidence pack stay
+frozen and still record them, which is the record working rather than untidiness.
+
+## The content model
+
+The stored shape of a component's content, designed in [content-model.md](../design/content-model.md)
+and built on the editor [ADR-0023](../decisions/0023-prosemirror-as-the-editor-and-its-model.md)
+settled first - because CNT-012 makes the first migration fixture permanent, so a framework that
+imposed a shape had to be ruled out while there were no fixtures.
+
+This is the first tranche T1 work. The tranche is designed and built one subsystem at a time rather
+than designed whole: a plan written two subsystems early is rewritten when its turn comes, and so is a
+design.
+
+| #   | Plan                                                                           | Builds                                                                                                                                                                                                                                                                                                                                                   | Status  |
+| --- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md) | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface | Written |
+
+Three things plan 1 deliberately leaves, named so the next plan starts from a list rather than from a
+reading of the diff: the spike schema and the four gate-case tests still standing beside the new model,
+with the OOXML reader and writer still inside `packages/domain` where
+[content-model.md](../design/content-model.md) says they should not stay; the admission pipeline, which
+is the whole of CNT section 10; and resolution, which needs conditions and suggestions that are T3 and
+T4 capabilities even though CNT-116 puts their marks in the first schema version stored.
