@@ -122,6 +122,55 @@ describe('drafting a candidate requirement', () => {
     expect(draft.sections).toEqual(['2. Widgets', '2.1 Gadgets']);
   });
 
+  it('collapses a multi-paragraph statement to one line, so the row is not lost by parseAreaDocument', () => {
+    const filedMultiParagraph: FiledRequirement = {
+      ...filedComplete,
+      statement: 'A widget must remember its name.\n\nAnd it must also remember its colour.',
+    };
+
+    const draft = draftRequirement(filedMultiParagraph, model, areaDocumentText);
+    const parsed = parseAreaDocument(document, documentContaining(draft.row));
+
+    expect(parsed.requirements).toHaveLength(1);
+    expect(parsed.requirements[0]!.statement).toBe(
+      'A widget must remember its name. And it must also remember its colour.',
+    );
+  });
+
+  it('collapses a tab within a statement to a single space', () => {
+    const filedWithTab: FiledRequirement = {
+      ...filedComplete,
+      statement: 'A widget must remember\tits own name.',
+    };
+
+    const draft = draftRequirement(filedWithTab, model, areaDocumentText);
+
+    expect(draft.row).toContain('A widget must remember its own name.');
+  });
+
+  it('collapses a run of repeated spaces within a statement to a single space', () => {
+    const filedWithSpaces: FiledRequirement = {
+      ...filedComplete,
+      statement: 'A widget must   remember its own name.',
+    };
+
+    const draft = draftRequirement(filedWithSpaces, model, areaDocumentText);
+
+    expect(draft.row).toContain('A widget must remember its own name.');
+  });
+
+  it('does not double-escape a statement that already carries an escaped pipe', () => {
+    const filedWithEscapedPipe: FiledRequirement = {
+      ...filedComplete,
+      statement: 'A widget must show \\| as a literal pipe.',
+    };
+
+    const draft = draftRequirement(filedWithEscapedPipe, model, areaDocumentText);
+    const parsed = parseAreaDocument(document, documentContaining(draft.row));
+
+    expect(parsed.requirements[0]!.statement).toBe('A widget must show \\| as a literal pipe.');
+  });
+
   it('warns about a missing tranche, a missing test hint, and a statement that binds nothing - never refusing', () => {
     const filedBare: FiledRequirement = {
       area: 'ZZZ',

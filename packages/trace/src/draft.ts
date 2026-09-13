@@ -20,10 +20,27 @@ const UNKNOWN_TRANCHE = 'T?';
 /** A `## ` or `### ` heading line, capturing its text (numbering and all, exactly as printed). */
 const HEADING = /^#{2,3}\s+(.+?)\s*$/;
 
-/** A markdown table cell must not contain an unescaped pipe - `parse/table.ts`'s `tableCells` splits
- * on one - so a statement that happens to carry a literal `|` is escaped on the way into a row. */
+/**
+ * A markdown table cell must be one line and must not contain an unescaped pipe - `parse/table.ts`'s
+ * `tableCells` splits a row on newlines-as-rows and on an unescaped pipe - so both are dealt with on
+ * the way into a row.
+ *
+ * "The requirement" is a textarea, and `parse/issue.ts` deliberately keeps a multi-paragraph answer
+ * whole. Left alone, a two-paragraph statement produces a row containing a blank line, which is no
+ * longer one table row: `parseAreaDocument` reads only the first physical line as the row and the
+ * rest as ordinary prose, so the requirement is silently absent from the corpus with no error
+ * anywhere. A requirement statement is one sentence by convention, so collapsing every run of
+ * whitespace - newlines, tabs, repeated spaces - into a single space is the correct normalisation
+ * here, not a workaround.
+ *
+ * The pipe escape only touches a pipe not already escaped, matching the same
+ * `(?<!\\)\|` convention `tableCells` splits on - escaping an already-escaped `\|` again would double
+ * the backslash (`\|` becoming `\\|`) and leave a stray backslash in the statement once the row is
+ * parsed back.
+ */
 function escapeCell(cell: string): string {
-  return cell.replace(/\|/g, '\\|');
+  const oneLine = cell.replace(/\s+/g, ' ').trim();
+  return oneLine.replace(/(?<!\\)\|/g, '\\|');
 }
 
 /**
