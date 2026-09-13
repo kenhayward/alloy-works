@@ -1,7 +1,14 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
 import { REPO_ROOT, compile } from './compile.js';
-import { formatSearch, formatStats, formatTrace, nextIdentifier, search } from './format.js';
+import {
+  formatArea,
+  formatSearch,
+  formatStats,
+  formatTrace,
+  nextIdentifier,
+  search,
+} from './format.js';
 import { allTraces, traceOf } from './state.js';
 
 const USAGE = `pnpm trace <command>
@@ -35,11 +42,7 @@ function main(argv: string[]): number {
       const area = argument.toUpperCase();
       const traces = allTraces(model).filter((trace) => trace.requirement.area === area);
       if (traces.length === 0) return fail(`No area ${area} in the corpus.`);
-      for (const trace of traces) {
-        console.log(
-          `${trace.requirement.id}  ${trace.state.padEnd(10)}  ${trace.requirement.statement}`,
-        );
-      }
+      console.log(formatArea(traces));
       return 0;
     }
     case 'next': {

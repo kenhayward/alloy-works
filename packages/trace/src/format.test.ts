@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Requirement, TraceModel } from './model.js';
-import { formatSearch, formatStats, formatTrace, nextIdentifier, search } from './format.js';
-import { traceOf } from './state.js';
+import {
+  formatArea,
+  formatSearch,
+  formatStats,
+  formatTrace,
+  nextIdentifier,
+  search,
+} from './format.js';
+import { allTraces, traceOf } from './state.js';
 
 const requirement = (
   id: string,
@@ -99,5 +106,29 @@ describe('allocating the next identifier', () => {
 
   it('refuses an area the corpus does not hold, rather than inventing one', () => {
     expect(() => nextIdentifier(model, 'QQQ')).toThrow(/QQQ/);
+  });
+
+  it('counts from the highest allocated, not from how many there are', () => {
+    const withAGap: TraceModel = {
+      ...model,
+      requirements: [
+        ...model.requirements,
+        requirement('ZZZ-009', 'A widget must survive a gap', 'T1'),
+      ],
+    };
+
+    // Four requirements, highest is 009. A count-based allocator would say ZZZ-005 and reissue a
+    // live identifier; identifiers here are never reused, so the answer is ZZZ-010.
+    expect(nextIdentifier(withAGap, 'ZZZ')).toBe('ZZZ-010');
+  });
+});
+
+describe('formatting an area', () => {
+  it('gives one row per requirement, with the state padded into a column', () => {
+    const rows = formatArea(allTraces(model)).split(/\r?\n/);
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toBe('ZZZ-001  Designed    A widget must carry a footnote');
+    expect(rows[1]).toBe('ZZZ-002  Specified   A gadget must spin freely');
   });
 });

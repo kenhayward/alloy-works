@@ -24,6 +24,15 @@ export function search(model: TraceModel, term: string): Requirement[] {
   );
 }
 
+export function formatArea(traces: Trace[]): string {
+  return traces
+    .map(
+      (trace) =>
+        `${trace.requirement.id}  ${trace.state.padEnd(10)}  ${trace.requirement.statement}`,
+    )
+    .join('\n');
+}
+
 export function formatSearch(results: Requirement[], term: string): string {
   if (results.length === 0) return `Nothing in the corpus mentions "${term}".`;
   const rows = results.map(
