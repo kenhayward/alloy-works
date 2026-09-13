@@ -3,6 +3,51 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.16.0 - 2026-09-13 (PR #79)
+
+### Added
+
+- **The content model's stored shape**, in `packages/domain/src/content/model/` - the first tranche T1
+  code, built from [the content model design](docs/design/content-model.md) and the editor decision
+  [ADR-0023](docs/decisions/0023-prosemirror-as-the-editor-and-its-model.md) that had to come first.
+  Seven kinds of block, eight kinds of inline content and thirteen annotations that overlap without
+  splitting the text underneath, each carrying an identifier of its own so that a comment or a
+  suggestion survives the text around it being edited.
+- **One entry point that validates**, `parseContentDocument`, carrying the three rules no per-node check
+  can express: block identifiers are unique within a component, two adjacent empty paragraphs are
+  refused while one is admitted, and a footnote holds paragraphs and nothing else.
+- **A canonical serialisation**, so that two documents differing only in how they were built produce one
+  string and therefore one content hash. Members in lexicographic order, text in Unicode NFC, no
+  insignificant whitespace. The hash itself belongs to whoever stores the content, which keeps this
+  package free of any platform.
+- **Migration on read, never on write.** Content records the schema version it was written against and
+  is projected forward every time it is read, so stored bytes never change and a version's hash stays
+  the hash of what was written. Content that fails the check on the way back out is set aside and
+  reported rather than quietly repaired.
+- **A fixture of stored content per schema version, never deleted** - one minimal component and one
+  carrying every construct, with tests that migrate both to the current version and assert the second
+  really is complete.
+- **A checked route out of the product for every construct**: one row per block, inline node and mark
+  naming what it becomes in Word and in tagged PDF, and a test that fails when a construct has no row or
+  a row has a gap. A construct with no way out is a finding about the construct.
+- **The content model as the domain package's public surface**, promoted deliberately, with the whole
+  export list pinned by a test so the next addition is a decision rather than drift.
+
+### Changed
+
+- `docs/architecture.md` now describes the content model as built rather than planned, and its status
+  note says so; [the design](docs/design/content-model.md) keeps the argument and the requirements it
+  owns, and marks what is built.
+- `README.md` and [`docs/features.md`](docs/features.md) describe the content model as the stored shape
+  it is, and say plainly what it is not: nothing authors this content, stores it, imports it or
+  publishes it. A schema that parses is not a product that authors.
+
+**What this release answers for.** Forty requirements are now cited by a passing test for the first time
+outside the scaffolding, thirty-nine of them by the content model's own tests. That means each is cited
+by a test that passed, which is not the same as the requirement being true of the product: there is no
+editor, no storage and no publishing, and `pnpm trace gate` still measures a release against a baseline
+a person writes by hand.
+
 ## 0.15.5 - 2026-09-13 (PR #78)
 
 ### Added

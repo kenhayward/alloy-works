@@ -71,13 +71,13 @@ bar needs themes, templates, assets and tables as well as an editor. **None of i
 
 ## Features
 
-| Feature                      | Description                                                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| An environment you can open  | Sign in, ask for a sample document, and watch it arrive without asking again, in a browser or the desktop app    |
-| One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                       |
-| Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                       |
-| Content model                | A typed, titled, independently versioned `Component`, validated on creation, on change and on read-back          |
-| Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer |
+| Feature                      | Description                                                                                                                                               |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An environment you can open  | Sign in, ask for a sample document, and watch it arrive without asking again, in a browser or the desktop app                                             |
+| One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                                                                |
+| Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                                                                |
+| Content model                | The stored shape of a component's content: blocks, inline content and overlapping annotations, each identified, versioned by schema and checked both ways |
+| Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                          |
 
 Full prose list: [`docs/features.md`](docs/features.md).
 

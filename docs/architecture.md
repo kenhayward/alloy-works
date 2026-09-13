@@ -1,8 +1,10 @@
 # Architecture - the repository as built
 
-> Status: scaffolding. The workspaces, the split between web and desktop, and the seam between them
-> are real and tested. The product on top of them is not written yet - the single `Component` in
-> `packages/domain` exists to prove the path end to end, not to fix a content model.
+> Status: scaffolding, plus the content model's stored shape. The workspaces, the split between web
+> and desktop, and the seam between them are real and tested, and so is the schema a component's
+> content is held in - [the content model](#the-content-model) below. Nothing authors it, stores it or
+> publishes it yet. The single `Component` beside it in `packages/domain` is still the scaffolding that
+> proved the path end to end, and is not a decision about content.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
@@ -19,7 +21,7 @@ One pnpm workspace, one lock file, eleven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `@alloy-works/domain`       | The content model, the theme model and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                                                                                                                                                                                                                                                                                          |
+| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                                                                                                                                                                                                |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI                                                                                                                                                                                                                                                                                                                                                                    |
@@ -46,6 +48,56 @@ Dependencies point one way: `apps/web` depends on `@alloy-works/domain` and on
 depends on `@alloy-works/web` **for types only** (see the platform bridge below). The domain package
 depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
 along.
+
+## The content model
+
+`packages/domain/src/content/model/` holds the shape a component's content is stored in, designed in
+[`design/content-model.md`](design/content-model.md) and built on
+[ADR-0005](decisions/0005-purpose-built-node-and-mark-content-model.md) and
+[ADR-0023](decisions/0023-prosemirror-as-the-editor-and-its-model.md). It is the whole of the stored
+shape and none of the product on top: nothing authors content, stores it, admits it from another
+format or publishes it.
+
+| File           | Holds                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------- |
+| `marks.ts`     | Thirteen marks, and the set is closed. Each carries an identifier and no appearance          |
+| `inline.ts`    | Eight inline nodes, and the three-state alternative a figure or an image carries             |
+| `blocks.ts`    | Seven blocks, and the restricted sequence a footnote's content is                            |
+| `document.ts`  | The root a version holds, and `parseContentDocument` - the one way a document is constructed |
+| `canonical.ts` | `canonicalise`, whose output is what a caller hashes into `content_hash`                     |
+| `migrate.ts`   | The migration chain, applied on read, and the quarantine for content that will not parse     |
+| `mapping.ts`   | One row per node and per mark, naming what it becomes in Word and in tagged PDF              |
+| `fixtures/v1/` | Stored content at schema version 1, never deleted                                            |
+
+**Four properties, because each is a decision rather than an implementation detail.**
+
+**The root's members are closed.** A component's content carries the schema version it was written
+against, its own title, its base language, its base direction, and its blocks. Adding a member is a
+schema version with a migration and a fixture, not a configuration option.
+
+**Every document goes through `parseContentDocument`.** Three rules live there rather than in the
+schema, because each is a property of a document rather than of a node: block identifiers are unique
+within the component, two adjacent empty paragraphs are refused while one is admitted, and a
+footnote's content is paragraphs only.
+
+**Migration is a read-time projection and never a rewrite.** Version rows take inserts only and
+`content_hash` is the hash of what was written, so migrating stored content would either invalidate
+its hash or need a version row nobody authored. The stored bytes never change. With one schema version
+the chain is empty; the chain, the fixture directory and the test that walks every fixture to current
+exist anyway, because the first schema change is when a chain nobody built is found to be missing.
+
+**No node exists without a way out.** `mapping.ts` carries a row for every block, inline node and mark,
+and a test fails when a type has no row or a row has a blank cell. A cell that cannot be filled is a
+finding about the node rather than a comment in the file.
+
+Hashing is deliberately not here. `canonicalise` returns a string and the caller hashes it, because
+`node:crypto` is not platform-free and `crypto.subtle` would make parsing async for nothing.
+
+**The content model spike's schema still stands beside this one**, in `packages/domain/src/content/`,
+with `compare.ts`, `resolve.ts`, `binding.ts`, the OOXML reader and writer, and the four gate-case
+tests that are the evidence ADR-0005 rests on. Retiring it, and moving the OOXML pair out of this
+package as `design/content-model.md` requires, is a later plan's work - named in
+[`plans/README.md`](plans/README.md) so it is a debt rather than a surprise.
 
 ## One renderer, two deliveries
 

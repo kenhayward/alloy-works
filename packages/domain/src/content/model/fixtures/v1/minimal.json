@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "title": "A new component",
+  "language": "en-GB",
+  "direction": "ltr",
+  "content": [{ "type": "paragraph", "id": "b1", "style": "body", "content": [] }]
+}

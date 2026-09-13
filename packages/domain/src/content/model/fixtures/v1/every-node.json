@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "title": "Every node and every mark",
+  "language": "en-GB",
+  "direction": "ltr",
+  "content": [
+    {
+      "type": "paragraph",
+      "id": "b1",
+      "style": "body",
+      "content": [
+        {
+          "type": "text",
+          "value": "Emphasised and strong, ",
+          "marks": [
+            { "type": "emphasis", "id": "m1" },
+            { "type": "strong", "id": "m2" }
+          ]
+        },
+        { "type": "text", "value": "underlined, ", "marks": [{ "type": "underline", "id": "m3" }] },
+        {
+          "type": "text",
+          "value": "subscript and superscript, ",
+          "marks": [
+            { "type": "subscript", "id": "m4" },
+            { "type": "superscript", "id": "m5" }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "inline code, ",
+          "marks": [{ "type": "inlineCode", "id": "m6" }]
+        },
+        {
+          "type": "text",
+          "value": "a defined term, ",
+          "marks": [{ "type": "definedTerm", "id": "m7", "term": "term-1" }]
+        },
+        {
+          "type": "text",
+          "value": "a quoted phrase, ",
+          "marks": [{ "type": "quotedPhrase", "id": "m8" }]
+        },
+        {
+          "type": "text",
+          "value": "conditional text, ",
+          "marks": [
+            { "type": "condition", "id": "m9", "axis": "jurisdiction", "values": ["uk", "eu"] }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "a suggested deletion, ",
+          "marks": [{ "type": "suggestion", "id": "m10", "operation": "delete", "author": "Ada" }]
+        },
+        {
+          "type": "text",
+          "value": "a commented span, ",
+          "marks": [{ "type": "comment", "id": "m11", "threadId": "thread-1" }]
+        },
+        {
+          "type": "text",
+          "value": "a link, ",
+          "marks": [
+            {
+              "type": "hyperlink",
+              "id": "m12",
+              "href": "https://example.test/reference",
+              "title": "The reference"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "and a passage in another language.",
+          "marks": [{ "type": "language", "id": "m13", "tag": "pt-BR" }]
+        },
+        { "type": "equation", "mathml": "<math><mi>x</mi></math>", "latex": "x" },
+        {
+          "type": "footnote",
+          "id": "f1",
+          "anchor": { "kind": "span" },
+          "content": [
+            {
+              "type": "paragraph",
+              "id": "fb1",
+              "style": "footnote",
+              "content": [
+                {
+                  "type": "text",
+                  "value": "A note on the span, with a decorative image ",
+                  "marks": []
+                },
+                {
+                  "type": "image",
+                  "asset": "asset-2",
+                  "imageStyle": "inline",
+                  "alternative": { "kind": "decorative" }
+                }
+              ]
+            }
+          ]
+        },
+        { "type": "crossReference", "target": "b4", "display": "numberAndTitle" },
+        { "type": "citation", "entry": "bib-1", "locator": "p. 12" },
+        { "type": "variable", "name": "productName" },
+        { "type": "binding", "query": "query-1" },
+        {
+          "type": "image",
+          "asset": "asset-1",
+          "imageStyle": "inline",
+          "alternative": { "kind": "inherited" }
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "id": "b2",
+      "kind": "ordered",
+      "start": 1,
+      "format": "decimal",
+      "items": [
+        {
+          "content": [
+            {
+              "type": "list",
+              "id": "b3",
+              "kind": "unordered",
+              "items": [
+                {
+                  "content": [
+                    {
+                      "type": "list",
+                      "id": "b3a",
+                      "kind": "definition",
+                      "items": [
+                        {
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "id": "b3b",
+                              "style": "body",
+                              "content": [{ "type": "text", "value": "A definition.", "marks": [] }]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "id": "b4",
+      "caption": "One of every construct",
+      "headerRows": 1,
+      "headerColumns": 1,
+      "keyColumns": [0],
+      "note": [
+        {
+          "type": "footnote",
+          "id": "f2",
+          "anchor": { "kind": "table" },
+          "content": [
+            {
+              "type": "paragraph",
+              "id": "fb2",
+              "style": "footnote",
+              "content": [{ "type": "text", "value": "A note on the table.", "marks": [] }]
+            }
+          ]
+        }
+      ],
+      "rows": [
+        {
+          "cells": [
+            {
+              "content": [
+                {
+                  "type": "paragraph",
+                  "id": "b5",
+                  "style": "tableHeader",
+                  "content": [{ "type": "text", "value": "Measure", "marks": [] }]
+                }
+              ],
+              "colspan": 1,
+              "rowspan": 1
+            },
+            {
+              "content": [
+                {
+                  "type": "paragraph",
+                  "id": "b6",
+                  "style": "tableHeader",
+                  "content": [{ "type": "text", "value": "Value", "marks": [] }]
+                }
+              ],
+              "colspan": 1,
+              "rowspan": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "content": [
+                {
+                  "type": "paragraph",
+                  "id": "b7",
+                  "style": "tableBody",
+                  "content": [
+                    { "type": "text", "value": "Throughput", "marks": [] },
+                    {
+                      "type": "footnote",
+                      "id": "f3",
+                      "anchor": { "kind": "cell", "key": "Throughput" },
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "id": "fb3",
+                          "style": "footnote",
+                          "content": [
+                            { "type": "text", "value": "Anchored by key value.", "marks": [] }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "colspan": 1,
+              "rowspan": 1
+            },
+            {
+              "content": [
+                {
+                  "type": "paragraph",
+                  "id": "b8",
+                  "style": "tableBody",
+                  "content": [
+                    { "type": "text", "value": "Measured", "marks": [] },
+                    {
+                      "type": "footnote",
+                      "id": "f4",
+                      "anchor": { "kind": "cellPosition", "row": 1, "column": 1 },
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "id": "fb4",
+                          "style": "footnote",
+                          "content": [
+                            { "type": "text", "value": "Anchored by position.", "marks": [] }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "colspan": 1,
+              "rowspan": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "b9",
+      "asset": "asset-3",
+      "imageStyle": "column-width",
+      "caption": "A figure carrying its own alternative",
+      "alternative": { "kind": "own", "text": "A bar chart of throughput by measure" }
+    },
+    {
+      "type": "preformatted",
+      "id": "b10",
+      "text": "select 1\n\tfrom nothing",
+      "language": "sql"
+    },
+    {
+      "type": "blockquote",
+      "id": "b11",
+      "content": [
+        {
+          "type": "paragraph",
+          "id": "b12",
+          "style": "quote",
+          "content": [{ "type": "text", "value": "A quoted passage.", "marks": [] }]
+        }
+      ],
+      "attribution": [{ "type": "text", "value": "Grace", "marks": [] }]
+    },
+    {
+      "type": "equation",
+      "id": "b13",
+      "mathml": "<math display=\"block\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>",
+      "latex": "\\frac{a}{b}",
+      "numbered": true
+    }
+  ]
+}

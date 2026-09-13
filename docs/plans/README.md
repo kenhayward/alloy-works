@@ -75,13 +75,20 @@ This is the first tranche T1 work. The tranche is designed and built one subsyst
 than designed whole: a plan written two subsystems early is rewritten when its turn comes, and so is a
 design.
 
-| #   | Plan                                                                           | Builds                                                                                                                                                                                                                                                                                                                                                   | Status  |
-| --- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md) | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface | Written |
+| #   | Plan                                                                           | Builds                                                                                                                                                                                                                                                                                                                                                   | Status         |
+| --- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md) | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface | Built (PR #79) |
 
-Three things plan 1 deliberately leaves, named so the next plan starts from a list rather than from a
+**Plan 1 is built.** The stored shape exists, 39 requirements are cited by its tests and
+`docs/architecture.md` describes it as built rather than planned. What that is not: a schema that
+parses is not a product that authors, and [`../features.md`](../features.md) stays the honest account of
+the distance.
+
+Four things plan 1 deliberately leaves, named so the next plan starts from a list rather than from a
 reading of the diff: the spike schema and the four gate-case tests still standing beside the new model,
 with the OOXML reader and writer still inside `packages/domain` where
 [content-model.md](../design/content-model.md) says they should not stay; the admission pipeline, which
 is the whole of CNT section 10; and resolution, which needs conditions and suggestions that are T3 and
-T4 capabilities even though CNT-116 puts their marks in the first schema version stored.
+T4 capabilities even though CNT-116 puts their marks in the first schema version stored; and identity
+through editing, which ADR-0023 settled as a rule of descent rather than arrival and which belongs with
+the editor, because it is a plugin over transactions rather than a property of the schema.
