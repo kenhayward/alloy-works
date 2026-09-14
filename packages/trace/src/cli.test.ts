@@ -218,34 +218,43 @@ describe('writing a listing to a file', () => {
     }
   };
 
-  it('writes CRLF on a platform whose line ending is CRLF, so Windows viewers break the lines', () => {
-    const bytes = written('\r\n');
+  /** The text after the byte-order mark, failing if the mark is not there. */
+  const text = (bytes: Buffer): string => {
+    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    return bytes.subarray(3).toString('utf8');
+  };
 
-    expect(bytes.toString('utf8')).toBe(
+  it('writes CRLF on a platform whose line ending is CRLF, so Windows viewers break the lines', () => {
+    const written_ = text(written('\r\n'));
+
+    expect(written_).toBe(
       'ZZZ-001  Specified   Café 文字 ≤ must survive\r\nZZZ-002  Specified   A second row\r\nZZZ-003  Specified   A third row\r\n',
     );
     // No LF that is not part of a CRLF - a bare LF is exactly what a Windows viewer does not break on.
-    expect(bytes.toString('utf8').replace(/\r\n/g, '')).not.toContain('\n');
+    expect(written_.replace(/\r\n/g, '')).not.toContain('\n');
   });
 
   it('writes LF on a platform whose line ending is LF', () => {
-    expect(written('\n').toString('utf8')).toBe(
+    expect(text(written('\n'))).toBe(
       'ZZZ-001  Specified   Café 文字 ≤ must survive\nZZZ-002  Specified   A second row\nZZZ-003  Specified   A third row\n',
     );
   });
 
   it('uses the line ending of the platform it runs on when none is given', () => {
-    const text = written().toString('utf8');
+    const written_ = text(written());
 
-    expect(text.endsWith(`A third row${EOL}`)).toBe(true);
-    expect(text.split(EOL)).toHaveLength(4);
+    expect(written_.endsWith(`A third row${EOL}`)).toBe(true);
+    expect(written_.split(EOL)).toHaveLength(4);
   });
 
-  it('writes UTF-8 with no byte-order mark', () => {
+  // Editors that decide a file's encoding from a byte-order mark, and otherwise assume the Windows
+  // legacy code page, show a UTF-8 section sign as `Â§` without one (#93).
+  it('starts with exactly one UTF-8 byte-order mark, so an editor need not guess the encoding', () => {
     const bytes = written('\r\n');
 
-    expect([...bytes.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
-    expect(bytes.toString('utf8')).toContain('Café 文字 ≤');
+    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    expect([...bytes.subarray(3, 6)]).not.toEqual([0xef, 0xbb, 0xbf]);
+    expect(text(bytes)).toContain('Café 文字 ≤');
   });
 });
 

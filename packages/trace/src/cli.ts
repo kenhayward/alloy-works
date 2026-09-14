@@ -246,15 +246,20 @@ export function resolveOutputPath(
 }
 
 /**
- * Writes a listing as UTF-8 with no byte-order mark, a final newline, and **the line ending of the
+ * Writes a listing as UTF-8 **with a byte-order mark**, a final newline, and **the line ending of the
  * platform writing it** - CRLF on Windows, LF elsewhere. A listing written to a file is for reading
- * on the machine that wrote it, and a Windows text viewer does not break lines on a bare LF, which is
- * how an LF-only file came to show as one run-on block (#91). The same machine still writes the same
- * bytes every time. `eol` is a parameter so both endings are tested wherever the tests run.
+ * on the machine that wrote it: a Windows text viewer does not break lines on a bare LF, which is how
+ * an LF-only file came to show as one run-on block (#91), and an editor that decides the encoding from
+ * a byte-order mark shows a UTF-8 `§` as `Â§` without one (#93). The same machine still writes the
+ * same bytes every time. `eol` is a parameter so both endings are tested wherever the tests run.
  */
 export function writeListing(path: string, text: string, eol: string = EOL): void {
-  const lines = text.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n');
-  writeFileSync(path, lines.join(eol) + eol, { encoding: 'utf8' });
+  const lines = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\n$/, '')
+    .split('\n');
+  writeFileSync(path, `\uFEFF${lines.join(eol)}${eol}`, { encoding: 'utf8' });
 }
 
 /** The one line printed instead of the listing, naming the counts and the full path written. */
