@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.18.2 - 2026-09-14 (PR #94)
+
+### Fixed
+
+- A listing written with `pnpm trace area --file` now starts with a UTF-8 byte-order mark. Editors that
+  decide a file's encoding from one, and otherwise assume the Windows legacy code page, showed the
+  listing's `§` characters as `Â§`; they now read the file as UTF-8 without guessing.
+
+### Changed
+
+- An `untracked/` folder at the repository root is ignored by git, as a place for local output - a
+  listing written to a file, a script kept for one's own use - that is never part of the repository.
+
 ## 0.18.1 - 2026-09-14 (PR #92)
 
 ### Fixed
