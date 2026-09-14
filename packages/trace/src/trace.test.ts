@@ -21,12 +21,17 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
-    // 1306, not 1303: designing the content model found the specification calling a component
-    // "titled" in scope section 6 while no area gave one a title. CNT-142 to CNT-144 add the
-    // title, carry it in versioned content, and close the set of attributes every component has.
-    expect(model.requirements).toHaveLength(1306);
-    expect(model.nonRequirements).toHaveLength(112);
-    expect(model.questions).toHaveLength(131);
+    // 1360, not 1306: specifying metadata and component types added the MET area's 36 rows and 18
+    // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
+    // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
+    // title of its own.
+    expect(model.requirements).toHaveLength(1360);
+    expect(model.nonRequirements).toHaveLength(117);
+    expect(model.questions).toHaveLength(135);
+    // 252, from 253: docs/design/relationships.md stopped claiming REL-003 when REL-053 superseded
+    // it, because the design stores a JSON Schema per type and REL-053 wants the tenant's shared
+    // metadata schemas - a broader requirement, so the claim was dropped rather than repointed.
+    // content-model.md swapped CNT-144 for CNT-146, which leaves its count unchanged.
     // 253, from 172: docs/design/content-model.md claims 81 - the first design document for
     // tranche T1. Twelve more of CNT's were left deliberately unclaimed because the model answers
     // one clause and the outline or the publisher answers the other; that document names them.
@@ -35,7 +40,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(253);
+    ).toBe(252);
   });
 });
 

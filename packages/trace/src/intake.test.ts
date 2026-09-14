@@ -27,8 +27,8 @@ describe('the requirement issue form', () => {
     expect(areasInForm.sort()).toEqual([...areasInIndex].sort());
   });
 
-  it('offers all twenty-one, so neither list is empty by accident', () => {
-    expect(areasInForm).toHaveLength(21);
+  it('offers all twenty-two, so neither list is empty by accident', () => {
+    expect(areasInForm).toHaveLength(22);
   });
 
   // This checks the labels a person reads, not the YAML's own keys: a GitHub issue form gives every

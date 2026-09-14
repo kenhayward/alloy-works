@@ -121,15 +121,17 @@ describe('the real corpus', () => {
   // Parsing every document without refusing a row is not asserted here: it happens above, at
   // collection time, when `parsed` is built - a throw there fails the whole file, not this test.
   // This just pins the count of area documents the corpus is expected to hold.
-  it('finds all 21 area documents on disk', () => {
-    expect(areas).toHaveLength(21);
+  it('finds all 22 area documents on disk', () => {
+    expect(areas).toHaveLength(22);
   });
 
   it('finds exactly the corpus this plan was written against', () => {
-    // 1306: CNT-142 to CNT-144, the component's own title and the closed structural set, added
-    // when designing the content model found scope section 6 asserting a title no area specified.
-    expect(total((document) => document.requirements)).toBe(1306);
-    expect(total((document) => document.nonRequirements)).toBe(112);
-    expect(total((document) => document.questions)).toBe(131);
+    // 1360, from 1306: the MET area's 36, and 18 rows elsewhere replacing the 18 that specifying
+    // metadata and component types superseded - a template assigning schemas rather than owning
+    // one, a component's type in its closed set, and relationship types using the same schemas.
+    // Superseded rows keep their place, so the count only ever rises.
+    expect(total((document) => document.requirements)).toBe(1360);
+    expect(total((document) => document.nonRequirements)).toBe(117);
+    expect(total((document) => document.questions)).toBe(135);
   });
 });

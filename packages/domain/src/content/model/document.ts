@@ -10,7 +10,7 @@ const bcp47 = z
   .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/, 'not a BCP 47 tag');
 
 /**
- * The root, and its members are closed (CNT-144). The component's identifier belongs to the artifact
+ * The root, and its members are closed (CNT-146). The component's identifier belongs to the artifact
  * rather than to its content; everything else a component carries whatever its type is here.
  */
 export const contentDocumentSchema = z.strictObject({

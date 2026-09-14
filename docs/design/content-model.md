@@ -38,89 +38,89 @@ on read, because versions are immutable and `content_hash` is the hash of what w
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **CNT-001** | A tree of typed block nodes, JSON-serialised, validated in `packages/domain`. Read as same-family with the editor rather than object-identical - see "How CNT-001 is read"     |
-| **CNT-002** | `id` is required on every block, allocated at creation and unique within the component                                                                                         |
-| **CNT-003** | A mark is a member of a set on a text node, never an element, so two marks cover overlapping ranges with nothing between them                                                  |
-| **CNT-004** | `id` is required on every mark; an annotation fragmented across text nodes repeats one id                                                                                      |
-| **CNT-005** | Resolution acts on a mark id rather than a position, so every fragment of one annotation resolves in one operation                                                             |
-| **CNT-006** | The mark schema is a closed discriminated union. A new type is a schema version with a migration and a fixture, not a setting                                                  |
-| **CNT-007** | No milestone, no range-start, no range-end, no standoff table. The overlap needs no construct because marks are sets                                                           |
-| **CNT-008** | No node and no mark has a member for a typeface, a size, a colour or spacing. There is nowhere to put one                                                                      |
-| **CNT-009** | Resolution rewrites content and preserves `id` on every block it keeps                                                                                                         |
-| **CNT-010** | One parse entry point validates on creation, on change and on read-back. No other path constructs a document                                                                   |
-| **CNT-011** | `schemaVersion` is a member of the root, so content describes itself once it leaves the database. VER-010's column is derived from it at insert and the two must agree         |
-| **CNT-012** | A fixture directory per schema version, never deleted, and one test migrating every fixture to current                                                                         |
-| **CNT-013** | A failed read returns a named quarantine result identifying the artifact, the version and the failure. No path yields partial content                                          |
-| **CNT-142** | `title` is a member of the root                                                                                                                                                |
-| **CNT-143** | `title` and `language` are inside the versioned content, so they are inside `content_hash` and a version records what the component was called when it was cut                 |
-| **CNT-144** | The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and the identifier belongs to the artifact. Adding a member is a schema version |
-| **CNT-014** | `paragraph`, the default block                                                                                                                                                 |
-| **CNT-117** | `list` carries `kind`: ordered, unordered or definition                                                                                                                        |
-| **CNT-118** | A list item holds block content, so a list nests by construction and six levels is a floor rather than a limit, in any mixture of kinds                                        |
-| **CNT-119** | An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering                                      |
-| **CNT-016** | `table` declares header rows and header columns, carries cell spans, and carries a caption                                                                                     |
-| **CNT-017** | `figure` carries an asset reference and a caption, and never asset bytes                                                                                                       |
-| **CNT-018** | `preformatted` holds text with whitespace significant and an optional language label                                                                                           |
-| **CNT-019** | `blockquote` holds block content and an optional attribution, which may carry a citation inline                                                                                |
-| **CNT-021** | `equation` as a block                                                                                                                                                          |
-| **CNT-022** | Alternative text is a three-state and absent is not one of them, so publishing cannot find it missing because it cannot be missing                                             |
-| **CNT-023** | There is no spacer construct, and validation refuses two adjacent empty paragraphs - see "What CNT-023 forbids, exactly"                                                       |
-| **CNT-124** | Validation requires at least one block, and a newly created component is exactly one empty paragraph                                                                           |
-| **CNT-081** | A caption-bearing block carries the same required `id` as any other block, which is the identity the outline numbers by                                                        |
-| **CNT-125** | Every block carries `id` whether or not it carries a caption, so any block can be a cross-reference target                                                                     |
-| **CNT-086** | A table cell holds inline content and `image` is an inline node, so an image in a cell needs no construct of its own                                                           |
-| **CNT-121** | A figure and an inline image each carry `imageStyle`, a name drawn from the catalogue STY owns                                                                                 |
-| **CNT-123** | Neither carries a width, a height or a unit of any kind. There is no member to hold one                                                                                        |
-| **CNT-024** | `text` is the only leaf node, and marks apply to it                                                                                                                            |
-| **CNT-025** | `equation` inline                                                                                                                                                              |
-| **CNT-026** | `footnote` is an inline node placed at the span it annotates, carrying the note's content                                                                                      |
-| **CNT-027** | `crossReference` carries a target and a display kind, and has no member for a number or a title                                                                                |
-| **CNT-028** | `citation` inline                                                                                                                                                              |
-| **CNT-029** | `variable` carries a name and no value                                                                                                                                         |
-| **CNT-030** | `binding` carries a query reference and no value                                                                                                                               |
-| **CNT-031** | Eight character marks: emphasis, strong, underline, subscript, superscript, inline code, defined term, quoted phrase                                                           |
-| **CNT-032** | `condition` carries an axis and permitted values, present in the first schema version stored as CNT-116 requires                                                               |
-| **CNT-033** | `suggestion` carries an operation and an author, present from the first schema version                                                                                         |
-| **CNT-034** | `comment` carries a thread identity, present from the first schema version                                                                                                     |
-| **CNT-140** | The root carries a BCP 47 base language; a `language` mark carries a BCP 47 tag, validated on entry rather than on use                                                         |
-| **CNT-085** | `underline` is in the set, and this document says plainly that it is the one mark named for its appearance                                                                     |
-| **CNT-087** | `image` is an inline node, so it sits inside a run of text                                                                                                                     |
-| **CNT-126** | `hyperlink` is a mark rather than a node, so it overlaps a condition or a suggestion exactly as the others do                                                                  |
-| **CNT-127** | The scheme allowlist is enforced in validation and again in the pipeline's sanitise stage, so a target with another scheme is refused before it can be stored                  |
-| **CNT-036** | A `footnote` inline node sits at the span it annotates                                                                                                                         |
-| **CNT-037** | A cell holds inline content, so a cell-anchored note is the same construct as a span-anchored one                                                                              |
-| **CNT-038** | `table` carries an optional table-level note. It is not an inline anchor, because a table is not a span                                                                        |
-| **CNT-107** | A table may declare key columns. Where declared an anchor names the key value; where not, it names row and column and is marked as the weaker form                             |
-| **CNT-129** | Footnote content is a restricted block sequence, and the schema admits no table and no image inside it                                                                         |
-| **CNT-043** | MathML is the one stored representation, whatever the entry route                                                                                                              |
-| **CNT-044** | LaTeX entry converts to MathML at the boundary, the same discipline CNT-056 applies to Unicode. The LaTeX typed is kept beside it as a non-authoritative input record          |
-| **CNT-050** | `citation` carries an entry identity and has no text member, so typed citation text is not representable                                                                       |
-| **CNT-051** | The entry is an artifact in the space; a citation holds its identity and never a copy of it                                                                                    |
-| **CNT-052** | `citation` carries an optional locator beside its reference                                                                                                                    |
-| **CNT-055** | Text is JSON strings, so the whole Unicode range is storable, astral planes included                                                                                           |
-| **CNT-056** | NFC is applied in the pipeline's normalise stage and asserted by validation, so no un-normalised string can be stored                                                          |
-| **CNT-059** | Direction is explicit on the root and on any run that differs, never derived from the language tag - see "Why direction is not derived"                                        |
-| **CNT-060** | An OOXML reader feeds the pipeline, producing structure rather than styled runs                                                                                                |
-| **CNT-061** | A Markdown reader feeds the same pipeline                                                                                                                                      |
-| **CNT-062** | An HTML reader feeds the same pipeline                                                                                                                                         |
-| **CNT-063** | The report is a collector threaded through all six stages, returned with the admitted content rather than logged                                                               |
-| **CNT-064** | A stage that discards or rewrites must append to the report; the verification rule below requires every admission test to assert the report as well as the output              |
-| **CNT-065** | The normalise stage drops typeface, size and colour, and there is no member in the model for any of them to survive into                                                       |
-| **CNT-130** | The sanitise stage runs before normalise, so scripts, event handlers, embedded objects and disallowed link targets are gone before anything else touches the content           |
-| **CNT-131** | Each dropped or rewritten hyperlink is a report entry of its own, naming the target it had                                                                                     |
-| **CNT-132** | The re-identify stage allocates a new `id` for every block, so copying cannot duplicate an identifier                                                                          |
-| **CNT-133** | The re-identify stage drops annotations whose owning artifact does not travel, and appends one report entry each                                                               |
-| **CNT-134** | The migrate stage runs before validate: content at an earlier schema version is brought to current or refused with a named error, and is never stored unmigrated               |
-| **CNT-135** | One pipeline serves a foreign paste and an internal copy, so the report is to one standard because it is one implementation                                                    |
-| **LIB-015** | The defined-term mark carries a term identity and has no text member, so a term cannot be typed as text                                                                        |
-| **LOC-009** | A component declares a base language and any run may declare its own, so a language variant is a component in its own right rather than a shape the model has to gain later    |
-| **LOC-020** | Structure, marks, references, bindings and terms are nodes and members rather than text, so a round-trip has nothing to lose and nothing translatable to mistake them for      |
-| **AST-012** | A figure's alternative text may be inherited, which is the state that reads the asset's default                                                                                |
-| **AST-013** | A figure's own text is one of the three states, and it overrides the asset's default                                                                                           |
-| **AST-015** | Decorative is a state of its own rather than an empty string, so no alternative text is a declaration rather than an omission                                                  |
-| **AST-039** | Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it                                                    |
+| ID          | How it is met                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-001** | A tree of typed block nodes, JSON-serialised, validated in `packages/domain`. Read as same-family with the editor rather than object-identical - see "How CNT-001 is read"    |
+| **CNT-002** | `id` is required on every block, allocated at creation and unique within the component                                                                                        |
+| **CNT-003** | A mark is a member of a set on a text node, never an element, so two marks cover overlapping ranges with nothing between them                                                 |
+| **CNT-004** | `id` is required on every mark; an annotation fragmented across text nodes repeats one id                                                                                     |
+| **CNT-005** | Resolution acts on a mark id rather than a position, so every fragment of one annotation resolves in one operation                                                            |
+| **CNT-006** | The mark schema is a closed discriminated union. A new type is a schema version with a migration and a fixture, not a setting                                                 |
+| **CNT-007** | No milestone, no range-start, no range-end, no standoff table. The overlap needs no construct because marks are sets                                                          |
+| **CNT-008** | No node and no mark has a member for a typeface, a size, a colour or spacing. There is nowhere to put one                                                                     |
+| **CNT-009** | Resolution rewrites content and preserves `id` on every block it keeps                                                                                                        |
+| **CNT-010** | One parse entry point validates on creation, on change and on read-back. No other path constructs a document                                                                  |
+| **CNT-011** | `schemaVersion` is a member of the root, so content describes itself once it leaves the database. VER-010's column is derived from it at insert and the two must agree        |
+| **CNT-012** | A fixture directory per schema version, never deleted, and one test migrating every fixture to current                                                                        |
+| **CNT-013** | A failed read returns a named quarantine result identifying the artifact, the version and the failure. No path yields partial content                                         |
+| **CNT-142** | `title` is a member of the root                                                                                                                                               |
+| **CNT-143** | `title` and `language` are inside the versioned content, so they are inside `content_hash` and a version records what the component was called when it was cut                |
+| **CNT-146** | The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and a metadata value is never one of them. Adding a member is a schema version |
+| **CNT-014** | `paragraph`, the default block                                                                                                                                                |
+| **CNT-117** | `list` carries `kind`: ordered, unordered or definition                                                                                                                       |
+| **CNT-118** | A list item holds block content, so a list nests by construction and six levels is a floor rather than a limit, in any mixture of kinds                                       |
+| **CNT-119** | An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering                                     |
+| **CNT-016** | `table` declares header rows and header columns, carries cell spans, and carries a caption                                                                                    |
+| **CNT-017** | `figure` carries an asset reference and a caption, and never asset bytes                                                                                                      |
+| **CNT-018** | `preformatted` holds text with whitespace significant and an optional language label                                                                                          |
+| **CNT-019** | `blockquote` holds block content and an optional attribution, which may carry a citation inline                                                                               |
+| **CNT-021** | `equation` as a block                                                                                                                                                         |
+| **CNT-022** | Alternative text is a three-state and absent is not one of them, so publishing cannot find it missing because it cannot be missing                                            |
+| **CNT-023** | There is no spacer construct, and validation refuses two adjacent empty paragraphs - see "What CNT-023 forbids, exactly"                                                      |
+| **CNT-124** | Validation requires at least one block, and a newly created component is exactly one empty paragraph                                                                          |
+| **CNT-081** | A caption-bearing block carries the same required `id` as any other block, which is the identity the outline numbers by                                                       |
+| **CNT-125** | Every block carries `id` whether or not it carries a caption, so any block can be a cross-reference target                                                                    |
+| **CNT-086** | A table cell holds inline content and `image` is an inline node, so an image in a cell needs no construct of its own                                                          |
+| **CNT-121** | A figure and an inline image each carry `imageStyle`, a name drawn from the catalogue STY owns                                                                                |
+| **CNT-123** | Neither carries a width, a height or a unit of any kind. There is no member to hold one                                                                                       |
+| **CNT-024** | `text` is the only leaf node, and marks apply to it                                                                                                                           |
+| **CNT-025** | `equation` inline                                                                                                                                                             |
+| **CNT-026** | `footnote` is an inline node placed at the span it annotates, carrying the note's content                                                                                     |
+| **CNT-027** | `crossReference` carries a target and a display kind, and has no member for a number or a title                                                                               |
+| **CNT-028** | `citation` inline                                                                                                                                                             |
+| **CNT-029** | `variable` carries a name and no value                                                                                                                                        |
+| **CNT-030** | `binding` carries a query reference and no value                                                                                                                              |
+| **CNT-031** | Eight character marks: emphasis, strong, underline, subscript, superscript, inline code, defined term, quoted phrase                                                          |
+| **CNT-032** | `condition` carries an axis and permitted values, present in the first schema version stored as CNT-116 requires                                                              |
+| **CNT-033** | `suggestion` carries an operation and an author, present from the first schema version                                                                                        |
+| **CNT-034** | `comment` carries a thread identity, present from the first schema version                                                                                                    |
+| **CNT-140** | The root carries a BCP 47 base language; a `language` mark carries a BCP 47 tag, validated on entry rather than on use                                                        |
+| **CNT-085** | `underline` is in the set, and this document says plainly that it is the one mark named for its appearance                                                                    |
+| **CNT-087** | `image` is an inline node, so it sits inside a run of text                                                                                                                    |
+| **CNT-126** | `hyperlink` is a mark rather than a node, so it overlaps a condition or a suggestion exactly as the others do                                                                 |
+| **CNT-127** | The scheme allowlist is enforced in validation and again in the pipeline's sanitise stage, so a target with another scheme is refused before it can be stored                 |
+| **CNT-036** | A `footnote` inline node sits at the span it annotates                                                                                                                        |
+| **CNT-037** | A cell holds inline content, so a cell-anchored note is the same construct as a span-anchored one                                                                             |
+| **CNT-038** | `table` carries an optional table-level note. It is not an inline anchor, because a table is not a span                                                                       |
+| **CNT-107** | A table may declare key columns. Where declared an anchor names the key value; where not, it names row and column and is marked as the weaker form                            |
+| **CNT-129** | Footnote content is a restricted block sequence, and the schema admits no table and no image inside it                                                                        |
+| **CNT-043** | MathML is the one stored representation, whatever the entry route                                                                                                             |
+| **CNT-044** | LaTeX entry converts to MathML at the boundary, the same discipline CNT-056 applies to Unicode. The LaTeX typed is kept beside it as a non-authoritative input record         |
+| **CNT-050** | `citation` carries an entry identity and has no text member, so typed citation text is not representable                                                                      |
+| **CNT-051** | The entry is an artifact in the space; a citation holds its identity and never a copy of it                                                                                   |
+| **CNT-052** | `citation` carries an optional locator beside its reference                                                                                                                   |
+| **CNT-055** | Text is JSON strings, so the whole Unicode range is storable, astral planes included                                                                                          |
+| **CNT-056** | NFC is applied in the pipeline's normalise stage and asserted by validation, so no un-normalised string can be stored                                                         |
+| **CNT-059** | Direction is explicit on the root and on any run that differs, never derived from the language tag - see "Why direction is not derived"                                       |
+| **CNT-060** | An OOXML reader feeds the pipeline, producing structure rather than styled runs                                                                                               |
+| **CNT-061** | A Markdown reader feeds the same pipeline                                                                                                                                     |
+| **CNT-062** | An HTML reader feeds the same pipeline                                                                                                                                        |
+| **CNT-063** | The report is a collector threaded through all six stages, returned with the admitted content rather than logged                                                              |
+| **CNT-064** | A stage that discards or rewrites must append to the report; the verification rule below requires every admission test to assert the report as well as the output             |
+| **CNT-065** | The normalise stage drops typeface, size and colour, and there is no member in the model for any of them to survive into                                                      |
+| **CNT-130** | The sanitise stage runs before normalise, so scripts, event handlers, embedded objects and disallowed link targets are gone before anything else touches the content          |
+| **CNT-131** | Each dropped or rewritten hyperlink is a report entry of its own, naming the target it had                                                                                    |
+| **CNT-132** | The re-identify stage allocates a new `id` for every block, so copying cannot duplicate an identifier                                                                         |
+| **CNT-133** | The re-identify stage drops annotations whose owning artifact does not travel, and appends one report entry each                                                              |
+| **CNT-134** | The migrate stage runs before validate: content at an earlier schema version is brought to current or refused with a named error, and is never stored unmigrated              |
+| **CNT-135** | One pipeline serves a foreign paste and an internal copy, so the report is to one standard because it is one implementation                                                   |
+| **LIB-015** | The defined-term mark carries a term identity and has no text member, so a term cannot be typed as text                                                                       |
+| **LOC-009** | A component declares a base language and any run may declare its own, so a language variant is a component in its own right rather than a shape the model has to gain later   |
+| **LOC-020** | Structure, marks, references, bindings and terms are nodes and members rather than text, so a round-trip has nothing to lose and nothing translatable to mistake them for     |
+| **AST-012** | A figure's alternative text may be inherited, which is the state that reads the asset's default                                                                               |
+| **AST-013** | A figure's own text is one of the three states, and it overrides the asset's default                                                                                          |
+| **AST-015** | Decorative is a state of its own rather than an empty string, so no alternative text is a declaration rather than an omission                                                 |
+| **AST-039** | Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it                                                   |
 
 ## What this document does not own
 
@@ -131,27 +131,23 @@ answers that requirement in full. Several of CNT's rows are two requirements in 
 the model answers one clause and the outline or the publisher answers the other. Claiming them would
 say this design holds ground it does not.
 
-| Left unclaimed            | Why                                                                                                                                           |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                             |
-| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's         |
-| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                |
-| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                             |
-| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                      |
-| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                    |
-| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case          |
-| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                  |
-| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                      |
-| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                     |
-| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                       |
-| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference |
+| Left unclaimed            | Why                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                                            |
+| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's                        |
+| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                               |
+| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                            |
+| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                                     |
+| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                                   |
+| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                         |
+| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                                 |
+| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                                     |
+| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                                    |
+| CNT-145                   | It adds the component's type to what every component carries, and the type is recorded on the version rather than in content - where, is storage's to design |
+| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                                      |
+| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference                |
 
-**Component typed metadata is not here.** A component is also _typed_, and a type declares the
-metadata its components carry. That is a subsystem the size of TPL's metadata half, and it is
-specified separately rather than designed under this document's pressure; **CNT-Q12** records the
-split. No member is reserved for it in the root: CNT-012's migration path is a T1 deliverable, and
-adding a typed-values member through it later is cheaper and more honest than an empty member that
-resolves to nothing.
+**Component metadata is not here, and it has since been specified.** A component is of one component type, whose metadata schemas decide the fields its values are validated against - [MET](../specification/requirements/MET-metadata-and-component-types.md), which settled **CNT-Q12**. None of it enters the content document: the type and the values belong to the version, beside its content (MET-015, MET-016). That is why this document claims **CNT-146**, the root it built, and not **CNT-145**, which superseded CNT-144 by adding the type to what every component carries. No member is reserved in the root for either, which the specification now requires rather than merely allows.
 
 **Two things this document requires of STR.** Both are consequences of decisions here, and both fail
 silently if STR is written without them.
@@ -205,7 +201,7 @@ One JSON document per version, stored inline on the version row with `content_ha
 | `content`       | The sequence of block nodes                                         |
 
 The component's **identifier** is the artifact's, not the content's. Everything else a component has
-that is not its content is either in the root above or is not in T1 at all (CNT-144).
+that is not its content - its component type and its metadata values - belongs to the version rather than to the content (CNT-145, CNT-146, MET-016).
 
 **A canonical serialisation, which nothing else states.** `content_hash` is load-bearing: VER refuses
 a version whose hash is unchanged, and equal hashes skip a comparison. Both break if two identical
