@@ -1,5 +1,6 @@
 import type { Problem } from './check.js';
 import type { Draft } from './draft.js';
+import type { AreaIndexEntry } from './parse/areas.js';
 import type { GateResult } from './gate.js';
 import type { Baseline, Requirement, TraceModel } from './model.js';
 import type { TestOutcome } from './results.js';
@@ -62,6 +63,41 @@ export function formatArea(traces: Trace[]): string {
         `${trace.requirement.id}  ${trace.state.padEnd(10)}  ${trace.requirement.statement}`,
     )
     .join('\n');
+}
+
+/**
+ * Every area at once: each under a heading naming its code, its name from the areas index and how
+ * many requirements it holds, with the rows `formatArea` gives it, and a blank line between areas.
+ *
+ * Areas come in the index's order - the order the scope introduces them in - rather than the order
+ * requirements happen to be compiled in. An indexed area with nothing in it yet is still listed, and
+ * says so, and a requirement whose area the index does not list is never dropped: it is shown after
+ * the indexed areas, under a heading saying the index does not know it. A listing of "all" that
+ * silently omitted anything would be the one kind of wrong nobody notices.
+ */
+export function formatAllAreas(traces: Trace[], index: readonly AreaIndexEntry[]): string {
+  const byArea = new Map<string, Trace[]>();
+  for (const trace of traces) {
+    const area = trace.requirement.area;
+    byArea.set(area, [...(byArea.get(area) ?? []), trace]);
+  }
+
+  const count = (n: number): string =>
+    n === 0 ? 'no requirements yet' : `${n} requirement${n === 1 ? '' : 's'}`;
+  const block = (heading: string, rows: Trace[]): string =>
+    rows.length === 0 ? heading : `${heading}\n${formatArea(rows)}`;
+
+  const indexed = new Set(index.map((area) => area.code));
+  const blocks = index.map((area) => {
+    const rows = byArea.get(area.code) ?? [];
+    return block(`${area.code} - ${area.name} - ${count(rows.length)}`, rows);
+  });
+  for (const [code, rows] of byArea) {
+    if (!indexed.has(code)) {
+      blocks.push(block(`${code} - not in the areas index - ${count(rows.length)}`, rows));
+    }
+  }
+  return blocks.join('\n\n');
 }
 
 /**

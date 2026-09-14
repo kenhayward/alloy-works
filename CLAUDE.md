@@ -54,7 +54,8 @@ There are 1,360 requirements in 22 documents under
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements
 in one area in full, `show <ID>` for one requirement with its design and its tests, `search <term>`
-across every statement, `area <XXX>` for a whole area. The commands are listed under
+across every statement, `area <XXX>` for a whole area, `area --all` for every area at once. The
+commands are listed under
 [Commands](#commands).
 
 Open a requirement document directly to **edit** it - add a row, mark one superseded, answer a
@@ -273,6 +274,7 @@ pnpm --filter @alloy-works/trace generate         # rewrite trace.json after cha
 pnpm trace show <ID>                              # one requirement: statement, tranche, state, design, tests
 pnpm trace search <term>                          # every requirement whose statement mentions the term
 pnpm trace area <XXX>                             # a whole area, with each requirement's state
+pnpm trace area --all                             # every area, in the index's order, each with its name and count
 pnpm trace tranche <Tn> [XXX]                     # a tranche by area, or one area of it in full
 pnpm trace next <XXX>                             # the next free identifier in an area
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest

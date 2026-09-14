@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.17.0 - 2026-09-14 (PR #89)
+
+### Added
+
+- `pnpm trace area --all` lists every requirement in the corpus in one command: each area in the
+  order the areas index gives, under a heading with its code, its name and how many requirements it
+  holds, followed by the same rows `pnpm trace area <XXX>` prints for that area. An area in the index
+  with nothing in it yet is still listed and says so, and a requirement whose area the index does not
+  list is shown rather than left out, so the listing is always the whole corpus - its row count
+  matches `pnpm trace stats`.
+
 ## 0.16.2 - 2026-09-14 (PR #87)
 
 ### Fixed
