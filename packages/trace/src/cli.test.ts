@@ -1,6 +1,17 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
-import { areaListing, readDraftInput } from './cli.js';
+import {
+  areaListing,
+  describeWrite,
+  readAreaArguments,
+  readDraftInput,
+  resolveOutputPath,
+  writeListing,
+} from './cli.js';
 import type { TraceModel } from './model.js';
 
 /**
@@ -86,15 +97,22 @@ describe('the area command', () => {
   it('lists one area by its code, in any case, without reading the index', () => {
     expect(areaListing('zzz', model, noIndex)).toEqual({
       output: 'ZZZ-001  Specified   A widget must carry a footnote',
+      requirements: 1,
+      areas: 1,
     });
   });
 
   it('lists every area with --all, under headings from the index', () => {
-    const result = areaListing('--all', model, () => [{ code: 'ZZZ', name: 'Invented area' }]);
+    const result = areaListing('--all', model, () => [
+      { code: 'ZZZ', name: 'Invented area' },
+      { code: 'ZZQ', name: 'Invented and empty' },
+    ]);
 
     expect(result).toEqual({
       output:
-        'ZZZ - Invented area - 1 requirement\nZZZ-001  Specified   A widget must carry a footnote',
+        'ZZZ - Invented area - 1 requirement\nZZZ-001  Specified   A widget must carry a footnote\n\nZZQ - Invented and empty - no requirements yet',
+      requirements: 1,
+      areas: 2,
     });
   });
 
@@ -106,5 +124,117 @@ describe('the area command', () => {
 
   it('refuses an area the corpus does not hold', () => {
     expect(areaListing('ZZQ', model, noIndex)).toEqual({ error: 'No area ZZQ in the corpus.' });
+  });
+});
+
+describe('reading the area command arguments', () => {
+  it('reads an area code, or --all, with no file', () => {
+    expect(readAreaArguments(['CNT'])).toEqual({ target: 'CNT' });
+    expect(readAreaArguments(['--all'])).toEqual({ target: '--all' });
+  });
+
+  it('reads --file and its filename, before or after the area', () => {
+    expect(readAreaArguments(['--all', '--file', 'areas.txt'])).toEqual({
+      target: '--all',
+      file: 'areas.txt',
+    });
+    expect(readAreaArguments(['--file', 'cnt.txt', 'CNT'])).toEqual({
+      target: 'CNT',
+      file: 'cnt.txt',
+    });
+  });
+
+  it('leaves the target absent when none is given, so the listing refuses it by name', () => {
+    expect(readAreaArguments([])).toEqual({});
+  });
+
+  it('refuses --file with no filename after it', () => {
+    const result = readAreaArguments(['--all', '--file']);
+
+    expect('error' in result && result.error).toMatch(/--file needs a filename/);
+  });
+
+  it('refuses a flag where the filename should be', () => {
+    const result = readAreaArguments(['--file', '--all']);
+
+    expect('error' in result && result.error).toMatch(/--file needs a filename/);
+  });
+
+  it('refuses two areas at once', () => {
+    const result = readAreaArguments(['CNT', 'STR']);
+
+    expect('error' in result && result.error).toMatch(/one area/);
+  });
+});
+
+/**
+ * `pnpm trace` runs the CLI inside `packages/trace`, because the root script is a `--filter`, so the
+ * process's own working directory is not where anybody expects a file to land. The base passed in is
+ * `INIT_CWD`, the directory pnpm started from - for this repository, its root. Run from a
+ * subdirectory, pnpm still reports the root; only `PWD` carries the subdirectory, and only in some
+ * shells, so it is deliberately not used.
+ */
+describe('where --file writes', () => {
+  const typedIn = resolve('/work', 'repository');
+  const exists = (): boolean => true;
+
+  it('takes a relative filename against the base pnpm reports, not the working directory', () => {
+    expect(resolveOutputPath('areas.txt', typedIn, exists)).toEqual({
+      path: join(typedIn, 'areas.txt'),
+    });
+  });
+
+  it('uses an absolute filename as given', () => {
+    const absolute = resolve('/elsewhere', 'areas.txt');
+
+    expect(resolveOutputPath(absolute, typedIn, exists)).toEqual({ path: absolute });
+  });
+
+  it('refuses a folder that does not exist rather than creating it, naming the folder', () => {
+    const result = resolveOutputPath(join('missing', 'areas.txt'), typedIn, () => false);
+
+    expect(result).toEqual({
+      error: `No folder ${join(typedIn, 'missing')} to write areas.txt into.`,
+    });
+  });
+});
+
+describe('writing a listing to a file', () => {
+  it('writes UTF-8 with no byte-order mark, LF line endings and a final newline', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'trace-area-'));
+    try {
+      const path = join(directory, 'areas.txt');
+      // A statement outside ASCII - an accented letter, a CJK character and a mathematical symbol -
+      // is the thing a wrong encoding corrupts, and a CRLF inside the text is what a platform default
+      // would otherwise leave behind.
+      writeListing(
+        path,
+        'ZZZ-001  Specified   Caf\u00e9 \u6587\u5b57 \u2264 must survive\r\nZZZ-002  Specified   A second row',
+      );
+
+      const bytes = readFileSync(path);
+
+      expect([...bytes.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
+      expect(bytes.includes(0x0d)).toBe(false);
+      expect(bytes.toString('utf8')).toBe(
+        'ZZZ-001  Specified   Caf\u00e9 \u6587\u5b57 \u2264 must survive\nZZZ-002  Specified   A second row\n',
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('saying what was written', () => {
+  it('names the counts and the full path', () => {
+    expect(describeWrite({ output: '', requirements: 1360, areas: 22 }, 'D:/work/areas.txt')).toBe(
+      'Wrote 1,360 requirements in 22 areas to D:/work/areas.txt',
+    );
+  });
+
+  it('uses the singular for one of each', () => {
+    expect(describeWrite({ output: '', requirements: 1, areas: 1 }, '/tmp/x.txt')).toBe(
+      'Wrote 1 requirement in 1 area to /tmp/x.txt',
+    );
   });
 });

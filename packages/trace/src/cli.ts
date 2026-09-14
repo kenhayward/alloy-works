@@ -2,7 +2,7 @@
 // format.ts and state.ts, which are pure and tested without a process.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { problems } from './check.js';
@@ -73,6 +73,9 @@ const USAGE = `pnpm trace <command>
   area <XXX>         every requirement in an area, with its state
   area --all         every area, in the areas index's order, each under a heading with its name
                      and its count
+  area <XXX> | --all --file <filename>
+                     the same listing written to a file, UTF-8, instead of printed. A relative
+                     filename is taken from the repository root, wherever pnpm trace is run
   tranche <Tn> [XXX]  a tranche by area, with a count per state; with an area, that area's
                      requirements in full - the listing designing a tranche starts from
   next <XXX>         the next free identifier in an area
@@ -164,15 +167,97 @@ export function areaListing(
   argument: string | undefined,
   model: TraceModel,
   loadIndex: () => AreaIndexEntry[],
-): { output: string } | { error: string } {
+): AreaListing | { error: string } {
   if (argument === undefined) {
     return { error: 'area needs a three-letter code, such as CNT, or --all for every area.' };
   }
-  if (argument === '--all') return { output: formatAllAreas(allTraces(model), loadIndex()) };
+  const traces = allTraces(model);
+  if (argument === '--all') {
+    const index = loadIndex();
+    const areas = new Set([
+      ...index.map((entry) => entry.code),
+      ...traces.map((trace) => trace.requirement.area),
+    ]);
+    return {
+      output: formatAllAreas(traces, index),
+      requirements: traces.length,
+      areas: areas.size,
+    };
+  }
   const area = argument.toUpperCase();
-  const traces = allTraces(model).filter((trace) => trace.requirement.area === area);
-  if (traces.length === 0) return { error: `No area ${area} in the corpus.` };
-  return { output: formatArea(traces) };
+  const inArea = traces.filter((trace) => trace.requirement.area === area);
+  if (inArea.length === 0) return { error: `No area ${area} in the corpus.` };
+  return { output: formatArea(inArea), requirements: inArea.length, areas: 1 };
+}
+
+/** A listing, and how much is in it - which is what the line after writing one to a file reports. */
+export interface AreaListing {
+  output: string;
+  requirements: number;
+  areas: number;
+}
+
+/**
+ * The `area` command's arguments: the area code or `--all`, and `--file <filename>` before or after
+ * it. A missing target is left absent rather than refused here, so `areaListing` refuses it with the
+ * one message that names both forms.
+ */
+export function readAreaArguments(
+  args: readonly string[],
+): { target?: string; file?: string } | { error: string } {
+  const read: { target?: string; file?: string } = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i]!;
+    if (arg === '--file') {
+      const filename = args[i + 1];
+      if (filename === undefined || filename.startsWith('--')) {
+        return { error: '--file needs a filename, such as --file areas.txt.' };
+      }
+      read.file = filename;
+      i += 1;
+      continue;
+    }
+    if (read.target !== undefined) {
+      return { error: `area lists one area or --all, not both ${read.target} and ${arg}.` };
+    }
+    read.target = arg;
+  }
+  return read;
+}
+
+/**
+ * Where `--file` writes. A relative filename is taken from `base`: under `pnpm trace` that is
+ * `INIT_CWD`, the directory pnpm started from, which for this repository is its root wherever inside it
+ * the command is run - not `packages/trace`, where pnpm actually runs the CLI. A folder that does not
+ * exist is refused rather than created, so a mistyped path cannot leave stray folders behind.
+ */
+export function resolveOutputPath(
+  file: string,
+  base: string,
+  directoryExists: (dir: string) => boolean,
+): { path: string } | { error: string } {
+  const path = isAbsolute(file) ? file : resolve(base, file);
+  const folder = dirname(path);
+  if (!directoryExists(folder)) {
+    return { error: `No folder ${folder} to write ${basename(path)} into.` };
+  }
+  return { path };
+}
+
+/**
+ * Writes a listing as UTF-8 with no byte-order mark, LF line endings and a final newline, so the
+ * file reads the same in any editor on any platform and diffs cleanly against the next one.
+ */
+export function writeListing(path: string, text: string): void {
+  const lf = text.replace(/\r\n?/g, '\n');
+  writeFileSync(path, lf.endsWith('\n') ? lf : `${lf}\n`, { encoding: 'utf8' });
+}
+
+/** The one line printed instead of the listing, naming the counts and the full path written. */
+export function describeWrite(listing: AreaListing, path: string): string {
+  const count = (n: number, noun: string): string =>
+    `${n.toLocaleString('en-GB')} ${noun}${n === 1 ? '' : 's'}`;
+  return `Wrote ${count(listing.requirements, 'requirement')} in ${count(listing.areas, 'area')} to ${path}`;
 }
 
 /**
@@ -289,7 +374,9 @@ function main(argv: string[]): number {
         return 0;
       }
       case 'area': {
-        const result = areaListing(argument, model, () =>
+        const args = readAreaArguments(argv.slice(1));
+        if ('error' in args) return fail(args.error);
+        const result = areaListing(args.target, model, () =>
           parseAreaIndex(
             readFileSync(
               join(REPO_ROOT, 'docs', 'specification', 'requirements', 'README.md'),
@@ -298,7 +385,18 @@ function main(argv: string[]): number {
           ),
         );
         if ('error' in result) return fail(result.error);
-        console.log(result.output);
+        if (args.file === undefined) {
+          console.log(result.output);
+          return 0;
+        }
+        // pnpm runs this inside packages/trace. INIT_CWD is the directory pnpm started from, which
+        // for `pnpm trace` anywhere in the repository is the workspace root.
+        const target = resolveOutputPath(args.file, process.env.INIT_CWD ?? process.cwd(), (dir) =>
+          existsSync(dir),
+        );
+        if ('error' in target) return fail(target.error);
+        writeListing(target.path, result.output);
+        console.log(describeWrite(result, target.path));
         return 0;
       }
       case 'tranche': {
