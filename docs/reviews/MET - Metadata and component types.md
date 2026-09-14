@@ -2,9 +2,9 @@ Field types - MET-002
 
 The data types a field may take must be a closed set - text, number, date, and true or false
 
-This should include Date, Time, Datetime as separate field types and also include user (i.e. a User in this system), consider how reference types are handled (e.g. Clinical Study Number, Drawn from another system, are these a vocabulary?)  
+This should include Date, Time, Datetime as separate field types and also include user (i.e. a User in this system), consider how reference types are handled (e.g. Clinical Study Number, Drawn from another system, are these a vocabulary?)
 
-Metadata Schemas - These should have a name 
+Metadata Schemas - These should have a name
 
 MET-006's "whether that default may be changed once set" is declared but never used. No requirement defines what the flag means operationally (schema-level default vs. artifact value editability) or what happens when a change is attempted — no validation rule, no refusal, nothing. Either give it a semantics and an enforcement point (MET-021/022 territory) or cut it.
 
@@ -15,4 +15,3 @@ Value fate on type/schema change is unspecified. MET-014 changes a component's t
 Multi-value fields have no required/default semantics. MET-002 lets a field hold several values; MET-006's "required" and "default" are only meaningful for one value. Does required mean at least one? What is a multi-value default (empty list)? No upper bound is mentioned either.
 
 The document/section boundary is implied, not stated. Sections 5–7 are entirely about component values, yet schemas also apply to documents and sections, and MET-019 explicitly protects "documents or sections" from invalidation. The "Not here" table says which schemas a template assigns is TPL's, but not that document/section values and their versioning/validation are TPL's. Add that row — otherwise readers will expect section 6 to cover them. Correspondingly, TPL is missing from the "Rests on" table even though MET-019 and the composition rules depend on how template assignments work.
-
