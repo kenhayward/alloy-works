@@ -110,11 +110,12 @@ describe('the requirements index', () => {
   });
 
   it('reserves a code for every area named in the scope', () => {
-    // Twenty-one capability areas in Project_Scope.md section 7. A code missing here is an area
+    // Twenty-two capability areas in Project_Scope.md section 7. A code missing here is an area
     // nobody has claimed, which is how one quietly fails to be specified at all. The number is
     // asserted rather than counted from the scope so that adding an area is a deliberate act in
-    // two places, not a silent one in either.
-    expect(indexRows).toHaveLength(21);
+    // two places, not a silent one in either. The twenty-second, MET, was added when a component's
+    // metadata was found to have been specified as a template's.
+    expect(indexRows).toHaveLength(22);
   });
 
   // Fixtures across this package use ZZZ identifiers, and the citation scan ignores that area on

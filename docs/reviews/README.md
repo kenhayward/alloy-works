@@ -9,7 +9,7 @@ set, where the seams between documents are, and where they contradict each other
 [XXX - Response.md](<XXX - Response.md>) answers it section by section, and each amended requirements
 document carries a **From the cross-cutting review** row in its change history.
 
-**All twenty-one areas have been reviewed and answered.** Each requirements document ends with a
+**All twenty-two areas have been reviewed and answered.** Each requirements document ends with a
 change history naming what changed against which review point, and what was deliberately left alone.
 
 **They are inputs, not records of what was decided.** A review says what somebody found wrong or
@@ -49,3 +49,4 @@ the answer is in the reply, not in a correction here.
 | [GEN - Generative AI](<GEN - Generative AI.md>)                                                         | [GEN](../specification/requirements/GEN-generative-ai.md)                            | [GEN section 14](../specification/requirements/GEN-generative-ai.md#14-change-history)                            |
 | [CNT - Content and Authoring](<CNT - Content and Authoring.md>)                                         | [CNT](../specification/requirements/CNT-content-and-authoring.md)                    | [CNT section 17](../specification/requirements/CNT-content-and-authoring.md#17-change-history)                    |
 | [COL - Collaboration and review](<COL - Collaboration and review.md>)                                   | [COL](../specification/requirements/COL-collaboration-and-review.md)                 | [COL section 13](../specification/requirements/COL-collaboration-and-review.md#13-change-history)                 |
+| [MET - Metadata and component types](<MET - Metadata and component types.md>)                           | [MET](../specification/requirements/MET-metadata-and-component-types.md)             | [MET section 12](../specification/requirements/MET-metadata-and-component-types.md#12-change-history)             |

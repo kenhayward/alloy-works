@@ -27,7 +27,7 @@ understand the storage layer, rather than something to be thrown away.
 
 ## Why these are not one per requirement area
 
-There are twenty-one requirement areas and there will not be twenty-one design documents. **Design
+There are twenty-two requirement areas and there will not be twenty-two design documents. **Design
 boundaries are not requirement boundaries.** Storage serves VER, CNT, REU, LIF, TPL and REL at once;
 publishing will serve PUB, STY, STR and TAB. Mirroring the areas would either fragment one subsystem
 across six documents or repeat it in six, and both make the design harder to reason about than the

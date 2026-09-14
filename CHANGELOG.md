@@ -3,6 +3,44 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.16.1 - 2026-09-14 (PR #81)
+
+### Added
+
+- **A twenty-second requirements area, [MET - Metadata and component types](docs/specification/requirements/MET-metadata-and-component-types.md)**,
+  with 36 requirements. A **field** is defined once for the tenant and shared, so `jurisdiction` means
+  one thing and is one search facet wherever it appears. A **metadata schema** is a named group of
+  fields, managed and assigned as one, saying which are required, their defaults and which values it
+  fixes. A **component type** is what kind of component something is - a narrative overview, a
+  stability table section - and assigns the schemas its components carry.
+- A component's metadata values belong to its **version**, beside its content, so a baseline pins what
+  a component said it was as well as what it said. A version is judged for ever by the definitions it
+  was written against, and the next version by the current ones.
+- **Reusing what a section holds**: a section found in an existing document leads to the components it
+  places, and they can be placed into another document as references under a section of its own,
+  without the found section being shared (REU-054, SCH-053).
+- The review of the MET draft, kept as it arrived, and its answer in MET's change history.
+
+### Changed
+
+- **A template assigns zero or more metadata schemas rather than owning exactly one**, each applying to
+  the document or to its sections, as the scope always said a template should. A document records the
+  schema and field versions it was created against, because a schema's assignments always take its
+  latest version.
+- **A component takes its fields from its type, never from a document that references it.** The old
+  rule broke the moment two documents made from different templates referenced one component.
+- Relationship types now use the same metadata schemas instead of a shape of their own, and changes to
+  a shared schema or field are refused where they would break an existing relationship.
+- A vocabulary may take its values from an external source - a study register, say - held locally so
+  that validation and publishing never depend on reaching it.
+- Eighteen requirements across TPL, CNT, STR, SCH, REL, LIB and VER are superseded by rows that say what
+  they now mean, and each area records why in its change history. The corpus is 1,360 requirements.
+- `Project_Scope.md` defines a field and a component type, and gains section 7.22. The requirement issue
+  form offers the new area.
+- The requirements index's count of settled questions is corrected: it said twenty-nine and one half
+  settled when twenty-eight and one half were, and it now says twenty-nine, counting the one this
+  change settles.
+
 ## 0.16.0 - 2026-09-13 (PR #79)
 
 ### Added

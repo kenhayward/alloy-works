@@ -20,15 +20,16 @@ That is what lets the same component be section 2 of one report and section 7.3 
 | [CNT](CNT-content-and-authoring.md)                | Content carries no position; caption-bearing blocks carry identity (CNT-081) |
 | [`Project_Scope.md`](../Project_Scope.md) §6, §7.2 | Outline, section, component reference; the intent this makes precise         |
 
-| Not here                                                    | There                                                                        |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| What a component contains                                   | **CNT**                                                                      |
-| Whether a reference is pinned or floating, and reuse itself | **REU**, **VER**                                                             |
-| Declaring the numbering scheme and rendering the numbers    | **PUB**                                                                      |
-| The catalogue a caption's style comes from                  | **STY**                                                                      |
-| A template's starting outline                               | **TPL**                                                                      |
-| Who may reorder an outline                                  | **IAM**                                                                      |
-| Two editors moving the same node at once                    | Here, STR-059; **COL** holds the component lock and **API** the precondition |
+| Not here                                                     | There                                                                        |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| What a component contains                                    | **CNT**                                                                      |
+| Whether a reference is pinned or floating, and reuse itself  | **REU**, **VER**                                                             |
+| Declaring the numbering scheme and rendering the numbers     | **PUB**                                                                      |
+| The catalogue a caption's style comes from                   | **STY**                                                                      |
+| A template's starting outline                                | **TPL**                                                                      |
+| Which fields a section carries, and what makes a value valid | **TPL**, **MET**                                                             |
+| Who may reorder an outline                                   | **IAM**                                                                      |
+| Two editors moving the same node at once                     | Here, STR-059; **COL** holds the component lock and **API** the precondition |
 
 ## 3. The outline
 
@@ -45,7 +46,8 @@ are separable precisely because a section is never reused.
 | **STR-002** | Every outline node must be either a section or a component reference                                                                                                                                                                                                                                                                                                                                                                        | T1         | Specified             |
 | **STR-003** | Every outline node must carry a stable identifier, allocated on creation and never reused                                                                                                                                                                                                                                                                                                                                                   | T1         | Specified             |
 | **STR-004** | A section must exist only in the document that declares it. Sections must not be shareable or reusable                                                                                                                                                                                                                                                                                                                                      | Constraint | Specified             |
-| **STR-005** | A section must carry a title, and must be able to carry metadata of its own                                                                                                                                                                                                                                                                                                                                                                 | T1         | Specified             |
+| **STR-005** | A section must carry a title, and must be able to carry metadata of its own                                                                                                                                                                                                                                                                                                                                                                 | T1         | Superseded by STR-060 |
+| **STR-060** | A section must carry a title, and must be able to carry field values of its own, from the metadata schemas its document's template applies at section level (**TPL-054**, **MET-034**)                                                                                                                                                                                                                                                      | T1         | Specified             |
 | **STR-006** | The outline must be editable by pointer, by keyboard alone, and through the API                                                                                                                                                                                                                                                                                                                                                             | T1         | Specified             |
 | **STR-007** | The outline must support nesting to at least nine levels                                                                                                                                                                                                                                                                                                                                                                                    | T1         | Specified             |
 | **STR-008** | Moving a node must move its entire subtree, and must be a single undoable action                                                                                                                                                                                                                                                                                                                                                            | T1         | Specified             |
@@ -79,6 +81,13 @@ front matter, and its root is the document.
 **STR-010 is small to write and awkward everywhere else.** A component used twice in one report is
 two figures, two numbers and two cross-reference targets. If the occurrence has no identity of its
 own, a reference to "the second one" cannot be expressed, and numbering has nothing to hang on.
+
+**STR-060 says where a section's metadata comes from.** STR-005 let a section carry "metadata of its
+own" and nothing said which fields. A section exists only in its document (STR-004), so taking its
+fields from that document's template is sound - which it never was for a component, which many
+documents reference and which takes its fields from its own type instead (MET-013). Section metadata is
+worth having for the reason SCH-053 names: a well-described section in an existing document is how an
+author finds components worth reusing.
 
 ## 4. Numbering
 
@@ -221,18 +230,19 @@ and travels with them wherever they are used. That half is CNT's, through a bloc
 
 ## 13. Traceability
 
-| This document             | Rests on                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------- |
-| STR-051                   | REU-028 to REU-030, PUB-002 - one order, stated once                                            |
-| STR-052                   | VER-018, REU-040 - what a baseline pins, and what a publication records                         |
-| STR-055                   | STR-027, STR-050 - the paged and unpaged forms                                                  |
-| STR-057                   | REU-044 - the same cycle rule from the reuse side                                               |
-| STR-051 to STR-057        | [The v1 review](<../../reviews/STR - Structure, numbering and cross-references.md>); section 14 |
-| Section 3                 | Scope §6 (outline, section, component reference); CNT's governing constraint                    |
-| STR-020, STR-030, STR-042 | Scope §7.3 conditional profiling; resolution order matters                                      |
-| STR-023 to STR-025        | CNT-081, caption-bearing blocks carrying identity                                               |
-| Section 10                | Settles CNT-Q07                                                                                 |
-| STR-044 to STR-047        | Scope §7.2 deep links                                                                           |
+| This document             | Rests on                                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| STR-051                   | REU-028 to REU-030, PUB-002 - one order, stated once                                                            |
+| STR-052                   | VER-018, REU-040 - what a baseline pins, and what a publication records                                         |
+| STR-055                   | STR-027, STR-050 - the paged and unpaged forms                                                                  |
+| STR-057                   | REU-044 - the same cycle rule from the reuse side                                                               |
+| STR-051 to STR-057        | [The v1 review](<../../reviews/STR - Structure, numbering and cross-references.md>); section 14                 |
+| Section 3                 | Scope §6 (outline, section, component reference); CNT's governing constraint                                    |
+| STR-020, STR-030, STR-042 | Scope §7.3 conditional profiling; resolution order matters                                                      |
+| STR-023 to STR-025        | CNT-081, caption-bearing blocks carrying identity                                                               |
+| Section 10                | Settles CNT-Q07                                                                                                 |
+| STR-044 to STR-047        | Scope §7.2 deep links                                                                                           |
+| STR-060                   | [MET](MET-metadata-and-component-types.md); TPL-054; section 14, "From specifying metadata and component types" |
 
 ## 14. Change history
 
@@ -268,3 +278,19 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections | Change                                                                                                                                                                                                                                                                                                                                              |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.1, 2.8, 3.2.9 | **STR-009 superseded by STR-058**, recording which of three reference modes a component reference takes. **STR-059** answers outline concurrency here rather than delegating it to a document that does not own document-level locking: a version precondition, conflict detection in the interface, and the component lock still doing its own job |
+
+### From specifying metadata and component types
+
+Not a review. Specifying [MET](MET-metadata-and-component-types.md) gave "metadata" a definition, and
+STR-005 had used the word with no source for its fields.
+
+| What was found                                                                         | Change                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| STR-005 let a section carry metadata of its own and named nowhere its fields come from | **STR-005 superseded by STR-060**: a section's fields come from the schemas its template applies at section level (TPL-054). Narrowing where the fields come from changes what the product must do, so it is a new row rather than an edit |
+| Not changed: **STR-004**, sections are not shareable                                   | Reusing what an existing section holds is **REU-054**, which places its components under a new section and leaves the found one unshared                                                                                                   |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 59, of which 2 superseded | 60, of which 3 superseded |
+| Non-requirements | 5                         | 5                         |
+| Open questions   | 4                         | 4                         |

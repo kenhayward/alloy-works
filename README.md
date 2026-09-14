@@ -42,11 +42,9 @@ produces today**, and **review must feel at least as good as a word processor**.
 It is deliberately **not** a BI tool, a spreadsheet, a data warehouse, an asset manager, a wiki, a
 web publishing channel, an XML editor for arbitrary schemas, or offline-first.
 [`docs/specification/Project_Scope.md`](docs/specification/Project_Scope.md) carries the full
-argument: the market position, the personas, twenty-one capability areas, the non-goals, the
+argument: the market position, the personas, twenty-two capability areas, the non-goals, the
 decisions taken and still open, and the risks. The detailed requirements are in
-[`docs/specification/requirements/`](docs/specification/requirements/) - one document per area, all
-twenty-one written, each reviewed, and then all of them read against each other in a cross-cutting
-pass. Every one ends with a change history saying what changed and why, and the reviews behind them
+[`docs/specification/requirements/`](docs/specification/requirements/) - one document per area, all twenty-two written and each reviewed, and the first twenty-one read against each other in a cross-cutting pass. Every one ends with a change history saying what changed and why, and the reviews behind them
 are kept in [`docs/reviews/`](docs/reviews/). Each subsystem design in
 [`docs/design/`](docs/design/) declares which requirements it answers, so a requirement no design
 claims is work not yet designed.
@@ -55,18 +53,18 @@ claims is work not yet designed.
 
 Six tranches, each a usable increment rather than a layer:
 
-| Tranche                    | Contains                                                                                                                                                                                                         |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, tables and figures, styles and themes, templates, search, PDF and Word publishing, the API |
-| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, revising a value by hand, tabular presentation                                                                                                 |
-| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit, component lifecycles                                                                                                           |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries, diverging revisions                                                                                              |
-| **T5 - The intelligence**  | Template prompts, the assistant and interactive chat, retrieval grounding, AI governance and cost controls                                                                                                       |
-| **T6 - The interchange**   | Word import, citation styles, external reference sources, translation                                                                                                                                            |
+| Tranche                    | Contains                                                                                                                                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1 - The spine**         | Tenancy, identity, access control, components with immutable versions, documents and outlines, the editor, numbering, tables and figures, styles and themes, templates, metadata and component types, search, PDF and Word publishing, the API |
+| **T2 - The data**          | Connections, query definitions, parameters, bindings, provenance, revising a value by hand, tabular presentation                                                                                                                               |
+| **T3 - The collaboration** | Presence, locks, threads, suggestions, baselines, comparison, workflow and audit, component lifecycles                                                                                                                                         |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, relationships and graph queries, diverging revisions                                                                                                                            |
+| **T5 - The intelligence**  | Template prompts, the assistant and interactive chat, retrieval grounding, AI governance and cost controls                                                                                                                                     |
+| **T6 - The interchange**   | Word import, citation styles, external reference sources, translation                                                                                                                                                                          |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
-than its name suggests, touching twelve of the twenty-one areas, because publishing at the fidelity
+than its name suggests, touching thirteen of the twenty-two areas, because publishing at the fidelity
 bar needs themes, templates, assets and tables as well as an editor. **None of it is built yet** - what exists today is the scaffolding under it, listed below.
 
 ## Features

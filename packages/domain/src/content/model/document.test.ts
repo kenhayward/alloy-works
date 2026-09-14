@@ -22,7 +22,7 @@ describe('the content document', () => {
     expect(parseContentDocument(doc([paragraph('b1')])).content[0]?.type).toBe('paragraph');
   });
 
-  it('CNT-144 closes the root, so an unknown member is refused', () => {
+  it('CNT-146 closes the root, so an unknown member is refused', () => {
     expect(() =>
       contentDocumentSchema.parse({ ...doc([paragraph('b1')]), owner: 'Grace' }),
     ).toThrow();

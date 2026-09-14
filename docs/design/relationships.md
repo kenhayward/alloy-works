@@ -27,7 +27,6 @@ answer beyond those bounds is a report produced in the background.
 | ID          | How it is met                                                                                                                                                                                                                                                |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **REL-001** | `relationship.type_id` is a foreign key to `relationship_type`; a relationship of an undeclared type cannot be inserted                                                                                                                                      |
-| **REL-003** | `relationship_type.metadata_schema` is a JSON Schema the instances' metadata must satisfy                                                                                                                                                                    |
 | **REL-004** | `relationship_type.inverse_name`, used whenever a relationship is read from its far end                                                                                                                                                                      |
 | **REL-005** | Types and endpoints are rows, maintained by a tenant administrator through the service                                                                                                                                                                       |
 | **REL-006** | Deleting a type or an endpoint kind in use is refused by restricted foreign keys; a cardinality change is checked against instances                                                                                                                          |
@@ -61,8 +60,14 @@ artifact to relate to itself (REL-045), whether it is acyclic (REL-046), and the
 at each end (REL-035), as well as the name, direction, cardinality and inverse name that
 `relationship_type` carries below. The last three are requirements this design does not answer at all,
 so claiming REL-047 would claim ground it does not hold: the requirement stays specified and
-undesigned until a revision decides where those three live. REL-002, the requirement REL-047
-replaced, was narrower and is no longer in force.
+\1
+
+**REL-053 is not claimed here, and REL-003, which it replaced, no longer is.** This design stores a JSON
+Schema per type in `relationship_type.metadata_schema`, which answered REL-003's "a metadata shape".
+REL-053 asks for more: a type assigns the tenant's shared metadata schemas ([MET](../specification/requirements/MET-metadata-and-component-types.md)), so a
+field on a relationship is the same field as on a component and facets with it. A JSON Schema private to
+one type cannot be that, so the claim is dropped rather than repointed - and **REL-054**, which guards
+relationships against a schema or field change as well as a type change, is undesigned with it.
 
 ## Tables
 

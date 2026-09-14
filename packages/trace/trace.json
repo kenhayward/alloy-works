@@ -1429,7 +1429,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "CNT-001",
@@ -1438,7 +1438,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 73
+      "line": 72
     },
     {
       "id": "CNT-002",
@@ -1447,7 +1447,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 74
+      "line": 73
     },
     {
       "id": "CNT-003",
@@ -1456,7 +1456,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 75
+      "line": 74
     },
     {
       "id": "CNT-004",
@@ -1465,7 +1465,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 76
+      "line": 75
     },
     {
       "id": "CNT-005",
@@ -1474,7 +1474,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 77
+      "line": 76
     },
     {
       "id": "CNT-006",
@@ -1483,7 +1483,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 78
+      "line": 77
     },
     {
       "id": "CNT-007",
@@ -1492,7 +1492,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 79
+      "line": 78
     },
     {
       "id": "CNT-008",
@@ -1501,7 +1501,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 80
+      "line": 79
     },
     {
       "id": "CNT-009",
@@ -1510,7 +1510,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 81
+      "line": 80
     },
     {
       "id": "CNT-010",
@@ -1519,7 +1519,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 82
+      "line": 81
     },
     {
       "id": "CNT-011",
@@ -1528,7 +1528,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 83
+      "line": 82
     },
     {
       "id": "CNT-012",
@@ -1537,7 +1537,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 84
+      "line": 83
     },
     {
       "id": "CNT-013",
@@ -1546,16 +1546,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 85
+      "line": 84
     },
     {
       "id": "CNT-142",
       "area": "CNT",
-      "statement": "A component must carry a title of its own, distinct from the title of any outline section that places it (**STR-005**), so that it can be listed and found in a space holding no documents at all",
+      "statement": "A component must carry a title of its own, distinct from the title of any outline section that places it (**STR-060**), so that it can be listed and found in a space holding no documents at all",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 86
+      "line": 85
     },
     {
       "id": "CNT-143",
@@ -1564,16 +1564,34 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 87
+      "line": 86
     },
     {
       "id": "CNT-144",
       "area": "CNT",
       "statement": "A component's structural attributes - those every component carries whatever its type - must be a closed set: its identifier, its title, its base language, and the schema version its content was written against. Adding one is a schema change with a migration, not a configuration option",
       "tranche": "Constraint",
+      "status": "Superseded by CNT-145",
+      "document": "CNT-content-and-authoring.md",
+      "line": 87
+    },
+    {
+      "id": "CNT-145",
+      "area": "CNT",
+      "statement": "A component's structural attributes - those every component carries whatever its type - must be a closed set: its identifier, its component type (**MET-011**), its title, its base language, and the schema version its content was written against. Adding one is a schema change with a migration, not a configuration option",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 88
+    },
+    {
+      "id": "CNT-146",
+      "area": "CNT",
+      "statement": "A component's versioned content must hold a closed set of members at its root - the schema version, the title, the base language, the base direction and the blocks - and a metadata value must never be one of them (**MET-016**)",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 89
     },
     {
       "id": "CNT-014",
@@ -1582,7 +1600,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 121
+      "line": 119
     },
     {
       "id": "CNT-015",
@@ -1591,7 +1609,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-117",
       "document": "CNT-content-and-authoring.md",
-      "line": 122
+      "line": 120
     },
     {
       "id": "CNT-117",
@@ -1600,7 +1618,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 123
+      "line": 121
     },
     {
       "id": "CNT-118",
@@ -1609,7 +1627,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 124
+      "line": 122
     },
     {
       "id": "CNT-119",
@@ -1618,7 +1636,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 125
+      "line": 123
     },
     {
       "id": "CNT-016",
@@ -1627,7 +1645,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 126
+      "line": 124
     },
     {
       "id": "CNT-017",
@@ -1636,7 +1654,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 127
+      "line": 125
     },
     {
       "id": "CNT-018",
@@ -1645,7 +1663,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 128
+      "line": 126
     },
     {
       "id": "CNT-019",
@@ -1654,7 +1672,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 129
+      "line": 127
     },
     {
       "id": "CNT-020",
@@ -1663,7 +1681,7 @@
       "tranche": "T2",
       "status": "Superseded by CNT-120",
       "document": "CNT-content-and-authoring.md",
-      "line": 130
+      "line": 128
     },
     {
       "id": "CNT-120",
@@ -1672,7 +1690,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 131
+      "line": 129
     },
     {
       "id": "CNT-021",
@@ -1681,7 +1699,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 132
+      "line": 130
     },
     {
       "id": "CNT-022",
@@ -1690,7 +1708,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 133
+      "line": 131
     },
     {
       "id": "CNT-023",
@@ -1699,7 +1717,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 134
+      "line": 132
     },
     {
       "id": "CNT-124",
@@ -1708,7 +1726,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 135
+      "line": 133
     },
     {
       "id": "CNT-081",
@@ -1717,7 +1735,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 136
+      "line": 134
     },
     {
       "id": "CNT-125",
@@ -1726,7 +1744,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 137
+      "line": 135
     },
     {
       "id": "CNT-086",
@@ -1735,7 +1753,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 138
+      "line": 136
     },
     {
       "id": "CNT-088",
@@ -1744,7 +1762,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-121",
       "document": "CNT-content-and-authoring.md",
-      "line": 139
+      "line": 137
     },
     {
       "id": "CNT-121",
@@ -1753,7 +1771,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 140
+      "line": 138
     },
     {
       "id": "CNT-122",
@@ -1762,7 +1780,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 141
+      "line": 139
     },
     {
       "id": "CNT-123",
@@ -1771,7 +1789,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 142
+      "line": 140
     },
     {
       "id": "CNT-091",
@@ -1780,7 +1798,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-016",
       "document": "CNT-content-and-authoring.md",
-      "line": 143
+      "line": 141
     },
     {
       "id": "CNT-092",
@@ -1789,7 +1807,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-017",
       "document": "CNT-content-and-authoring.md",
-      "line": 144
+      "line": 142
     },
     {
       "id": "CNT-093",
@@ -1798,7 +1816,7 @@
       "tranche": "T2",
       "status": "Superseded by STY-029",
       "document": "CNT-content-and-authoring.md",
-      "line": 145
+      "line": 143
     },
     {
       "id": "CNT-094",
@@ -1807,7 +1825,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 146
+      "line": 144
     },
     {
       "id": "CNT-024",
@@ -1816,7 +1834,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 195
+      "line": 193
     },
     {
       "id": "CNT-025",
@@ -1825,7 +1843,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 196
+      "line": 194
     },
     {
       "id": "CNT-026",
@@ -1834,7 +1852,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 197
+      "line": 195
     },
     {
       "id": "CNT-027",
@@ -1843,7 +1861,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 198
+      "line": 196
     },
     {
       "id": "CNT-028",
@@ -1852,7 +1870,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 199
+      "line": 197
     },
     {
       "id": "CNT-029",
@@ -1861,7 +1879,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 200
+      "line": 198
     },
     {
       "id": "CNT-030",
@@ -1870,7 +1888,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 201
+      "line": 199
     },
     {
       "id": "CNT-031",
@@ -1879,7 +1897,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 202
+      "line": 200
     },
     {
       "id": "CNT-032",
@@ -1888,7 +1906,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 203
+      "line": 201
     },
     {
       "id": "CNT-033",
@@ -1897,7 +1915,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 204
+      "line": 202
     },
     {
       "id": "CNT-034",
@@ -1906,7 +1924,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 205
+      "line": 203
     },
     {
       "id": "CNT-035",
@@ -1915,7 +1933,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 206
+      "line": 204
     },
     {
       "id": "CNT-083",
@@ -1924,7 +1942,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-140",
       "document": "CNT-content-and-authoring.md",
-      "line": 207
+      "line": 205
     },
     {
       "id": "CNT-084",
@@ -1933,7 +1951,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 208
+      "line": 206
     },
     {
       "id": "CNT-140",
@@ -1942,7 +1960,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 209
+      "line": 207
     },
     {
       "id": "CNT-085",
@@ -1951,7 +1969,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 210
+      "line": 208
     },
     {
       "id": "CNT-087",
@@ -1960,7 +1978,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 211
+      "line": 209
     },
     {
       "id": "CNT-126",
@@ -1969,7 +1987,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 212
+      "line": 210
     },
     {
       "id": "CNT-127",
@@ -1978,7 +1996,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 213
+      "line": 211
     },
     {
       "id": "CNT-128",
@@ -1987,7 +2005,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 214
+      "line": 212
     },
     {
       "id": "CNT-036",
@@ -1996,7 +2014,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 263
+      "line": 261
     },
     {
       "id": "CNT-037",
@@ -2005,7 +2023,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 264
+      "line": 262
     },
     {
       "id": "CNT-038",
@@ -2014,7 +2032,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 265
+      "line": 263
     },
     {
       "id": "CNT-039",
@@ -2023,7 +2041,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 266
+      "line": 264
     },
     {
       "id": "CNT-040",
@@ -2032,7 +2050,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-129",
       "document": "CNT-content-and-authoring.md",
-      "line": 267
+      "line": 265
     },
     {
       "id": "CNT-041",
@@ -2041,7 +2059,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 268
+      "line": 266
     },
     {
       "id": "CNT-042",
@@ -2050,7 +2068,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 269
+      "line": 267
     },
     {
       "id": "CNT-107",
@@ -2059,7 +2077,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 270
+      "line": 268
     },
     {
       "id": "CNT-129",
@@ -2068,7 +2086,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 271
+      "line": 269
     },
     {
       "id": "CNT-043",
@@ -2077,7 +2095,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 284
+      "line": 282
     },
     {
       "id": "CNT-044",
@@ -2086,7 +2104,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 285
+      "line": 283
     },
     {
       "id": "CNT-045",
@@ -2095,7 +2113,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 286
+      "line": 284
     },
     {
       "id": "CNT-046",
@@ -2104,7 +2122,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 287
+      "line": 285
     },
     {
       "id": "CNT-047",
@@ -2113,7 +2131,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 288
+      "line": 286
     },
     {
       "id": "CNT-048",
@@ -2122,7 +2140,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 289
+      "line": 287
     },
     {
       "id": "CNT-049",
@@ -2131,7 +2149,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 290
+      "line": 288
     },
     {
       "id": "CNT-050",
@@ -2140,7 +2158,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 296
+      "line": 294
     },
     {
       "id": "CNT-051",
@@ -2149,7 +2167,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 297
+      "line": 295
     },
     {
       "id": "CNT-052",
@@ -2158,7 +2176,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 298
+      "line": 296
     },
     {
       "id": "CNT-053",
@@ -2167,7 +2185,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 299
+      "line": 297
     },
     {
       "id": "CNT-054",
@@ -2176,7 +2194,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 300
+      "line": 298
     },
     {
       "id": "CNT-102",
@@ -2185,7 +2203,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 301
+      "line": 299
     },
     {
       "id": "CNT-055",
@@ -2194,7 +2212,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 311
+      "line": 309
     },
     {
       "id": "CNT-056",
@@ -2203,7 +2221,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 312
+      "line": 310
     },
     {
       "id": "CNT-057",
@@ -2212,7 +2230,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 313
+      "line": 311
     },
     {
       "id": "CNT-058",
@@ -2221,7 +2239,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 314
+      "line": 312
     },
     {
       "id": "CNT-059",
@@ -2230,7 +2248,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 315
+      "line": 313
     },
     {
       "id": "CNT-060",
@@ -2239,7 +2257,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 325
+      "line": 323
     },
     {
       "id": "CNT-061",
@@ -2248,7 +2266,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 326
+      "line": 324
     },
     {
       "id": "CNT-062",
@@ -2257,7 +2275,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 327
+      "line": 325
     },
     {
       "id": "CNT-063",
@@ -2266,7 +2284,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 328
+      "line": 326
     },
     {
       "id": "CNT-064",
@@ -2275,7 +2293,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 329
+      "line": 327
     },
     {
       "id": "CNT-065",
@@ -2284,7 +2302,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 330
+      "line": 328
     },
     {
       "id": "CNT-130",
@@ -2293,7 +2311,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 331
+      "line": 329
     },
     {
       "id": "CNT-131",
@@ -2302,7 +2320,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 332
+      "line": 330
     },
     {
       "id": "CNT-132",
@@ -2311,7 +2329,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 353
+      "line": 351
     },
     {
       "id": "CNT-133",
@@ -2320,7 +2338,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 354
+      "line": 352
     },
     {
       "id": "CNT-134",
@@ -2329,7 +2347,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 355
+      "line": 353
     },
     {
       "id": "CNT-135",
@@ -2338,7 +2356,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 356
+      "line": 354
     },
     {
       "id": "CNT-066",
@@ -2347,7 +2365,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 400
+      "line": 398
     },
     {
       "id": "CNT-067",
@@ -2356,7 +2374,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 401
+      "line": 399
     },
     {
       "id": "CNT-068",
@@ -2365,7 +2383,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 402
+      "line": 400
     },
     {
       "id": "CNT-069",
@@ -2374,7 +2392,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 403
+      "line": 401
     },
     {
       "id": "CNT-070",
@@ -2383,7 +2401,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 404
+      "line": 402
     },
     {
       "id": "CNT-071",
@@ -2392,7 +2410,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 405
+      "line": 403
     },
     {
       "id": "CNT-089",
@@ -2401,7 +2419,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 406
+      "line": 404
     },
     {
       "id": "CNT-090",
@@ -2410,7 +2428,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 407
+      "line": 405
     },
     {
       "id": "CNT-103",
@@ -2419,7 +2437,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 408
+      "line": 406
     },
     {
       "id": "CNT-098",
@@ -2428,7 +2446,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 414
+      "line": 412
     },
     {
       "id": "CNT-099",
@@ -2437,7 +2455,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 415
+      "line": 413
     },
     {
       "id": "CNT-100",
@@ -2446,7 +2464,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 416
+      "line": 414
     },
     {
       "id": "CNT-101",
@@ -2455,7 +2473,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 417
+      "line": 415
     },
     {
       "id": "CNT-072",
@@ -2464,7 +2482,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 430
+      "line": 428
     },
     {
       "id": "CNT-073",
@@ -2473,7 +2491,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 431
+      "line": 429
     },
     {
       "id": "CNT-074",
@@ -2482,7 +2500,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 432
+      "line": 430
     },
     {
       "id": "CNT-075",
@@ -2491,7 +2509,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 433
+      "line": 431
     },
     {
       "id": "CNT-076",
@@ -2500,7 +2518,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 434
+      "line": 432
     },
     {
       "id": "CNT-082",
@@ -2509,7 +2527,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 435
+      "line": 433
     },
     {
       "id": "CNT-097",
@@ -2518,7 +2536,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 436
+      "line": 434
     },
     {
       "id": "CNT-115",
@@ -2527,7 +2545,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 437
+      "line": 435
     },
     {
       "id": "CNT-095",
@@ -2536,7 +2554,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 438
+      "line": 436
     },
     {
       "id": "CNT-096",
@@ -2545,7 +2563,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 439
+      "line": 437
     },
     {
       "id": "CNT-114",
@@ -2554,7 +2572,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-136",
       "document": "CNT-content-and-authoring.md",
-      "line": 440
+      "line": 438
     },
     {
       "id": "CNT-136",
@@ -2563,7 +2581,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 441
+      "line": 439
     },
     {
       "id": "CNT-104",
@@ -2572,7 +2590,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 447
+      "line": 445
     },
     {
       "id": "CNT-105",
@@ -2581,7 +2599,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 448
+      "line": 446
     },
     {
       "id": "CNT-106",
@@ -2590,7 +2608,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 449
+      "line": 447
     },
     {
       "id": "CNT-108",
@@ -2599,7 +2617,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 455
+      "line": 453
     },
     {
       "id": "CNT-109",
@@ -2608,7 +2626,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 456
+      "line": 454
     },
     {
       "id": "CNT-110",
@@ -2617,7 +2635,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 457
+      "line": 455
     },
     {
       "id": "CNT-141",
@@ -2626,7 +2644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 458
+      "line": 456
     },
     {
       "id": "CNT-111",
@@ -2635,7 +2653,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 459
+      "line": 457
     },
     {
       "id": "CNT-112",
@@ -2644,7 +2662,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 460
+      "line": 458
     },
     {
       "id": "CNT-113",
@@ -2653,7 +2671,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 461
+      "line": 459
     },
     {
       "id": "CNT-077",
@@ -2662,7 +2680,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 502
+      "line": 500
     },
     {
       "id": "CNT-078",
@@ -2671,7 +2689,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 503
+      "line": 501
     },
     {
       "id": "CNT-079",
@@ -2680,7 +2698,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 504
+      "line": 502
     },
     {
       "id": "CNT-080",
@@ -2689,7 +2707,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 505
+      "line": 503
     },
     {
       "id": "CNT-137",
@@ -2698,7 +2716,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 506
+      "line": 504
     },
     {
       "id": "CNT-138",
@@ -2707,7 +2725,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 507
+      "line": 505
     },
     {
       "id": "CNT-139",
@@ -2716,7 +2734,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 508
+      "line": 506
     },
     {
       "id": "COL-001",
@@ -4188,7 +4206,7 @@
     {
       "id": "GEN-054",
       "area": "GEN",
-      "statement": "A user must be able to save their own prompts to a personal prompt library, visible only to them, and to run one in a conversation. A personal prompt is not a tenant artifact: it must never be bound by a template (**TPL-002**) or run by anybody else",
+      "statement": "A user must be able to save their own prompts to a personal prompt library, visible only to them, and to run one in a conversation. A personal prompt is not a tenant artifact: it must never be bound by a template (**TPL-052**) or run by anybody else",
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
@@ -5923,13 +5941,22 @@
       "line": 178
     },
     {
+      "id": "LIB-058",
+      "area": "LIB",
+      "statement": "A vocabulary must be able to take its values from a declared external source (**LIB-032**) rather than being maintained by hand, each value held locally with the source it came from and the identifier the source gave it (**LIB-034**), re-checkable against that source (**LIB-035**), and never depended on at validation or publish (**LIB-033**, **MET-032**)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "LIB-reference-libraries.md",
+      "line": 179
+    },
+    {
       "id": "LIB-021",
       "area": "LIB",
       "statement": "A metadata field must be able to draw its permitted values from a vocabulary (**TPL-008**)",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by MET-003",
       "document": "LIB-reference-libraries.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "LIB-022",
@@ -5938,7 +5965,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "LIB-023",
@@ -5947,7 +5974,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "LIB-024",
@@ -5956,7 +5983,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "LIB-053",
@@ -5965,7 +5992,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "LIB-054",
@@ -5974,7 +6001,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "LIB-055",
@@ -5983,7 +6010,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "LIB-025",
@@ -5992,7 +6019,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 200
+      "line": 208
     },
     {
       "id": "LIB-026",
@@ -6001,7 +6028,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 201
+      "line": 209
     },
     {
       "id": "LIB-027",
@@ -6010,7 +6037,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 202
+      "line": 210
     },
     {
       "id": "LIB-051",
@@ -6019,7 +6046,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 203
+      "line": 211
     },
     {
       "id": "LIB-052",
@@ -6028,7 +6055,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 204
+      "line": 212
     },
     {
       "id": "LIB-028",
@@ -6037,7 +6064,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 220
+      "line": 228
     },
     {
       "id": "LIB-029",
@@ -6046,7 +6073,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 221
+      "line": 229
     },
     {
       "id": "LIB-030",
@@ -6055,7 +6082,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 222
+      "line": 230
     },
     {
       "id": "LIF-001",
@@ -7039,6 +7066,330 @@
       "line": 178
     },
     {
+      "id": "MET-001",
+      "area": "MET",
+      "statement": "A field must be a tenant-wide definition with a stable identifier, a name, a data type and the validation its values must satisfy. A field grouped by more than one schema must be one field",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 104
+    },
+    {
+      "id": "MET-002",
+      "area": "MET",
+      "statement": "The data types a field may take must be a closed set - text, number, date, time, date and time, true or false, and user - and a field must declare whether it holds one value or several. Adding a data type must be a product change, not a configuration option",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 105
+    },
+    {
+      "id": "MET-028",
+      "area": "MET",
+      "statement": "A date-and-time value must carry its offset from UTC, so that it names one instant. A date and a time must carry no offset",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 106
+    },
+    {
+      "id": "MET-029",
+      "area": "MET",
+      "statement": "A user field's value must be a user of this tenant, and must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 107
+    },
+    {
+      "id": "MET-030",
+      "area": "MET",
+      "statement": "A field holding several values must hold no value twice and must keep its values in the order they were given, and must be able to declare the most values it may hold. For such a field, required must mean at least one value, and a default must be a list of values",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 108
+    },
+    {
+      "id": "MET-003",
+      "area": "MET",
+      "statement": "A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 109
+    },
+    {
+      "id": "MET-032",
+      "area": "MET",
+      "statement": "A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 110
+    },
+    {
+      "id": "MET-004",
+      "area": "MET",
+      "statement": "Whether a value is valid must depend on its field alone: the same value for the same field must never be valid on one artifact and invalid on another",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 111
+    },
+    {
+      "id": "MET-005",
+      "area": "MET",
+      "statement": "A metadata schema must be a named, versioned, tenant-wide definition grouping fields, managed and assigned as one unit. _Replaces TPL-007_",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 144
+    },
+    {
+      "id": "MET-006",
+      "area": "MET",
+      "statement": "A schema must declare, for each field it groups, whether the field is required, its default where it has one, and whether its value is fixed (MET-033). _Replaces TPL-010_",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 145
+    },
+    {
+      "id": "MET-033",
+      "area": "MET",
+      "statement": "A value a schema fixes must be taken from the schema's default, which a fixed field must have, and must not be editable on the artifact: an attempt must be refused, naming the field and the schema (MET-022). A field must be fixed wherever any schema applied there fixes it",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 146
+    },
+    {
+      "id": "MET-034",
+      "area": "MET",
+      "statement": "Schemas must apply at exactly four places - a component, through its component type; a document, through its template's document-level assignments; a section, through its template's section-level assignments (**TPL-054**); and a relationship, through its relationship type (**REL-053**). Schemas applied at different places must never compose on one artifact",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 147
+    },
+    {
+      "id": "MET-007",
+      "area": "MET",
+      "statement": "Where more than one schema applied at the same place (MET-034) groups the same field, the field must apply once, and must be required if any of those schemas requires it",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 148
+    },
+    {
+      "id": "MET-008",
+      "area": "MET",
+      "statement": "Assigning a schema whose default for a field differs from the default of a schema already applied at the same place must be refused, naming the field and both schemas",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 149
+    },
+    {
+      "id": "MET-035",
+      "area": "MET",
+      "statement": "An assignment must always take the latest version of a schema. A new version of a schema must be refused where its default for a field would differ from that of a schema applied beside it at any place, naming the field, the other schema and every such place, and where it would make an existing relationship invalid (**REL-054**)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 150
+    },
+    {
+      "id": "MET-009",
+      "area": "MET",
+      "statement": "An assignment of a schema must be able to make an optional field required for that assignment, and must not otherwise alter the schema: not make a required field optional, change a default, fix or unfix a value, or change a field's validation",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 151
+    },
+    {
+      "id": "MET-010",
+      "area": "MET",
+      "statement": "A component type must be a named, versioned, tenant-wide definition assigning zero or more metadata schemas, and must be distinct from the kinds of content a component holds",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 172
+    },
+    {
+      "id": "MET-011",
+      "area": "MET",
+      "statement": "Every component must be of exactly one component type, chosen when it is created",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 173
+    },
+    {
+      "id": "MET-012",
+      "area": "MET",
+      "statement": "A tenant must declare a default component type, which may assign no schemas, so that creating or importing a component always has a type to take",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 174
+    },
+    {
+      "id": "MET-013",
+      "area": "MET",
+      "statement": "A component's fields must come from its component type and never from a document that references it, so that a component referenced by documents made from different templates carries the same fields in each",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 175
+    },
+    {
+      "id": "MET-014",
+      "area": "MET",
+      "statement": "Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 176
+    },
+    {
+      "id": "MET-015",
+      "area": "MET",
+      "statement": "A component's metadata values must belong to its version: setting one must be a change to the component (**ADR-0006**), a version's values must never change once it is cut, and a baseline pinning the version must pin them (**VER-018**)",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 209
+    },
+    {
+      "id": "MET-016",
+      "area": "MET",
+      "statement": "Metadata values must be held beside a component's content and never inside the content document (**CNT-144**)",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 210
+    },
+    {
+      "id": "MET-017",
+      "area": "MET",
+      "statement": "Every component version must record the versions of the component type, schemas and fields it was written against, and must be validated against those for as long as it exists",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 211
+    },
+    {
+      "id": "MET-018",
+      "area": "MET",
+      "statement": "A component's next version must be written against the current versions of its type, schemas and fields, so that a field newly made required is asked for the next time the component is edited",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 212
+    },
+    {
+      "id": "MET-036",
+      "area": "MET",
+      "statement": "Where a component's next version is written against definitions under which a value's field no longer applies - its type changed, or a schema no longer groups the field - that value must not be carried into the version, and the version must record each value it did not carry, by field. A value whose field still applies must be carried unchanged",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 213
+    },
+    {
+      "id": "MET-019",
+      "area": "MET",
+      "statement": "Changing a field, a schema or a component type must never make an existing component version, document or section invalid. _Replaces TPL-011, which said this of documents only_",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 214
+    },
+    {
+      "id": "MET-020",
+      "area": "MET",
+      "statement": "Every change to a field, a schema or a component type must create a new version of it and must be audited",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 215
+    },
+    {
+      "id": "MET-021",
+      "area": "MET",
+      "statement": "Validation must run while authoring, showing a missing or invalid field as it arises rather than only when publishing. _Replaces TPL-038, which said this of documents only_",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 231
+    },
+    {
+      "id": "MET-022",
+      "area": "MET",
+      "statement": "A validation failure must name the field, the rule, the artifact, and the schema that applied the rule. _Replaces TPL-037_",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 232
+    },
+    {
+      "id": "MET-023",
+      "area": "MET",
+      "statement": "Publishing a document must fail where any component version it references is missing a required field or holds an invalid value. Neither cutting a version nor designating a revision may be refused for that reason (**MET-Q03**)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 233
+    },
+    {
+      "id": "MET-031",
+      "area": "MET",
+      "statement": "The name of a field, of a schema and of a component type must each be unique within the tenant among definitions of its kind (**REL-040** is the same rule for a relationship type)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 250
+    },
+    {
+      "id": "MET-024",
+      "area": "MET",
+      "statement": "Managing fields, schemas and component types must be a permission of its own, grantable without tenant administration and separate from designing templates (**TPL-006**, **IAM**)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 251
+    },
+    {
+      "id": "MET-025",
+      "area": "MET",
+      "statement": "A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition)",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 252
+    },
+    {
+      "id": "MET-026",
+      "area": "MET",
+      "statement": "Deleting a field, a schema or a component type that anything uses must be refused, naming what depends on it. It must never cascade",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 253
+    },
+    {
+      "id": "MET-027",
+      "area": "MET",
+      "statement": "A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 254
+    },
+    {
       "id": "PUB-001",
       "area": "PUB",
       "statement": "Publishing must run as four named stages - resolve, compose, paginate, render - each able to fail with diagnostics naming the stage",
@@ -7554,7 +7905,7 @@
     {
       "id": "PUB-082",
       "area": "PUB",
-      "statement": "A publication's record must be no weaker than the baseline's pins (VER-018, **VER-054**) and must additionally identify any accepted generated content it contains, with the prompt, model and context digest retained for it (**GEN-023**, **GEN-046**)",
+      "statement": "A publication's record must be no weaker than the baseline's pins (VER-018, **VER-055**) and must additionally identify any accepted generated content it contains, with the prompt, model and context digest retained for it (**GEN-023**, **GEN-046**)",
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -7801,7 +8152,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 35
+      "line": 37
     },
     {
       "id": "REL-002",
@@ -7810,16 +8161,25 @@
       "tranche": "T4",
       "status": "Superseded by REL-047",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 36
+      "line": 38
     },
     {
       "id": "REL-003",
       "area": "REL",
       "statement": "A type must be able to declare a metadata shape that instances of it carry",
       "tranche": "T4",
+      "status": "Superseded by REL-053",
+      "document": "REL-relationships-and-the-graph.md",
+      "line": 39
+    },
+    {
+      "id": "REL-053",
+      "area": "REL",
+      "statement": "A relationship type must be able to assign metadata schemas (**MET-005**), whose fields its relationships carry. A relationship type is one of the places schemas apply (**MET-034**)",
+      "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 37
+      "line": 40
     },
     {
       "id": "REL-004",
@@ -7828,7 +8188,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 38
+      "line": 41
     },
     {
       "id": "REL-005",
@@ -7837,7 +8197,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 39
+      "line": 42
     },
     {
       "id": "REL-006",
@@ -7846,7 +8206,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 40
+      "line": 43
     },
     {
       "id": "REL-007",
@@ -7855,7 +8215,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 41
+      "line": 44
     },
     {
       "id": "REL-047",
@@ -7864,16 +8224,25 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 42
+      "line": 45
     },
     {
       "id": "REL-036",
       "area": "REL",
       "statement": "Changing a type's metadata shape must be guarded exactly as its endpoints and cardinality are (REL-006): adding a required field, narrowing a field's type or removing one must be refused where existing instances would become invalid, and the refusal must say how many would",
       "tranche": "Constraint",
+      "status": "Superseded by REL-054",
+      "document": "REL-relationships-and-the-graph.md",
+      "line": 46
+    },
+    {
+      "id": "REL-054",
+      "area": "REL",
+      "statement": "A change that would make an existing relationship invalid must be refused, saying how many would become invalid: changing a type's endpoints or cardinality (REL-006), assigning a schema to a type or removing one, and a new version of a schema or field the type assigns (**MET-035**) that adds a required field, narrows a field's type or validation, or removes a field. A relationship is edited in place rather than versioned (REL-033), so it cannot be judged by the definitions it was written against as a component version is (**MET-017**)",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 43
+      "line": 47
     },
     {
       "id": "REL-037",
@@ -7882,7 +8251,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 44
+      "line": 48
     },
     {
       "id": "REL-038",
@@ -7891,7 +8260,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 45
+      "line": 49
     },
     {
       "id": "REL-040",
@@ -7900,7 +8269,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 46
+      "line": 50
     },
     {
       "id": "REL-039",
@@ -7909,7 +8278,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 47
+      "line": 51
     },
     {
       "id": "REL-041",
@@ -7918,7 +8287,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 48
+      "line": 52
     },
     {
       "id": "REL-042",
@@ -7927,7 +8296,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 49
+      "line": 53
     },
     {
       "id": "REL-045",
@@ -7936,7 +8305,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 50
+      "line": 54
     },
     {
       "id": "REL-046",
@@ -7945,7 +8314,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 51
+      "line": 55
     },
     {
       "id": "REL-008",
@@ -7954,7 +8323,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 75
+      "line": 91
     },
     {
       "id": "REL-009",
@@ -7963,7 +8332,7 @@
       "tranche": "T4",
       "status": "Superseded by REL-052",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 76
+      "line": 92
     },
     {
       "id": "REL-010",
@@ -7972,7 +8341,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 77
+      "line": 93
     },
     {
       "id": "REL-011",
@@ -7981,7 +8350,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 78
+      "line": 94
     },
     {
       "id": "REL-012",
@@ -7990,7 +8359,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 79
+      "line": 95
     },
     {
       "id": "REL-013",
@@ -7999,7 +8368,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 80
+      "line": 96
     },
     {
       "id": "REL-014",
@@ -8008,7 +8377,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 81
+      "line": 97
     },
     {
       "id": "REL-052",
@@ -8017,7 +8386,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 82
+      "line": 98
     },
     {
       "id": "REL-033",
@@ -8026,7 +8395,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 83
+      "line": 99
     },
     {
       "id": "REL-034",
@@ -8035,7 +8404,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 84
+      "line": 100
     },
     {
       "id": "REL-035",
@@ -8044,7 +8413,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 85
+      "line": 101
     },
     {
       "id": "REL-043",
@@ -8053,7 +8422,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 86
+      "line": 102
     },
     {
       "id": "REL-044",
@@ -8062,7 +8431,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 87
+      "line": 103
     },
     {
       "id": "REL-048",
@@ -8071,7 +8440,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 88
+      "line": 104
     },
     {
       "id": "REL-049",
@@ -8080,7 +8449,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 89
+      "line": 105
     },
     {
       "id": "REL-015",
@@ -8089,7 +8458,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 109
+      "line": 125
     },
     {
       "id": "REL-016",
@@ -8098,7 +8467,7 @@
       "tranche": "T4",
       "status": "Superseded by REL-029",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 110
+      "line": 126
     },
     {
       "id": "REL-017",
@@ -8107,7 +8476,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 111
+      "line": 127
     },
     {
       "id": "REL-018",
@@ -8116,7 +8485,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 112
+      "line": 128
     },
     {
       "id": "REL-019",
@@ -8125,7 +8494,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 113
+      "line": 129
     },
     {
       "id": "REL-020",
@@ -8134,7 +8503,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 114
+      "line": 130
     },
     {
       "id": "REL-021",
@@ -8143,7 +8512,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 115
+      "line": 131
     },
     {
       "id": "REL-029",
@@ -8152,7 +8521,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 116
+      "line": 132
     },
     {
       "id": "REL-030",
@@ -8161,7 +8530,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 117
+      "line": 133
     },
     {
       "id": "REL-031",
@@ -8170,7 +8539,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 118
+      "line": 134
     },
     {
       "id": "REL-051",
@@ -8179,7 +8548,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 119
+      "line": 135
     },
     {
       "id": "REL-022",
@@ -8188,7 +8557,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 139
+      "line": 155
     },
     {
       "id": "REL-023",
@@ -8197,7 +8566,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 140
+      "line": 156
     },
     {
       "id": "REL-024",
@@ -8206,7 +8575,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 141
+      "line": 157
     },
     {
       "id": "REL-032",
@@ -8215,7 +8584,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 142
+      "line": 158
     },
     {
       "id": "REL-050",
@@ -8224,7 +8593,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 143
+      "line": 159
     },
     {
       "id": "REL-025",
@@ -8233,7 +8602,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 161
+      "line": 177
     },
     {
       "id": "REL-026",
@@ -8242,7 +8611,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 162
+      "line": 178
     },
     {
       "id": "REL-027",
@@ -8251,7 +8620,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 163
+      "line": 179
     },
     {
       "id": "REL-028",
@@ -8260,7 +8629,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 164
+      "line": 180
     },
     {
       "id": "REU-001",
@@ -8269,7 +8638,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 39
+      "line": 40
     },
     {
       "id": "REU-002",
@@ -8278,7 +8647,7 @@
       "tranche": "T4",
       "status": "Superseded by REU-050",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 40
+      "line": 41
     },
     {
       "id": "REU-003",
@@ -8287,7 +8656,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 41
+      "line": 42
     },
     {
       "id": "REU-004",
@@ -8296,7 +8665,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 42
+      "line": 43
     },
     {
       "id": "REU-005",
@@ -8305,7 +8674,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 43
+      "line": 44
     },
     {
       "id": "REU-050",
@@ -8314,7 +8683,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "REU-042",
@@ -8323,7 +8692,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "REU-043",
@@ -8332,7 +8701,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "REU-044",
@@ -8341,7 +8710,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "REU-045",
@@ -8350,7 +8719,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 48
+      "line": 49
     },
     {
       "id": "REU-046",
@@ -8359,7 +8728,16 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 49
+      "line": 50
+    },
+    {
+      "id": "REU-054",
+      "area": "REU",
+      "statement": "An author must be able to place the components a section in another document places into their own document in one act, as references under a new section of their own. The found section must not be shared (**STR-004**); the new section must take its fields from the author's own template (**STR-060**) and copy no values; each reference must take a mode REU-050 allows; and REU-046's report must run before the act is accepted",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 51
     },
     {
       "id": "REU-006",
@@ -8368,7 +8746,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 67
+      "line": 76
     },
     {
       "id": "REU-007",
@@ -8377,7 +8755,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 68
+      "line": 77
     },
     {
       "id": "REU-008",
@@ -8386,7 +8764,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 69
+      "line": 78
     },
     {
       "id": "REU-009",
@@ -8395,7 +8773,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 70
+      "line": 79
     },
     {
       "id": "REU-010",
@@ -8404,7 +8782,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 71
+      "line": 80
     },
     {
       "id": "REU-052",
@@ -8413,7 +8791,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 72
+      "line": 81
     },
     {
       "id": "REU-011",
@@ -8422,7 +8800,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 92
+      "line": 101
     },
     {
       "id": "REU-012",
@@ -8431,7 +8809,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 93
+      "line": 102
     },
     {
       "id": "REU-013",
@@ -8440,7 +8818,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 94
+      "line": 103
     },
     {
       "id": "REU-014",
@@ -8449,7 +8827,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 95
+      "line": 104
     },
     {
       "id": "REU-015",
@@ -8458,7 +8836,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 96
+      "line": 105
     },
     {
       "id": "REU-016",
@@ -8467,7 +8845,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 107
+      "line": 116
     },
     {
       "id": "REU-017",
@@ -8476,7 +8854,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 108
+      "line": 117
     },
     {
       "id": "REU-018",
@@ -8485,7 +8863,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 109
+      "line": 118
     },
     {
       "id": "REU-019",
@@ -8494,7 +8872,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 110
+      "line": 119
     },
     {
       "id": "REU-036",
@@ -8503,7 +8881,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 111
+      "line": 120
     },
     {
       "id": "REU-037",
@@ -8512,7 +8890,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 112
+      "line": 121
     },
     {
       "id": "REU-038",
@@ -8521,7 +8899,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 113
+      "line": 122
     },
     {
       "id": "REU-020",
@@ -8530,7 +8908,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 128
+      "line": 137
     },
     {
       "id": "REU-021",
@@ -8539,7 +8917,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 129
+      "line": 138
     },
     {
       "id": "REU-022",
@@ -8548,7 +8926,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 130
+      "line": 139
     },
     {
       "id": "REU-023",
@@ -8557,7 +8935,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-048",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 131
+      "line": 140
     },
     {
       "id": "REU-024",
@@ -8566,7 +8944,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 132
+      "line": 141
     },
     {
       "id": "REU-025",
@@ -8575,7 +8953,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 133
+      "line": 142
     },
     {
       "id": "REU-026",
@@ -8584,7 +8962,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 134
+      "line": 143
     },
     {
       "id": "REU-027",
@@ -8593,7 +8971,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 135
+      "line": 144
     },
     {
       "id": "REU-053",
@@ -8602,7 +8980,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 136
+      "line": 145
     },
     {
       "id": "REU-048",
@@ -8611,7 +8989,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 137
+      "line": 146
     },
     {
       "id": "REU-047",
@@ -8620,7 +8998,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 138
+      "line": 147
     },
     {
       "id": "REU-028",
@@ -8629,7 +9007,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 165
+      "line": 174
     },
     {
       "id": "REU-029",
@@ -8638,7 +9016,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 166
+      "line": 175
     },
     {
       "id": "REU-030",
@@ -8647,7 +9025,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 167
+      "line": 176
     },
     {
       "id": "REU-039",
@@ -8656,7 +9034,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 168
+      "line": 177
     },
     {
       "id": "REU-040",
@@ -8665,7 +9043,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 169
+      "line": 178
     },
     {
       "id": "REU-031",
@@ -8674,7 +9052,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 189
+      "line": 198
     },
     {
       "id": "REU-032",
@@ -8683,7 +9061,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 190
+      "line": 199
     },
     {
       "id": "REU-033",
@@ -8692,7 +9070,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 191
+      "line": 200
     },
     {
       "id": "REU-034",
@@ -8701,7 +9079,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 192
+      "line": 201
     },
     {
       "id": "REU-035",
@@ -8710,7 +9088,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 193
+      "line": 202
     },
     {
       "id": "REU-051",
@@ -8719,7 +9097,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 194
+      "line": 203
     },
     {
       "id": "REU-041",
@@ -8728,7 +9106,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-051",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 195
+      "line": 204
     },
     {
       "id": "REU-049",
@@ -8737,16 +9115,25 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 196
+      "line": 205
     },
     {
       "id": "SCH-001",
       "area": "SCH",
       "statement": "Components, documents, publications, templates, assets, query definitions, terms and threads must all be searchable",
       "tranche": "T1",
+      "status": "Superseded by SCH-051",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 38
+    },
+    {
+      "id": "SCH-051",
+      "area": "SCH",
+      "statement": "Components, documents, sections, publications, templates, assets, query definitions, terms, threads, fields, metadata schemas and component types must all be searchable",
+      "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 37
+      "line": 39
     },
     {
       "id": "SCH-002",
@@ -8755,7 +9142,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 38
+      "line": 40
     },
     {
       "id": "SCH-003",
@@ -8764,7 +9151,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 39
+      "line": 41
     },
     {
       "id": "SCH-004",
@@ -8773,7 +9160,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 40
+      "line": 42
     },
     {
       "id": "SCH-038",
@@ -8782,7 +9169,16 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 41
+      "line": 43
+    },
+    {
+      "id": "SCH-053",
+      "area": "SCH",
+      "statement": "A section found by search must show the document it belongs to and the components it places, so that a section in an existing document is a route to reusing those components (**REU-054**)",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 44
     },
     {
       "id": "SCH-005",
@@ -8791,7 +9187,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 52
+      "line": 65
     },
     {
       "id": "SCH-006",
@@ -8800,7 +9196,7 @@
       "tranche": "Constraint",
       "status": "Superseded by SCH-032",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 53
+      "line": 66
     },
     {
       "id": "SCH-007",
@@ -8809,7 +9205,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 54
+      "line": 67
     },
     {
       "id": "SCH-008",
@@ -8818,7 +9214,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 55
+      "line": 68
     },
     {
       "id": "SCH-009",
@@ -8827,7 +9223,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 56
+      "line": 69
     },
     {
       "id": "SCH-010",
@@ -8836,7 +9232,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 57
+      "line": 70
     },
     {
       "id": "SCH-032",
@@ -8845,7 +9241,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 58
+      "line": 71
     },
     {
       "id": "SCH-011",
@@ -8854,7 +9250,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 75
+      "line": 88
     },
     {
       "id": "SCH-012",
@@ -8863,7 +9259,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 76
+      "line": 89
     },
     {
       "id": "SCH-013",
@@ -8872,7 +9268,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 77
+      "line": 90
     },
     {
       "id": "SCH-014",
@@ -8881,7 +9277,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 78
+      "line": 91
     },
     {
       "id": "SCH-015",
@@ -8890,7 +9286,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 79
+      "line": 92
     },
     {
       "id": "SCH-016",
@@ -8899,7 +9295,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 80
+      "line": 93
     },
     {
       "id": "SCH-017",
@@ -8908,7 +9304,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 81
+      "line": 94
     },
     {
       "id": "SCH-033",
@@ -8917,7 +9313,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 82
+      "line": 95
     },
     {
       "id": "SCH-035",
@@ -8926,7 +9322,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 83
+      "line": 96
     },
     {
       "id": "SCH-036",
@@ -8935,7 +9331,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 84
+      "line": 97
     },
     {
       "id": "SCH-037",
@@ -8944,7 +9340,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 85
+      "line": 98
     },
     {
       "id": "SCH-039",
@@ -8953,7 +9349,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 86
+      "line": 99
     },
     {
       "id": "SCH-040",
@@ -8962,7 +9358,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 87
+      "line": 100
     },
     {
       "id": "SCH-041",
@@ -8971,7 +9367,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 88
+      "line": 101
     },
     {
       "id": "SCH-042",
@@ -8980,7 +9376,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 89
+      "line": 102
     },
     {
       "id": "SCH-045",
@@ -8989,7 +9385,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 90
+      "line": 103
     },
     {
       "id": "SCH-047",
@@ -8998,7 +9394,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 91
+      "line": 104
     },
     {
       "id": "SCH-018",
@@ -9007,7 +9403,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 111
+      "line": 124
+    },
+    {
+      "id": "SCH-052",
+      "area": "SCH",
+      "statement": "Component type must be a filter and a facet over components, and a field must facet across every artifact that carries it, whichever schema applied it and at whichever place (**MET-001**, **MET-034**)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 125
     },
     {
       "id": "SCH-019",
@@ -9016,7 +9421,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 112
+      "line": 126
     },
     {
       "id": "SCH-020",
@@ -9025,7 +9430,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 113
+      "line": 127
     },
     {
       "id": "SCH-021",
@@ -9034,7 +9439,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 114
+      "line": 128
     },
     {
       "id": "SCH-022",
@@ -9043,7 +9448,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 115
+      "line": 129
     },
     {
       "id": "SCH-034",
@@ -9052,7 +9457,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 116
+      "line": 130
     },
     {
       "id": "SCH-044",
@@ -9061,7 +9466,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 117
+      "line": 131
     },
     {
       "id": "SCH-046",
@@ -9070,7 +9475,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 118
+      "line": 132
     },
     {
       "id": "SCH-023",
@@ -9079,7 +9484,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 124
+      "line": 138
     },
     {
       "id": "SCH-024",
@@ -9088,7 +9493,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 125
+      "line": 139
     },
     {
       "id": "SCH-025",
@@ -9097,7 +9502,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 126
+      "line": 140
     },
     {
       "id": "SCH-026",
@@ -9106,7 +9511,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 127
+      "line": 141
     },
     {
       "id": "SCH-043",
@@ -9115,7 +9520,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 128
+      "line": 142
     },
     {
       "id": "SCH-048",
@@ -9124,7 +9529,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 129
+      "line": 143
     },
     {
       "id": "SCH-027",
@@ -9133,7 +9538,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-050",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 140
+      "line": 154
     },
     {
       "id": "SCH-028",
@@ -9142,7 +9547,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 141
+      "line": 155
     },
     {
       "id": "SCH-029",
@@ -9151,7 +9556,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 142
+      "line": 156
     },
     {
       "id": "SCH-030",
@@ -9160,7 +9565,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 143
+      "line": 157
     },
     {
       "id": "SCH-031",
@@ -9169,7 +9574,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 144
+      "line": 158
     },
     {
       "id": "SCH-050",
@@ -9178,7 +9583,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 145
+      "line": 159
     },
     {
       "id": "SCH-049",
@@ -9187,7 +9592,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 146
+      "line": 160
     },
     {
       "id": "STR-001",
@@ -9196,7 +9601,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "STR-002",
@@ -9205,7 +9610,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "STR-003",
@@ -9214,7 +9619,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "STR-004",
@@ -9223,16 +9628,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "STR-005",
       "area": "STR",
       "statement": "A section must carry a title, and must be able to carry metadata of its own",
       "tranche": "T1",
+      "status": "Superseded by STR-060",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 49
+    },
+    {
+      "id": "STR-060",
+      "area": "STR",
+      "statement": "A section must carry a title, and must be able to carry field values of its own, from the metadata schemas its document's template applies at section level (**TPL-054**, **MET-034**)",
+      "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 48
+      "line": 50
     },
     {
       "id": "STR-006",
@@ -9241,7 +9655,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 49
+      "line": 51
     },
     {
       "id": "STR-007",
@@ -9250,7 +9664,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 50
+      "line": 52
     },
     {
       "id": "STR-008",
@@ -9259,7 +9673,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 51
+      "line": 53
     },
     {
       "id": "STR-009",
@@ -9268,7 +9682,7 @@
       "tranche": "T1",
       "status": "Superseded by STR-058",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 52
+      "line": 54
     },
     {
       "id": "STR-010",
@@ -9277,7 +9691,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 53
+      "line": 55
     },
     {
       "id": "STR-011",
@@ -9286,7 +9700,7 @@
       "tranche": "T1",
       "status": "Superseded by STR-057",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 54
+      "line": 56
     },
     {
       "id": "STR-012",
@@ -9295,7 +9709,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 55
+      "line": 57
     },
     {
       "id": "STR-058",
@@ -9304,7 +9718,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 56
+      "line": 58
     },
     {
       "id": "STR-059",
@@ -9313,7 +9727,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 57
+      "line": 59
     },
     {
       "id": "STR-057",
@@ -9322,7 +9736,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 58
+      "line": 60
     },
     {
       "id": "STR-053",
@@ -9331,7 +9745,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 59
+      "line": 61
     },
     {
       "id": "STR-054",
@@ -9340,7 +9754,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 60
+      "line": 62
     },
     {
       "id": "STR-013",
@@ -9349,7 +9763,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 91
+      "line": 100
     },
     {
       "id": "STR-014",
@@ -9358,7 +9772,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 92
+      "line": 101
     },
     {
       "id": "STR-015",
@@ -9367,7 +9781,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 93
+      "line": 102
     },
     {
       "id": "STR-016",
@@ -9376,7 +9790,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 94
+      "line": 103
     },
     {
       "id": "STR-017",
@@ -9385,7 +9799,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 95
+      "line": 104
     },
     {
       "id": "STR-018",
@@ -9394,7 +9808,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 96
+      "line": 105
     },
     {
       "id": "STR-019",
@@ -9403,7 +9817,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 97
+      "line": 106
     },
     {
       "id": "STR-020",
@@ -9412,7 +9826,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 98
+      "line": 107
     },
     {
       "id": "STR-021",
@@ -9421,7 +9835,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 99
+      "line": 108
     },
     {
       "id": "STR-022",
@@ -9430,7 +9844,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 100
+      "line": 109
     },
     {
       "id": "STR-051",
@@ -9439,7 +9853,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 101
+      "line": 110
     },
     {
       "id": "STR-052",
@@ -9448,7 +9862,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 102
+      "line": 111
     },
     {
       "id": "STR-023",
@@ -9457,7 +9871,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 124
+      "line": 133
     },
     {
       "id": "STR-024",
@@ -9466,7 +9880,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 125
+      "line": 134
     },
     {
       "id": "STR-025",
@@ -9475,7 +9889,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 126
+      "line": 135
     },
     {
       "id": "STR-026",
@@ -9484,7 +9898,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 132
+      "line": 141
     },
     {
       "id": "STR-027",
@@ -9493,7 +9907,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 133
+      "line": 142
     },
     {
       "id": "STR-028",
@@ -9502,7 +9916,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 134
+      "line": 143
     },
     {
       "id": "STR-029",
@@ -9511,7 +9925,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 135
+      "line": 144
     },
     {
       "id": "STR-030",
@@ -9520,7 +9934,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 136
+      "line": 145
     },
     {
       "id": "STR-031",
@@ -9529,7 +9943,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 137
+      "line": 146
     },
     {
       "id": "STR-032",
@@ -9538,7 +9952,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 138
+      "line": 147
     },
     {
       "id": "STR-033",
@@ -9547,7 +9961,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 139
+      "line": 148
     },
     {
       "id": "STR-056",
@@ -9556,7 +9970,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 140
+      "line": 149
     },
     {
       "id": "STR-055",
@@ -9565,7 +9979,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 141
+      "line": 150
     },
     {
       "id": "STR-034",
@@ -9574,7 +9988,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 162
+      "line": 171
     },
     {
       "id": "STR-035",
@@ -9583,7 +9997,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 163
+      "line": 172
     },
     {
       "id": "STR-036",
@@ -9592,7 +10006,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 164
+      "line": 173
     },
     {
       "id": "STR-037",
@@ -9601,7 +10015,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 165
+      "line": 174
     },
     {
       "id": "STR-038",
@@ -9610,7 +10024,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 166
+      "line": 175
     },
     {
       "id": "STR-039",
@@ -9619,7 +10033,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 167
+      "line": 176
     },
     {
       "id": "STR-040",
@@ -9628,7 +10042,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 173
+      "line": 182
     },
     {
       "id": "STR-041",
@@ -9637,7 +10051,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 174
+      "line": 183
     },
     {
       "id": "STR-042",
@@ -9646,7 +10060,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 175
+      "line": 184
     },
     {
       "id": "STR-043",
@@ -9655,7 +10069,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 176
+      "line": 185
     },
     {
       "id": "STR-044",
@@ -9664,7 +10078,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 182
+      "line": 191
     },
     {
       "id": "STR-045",
@@ -9673,7 +10087,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 183
+      "line": 192
     },
     {
       "id": "STR-046",
@@ -9682,7 +10096,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 184
+      "line": 193
     },
     {
       "id": "STR-047",
@@ -9691,7 +10105,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 185
+      "line": 194
     },
     {
       "id": "STR-048",
@@ -9700,7 +10114,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 199
+      "line": 208
     },
     {
       "id": "STR-049",
@@ -9709,7 +10123,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 200
+      "line": 209
     },
     {
       "id": "STR-050",
@@ -9718,7 +10132,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 201
+      "line": 210
     },
     {
       "id": "STY-001",
@@ -10816,25 +11230,43 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 42
+      "line": 43
     },
     {
       "id": "TPL-002",
       "area": "TPL",
       "statement": "A template must bind exactly one of each definition: metadata schema, structure outline, query set, presentation theme, publishing layout, prompt library",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by TPL-052",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 43
+      "line": 44
     },
     {
       "id": "TPL-003",
       "area": "TPL",
       "statement": "A template must **own** its metadata schema and its structure outline, and must **reference** the other four",
       "tranche": "T1",
+      "status": "Superseded by TPL-053",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 45
+    },
+    {
+      "id": "TPL-052",
+      "area": "TPL",
+      "statement": "A template must bind exactly one structure outline, query set, presentation theme, publishing layout and prompt library, and zero or more metadata schemas (**MET-005**)",
+      "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 44
+      "line": 46
+    },
+    {
+      "id": "TPL-053",
+      "area": "TPL",
+      "statement": "A template must **own** its structure outline, and must **reference** every other definition it binds, its metadata schemas included",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 47
     },
     {
       "id": "TPL-004",
@@ -10843,7 +11275,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 45
+      "line": 48
     },
     {
       "id": "TPL-005",
@@ -10852,7 +11284,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 46
+      "line": 49
     },
     {
       "id": "TPL-006",
@@ -10861,61 +11293,70 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 47
+      "line": 50
     },
     {
       "id": "TPL-046",
       "area": "TPL",
-      "statement": "Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-002 holds and TPL-004 always has something to resolve (**TPL-Q01**)",
+      "statement": "Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-052 holds and TPL-004 always has something to resolve (**TPL-Q01**)",
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 48
+      "line": 51
     },
     {
       "id": "TPL-007",
       "area": "TPL",
       "statement": "A metadata schema must declare typed fields, each with a type, whether it is required, and its validation rules",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by MET-005",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 58
+      "line": 73
     },
     {
       "id": "TPL-008",
       "area": "TPL",
       "statement": "A field must be able to draw its permitted values from a controlled vocabulary rather than being free text (**LIB**)",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by MET-003",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 59
+      "line": 74
     },
     {
       "id": "TPL-009",
       "area": "TPL",
       "statement": "A schema must be able to apply fields at document level and at component level, since the two are asked different questions",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by TPL-054",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 60
+      "line": 75
     },
     {
       "id": "TPL-010",
       "area": "TPL",
       "statement": "A field must be able to declare a default, and whether that default may be changed after instantiation",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by MET-006",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 61
+      "line": 76
     },
     {
       "id": "TPL-011",
       "area": "TPL",
       "statement": "Changing a schema must not invalidate documents already created against an earlier version of it",
       "tranche": "Constraint",
+      "status": "Superseded by MET-019",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 77
+    },
+    {
+      "id": "TPL-054",
+      "area": "TPL",
+      "statement": "Each metadata schema a template assigns must declare whether it applies to the document or to the document's sections (**MET-034**), and may make an optional field required for that assignment and nothing more (**MET-009**)",
+      "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 62
+      "line": 78
     },
     {
       "id": "TPL-012",
@@ -10924,7 +11365,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 68
+      "line": 84
     },
     {
       "id": "TPL-013",
@@ -10933,7 +11374,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 69
+      "line": 85
     },
     {
       "id": "TPL-014",
@@ -10942,7 +11383,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 70
+      "line": 86
     },
     {
       "id": "TPL-015",
@@ -10951,7 +11392,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 71
+      "line": 87
     },
     {
       "id": "TPL-016",
@@ -10960,7 +11401,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 72
+      "line": 88
     },
     {
       "id": "TPL-049",
@@ -10969,7 +11410,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 73
+      "line": 89
     },
     {
       "id": "TPL-017",
@@ -10978,7 +11419,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 79
+      "line": 95
     },
     {
       "id": "TPL-018",
@@ -10987,7 +11428,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 80
+      "line": 96
     },
     {
       "id": "TPL-019",
@@ -10996,7 +11437,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 81
+      "line": 97
     },
     {
       "id": "TPL-020",
@@ -11005,7 +11446,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 82
+      "line": 98
     },
     {
       "id": "TPL-021",
@@ -11014,7 +11455,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 83
+      "line": 99
     },
     {
       "id": "TPL-041",
@@ -11023,7 +11464,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 84
+      "line": 100
     },
     {
       "id": "TPL-042",
@@ -11032,16 +11473,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 85
+      "line": 101
     },
     {
       "id": "TPL-045",
       "area": "TPL",
-      "statement": "A parameter value that is present but invalid - the wrong type, outside its permitted range, or absent from its vocabulary - must be refused and named with the parameter, the rule and the value, through the API (TPL-026) exactly as in the interface (TPL-037)",
+      "statement": "A parameter value that is present but invalid - the wrong type, outside its permitted range, or absent from its vocabulary - must be refused and named with the parameter, the rule and the value, through the API (TPL-026) exactly as in the interface (**MET-022**)",
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 86
+      "line": 102
     },
     {
       "id": "TPL-022",
@@ -11050,7 +11491,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 107
+      "line": 123
     },
     {
       "id": "TPL-051",
@@ -11059,7 +11500,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 108
+      "line": 124
     },
     {
       "id": "TPL-023",
@@ -11068,7 +11509,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 109
+      "line": 125
     },
     {
       "id": "TPL-024",
@@ -11077,7 +11518,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 110
+      "line": 126
     },
     {
       "id": "TPL-025",
@@ -11086,7 +11527,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 111
+      "line": 127
     },
     {
       "id": "TPL-026",
@@ -11095,7 +11536,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 112
+      "line": 128
     },
     {
       "id": "TPL-050",
@@ -11104,7 +11545,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 113
+      "line": 129
     },
     {
       "id": "TPL-048",
@@ -11113,7 +11554,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 114
+      "line": 130
     },
     {
       "id": "TPL-027",
@@ -11122,7 +11563,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 124
+      "line": 140
     },
     {
       "id": "TPL-028",
@@ -11131,7 +11572,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 125
+      "line": 141
     },
     {
       "id": "TPL-029",
@@ -11140,7 +11581,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 126
+      "line": 142
     },
     {
       "id": "TPL-030",
@@ -11149,7 +11590,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 127
+      "line": 143
     },
     {
       "id": "TPL-044",
@@ -11158,7 +11599,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 128
+      "line": 144
     },
     {
       "id": "TPL-031",
@@ -11167,7 +11608,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 139
+      "line": 155
     },
     {
       "id": "TPL-032",
@@ -11176,7 +11617,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 140
+      "line": 156
     },
     {
       "id": "TPL-033",
@@ -11185,7 +11626,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 141
+      "line": 157
     },
     {
       "id": "TPL-034",
@@ -11194,7 +11635,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 142
+      "line": 158
     },
     {
       "id": "TPL-035",
@@ -11203,43 +11644,79 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 143
+      "line": 159
+    },
+    {
+      "id": "TPL-058",
+      "area": "TPL",
+      "statement": "Moving a document forward (TPL-033) must bring its fields to the current versions of the schemas and fields its template assigns as well as its outline to a newer template version, and must be possible when only a schema or a field has changed. The report TPL-034 requires must name each field that changes and each value that would not be carried forward, as **MET-036** treats a component's",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 160
     },
     {
       "id": "TPL-036",
       "area": "TPL",
       "statement": "A document must satisfy the metadata schema its template binds, and publishing must fail where it does not",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 154
+      "line": 171
     },
     {
       "id": "TPL-037",
       "area": "TPL",
       "statement": "Validation failures must name the field, the rule and the document",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 155
+      "line": 172
     },
     {
       "id": "TPL-038",
       "area": "TPL",
       "statement": "Validation must run while authoring, not only at publish, so that a missing required field is known early",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 156
+      "line": 173
     },
     {
       "id": "TPL-043",
       "area": "TPL",
       "statement": "Validation must enforce the definitions as they were in the template version recorded on the document (TPL-025), not as they are now: tightening a schema or marking a new section required must not make existing documents fail (TPL-011, TPL-031). Moving to a newer version is the deliberate act in section 9",
       "tranche": "Constraint",
+      "status": "Superseded by TPL-057",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 174
+    },
+    {
+      "id": "TPL-055",
+      "area": "TPL",
+      "statement": "A document must satisfy the fields its template applies at document level, and each section the fields applied at section level, and publishing must fail where either does not (**MET-022** names each failure)",
+      "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 157
+      "line": 175
+    },
+    {
+      "id": "TPL-056",
+      "area": "TPL",
+      "statement": "Instantiation must record on the document the version of each metadata schema and field it was created against. An assignment takes a schema's latest version (**MET-035**), so the template version TPL-025 records no longer decides which fields apply",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 176
+    },
+    {
+      "id": "TPL-057",
+      "area": "TPL",
+      "statement": "Validation must enforce what is recorded on the document rather than the definitions as they are now: its outline and required sections as they were in the template version TPL-025 records, and its fields as they were in the schema and field versions TPL-056 records. Tightening a schema or marking a new section required must not make an existing document fail (**MET-019**, TPL-031). Moving forward is the deliberate act in section 9",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 177
     },
     {
       "id": "TPL-039",
@@ -11248,7 +11725,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 174
+      "line": 201
     },
     {
       "id": "TPL-040",
@@ -11257,7 +11734,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 175
+      "line": 202
     },
     {
       "id": "TPL-047",
@@ -11266,7 +11743,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 176
+      "line": 203
     },
     {
       "id": "VER-001",
@@ -11275,7 +11752,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 40
+      "line": 41
     },
     {
       "id": "VER-002",
@@ -11284,7 +11761,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 41
+      "line": 42
     },
     {
       "id": "VER-003",
@@ -11293,7 +11770,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 42
+      "line": 43
     },
     {
       "id": "VER-004",
@@ -11302,7 +11779,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 43
+      "line": 44
     },
     {
       "id": "VER-005",
@@ -11311,7 +11788,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "VER-006",
@@ -11320,7 +11797,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 54
+      "line": 55
     },
     {
       "id": "VER-007",
@@ -11329,7 +11806,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 55
+      "line": 56
     },
     {
       "id": "VER-008",
@@ -11338,7 +11815,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 56
+      "line": 57
     },
     {
       "id": "VER-009",
@@ -11347,7 +11824,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 57
+      "line": 58
     },
     {
       "id": "VER-010",
@@ -11356,7 +11833,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 58
+      "line": 59
     },
     {
       "id": "VER-011",
@@ -11365,7 +11842,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 59
+      "line": 60
     },
     {
       "id": "VER-042",
@@ -11374,7 +11851,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 60
+      "line": 61
     },
     {
       "id": "VER-052",
@@ -11383,7 +11860,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 61
+      "line": 62
     },
     {
       "id": "VER-012",
@@ -11392,7 +11869,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 84
+      "line": 85
     },
     {
       "id": "VER-013",
@@ -11401,7 +11878,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 85
+      "line": 86
     },
     {
       "id": "VER-014",
@@ -11410,7 +11887,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 86
+      "line": 87
     },
     {
       "id": "VER-015",
@@ -11419,7 +11896,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 87
+      "line": 88
     },
     {
       "id": "VER-016",
@@ -11428,7 +11905,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 88
+      "line": 89
     },
     {
       "id": "VER-017",
@@ -11437,7 +11914,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 94
+      "line": 95
     },
     {
       "id": "VER-018",
@@ -11446,7 +11923,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 95
+      "line": 96
     },
     {
       "id": "VER-019",
@@ -11455,7 +11932,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 96
+      "line": 97
     },
     {
       "id": "VER-020",
@@ -11464,7 +11941,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 97
+      "line": 98
     },
     {
       "id": "VER-021",
@@ -11473,7 +11950,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 98
+      "line": 99
     },
     {
       "id": "VER-022",
@@ -11482,7 +11959,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 99
+      "line": 100
     },
     {
       "id": "VER-023",
@@ -11491,16 +11968,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 100
+      "line": 101
     },
     {
       "id": "VER-054",
       "area": "VER",
       "statement": "A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), and the template version recorded on it with the definitions that version owned (**TPL-025**, **TPL-043**)",
       "tranche": "Constraint",
+      "status": "Superseded by VER-055",
+      "document": "VER-versioning-baselines-and-comparison.md",
+      "line": 102
+    },
+    {
+      "id": "VER-055",
+      "area": "VER",
+      "statement": "A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), the template version recorded on it (**TPL-025**), and the versions of the metadata schemas and fields its document and sections were validated against (**TPL-056**). A component version already records the definitions it was written against (**MET-017**), so pinning the version pins those",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 101
+      "line": 103
     },
     {
       "id": "VER-043",
@@ -11509,7 +11995,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 102
+      "line": 104
     },
     {
       "id": "VER-046",
@@ -11518,7 +12004,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 103
+      "line": 105
     },
     {
       "id": "VER-049",
@@ -11527,7 +12013,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 104
+      "line": 106
     },
     {
       "id": "VER-050",
@@ -11536,7 +12022,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 105
+      "line": 107
     },
     {
       "id": "VER-051",
@@ -11545,7 +12031,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 106
+      "line": 108
     },
     {
       "id": "VER-024",
@@ -11554,7 +12040,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 115
+      "line": 122
     },
     {
       "id": "VER-025",
@@ -11563,7 +12049,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 116
+      "line": 123
     },
     {
       "id": "VER-026",
@@ -11572,7 +12058,7 @@
       "tranche": "T3",
       "status": "Superseded by VER-045",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 117
+      "line": 124
     },
     {
       "id": "VER-027",
@@ -11581,7 +12067,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 118
+      "line": 125
     },
     {
       "id": "VER-028",
@@ -11590,7 +12076,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 119
+      "line": 126
     },
     {
       "id": "VER-029",
@@ -11599,7 +12085,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 120
+      "line": 127
     },
     {
       "id": "VER-030",
@@ -11608,7 +12094,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 121
+      "line": 128
     },
     {
       "id": "VER-031",
@@ -11617,7 +12103,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 122
+      "line": 129
     },
     {
       "id": "VER-045",
@@ -11626,7 +12112,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 123
+      "line": 130
     },
     {
       "id": "VER-032",
@@ -11635,7 +12121,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 144
+      "line": 151
     },
     {
       "id": "VER-033",
@@ -11644,7 +12130,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 145
+      "line": 152
     },
     {
       "id": "VER-034",
@@ -11653,7 +12139,7 @@
       "tranche": "T3",
       "status": "Superseded by VER-044",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 146
+      "line": 153
     },
     {
       "id": "VER-035",
@@ -11662,7 +12148,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 147
+      "line": 154
     },
     {
       "id": "VER-044",
@@ -11671,7 +12157,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 148
+      "line": 155
     },
     {
       "id": "VER-036",
@@ -11680,7 +12166,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 160
+      "line": 167
     },
     {
       "id": "VER-037",
@@ -11689,7 +12175,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 161
+      "line": 168
     },
     {
       "id": "VER-038",
@@ -11698,7 +12184,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 162
+      "line": 169
     },
     {
       "id": "VER-047",
@@ -11707,7 +12193,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 163
+      "line": 170
     },
     {
       "id": "VER-048",
@@ -11716,7 +12202,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 164
+      "line": 171
     },
     {
       "id": "VER-039",
@@ -11725,7 +12211,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 175
+      "line": 182
     },
     {
       "id": "VER-040",
@@ -11734,7 +12220,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 176
+      "line": 183
     },
     {
       "id": "VER-041",
@@ -11743,7 +12229,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 177
+      "line": 184
     },
     {
       "id": "VER-053",
@@ -11752,7 +12238,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 178
+      "line": 185
     }
   ],
   "nonRequirements": [
@@ -11844,61 +12330,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 526
+      "line": 524
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 527
+      "line": 525
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 528
+      "line": 526
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 529
+      "line": 527
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 530
+      "line": 528
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 531
+      "line": 529
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 532
+      "line": 530
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 533
+      "line": 531
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 534
+      "line": 532
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 535
+      "line": 533
     },
     {
       "id": "COL-N01",
@@ -12090,37 +12576,37 @@
       "id": "LIB-N01",
       "statement": "**No ontology with inference** (LIB-027)",
       "document": "LIB-reference-libraries.md",
-      "line": 228
+      "line": 236
     },
     {
       "id": "LIB-N02",
       "statement": "**No terminology as text macros.** A term is a reference; expansion is how one is inserted, not what one becomes (LIB-019)",
       "document": "LIB-reference-libraries.md",
-      "line": 229
+      "line": 237
     },
     {
       "id": "LIB-N03",
       "statement": "**No boilerplate here.** A standard phrase or paragraph is reuse, and belongs to **REU** as a component or a variable",
       "document": "LIB-reference-libraries.md",
-      "line": 230
+      "line": 238
     },
     {
       "id": "LIB-N04",
       "statement": "**Not a full termbase.** Concept-level modelling, term extraction and translation memory are separate products",
       "document": "LIB-reference-libraries.md",
-      "line": 231
+      "line": 239
     },
     {
       "id": "LIB-N05",
       "statement": "**One definition per term.** A term carrying two senses is two terms. Concept-level modelling is the termbase LIB-N04 rules out, and a single definition slot is the deliberate consequence",
       "document": "LIB-reference-libraries.md",
-      "line": 232
+      "line": 240
     },
     {
       "id": "LIB-N06",
       "statement": "**No mirror of an external source.** The product searches PubMed, Crossref and their like and keeps what a document cites (LIB-031, LIB-033). Ingesting a registry would be maintaining somebody else's database badly",
       "document": "LIB-reference-libraries.md",
-      "line": 233
+      "line": 241
     },
     {
       "id": "LIF-N01",
@@ -12189,6 +12675,36 @@
       "line": 193
     },
     {
+      "id": "MET-N01",
+      "statement": "**A component type does not govern content.** It decides which fields apply and nothing else; every type has the same closed content vocabulary. See MET-Q01",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 260
+    },
+    {
+      "id": "MET-N02",
+      "statement": "**No override but tightening.** An assignment may make an optional field required and may change nothing else about a schema (MET-009)",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 261
+    },
+    {
+      "id": "MET-N03",
+      "statement": "**No field local to one schema.** Every field is a shared definition, which is what keeps one field one facet",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 262
+    },
+    {
+      "id": "MET-N04",
+      "statement": "**Not a form builder.** A schema describes an artifact; it is not a data-entry application. _Carries TPL-N04 across_",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 263
+    },
+    {
+      "id": "MET-N05",
+      "statement": "**No definitions per space.** Fields, schemas and component types belong to the tenant. See MET-Q04",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 264
+    },
+    {
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
@@ -12216,115 +12732,115 @@
       "id": "REL-N01",
       "statement": "**No unconstrained any-to-any relationships.** Every type is declared (scope §9 decision 8)",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 170
+      "line": 186
     },
     {
       "id": "REL-N02",
       "statement": "**No inference.** Nothing may be concluded that nobody stated. In a regulated market, \"the system inferred it\" is not something anybody can sign",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 171
+      "line": 187
     },
     {
       "id": "REL-N03",
       "statement": "**No relationships replacing references.** A document assembles components through its outline, not through the graph",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 172
+      "line": 188
     },
     {
       "id": "REL-N04",
       "statement": "**No unbounded traversal**, by anybody, through any surface (REL-017)",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 173
+      "line": 189
     },
     {
       "id": "REL-N05",
       "statement": "**No relationship that grants access.** An edge is an assertion about two artifacts and never widens what anybody may see: it is refused where its creator cannot read both ends (REL-035), and it is invisible to a reader who cannot (REL-019)",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 174
+      "line": 190
     },
     {
       "id": "REU-N01",
       "statement": "**No copying content to reuse it.** A reference resolves; it does not duplicate",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 214
+      "line": 223
     },
     {
       "id": "REU-N02",
       "statement": "**No overrides that live on the component.** An override belongs to one reference (REU-012)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 215
+      "line": 224
     },
     {
       "id": "REU-N03",
       "statement": "**No inferred inclusion.** A condition axis a profile does not set excludes (REU-024)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 216
+      "line": 225
     },
     {
       "id": "REU-N04",
       "statement": "**No conditional content in an output, hidden.** Excluded means absent, and every publication is scanned to prove it (REU-048, which superseded REU-023)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 217
+      "line": 226
     },
     {
       "id": "REU-N05",
       "statement": "**No ambient input to resolution.** What a document resolves to is a function of its components, profile, parameters and overrides, and of nothing else - no clock, no execution order, no identity of whoever pressed the button (REU-039)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 218
+      "line": 227
     },
     {
       "id": "SCH-N01",
       "statement": "**No search across tenants**, for any purpose including support",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 164
+      "line": 178
     },
     {
       "id": "SCH-N02",
       "statement": "**No index-time permission baking.** Permissions change; an index cannot be re-written every time they do (SCH-005)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 165
+      "line": 179
     },
     {
       "id": "SCH-N03",
       "statement": "**No relevance tuning per user.** Two users with the same permissions must see the same results in the same order",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 166
+      "line": 180
     },
     {
       "id": "SCH-N04",
       "statement": "**Not an analytics surface.** Counting what exists is a report, not a search (**ADM**)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 167
+      "line": 181
     },
     {
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 207
+      "line": 216
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 217
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 209
+      "line": 218
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 210
+      "line": 219
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 211
+      "line": 220
     },
     {
       "id": "STY-N01",
@@ -12384,49 +12900,49 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 182
+      "line": 209
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 183
+      "line": 210
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 184
+      "line": 211
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 185
+      "line": 212
     },
     {
       "id": "VER-N01",
       "statement": "**No editing of history.** A version is never amended; corrections move forwards",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 195
+      "line": 202
     },
     {
       "id": "VER-N02",
       "statement": "**No branching of documents.** A variant of a report is a profile or a separate document, not a branch (**REU**)",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 196
+      "line": 203
     },
     {
       "id": "VER-N03",
       "statement": "**No automatic versioning on a timer.** A version is a positive act (CNT-070)",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 197
+      "line": 204
     },
     {
       "id": "VER-N04",
       "statement": "**Iterations are not history.** They are recovery, they are private, and they expire",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 198
+      "line": 205
     }
   ],
   "questions": [
@@ -12575,105 +13091,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 541
+      "line": 539
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 542
+      "line": 540
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 543
+      "line": 541
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 544
+      "line": 542
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 545
+      "line": 543
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 546
+      "line": 544
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 547
+      "line": 545
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 548
+      "line": 546
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 549
+      "line": 547
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 550
+      "line": 548
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
-      "settledBy": "**Half settled.** The structural half is here: CNT-142 to CNT-144 give a component its own title and close the set of attributes every component carries. The typed half is still open - a component is _typed_, and a type declaring the metadata its components carry is a subsystem the size of TPL's metadata half. What would settle it: a decision on where component types live, given that a document's schema comes from its template but a component is transcluded into many documents and so cannot take its type from any of them",
+      "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 551
+      "line": 549
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-136)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 552
+      "line": 550
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 553
+      "line": 551
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 554
+      "line": 552
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 555
+      "line": 553
     },
     {
       "id": "COL-Q01",
@@ -12904,56 +13420,56 @@
       "question": "**Does a term need a lifecycle of its own?** A glossary in a regulated environment is often approved, which means states and gates",
       "settledBy": "Whether customers govern terminology the way they govern content. In pharma they do",
       "document": "LIB-reference-libraries.md",
-      "line": 239
+      "line": 247
     },
     {
       "id": "LIB-Q02",
       "question": "**Where does first-use expansion reset (LIB-016)?** Per document is obvious; per chapter is what several house styles actually require",
       "settledBy": "Real house styles. It is a publishing-layout property if it varies",
       "document": "LIB-reference-libraries.md",
-      "line": 240
+      "line": 248
     },
     {
       "id": "LIB-Q03",
       "question": "**Do bibliographies need to be per space or shared (LIB-030)?** A shared one is maintained once and permissioned coarsely",
       "settledBy": "Whether early customers' sources are confidential. In clinical work they can be",
       "document": "LIB-reference-libraries.md",
-      "line": 241
+      "line": 249
     },
     {
       "id": "LIB-Q04",
       "question": "**Should the product detect terms an author typed as text?** Suggesting a reference where somebody wrote the words is valuable and intrusive",
       "settledBy": "Whether it can be offered without becoming a spell-checker that argues",
       "document": "LIB-reference-libraries.md",
-      "line": 242
+      "line": 250
     },
     {
       "id": "LIB-Q05",
       "question": "**How are record identities scoped - space, tenant or global - and does a shared library expose one identity or a view per space?**",
       "settledBy": "**Settled.** Unique within the tenant, and a share is one record seen from several spaces rather than a copy in each (LIB-041, LIB-042). Labels may collide across spaces, because a label was never the identity (LIB-043)",
       "document": "LIB-reference-libraries.md",
-      "line": 243
+      "line": 251
     },
     {
       "id": "LIB-Q06",
       "question": "**Is bibliography dedupe enforced at manual creation as well as import, and on which fields?**",
       "settledBy": "**Settled.** Both, on the same detection (LIB-044), using canonical identifiers first - DOI, PubMed identifier, ISBN, ISSN - and a declared title-author-year comparison only where none exists (LIB-045)",
       "document": "LIB-reference-libraries.md",
-      "line": 244
+      "line": 252
     },
     {
       "id": "LIB-Q07",
       "question": "**Which external sources are in the declared list (LIB-032)?** PubMed and Crossref are the obvious two for this market; registries, standards bodies and a customer's own catalogue each cost an adapter",
       "settledBy": "The first customers' citation practice. The list is declared and extensible either way, so this decides the order it grows in rather than whether it can",
       "document": "LIB-reference-libraries.md",
-      "line": 245
+      "line": 253
     },
     {
       "id": "LIB-Q08",
       "question": "**Does a retracted source block a publish or warn (LIB-036)?**",
       "settledBy": "Whether customers treat a retraction as a control or as a record - the same question **AST-Q04** asks about a licence, and it should get the same answer",
       "document": "LIB-reference-libraries.md",
-      "line": 246
+      "line": 254
     },
     {
       "id": "LIF-Q01",
@@ -13040,6 +13556,34 @@
       "line": 203
     },
     {
+      "id": "MET-Q01",
+      "question": "**Should a component type be able to constrain its content?** A stability table section that holds no table is probably a mistake, and MET-N01 says nothing catches it",
+      "settledBy": "A real type whose content is wrong often enough to matter. A restriction to a subset of the seven blocks needs no content-model change, but makes validating content depend on the type",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 270
+    },
+    {
+      "id": "MET-Q02",
+      "question": "**Do assets take typed metadata through an asset type?** AST-027 and SCH-004 search assets \"by metadata\" and AST-031 records a fixed set of properties; neither says whether an asset carries fields",
+      "settledBy": "Whether a customer needs to classify assets by more than their recorded properties. If so, an asset type is this area's component type again, and should reuse it rather than copy it",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 271
+    },
+    {
+      "id": "MET-Q03",
+      "question": "**Should an approval gate be able to require complete metadata?** Enforcement is at publish (MET-023), so an approved, issued revision can be missing a required field",
+      "settledBy": "A decision with **LIF**. LIF-061 already lets a workflow definition declare what a transition requires, which is where a regime needing complete metadata at approval would say so",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 272
+    },
+    {
+      "id": "MET-Q04",
+      "question": "**Should a space be able to narrow the component types and schemas it offers?** A clinical space offered finance component types is noise, and MET-N05 keeps every definition visible everywhere",
+      "settledBy": "The first tenant with enough types for the list to be a problem. Narrowing what is offered changes nothing already created, so it can be added later without a migration",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 273
+    },
+    {
       "id": "PUB-Q01",
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
@@ -13079,147 +13623,147 @@
       "question": "**Does this need a graph store, or recursive queries over the primary one?** Open decision 6 in scope §10",
       "settledBy": "**Settled.** Recursive queries over the primary store, de-duplicating so a hub cannot multiply the work, with every interactive traversal capped. See [ADR-0017](../../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md) and [`Relationship_Spike_Findings.md`](../spikes/Relationship_Spike_Findings.md)",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 180
+      "line": 196
     },
     {
       "id": "REL-Q02",
       "question": "**How is permission filtering done without traversing what the user cannot see?** Filtering after traversal is correct and leaks timing; filtering during it is harder",
       "settledBy": "**Settled.** During: the permission test is inside each recursive step, so an unreadable artifact is counted and never expanded. What traversal time still says about unreadable neighbours is a stated residual risk in [relationships.md](../../design/relationships.md)",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 181
+      "line": 197
     },
     {
       "id": "REL-Q03",
       "question": "**Should relationships be inferable from references?** A document using a component is a relationship in everything but name, and materialising it doubles the data",
       "settledBy": "**Settled.** References appear in traversal and the graph view, marked as hard dependencies, read from where they live rather than copied into the relationship table",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 182
+      "line": 198
     },
     {
       "id": "REL-Q04",
       "question": "**Do relationships cross spaces, and may they cross tenants?** Cross-space is useful and interacts with **IAM-016**; cross-tenant is forbidden by IAM-001",
       "settledBy": "**Settled.** Across spaces where the user may read both ends, as references may (IAM-016); never across tenants (IAM-001, [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 183
+      "line": 199
     },
     {
       "id": "REL-Q05",
       "question": "**Can the instances of a deprecated type be moved to its replacement (REL-037)?** Deprecation without a migration leaves a tenant maintaining two vocabularies for ever",
       "settledBy": "Whether a customer deprecates a type with enough instances to make re-typing by hand unreasonable. The capability is a bulk change over edges, which REL-048 already constrains",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 184
+      "line": 200
     },
     {
       "id": "REL-Q06",
       "question": "**Can metadata filtering (REL-051) stay inside REL-031's budget?** Filtering by type is an index; filtering by a declared metadata shape may not be",
       "settledBy": "Measurement against the million-component tenant the spike used. If it cannot, metadata filtering belongs to the background report (REL-032) rather than to interactive traversal",
       "document": "REL-relationships-and-the-graph.md",
-      "line": 185
+      "line": 201
     },
     {
       "id": "REU-Q01",
       "question": "**Does the override mechanism actually hold (section 5)?** The spike's case 6 was never run, and it is the case where the discarded alternative is stronger",
       "settledBy": "Running case 6: one component in two documents where one needs a single word different",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 224
+      "line": 233
     },
     {
       "id": "REU-Q02",
       "question": "**May a condition apply to a whole component reference, as well as to content inside one?** \"Include this section only for the regulator\" is an obvious want",
       "settledBy": "Whether it is expressible as an outline-node condition in **STR** instead, which may be cleaner",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 225
+      "line": 234
     },
     {
       "id": "REU-Q03",
       "question": "**How many profiles does one document have in practice?** Two is easy; twelve makes preview, comparison and publication counts awkward",
       "settledBy": "Real customer profiles. It affects whether publishing per profile is a routine act or a batch job",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 226
+      "line": 235
     },
     {
       "id": "REU-Q04",
       "question": "**Can conditions nest or combine with logic?** \"UK and not draft\" is asked for the moment two axes exist",
       "settledBy": "Whether simple set membership survives a real house style. Boolean conditions are easy to add and very hard to review",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 227
+      "line": 236
     },
     {
       "id": "REU-Q05",
       "question": "**May a parameter set be declared per profile, so that variables rather than conditions carry per-profile wording?** REU-047 makes conditional alternatives the documented path; parameters would make it a table instead",
       "settledBy": "Real house wording differences. Conditions suit a sentence that differs; parameters suit a value that differs, and customers will have both",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 228
+      "line": 237
     },
     {
       "id": "SCH-Q01",
       "question": "**Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice",
       "settledBy": "**Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 173
+      "line": 187
     },
     {
       "id": "SCH-Q02",
       "question": "**How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale",
       "settledBy": "**Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../spikes/Search_Spike_Findings.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 174
+      "line": 188
     },
     {
       "id": "SCH-Q03",
       "question": "**Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed",
       "settledBy": "Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 175
+      "line": 189
     },
     {
       "id": "SCH-Q04",
       "question": "**Does semantic search need its own permission story?**",
       "settledBy": "**Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 176
+      "line": 190
     },
     {
       "id": "SCH-Q05",
       "question": "**Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "settledBy": "Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 177
+      "line": 191
     },
     {
       "id": "SCH-Q06",
       "question": "**How much fuzzy matching (SCH-041), and where does it stop?** An edit distance that finds a typo also finds a different word, and in a regulated corpus a near miss presented as a match is worse than nothing",
       "settledBy": "Real queries against real content. The requirement is that approximation is stated where it happens; the distance itself is a number to tune",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 178
+      "line": 192
     },
     {
       "id": "STR-Q01",
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 217
+      "line": 226
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 218
+      "line": 227
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 219
+      "line": 228
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 220
+      "line": 229
     },
     {
       "id": "STY-Q01",
@@ -13289,63 +13833,63 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 191
+      "line": 218
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 192
+      "line": 219
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 193
+      "line": 220
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 194
+      "line": 221
     },
     {
       "id": "VER-Q01",
       "question": "**What is the default iteration retention window (VER-004)?** Too short loses work; too long is storage spent on keystrokes",
       "settledBy": "Observed authoring behaviour. A day is a plausible starting guess and no more than a guess. [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md) makes the cost concrete: the expiry sweep is cheap, the storage is not",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 204
+      "line": 211
     },
     {
       "id": "VER-Q02",
       "question": "**How is resolved-output comparison implemented (VER-031)?** It needs two full publishing runs, or a resolved intermediate that can be diffed",
       "settledBy": "The publishing engine decision, since comparing rendered PDFs is not the same as comparing what produced them",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 205
+      "line": 212
     },
     {
       "id": "VER-Q03",
       "question": "**How is erasure reconciled with immutability (VER-038)?**",
       "settledBy": "A design decision with legal input, taken once and recorded",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 206
+      "line": 213
     },
     {
       "id": "VER-Q04",
       "question": "**Which gates take a baseline automatically (VER-021), and is that the default?** That it can happen is settled; what is open is which gates do it and whether a tenant starts with it on - every approval producing one is tidy and may also produce thousands nobody wanted",
       "settledBy": "Whether lifecycle gates in practice are frequent or rare, and what the first regulated customer's gate map looks like",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 207
+      "line": 214
     },
     {
       "id": "VER-Q05",
       "question": "**What is the similarity threshold in VER-028?** The number is tuned against one case and is the least defensible thing the spike produced, and VER-029 makes its consequence visible rather than correct",
       "settledBy": "Real content, in volume. Until then a match by similarity is reported as such (VER-029), which is what stops the number being relied on silently",
       "document": "VER-versioning-baselines-and-comparison.md",
-      "line": 208
+      "line": 215
     }
   ],
   "designs": [
@@ -13413,8 +13957,8 @@
           "howItIsMet": "`title` and `language` are inside the versioned content, so they are inside `content_hash` and a version records what the component was called when it was cut"
         },
         {
-          "id": "CNT-144",
-          "howItIsMet": "The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and the identifier belongs to the artifact. Adding a member is a schema version"
+          "id": "CNT-146",
+          "howItIsMet": "The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and a metadata value is never one of them. Adding a member is a schema version"
         },
         {
           "id": "CNT-014",
@@ -13725,10 +14269,6 @@
         {
           "id": "REL-001",
           "howItIsMet": "`relationship.type_id` is a foreign key to `relationship_type`; a relationship of an undeclared type cannot be inserted"
-        },
-        {
-          "id": "REL-003",
-          "howItIsMet": "`relationship_type.metadata_schema` is a JSON Schema the instances' metadata must satisfy"
         },
         {
           "id": "REL-004",
@@ -14571,7 +15111,7 @@
       "kind": "title"
     },
     {
-      "id": "CNT-144",
+      "id": "CNT-146",
       "file": "packages/domain/src/content/model/document.test.ts",
       "line": 25,
       "kind": "title"

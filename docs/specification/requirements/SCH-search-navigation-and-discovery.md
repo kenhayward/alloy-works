@@ -20,30 +20,43 @@ leaking through a count or a ranking.
 | [IAM](IAM-identity-tenancy-and-access-control.md) | The permissions this must reproduce                |
 | [LIB](LIB-reference-libraries.md)                 | Alternative labels and thesaurus relations         |
 
-| Not here                          | There            |
-| --------------------------------- | ---------------- |
-| Navigating within one document    | **STR**          |
-| Retrieval that grounds a model    | **GEN**          |
-| Traversing declared relationships | **REL**          |
-| Index infrastructure and its cost | **ADM**          |
-| Whether a thread is internal      | **COL**          |
-| The language a passage is in      | **CNT**          |
-| How long earlier versions survive | **VER**, **LIF** |
+| Not here                                                | There            |
+| ------------------------------------------------------- | ---------------- |
+| Navigating within one document                          | **STR**          |
+| Retrieval that grounds a model                          | **GEN**          |
+| Traversing declared relationships                       | **REL**          |
+| Index infrastructure and its cost                       | **ADM**          |
+| Whether a thread is internal                            | **COL**          |
+| The language a passage is in                            | **CNT**          |
+| How long earlier versions survive                       | **VER**, **LIF** |
+| Fields, metadata schemas and component types themselves | **MET**          |
 
 ## 3. What is searchable
 
-| ID          | Requirement                                                                                                                                                                                                                                                  | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **SCH-001** | Components, documents, publications, templates, assets, query definitions, terms and threads must all be searchable                                                                                                                                          | T1      | Specified |
-| **SCH-002** | Search must cover content, metadata, titles, captions and alternative text                                                                                                                                                                                   | T1      | Specified |
-| **SCH-003** | Search must cover the current version by default, with earlier versions and baselines searchable on request                                                                                                                                                  | T3      | Specified |
-| **SCH-004** | An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)                                                                                                                                                        | T2      | Specified |
-| **SCH-038** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to and by whether it is internal (**COL-038**), and must re-index incrementally as messages accumulate rather than by re-reading the thread | T3      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                  | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------------------- |
+| **SCH-001** | Components, documents, publications, templates, assets, query definitions, terms and threads must all be searchable                                                                                                                                          | T1      | Superseded by SCH-051 |
+| **SCH-051** | Components, documents, sections, publications, templates, assets, query definitions, terms, threads, fields, metadata schemas and component types must all be searchable                                                                                     | T1      | Specified             |
+| **SCH-002** | Search must cover content, metadata, titles, captions and alternative text                                                                                                                                                                                   | T1      | Specified             |
+| **SCH-003** | Search must cover the current version by default, with earlier versions and baselines searchable on request                                                                                                                                                  | T3      | Specified             |
+| **SCH-004** | An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)                                                                                                                                                        | T2      | Specified             |
+| **SCH-038** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to and by whether it is internal (**COL-038**), and must re-index incrementally as messages accumulate rather than by re-reading the thread | T3      | Specified             |
+| **SCH-053** | A section found by search must show the document it belongs to and the components it places, so that a section in an existing document is a route to reusing those components (**REU-054**)                                                                  | T4      | Specified             |
 
 **SCH-038 gives threads the treatment SCH-004 already gives assets.** A thread was named as
 searchable and nothing said what is searched, at what granularity, or what happens as it grows - and
 an internal thread (COL-038) is exactly the content a careless index makes findable by the client it
 was hidden from.
+
+**SCH-051 adds sections, and the definitions MET introduced.** A section now carries field values of
+its own (STR-060), and finding one in an existing document is how an author finds components worth
+reusing - SCH-053 makes the result lead to them, and REU-054 is the act of reusing them. Fields, schemas
+and component types are searchable because a tenant with two hundred of them is a library somebody has
+to navigate.
+
+**SCH-052 makes "type" in SCH-018 mean something specific for components**, and it only works because
+MET-001 makes a field one shared definition: `jurisdiction` reached through a component type and
+`jurisdiction` reached through a template is one facet rather than two that happen to share a name.
 
 ## 4. Permissions
 
@@ -109,6 +122,7 @@ people learn to double-check.
 | ID          | Requirement                                                                                                                                                                                                                                                                  | Tranche | Status    |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | **SCH-018** | Results must be narrowable by type, space, metadata value, workflow state, owner, date and condition value                                                                                                                                                                   | T1      | Specified |
+| **SCH-052** | Component type must be a filter and a facet over components, and a field must facet across every artifact that carries it, whichever schema applied it and at whichever place (**MET-001**, **MET-034**)                                                                     | T1      | Specified |
 | **SCH-019** | Listing views must exist for documents, components, publications, templates and cohorts, with sorting and filtering                                                                                                                                                          | T1      | Specified |
 | **SCH-020** | A search or a listing must be saveable, nameable and shareable, subject to the recipient's own permissions                                                                                                                                                                   | T3      | Specified |
 | **SCH-021** | A saved search must be re-evaluated when opened, never showing the results it had when it was saved                                                                                                                                                                          | T3      | Specified |
@@ -221,3 +235,21 @@ for what gets a new identifier are in [the index](README.md#how-a-requirement-is
 | Requirements     | 35     | 50, of which 2 superseded |
 | Non-requirements | 4      | 4                         |
 | Open questions   | 5      | 6                         |
+
+### From specifying metadata and component types
+
+Not a review. Specifying [MET](MET-metadata-and-component-types.md) introduced three kinds of
+definition and gave sections metadata of their own, and the stated reason for section metadata was
+finding components to reuse.
+
+| What was found                                                                                                                   | Change                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| SCH-001 did not list sections as searchable, so the route "find a well-described section, reuse what it holds" had no first step | **SCH-001 superseded by SCH-051**, adding sections, fields, metadata schemas and component types                  |
+| Nothing led from a found section to the components it places                                                                     | **SCH-053**, T4 with the reuse it serves (REU-054, REU-001)                                                       |
+| SCH-018 narrows by "type", and component type did not exist                                                                      | **SCH-052** makes component type a filter and a facet, and makes a field facet across every place that applies it |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 50, of which 2 superseded | 53, of which 3 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 6, of which 3 settled     | 6, of which 3 settled     |

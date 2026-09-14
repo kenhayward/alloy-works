@@ -121,8 +121,7 @@ These names are the shared vocabulary for every requirements document that follo
 
 ### Content
 
-- **Component** - the atom. A small, typed, titled, independently revisable piece of content that a
-  document may reference. It knows its own content and metadata. It does not know its heading
+- **Component** - the atom. A small, typed, titled, independently revisable piece of content that a document may reference. It knows its own content and metadata, and it is of exactly one **component type**, which decides the metadata it carries. It does not know its heading
   number, its position, or which documents use it.
 - **Iteration** - an interim save of a component. Immutable, timestamped, visible only to the editor
   holding the lock, and retained for a declared recovery window rather than for ever. This is where
@@ -172,19 +171,25 @@ These names are the shared vocabulary for every requirements document that follo
 
 ### Definition artifacts
 
-A **template** is a _binding_ artifact. It composes the six definitions below and owns none of them.
-Each is independently reusable and independently versioned, so a table look, a query or a prompt can
+A **template** is a _binding_ artifact. It composes the definitions below and owns only its starting structure outline. The rest are each independently reusable and independently versioned, and a template assigns zero or more metadata schemas rather than owning one, so a table look, a query or a prompt can
 be shared across templates without cloning anything.
 
-| Definition                                 | What it declares                                                                                                                                                          |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Metadata schema**                        | The typed fields a document and its components must or may carry, and their validation rules                                                                              |
-| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation                                                                             |
-| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                                                                                                 |
-| **Presentation theme**                     | On-screen and in-output appearance, as named style catalogues an administrator can extend - paragraph, character, table, image, admonition and citation styles. See §7.18 |
-| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format                                                                             |
-| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings                                                                            |
+| Definition                                 | What it declares                                                                                                                                                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Metadata schema**                        | A named group of shared fields, declaring which are required, their defaults and which values it fixes. Assigned to a template for its documents and their sections, to a component type, or to a relationship type. See §7.22 |
+| **Structure outline**                      | The starting shape of a document: expected sections, required components, permitted variation                                                                                                                                  |
+| **Data connections and query definitions** | Where data comes from, and the parameterised queries available against it                                                                                                                                                      |
+| **Presentation theme**                     | On-screen and in-output appearance, as named style catalogues an administrator can extend - paragraph, character, table, image, admonition and citation styles. See §7.18                                                      |
+| **Publishing layout**                      | Page size, margins, running heads, pagination rules, front and back matter, per output format                                                                                                                                  |
+| **Prompt library**                         | Declared AI prompts, each with its declared context, permitted output, and governance settings                                                                                                                                 |
 
+- **Field** - one typed piece of metadata - a jurisdiction, a study number, a responsible author -
+  defined once for the tenant and shared by every schema that groups it, so that it means one thing
+  and facets as one thing wherever it appears.
+- **Component type** - what kind of component something is - a narrative overview, a stability table
+  section - and which metadata schemas its components carry. Distinct from what a component holds,
+  and never taken from a document that references the component, because a component is referenced
+  by documents made from many templates.
 - **Parameter set** - the values that instantiate a template into a document: the site, the period,
   the product, the jurisdiction. Parameters feed queries, metadata, conditions and prompts, which is
   what lets one template produce forty reports.
@@ -515,10 +520,7 @@ this product will begin. Neither had an owner: §6 defined a parameter set and �
 generating many documents at once, but nothing covered a single document being created, and the
 template designer named in §5 had no area serving them.
 
-- **Template authoring.** A template designer creates, edits and versions a template, and binds to
-  it the six definitions in §6. Two of those - the **metadata schema** and the **structure
-  outline** - are owned here, because nothing else owns them; the other four belong to **DAT**,
-  **STY**, **PUB** and **GEN**, and a template only references them.
+- **Template authoring.** A template designer creates, edits and versions a template, and binds to it the definitions in §6. The **structure outline** is owned here, because nothing else owns it. The rest are referenced: zero or more **metadata schemas**, each applying to the document or to its sections (§7.22), and a query set, a theme, a layout and a prompt library, which belong to **DAT**, **STY**, **PUB** and **GEN**.
 - **Declared parameters.** A template declares what it needs to be instantiated: each parameter's
   name, type, permitted values, and whether it is required. A document cannot be created until the
   required ones are supplied.
@@ -534,8 +536,7 @@ template designer named in §5 had no area serving them.
   authors. What a template version change gives is an answer to "which documents came from this
   version", and a decision about whether a document can be moved forward to a newer one - which is a
   migration, with everything that implies, rather than a setting.
-- **Validation.** A document must satisfy the metadata schema its template binds, and a template
-  whose definition bindings do not resolve must not be usable to create anything. A broken template
+- **Validation.** A document must satisfy the fields its template's schemas apply, at document and at section level, as those were when the document recorded them, and a template whose definition bindings do not resolve must not be usable to create anything. A broken template
   discovered at publish time has already cost somebody a day.
 - **Bulk generation rests on this.** §7.3 instantiates many documents from one template and a set of
   parameter rows; that is the same act repeated, and the guarantees it needs are the ones here.
@@ -586,14 +587,38 @@ identically - referenced rather than typed, versioned, permissioned, searchable,
   into reusable content.
 - **Glossaries and lists of abbreviations** are generated from the terms a document actually uses,
   by the publishing pipeline, the same way a list of figures is.
-- **Controlled vocabularies** - named lists of permitted values a metadata field draws on. §7.19
-  declares which vocabulary a field uses; the vocabulary itself lives here, so two templates can
-  share one.
+- **Controlled vocabularies** - named lists of permitted values a metadata field draws on. §7.22 declares which vocabulary a field uses; the vocabulary itself lives here, so two fields can share one, and it may take its values from an external source - a study register, say - held locally so that publishing never depends on reaching it.
 - **A thesaurus, not an ontology.** Broader, narrower and related relations between terms, so that
   searching for one finds the others (§7.11). Inference is deliberately excluded: §7.12 already gives
   a declared, queryable relationship graph, and in a regulated market "the system inferred it" is a
   liability rather than a feature.
 - **Versioned, with where-used and import and export**, as for assets.
+
+### 7.22 Metadata and component types
+
+The typed information an artifact carries about itself. It had been specified as part of a template
+(§7.19), which works for a document and fails for a component the moment two documents made from
+different templates reference it - so it is an area of its own, and templates, component types and
+relationship types all use it.
+
+- **Fields are shared.** A field is defined once for the tenant, with a data type from a closed set -
+  text, number, date, time, date and time, true or false, and user - and the validation its values must
+  satisfy. `jurisdiction` is one field wherever it appears, so it is one facet in search.
+- **Schemas group fields.** A metadata schema is a named group, managed and assigned as one, declaring
+  which of its fields are required, their defaults and which values it fixes. Changing a schema changes
+  it everywhere it is assigned, and a change that would conflict with a schema assigned beside it is
+  refused.
+- **Component types.** Every component is of exactly one component type, which assigns the schemas its
+  fields come from. A type decides metadata and nothing about content. A tenant has a default type, so
+  creating or importing a component never lacks one.
+- **Values are part of the version.** A component's metadata values belong to its version, beside its
+  content, so a baseline pins what a component said it was as well as what it said. A version is judged
+  for ever by the definitions it was written against; the next version is written against the current
+  ones.
+- **Enforced at publish, shown while authoring.** A missing or invalid field is visible as it arises and
+  fails the publish of any document that references it.
+- **Managed as a job of its own**, by a permission separate from tenant administration and from template
+  design.
 
 ## 8. Non-goals
 
@@ -709,21 +734,19 @@ the web delivery. Where a platform lags, say so plainly rather than implying par
 
 Six tranches, ordered by dependency and by risk. Each is a usable increment, not a layer.
 
-| Tranche                    | Contains                                                                                                                                                                                                                                                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **T1 - The spine**         | Tenancy and organisations, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, authored tables and figures with alternative text, style catalogues and themes, templates with their metadata schema and structure outline, search, PDF and Word publishing, the OpenAPI surface |
-| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, revising a bound value by hand, tabular presentation and field formatting                                                                                                                                                                                                 |
-| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit, and lifecycles for components as well as documents                                                                                                                                                                                           |
-| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries, and revisions that diverge - more than one effective at once, and bringing a line back                                                                                                                                        |
-| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant and interactive chat, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                                                                                                                                                             |
-| **T6 - The interchange**   | Word import and breakout, citation styles, external reference sources, translation and XLIFF                                                                                                                                                                                                                                                                 |
+| Tranche                    | Contains                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **T1 - The spine**         | Tenancy and organisations, identity, RBAC, spaces, components with immutable versions, documents with outlines, the editor, numbering and cross-references, authored tables and figures with alternative text, style catalogues and themes, templates with their structure outline, metadata schemas and component types, search, PDF and Word publishing, the OpenAPI surface |
+| **T2 - The data**          | Connections, query definitions, parameters, inline and block bindings, provenance, revising a bound value by hand, tabular presentation and field formatting                                                                                                                                                                                                                   |
+| **T3 - The collaboration** | Presence, soft locks, threads, mentions, suggestions, notifications, baselines, comparison, workflow and audit, and lifecycles for components as well as documents                                                                                                                                                                                                             |
+| **T4 - The reuse**         | Transclusion, where-used, variables, conditions and profiling, parameterised bulk generation, relationships and graph queries, and revisions that diverge - more than one effective at once, and bringing a line back                                                                                                                                                          |
+| **T5 - The intelligence**  | Template prompts, the tool-enabled assistant and interactive chat, retrieval grounding, AI governance and cost controls, the hardened MCP facade                                                                                                                                                                                                                               |
+| **T6 - The interchange**   | Word import and breakout, citation styles, external reference sources, translation and XLIFF                                                                                                                                                                                                                                                                                   |
 
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate.
 
-**T1 is larger than its name suggests, and that is worth knowing before designing it.** It touches
-twelve of the twenty-one areas, because publishing at the fidelity bar pulls in more than the
-editor: a document takes its theme and layout from a template (**TPL**), the theme resolves every
+**T1 is larger than its name suggests, and that is worth knowing before designing it.** It touches thirteen of the twenty-two areas, because publishing at the fidelity bar pulls in more than the editor: a document takes its theme and layout from a template (**TPL**), every component and document carries the fields its type or template assigns (**MET**), the theme resolves every
 style the editor renders and the publisher draws (**STY**), a figure needs an asset whose intrinsic
 dimensions an image style resolves against and whose alternative text publishing fails without
 (**AST**, **CNT-022**, **PUB-033**), and an authored table needs its caption, its header association
@@ -795,7 +818,7 @@ Five things cut across the order:
 
 The four steps this section first listed are done. The content model spike confirmed
 [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md); the requirements are
-written, twenty-one areas under [`requirements/`](requirements/); the publishing engine spike chose
+written, twenty-two areas under [`requirements/`](requirements/); the publishing engine spike chose
 Typst ([ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)); and
 the architecture is proposed, as the decision records in [`docs/decisions/`](../decisions/) and the
 design documents in [`docs/design/`](../design/), with the whole system drawn in

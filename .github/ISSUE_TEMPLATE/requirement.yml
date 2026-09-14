@@ -41,6 +41,7 @@ body:
         - TPL - Templates and document instantiation
         - AST - Assets and media
         - LIB - Reference libraries
+        - MET - Metadata and component types
     validations:
       required: true
   - type: textarea

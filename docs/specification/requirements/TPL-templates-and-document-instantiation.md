@@ -5,8 +5,7 @@
 ## 1. Purpose
 
 The artifact that binds the others, and how most documents in this product begin. This area owns
-template authoring, the two definitions nothing else owns - the metadata schema and the starting
-structure outline - the parameters a template declares, and what happens when a document is created
+template authoring, the one definition nothing else owns - the starting structure outline - which metadata schemas a template assigns to its documents and their sections, the parameters a template declares, and what happens when a document is created
 from one.
 
 It exists because of a gap the ownership pass found: the scope defined a parameter set and specified
@@ -15,51 +14,68 @@ designer named as a user in §5 had no area serving them.
 
 ## 2. Depends on
 
-| Rests on                                               | What it fixes                                                 |
-| ------------------------------------------------------ | ------------------------------------------------------------- |
-| [`Project_Scope.md`](../Project_Scope.md) §6, §7.19    | Template, parameter set, the six definitions a template binds |
-| [STR](STR-structure-numbering-and-cross-references.md) | A document's live outline, which a starting outline becomes   |
-| [DAT](DAT-data-connectivity-and-bindings.md)           | Query definitions and binding modes                           |
-| [LIB](LIB-reference-libraries.md)                      | The controlled vocabulary a metadata field draws on (TPL-008) |
-| [REU](REU-reuse-variants-and-conditional-profiling.md) | What a variable is, and what it resolves against              |
+| Rests on                                               | What it fixes                                                         |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| [`Project_Scope.md`](../Project_Scope.md) §6, §7.19    | Template, parameter set, the six definitions a template binds         |
+| [STR](STR-structure-numbering-and-cross-references.md) | A document's live outline, which a starting outline becomes           |
+| [DAT](DAT-data-connectivity-and-bindings.md)           | Query definitions and binding modes                                   |
+| [MET](MET-metadata-and-component-types.md)             | Fields, metadata schemas and how assigned schemas compose (MET-034)   |
+| [LIB](LIB-reference-libraries.md)                      | The vocabulary a parameter's permitted values may come from (TPL-045) |
+| [REU](REU-reuse-variants-and-conditional-profiling.md) | What a variable is, and what it resolves against                      |
 
-| Not here                                               | There   |
-| ------------------------------------------------------ | ------- |
-| A document's outline once it exists                    | **STR** |
-| Query definitions themselves                           | **DAT** |
-| Themes and style catalogues                            | **STY** |
-| Publishing layouts                                     | **PUB** |
-| Prompt libraries                                       | **GEN** |
-| The vocabulary a metadata field draws on               | **LIB** |
-| Generating many documents at once                      | **REU** |
-| Who may design a template, and who may create from one | **IAM** |
-| What a variable is, and how one resolves               | **REU** |
+| Not here                                                    | There   |
+| ----------------------------------------------------------- | ------- |
+| A document's outline once it exists                         | **STR** |
+| Query definitions themselves                                | **DAT** |
+| Themes and style catalogues                                 | **STY** |
+| Publishing layouts                                          | **PUB** |
+| Prompt libraries                                            | **GEN** |
+| Fields and metadata schemas themselves, and component types | **MET** |
+| The vocabulary a metadata field draws on                    | **LIB** |
+| Generating many documents at once                           | **REU** |
+| Who may design a template, and who may create from one      | **IAM** |
+| What a variable is, and how one resolves                    | **REU** |
 
 ## 3. Templates
 
-| ID          | Requirement                                                                                                                                                                                          | Tranche | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **TPL-001** | A template must be a named, versioned artifact belonging to a space                                                                                                                                  | T1      | Specified |
-| **TPL-002** | A template must bind exactly one of each definition: metadata schema, structure outline, query set, presentation theme, publishing layout, prompt library                                            | T1      | Specified |
-| **TPL-003** | A template must **own** its metadata schema and its structure outline, and must **reference** the other four                                                                                         | T1      | Specified |
-| **TPL-004** | A template must not be usable to create a document while any definition it references does not resolve                                                                                               | T1      | Specified |
-| **TPL-005** | A template must be testable by creating a throwaway document from it, without that document entering the space                                                                                       | T2      | Specified |
-| **TPL-006** | Templates must be permissioned separately from the documents made from them, because designing one and writing one are different jobs                                                                | T1      | Specified |
-| **TPL-046** | Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-002 holds and TPL-004 always has something to resolve (**TPL-Q01**) | T2      | Specified |
+| ID          | Requirement                                                                                                                                                                                          | Tranche | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **TPL-001** | A template must be a named, versioned artifact belonging to a space                                                                                                                                  | T1      | Specified             |
+| **TPL-002** | A template must bind exactly one of each definition: metadata schema, structure outline, query set, presentation theme, publishing layout, prompt library                                            | T1      | Superseded by TPL-052 |
+| **TPL-003** | A template must **own** its metadata schema and its structure outline, and must **reference** the other four                                                                                         | T1      | Superseded by TPL-053 |
+| **TPL-052** | A template must bind exactly one structure outline, query set, presentation theme, publishing layout and prompt library, and zero or more metadata schemas (**MET-005**)                             | T1      | Specified             |
+| **TPL-053** | A template must **own** its structure outline, and must **reference** every other definition it binds, its metadata schemas included                                                                 | T1      | Specified             |
+| **TPL-004** | A template must not be usable to create a document while any definition it references does not resolve                                                                                               | T1      | Specified             |
+| **TPL-005** | A template must be testable by creating a throwaway document from it, without that document entering the space                                                                                       | T2      | Specified             |
+| **TPL-006** | Templates must be permissioned separately from the documents made from them, because designing one and writing one are different jobs                                                                | T1      | Specified             |
+| **TPL-046** | Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-052 holds and TPL-004 always has something to resolve (**TPL-Q01**) | T2      | Specified             |
 
 **TPL-004 is cheap here and expensive anywhere else.** A template whose theme was deleted or whose
 query set moved is discovered either when somebody tries to create a document, or at publish time a
 fortnight later. The first costs a moment; the second has already cost somebody a day.
 
-## 4. The metadata schema
+## 4. Metadata schemas
 
-| ID          | Requirement                                                                                                                 | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **TPL-007** | A metadata schema must declare typed fields, each with a type, whether it is required, and its validation rules             | T1         | Specified |
-| **TPL-008** | A field must be able to draw its permitted values from a controlled vocabulary rather than being free text (**LIB**)        | T2         | Specified |
-| **TPL-009** | A schema must be able to apply fields at document level and at component level, since the two are asked different questions | T1         | Specified |
-| **TPL-010** | A field must be able to declare a default, and whether that default may be changed after instantiation                      | T1         | Specified |
-| **TPL-011** | Changing a schema must not invalidate documents already created against an earlier version of it                            | Constraint | Specified |
+**What a metadata schema is now belongs to [MET](MET-metadata-and-component-types.md).** This
+section used to own the schema and describe its fields, and it said too little to build from - a
+schema "must be able to apply fields at document level and at component level" (TPL-009) without
+anything saying what a schema was. It also got the component half wrong: a component is referenced by
+documents made from many templates, so its fields cannot come from any of them. MET takes fields,
+schemas and component types; what stays here is the template's side of it - which schemas a template
+assigns, and to what.
+
+**A template assigns schemas; it does not own one.** Zero or more, each applying to the document or to
+its sections, which is what the scope's section 6 always said: a template composes definitions and owns
+none of them but its starting outline.
+
+| ID          | Requirement                                                                                                                                                                                                                     | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **TPL-007** | A metadata schema must declare typed fields, each with a type, whether it is required, and its validation rules                                                                                                                 | T1         | Superseded by MET-005 |
+| **TPL-008** | A field must be able to draw its permitted values from a controlled vocabulary rather than being free text (**LIB**)                                                                                                            | T2         | Superseded by MET-003 |
+| **TPL-009** | A schema must be able to apply fields at document level and at component level, since the two are asked different questions                                                                                                     | T1         | Superseded by TPL-054 |
+| **TPL-010** | A field must be able to declare a default, and whether that default may be changed after instantiation                                                                                                                          | T1         | Superseded by MET-006 |
+| **TPL-011** | Changing a schema must not invalidate documents already created against an earlier version of it                                                                                                                                | Constraint | Superseded by MET-019 |
+| **TPL-054** | Each metadata schema a template assigns must declare whether it applies to the document or to the document's sections (**MET-034**), and may make an optional field required for that assignment and nothing more (**MET-009**) | T1         | Specified             |
 
 ## 5. The structure outline
 
@@ -83,7 +99,7 @@ fortnight later. The first costs a moment; the second has already cost somebody 
 | **TPL-021** | Whether a parameter may be changed after instantiation must be declared, because changing "the site this report is about" is not the same as correcting a typo                                                                                                                   | T2         | Specified |
 | **TPL-041** | A template must declare what each parameter feeds: which metadata field it seeds, which variables take their value from it (**REU-018**), and which query arguments it supplies (**DAT-010**). A parameter with no declared use must be refused rather than accepted and ignored | T2         | Specified |
 | **TPL-042** | A variable a parameter feeds must be one **REU** declares (REU-018). This area supplies values; it does not define the vocabulary or the resolution rules (REU-016, REU-036)                                                                                                     | Constraint | Specified |
-| **TPL-045** | A parameter value that is present but invalid - the wrong type, outside its permitted range, or absent from its vocabulary - must be refused and named with the parameter, the rule and the value, through the API (TPL-026) exactly as in the interface (TPL-037)               | T2         | Specified |
+| **TPL-045** | A parameter value that is present but invalid - the wrong type, outside its permitted range, or absent from its vocabulary - must be refused and named with the parameter, the rule and the value, through the API (TPL-026) exactly as in the interface (**MET-022**)           | T2         | Specified |
 
 **TPL-041 is the requirement without which every other one here can be satisfied by a template that
 does nothing.** TPL-019 says a parameter must be usable to seed metadata, resolve variables and
@@ -134,13 +150,14 @@ a component floats or pins; this is the prior question of whether it may leave a
 
 ## 9. When a template changes
 
-| ID          | Requirement                                                                                           | Tranche    | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **TPL-031** | Changing a template must not alter any document already created from it                               | Constraint | Specified |
-| **TPL-032** | It must be possible to list the documents created from a given template version                       | T2         | Specified |
-| **TPL-033** | Moving a document to a newer template version must be an explicit, audited act, and must be refusable | T3         | Specified |
-| **TPL-034** | Such a move must report what it will change before it runs, and must be abandonable at that point     | T3         | Specified |
-| **TPL-035** | A move that cannot be completed must leave the document exactly as it was                             | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                              | Tranche    | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **TPL-031** | Changing a template must not alter any document already created from it                                                                                                                                                                                                                                                                                                                                  | Constraint | Specified |
+| **TPL-032** | It must be possible to list the documents created from a given template version                                                                                                                                                                                                                                                                                                                          | T2         | Specified |
+| **TPL-033** | Moving a document to a newer template version must be an explicit, audited act, and must be refusable                                                                                                                                                                                                                                                                                                    | T3         | Specified |
+| **TPL-034** | Such a move must report what it will change before it runs, and must be abandonable at that point                                                                                                                                                                                                                                                                                                        | T3         | Specified |
+| **TPL-035** | A move that cannot be completed must leave the document exactly as it was                                                                                                                                                                                                                                                                                                                                | Constraint | Specified |
+| **TPL-058** | Moving a document forward (TPL-033) must bring its fields to the current versions of the schemas and fields its template assigns as well as its outline to a newer template version, and must be possible when only a schema or a field has changed. The report TPL-034 requires must name each field that changes and each value that would not be carried forward, as **MET-036** treats a component's | T3         | Specified |
 
 **Section 9 is a migration wearing the clothes of a setting**, which is why it is written as one.
 The tempting design is a checkbox marked "keep this document up to date with its template". What
@@ -149,12 +166,15 @@ approval, which is the one thing an audited system must not do.
 
 ## 10. Validation
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                                        | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **TPL-036** | A document must satisfy the metadata schema its template binds, and publishing must fail where it does not                                                                                                                                                                                                         | T1         | Specified |
-| **TPL-037** | Validation failures must name the field, the rule and the document                                                                                                                                                                                                                                                 | T1         | Specified |
-| **TPL-038** | Validation must run while authoring, not only at publish, so that a missing required field is known early                                                                                                                                                                                                          | T1         | Specified |
-| **TPL-043** | Validation must enforce the definitions as they were in the template version recorded on the document (TPL-025), not as they are now: tightening a schema or marking a new section required must not make existing documents fail (TPL-011, TPL-031). Moving to a newer version is the deliberate act in section 9 | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                         | Tranche    | Status                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **TPL-036** | A document must satisfy the metadata schema its template binds, and publishing must fail where it does not                                                                                                                                                                                                                                                                                                                                          | T1         | Superseded by TPL-055 |
+| **TPL-037** | Validation failures must name the field, the rule and the document                                                                                                                                                                                                                                                                                                                                                                                  | T1         | Superseded by MET-022 |
+| **TPL-038** | Validation must run while authoring, not only at publish, so that a missing required field is known early                                                                                                                                                                                                                                                                                                                                           | T1         | Superseded by MET-021 |
+| **TPL-043** | Validation must enforce the definitions as they were in the template version recorded on the document (TPL-025), not as they are now: tightening a schema or marking a new section required must not make existing documents fail (TPL-011, TPL-031). Moving to a newer version is the deliberate act in section 9                                                                                                                                  | Constraint | Superseded by TPL-057 |
+| **TPL-055** | A document must satisfy the fields its template applies at document level, and each section the fields applied at section level, and publishing must fail where either does not (**MET-022** names each failure)                                                                                                                                                                                                                                    | T1         | Specified             |
+| **TPL-056** | Instantiation must record on the document the version of each metadata schema and field it was created against. An assignment takes a schema's latest version (**MET-035**), so the template version TPL-025 records no longer decides which fields apply                                                                                                                                                                                           | Constraint | Specified             |
+| **TPL-057** | Validation must enforce what is recorded on the document rather than the definitions as they are now: its outline and required sections as they were in the template version TPL-025 records, and its fields as they were in the schema and field versions TPL-056 records. Tightening a schema or marking a new section required must not make an existing document fail (**MET-019**, TPL-031). Moving forward is the deliberate act in section 9 | Constraint | Specified             |
 
 **TPL-043 states the only reading that reconciles three requirements.** TPL-011 says a schema change
 must not invalidate existing documents, TPL-031 says a template change must not alter them, and
@@ -162,6 +182,13 @@ TPL-036 says a document must satisfy "the metadata schema its template binds" - 
 literally, tightening a schema would fail every document already created against the looser one at
 its next publish. Validation runs against the recorded version, and section 9 is how a document moves
 forward.
+
+**TPL-056 and TPL-057 exist because assignments float.** TPL-043 reconciled TPL-011, TPL-031 and
+TPL-036 by validating a document against the template version recorded on it - which worked while a
+template version owned its schema. A template now assigns schemas that always take their latest
+version (MET-035), so the template version no longer says which fields a document was created against.
+The document says it instead, and validation reads that record. TPL-058 lets a document catch up on a
+schema change alone, which a template version bump could not express.
 
 ## 11. Bulk generation
 
@@ -195,19 +222,20 @@ the same guarantees.
 
 ## 14. Traceability
 
-| This document      | Rests on                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| Section 1          | Scope §7.19, and the ownership pass that found the gap                                     |
-| TPL-003            | The two definitions no other area owned                                                    |
-| TPL-016, TPL-027   | STR - a starting outline becomes a document's own                                          |
-| TPL-023            | DAT-034, binding modes decide when a query runs                                            |
-| Section 9          | Scope §7.19, existing documents not changing underneath their authors                      |
-| Section 11         | Scope §7.3, parameterised bulk generation                                                  |
-| TPL-041, TPL-042   | REU-016, REU-018, REU-036 - what a variable is and what it resolves against                |
-| TPL-043            | TPL-011, TPL-031 - the reading that reconciles them with TPL-036                           |
-| TPL-050            | LIF-026, LIF-027 - who did what, when, in the audit log                                    |
-| TPL-049            | PUB-010 - document-level matter the layout places                                          |
-| TPL-041 to TPL-050 | [The v1 review](<../../reviews/TPL - Templates and document instantiation.md>); section 15 |
+| This document      | Rests on                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Section 1          | Scope §7.19, and the ownership pass that found the gap                                                 |
+| TPL-003            | The two definitions no other area owned                                                                |
+| TPL-016, TPL-027   | STR - a starting outline becomes a document's own                                                      |
+| TPL-023            | DAT-034, binding modes decide when a query runs                                                        |
+| Section 9          | Scope §7.19, existing documents not changing underneath their authors                                  |
+| Section 11         | Scope §7.3, parameterised bulk generation                                                              |
+| TPL-041, TPL-042   | REU-016, REU-018, REU-036 - what a variable is and what it resolves against                            |
+| TPL-043            | TPL-011, TPL-031 - the reading that reconciles them with TPL-036                                       |
+| TPL-050            | LIF-026, LIF-027 - who did what, when, in the audit log                                                |
+| TPL-049            | PUB-010 - document-level matter the layout places                                                      |
+| TPL-041 to TPL-050 | [The v1 review](<../../reviews/TPL - Templates and document instantiation.md>); section 15             |
+| TPL-052 to TPL-058 | [MET](MET-metadata-and-component-types.md); section 15, "From specifying metadata and component types" |
 
 ## 15. Change history
 
@@ -259,3 +287,25 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections | Change                                                                                                                                                              |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.4             | **TPL-051** lets a template declare default profile values and required axes, and requires instantiation to establish the profile rather than leaving it undeclared |
+
+### From specifying metadata and component types
+
+Not a review. Specifying [MET](MET-metadata-and-component-types.md) found that this area owned a
+definition the scope said no template owns, and that what it said about the definition was too thin to
+build from.
+
+| What was found                                                                                                                                                                                                   | Change                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope §6 says a template composes its definitions and "owns none of them", and §9 decision 3 rejects a template owning metadata as a god-object. TPL-002 and TPL-003 had the template own **exactly one** schema | **TPL-002 superseded by TPL-052** - zero or more schemas. **TPL-003 superseded by TPL-053** - the outline is the one definition a template owns                                                                              |
+| TPL-009 took a component's fields from the schema of the document referencing it, which breaks at the second document made from a different template                                                             | **TPL-009 superseded by TPL-054** - a template's schemas apply to the document or its sections. A component's fields come from its component type (**MET-013**)                                                              |
+| TPL-007, TPL-008, TPL-010 and TPL-011 described fields and schemas in general, and TPL-037 and TPL-038 described validation that applies to every artifact, not only documents                                   | **Superseded by MET-005, MET-003, MET-006, MET-019, MET-022 and MET-021**, where one statement serves documents, sections and components                                                                                     |
+| TPL-043 validated against the definitions a template version owned. Once assignments take a schema's latest version (MET-035), a template version no longer decides a document's fields                          | **TPL-043 superseded by TPL-057**, validating against what the document records. **TPL-056** makes instantiation record the schema and field versions, and **TPL-058** lets a document move forward on a schema change alone |
+| TPL-036 required a document to satisfy "the metadata schema its template binds" - singular, and silent on sections                                                                                               | **TPL-036 superseded by TPL-055**, covering the document's fields and each section's                                                                                                                                         |
+| Pointers into moved rows                                                                                                                                                                                         | TPL-045 now cites MET-022; TPL-046 cites TPL-052                                                                                                                                                                             |
+| Not changed: **TPL-N04, "not a form builder"**                                                                                                                                                                   | Left here because it is still true of a template, and carried into MET as MET-N04                                                                                                                                            |
+
+| Counts           | Before | After                      |
+| ---------------- | ------ | -------------------------- |
+| Requirements     | 51     | 58, of which 11 superseded |
+| Non-requirements | 4      | 4                          |
+| Open questions   | 4      | 4                          |
