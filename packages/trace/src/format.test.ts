@@ -9,6 +9,7 @@ import type { Baseline, Requirement, TraceModel } from './model.js';
 import { TraceModel as TraceModelSchema } from './model.js';
 import {
   STATES,
+  formatAllAreas,
   formatArea,
   formatTranche,
   formatBaseline,
@@ -383,6 +384,62 @@ describe('formatting an area', () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]).toBe('ZZZ-001  Designed    A widget must carry a footnote');
     expect(rows[1]).toBe('ZZZ-002  Specified   A gadget must spin freely');
+  });
+});
+
+describe('formatting every area at once', () => {
+  // Two invented areas beside ZZZ. Their identifiers appear only in test bodies, never in a title, so
+  // the citation scanner - which reads titles - cannot mistake them for coverage.
+  const areas: TraceModel = {
+    ...model,
+    requirements: [
+      requirement('ZZB-001', 'A sprocket must mesh', 'T1'),
+      ...model.requirements,
+      requirement('ZZA-001', 'A lever must return', 'T2'),
+      requirement('ZZA-002', 'A lever must not stick', 'T2'),
+    ],
+  };
+  const index = [
+    { code: 'ZZA', name: 'Invented levers' },
+    { code: 'ZZZ', name: 'Invented area' },
+    { code: 'ZZB', name: 'Invented sprockets' },
+  ];
+
+  it('lists the areas in the order the index gives, not the order requirements arrive in', () => {
+    const headings = formatAllAreas(allTraces(areas), index)
+      .split(/\r?\n/)
+      .filter((line) => / - (\d+ requirements?|no requirements yet)$/.test(line));
+
+    expect(headings).toEqual([
+      'ZZA - Invented levers - 2 requirements',
+      'ZZZ - Invented area - 3 requirements',
+      'ZZB - Invented sprockets - 1 requirement',
+    ]);
+  });
+
+  it('gives each area the rows the single-area listing gives it, separated by a blank line', () => {
+    const output = formatAllAreas(allTraces(areas), index);
+
+    expect(output).toContain(
+      ['ZZZ - Invented area - 3 requirements', formatArea(allTraces(model))].join('\n'),
+    );
+    expect(output).toContain('ZZA-002  Specified   A lever must not stick\n\nZZZ - Invented area');
+  });
+
+  it('says so when an indexed area has no requirements yet, rather than leaving it out', () => {
+    const output = formatAllAreas(allTraces(model), [
+      { code: 'ZZZ', name: 'Invented area' },
+      { code: 'ZZQ', name: 'Invented and empty' },
+    ]);
+
+    expect(output).toContain('ZZQ - Invented and empty - no requirements yet');
+  });
+
+  it('never drops a requirement whose area the index does not list', () => {
+    const output = formatAllAreas(allTraces(areas), [{ code: 'ZZZ', name: 'Invented area' }]);
+
+    expect(output).toContain('ZZA - not in the areas index - 2 requirements');
+    expect(output).toContain('ZZB-001  Specified   A sprocket must mesh');
   });
 });
 

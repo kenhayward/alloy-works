@@ -9,6 +9,7 @@ import { problems } from './check.js';
 import { REPO_ROOT, compile } from './compile.js';
 import { draftRequirement } from './draft.js';
 import {
+  formatAllAreas,
   formatArea,
   formatBaseline,
   formatDraft,
@@ -22,7 +23,8 @@ import {
   search,
 } from './format.js';
 import { gate } from './gate.js';
-import { TRANCHES, validate } from './model.js';
+import { type TraceModel, TRANCHES, validate } from './model.js';
+import { type AreaIndexEntry, parseAreaIndex } from './parse/areas.js';
 import { parseBaseline } from './parse/baseline.js';
 import { FiledRequirement, normalizeTranche, parseIssue } from './parse/issue.js';
 import { packDocuments } from './pack.js';
@@ -69,6 +71,8 @@ const USAGE = `pnpm trace <command>
   show <ID>          one requirement: its statement, tranche, state and owning design
   search <term>      every requirement whose statement mentions the term
   area <XXX>         every requirement in an area, with its state
+  area --all         every area, in the areas index's order, each under a heading with its name
+                     and its count
   tranche <Tn> [XXX]  a tranche by area, with a count per state; with an area, that area's
                      requirements in full - the listing designing a tranche starts from
   next <XXX>         the next free identifier in an area
@@ -149,6 +153,26 @@ interface DraftInput {
 
 interface DraftInputError {
   readonly error: string;
+}
+
+/**
+ * What `area` prints, or why it cannot: one area by its code, or `--all` for every area under
+ * headings taken from the areas index. The index is read through `loadIndex` only for `--all`, so a
+ * single-area listing never depends on a document it does not use.
+ */
+export function areaListing(
+  argument: string | undefined,
+  model: TraceModel,
+  loadIndex: () => AreaIndexEntry[],
+): { output: string } | { error: string } {
+  if (argument === undefined) {
+    return { error: 'area needs a three-letter code, such as CNT, or --all for every area.' };
+  }
+  if (argument === '--all') return { output: formatAllAreas(allTraces(model), loadIndex()) };
+  const area = argument.toUpperCase();
+  const traces = allTraces(model).filter((trace) => trace.requirement.area === area);
+  if (traces.length === 0) return { error: `No area ${area} in the corpus.` };
+  return { output: formatArea(traces) };
 }
 
 /**
@@ -265,11 +289,16 @@ function main(argv: string[]): number {
         return 0;
       }
       case 'area': {
-        if (argument === undefined) return fail('area needs a three-letter code, such as CNT.');
-        const area = argument.toUpperCase();
-        const traces = allTraces(model).filter((trace) => trace.requirement.area === area);
-        if (traces.length === 0) return fail(`No area ${area} in the corpus.`);
-        console.log(formatArea(traces));
+        const result = areaListing(argument, model, () =>
+          parseAreaIndex(
+            readFileSync(
+              join(REPO_ROOT, 'docs', 'specification', 'requirements', 'README.md'),
+              'utf8',
+            ),
+          ),
+        );
+        if ('error' in result) return fail(result.error);
+        console.log(result.output);
         return 0;
       }
       case 'tranche': {
