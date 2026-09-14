@@ -1,6 +1,6 @@
 # 0012 - A relational version chain with hashed content
 
-- **Status:** Accepted
+- **Status:** Superseded by 0024
 - **Date:** 2026-09-10
 
 ## Context

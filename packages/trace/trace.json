@@ -14535,7 +14535,7 @@
       "owns": [
         {
           "id": "VER-001",
-          "howItIsMet": "An `iteration` row carries editor, timestamp and content, and is never updated after insert"
+          "howItIsMet": "An `iteration` row carries editor, timestamp, content and metadata values, and is never updated after insert"
         },
         {
           "id": "VER-002",
@@ -14656,6 +14656,22 @@
         {
           "id": "VER-040",
           "howItIsMet": "Re-deriving inserts new derived rows and alters no version"
+        },
+        {
+          "id": "CNT-145",
+          "howItIsMet": "A component artifact carries its identifier; each version row carries its component type's version and `schema_version`, and content whose root holds the title and base language (CNT-146). There is no general attribute column, so adding a structural attribute is a migration"
+        },
+        {
+          "id": "MET-015",
+          "howItIsMet": "Metadata values are a column on the version row, which takes inserts only, so a value changes only by a new version; `baseline_pin` pins the version, and the values with it"
+        },
+        {
+          "id": "MET-016",
+          "howItIsMet": "Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own"
+        },
+        {
+          "id": "VER-042",
+          "howItIsMet": "Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)"
         }
       ]
     },
