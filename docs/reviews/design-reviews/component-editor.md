@@ -7,7 +7,6 @@ I reviewed `component-editor.md` against the four requirement documents you prov
 - `STY-styles-and-presentation-themes.md`
 - `API-api-mcp-and-extensibility.md`
 
-
 I treated this as a requirements/design review, not an implementation review. I have **not** assumed that the referenced-but-not-provided documents are settled: `COL`, `storage-and-versioning.md`, `realtime.md`, `themes.md`, `content-model.md`, ADRs, etc. Where the design depends on those, I flag it as an unresolved dependency rather than judging the detail.
 Overall, the design has a strong core shape:
 
@@ -38,7 +37,7 @@ But `CNT-060` to `CNT-064`, and `CNT-130`/`CNT-131`, are T1 requirements that re
 
 As written, this slice does not meet those requirements unless:
 
-1. the admission pipeline is part of this build, or  
+1. the admission pipeline is part of this build, or
 2. the draft explicitly records that foreign paste is intentionally deferred in this slice and the affected requirement status/tranche is updated accordingly.
 
 If the intent is “first slice of the editor” but still T1-complete for component content, plain-text-only paste is a material gap. If it is deliberately partial, the document should say so clearly rather than implying that paste will simply work through `transformPasted` once another design arrives.
@@ -130,11 +129,11 @@ Recommended fix:
 
 Add an authoring matrix table with rows for every block/node/mark in the content model and columns such as:
 
-| Content item | Can create? | Can edit? | Rendered read-only? | Unresolvable behaviour? | Requirement refs |
-|---|---|---|---|---|---|
-| Paragraph | yes | yes | n/a | unresolvable style marker | CNT-014, STY-... |
-| Hyperlink | ? | ? | ? | refused on entry / paste report | CNT-126–128 |
-| Suggestion mark | no? | read-only? | yes/no | colour-independent marker | CNT-033, CNT-137/138 |
+| Content item    | Can create? | Can edit?  | Rendered read-only? | Unresolvable behaviour?         | Requirement refs     |
+| --------------- | ----------- | ---------- | ------------------- | ------------------------------- | -------------------- |
+| Paragraph       | yes         | yes        | n/a                 | unresolvable style marker       | CNT-014, STY-...     |
+| Hyperlink       | ?           | ?          | ?                   | refused on entry / paste report | CNT-126–128          |
+| Suggestion mark | no?         | read-only? | yes/no              | colour-independent marker       | CNT-033, CNT-137/138 |
 
 This would make the slice boundary explicit.
 
@@ -150,7 +149,7 @@ That may be a reasonable architectural deferral, but `CNT-027`, `CNT-028`, `CNT-
 
 If this slice cannot insert cross-references/citations/variables/bindings, then it is not fully meeting those CNT requirements as written. The draft should either:
 
-1. provide minimal insertion commands against existing targets, or  
+1. provide minimal insertion commands against existing targets, or
 2. explicitly record that these are schema-supported but command-unavailable in this slice, with the requirement impact noted.
 
 The same applies to citations especially: `CNT-051` says bibliography entries must be managed artifacts within a space, referenceable from any component. If an author cannot create a citation in the component editor and bibliography management is elsewhere, that cross-slice path needs to be stated.
@@ -304,13 +303,13 @@ Recommended fix:
 
 Add an identity subsection or table specifying allocation/re-identification rules for blocks and marks by operation:
 
-| Operation | Block IDs | Mark/annotation IDs | Notes |
-|---|---|---|---|
-| New block in editor | ? | n/a | e.g. local UUID, never reused |
-| Split/join | preserved where ADR says so | fragmented annotation stays one ID | |
-| Internal paste | all pasted blocks re-identified | cross-artifact annotations dropped/reported | CNT-132–135 |
-| External paste | new IDs allocated | sanitised/migrated/refused | CNT-130, CNT-134 |
-| Restore iteration | migrated/validated to current schema or refused | same | recovery safety |
+| Operation           | Block IDs                                       | Mark/annotation IDs                         | Notes                         |
+| ------------------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------- |
+| New block in editor | ?                                               | n/a                                         | e.g. local UUID, never reused |
+| Split/join          | preserved where ADR says so                     | fragmented annotation stays one ID          |                               |
+| Internal paste      | all pasted blocks re-identified                 | cross-artifact annotations dropped/reported | CNT-132–135                   |
+| External paste      | new IDs allocated                               | sanitised/migrated/refused                  | CNT-130, CNT-134              |
+| Restore iteration   | migrated/validated to current schema or refused | same                                        | recovery safety               |
 
 ---
 
@@ -334,11 +333,11 @@ Recommended fix:
 
 State explicitly how each caption-bearing block stores its caption:
 
-| Block | Caption representation | Identity rule | Editing UI |
-|---|---|---|---|
-| Authored table | node/attribute in content model | stable ID preserved through split/join/copy per rules | ? |
-| Figure | asset reference + caption + alttext | block/caption IDs | ? |
-| Block equation | equation node + optional caption | stable IDs | ? |
+| Block          | Caption representation              | Identity rule                                         | Editing UI |
+| -------------- | ----------------------------------- | ----------------------------------------------------- | ---------- |
+| Authored table | node/attribute in content model     | stable ID preserved through split/join/copy per rules | ?          |
+| Figure         | asset reference + caption + alttext | block/caption IDs                                     | ?          |
+| Block equation | equation node + optional caption    | stable IDs                                            | ?          |
 
 Add tests that captions survive copy/paste and re-identification correctly.
 
@@ -453,12 +452,12 @@ Recommended fix:
 
 Add explicit transitions for Claiming:
 
-| Event | Behaviour |
-|---|---|
-| Grant received | apply held change(s) in order; enter Editing |
-| Refusal | show holder/expected release; keep or discard held change according to stated policy; no silent loss |
-| Additional input while claiming | queued, rejected with warning, or applied on grant — choose one and test it |
-| Claim timeout/error | return to Reading or Recovery with structured error and retry affordance |
+| Event                           | Behaviour                                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Grant received                  | apply held change(s) in order; enter Editing                                                         |
+| Refusal                         | show holder/expected release; keep or discard held change according to stated policy; no silent loss |
+| Additional input while claiming | queued, rejected with warning, or applied on grant — choose one and test it                          |
+| Claim timeout/error             | return to Reading or Recovery with structured error and retry affordance                             |
 
 Also state whether metadata field changes can be the “first change” that triggers claiming. I assume they should, because values are part of the iteration.
 
@@ -714,12 +713,12 @@ Recommended fix:
 
 Add failure columns to the session table:
 
-| State | Failure | Behaviour |
-|---|---|---|
-| Cutting | flush fails | remain Editing/Recovery; retry/backoff; no version request |
-| Cutting | version refused by precondition | show structured error with current version; do not release if user intended Done editing |
-| Releasing | final flush fails | keep lock or enter Recovery with explicit recovery path |
-| Releasing | lock already moved | reconcile local state, offer restore/discard |
+| State     | Failure                         | Behaviour                                                                                |
+| --------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Cutting   | flush fails                     | remain Editing/Recovery; retry/backoff; no version request                               |
+| Cutting   | version refused by precondition | show structured error with current version; do not release if user intended Done editing |
+| Releasing | final flush fails               | keep lock or enter Recovery with explicit recovery path                                  |
+| Releasing | lock already moved              | reconcile local state, offer restore/discard                                             |
 
 ---
 
@@ -817,10 +816,10 @@ Recommended fix:
 
 Specify the stored shapes explicitly:
 
-| Type | Stored form | UI behaviour |
-|---|---|---|
-| date | `YYYY-MM-DD`, no offset | date picker only |
-| time | `HH:mm:ss` or as field validation defines, no offset | time input only |
+| Type      | Stored form                                                                     | UI behaviour                                                                          |
+| --------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| date      | `YYYY-MM-DD`, no offset                                                         | date picker only                                                                      |
+| time      | `HH:mm:ss` or as field validation defines, no offset                            | time input only                                                                       |
 | date-time | ISO 8601 instant with explicit UTC offset/`Z`, e.g. `2025-01-01T12:00:00+01:00` | author may pick local date/time plus zone; service stores instant with numeric offset |
 
 Add validation and round-trip tests for DST transitions if named zones are supported in the UI.
@@ -1040,12 +1039,12 @@ Recommended fix:
 
 Amend the API table to show required/expected fields/headers for each route:
 
-| Route | Version precondition? | Idempotency? | Notes |
-|---|---|---|---|
-| POST components | n/a new resource | Idempotency-Key required/recommended | creation transactional |
-| PUT iterations | yes: opened-from or latest version id | natural session/seq + optional key | reject missing/stale precondition per API-037/038 |
-| DELETE lock if cutting | yes when it may cut a version | safe repeat release semantics | return whether version was cut |
-| POST versions | yes: opened-from/latest stated | optional Idempotency-Key or defined retry semantics | `version.unchanged` is not an author error but still structured |
+| Route                  | Version precondition?                 | Idempotency?                                        | Notes                                                           |
+| ---------------------- | ------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
+| POST components        | n/a new resource                      | Idempotency-Key required/recommended                | creation transactional                                          |
+| PUT iterations         | yes: opened-from or latest version id | natural session/seq + optional key                  | reject missing/stale precondition per API-037/038               |
+| DELETE lock if cutting | yes when it may cut a version         | safe repeat release semantics                       | return whether version was cut                                  |
+| POST versions          | yes: opened-from/latest stated        | optional Idempotency-Key or defined retry semantics | `version.unchanged` is not an author error but still structured |
 
 Also state that requests missing required preconditions are refused with distinct machine-readable code naming the current version, per `API-037`.
 
@@ -1131,13 +1130,13 @@ The design assumes the user is an author and talks about lock holder, but it doe
 
 At minimum, specify:
 
-| Route | Required permission/role-ish behaviour | 401 vs 403 handling |
-|---|---|---|
-| GET component | entitled to read component/space | unauthenticated vs forbidden per IAM contract |
-| POST lock / claim/move | authoring/edit permission on component; same-principal move allowed where rules permit | naming holder/release for lock refusal separate from authz refusal |
-| PUT iterations | current lock holder only; author permission as well? | structured error |
-| GET iterations | lock-holder/principal visibility per VER/CNT rules | forbidden with holder info if not entitled |
-| POST versions / DELETE lock | current lock holder and version-cut permission where applicable | structured refusal |
+| Route                       | Required permission/role-ish behaviour                                                 | 401 vs 403 handling                                                |
+| --------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| GET component               | entitled to read component/space                                                       | unauthenticated vs forbidden per IAM contract                      |
+| POST lock / claim/move      | authoring/edit permission on component; same-principal move allowed where rules permit | naming holder/release for lock refusal separate from authz refusal |
+| PUT iterations              | current lock holder only; author permission as well?                                   | structured error                                                   |
+| GET iterations              | lock-holder/principal visibility per VER/CNT rules                                     | forbidden with holder info if not entitled                         |
+| POST versions / DELETE lock | current lock holder and version-cut permission where applicable                        | structured refusal                                                 |
 
 Lock denial (`API-039`) is a different case from authorisation failure. The design should make that distinction explicit:
 
@@ -1307,13 +1306,13 @@ If insertion is unavailable, the design still needs this behaviour for migrated/
 
 The design should explicitly state which table properties are shown in the editing view and which are deferred to preview/publish:
 
-| Property | Editor behaviour |
-|---|---|
-| header row/column treatment | render as theme declares |
-| banding/borders/rules | render where not pagination-dependent |
-| cell padding/alignment | render where possible |
+| Property                      | Editor behaviour                                   |
+| ----------------------------- | -------------------------------------------------- |
+| header row/column treatment   | render as theme declares                           |
+| banding/borders/rules         | render where not pagination-dependent              |
+| cell padding/alignment        | render where possible                              |
 | page-break continuation label | do not simulate silently; defer to preview/publish |
-| repeated headers across pages | defer to publisher/preview |
+| repeated headers across pages | defer to publisher/preview                         |
 
 This avoids the editor accidentally implying a pagination behaviour it cannot show.
 
@@ -1424,7 +1423,7 @@ body includes:
   component_type_id
   base_language (BCP 47)
   base_direction: ltr | rtl
-  optional metadata defaults? 
+  optional metadata defaults?
   Idempotency-Key
 ```
 
@@ -1593,13 +1592,13 @@ If I were reviewing this for acceptance, I would require either concrete changes
    Explicit markers for missing styles, font load failures/glyph gaps where detectable, unresolved references/bindings, and no silent defaults. This is required by `STY-070` and aligns with fail-loud rules elsewhere.
 
 10. **Complete metadata panel design**  
-   Add multi-value fields, deprovisioned-user display, precise date/time offset storage, validation error shape, title/base language editing rules, component type immutability at API level, and definition-drift handling while a session is open.
+    Add multi-value fields, deprovisioned-user display, precise date/time offset storage, validation error shape, title/base language editing rules, component type immutability at API level, and definition-drift handling while a session is open.
 
 11. **Resolve equation canonicalisation/alttext/engine risk**  
-   State canonical stored representation (normalised MathML), whether LaTeX is persisted non-canonically, deterministic converter/canonicalisation behaviour, alttext generation for pasted/migrated/restored equations, and a decision on the speech rule engine’s licence/load model.
+    State canonical stored representation (normalised MathML), whether LaTeX is persisted non-canonically, deterministic converter/canonicalisation behaviour, alttext generation for pasted/migrated/restored equations, and a decision on the speech rule engine’s licence/load model.
 
 12. **Tighten accessibility/release gate**  
-   Specify focus management for equation/footnote/symbol UI, live announcements for lock/save/recovery/version/validation states, metadata form accessibility, RTL/bidi support including base direction in creation payload, and make the browser automated suite plus recorded manual audit an explicit release gate under `CNT-139`.
+    Specify focus management for equation/footnote/symbol UI, live announcements for lock/save/recovery/version/validation states, metadata form accessibility, RTL/bidi support including base direction in creation payload, and make the browser automated suite plus recorded manual audit an explicit release gate under `CNT-139`.
 
 ---
 
