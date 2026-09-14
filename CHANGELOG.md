@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.18.0 - 2026-09-14 (PR #90)
+
+### Added
+
+- `--file <filename>` on `pnpm trace area`, with an area code or with `--all`, writes the listing to a
+  file instead of printing it, and prints one line saying how many requirements and areas it wrote and
+  the full path. The file is UTF-8 with no byte-order mark, LF line endings and a final newline, so it
+  opens the same in any editor on any platform and diffs cleanly against the last one.
+- A relative filename is taken from the repository root, wherever inside the repository the command is
+  run - not from `packages/trace`, where pnpm actually runs the tool. An existing file is overwritten;
+  a folder that does not exist is refused, naming it, rather than created.
+
 ## 0.17.0 - 2026-09-14 (PR #89)
 
 ### Added
