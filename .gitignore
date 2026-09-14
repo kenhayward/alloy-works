@@ -39,5 +39,9 @@ Thumbs.db
 *.env
 !*.env.example
 
+# Local scratch beside the repository and never part of it - a listing written with
+# `pnpm trace area --file`, a script somebody keeps for their own use.
+untracked/
+
 # Spike build output. The bundle is 2MB and is rebuilt by one esbuild command.
 spikes/editor-framework/out/
