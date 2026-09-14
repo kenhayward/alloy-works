@@ -275,6 +275,7 @@ pnpm trace show <ID>                              # one requirement: statement, 
 pnpm trace search <term>                          # every requirement whose statement mentions the term
 pnpm trace area <XXX>                             # a whole area, with each requirement's state
 pnpm trace area --all                             # every area, in the index's order, each with its name and count
+pnpm trace area --all --file areas.txt             # the same, written as UTF-8 to a file at the repository root
 pnpm trace tranche <Tn> [XXX]                     # a tranche by area, or one area of it in full
 pnpm trace next <XXX>                             # the next free identifier in an area
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest

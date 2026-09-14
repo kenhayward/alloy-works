@@ -64,6 +64,7 @@ the full account. The two that catch people out:
 pnpm trace search 'footnote'      # every requirement whose statement mentions it
 pnpm trace area CNT               # a whole area, with each requirement's state
 pnpm trace area --all             # every area at once, in the areas index's order
+pnpm trace area --all --file areas.txt   # the same listing, written to a file
 pnpm trace show CNT-014           # one requirement: statement, design, tests, state
 pnpm trace tranche T1             # a tranche by area, with a count per state
 pnpm trace tranche T1 CNT         # that tranche's requirements in one area, in full
@@ -328,21 +329,22 @@ product does, and it is checkable at every step rather than asserted at the end.
 
 ## Every command
 
-| Command                         | What it does                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| `pnpm trace show <ID>`          | One requirement: statement, tranche, state, design, citing tests                     |
-| `pnpm trace search <term>`      | Every requirement whose statement mentions the term                                  |
-| `pnpm trace area <XXX>`         | Every requirement in an area, with its state                                         |
-| `pnpm trace area --all`         | Every area, in the areas index's order, each under a heading with its name and count |
-| `pnpm trace next <XXX>`         | The next free identifier in an area                                                  |
-| `pnpm trace tranche <Tn> [XXX]` | A tranche by area, or one area of it in full                                         |
-| `pnpm trace stats`              | The corpus by tranche and state                                                      |
-| `pnpm trace check`              | Every problem in the corpus. Non-zero exit when there is one                         |
-| `pnpm trace verify [dir]`       | The same table, with `Verified` computed from a test run                             |
-| `pnpm trace baseline [name]`    | A committed baseline: what it includes, excludes and why                             |
-| `pnpm trace gate [name]`        | Pass or fail a baseline. Non-zero exit on failure                                    |
-| `pnpm trace pack <version>`     | Write the evidence pack. Refuses a dirty working tree                                |
-| `pnpm trace draft <issue>`      | Draft a row from a filed issue. Prints only, never writes                            |
+| Command                                            | What it does                                                                                                                                                                                                                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm trace show <ID>`                             | One requirement: statement, tranche, state, design, citing tests                                                                                                                                                                                                    |
+| `pnpm trace search <term>`                         | Every requirement whose statement mentions the term                                                                                                                                                                                                                 |
+| `pnpm trace area <XXX>`                            | Every requirement in an area, with its state                                                                                                                                                                                                                        |
+| `pnpm trace area --all`                            | Every area, in the areas index's order, each under a heading with its name and count                                                                                                                                                                                |
+| `pnpm trace area <XXX> \| --all --file <filename>` | The same listing written to a file as UTF-8, with no byte-order mark and LF line endings. A relative filename is taken from the repository root, wherever inside the repository the command is run, and a folder that does not exist is refused rather than created |
+| `pnpm trace next <XXX>`                            | The next free identifier in an area                                                                                                                                                                                                                                 |
+| `pnpm trace tranche <Tn> [XXX]`                    | A tranche by area, or one area of it in full                                                                                                                                                                                                                        |
+| `pnpm trace stats`                                 | The corpus by tranche and state                                                                                                                                                                                                                                     |
+| `pnpm trace check`                                 | Every problem in the corpus. Non-zero exit when there is one                                                                                                                                                                                                        |
+| `pnpm trace verify [dir]`                          | The same table, with `Verified` computed from a test run                                                                                                                                                                                                            |
+| `pnpm trace baseline [name]`                       | A committed baseline: what it includes, excludes and why                                                                                                                                                                                                            |
+| `pnpm trace gate [name]`                           | Pass or fail a baseline. Non-zero exit on failure                                                                                                                                                                                                                   |
+| `pnpm trace pack <version>`                        | Write the evidence pack. Refuses a dirty working tree                                                                                                                                                                                                               |
+| `pnpm trace draft <issue>`                         | Draft a row from a filed issue. Prints only, never writes                                                                                                                                                                                                           |
 
 ## Where the rest lives
 
