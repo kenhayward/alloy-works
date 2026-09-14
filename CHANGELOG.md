@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.16.2 - 2026-09-14 (PR #87)
+
+### Fixed
+
+- **A correction to a component's metadata alone would have been refused as an unchanged version.** The
+  storage design decided "unchanged" by the content hash, and since metadata sits beside content rather
+  than inside it, fixing a mistyped study number left that hash exactly as it was. A version is now
+  judged by a **version digest** over everything it holds - content, component type, metadata values
+  and the definitions it was written against - so that correction is a version, compares as a change,
+  and is covered by the version's tamper-evident digest. The content hash stays, for the one job it is
+  right for: keying search embeddings, which are of content. Recorded as
+  [ADR-0024](docs/decisions/0024-a-version-digest-over-the-whole-version.md), superseding ADR-0012.
+
+### Changed
+
+- The storage design now holds a component version's type, metadata values, the values it did not
+  carry forward and the definition versions it was written against, and versions fields, metadata
+  schemas and component types like every other artifact, so a baseline pins them.
+
 ## 0.16.1 - 2026-09-14 (PR #81)
 
 ### Added
