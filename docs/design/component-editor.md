@@ -1,61 +1,67 @@
 # The component editor and its editing session
 
-> **Status: DRAFT for review.** Committed as it stood when handed over, so `git diff` shows exactly
-> what changed. Edit anything directly; where you want to say something rather than change it, add a
-> line starting `> **Ken:**` under the paragraph or table it is about.
+> **Status: DRAFT, reviewed.** [The review](../reviews/design-reviews/component-editor.md) is
+> answered in [section Review](#review), point by point. Committed as it stood when handed over, so
+> `git diff` shows exactly what changed. Edit anything directly; where you want to say something rather
+> than change it, add a line starting `> **Ken:**` under the paragraph or table it is about.
 
 Editing one component, end to end: the surface an author types into, the lock that makes them the one
 editing it, continuous saving, cutting a version, and the component's type and metadata alongside its
 content.
 
 This is the first slice of the editor. It rests on [ADR-0023](../decisions/0023-prosemirror-as-the-editor-and-its-model.md)
-(ProseMirror, one view per component), [content-model.md](content-model.md) (what is stored),
-[storage-and-versioning.md](storage-and-versioning.md) and [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md)
-(iterations, versions and the digest), [metadata.md](metadata.md) (which fields apply and what is
-valid), [themes.md](themes.md) (how it looks) and [realtime.md](realtime.md) (how others learn of the
-lock). **The document view** - many components in one scroll, the read, review and author modes,
-choosing which version a reference points at, and preview - is the next slice, designed once the
-outline (STR) and the publishing pipeline are.
+(ProseMirror, one view per component), [content-model.md](content-model.md) (what is stored, and the
+admission pipeline everything entering it passes through), [storage-and-versioning.md](storage-and-versioning.md)
+and [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md) (iterations, versions and
+the digest), [metadata.md](metadata.md) (which fields apply and what is valid), [themes.md](themes.md)
+(how it looks, resolved once for the editor and the publisher alike), [realtime.md](realtime.md) (how
+others learn of the lock) and [service-foundations.md](service-foundations.md) (how every route is
+written). **The document view** - many components in one scroll, the read, review and author modes,
+headings, choosing which version a reference points at, and preview - is the next slice, designed once
+the outline (STR) and the publishing pipeline are.
 
 ## The shape in one paragraph
 
-The renderer holds the editor state. A component opens read-only; the first change an author makes
-claims the component's **lock**, and the change is held rather than lost while the claim is answered.
-Every change after that is sent, after a short pause, as an **iteration** - a whole snapshot of the
-content and the metadata values, carrying the lock - and the author is told plainly whether it arrived.
-The steps of the session are kept in the browser's session storage, so undo survives a reload. A
-**version** is cut only by a positive act: **Save version**, or **Done editing**, which also releases
-the lock. A lock that times out cuts nothing, and its iterations wait to be recovered. Beside the
-content, the component's type decides its fields, and validation runs as values change.
+The renderer holds the editor state. A component opens read-only; the first change an author makes -
+to the content or to a metadata value - claims the component's **lock**, and changes are held rather
+than lost while the claim is answered. Every change after that is sent, after a short pause, as an
+**iteration** - a whole snapshot of the content and the metadata values, carrying the lock and a
+sequence number the service only ever accepts in increasing order - and the author is told plainly
+whether it arrived. The session's steps and latest values are kept in the browser's session storage, so
+undo survives a reload. A **version** is cut only by a positive act: **Save version**, or **Done
+editing**, which also releases the lock, and neither goes ahead while changes are unsaved. A lock that
+times out cuts nothing, and its iterations wait to be recovered. Beside the content, the component's
+type decides its fields; validation runs as values change, and a definition that changes mid-session is
+noticed and explained rather than discovered at a refusal.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                       |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CNT-066** | After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts                                                        |
-| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one                               |
-| **CNT-068** | A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced                      |
-| **CNT-069** | One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from  |
-| **CNT-103** | Cutting a version clears the history and the stored steps, so undo never reaches past a version                                                                                     |
-| **CNT-070** | A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout                                             |
-| **CNT-089** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and visible only to the lock holder (VER-001 to VER-003)                 |
-| **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, and restoring one makes it the current content of the session - as an edit, undoable             |
-| **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                    |
-| **COL-005** | The lock is claimed by the first change an author makes, not by a separate act; the change waits for the claim rather than being refused                                            |
-| **COL-006** | The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it                                                          |
-| **COL-008** | A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it                             |
-| **COL-010** | **Done editing** releases the lock and cuts a version of what changed; a lock expiring cuts nothing                                                                                 |
-| **COL-011** | The lock is a row per component; nothing locks a document                                                                                                                           |
-| **API-039** | The service checks the lock on every mutating component request and refuses one from anybody but the holder, naming the holder and the expected release                             |
-| **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable                                        |
-| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration whose value for it differs from the default, naming field and schema |
-| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                             |
-| **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the surface, the toolbar and the metadata panel   |
-| **CNT-048** | An equation's alternative is generated from its MathML when it is entered and stored as the MathML `alttext`, editable in the equation's panel                                      |
-| **CNT-080** | Equations render as native MathML carrying `alttext`, which assistive technology reads                                                                                              |
-| **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                     |
-| **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged   |
-| **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker      |
+| ID          | How it is met                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **CNT-066** | After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts                                                                     |
+| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one                                            |
+| **CNT-068** | A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced                                   |
+| **CNT-069** | One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from               |
+| **CNT-103** | Cutting a version clears the history and the stored steps, and a reload that finds steps recorded against an older version discards them, so undo never reaches past a version                   |
+| **CNT-070** | A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout                                                          |
+| **CNT-089** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and visible only to the lock holder (VER-001 to VER-003)                              |
+| **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration |
+| **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                                 |
+| **COL-005** | The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused                                     |
+| **COL-006** | The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it                                                                       |
+| **COL-008** | A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it                                          |
+| **COL-010** | **Done editing** releases the lock and cuts a version of what changed; a lock expiring cuts nothing                                                                                              |
+| **COL-011** | The lock is a row per component; nothing locks a document                                                                                                                                        |
+| **API-039** | The service checks the lock on every mutating component request and refuses one from anybody but the holder with `lock.held`, naming the holder and the expected release                         |
+| **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it             |
+| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration whose value for it differs from the default, naming field and schema              |
+| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                                          |
+| **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                        |
+| **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - on entry, and on load for any equation that lacks one - stored as `alttext`, and always editable      |
+| **CNT-080** | Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard                                                          |
+| **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                  |
+| **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                |
+| **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                   |
 
 **CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.** Native
 spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each run against
@@ -67,34 +73,45 @@ has not enabled is checked against whatever it has.
 
 ## What this document does not own
 
-| Left unclaimed            | Why                                                                                                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CNT-035                   | Every CNT-031 mark from toolbar and keyboard includes **defined term**, whose control needs a term to choose, and terms are LIB's T6 library. The other seven marks are designed here |
-| CNT-078, CNT-139          | WCAG 2.2 AA and its verification are for the editor as a whole, and half of the editor is the document view, not yet designed. This slice is built to it and tested against it        |
-| CNT-079                   | Headings are outline nodes, rendered by the document view. Lists, tables and footnotes are exposed as structure here                                                                  |
-| CNT-074                   | Which component the cursor is in is the document view's; this slice shows the lock state of the one component open                                                                    |
-| MET-021                   | The metadata panel runs validation as values change, for a component. MET-021 replaced TPL-038 and covers a document's and a section's fields too, which the document view edits      |
-| CNT-045, CNT-046, CNT-049 | Rendering an equation in PDF and Word, and in a heading or a caption, are the publisher's and the document view's                                                                     |
-| CNT-113, COL-026          | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                               |
-| COL-007, API-036          | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s                                                                                              |
-| COL-009                   | Taking a lock from an idle holder, with a warning and an audit, is not in the minimal lock. The row supports it; the act is not designed                                              |
-| API-037                   | The version precondition is honoured below, but it is a rule for every versioned resource, not something this design is the realisation of                                            |
-| STY-070                   | An unresolvable style shows its marker from the theme projection; an unresolvable glyph needs font coverage the editor does not yet have                                              |
+**Much of what an editor does is designed elsewhere, and this document uses it rather than restating
+it.** The admission pipeline that paste and internal copy pass through (CNT-060 to CNT-064, CNT-130 to
+CNT-135), what every node and mark stores (CNT-017, CNT-022, CNT-027 to CNT-030, CNT-043, CNT-081,
+CNT-107, CNT-126, CNT-127, CNT-129) and identity (CNT-002, CNT-004) are
+[content-model.md](content-model.md)'s. Style resolution and the editor's rendering of it (CNT-097,
+STY-035, STY-037, STY-053, STY-058) are [themes.md](themes.md)'s. The API conventions every route
+follows - the error shape, cursors, idempotency keys, the generated contract (API-002, API-003, API-005
+to API-008) - are [service-foundations.md](service-foundations.md)'s.
+
+| Left unclaimed                              | Why                                                                                                                                                                                                                                           |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-035                                     | Every CNT-031 mark from toolbar and keyboard includes **defined term**, whose control needs a term to choose, and terms are LIB's T6 library. The other seven marks are designed here                                                         |
+| CNT-078, CNT-139                            | WCAG 2.2 AA and its verification are for the editor as a whole, and half of the editor is the document view, not yet designed. This slice is built to it, tested against it, and gated on it below                                            |
+| CNT-079                                     | Headings are outline nodes, rendered by the document view. Lists, tables and footnotes are exposed as structure here                                                                                                                          |
+| CNT-074                                     | Which component the cursor is in is the document view's; this slice shows the lock state of the one component open                                                                                                                            |
+| CNT-045, CNT-046, CNT-049                   | Rendering an equation in PDF and Word is the publisher's; an equation in a heading is the document view's, and **in a caption it is not representable** - see [Captions](#captions)                                                           |
+| CNT-122                                     | The editor sizes an image by the shared resolver; resolving it at publish is the publisher's                                                                                                                                                  |
+| CNT-113, COL-026                            | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                                                                                       |
+| COL-007, API-036                            | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s, which this design extends to a component opened on its own                                                                                          |
+| COL-009                                     | Taking a lock from an idle holder, with a warning and an audit, is not in the minimal lock. The row supports it; the act is not designed                                                                                                      |
+| MET-021, MET-029                            | This panel validates as values change and shows a departed user as no longer active - for a component. Both requirements cover a document's and a section's fields too, which the document view edits                                         |
+| API-037, API-038, API-047, API-051, API-053 | Preconditions, request identifiers, rate limits and the authentication contract are honoured by every route below, but they are rules for every route in the product, not something this design is the realisation of                         |
+| STY-066, STY-070                            | A draft resolving against its document's theme needs a document; an unresolvable glyph needs coverage data the editor does not have. Styles and typefaces that fail to resolve are marked - see [Unresolvable content](#unresolvable-content) |
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                     |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/editor`       | New. The ProseMirror schema, the mapping to and from the stored model, plugins, commands, keymaps and node views. Browser code, no React |
-| `apps/web`              | A thin React component that mounts one `EditorView`, the toolbar, the metadata panel, the save indicator and the session state machine   |
-| `packages/domain`       | Unchanged in role: the content model and [metadata.md](metadata.md)'s rules, imported by both the renderer and the service               |
-| `packages/api-contract` | The routes below                                                                                                                         |
-| `apps/service`          | The routes, the lock, iterations and versions, per [storage-and-versioning.md](storage-and-versioning.md)                                |
-| `apps/desktop`          | One bridge call to set the platform checker's languages (CNT-148), decided in `shell.ts` as a pure function                              |
+| Where                   | What                                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/editor`       | New. The ProseMirror schema, the mapping to and from the stored model, plugins, commands, keymaps and node views. Browser code, no React                          |
+| `apps/web`              | A thin React component that mounts one `EditorView`, the toolbar, the metadata panel, the save indicator and the session state machine                            |
+| `packages/domain`       | Unchanged in role: the content model, the admission pipeline, [metadata.md](metadata.md)'s rules and the theme resolver, imported by the renderer and the service |
+| `packages/api-contract` | The routes below                                                                                                                                                  |
+| `apps/service`          | The routes, the lock, iterations and versions, per [storage-and-versioning.md](storage-and-versioning.md)                                                         |
+| `apps/desktop`          | One bridge call to set the platform checker's languages (CNT-148), decided in `shell.ts` as a pure function                                                       |
 
 **`packages/editor` is a workspace rather than a folder in `apps/web`** because most of it is testable
 without a browser: `prosemirror-model` and `prosemirror-state` run in Node, so the mapping, the identity
-plugin and every command are tested there. Only node views and the view itself need a DOM.
+plugin, the invariants and every command are tested there. Only node views and the view itself need a
+DOM.
 
 **No editor toolkit sits on top of ProseMirror.** A toolkit brings its own schema and extension model,
 and this product already has a schema - two definitions of one document are two things to keep in
@@ -104,176 +121,507 @@ choice not to.
 ## The surface
 
 **The schema is the stored model's, mapped losslessly.** Every node and mark in content-model.md has a
-ProseMirror counterpart, and `toEditor` and `fromEditor` are total and inverse. The one difference the
-spike found is kept: a block's `id` has a default of `null` in the editor schema, because ProseMirror
-must be able to generate a paragraph, and the identity plugin fills it. `fromEditor` refuses a `null`
-identifier, so an unidentified block can never reach storage.
+ProseMirror counterpart, and `toEditor` and `fromEditor` are total and inverse. The component's title,
+base language and base direction - the content root's other members - are attributes of the editor's
+document node, so changing one is a step like any other: saved, undoable and versioned. The one
+difference the spike found is kept: a block's `id` has a default of `null` in the editor schema, because
+ProseMirror must be able to generate a paragraph, and the identity plugin fills it. `fromEditor` refuses
+a `null` identifier, so an unidentified block can never reach storage.
 
-**Identity is ADR-0023's plugin, unchanged**: a block at its identifier's forward-mapped position, with
-association 1, descends and keeps it; every other block holding that identifier is re-identified.
+### What an author can do with each thing in the model
 
-| Content                                          | In the editor                                                                                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Paragraph styles                                 | A style picker offering the theme's allowed paragraph styles (STY-033). No alignment, spacing or typeface control (CNT-094)    |
-| Character marks                                  | Toolbar buttons and platform shortcuts for emphasis, strong, underline, subscript, superscript, inline code and quoted phrase  |
-| Lists                                            | Three kinds, nesting by `Tab` and `Shift-Tab`, start and format on an ordered list                                             |
-| Tables                                           | `prosemirror-tables` with ADR-0023's accessible `toDOM` - `scope` on header cells, a `<caption>` - and **column resizing off** |
-| Equations                                        | A node view rendering MathML; editing opens a LaTeX field converted to MathML as you type, with the LaTeX kept (CNT-043)       |
-| Footnotes                                        | A node view holding a nested editor for the note's paragraphs, as in ProseMirror's footnote pattern                            |
-| Figures and images                               | Rendered from their asset. **Inserting one waits for the assets design**: nothing yet ingests an asset to insert               |
-| Cross-references, citations, variables, bindings | Rendered as atoms naming what they point at. Inserting each waits for the design that owns its target - STR, LIB, REU, DAT     |
-| Symbols                                          | The insertion palette (CNT-057)                                                                                                |
+The slice boundary, stated for every node and mark rather than left to be inferred. **Create** means a
+command makes a new one; **edit** means an existing one can be changed.
 
-**Column resizing is off because ADR-0023 made accessibility win.** The resizing plugin's node view owns
-the table's DOM and ignores `toDOM`, so it cannot emit the `<caption>` TAB-039 requires. A table's
-widths are the theme's.
+| Content                                                                         | Create                        | Edit                                                              | Where it waits                                            |
+| ------------------------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| Paragraph                                                                       | Yes                           | Text, and its style from the theme's allowed list                 |                                                           |
+| Emphasis, strong, underline, subscript, superscript, inline code, quoted phrase | Yes, toolbar and shortcut     | Apply and remove                                                  |                                                           |
+| Hyperlink                                                                       | Yes, over a selection         | Target and title; removal                                         |                                                           |
+| Language                                                                        | Yes, over a selection         | Tag; removal                                                      |                                                           |
+| Defined term                                                                    | No                            | Removal only                                                      | LIB's terms, T6                                           |
+| List, three kinds                                                               | Yes                           | Kind, nesting, start and format                                   |                                                           |
+| Table                                                                           | Yes                           | Cells, spans, header rows and columns, key columns, caption, note |                                                           |
+| Preformatted                                                                    | Yes                           | Text and language label                                           |                                                           |
+| Block quotation                                                                 | Yes                           | Content and attribution                                           |                                                           |
+| Equation, inline and block                                                      | Yes                           | LaTeX or MathML, alternative text, numbered or not                |                                                           |
+| Footnote                                                                        | Yes, in all four anchor kinds | Content, restricted to CNT-129's                                  |                                                           |
+| Figure, inline image                                                            | No                            | Caption, alternative text state, image style                      | The assets design: nothing yet ingests an asset to insert |
+| Cross-reference                                                                 | No                            | Removal only                                                      | STR, in the document view, where its targets are          |
+| Citation                                                                        | No                            | Removal only                                                      | LIB's bibliography, T6                                    |
+| Variable                                                                        | No                            | Removal only                                                      | REU, T4                                                   |
+| Binding                                                                         | No                            | Removal only                                                      | DAT, T2                                                   |
+| Condition, suggestion, comment anchor                                           | No                            | None                                                              | REU, T4, and COL, T3. Nothing in T1 creates one           |
 
-**Equations are native MathML.** Chromium renders MathML Core, and Electron is Chromium, so there is no
-typesetting library in the editor and nothing to disagree with the publisher about except the MathML
-itself. LaTeX is converted by a converter that emits MathML - Temml is the candidate, being small and
-MIT-licensed - and the alternative text is generated from the MathML by a speech rule engine, loaded
-only when an equation is being edited, because it is large.
+**Nothing in T1 can put a condition, a suggestion or a comment anchor into a component** - the admission
+pipeline drops annotations whose owner does not travel (CNT-133) and follows CNT-Q14's recommendation to
+drop a condition whose axis is absent - so the editor renders one only if it ever meets one: as a marker
+distinguishable without colour (CNT-138), read-only. **Admonitions are not in this table because they
+are not in the model**: content-model.md left the block out of the first vocabulary deliberately, as T2.
 
-**The theme is `projectCss`** (themes.md), scoped to the component's container, with the tenant's
-typefaces. The editor resolves nothing itself (STY-035).
+**A figure or image that cannot be inserted is still edited faithfully.** Its caption, its alternative
+text in the model's three states - its own text, inherited from the asset, or decorative - and its image
+style are editable, and an asset that does not resolve renders as an explicit marker. Until the assets
+design exists, the slice cannot make a new figure, and the editor is not T1-complete for figures - which
+the build plan says rather than implies.
 
-**Paste goes through the admission pipeline** content-model.md designs - read, sanitise, migrate,
-normalise, re-identify, validate - through ProseMirror's `transformPasted`, and the report is shown
-when anything was dropped. Until the pipeline is built, the editor accepts plain text only rather than
-admitting anything unsanitised.
+### Identity, by operation
+
+| Operation                 | Blocks                                                                                                                                       | Marks                                                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| A new block in the editor | The identity plugin allocates 128 random bits, base32, and re-draws on a clash within the component                                          | -                                                                                                                                          |
+| Applying a mark           | -                                                                                                                                            | A new identifier. Character marks exclude their own type, so re-applying one replaces it with a fresh identifier; annotation marks overlap |
+| Split, join, move         | ADR-0023's descent rule: the block at its identifier's forward-mapped position, association 1, keeps it; every other holder is re-identified | Attributes travel with the text, so a mark split across text nodes keeps one identifier (CNT-004)                                          |
+| Paste, from anywhere      | The admission pipeline's re-identify stage allocates a new identifier for every block before ProseMirror sees the slice (CNT-132)            | The same stage allocates a new identifier for every mark, and drops annotations whose owner does not travel (CNT-133)                      |
+| Restoring an iteration    | As stored, already unique; migrated to the current schema first or refused by name (CNT-012, CNT-013)                                        | As stored                                                                                                                                  |
+
+**Paste is re-identification, not collision resolution.** The descent rule decides who keeps an
+identifier when two blocks in one document hold it. Pasted content never reaches that rule with a copied
+identifier, because the pipeline has already given every pasted block and mark a new one - so a copied
+block cannot keep its identifier merely because the receiving component did not have it yet.
+
+### Invariants the editor holds
+
+- **At least one block, always.** The editor document's content is `block+`, so deleting everything
+  leaves one empty paragraph (CNT-124).
+- **Never two adjacent empty paragraphs** (CNT-023). `Enter` in an empty paragraph creates no second one
+  - in a list it leaves the list - and an `appendTransaction` removes the second of two adjacent empty
+    paragraphs however they arose, from a join, a deletion or an undo. Blank lines in pasted content are
+    normalised by the pipeline and reported.
+- **What the editor holds is always storable.** Every iteration is `fromEditor` then
+  `parseContentDocument`, in the renderer; the service parses it again and refuses content that does not
+  parse, so an invariant broken by a bug is a refused save rather than a stored defect.
+
+### Tables and footnotes
+
+A table's properties - header rows and columns, **key columns**, caption and note - are edited in a table
+panel reached from the table's toolbar and by keyboard. Tables use `prosemirror-tables` with ADR-0023's
+accessible `toDOM` - `scope` on header cells, a `<caption>` - and **column resizing off**, because the
+resizing plugin owns the table's DOM and ignores `toDOM`, so it cannot emit the caption TAB-039 requires.
+A table's widths are the theme's.
+
+| Footnote anchored to | Inserted by                                                                                       | Survives                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| A span of text       | **Insert footnote** at the cursor                                                                 | Any edit that keeps the anchor node                                                                                       |
+| A cell, by key       | **Insert footnote** in a cell of a table with key columns; the key is that row's key-column value | Reordering rows. If the key value changes or the row goes, the anchor shows as unresolved, and publishing fails (CNT-042) |
+| A cell, by position  | **Insert footnote** in a cell of a table without key columns                                      | Nothing that moves the cell. Shown with a marker saying it is the weaker form (CNT-107)                                   |
+| The table as a whole | **Add note** in the table panel                                                                   | Anything that keeps the table                                                                                             |
+
+A footnote's content is a nested editor on the **restricted schema** - paragraphs only, holding the
+inline content CNT-129 allows, and no table or image - so the restriction is structural, not a check.
+
+### Equations
+
+**MathML is canonical and LaTeX is an input record**, as content-model.md decided (CNT-043): rendering,
+comparison and publishing read the MathML only. An author types LaTeX, converted as they type by a
+converter that emits MathML - Temml is the candidate, being small and MIT-licensed - **pinned to a
+version**, and the MathML is **normalised on entry** by the pipeline's normalise stage - one attribute
+order, no insignificant whitespace, one namespace declaration - so identical input stores identical
+bytes and does not churn the version digest. Equations entered by different paths that mean the same
+thing are not detected as equal; nothing requires it, and a comparison showing a re-entered equation as
+changed is honest.
+
+Chromium renders MathML Core and Electron is Chromium, so there is no typesetting library in the editor.
+
+| Context                              | Equation                                          |
+| ------------------------------------ | ------------------------------------------------- |
+| Running text, list items, quotations | Inline, and block where blocks are allowed        |
+| A table cell                         | Inline, in the cell's paragraphs, and block       |
+| A footnote                           | Inline                                            |
+| A caption                            | **Not representable** - see [Captions](#captions) |
+| A heading                            | The document view's                               |
+
+**Generating the alternative is assistance, and its absence is never silent.** The alternative is
+generated from the MathML by a speech rule engine where one is available - when an equation is entered,
+and on load for any equation that has none, which covers pasted, migrated and restored ones. It is always
+editable. If no generator is available or it produces nothing, the field is empty and marked, and a
+missing alternative fails the publish (PUB-072). CNT-048 asks for generation "where possible", so the
+choice of engine does not decide whether this slice meets it.
+
+### Captions
+
+A table's and a figure's caption is the model's `caption` member, a **plain string**, edited as a text
+field in the table or figure panel. A caption-bearing block's identity is its block `id` (CNT-081), which
+every operation in the identity table above treats like any other.
+
+**A plain-string caption cannot hold an equation, a mark or a cross-reference**, so CNT-046's "an equation
+in a caption" is not representable in the model as built. That is a finding about the content model rather
+than the editor, raised as [#88](https://github.com/kenhayward/alloy-works/issues/88) rather than worked around here.
+
+## Theme and rendering
+
+**A component opened on its own renders against the product's default theme** (STY-048), at its current
+version, and the view says so: _shown in the default theme_. A component is referenced by documents bound
+to different themes, and until the document view gives it a document there is no one theme it would be
+right to show. In the document view a draft resolves against its document's theme version (STY-066).
+
+**The editor resolves nothing itself.** themes.md's single resolver in `packages/domain` resolves styles
+for the editor and the publisher alike (STY-035), and `projectCss` is the editor's projection of what it
+resolved, scoped to the component's container, with the tenant's typefaces. Paragraph and character
+styles render every declared property (STY-058), and properties that only exist on a page - a table's
+repeated header row, a continuation label, keep-together - are not simulated (STY-037); preview is what
+shows them. The measured agreement between the editor, the PDF and Word is themes.md's conformance suite.
+
+**Direction is the model's, and the view follows it.** The surface carries `dir` from the component's
+base direction; mixed-direction text within a run follows the Unicode bidirectional algorithm; and the
+theme projection is expected to express alignment as start and end rather than left and right, so a
+right-to-left component aligns correctly without a second style.
+
+### Unresolvable content
+
+| What                                             | The editor shows                                                                                                                                                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A style not in the theme                         | The resolver's unresolved result, projected as a marker with an accessible description naming the style                                                                                                                  |
+| A typeface that fails to load                    | Detected from the font's load status; the text is marked and never quietly set in a fallback (STY-040)                                                                                                                   |
+| An asset that does not resolve                   | A marker in the figure's place, naming the asset                                                                                                                                                                         |
+| A cross-reference, citation, variable or binding | An atom naming its target where the target can be read, and a marker where it cannot. A cross-reference in a component opened on its own is shown as resolved in a document, because that is where its number comes from |
+| A glyph a typeface lacks                         | **Nothing yet.** A browser gives no reliable signal, and coverage data per typeface is not designed - so STY-070 stays unclaimed on this clause                                                                          |
 
 ## The session
 
-| State         | Means                                                         | Leaves by                                                                                      |
-| ------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Reading**   | Open, not held. Selecting and copying work; changing does not | A change → Claiming                                                                            |
-| **Claiming**  | The first change is held while the lock is requested          | Granted → Editing, with the held change applied. Refused → Reading, naming the holder          |
-| **Editing**   | This session holds the lock. Changes are saved as iterations  | Save version → Cutting. Done editing → Releasing. Lock lost → Recovery                         |
-| **Cutting**   | Unsent changes are flushed, then the version is requested     | Cut, or nothing to cut → Editing, history cleared                                              |
-| **Releasing** | Flushed, a version cut if anything changed, the lock released | → Reading                                                                                      |
-| **Recovery**  | The lock expired or was taken while changes existed           | The author restores an iteration after claiming again, or discards the session's unsaved steps |
+| State         | Means                                                                          | Leaves by                                                                       | When it fails                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Reading**   | Open, not held. Selecting and copying work; changing does not                  | A change to content or a value → Claiming                                       | -                                                                                                              |
+| **Claiming**  | Changes are held while the lock is requested                                   | Granted → Editing, held changes applied in order                                | Refused → Reading, holder named, held changes kept - see below. No answer in ten seconds → Reading, with retry |
+| **Editing**   | This session holds the lock. Changes are saved as iterations                   | Save version → Cutting. Done editing → Releasing                                | Lock expired, taken or moved → Recovery                                                                        |
+| **Cutting**   | Unsaved changes are flushed and acknowledged, then the version is requested    | Cut, or nothing to cut → Editing, history and stored steps cleared              | Flush fails → Editing, not saved, no version requested. Refused → Editing, reason shown                        |
+| **Releasing** | Flushed and acknowledged, a version cut if anything changed, the lock released | → Reading                                                                       | Flush fails → Editing, not saved: the lock is not released over unsaved work unless the author discards it     |
+| **Recovery**  | The lock went while this session had changes                                   | The author claims again and restores, or discards the session's unsaved changes | Claim refused → stays in Recovery, unsaved changes still held locally                                          |
+
+### Claiming
 
 **Claiming waits rather than refuses.** COL-005 wants claiming to be automatic on beginning to edit. An
-editor that refused the first keystroke and asked the author to type it again would make claiming a
-separate act in all but name. So the first change is held - the surface shows that editing is starting
+editor that refused the first keystroke and asked for it again would make claiming a separate act in all
+but name.
 
-- and applied when the lock is granted, normally within a round trip.
+- **Changes are held in order.** The first change and everything after it - typing, a paste, a metadata
+  value - is held as a queue of transactions against the document as it was, and applied in order when
+  the lock is granted, normally within a round trip. The surface shows that editing is starting.
+- **A refusal loses nothing.** The held changes are not applied, and the author is told who holds the
+  component and when it is expected back, and offered the held changes as text to copy - the one thing
+  that can be kept without writing to a component someone else is editing.
+- **No answer is a refusal to retry**, not a silent wait: after ten seconds the session returns to
+  Reading, keeps the held changes, and offers to try again.
 
-**Saving.** After two seconds without a change, or every ten seconds during continuous typing, the
-renderer sends an iteration: the whole content and values, the lock's session, and a sequence number.
-The service inserts it unless that session and sequence are already stored, so a retry never makes two
-rows. The indicator says **saved** when the latest sequence is acknowledged, **saving** while one is in
-flight, and **not saved, retrying** once a save has failed for ten seconds - with backoff to thirty
-seconds between attempts, and every unsent step still in session storage.
+### Saving
 
-**Undo across a reload.** Session storage holds, per component and lock session, the version the
-session opened from, the document at that point, and every step since, with the history's grouping. On
-reload, if the service confirms this session still holds the lock and the version is unchanged, the
-steps are replayed into a fresh editor state with history, so undo reaches back exactly as far as it
-did. If the lock is gone, the session enters Recovery.
+After two seconds without a change, or every ten seconds during continuous typing, the renderer sends an
+iteration: the whole content and values, the lock's session, a sequence number, and the version the
+session opened from. **A metadata value change counts as a change**, starting and resetting the same
+timers.
 
-**Undo covers content, not metadata.** ProseMirror's history is the document's. A metadata field is an
-ordinary input with its own undo, and folding value changes into the content history would make one
-`Ctrl-Z` undo an edit the author cannot see from where the cursor is.
+**One iteration is in flight at a time, and sequence numbers only increase.** For each editing session the
+service keeps the latest accepted sequence and the digest of what it accepted:
 
-**Two windows, one author.** The lock belongs to a principal and an editing session. A second window of
-the same author finds the component held by its own other session and is told so, and may **continue
-here**, which moves the lock to the new session. Iterations stay visible to that author, because the
-holder is the principal (VER-002).
+| Arrives                                          | Answer                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| A sequence above the latest accepted             | Accepted                                                                 |
+| The latest sequence again, same content          | The original acknowledgement - a retry makes no second row               |
+| The latest sequence again, different content     | Refused, `iteration.conflict`                                            |
+| A sequence below the latest accepted             | Refused, `iteration.stale` - a whole snapshot never replaces a newer one |
+| A stated opened-from version that is not current | Refused, `version.precondition`, naming the current version              |
+
+The indicator says **saved** when the latest sequence is acknowledged, **saving** while one is in flight,
+and **not saved, retrying** once a save has failed for ten seconds. Retries back off to thirty seconds
+between attempts, and a limited response's `Retry-After` is honoured over the client's own backoff.
+Every unsent step, and the latest values, stay in session storage throughout.
+
+### Undo across a reload
+
+Session storage holds, per component and editing session: the version the session opened from, the
+document at that point, every step since with the history's grouping, the latest metadata values, and
+the last sequence number sent.
+
+On reload the renderer asks the service for the session's latest accepted sequence. If this session still
+holds the lock and the opened-from version is unchanged, the steps are replayed into a fresh editor state
+with history, the values restored, and anything beyond the service's latest sequence sent as the next
+iteration - so undo reaches back exactly as far as it did, and the service's record is never overwritten
+by an older local one. Steps recorded against an older version are discarded (CNT-103). A lock no longer
+held means Recovery. Session storage that does not parse is discarded and the session opens from the
+service's latest iteration.
+
+**Undo covers content, not metadata.** ProseMirror's history is the document's - which includes the title,
+base language and base direction. A metadata field is an ordinary input with its own undo, and folding
+value changes into the content history would make one `Ctrl-Z` undo an edit the author cannot see from
+where the cursor is.
+
+### Two windows, one author
+
+The lock belongs to a principal and an editing session. A second window of the same author finds the
+component held by its own other session - the component's lock state says so before anybody types - and
+may **continue here**, which moves the lock to the new session.
+
+**Moving the lock does not strand the other window's work.** The window that lost the lock learns it from
+the lock event (realtime) or, failing that, from its next refused save, and enters Recovery with its
+unsent changes still held locally. From there it can move the lock back and save them, or discard them.
+Iterations either session saved stay visible to that author, because the holder is the principal
+(VER-002).
+
+### Recovery
+
+Iterations are visible to the lock holder only (VER-002), so **Recovery begins by claiming the lock
+again** - which succeeds only if nobody else holds it. Without the lock, the author still has whatever
+unsent changes the window holds, and is told who holds the component.
+
+With it, the panel lists retained iterations newest first, a page at a time over a cursor (API-007),
+within the tenant's retention window (VER-003, VER-004); an iteration that expires while listed disappears
+on the next page or refresh. **Restoring applies a whole snapshot - content and values together** - after
+the current state is saved as an iteration of its own, so a restore is itself recoverable. A restored
+snapshot is migrated to the current schema and validated first, and one that will not read is refused by
+name rather than half loaded (CNT-012, CNT-013).
 
 ## Cutting a version
 
-**Save version** takes an optional note (VER-007). The renderer flushes unsent changes, then asks for a
-version from the latest acknowledged iteration, stating the version the session opened from.
+**Save version** takes an optional note (VER-007). The renderer flushes unsaved changes and waits for the
+acknowledgement, then asks for a version from the latest acknowledged iteration, stating the version the
+session opened from and an `Idempotency-Key`.
 
-The service, in one transaction: checks the lock; refuses if the component's latest version is not the
-one stated, which cannot happen while the lock is held and is checked anyway (API-037); loads the
-current definitions (`definitionsFor`, metadata.md); carries the values forward (`carryForward`);
-computes the content hash and the version digest (ADR-0024); **refuses with `version.unchanged` if the
-digest equals the latest version's**; and inserts the version with its `version_definition` rows.
+The service, in one transaction: checks the lock; refuses if the component's latest version is not the one
+stated (`version.precondition`); loads the current definitions (`definitionsFor`, metadata.md); carries the
+values forward (`carryForward`); computes the content hash and the version digest (ADR-0024); **answers
+`version.unchanged` if the digest equals the latest version's**; and inserts the version with its
+`version_definition` rows. A repeated request with the same key returns the first answer (API-008).
 
-**Nothing to cut is not an error to the author.** Save version with no change says so and does nothing.
-Done editing with no change releases the lock and cuts nothing - COL-010's "releasing cuts a version"
-has nothing to cut, and ADR-0024 refuses a version that says nothing new.
+**Nothing to cut is not an error to the author.** `version.unchanged` is a structured answer rather than a
+failure: Save version with no change says so and does nothing; Done editing with no change releases the
+lock and cuts nothing - COL-010's "releasing cuts a version" has nothing to cut, and ADR-0024 refuses a
+version that says nothing new.
 
-**Values that will not be carried are shown before the cut.** If the current definitions no longer
-include a field that holds a value, the author is told which values the version will leave behind,
-by field, before confirming (MET-036).
+**After a successful cut** the editor clears its history and replaces the session-storage entry with one
+recorded against the new version, so nothing from before the cut can be replayed into undo.
+
+**Values that will not be carried are shown before the cut.** If the current definitions no longer include
+a field that holds a value, the author is told which values the version will leave behind, by field,
+before confirming (MET-036).
 
 ## Metadata alongside
 
-The **metadata panel** sits beside the surface in the same view. It shows the component's type -
-read-only in T1, since changing it is MET-014, T2 - and its effective fields in resolution order
-(metadata.md), each with its data type's input: text, a decimal input that keeps the string entered,
-date, time, date and time with a zone, a switch, and a user picker over the tenant's principals.
+The **metadata panel** sits beside the surface in the same view. It shows the component's type - read-only
+in T1, since changing it is MET-014, T2 - and its effective fields in resolution order (metadata.md).
 
-- **Required** fields are marked, naming the schema that requires them.
-- **Fixed** fields are read-only, naming the schema that fixes them (MET-033).
-- **Validation runs on every change** (MET-021), in the renderer, with the same `validate` the service
-  and the publisher use.
+| Data type   | Input                                                                                                                                                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`      | A text input                                                                                                                                                                                                           |
+| `number`    | A decimal input that keeps the string entered                                                                                                                                                                          |
+| `date`      | A date input; stored `YYYY-MM-DD`, no offset                                                                                                                                                                           |
+| `time`      | A time input; stored `HH:MM` or `HH:MM:SS`, no offset                                                                                                                                                                  |
+| `dateTime`  | A local date and time in a named zone, defaulting to the author's; **stored as the instant with its numeric offset**, never the zone name. A time that does not exist or occurs twice in that zone asks which is meant |
+| `boolean`   | A switch                                                                                                                                                                                                               |
+| `user`      | A picker over the tenant's **active** principals. A stored principal who has since been de-provisioned is shown by name as **no longer active**, and the value stays set and valid                                     |
+| Any, `many` | An ordered list of that input, with add, remove and move up and down; duplicates and more than `maxValues` are validation failures shown on the list; order is kept exactly                                            |
+
+- **Required** fields are marked and exposed as required to assistive technology, naming every schema that
+  requires them.
+- **Fixed** fields are read-only, naming every schema that fixes them (MET-033).
+- **Validation runs on every change** in the renderer, with the same `validate` the service and the
+  publisher use, each failure associated with its field and announced.
 - **Values are part of the iteration**, so they autosave, recover and version with the content.
 
 **The service refuses only what cannot be stored honestly.** An iteration is refused if a fixed value
-differs from its default (MET-033) or a value is not the JSON its data type takes. Every other failure -
-a required field left empty, a pattern not matched - is saved and shown, and fails the publish
-(MET-023). An author mid-draft is never blocked from saving.
+differs from its default (`metadata.fixed`, MET-033), a value is not the JSON its data type takes, or it
+would change the component's type. Every other failure - a required field left empty, a pattern not
+matched - is saved and shown, and fails the publish (MET-023). An author mid-draft is never blocked from
+saving. Refusals use service-foundations' error shape, with the field, the rule and the schemas as members
+rather than prose.
+
+### When definitions change mid-session
+
+Definitions are tenant-wide and change while people are editing. **A session notices a change rather than
+discovering it at a refusal.**
+
+- `GET /v1/components/{id}` returns the definition versions the effective fields were resolved from, and
+  every iteration acknowledgement carries a digest of the current ones. When the digest differs, the
+  renderer re-fetches the effective fields.
+- **The panel then explains what changed**, before the author meets it: a field newly required is marked
+  and named; a field newly fixed takes its default, with the old value and the reason shown; a field no
+  longer applying keeps its value, listed as one the next version will not carry.
+- **An iteration in flight when a field becomes fixed** is refused with `metadata.fixed`, carrying the
+  current definitions; the renderer applies them as above and resends, without the author having to act.
+- **The cut uses the definitions current at the cut**, and shows what will not be carried first, so nothing
+  the author entered disappears unseen.
 
 ## Creating a component
 
-A title, a base language (a BCP 47 picker), and a component type, with the tenant's default preselected
-(MET-011). Creating inserts the artifact and version `0.1`: one empty paragraph (CNT-124), every fixed
-field at its default and every other default applied (metadata.md). Creation is itself a positive act,
-so every component has a version from the moment it exists, and a baseline can pin it.
+A title, a base language (a BCP 47 picker), a **base direction** - left to right or right to left,
+defaulting from the language's script - and a component type, with the tenant's default preselected
+(MET-011). The request carries an `Idempotency-Key`, so a retried create returns the component already
+made rather than a second one. Creating inserts the artifact and version `0.1`: one empty paragraph
+(CNT-124), every fixed field at its default and every other default applied (metadata.md). Creation is
+itself a positive act, so every component has a version from the moment it exists, and a baseline can pin
+it.
+
+**Title, base language and base direction are edited afterwards** in the component header above the
+surface. Each is a step on the editor's document, so each is saved, undoable and versioned like content.
+Changing the base language asks for confirmation, because every run without its own language mark changes
+language with it, and the spellcheck rule (CNT-147) is recomputed from the new base.
+
+## Accessibility
+
+- **Regions.** The view has four: component header, toolbar, surface, metadata panel. `F6` and
+  `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
+- **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
+  into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
+  popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.
+- **Equations** are focusable nodes, opened with `Enter`; the LaTeX field has `spellcheck="false"` and an
+  accessible name; the alternative-text field is labelled and marked when empty.
+- **Status is announced**, politely, through one live region: saving failing and recovering, the lock
+  claimed, a claim refused with its holder and expected release, entering Recovery, a version cut or
+  nothing to cut, a definition change, and an unresolvable marker appearing.
+- **The metadata form** gives every input a label, exposes required and fixed state, associates each
+  validation failure with its field, and names a no-longer-active user as such.
+- **Markers are never colour alone** (CNT-138): a shape or text accompanies each.
 
 ## The API
 
-| Route                                                | Does                                                                                                    |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `POST /v1/spaces/{space}/components`                 | Creates a component and its version `0.1`                                                               |
-| `GET /v1/components/{id}`                            | The latest version, its values, and the effective fields for authoring                                  |
-| `POST /v1/components/{id}/lock`                      | Claims the lock for an editing session, or moves it to a new session of the same principal              |
-| `DELETE /v1/components/{id}/lock`                    | Done editing: cuts a version if anything changed, then releases                                         |
-| `PUT /v1/components/{id}/iterations/{session}/{seq}` | Saves an iteration; idempotent on session and sequence                                                  |
-| `GET /v1/components/{id}/iterations`                 | Retained iterations, to the lock holder only                                                            |
-| `POST /v1/components/{id}/versions`                  | Cuts a version from the latest iteration, with an optional note and the version the session opened from |
+Every route follows [service-foundations.md](service-foundations.md): declared once in
+`packages/api-contract`, the OpenAPI document generated from it and drift-checked, requests and responses
+validated both ways, one error shape `{ code, message, rule?, traceId }`, cursor listings, and an
+`Idempotency-Key` honoured on any mutating request.
 
-Every mutating route refuses a request from anybody but the lock holder with the structured error
-contract (API-005, API-006), naming the holder and the expected release (API-039). Lock changes notify
-through [realtime.md](realtime.md)'s row-and-notify path.
+| Route                                                | Permission   | Carries                                               | Does                                                                                                                                                                                               |
+| ---------------------------------------------------- | ------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/spaces/{space}/components`                 | Create       | `Idempotency-Key`                                     | Creates a component and its version `0.1`                                                                                                                                                          |
+| `GET /v1/components/{id}`                            | Read         | -                                                     | The latest version and its values, the effective fields and the definition versions they came from, and the lock state: holder, expected release, and whether it is this principal's other session |
+| `POST /v1/components/{id}/lock`                      | Edit         | The editing session                                   | Claims the lock, or moves it to a new session of the same principal                                                                                                                                |
+| `DELETE /v1/components/{id}/lock`                    | Edit, holder | Opened-from version, `Idempotency-Key`                | Done editing: cuts a version if anything changed, then releases; says whether a version was cut                                                                                                    |
+| `PUT /v1/components/{id}/iterations/{session}/{seq}` | Edit, holder | Opened-from version                                   | Saves an iteration, under the sequence rules above                                                                                                                                                 |
+| `GET /v1/components/{id}/iterations`                 | Edit, holder | `cursor`, `limit`                                     | Retained iterations, newest first                                                                                                                                                                  |
+| `POST /v1/components/{id}/versions`                  | Edit, holder | Opened-from version, optional note, `Idempotency-Key` | Cuts a version from the latest iteration                                                                                                                                                           |
+
+**Three different refusals, kept apart.** An unauthenticated request is refused as unauthenticated and a
+request without the permission as forbidden, by IAM's contract (API-053); an authorised request against a
+component somebody else holds is refused `lock.held`, naming the holder and the expected release (API-039).
+An author who may edit but finds the component held is not "forbidden", and the error does not say so.
+
+**Lock changes are heard by a component opened on its own.** realtime.md's stream takes a scope: an open
+document, as before, or a single component opened outside any document. The events and the snapshot are
+the same, so the component's lock state stays current without anybody polling.
 
 ## Verification
 
 - **The mapping round trip, as a property test**: generated content documents survive `toEditor` then
   `fromEditor` unchanged, in Node. This is the test content-model.md named as arriving with the editor.
-- **The spike's identity assertions become real tests**, the paste, split and join cases among them.
-- **The session state machine against a hand-written fake service**: a claim refused, a claim granted
-  with the held change applied, saves retried without duplicates, a lock lost mid-edit, undo after a
-  reload.
-- **Service tests for every refusal**: another holder (API-039), an unchanged version, a changed fixed
-  value, a stale opened-from version; and a timeout that cuts nothing while a release cuts one (COL-010).
+- **Invariants as property tests**: after any generated sequence of commands, no block has a `null`
+  identifier, there is at least one block, no two empty paragraphs are adjacent, block identifiers are
+  unique, and a footnote's content holds no table or image.
+- **Identity**: the spike's assertions become real tests - paste, split and join among them - and pasted
+  content is asserted re-identified, blocks and marks, even where the receiving component lacked the
+  copied identifiers.
+- **Paste**: the admission pipeline's own tests assert what was dropped as well as what survived (CNT-064);
+  the editor's assert that a paste reaches ProseMirror only through the pipeline and that the report is
+  shown.
+- **The session state machine against a hand-written fake service**, including its failure edges: typing
+  and a large paste while claiming; a refused claim keeping held changes; a metadata value as the first
+  change; a stale and a conflicting sequence; a flush failing before Save version and before Done editing;
+  a fixed field arriving mid-session; the lock moved to another window with unsent changes; a reload with
+  the service ahead of session storage; and unreadable session storage.
+- **Service tests for every refusal**: another holder (API-039), an unchanged version, a changed fixed value,
+  a type change, a stale or conflicting sequence, a stale opened-from version; and a timeout that cuts
+  nothing while a release cuts one (COL-010).
+- **Contract tests** for every route against the generated OpenAPI document (API-003), asserting error
+  bodies - `code` and members - and not only status codes.
 - **Desktop**: the shell's language choice tested as a pure function in `shell.ts`.
-- **Accessibility** is built to WCAG 2.2 AA and needs a browser to verify - an automated suite in CI and
-  a recorded manual audit (CNT-139). The repository has no browser suite yet
-  ([testing.md](../testing.md)), so this slice's build plan introduces one.
+- **Autosave under load**: request rate under continuous typing and idle bursts, backoff, and `Retry-After`,
+  measured on a declared reference configuration and recorded beside the provisional two and ten seconds.
+- **Accessibility**, which needs a browser: an automated suite in CI over this surface, and a recorded manual
+  audit against WCAG 2.2 AA. The repository has no browser suite yet ([testing.md](../testing.md)), so this
+  slice's build plan introduces one. **No release claims CNT-078 or CNT-139 without both results in its
+  evidence.**
 
 ## What was ruled out
 
 - **The service as the authority over steps.** It would make a step log load-bearing, which ADR-0012 and
-  ADR-0024 both declined as the system of record, and it needs co-editing machinery soft locks
-  deliberately avoid.
+  ADR-0024 both declined as the system of record, and it needs co-editing machinery soft locks deliberately
+  avoid.
 - **Local-first drafts.** Offline-first is a non-goal, and a draft in the browser's database is somewhere
   VER-002's visibility rule cannot be enforced.
 - **An editor toolkit over ProseMirror.** A second schema to keep in step with the first.
-- **Our own spellchecker.** It would have met CNT-099 as written; the decision was to keep the native
-  checker and supersede CNT-099 and CNT-101 instead.
+- **Our own spellchecker.** It would have met CNT-099 as written; the decision was to keep the native checker
+  and supersede CNT-099 and CNT-101 instead.
 - **A single-writer session.** CNT-071 and VER-002 would have been broken from the first release.
 - **Column resizing.** ADR-0023: accessibility wins where a plugin owns the DOM.
+- **Detecting equivalent equations.** Normalising MathML makes identical input store identically; deciding
+  that two different MathML trees mean the same thing is a semantic comparison nothing requires.
+- **Polling for lock state.** A second path to the same state realtime.md already delivers, with staleness
+  of its own.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                                                                               |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | **Where a component opened outside any document hears about its lock.** realtime.md's stream is one per open document. This slice edits a component on its own, so either the stream gains a component scope or others see the lock only once the document view exists |
-| New | The lock's inactivity period. Fifteen minutes is a guess that trades an author losing the lock over lunch against a colleague waiting; COL-008 makes it a tenant setting, and the default wants a customer's view                                                      |
-| New | The save cadence. Two seconds idle and ten seconds continuous are unmeasured against the service's write budget                                                                                                                                                        |
-| New | The speech rule engine's size and licence, which decide whether generated equation alternatives load on demand or not at all                                                                                                                                           |
+| ID  | Question                                                                                                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | The lock's inactivity period. Fifteen minutes is a guess that trades an author losing the lock over lunch against a colleague waiting; COL-008 makes it a tenant setting, and the default wants a customer's view |
+| New | The save cadence. Two seconds idle and ten seconds continuous are unmeasured against the service's write budget; the verification above is how they get a number                                                  |
+| New | The speech rule engine - which one, its licence and its size. It no longer decides CNT-048, only how often an author types an alternative by hand                                                                 |
+| New | Whether a tenant should be able to name a house theme for components opened on their own, rather than the product's default                                                                                       |
+
+## Review
+
+[The review](../reviews/design-reviews/component-editor.md) read the draft against four requirement
+documents - CNT, MET, STY and API - and said plainly that it did not have the designs the draft rests on.
+**Its points were taken as inputs, not instructions.** Each was checked against the corpus and the other
+designs before deciding; where a premise was wrong the row says so, and where a point was right in
+substance but aimed at the wrong owner, the change went where the rule lives.
+
+### Content surface
+
+| Point                                          | Decision                                  | Change and reasoning                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1 Foreign paste is plain text only           | **Premise corrected; substance accepted** | CNT-060 to CNT-064, CNT-130 and CNT-131 are designed and claimed by content-model.md's admission pipeline, so no requirement is unmet by design. The real point is that "plain text until the pipeline is built" read as a design choice. It is build order: the pipeline is built in this slice's plan, and nothing ships the interim                                                                                                                  |
+| 1.2 Internal copy only implied                 | **Accepted**                              | A new identity table by operation, and an explicit rule that pasted content is re-identified before ProseMirror sees it - so the descent rule never gets the chance to keep a copied identifier. CNT-132 to CNT-135 stay content-model.md's                                                                                                                                                                                                             |
+| 1.3 No authoring matrix                        | **Accepted**                              | A table covering every node and mark: what can be created, edited, and where each waits. Hyperlink and language commands added, which the draft had omitted. **Admonitions declined**: they are not in the model, deliberately, and that decision is content-model.md's                                                                                                                                                                                 |
+| 1.4 Cross-references and others not insertable | **Accepted as explicit scope**            | CNT-027 to CNT-030 are the model's and designed. Insertion waits for the owner of each target - STR in the document view, LIB, REU, DAT - and the matrix now says so for each                                                                                                                                                                                                                                                                           |
+| 1.5 Figures cannot be created                  | **Accepted in part**                      | Existing figures are now edited faithfully: caption, the three alternative-text states, image style, and a marker for an unresolved asset. Creation still waits for the assets design, and the document now says the slice is not T1-complete for figures                                                                                                                                                                                               |
+| 1.6 Footnotes under-specified                  | **Accepted**                              | A footnote table for all four anchor kinds - how each is inserted and what each survives - key columns in a table panel, the weaker positional form marked, and the restricted schema made structural                                                                                                                                                                                                                                                   |
+| 1.7 Empty paragraphs and minimum blocks        | **Accepted**                              | Three invariants: `block+`, no adjacent empty paragraphs enforced on every transaction, and every iteration parsed before it leaves the renderer and again at the service                                                                                                                                                                                                                                                                               |
+| 1.8 Identifier allocation                      | **Accepted**                              | The identity table. Allocation is the renderer's, 128 random bits; mark identifiers are allocated on apply and on paste. **The paste rule for marks extends content-model.md's re-identify stage**, which named blocks only; that document is changed to match rather than this one diverging                                                                                                                                                           |
+| 1.9 Caption identity                           | **Premise corrected; found a real gap**   | Identity is the block `id` (CNT-081, designed). But answering this found that captions are plain strings in the model, so CNT-046's equation in a caption cannot be represented. That is raised as #88, not patched in the editor                                                                                                                                                                                                                       |
+| 1.10 Equations                                 | **Accepted in part**                      | MathML canonical and LaTeX an input record were already content-model.md's (CNT-043); now stated here. Accepted: the converter pinned, MathML normalised on entry, a placement table, and alternatives generated on load for equations lacking one. **Declined**: detecting semantically equivalent equations, which nothing requires. The engine question is narrowed rather than closed, because CNT-048's "where possible" makes generation optional |
+
+### Session
+
+| Point                                          | Decision                          | Change and reasoning                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1 Claiming edge cases                        | **Accepted**                      | Held changes are a queue applied in order; a refusal keeps them and offers them as text; no answer in ten seconds returns to Reading with a retry. A metadata value is a change that claims                                                                                                                                                                                                                    |
+| 2.2 Metadata in the session                    | **Accepted, with one reversal**   | Values claim, start the save timers, and are kept in session storage. **Restoring an iteration was said to be "undoable"; that is withdrawn**, because ProseMirror's history cannot carry values, and an undo that restored content but not values would produce a state no iteration ever held. Instead the current state is saved as an iteration before a restore, so a restore is recoverable the same way |
+| 2.3 Lock visibility for a component on its own | **Accepted**                      | The open question is closed: `GET` returns the lock state, and realtime.md's stream takes a component scope. Polling was ruled out as a second path to the same state                                                                                                                                                                                                                                          |
+| 2.4 Second window strands work                 | **Accepted**                      | The window that loses the lock enters Recovery holding its unsent changes, and can move the lock back                                                                                                                                                                                                                                                                                                          |
+| 2.5 Iteration sequencing                       | **Accepted**                      | The most important point in the review. One iteration in flight, sequences only increasing, and distinct answers for a retry, a conflict and a stale snapshot; reload reconciles against the service's latest accepted sequence rather than trusting session storage                                                                                                                                           |
+| 2.6 Recovery authorisation and restore         | **Accepted as clarification**     | Recovery begins by claiming the lock, because VER-002 makes iterations the holder's; listings are paged within the retention window; restores are whole snapshots, migrated and validated                                                                                                                                                                                                                      |
+| 2.7 Failure transitions                        | **Accepted**                      | A failure column on the state table. Neither a cut nor a release goes ahead over unsaved changes                                                                                                                                                                                                                                                                                                               |
+| 2.8 Clearing stored steps                      | **Already stated; made explicit** | CNT-103's claim said so; the cut section and the reload rule now do too                                                                                                                                                                                                                                                                                                                                        |
+
+### Metadata
+
+| Point                                            | Decision                                   | Change and reasoning                                                                                                                                                                                |
+| ------------------------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1 Multi-value fields                           | **Accepted**                               | An ordered list input for any `many` field                                                                                                                                                          |
+| 3.2 De-provisioned users                         | **Accepted**                               | The picker offers active principals; a departed one is shown as no longer active and stays valid. MET-029 stays unclaimed, because it covers document fields too                                    |
+| 3.3 Date and time                                | **Accepted as clarification**              | A named zone in the input, a numeric offset in storage, and a question when a time is ambiguous                                                                                                     |
+| 3.4 Validation error shape                       | **Accepted; changed where the rule lives** | metadata.md's failure shape gains a stable `code` and a list of `schemas`, since more than one can require or fix a field. Service refusals use service-foundations' error shape with those members |
+| 3.5 Definitions changing mid-session             | **Accepted**                               | A section of its own: the change is detected from each acknowledgement, explained in the panel, and an in-flight refusal is recovered without the author acting                                     |
+| 3.6 Title, language and direction after creation | **Accepted**                               | They are attributes of the editor document, so they are steps - saved, undoable and versioned. A language change asks for confirmation. The service refuses a type change in any iteration          |
+
+### API
+
+| Point                                     | Decision                       | Change and reasoning                                                                                                                                                                                         |
+| ----------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 4.1 Idempotency keys                      | **Premise corrected; applied** | API-008 is designed in service-foundations.md for every mutating request. The routes that create - a component, a version, a release that cuts - now say they carry one                                      |
+| 4.2 Preconditions on every mutating route | **Accepted**                   | Iterations and a release that may cut carry the opened-from version, refused `version.precondition` when stale. API-037 and API-038 stay unclaimed: they are rules for every route                           |
+| 4.3 Paging iterations                     | **Premise corrected; applied** | API-007 is designed; the listing takes a cursor, newest first                                                                                                                                                |
+| 4.4 Request identifiers                   | **Declined here**              | The error shape already carries `traceId`, and a request identifier on every response is a rule for every route, API-047, which belongs in service-foundations.md rather than in each design that has routes |
+| 4.5 Rate limits                           | **Accepted**                   | `Retry-After` is honoured over the client's backoff                                                                                                                                                          |
+| 4.6 Authorisation                         | **Accepted**                   | A permission column, and unauthenticated, forbidden and `lock.held` kept distinct                                                                                                                            |
+| 4.7 Contract tests                        | **Premise corrected; applied** | API-002 and API-003 are designed. The verification now names contract tests for these routes, asserting error bodies                                                                                         |
+
+### Style, accessibility and verification
+
+| Point                                       | Decision                        | Change and reasoning                                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 5.1 Which theme a component on its own uses | **Accepted**                    | The review's strongest point after sequencing. The product's default theme, labelled as such; a house theme per tenant is an open question rather than invented configuration                                                                                            |
+| 5.2 "Resolves nothing itself"               | **Premise corrected; reworded** | themes.md designs one resolver in `packages/domain` for the editor and the publisher, and its conformance suite is STY-053's. The sentence now points there rather than reading as an assumption                                                                         |
+| 5.3 Unresolvable markers                    | **Accepted in part**            | Markers for styles, failed typefaces, unresolved assets and unresolvable targets. **Glyph coverage declined for now**: a browser gives no reliable signal, so STY-070 stays unclaimed on that clause rather than claimed on a guess                                      |
+| 5.4 Image style in the editor               | **Accepted**                    | Existing images are sized by the shared resolver; CNT-122 stays unclaimed for its publish half                                                                                                                                                                           |
+| 5.5 Table pagination                        | **Accepted as clarification**   | Page-only properties are not simulated (STY-037, themes.md's)                                                                                                                                                                                                            |
+| 5.6 Accessibility detail                    | **Accepted**                    | An accessibility section: regions, inline nested editors and where focus returns, announcements, the metadata form. And a release gate: no release claims CNT-078 or CNT-139 without both results                                                                        |
+| 5.7 Direction                               | **Accepted**                    | Base direction at creation and in the header; `dir` from the model; logical alignment asked of the theme projection                                                                                                                                                      |
+| 6.1 to 6.6 Verification                     | **Accepted in part**            | Invariant property tests, identity after paste, the session's failure edges, contract tests and autosave measurement are added. Paste-drop assertions and style conformance are already the pipeline's and themes.md's suites, and are referenced rather than duplicated |

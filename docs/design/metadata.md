@@ -29,23 +29,23 @@ testable without booting anything.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **MET-001** | A field definition carries `id`, `name`, `dataType` and `validation`; schemas refer to a field by `id`, so a field grouped by two schemas is one definition                                          |
-| **MET-002** | `dataType` is a closed enum - `text`, `number`, `date`, `time`, `dateTime`, `boolean`, `user` - and `multiplicity` is `one` or `many`. Adding a type is a definition-schema version with a migration |
-| **MET-028** | A `dateTime` value must parse as ISO 8601 with an explicit offset or `Z`; a `date` or `time` value with an offset is refused                                                                         |
-| **MET-030** | A `many` field's value is an array with no duplicate after normalisation, in the order given; `required` means at least one element; a default is an array; `maxValues` is optional                  |
-| **MET-004** | `checkValue(field, value)` takes the field and the value and nothing else, so no context can make a value valid in one place and invalid in another                                                  |
-| **MET-005** | A schema definition carries `id`, `name` and its entries, and is an artifact kind versioned by the one mechanism (ADR-0024)                                                                          |
-| **MET-006** | Each schema entry is `{ field, required, default?, fixed }`                                                                                                                                          |
-| **MET-007** | Resolution keys effective fields by field `id`, so a field reached through several schemas appears once, required if any entry or assignment requires it                                             |
-| **MET-009** | A component type's assignment is `{ schema, requires: fieldId[] }`. There is no member that could loosen a field, change a default or fix a value, so an assignment cannot do those by construction  |
-| **MET-010** | A component type definition carries `id`, `name` and zero or more assignments, and nothing about content                                                                                             |
-| **MET-013** | `resolveComponentFields` takes a component type and its definitions and nothing about any document, so there is no input through which a document could contribute a field                           |
-| **MET-017** | `validate` takes the definition versions it is given; checking a stored version passes the versions recorded in `version_definition`, never the current ones                                         |
-| **MET-018** | `definitionsFor(type)` names the current version of the type, each schema it assigns and each field those group; the service stamps that list on a version at promotion                              |
-| **MET-036** | `carryForward(values, effective)` returns the values whose field still applies, unchanged, and a `notCarried` list of every other value by field, which the version records                          |
-| **MET-022** | Every failure is `{ field, rule, schema?, detail }`; the caller adds the artifact. A rule a schema imposed - required, fixed - names that schema                                                     |
+| ID          | How it is met                                                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MET-001** | A field definition carries `id`, `name`, `dataType` and `validation`; schemas refer to a field by `id`, so a field grouped by two schemas is one definition                                                            |
+| **MET-002** | `dataType` is a closed enum - `text`, `number`, `date`, `time`, `dateTime`, `boolean`, `user` - and `multiplicity` is `one` or `many`. Adding a type is a definition-schema version with a migration                   |
+| **MET-028** | A `dateTime` value must parse as ISO 8601 with an explicit offset or `Z`; a `date` or `time` value with an offset is refused                                                                                           |
+| **MET-030** | A `many` field's value is an array with no duplicate after normalisation, in the order given; `required` means at least one element; a default is an array; `maxValues` is optional                                    |
+| **MET-004** | `checkValue(field, value)` takes the field and the value and nothing else, so no context can make a value valid in one place and invalid in another                                                                    |
+| **MET-005** | A schema definition carries `id`, `name` and its entries, and is an artifact kind versioned by the one mechanism (ADR-0024)                                                                                            |
+| **MET-006** | Each schema entry is `{ field, required, default?, fixed }`                                                                                                                                                            |
+| **MET-007** | Resolution keys effective fields by field `id`, so a field reached through several schemas appears once, required if any entry or assignment requires it                                                               |
+| **MET-009** | A component type's assignment is `{ schema, requires: fieldId[] }`. There is no member that could loosen a field, change a default or fix a value, so an assignment cannot do those by construction                    |
+| **MET-010** | A component type definition carries `id`, `name` and zero or more assignments, and nothing about content                                                                                                               |
+| **MET-013** | `resolveComponentFields` takes a component type and its definitions and nothing about any document, so there is no input through which a document could contribute a field                                             |
+| **MET-017** | `validate` takes the definition versions it is given; checking a stored version passes the versions recorded in `version_definition`, never the current ones                                                           |
+| **MET-018** | `definitionsFor(type)` names the current version of the type, each schema it assigns and each field those group; the service stamps that list on a version at promotion                                                |
+| **MET-036** | `carryForward(values, effective)` returns the values whose field still applies, unchanged, and a `notCarried` list of every other value by field, which the version records                                            |
+| **MET-022** | Every failure is `{ code, field, rule, schemas, detail }`, with a stable `code`; the caller adds the artifact. A rule a schema imposed - required, fixed - lists every schema that imposed it, since more than one can |
 
 ## What this document does not own
 
@@ -133,16 +133,16 @@ it as a definition problem for an administrator rather than a validation failure
 
 `validate(effective, values)` returns every failure, not the first:
 
-| Rule                       | Fails when                                                                               | Names a schema |
-| -------------------------- | ---------------------------------------------------------------------------------------- | -------------- |
-| `required`                 | A required field has no value, or a `many` field has an empty array                      | Yes            |
-| `fixed`                    | A fixed field's value differs from its default                                           | Yes            |
-| `type`                     | A value is not the JSON its data type takes                                              | No             |
-| `multiplicity`             | A `one` field holds an array, a `many` field does not, or a `many` field repeats a value | No             |
-| `maxValues`                | A `many` field holds more than it declares                                               | No             |
-| The field's own validation | `minLength`, `pattern`, `min`, `scale` and the rest                                      | No             |
+| Rule                       | Fails when                                                                               | Names its schemas |
+| -------------------------- | ---------------------------------------------------------------------------------------- | ----------------- |
+| `required`                 | A required field has no value, or a `many` field has an empty array                      | Yes               |
+| `fixed`                    | A fixed field's value differs from its default                                           | Yes               |
+| `type`                     | A value is not the JSON its data type takes                                              | No                |
+| `multiplicity`             | A `one` field holds an array, a `many` field does not, or a `many` field repeats a value | No                |
+| `maxValues`                | A `many` field holds more than it declares                                               | No                |
+| The field's own validation | `minLength`, `pattern`, `min`, `scale` and the rest                                      | No                |
 
-Rules that come from the field name no schema, because by MET-004 they are the field's alone.
+Rules that come from the field name no schema, because by MET-004 they are the field's alone. Every failure carries a stable `code` - `metadata.required`, `metadata.fixed`, `metadata.type` and so on - so the editor, the service and the publisher report one failure the same way, and a service refusal carries the same members inside service-foundations' error shape.
 
 **A value whose field is not among the effective fields is not a validation failure.** It is a value
 that will not be carried forward, and the editor shows it as that (MET-036) rather than as an error an

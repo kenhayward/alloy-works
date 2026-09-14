@@ -338,7 +338,7 @@ already states for the workspace boundary - one shared module, never re-implemen
 | **Sanitise**    | Scripts, event handlers, embedded objects, and any hyperlink whose scheme is not allowlisted - never stored | CNT-130, CNT-127   |
 | **Migrate**     | Content at an earlier schema version brought to current, or refused with a named error                      | CNT-134            |
 | **Normalise**   | NFC; typeface, size and colour dropped; adjacent empty paragraphs collapsed                                 | CNT-056, CNT-065   |
-| **Re-identify** | A new identifier for every block; annotations whose owning artifact does not travel dropped                 | CNT-132, CNT-133   |
+| **Re-identify** | A new identifier for every block and every mark; annotations whose owning artifact does not travel dropped  | CNT-132, CNT-133   |
 | **Validate**    | The whole admission refused rather than partly stored                                                       | CNT-010            |
 
 The order is load-bearing. **Sanitise before normalise**, so a hostile target cannot survive
