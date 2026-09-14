@@ -1,11 +1,7 @@
 # Detailed requirements
 
 > **Status: v1, reviewed.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-one written, all twenty-one
-> reviewed, and all twenty-one read against each other in a
-> [cross-cutting pass](../../reviews/) whose answers are in
-> [`XXX - Response.md`](<../../reviews/XXX - Response.md>). 1306 requirements, 112 non-requirements
-> and 131 numbered questions, twenty-nine of which have since been settled and one half settled. These say
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1360 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.
@@ -125,6 +121,7 @@ that the codes are reserved and the shape of the whole is visible from the start
 | **TPL** | Templates and document instantiation      | 7.19    | [TPL-templates-and-document-instantiation.md](TPL-templates-and-document-instantiation.md)         |
 | **AST** | Assets and media                          | 7.20    | [AST-assets-and-media.md](AST-assets-and-media.md)                                                 |
 | **LIB** | Reference libraries                       | 7.21    | [LIB-reference-libraries.md](LIB-reference-libraries.md)                                           |
+| **MET** | Metadata and component types              | 7.22    | [MET-metadata-and-component-types.md](MET-metadata-and-component-types.md)                         |
 
 ## Who owns what
 
@@ -137,41 +134,43 @@ artifact nobody owns is one that quietly fails to be specified.
 [`Project_Scope.md`](../Project_Scope.md) §6 appears below. A concept may be listed as unowned; it
 may not be missing.
 
-| Artifact (scope §6)                        | Owned by           | Note                                                                       |
-| ------------------------------------------ | ------------------ | -------------------------------------------------------------------------- |
-| **Organisation**                           | IAM, ADM           | IAM the grouping of a customer's tenants, ADM administering and billing it |
-| **Tenant**                                 | IAM                | Isolation boundary                                                         |
-| **Space**                                  | IAM, ADM           | IAM the permission boundary, ADM creating and administering one            |
-| **Component**                              | CNT                |                                                                            |
-| **Node-and-mark model**                    | CNT                |                                                                            |
-| **Iteration**                              | VER                | Retention window is VER's; the editing behaviour is CNT's                  |
-| **Component version**                      | VER                |                                                                            |
-| **Component revision**                     | VER, LIF           | VER the designation, LIF the gate that creates it                          |
-| **Asset**                                  | AST                | STY depends on its intrinsic dimensions                                    |
-| **Document**                               | TPL, STR, LIF, VER | Created by TPL, structured by STR, governed by LIF, versioned by VER       |
-| **Outline**                                | STR                | The live outline. A template's starting outline is TPL's                   |
-| **Baseline**                               | VER                |                                                                            |
-| **Publication**                            | PUB                |                                                                            |
-| **Parameter set**                          | TPL                |                                                                            |
-| **Data connection**                        | DAT                |                                                                            |
-| **Query definition**                       | DAT                |                                                                            |
-| **Binding**                                | DAT                |                                                                            |
-| **Binding mode**                           | DAT                | Live, pinned, refreshable - and what happens when a source moves           |
-| **Provenance record**                      | DAT, LIF           | DAT writes it, LIF audits it                                               |
-| **Relationship**                           | REL                |                                                                            |
-| **Condition**                              | REU                | CNT owns the mark, REU the evaluation                                      |
-| **Review thread**                          | COL                | CNT owns the anchor mark                                                   |
-| **Suggestion**                             | COL                | CNT owns the mark                                                          |
-| **Workflow state**                         | LIF                |                                                                            |
-| **Metadata schema**                        | TPL                | Which vocabulary a field draws on is TPL's; the vocabulary is not          |
-| **Structure outline**                      | TPL                | The definition, not a document's live outline                              |
-| **Data connections and query definitions** | DAT                |                                                                            |
-| **Presentation theme**                     | STY                |                                                                            |
-| **Publishing layout**                      | PUB                |                                                                            |
-| **Prompt library**                         | GEN                |                                                                            |
-| **Bibliography entry**                     | LIB                | CNT owns the citation that references it                                   |
-| **Term**                                   | LIB                | CNT owns the reference mark, PUB the glossary, LOC the labels              |
-| **Vocabulary**                             | LIB                | TPL declares which vocabulary a field uses; LIB holds the list             |
+| Artifact (scope §6)                        | Owned by           | Note                                                                                                    |
+| ------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Organisation**                           | IAM, ADM           | IAM the grouping of a customer's tenants, ADM administering and billing it                              |
+| **Tenant**                                 | IAM                | Isolation boundary                                                                                      |
+| **Space**                                  | IAM, ADM           | IAM the permission boundary, ADM creating and administering one                                         |
+| **Component**                              | CNT                | Its component type and metadata values are MET's                                                        |
+| **Node-and-mark model**                    | CNT                |                                                                                                         |
+| **Iteration**                              | VER                | Retention window is VER's; the editing behaviour is CNT's                                               |
+| **Component version**                      | VER                |                                                                                                         |
+| **Component revision**                     | VER, LIF           | VER the designation, LIF the gate that creates it                                                       |
+| **Asset**                                  | AST                | STY depends on its intrinsic dimensions                                                                 |
+| **Document**                               | TPL, STR, LIF, VER | Created by TPL, structured by STR, governed by LIF, versioned by VER                                    |
+| **Outline**                                | STR                | The live outline. A template's starting outline is TPL's                                                |
+| **Baseline**                               | VER                |                                                                                                         |
+| **Publication**                            | PUB                |                                                                                                         |
+| **Parameter set**                          | TPL                |                                                                                                         |
+| **Data connection**                        | DAT                |                                                                                                         |
+| **Query definition**                       | DAT                |                                                                                                         |
+| **Binding**                                | DAT                |                                                                                                         |
+| **Binding mode**                           | DAT                | Live, pinned, refreshable - and what happens when a source moves                                        |
+| **Provenance record**                      | DAT, LIF           | DAT writes it, LIF audits it                                                                            |
+| **Relationship**                           | REL                |                                                                                                         |
+| **Condition**                              | REU                | CNT owns the mark, REU the evaluation                                                                   |
+| **Review thread**                          | COL                | CNT owns the anchor mark                                                                                |
+| **Suggestion**                             | COL                | CNT owns the mark                                                                                       |
+| **Workflow state**                         | LIF                |                                                                                                         |
+| **Metadata schema**                        | MET                | Assigned by TPL to documents and sections, by component types, and by REL to relationship types         |
+| **Field**                                  | MET                | Which vocabulary a field draws on is MET's; the vocabulary is LIB's                                     |
+| **Component type**                         | MET                | Governs a component's metadata only; what a component holds is CNT's                                    |
+| **Structure outline**                      | TPL                | The definition, not a document's live outline                                                           |
+| **Data connections and query definitions** | DAT                |                                                                                                         |
+| **Presentation theme**                     | STY                |                                                                                                         |
+| **Publishing layout**                      | PUB                |                                                                                                         |
+| **Prompt library**                         | GEN                |                                                                                                         |
+| **Bibliography entry**                     | LIB                | CNT owns the citation that references it                                                                |
+| **Term**                                   | LIB                | CNT owns the reference mark, PUB the glossary, LOC the labels                                           |
+| **Vocabulary**                             | LIB                | MET declares which vocabulary a field uses; LIB holds the list, and may fill it from an external source |
 
 Artifacts the scope refers to without defining in §6:
 
@@ -201,9 +200,13 @@ entries, terms and vocabularies are small structured records with none of that. 
 share - reference by identity and where-used - is an argument for a common mechanism rather than a
 common area, in the same way that `CNT` and `DAT` both anchor footnotes without being one area.
 
-Two of the twenty-one areas, `STY` and `TPL`, existed only because somebody happened to ask whether
-something was covered elsewhere. Two more, `AST` and `LIB`, came from looking on purpose. The guard
-above is what makes the difference repeatable.
+\1
+
+**A twenty-second area, `MET`, came later and from building rather than reading.** Designing the
+content model found a component described as typed and carrying metadata, and the only metadata in the
+corpus belonged to a template - which could never hold for a component that documents from different
+templates reference. Fields, metadata schemas and component types are `MET`'s, and TPL, CNT, STR, SCH,
+REU, REL, LIB and VER changed to agree, each saying so in its change history.
 
 ## The shape of an area document
 

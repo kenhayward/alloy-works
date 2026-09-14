@@ -1,12 +1,8 @@
 # MET - Metadata and component types
 
-> **Status: DRAFT, reviewed - section 1 of the metadata proposal.** Not yet in the corpus: no row here
-> is allocated until the pull request that lands it. The review is answered in section 12. **Section 2 of the proposal is drafted in the other area documents on this branch** - TPL, CNT, STR, SCH, REU, REL, LIB and VER, with pointer fixes in GEN and PUB. Sections 3 and 4 - the scope edits and the designs, tests and counts the change touches - are not drafted yet.
->
-> **How to mark this up.** Edit anything directly: reword a row, change a tranche, delete a row, add
-> one with `MET-???` as its identifier. Where you want to say something rather than change it, add a
-> line starting `> **Ken:**` under the paragraph or table it is about. The draft is committed as it
-> stood when it was handed to you, so `git diff` shows exactly what you changed and nothing else.
+> **Status: v1, reviewed.** Written when designing the content model found a component's metadata
+> specified as a template's; reviewed, and the review answered in section 12. TPL, CNT, STR, SCH, REU,
+> REL, LIB and VER changed to agree, and each says so in its change history.
 
 ## 1. Purpose
 
@@ -34,16 +30,16 @@ A **template** is assigned schemas too, for its documents and their sections, an
 
 ## 2. Depends on
 
-| Rests on                                                       | What it fixes                                                                                                   |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [`Project_Scope.md`](../Project_Scope.md) §6, §9 decision 3    | A template composes definitions and owns none of them                                                           |
-| [CNT](CNT-content-and-authoring.md)                            | What a component is, its versions, and its closed content root (CNT-144)                                        |
-| [TPL](TPL-templates-and-document-instantiation.md)             | How a template assigns schemas to a document and its sections, which MET-019 and MET-034 rest on                |
-| [LIB](LIB-reference-libraries.md)                              | The vocabulary a field draws its permitted values from, and the external sources one may use                    |
-| [IAM](IAM-identity-tenancy-and-access-control.md)              | What a user of the tenant is, which a user field's value names                                                  |
-| [REL](REL-relationships-and-the-graph.md)                      | Relationship types, which assign schemas, and the guard that refuses a change breaking a relationship (REL-054) |
-| [VER](VER-versioning-baselines-and-comparison.md)              | What a version and a baseline pin                                                                               |
-| [ADR-0006](../../decisions/0006-iteration-version-revision.md) | Iteration, version and revision                                                                                 |
+| Rests on                                                           | What it fixes                                                                                                   |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| [`Project_Scope.md`](../Project_Scope.md) §6, §7.22, §9 decision 3 | A template composes definitions and owns none of them but its outline; the area's remit                         |
+| [CNT](CNT-content-and-authoring.md)                                | What a component is, its versions, and its closed content root (CNT-144)                                        |
+| [TPL](TPL-templates-and-document-instantiation.md)                 | How a template assigns schemas to a document and its sections, which MET-019 and MET-034 rest on                |
+| [LIB](LIB-reference-libraries.md)                                  | The vocabulary a field draws its permitted values from, and the external sources one may use                    |
+| [IAM](IAM-identity-tenancy-and-access-control.md)                  | What a user of the tenant is, which a user field's value names                                                  |
+| [REL](REL-relationships-and-the-graph.md)                          | Relationship types, which assign schemas, and the guard that refuses a change breaking a relationship (REL-054) |
+| [VER](VER-versioning-baselines-and-comparison.md)                  | What a version and a baseline pin                                                                               |
+| [ADR-0006](../../decisions/0006-iteration-version-revision.md)     | Iteration, version and revision                                                                                 |
 
 | Not here                                                                             | There            |
 | ------------------------------------------------------------------------------------ | ---------------- |
