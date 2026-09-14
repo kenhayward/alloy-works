@@ -23,15 +23,16 @@ from a version - three sections the purpose above had not named.
 | [Content model spike findings](../spikes/Content_Model_Spike_Findings.md) | Comparison needs block identity, not a step log   |
 | [`Project_Scope.md`](../Project_Scope.md) §6, §7.9                        | Baseline; the three levels of comparison          |
 
-| Not here                                         | There            |
-| ------------------------------------------------ | ---------------- |
-| The editing behaviour that produces an iteration | **CNT**          |
-| The gate that designates a revision              | **LIF**          |
-| Rendering a comparison as a redline on screen    | **CNT**          |
-| Retention policy and legal hold                  | **LIF**          |
-| Who may read a history or run a comparison       | **IAM**          |
-| The clock every recorded time is kept on         | **LIF**          |
-| How a redline is rendered and exported           | **CNT**, **PUB** |
+| Not here                                                | There            |
+| ------------------------------------------------------- | ---------------- |
+| The editing behaviour that produces an iteration        | **CNT**          |
+| The gate that designates a revision                     | **LIF**          |
+| Rendering a comparison as a redline on screen           | **CNT**          |
+| Retention policy and legal hold                         | **LIF**          |
+| Who may read a history or run a comparison              | **IAM**          |
+| The clock every recorded time is kept on                | **LIF**          |
+| How a redline is rendered and exported                  | **CNT**, **PUB** |
+| Versioning fields, metadata schemas and component types | **MET**          |
 
 ## 3. Iterations
 
@@ -67,7 +68,7 @@ somebody who does not trust the system holding it, which is the situation an aud
 [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md), which already hashes
 content for other reasons.
 
-**VER-054 completes the pin list rather than replacing it.** VER-018 names the artifacts a document
+**VER-055 completes the pin list rather than replacing it**, as VER-054 did before templates stopped owning definitions. VER-018 names the artifacts a document
 is made of; a resolved document also depends on the bibliography entries it cites, the terms and
 vocabulary values it uses, and the template definitions it was created against. LIB-047 already says
 a change never reaches a baseline - which is only true if the baseline pinned the record in the first
@@ -89,24 +90,30 @@ and the failure is invisible until somebody re-publishes.
 
 ## 6. Baselines
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                       | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                                                                                                                                                                 | T3         | Specified |
-| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, typeface, layout and citation style the document used, and the outline itself (**STY-047** is what makes a typeface pinnable)                                                                           | Constraint | Specified |
-| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                                                                                                                                                          | Constraint | Specified |
-| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                                                                                                                                                                   | T4         | Specified |
-| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                                                                                                                                                               | T3         | Specified |
-| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                                                                                                                                                    | Constraint | Specified |
-| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                                                                                                                                                      | Constraint | Specified |
-| **VER-054** | A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), and the template version recorded on it with the definitions that version owned (**TPL-025**, **TPL-043**) | Constraint | Specified |
-| **VER-043** | A baseline must record a digest over the set of versions it pins, so that "these are the exact inputs" is one value somebody can check rather than a list they must compare by hand (VER-042)                                                                                                     | Constraint | Specified |
-| **VER-046** | A baseline's name must be unique within its document and must not be changeable after creation, because the name is part of what an immutable record is cited by                                                                                                                                  | T3         | Specified |
-| **VER-049** | A baseline must be markable as superseded, recording what superseded it, and a superseded baseline must remain retrievable. Baselines accumulate by design - nothing deletes one (VER-023) - so the controls are that creating one is a positive act and that a list can be filtered by state     | T3         | Specified |
-| **VER-050** | Who may read a version history, run a comparison or export a redline must follow the permissions of what is being compared (**IAM**), and an export must carry no content its requester may not read                                                                                              | Constraint | Specified |
-| **VER-051** | Comparison must meet a stated budget for a document of several hundred components with a history of hundreds of versions - provisional, confirmed against real content, measured in production like every other budget (**ADM-016**)                                                              | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Tranche    | Status                |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **VER-017** | A baseline must be a named, immutable version of a whole document                                                                                                                                                                                                                                                                                                                                                                                                                         | T3         | Specified             |
+| **VER-018** | A baseline must pin the exact version of every component, asset, query definition, theme, typeface, layout and citation style the document used, and the outline itself (**STY-047** is what makes a typeface pinnable)                                                                                                                                                                                                                                                                   | Constraint | Specified             |
+| **VER-019** | A baseline must pin every bound value and its provenance, regardless of the binding's mode (**DAT-038**)                                                                                                                                                                                                                                                                                                                                                                                  | Constraint | Specified             |
+| **VER-020** | A baseline must record the conditions in force when it was taken, because a document has as many resolutions as it has profiles                                                                                                                                                                                                                                                                                                                                                           | T4         | Specified             |
+| **VER-021** | Creating a baseline must be an explicit act, and must be possible automatically at a lifecycle gate                                                                                                                                                                                                                                                                                                                                                                                       | T3         | Specified             |
+| **VER-022** | A baseline must be reproducible: everything it pins must remain retrievable for as long as the baseline exists                                                                                                                                                                                                                                                                                                                                                                            | Constraint | Specified             |
+| **VER-023** | Deleting anything a baseline pins must be refused while that baseline exists                                                                                                                                                                                                                                                                                                                                                                                                              | Constraint | Specified             |
+| **VER-054** | A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), and the template version recorded on it with the definitions that version owned (**TPL-025**, **TPL-043**)                                                                                                                                                                                         | Constraint | Superseded by VER-055 |
+| **VER-055** | A baseline must also pin what VER-018 does not name and resolved output still depends on: the bibliography entries, terms and vocabulary values the document references (**LIB-004**), the template version recorded on it (**TPL-025**), and the versions of the metadata schemas and fields its document and sections were validated against (**TPL-056**). A component version already records the definitions it was written against (**MET-017**), so pinning the version pins those | Constraint | Specified             |
+| **VER-043** | A baseline must record a digest over the set of versions it pins, so that "these are the exact inputs" is one value somebody can check rather than a list they must compare by hand (VER-042)                                                                                                                                                                                                                                                                                             | Constraint | Specified             |
+| **VER-046** | A baseline's name must be unique within its document and must not be changeable after creation, because the name is part of what an immutable record is cited by                                                                                                                                                                                                                                                                                                                          | T3         | Specified             |
+| **VER-049** | A baseline must be markable as superseded, recording what superseded it, and a superseded baseline must remain retrievable. Baselines accumulate by design - nothing deletes one (VER-023) - so the controls are that creating one is a positive act and that a list can be filtered by state                                                                                                                                                                                             | T3         | Specified             |
+| **VER-050** | Who may read a version history, run a comparison or export a redline must follow the permissions of what is being compared (**IAM**), and an export must carry no content its requester may not read                                                                                                                                                                                                                                                                                      | Constraint | Specified             |
+| **VER-051** | Comparison must meet a stated budget for a document of several hundred components with a history of hundreds of versions - provisional, confirmed against real content, measured in production like every other budget (**ADM-016**)                                                                                                                                                                                                                                                      | T3         | Specified             |
 
 **VER-018 and VER-023 are the same requirement seen from two ends.** A baseline is only a promise
 that a document can be reproduced; a pin to something deletable is not a pin.
+
+**VER-055 replaces VER-054 because a template no longer owns its schemas.** VER-054 pinned the template
+version "with the definitions that version owned". A template now owns only its outline, and assigns
+metadata schemas that always take their latest version (MET-035), so what a document was validated
+against is recorded on the document (TPL-056) - and that record is what a baseline has to pin.
 
 ## 7. Comparison
 
@@ -277,3 +284,19 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections | Change                                                                                                                                                                                                                                                           |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.2             | **VER-054** completes the pin list: the bibliography entries, terms and vocabulary values a document references, and the template version with the definitions it owned. VER-018 named what a document is made of; a resolved document depends on more than that |
+
+### From specifying metadata and component types
+
+Not a review. Specifying [MET](MET-metadata-and-component-types.md) changed what a template version
+decides, and a baseline's pin list depended on it.
+
+| What was found                                                                                                                                                                | Change                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VER-054 pinned the template version "with the definitions that version owned". Templates no longer own their metadata schemas, and assignments take a schema's latest version | **VER-054 superseded by VER-055**, pinning the schema and field versions the document records (TPL-056). A component's are already pinned by pinning its version (MET-017)                                                                                     |
+| Not changed: **VER-011**                                                                                                                                                      | It lists what is versioned by the same rules as content, and does not name fields, schemas or component types. **MET-020** versions them, and VER-011 is claimed by a design that would have to drop its claim for a list change that alters no behaviour here |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 54, of which 2 superseded | 55, of which 3 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |

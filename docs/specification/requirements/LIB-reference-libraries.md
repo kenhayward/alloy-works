@@ -25,10 +25,10 @@ string in a paragraph.**
 | The citation and term marks in content                        | **CNT**          |
 | How a citation renders                                        | **STY**, **PUB** |
 | Generating a glossary or bibliography                         | **PUB**          |
-| Which vocabulary a metadata field uses                        | **TPL**          |
+| Which vocabulary a metadata field uses                        | **MET**          |
 | Searching across terms                                        | **SCH**          |
 | Binaries                                                      | **AST**          |
-| Whether a metadata field may draw on more than one vocabulary | **TPL**          |
+| Whether a metadata field may draw on more than one vocabulary | **MET**          |
 | Which roles may read or edit a library record                 | **IAM**          |
 | The audit log a change to a record lands in                   | **LIF**          |
 | Adding a connector for an external source                     | **API**          |
@@ -173,16 +173,17 @@ until the day somebody renames the term.
 
 ## 7. Vocabularies
 
-| ID          | Requirement                                                                                                                                                                                                                                                   | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **LIB-020** | A vocabulary must be a named list of permitted values, each with a label and a stable identifier                                                                                                                                                              | T2         | Specified |
-| **LIB-021** | A metadata field must be able to draw its permitted values from a vocabulary (**TPL-008**)                                                                                                                                                                    | T2         | Specified |
-| **LIB-022** | A condition axis must be able to draw its permitted values from a vocabulary (**REU-020**)                                                                                                                                                                    | T4         | Specified |
-| **LIB-023** | Retiring a value must not invalidate documents already using it; it must stop being offered and must be flagged where used                                                                                                                                    | Constraint | Specified |
-| **LIB-024** | A vocabulary must carry labels per language                                                                                                                                                                                                                   | T6         | Specified |
-| **LIB-053** | A vocabulary must declare the order its values are offered in, and that order must be deterministic rather than whatever the store returns                                                                                                                    | T2         | Specified |
-| **LIB-054** | A value must be able to carry an optional description, shown where the value is chosen                                                                                                                                                                        | T2         | Specified |
-| **LIB-055** | A value must be able to be **deprecated** - still offered, marked, with its replacement named - as a state before **retired** (LIB-023), which is no longer offered and still valid where used. This is the term side's behaviour (LIB-018) applied to values | T2         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                          | Tranche    | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **LIB-020** | A vocabulary must be a named list of permitted values, each with a label and a stable identifier                                                                                                                                                                                                                                                                     | T2         | Specified             |
+| **LIB-058** | A vocabulary must be able to take its values from a declared external source (**LIB-032**) rather than being maintained by hand, each value held locally with the source it came from and the identifier the source gave it (**LIB-034**), re-checkable against that source (**LIB-035**), and never depended on at validation or publish (**LIB-033**, **MET-032**) | T6         | Specified             |
+| **LIB-021** | A metadata field must be able to draw its permitted values from a vocabulary (**TPL-008**)                                                                                                                                                                                                                                                                           | T2         | Superseded by MET-003 |
+| **LIB-022** | A condition axis must be able to draw its permitted values from a vocabulary (**REU-020**)                                                                                                                                                                                                                                                                           | T4         | Specified             |
+| **LIB-023** | Retiring a value must not invalidate documents already using it; it must stop being offered and must be flagged where used                                                                                                                                                                                                                                           | Constraint | Specified             |
+| **LIB-024** | A vocabulary must carry labels per language                                                                                                                                                                                                                                                                                                                          | T6         | Specified             |
+| **LIB-053** | A vocabulary must declare the order its values are offered in, and that order must be deterministic rather than whatever the store returns                                                                                                                                                                                                                           | T2         | Specified             |
+| **LIB-054** | A value must be able to carry an optional description, shown where the value is chosen                                                                                                                                                                                                                                                                               | T2         | Specified             |
+| **LIB-055** | A value must be able to be **deprecated** - still offered, marked, with its replacement named - as a state before **retired** (LIB-023), which is no longer offered and still valid where used. This is the term side's behaviour (LIB-018) applied to values                                                                                                        | T2         | Specified             |
 
 **LIB-055 removes an asymmetry review found between the two halves of this document.** A term can
 be deprecated with a replacement named while people still use it; a value could only be retired, so
@@ -192,6 +193,13 @@ vocabulary somebody is mid-way through adopting.
 **LIB-023 is the one that gets missed.** A value removed from a vocabulary leaves documents carrying
 a metadata value that no longer validates, and the failure shows up months later at publish time on a
 document nobody has touched.
+
+**LIB-058 lets a vocabulary be maintained somewhere else.** A clinical study number is a value from a
+list, and the list is a study register rather than something a tenant types in. The rule is the one
+LIB-033 to LIB-035 already set for a citation: held here, with where it came from, checkable against the
+source, and never needed at publish. **MET-032** is the field side of it - a field is validated against
+the values held, never against the source. **LIB-021 is superseded by MET-003**, because it said what
+TPL-008 said, and one statement now lives where fields are defined.
 
 ## 8. Relations between terms
 
@@ -306,3 +314,21 @@ it. The rules for what gets a new identifier are in
 | Requirements     | 30     | 57                                       |
 | Non-requirements | 4      | 6                                        |
 | Open questions   | 4      | 8, of which 2 settled as they were added |
+
+### From specifying metadata and component types
+
+Not a review. Specifying [MET](MET-metadata-and-component-types.md) found a requirement stated twice,
+and a kind of vocabulary the product needs and no row allowed.
+
+| What was found                                                                                                                                                | Change                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| LIB-021 and TPL-008 said the same thing from two areas                                                                                                        | **LIB-021 superseded by MET-003**, where fields are defined. TPL-008 is superseded by the same row                                          |
+| A field drawing values from another system - a study number from a study register - had no mechanism, and the corpus already had the right rule for citations | **LIB-058**: a vocabulary may take its values from a declared external source, on LIB-033 to LIB-035's terms                                |
+| **LIB-058 is T6, and that is a flag.** All of this area's external-source rows are T6, and a study register may be needed well before then                    | Left at T6 for consistency with LIB-031 to LIB-038. Pulling it forward means pulling the external-source rows it depends on forward with it |
+| Boundary                                                                                                                                                      | The two rows about which vocabulary a metadata field uses now name **MET** rather than TPL                                                  |
+
+| Counts           | Before                | After                     |
+| ---------------- | --------------------- | ------------------------- |
+| Requirements     | 57                    | 58, of which 1 superseded |
+| Non-requirements | 6                     | 6                         |
+| Open questions   | 8, of which 2 settled | 8, of which 2 settled     |

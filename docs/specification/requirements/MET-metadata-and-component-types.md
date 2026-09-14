@@ -1,9 +1,7 @@
 # MET - Metadata and component types
 
 > **Status: DRAFT, reviewed - section 1 of the metadata proposal.** Not yet in the corpus: no row here
-> is allocated until the pull request that lands it. The review is answered in section 12. Sections 2
-> to 4 of the proposal - the changes to TPL, CNT, STR, SCH, REU, REL and LIB, and the scope edits - are
-> not in this file yet.
+> is allocated until the pull request that lands it. The review is answered in section 12. **Section 2 of the proposal is drafted in the other area documents on this branch** - TPL, CNT, STR, SCH, REU, REL, LIB and VER, with pointer fixes in GEN and PUB. Sections 3 and 4 - the scope edits and the designs, tests and counts the change touches - are not drafted yet.
 >
 > **How to mark this up.** Edit anything directly: reword a row, change a tranche, delete a row, add
 > one with `MET-???` as its identifier. Where you want to say something rather than change it, add a
@@ -32,20 +30,20 @@ Four concepts, and the words are used exactly:
 | **Component type**  | What kind of component this is - a narrative overview, a stability table section - and which schemas its components carry                 |
 | **Content type**    | Not a definition here. What a component _holds_ - paragraphs, a table, an image - is the content model's (**CNT**), not this area's       |
 
-A **template** is assigned schemas too, for its documents and their sections. That assignment is
-**TPL**'s; what a schema is, and how assignments combine, is here.
+A **template** is assigned schemas too, for its documents and their sections, and so is a **relationship type**, for its relationships. Those assignments are **TPL**'s and **REL**'s; what a schema is, and how assignments combine, is here.
 
 ## 2. Depends on
 
-| Rests on                                                       | What it fixes                                                                                    |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [`Project_Scope.md`](../Project_Scope.md) §6, §9 decision 3    | A template composes definitions and owns none of them                                            |
-| [CNT](CNT-content-and-authoring.md)                            | What a component is, its versions, and its closed content root (CNT-144)                         |
-| [TPL](TPL-templates-and-document-instantiation.md)             | How a template assigns schemas to a document and its sections, which MET-019 and MET-034 rest on |
-| [LIB](LIB-reference-libraries.md)                              | The vocabulary a field draws its permitted values from, and the external sources one may use     |
-| [IAM](IAM-identity-tenancy-and-access-control.md)              | What a user of the tenant is, which a user field's value names                                   |
-| [VER](VER-versioning-baselines-and-comparison.md)              | What a version and a baseline pin                                                                |
-| [ADR-0006](../../decisions/0006-iteration-version-revision.md) | Iteration, version and revision                                                                  |
+| Rests on                                                       | What it fixes                                                                                                   |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [`Project_Scope.md`](../Project_Scope.md) §6, §9 decision 3    | A template composes definitions and owns none of them                                                           |
+| [CNT](CNT-content-and-authoring.md)                            | What a component is, its versions, and its closed content root (CNT-144)                                        |
+| [TPL](TPL-templates-and-document-instantiation.md)             | How a template assigns schemas to a document and its sections, which MET-019 and MET-034 rest on                |
+| [LIB](LIB-reference-libraries.md)                              | The vocabulary a field draws its permitted values from, and the external sources one may use                    |
+| [IAM](IAM-identity-tenancy-and-access-control.md)              | What a user of the tenant is, which a user field's value names                                                  |
+| [REL](REL-relationships-and-the-graph.md)                      | Relationship types, which assign schemas, and the guard that refuses a change breaking a relationship (REL-054) |
+| [VER](VER-versioning-baselines-and-comparison.md)              | What a version and a baseline pin                                                                               |
+| [ADR-0006](../../decisions/0006-iteration-version-revision.md) | Iteration, version and revision                                                                                 |
 
 | Not here                                                                             | There            |
 | ------------------------------------------------------------------------------------ | ---------------- |
@@ -56,11 +54,11 @@ A **template** is assigned schemas too, for its documents and their sections. Th
 | Searching and faceting by field                                                      | **SCH**          |
 | Who may be granted the permission MET-024 names                                      | **IAM**          |
 | Approval gates, and what a transition may require                                    | **LIF**          |
-| A relationship type's fields                                                         | **REL**          |
+| Which schemas a relationship type assigns, and what a change may not break there     | **REL**          |
 
 Sections 5 to 7 are about **component** values. A document's and a section's values follow the same
 field and schema rules - sections 3 and 4 hold for every artifact - but what happens to them over time
-is **TPL**'s, because a document moves forward only by the deliberate act TPL section 9 describes.
+is **TPL**'s, because a document moves forward only by the deliberate act TPL section 9 describes. A relationship's values are **REL**'s: a relationship is edited in place, and a change that would break one is refused (REL-054).
 
 **Used by, and not changed by this area:** SCH-002, SCH-018, SCH-044 and SCH-046 search and facet
 over field values; REU-016, REU-036 and REU-038 resolve variables from document metadata; GEN-002 and
@@ -98,25 +96,23 @@ responsible must not leave with them.
 **A value from another system is a vocabulary, not a type.** A clinical study number drawn from a
 study register is a value from a list that happens to be maintained elsewhere. Treating it as a
 vocabulary whose values come from a declared source keeps one mechanism for "a value from a list", and
-takes the rule LIB-033 to LIB-035 already set for citations: the value is held here with the identifier
-the source gave it, it can be re-checked against the source, and neither validation nor publishing
-ever depends on reaching that system.
+takes the rule LIB-033 to LIB-035 already set for citations: the value is held here with the identifier the source gave it, it can be re-checked against the source, and neither validation nor publishing ever depends on reaching that system. The vocabulary taking values from a source is **LIB-058**'s; what that means for a field is MET-032's.
 
 **A field holding several values needs its own meaning of required and default.** Required means at
 least one value, a default is a list, and the values keep the order they were given - which has to be
 fixed rather than incidental, because the values are part of a version and a version's hash must not
 depend on the order a store happened to return them in.
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                | Tranche | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **MET-001** | A field must be a tenant-wide definition with a stable identifier, a name, a data type and the validation its values must satisfy. A field grouped by more than one schema must be one field                                                                                                                                                               | T1      | Specified |
-| **MET-002** | The data types a field may take must be a closed set - text, number, date, time, date and time, true or false, and user - and a field must declare whether it holds one value or several. Adding a data type must be a product change, not a configuration option                                                                                          | T1      | Specified |
-| **MET-028** | A date-and-time value must carry its offset from UTC, so that it names one instant. A date and a time must carry no offset                                                                                                                                                                                                                                 | T1      | Specified |
-| **MET-029** | A user field's value must be a user of this tenant, and must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                                                                                             | T1      | Specified |
-| **MET-030** | A field holding several values must hold no value twice and must keep its values in the order they were given, and must be able to declare the most values it may hold. For such a field, required must mean at least one value, and a default must be a list of values                                                                                    | T1      | Specified |
-| **MET-003** | A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or drawn from an external source (MET-032). _Replaces TPL-008 and LIB-021, which said this twice_                                                                                           | T2      | Specified |
-| **MET-032** | A vocabulary a field draws on must be able to take its values from a declared external source (**LIB**), each value held locally with its source and the identifier the source gave it, re-checkable against the source. Neither validation nor publishing may depend on reaching the source (**LIB-033** to **LIB-035** set the same rule for a citation) | T6      | Specified |
-| **MET-004** | Whether a value is valid must depend on its field alone: the same value for the same field must never be valid on one artifact and invalid on another                                                                                                                                                                                                      | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                     | Tranche | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **MET-001** | A field must be a tenant-wide definition with a stable identifier, a name, a data type and the validation its values must satisfy. A field grouped by more than one schema must be one field                                                                                    | T1      | Specified |
+| **MET-002** | The data types a field may take must be a closed set - text, number, date, time, date and time, true or false, and user - and a field must declare whether it holds one value or several. Adding a data type must be a product change, not a configuration option               | T1      | Specified |
+| **MET-028** | A date-and-time value must carry its offset from UTC, so that it names one instant. A date and a time must carry no offset                                                                                                                                                      | T1      | Specified |
+| **MET-029** | A user field's value must be a user of this tenant, and must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                  | T1      | Specified |
+| **MET-030** | A field holding several values must hold no value twice and must keep its values in the order they were given, and must be able to declare the most values it may hold. For such a field, required must mean at least one value, and a default must be a list of values         | T1      | Specified |
+| **MET-003** | A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_ | T2      | Specified |
+| **MET-032** | A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it                                   | T6      | Specified |
+| **MET-004** | Whether a value is valid must depend on its field alone: the same value for the same field must never be valid on one artifact and invalid on another                                                                                                                           | T1      | Specified |
 
 ## 4. Metadata schemas
 
@@ -126,9 +122,7 @@ group changes it everywhere it is assigned**: an assignment always takes the lat
 schema. Nothing already written moves, because every artifact version records the definitions it was
 written against (MET-017) - what changes is what the _next_ version is asked for.
 
-**Schemas meet in exactly three places**, and never across them. A component takes its schemas from its
-component type; a document from its template's document-level assignments; a section from its
-template's section-level assignments. A schema a template assigns and a schema a component type assigns
+**Schemas meet in exactly four places**, and never across them. A component takes its schemas from its component type; a document from its template's document-level assignments; a section from its template's section-level assignments; and a relationship from its relationship type (REL-053). A schema a template assigns and a schema a component type assigns
 never govern the same artifact, because a component takes nothing from any document (MET-013).
 
 **At one place, several schemas can apply**, which raises the only real composition question: two
@@ -149,16 +143,16 @@ optional field required for itself. It may not loosen one, change a default, fix
 change validation, because then "the Regulatory submission schema" would mean different things in two
 places and reading the schema would no longer tell anybody what an artifact must carry.
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                            | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **MET-005** | A metadata schema must be a named, versioned, tenant-wide definition grouping fields, managed and assigned as one unit. _Replaces TPL-007_                                                                                                                                                             | T1         | Specified |
-| **MET-006** | A schema must declare, for each field it groups, whether the field is required, its default where it has one, and whether its value is fixed (MET-033). _Replaces TPL-010_                                                                                                                             | T1         | Specified |
-| **MET-033** | A value a schema fixes must be taken from the schema's default, which a fixed field must have, and must not be editable on the artifact: an attempt must be refused, naming the field and the schema (MET-022). A field must be fixed wherever any schema applied there fixes it                       | T1         | Specified |
-| **MET-034** | Schemas must apply at exactly three places - a component, through its component type; a document, through its template's document-level assignments; and a section, through its template's section-level assignments (**TPL**). Schemas applied at different places must never compose on one artifact | Constraint | Specified |
-| **MET-007** | Where more than one schema applied at the same place (MET-034) groups the same field, the field must apply once, and must be required if any of those schemas requires it                                                                                                                              | T1         | Specified |
-| **MET-008** | Assigning a schema whose default for a field differs from the default of a schema already applied at the same place must be refused, naming the field and both schemas                                                                                                                                 | T1         | Specified |
-| **MET-035** | An assignment must always take the latest version of a schema. A new version of a schema must be refused where its default for a field would differ from that of a schema applied beside it at any place, naming the field, the other schema and every such place                                      | T1         | Specified |
-| **MET-009** | An assignment of a schema must be able to make an optional field required for that assignment, and must not otherwise alter the schema: not make a required field optional, change a default, fix or unfix a value, or change a field's validation                                                     | T1         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                            | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **MET-005** | A metadata schema must be a named, versioned, tenant-wide definition grouping fields, managed and assigned as one unit. _Replaces TPL-007_                                                                                                                                                                                                                             | T1         | Specified |
+| **MET-006** | A schema must declare, for each field it groups, whether the field is required, its default where it has one, and whether its value is fixed (MET-033). _Replaces TPL-010_                                                                                                                                                                                             | T1         | Specified |
+| **MET-033** | A value a schema fixes must be taken from the schema's default, which a fixed field must have, and must not be editable on the artifact: an attempt must be refused, naming the field and the schema (MET-022). A field must be fixed wherever any schema applied there fixes it                                                                                       | T1         | Specified |
+| **MET-034** | Schemas must apply at exactly four places - a component, through its component type; a document, through its template's document-level assignments; a section, through its template's section-level assignments (**TPL-054**); and a relationship, through its relationship type (**REL-053**). Schemas applied at different places must never compose on one artifact | Constraint | Specified |
+| **MET-007** | Where more than one schema applied at the same place (MET-034) groups the same field, the field must apply once, and must be required if any of those schemas requires it                                                                                                                                                                                              | T1         | Specified |
+| **MET-008** | Assigning a schema whose default for a field differs from the default of a schema already applied at the same place must be refused, naming the field and both schemas                                                                                                                                                                                                 | T1         | Specified |
+| **MET-035** | An assignment must always take the latest version of a schema. A new version of a schema must be refused where its default for a field would differ from that of a schema applied beside it at any place, naming the field, the other schema and every such place, and where it would make an existing relationship invalid (**REL-054**)                              | T1         | Specified |
+| **MET-009** | An assignment of a schema must be able to make an optional field required for that assignment, and must not otherwise alter the schema: not make a required field optional, change a default, fix or unfix a value, or change a field's validation                                                                                                                     | T1         | Specified |
 
 ## 5. Component types
 
@@ -255,13 +249,13 @@ REL-040 already sets for relationship types.
 tenant administrator's, and it is not the same job as designing a template (TPL-006) - so it is a
 permission that can be granted to somebody who holds neither.
 
-| ID          | Requirement                                                                                                                                                                                                           | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **MET-031** | The name of a field, of a schema and of a component type must each be unique within the tenant among definitions of its kind (**REL-040** is the same rule for a relationship type)                                   | T1         | Specified |
-| **MET-024** | Managing fields, schemas and component types must be a permission of its own, grantable without tenant administration and separate from designing templates (**TPL-006**, **IAM**)                                    | T1         | Specified |
-| **MET-025** | A field, a schema and a component type must each record where it is used, and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition)                  | T2         | Specified |
-| **MET-026** | Deleting a field, a schema or a component type that anything uses must be refused, naming what depends on it. It must never cascade                                                                                   | Constraint | Specified |
-| **MET-027** | A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere) | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                | Tranche    | Status    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **MET-031** | The name of a field, of a schema and of a component type must each be unique within the tenant among definitions of its kind (**REL-040** is the same rule for a relationship type)                                                                                                                        | T1         | Specified |
+| **MET-024** | Managing fields, schemas and component types must be a permission of its own, grantable without tenant administration and separate from designing templates (**TPL-006**, **IAM**)                                                                                                                         | T1         | Specified |
+| **MET-025** | A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition) | T2         | Specified |
+| **MET-026** | Deleting a field, a schema or a component type that anything uses must be refused, naming what depends on it. It must never cascade                                                                                                                                                                        | Constraint | Specified |
+| **MET-027** | A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)                                                                                      | T3         | Specified |
 
 ## 9. Non-requirements
 
@@ -289,7 +283,7 @@ permission that can be granted to somebody who holds neither.
 | Section 1     | Scope §6 and §9 decision 3; TPL-009 and CNT-Q12; issue #72                                                                                    |
 | Section 2     | The review's document and section boundary point                                                                                              |
 | Section 3     | TPL-007, TPL-008 and LIB-021; SCH-046, which needs one field to be one facet; LIB-033 to LIB-035; IAM-008                                     |
-| Section 4     | TPL-007 and TPL-010; the review's composition point                                                                                           |
+| Section 4     | TPL-007 and TPL-010; the review's composition point; TPL-054 and REL-053, the other places schemas apply                                      |
 | Section 5     | Issue #72's transclusion argument; CNT-142 to CNT-144; TPL-046                                                                                |
 | Section 6     | ADR-0006; VER-018; CNT-144; TPL-011 and TPL-043; REL-036, whose rule is right for relationships and wrong here; the review's value-fate point |
 | Section 7     | TPL-036 to TPL-038; LIF-038 and LIF-061                                                                                                       |
@@ -323,3 +317,24 @@ to MET-002, MET-006, MET-008 and MET-014 still point at what it read.
 | Requirements     | 27                | 36    |
 | Non-requirements | 5                 | 5     |
 | Open questions   | 4                 | 4     |
+
+### From drafting section 2 of the proposal
+
+Drafting the changes to the other areas found three things this document had to change to agree with
+them, and two it deliberately did not ask for.
+
+| What was found                                                                                                                                                                             | Change                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Relationship types had a metadata shape of their own (REL-003), a second schema system. Consolidating it into metadata schemas (REL-053) makes a relationship a fourth place schemas apply | **MET-034** and section 4's prose now name four places. Section 1 and the boundary rows name REL beside TPL                                                                                                                         |
+| A relationship is edited in place, so a schema or field change that breaks one has to be refused rather than recorded against (REL-054)                                                    | **MET-035** now refuses a new schema version that would make an existing relationship invalid, as well as one whose default conflicts                                                                                               |
+| MET-032 described a vocabulary taking values from a source, which is LIB's to say - the duplication TPL-008 and LIB-021 had been                                                           | **MET-032 narrowed** to the field side: validate against the values held, never the source. The vocabulary side is **LIB-058**, and **MET-003** cites it                                                                            |
+| Where-used named only definitions of this area                                                                                                                                             | **MET-025** now reaches templates and relationship types, which assign schemas                                                                                                                                                      |
+| Not changed: **IAM**. MET-024 names a permission of its own, and IAM-019's permission set is explicitly a floor ("at least")                                                               | No IAM row. TPL-006 had already set the precedent of an area naming a permission its own work needs                                                                                                                                 |
+| Not changed: **VER-011**, which does not list fields, schemas or component types among what is versioned                                                                                   | MET-020 versions them; the reasoning is in VER's change history                                                                                                                                                                     |
+| Pointers re-pointed in other areas                                                                                                                                                         | GEN-054 to TPL-052; PUB-082 to VER-055; TPL-045 to MET-022; TPL-046 to TPL-052; CNT-142 to STR-060. Change histories and traceability rows for superseded requirements were left as written, because they record what was true then |
+
+| Counts           | Before | After |
+| ---------------- | ------ | ----- |
+| Requirements     | 36     | 36    |
+| Non-requirements | 5      | 5     |
+| Open questions   | 4      | 4     |
