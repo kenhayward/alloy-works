@@ -8,7 +8,7 @@ This realises sections 3 to 10 of
 [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md), which
 [`Content_Model_Spike_Findings.md`](../specification/spikes/Content_Model_Spike_Findings.md)
 validated against its four gate cases. It is stored by
-[storage-and-versioning.md](storage-and-versioning.md) (ADR-0012), its appearance is resolved by
+[storage-and-versioning.md](storage-and-versioning.md) (ADR-0024), its appearance is resolved by
 [themes.md](themes.md) (ADR-0014), and its equations reach Word through
 [word-output.md](word-output.md) (ADR-0015) and PDF through the Typst template
 ([ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)).
@@ -131,21 +131,21 @@ answers that requirement in full. Several of CNT's rows are two requirements in 
 the model answers one clause and the outline or the publisher answers the other. Claiming them would
 say this design holds ground it does not.
 
-| Left unclaimed            | Why                                                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                                            |
-| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's                        |
-| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                               |
-| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                            |
-| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                                     |
-| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                                   |
-| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                         |
-| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                                 |
-| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                                     |
-| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                                    |
-| CNT-145                   | It adds the component's type to what every component carries, and the type is recorded on the version rather than in content - where, is storage's to design |
-| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                                      |
-| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference                |
+| Left unclaimed            | Why                                                                                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                             |
+| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's         |
+| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                |
+| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                             |
+| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                      |
+| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                    |
+| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case          |
+| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                  |
+| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                      |
+| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                     |
+| CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content     |
+| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                       |
+| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference |
 
 **Component metadata is not here, and it has since been specified.** A component is of one component type, whose metadata schemas decide the fields its values are validated against - [MET](../specification/requirements/MET-metadata-and-component-types.md), which settled **CNT-Q12**. None of it enters the content document: the type and the values belong to the version, beside its content (MET-015, MET-016). That is why this document claims **CNT-146**, the root it built, and not **CNT-145**, which superseded CNT-144 by adding the type to what every component carries. No member is reserved in the root for either, which the specification now requires rather than merely allows.
 

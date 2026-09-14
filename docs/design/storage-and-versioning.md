@@ -3,8 +3,7 @@
 How a component's history is stored, how a baseline pins a document, and where derived data lives.
 
 This is the realisation of [ADR-0006](../decisions/0006-iteration-version-revision.md) - iteration,
-version and revision - and of [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md),
-which chose the storage model. It sits inside a per-tenant schema, as
+version and revision - and of [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md), which chose the storage model, superseding [ADR-0012](../decisions/0012-relational-version-chain-hashed-content.md) when a component version came to hold metadata as well as content. It sits inside a per-tenant schema, as
 [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md) requires, and everything below is
 per-tenant without saying so again.
 
@@ -13,45 +12,47 @@ per-tenant without saying so again.
 ADR-0006 named three levels, and they are not three levels of one table. They are **two stores and a
 designation**: an ephemeral iteration store that autosaves land in and that expires on a timer; a
 permanent, append-only version chain that everything else refers to; and a revision, which is a
-designation applied to a row in that chain rather than a second history beside it. Content is stored
-inline and addressed by hash. Derived data - embeddings above all - hangs off the hash rather than
-off the version, because a version is immutable and the things derived from it are not.
+designation applied to a row in that chain rather than a second history beside it. A version holds its content inline and its metadata beside it. **Two digests, each with one meaning**: a version digest over the whole version decides whether a version changed, and a content hash over the content alone keys derived data - embeddings above all - because a version is immutable and the things derived from it are not.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                             |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **VER-001** | An `iteration` row carries editor, timestamp and content, and is never updated after insert                                                               |
-| **VER-002** | Iterations are readable only by the editor holding the component's lock; the lock holder is the only principal the row's visibility rule admits           |
-| **VER-003** | Promotion deletes nothing: iterations survive their version and expire on `expires_at`, set from the tenant's window at insert                            |
-| **VER-004** | The window is a tenant setting with a product default, applied when `expires_at` is computed rather than at sweep time, so changing it cannot revive rows |
-| **VER-005** | Nothing outside the editor's own recovery view joins to `iteration`. No foreign key points at it, which is what keeps it out of comparison and audit      |
-| **VER-006** | A version row is inserted by promotion from an iteration, never by the autosave path                                                                      |
-| **VER-007** | Author, timestamp and optional note are columns on the version row                                                                                        |
-| **VER-008** | `artifact_version` takes inserts only. No update or delete grant exists on it for the application role                                                    |
-| **VER-009** | `revision_no` and `version_no` are columns on the version row; the pair renders as `revision.version`                                                     |
-| **VER-010** | `schema_version` is a column on the version row, written at insert from the schema the content was authored against                                       |
-| **VER-011** | One versioning mechanism parameterised by `artifact_kind`, so documents, outlines, assets, query definitions, themes, layouts and templates share it      |
-| **VER-012** | A revision is a designation row referring to an existing version, adding no content of its own                                                            |
-| **VER-013** | Only the lifecycle service may insert a designation, and it does so as part of passing a gate                                                             |
-| **VER-014** | Designator, timestamp and gate are columns on the designation row                                                                                         |
-| **VER-015** | `revision_no` counts from 1 within an artifact; a version never designated carries revision 0                                                             |
-| **VER-016** | The designation row is insert-only on the same terms as the version row                                                                                   |
-| **VER-017** | A `baseline` row names a document artifact and a moment, and is insert-only                                                                               |
-| **VER-018** | `baseline_pin` holds one foreign key per pinned artifact version, covering every kind VER-011 versions                                                    |
-| **VER-019** | `baseline_value` holds each bound value and its provenance, pinned at the same instant as the versions                                                    |
-| **VER-020** | The condition set in force is stored on the baseline row, because a document has as many resolutions as it has profiles                                   |
-| **VER-021** | Baseline creation is an explicit call, made either by a person or by the lifecycle service at a gate                                                      |
-| **VER-022** | Everything a baseline pins is reachable by foreign key, and nothing reachable that way is collectable                                                     |
-| **VER-023** | `baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check                   |
-| **VER-032** | Restore reads an earlier version and inserts a new one with matching content. The earlier row is untouched                                                |
-| **VER-033** | The new version records the version it was restored from, so the chain reads as a decision                                                                |
-| **VER-035** | Preview resolves the restore without inserting, using the same code path as the write                                                                     |
-| **VER-036** | Versions, revisions and baselines have no expiry of their own; retention is a policy decision applied above this layer                                    |
-| **VER-037** | Legal hold marks an artifact, and the mark is checked by the same constraint path that refuses a pinned deletion                                          |
-| **VER-038** | The author of a version is a reference to a principal, never a copy of their details, so erasure acts in one place and the record of the act survives     |
-| **VER-039** | Derived data records the model and model version that produced it                                                                                         |
-| **VER-040** | Re-deriving inserts new derived rows and alters no version                                                                                                |
+| ID          | How it is met                                                                                                                                                                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **VER-001** | An `iteration` row carries editor, timestamp, content and metadata values, and is never updated after insert                                                                                                                                                                       |
+| **VER-002** | Iterations are readable only by the editor holding the component's lock; the lock holder is the only principal the row's visibility rule admits                                                                                                                                    |
+| **VER-003** | Promotion deletes nothing: iterations survive their version and expire on `expires_at`, set from the tenant's window at insert                                                                                                                                                     |
+| **VER-004** | The window is a tenant setting with a product default, applied when `expires_at` is computed rather than at sweep time, so changing it cannot revive rows                                                                                                                          |
+| **VER-005** | Nothing outside the editor's own recovery view joins to `iteration`. No foreign key points at it, which is what keeps it out of comparison and audit                                                                                                                               |
+| **VER-006** | A version row is inserted by promotion from an iteration, never by the autosave path                                                                                                                                                                                               |
+| **VER-007** | Author, timestamp and optional note are columns on the version row                                                                                                                                                                                                                 |
+| **VER-008** | `artifact_version` takes inserts only. No update or delete grant exists on it for the application role                                                                                                                                                                             |
+| **VER-009** | `revision_no` and `version_no` are columns on the version row; the pair renders as `revision.version`                                                                                                                                                                              |
+| **VER-010** | `schema_version` is a column on the version row, written at insert from the schema the content was authored against                                                                                                                                                                |
+| **VER-011** | One versioning mechanism parameterised by `artifact_kind`, so documents, outlines, assets, query definitions, themes, layouts and templates share it                                                                                                                               |
+| **VER-012** | A revision is a designation row referring to an existing version, adding no content of its own                                                                                                                                                                                     |
+| **VER-013** | Only the lifecycle service may insert a designation, and it does so as part of passing a gate                                                                                                                                                                                      |
+| **VER-014** | Designator, timestamp and gate are columns on the designation row                                                                                                                                                                                                                  |
+| **VER-015** | `revision_no` counts from 1 within an artifact; a version never designated carries revision 0                                                                                                                                                                                      |
+| **VER-016** | The designation row is insert-only on the same terms as the version row                                                                                                                                                                                                            |
+| **VER-017** | A `baseline` row names a document artifact and a moment, and is insert-only                                                                                                                                                                                                        |
+| **VER-018** | `baseline_pin` holds one foreign key per pinned artifact version, covering every kind VER-011 versions                                                                                                                                                                             |
+| **VER-019** | `baseline_value` holds each bound value and its provenance, pinned at the same instant as the versions                                                                                                                                                                             |
+| **VER-020** | The condition set in force is stored on the baseline row, because a document has as many resolutions as it has profiles                                                                                                                                                            |
+| **VER-021** | Baseline creation is an explicit call, made either by a person or by the lifecycle service at a gate                                                                                                                                                                               |
+| **VER-022** | Everything a baseline pins is reachable by foreign key, and nothing reachable that way is collectable                                                                                                                                                                              |
+| **VER-023** | `baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check                                                                                                                                            |
+| **VER-032** | Restore reads an earlier version and inserts a new one with matching content. The earlier row is untouched                                                                                                                                                                         |
+| **VER-033** | The new version records the version it was restored from, so the chain reads as a decision                                                                                                                                                                                         |
+| **VER-035** | Preview resolves the restore without inserting, using the same code path as the write                                                                                                                                                                                              |
+| **VER-036** | Versions, revisions and baselines have no expiry of their own; retention is a policy decision applied above this layer                                                                                                                                                             |
+| **VER-037** | Legal hold marks an artifact, and the mark is checked by the same constraint path that refuses a pinned deletion                                                                                                                                                                   |
+| **VER-038** | The author of a version is a reference to a principal, never a copy of their details, so erasure acts in one place and the record of the act survives                                                                                                                              |
+| **VER-039** | Derived data records the model and model version that produced it                                                                                                                                                                                                                  |
+| **VER-040** | Re-deriving inserts new derived rows and alters no version                                                                                                                                                                                                                         |
+| **CNT-145** | A component artifact carries its identifier; each version row carries its component type's version and `schema_version`, and content whose root holds the title and base language (CNT-146). There is no general attribute column, so adding a structural attribute is a migration |
+| **MET-015** | Metadata values are a column on the version row, which takes inserts only, so a value changes only by a new version; `baseline_pin` pins the version, and the values with it                                                                                                       |
+| **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                        |
+| **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                          |
 
 **VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that
@@ -66,29 +67,33 @@ it. The requirement stays specified and undesigned until a revision adds that ch
 Comparison (VER-024 to VER-031) reads this store but is not designed here - it is an algorithm, it
 was prototyped in the content model spike, and it deserves its own document.
 
+**MET-017 and MET-036 are not claimed here.** This design records what each asks for - the definition
+versions a version was written against, and the values it did not carry forward - and records them
+immutably. Neither requirement is only a record: MET-017 also requires a version to be validated
+against those definitions for as long as it exists, and MET-036 decides which values are carried at
+all. Both of those are the metadata service's, which is not designed yet, so the requirements stay
+specified and undesigned rather than half claimed.
+
 ## Stores
 
-**`artifact`** is the identity of a versioned thing: a kind and an id. A component, a document, an
-outline, an asset, a query definition, a theme, a layout or a template are all artifacts, and
+**`artifact`** is the identity of a versioned thing: a kind and an id. A component, a document, an outline, an asset, a query definition, a theme, a layout, a template, a field, a metadata schema or a component type are all artifacts, and
 VER-011 is satisfied by that being literally true rather than by seven tables agreeing to behave the
 same way. Seven bespoke version tables would be seven implementations of the same rules, and they
 would drift - one would forget the immutability grant or the schema-version column, and the failure
 would not be an error. It would be a baseline that resolves slightly differently in four years.
 
-**`artifact_version`** is the permanent chain. One row per version: the artifact, `revision_no` and
-`version_no`, author, timestamp, `schema_version`, an optional note, the content, and the content
-hash. The application role holds `INSERT` and `SELECT` on it and nothing else, so VER-008 is a grant
+**`artifact_version`** is the permanent chain. One row per version: the artifact, `revision_no` and `version_no`, author, timestamp, `schema_version`, an optional note, the content and its content hash, the metadata values, the values not carried forward, the component type's version where the artifact is a component, and the version digest. The application role holds `INSERT` and `SELECT` on it and nothing else, so VER-008 is a grant
 rather than a convention.
 
 **`revision_designation`** refers to a version row and adds who designated it, when, and against
 which gate. ADR-0006 said a revision is a marker on a version rather than a second history; this is
 that sentence as a table.
 
-**`iteration`** is the separate ephemeral store. Same content shape, different lifecycle: editor,
-timestamp, content, `expires_at`. **No foreign key points at it from anywhere**, which is how VER-005
+**`version_definition`** relates a version to each field, schema and component type version it was written against (MET-017), one row per definition version, by foreign key. It takes inserts only, on the same terms as the version row, and a baseline reaches every definition its versions used through it.
+
+**`iteration`** is the separate ephemeral store. Same substance, different lifecycle: editor, timestamp, content, metadata values, `expires_at`. **No foreign key points at it from anywhere**, which is how VER-005
 is enforced rather than asserted - a row nothing can reference cannot appear in comparison, in audit,
-or in anything a reader sees. Promotion copies an iteration's content into a new version row and
-leaves the iteration alone to expire on its own clock.
+or in anything a reader sees. Promotion copies an iteration's content and metadata values into a new version row, stamps the definition versions current at that moment (MET-018) and computes both digests, and leaves the iteration alone to expire on its own clock.
 
 Keeping iterations out of `artifact_version` is the decision in this document most likely to be
 undone by somebody tidying up, so it is worth being plain about why. Autosave is continuous
@@ -98,19 +103,37 @@ is a hot table, and expiry becomes a delete against it. Separated, the version c
 only when somebody decides something, and expiring iterations is a sweep over a table nothing else
 touches.
 
-## Content, and the hash
+## Content, metadata, and the two digests
 
 Content is JSON conforming to the node-and-mark model of
 [ADR-0005](../decisions/0005-purpose-built-node-and-mark-content-model.md), stored inline on the
-version row, with `content_hash` beside it.
+version row. **Metadata values sit beside it, in a column of their own**, because the content
+document's root is closed (CNT-146) and that closure is what the content hash rests on. A version is
+therefore more than its content, and one hash cannot answer both questions the store asks of it -
+which is why ADR-0012's single hash was superseded by [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md).
 
-The hash is not there in anticipation. It earns its place immediately:
+**The version digest decides whether a version changed.** It is SHA-256, as lowercase hexadecimal,
+over the canonical serialisation of the version's substance: the content, the component type's
+version, the metadata values, the definition versions it was written against, and the values it did
+not carry forward. The canonical rules are the content's own - members in lexicographic order,
+strings in NFC, no insignificant whitespace - with the definition versions sorted, because they are a
+set. It earns its place immediately:
 
-- **Refusing a version that changed nothing.** A positive act that produces an identical hash is a
-  mistake, and saying so is better than putting a meaningless row into a permanent chain.
-- **Short-circuiting comparison.** Equal hashes need no diff, which matters most for the case that is
+- **Refusing a version that changed nothing.** A positive act that produces a digest identical to the
+  previous version's is a mistake, and saying so is better than putting a meaningless row into a
+  permanent chain. A correction to one metadata value changes the digest, so it is a version.
+- **Short-circuiting comparison.** Equal digests need no diff, which matters most for the case that is
   otherwise most expensive: comparing two baselines of a long document where almost nothing moved.
-- **Keying derived data**, below.
+- **Tamper evidence (VER-042).** Anybody holding the row can recompute it.
+
+**Authorship is deliberately outside it.** Author, timestamp, note and the `revision.version` numbers
+are not what a version says, and including them would make every version differ from the last and
+the refusal above meaningless. Who did what, when, is the audit log's to make tamper-evident
+(LIF-055).
+
+**The content hash keys derived data, and helps comparison once.** It is SHA-256 over the canonical
+content alone. Two versions with equal content hashes and different digests skip the content diff and
+still compare what else changed - the case a metadata-only version produces.
 
 It also makes moving payloads into a separate content-addressed store later a move rather than a
 migration, if authoring volumes make deduplication worth having. That is the reason it is not being
@@ -129,8 +152,7 @@ depends on four hundred call sites remembering is not a boundary. Using the reas
 deliberate.
 
 VER-018 makes the pin set wide - components, assets, query definitions, themes, typefaces, layouts,
-citation styles and the outline. Because all of those are artifacts, `baseline_pin` needs no column
-per kind and no special case for the one added next.
+citation styles and the outline. Because all of those are artifacts, `baseline_pin` needs no column per kind and no special case for the one added next - which is what happened when fields, metadata schemas and component types arrived: a document's recorded schema and field versions (TPL-056) are pinned like any other artifact version.
 
 ## Derived data
 
@@ -139,7 +161,7 @@ Embeddings for search and retrieval are stored here, and **they do not live on t
 A version is immutable (VER-008); an embedding is not. Models are replaced, and re-embedding a corpus
 is a normal operation rather than an exception. A mutable value on an immutable row is a
 contradiction that resolves badly in exactly one direction, so derived data is its own store:
-`embedding`, keyed by **content hash, block id, model and model version**, holding the vector.
+`embedding`, keyed by **content hash, block id, model and model version**, holding the vector. The content hash rather than the version digest, deliberately: a version that changed only its metadata says nothing new to embed, and shares its predecessor's vectors.
 
 Keying by hash rather than by version buys something specific. Identical content is embedded once
 however many versions and documents contain it, and in a component CMS that is the common case, not

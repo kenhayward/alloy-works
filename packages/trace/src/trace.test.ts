@@ -28,6 +28,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1360);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 256, from 252: storage-and-versioning.md claims MET-015, MET-016, CNT-145 and VER-042 once a
+    // version records its metadata values, its component type and a digest over all of it, which
+    // ADR-0024 decided when a metadata-only change would otherwise have been refused as unchanged.
     // 252, from 253: docs/design/relationships.md stopped claiming REL-003 when REL-053 superseded
     // it, because the design stores a JSON Schema per type and REL-053 wants the tenant's shared
     // metadata schemas - a broader requirement, so the claim was dropped rather than repointed.
@@ -40,7 +43,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(252);
+    ).toBe(256);
   });
 });
 

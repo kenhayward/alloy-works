@@ -1,10 +1,11 @@
 import type { ContentDocument } from './document.js';
 
 /**
- * The canonical serialisation, and the input to `content_hash`.
+ * The canonical serialisation of content, and the input to `content_hash`.
  *
- * `storage-and-versioning.md` refuses a version whose hash is unchanged and skips a comparison when
- * two hashes are equal, so both behaviours rest on two identical documents producing one string.
+ * `content_hash` keys derived data, and the version digest (ADR-0024) - which decides whether a
+ * version changed - applies these same rules to the whole version, content included. Both rest on two
+ * identical documents producing one string.
  *
  * Three rules, and no more: members in lexicographic order (a declared order that needs no table to
  * keep in step with the schema), strings in NFC (CNT-056), and no insignificant whitespace.
