@@ -407,19 +407,27 @@ would be storage spent on something nobody will read.
 
 ### Spelling
 
-| ID          | Requirement                                                                                                                                                                                 | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **CNT-098** | The editor must check spelling as the author types                                                                                                                                          | T1      | Specified |
-| **CNT-099** | Spelling must be checked against the language of the run being edited (CNT-083), not against one language for the whole editor                                                              | T1      | Specified |
-| **CNT-100** | A tenant must be able to maintain custom dictionaries, so that domain vocabulary is not flagged in every document                                                                           | T2      | Specified |
-| **CNT-101** | Spelling must behave identically in both deliveries. The browser supplies it; the desktop shell must wire the platform's checker through the platform bridge rather than silently losing it | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                   | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **CNT-098** | The editor must check spelling as the author types                                                                                                                                                                                                            | T1      | Specified             |
+| **CNT-099** | Spelling must be checked against the language of the run being edited (CNT-083), not against one language for the whole editor                                                                                                                                | T1      | Superseded by CNT-147 |
+| **CNT-100** | A tenant must be able to maintain custom dictionaries, so that domain vocabulary is not flagged in every document                                                                                                                                             | T2      | Specified             |
+| **CNT-101** | Spelling must behave identically in both deliveries. The browser supplies it; the desktop shell must wire the platform's checker through the platform bridge rather than silently losing it                                                                   | T1      | Superseded by CNT-148 |
+| **CNT-147** | Spelling must be checked by the checker the delivery provides. A run whose language differs from its component's base language (**CNT-140**) must not be checked, so that a passage in another language is never flagged as misspelt                          | T1      | Specified             |
+| **CNT-148** | Neither delivery may lack a spelling checker. The web delivery uses the browser's; the desktop shell must wire the platform's checker through the platform bridge and enable it for the base languages of the components open, rather than silently losing it | T1      | Specified             |
 
 **Spelling is the one thing here the web gives away and the desktop does not** (CNT-101). A
 browser checks spelling in a contenteditable region without being asked; an Electron renderer does
 not unless the shell wires it up. That asymmetry is exactly what the platform bridge exists for, and
 it is the kind of thing that ships as "works in the web build" and is discovered by the first
-desktop user. **CNT-099 makes it language-aware** rather than editor-wide, which falls out of
-CNT-083 for free and would be awkward to add later.
+desktop user. **CNT-147 and CNT-148 replace CNT-099 and CNT-101, because native spellcheck cannot choose a
+dictionary per run.** Chromium and Firefox both check every run against the languages the browser or
+the environment has enabled, and ignore an element's `lang`, so "check each run against its own
+language" and "the browser supplies it" could not both be met. The decision was to keep the native
+checker. What it can honestly promise is that a passage in another language is not wrongly flagged -
+it is simply not checked - and that the desktop, which can choose its checker's languages, chooses the
+ones the open components are written in. A browser page cannot, so in the web delivery the languages
+checked are the author's browser's.
 
 ## 12. The document view
 
@@ -666,3 +674,19 @@ CNT-Q12, and in doing so changed a closed set this document declares.
 | Requirements     | 144, of which 10 superseded               | 146, of which 11 superseded |
 | Non-requirements | 10                                        | 10                          |
 | Open questions   | 15, of which 8 settled and 1 half settled | 15, of which 9 settled      |
+
+### From designing the component editor
+
+Not a review. Designing the component editor checked how spelling could be delivered before designing
+it, and found two requirements that could not both hold.
+
+| What was found                                                                                                                                                                                                                                                                                                             | Change                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native spellcheck ignores an element's `lang` - in Chromium, which is Chrome, Edge and Electron, and in Firefox - so it checks every run against the languages enabled for the browser or environment. CNT-099 required checking each run against its own language, and CNT-101 required the browser to supply the checker | The native checker was kept rather than building one. **CNT-099 superseded by CNT-147**: a run in a language other than its component's base language is not checked, so it is never wrongly flagged. **CNT-101 superseded by CNT-148**: neither delivery lacks a checker, and the desktop shell enables the open components' base languages |
+| Declined: **our own checker**, Hunspell-format dictionaries in a worker, which would have met CNT-099 as written                                                                                                                                                                                                           | A checker, dictionaries with their licences, and a suggestions menu to build and maintain, for spelling in passages whose language differs from their component's                                                                                                                                                                            |
+
+| Counts           | Before                      | After                       |
+| ---------------- | --------------------------- | --------------------------- |
+| Requirements     | 146, of which 11 superseded | 148, of which 13 superseded |
+| Non-requirements | 10                          | 10                          |
+| Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |
