@@ -1,5 +1,5 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { EOL, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -200,28 +200,52 @@ describe('where --file writes', () => {
 });
 
 describe('writing a listing to a file', () => {
-  it('writes UTF-8 with no byte-order mark, LF line endings and a final newline', () => {
+  // A statement outside ASCII - an accented letter, a CJK character and a mathematical symbol - is
+  // the thing a wrong encoding corrupts, and the text mixes LF and CRLF so that normalising is tested
+  // rather than assumed.
+  const listing =
+    'ZZZ-001  Specified   Café 文字 ≤ must survive\r\nZZZ-002  Specified   A second row\nZZZ-003  Specified   A third row';
+
+  const written = (eol?: string): Buffer => {
     const directory = mkdtempSync(join(tmpdir(), 'trace-area-'));
     try {
       const path = join(directory, 'areas.txt');
-      // A statement outside ASCII - an accented letter, a CJK character and a mathematical symbol -
-      // is the thing a wrong encoding corrupts, and a CRLF inside the text is what a platform default
-      // would otherwise leave behind.
-      writeListing(
-        path,
-        'ZZZ-001  Specified   Caf\u00e9 \u6587\u5b57 \u2264 must survive\r\nZZZ-002  Specified   A second row',
-      );
-
-      const bytes = readFileSync(path);
-
-      expect([...bytes.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
-      expect(bytes.includes(0x0d)).toBe(false);
-      expect(bytes.toString('utf8')).toBe(
-        'ZZZ-001  Specified   Caf\u00e9 \u6587\u5b57 \u2264 must survive\nZZZ-002  Specified   A second row\n',
-      );
+      if (eol === undefined) writeListing(path, listing);
+      else writeListing(path, listing, eol);
+      return readFileSync(path);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
+  };
+
+  it('writes CRLF on a platform whose line ending is CRLF, so Windows viewers break the lines', () => {
+    const bytes = written('\r\n');
+
+    expect(bytes.toString('utf8')).toBe(
+      'ZZZ-001  Specified   Café 文字 ≤ must survive\r\nZZZ-002  Specified   A second row\r\nZZZ-003  Specified   A third row\r\n',
+    );
+    // No LF that is not part of a CRLF - a bare LF is exactly what a Windows viewer does not break on.
+    expect(bytes.toString('utf8').replace(/\r\n/g, '')).not.toContain('\n');
+  });
+
+  it('writes LF on a platform whose line ending is LF', () => {
+    expect(written('\n').toString('utf8')).toBe(
+      'ZZZ-001  Specified   Café 文字 ≤ must survive\nZZZ-002  Specified   A second row\nZZZ-003  Specified   A third row\n',
+    );
+  });
+
+  it('uses the line ending of the platform it runs on when none is given', () => {
+    const text = written().toString('utf8');
+
+    expect(text.endsWith(`A third row${EOL}`)).toBe(true);
+    expect(text.split(EOL)).toHaveLength(4);
+  });
+
+  it('writes UTF-8 with no byte-order mark', () => {
+    const bytes = written('\r\n');
+
+    expect([...bytes.subarray(0, 3)]).not.toEqual([0xef, 0xbb, 0xbf]);
+    expect(bytes.toString('utf8')).toContain('Café 文字 ≤');
   });
 });
 

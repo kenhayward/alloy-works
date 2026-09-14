@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.18.1 - 2026-09-14 (PR #92)
+
+### Fixed
+
+- A listing written with `pnpm trace area --file` on Windows showed as one run-on block in Notepad-style
+  text viewers, because its lines ended in a bare LF. It now uses the line endings of the platform that
+  writes it - CRLF on Windows, LF elsewhere - so it reads one requirement per line in that platform's
+  own viewers. It is still UTF-8 with no byte-order mark, and the same machine writes the same bytes
+  every time.
+
 ## 0.18.0 - 2026-09-14 (PR #90)
 
 ### Added
