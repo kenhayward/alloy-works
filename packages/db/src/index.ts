@@ -49,3 +49,4 @@ export {
   type TenantListener,
 } from './realtime.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';

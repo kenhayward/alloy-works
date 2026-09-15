@@ -26,6 +26,7 @@
     "dev:setup": "tsx src/dev-setup.ts"
   },
   "dependencies": {
+    "@alloy-works/domain": "workspace:^",
     "kysely": "^0.29.5",
     "pg": "^8.23.0"
   },
