@@ -63,7 +63,7 @@ describe('definitionsFor', () => {
     ]);
   });
 
-  it('MET-017 refuses to name a definition it was not given, and one given at two versions', () => {
+  it('refuses to name a definition it was not given, and one given at two versions', () => {
     expect(() => definitionsFor({ version: 't', definition: type }, [], [])).toThrow(/schema-reg/);
     expect(() =>
       definitionsFor(
