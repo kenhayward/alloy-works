@@ -20,7 +20,9 @@ validation, user values, carrying forward, and what a version records - each one
 zod 4, Vitest 5. No new dependency.
 
 **Spec:** [`../design/metadata.md`](../design/metadata.md), including its Review section, whose
-decisions are settled. Read with
+decisions are settled, and its revision on `claude/access-design` (2da561b): resolution checks every
+effective default against the field version it is given, and MET-037 is added and left unclaimed.
+Read with
 [ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md) (what values and
 `notCarried` feed), [storage-and-versioning.md](../design/storage-and-versioning.md) (where they are
 stored) and [component-editor.md](../design/component-editor.md), "Metadata alongside" (how callers use
@@ -31,7 +33,7 @@ database, no route, no editor panel, no definitions-management service. Those ha
 written when their turn comes.
 
 **The code below was run before the plan was committed.** Against `main` at 0.18.3, every block was
-applied in task order and the domain suite passed (257 tests), with `tsc`, ESLint, Prettier and
+applied in task order and the domain suite passed (259 tests), with `tsc`, ESLint, Prettier and
 `pnpm trace check` clean and the citation counts each task names measured rather than estimated. Then
 it was removed, so the plan's tasks can be executed test first. It is still worth watching each test
 fail: the run proves the code, not that the order of an executor's steps did.
@@ -47,8 +49,8 @@ through two schemas once', ...)`. `packages/trace` scans titles to compute `Cove
   a comment is a mention, not a citation.
 - **Cite only what the design owns, and only what the test demonstrates.** metadata.md owns MET-001,
   002, 004 to 007, 009, 010, 013, 017, 018, 022, 028, 030 and 036. A test about something the design
-  leaves unclaimed - MET-008's refusal, MET-029's display, MET-033's refusal of a write - carries no
-  identifier in its title. `pnpm trace check` fails on a citation of a requirement no design claims.
+  leaves unclaimed - MET-008's refusal, MET-029's display, MET-033's refusal of a write, MET-037's
+  refusal of a field version - carries no identifier in its title. `pnpm trace check` fails on a citation of a requirement no design claims.
 - **`packages/domain` stays platform-free.** No React, no Electron, no `fs`, no `window`, no
   `node:crypto`, no clock, no I/O. Tests may read fixtures with `node:fs`; production code may not.
 - **`pattern` does not ship.** metadata.md's first open question - how a pattern is kept from
@@ -114,16 +116,16 @@ exactly the distinction the Review's third point exists to keep.
 
 **6. Shapes the design names but does not draw.**
 
-| Name                 | Shape chosen                                                                                                                                                                                                                                                    |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A failure            | `{ code: 'metadata.<rule>', field, rule, schemas, detail }`. Validation's rules, plus `user`, and three definition rules - `default`, `requires`, `defaultConflict` - found by `checkSchema` and `checkAssignment`                                              |
-| An effective field   | `{ field, required, requiredBy, fixed, fixedBy, default?: { value, from } }`. The design's `order` is the returned array's order rather than a member                                                                                                           |
-| `checkAssignment`    | `(assigned: MetadataSchemaDefinition[], candidate: { assignment, schema })` - it needs the candidate schema's payload to see what it groups                                                                                                                     |
-| `checkUserValues`    | `principals` is a **synchronous** `(id) => { active } \| undefined`. The package does no I/O, so the service collects identifiers with `principalIdsIn`, loads them in one query, and passes a lookup over what it loaded                                       |
-| `notCarried`         | A list of `{ field, value }`, sorted by field identifier - "a list ... by field", in the order canonical serialisation sorts members                                                                                                                            |
-| `definitionsFor`     | `(type, schemas, fields)`, each `{ version, definition }`: a payload does not know its own version, which is the artifact row's. Returns `{ kind, id, version }[]` sorted by kind, identifier and version, because a version's definitions are a set (ADR-0024) |
-| Disagreeing defaults | `resolveComponentFields` throws `DefinitionConflictError`, carrying `field` and `schemas`, never a validation failure                                                                                                                                           |
-| A missing definition | Resolution, `checkSchema` and `definitionsFor` throw, naming what was not supplied. Being handed a type without its schemas is the caller's bug, not an author's failure                                                                                        |
+| Name                            | Shape chosen                                                                                                                                                                                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A failure                       | `{ code: 'metadata.<rule>', field, rule, schemas, detail }`. Validation's rules, plus `user`, and three definition rules - `default`, `requires`, `defaultConflict` - found by `checkSchema` and `checkAssignment`                                                                   |
+| An effective field              | `{ field, required, requiredBy, fixed, fixedBy, default?: { value, from } }`. The design's `order` is the returned array's order rather than a member                                                                                                                                |
+| `checkAssignment`               | `(assigned: MetadataSchemaDefinition[], candidate: { assignment, schema })` - it needs the candidate schema's payload to see what it groups                                                                                                                                          |
+| `checkUserValues`               | `principals` is a **synchronous** `(id) => { active } \| undefined`. The package does no I/O, so the service collects identifiers with `principalIdsIn`, loads them in one query, and passes a lookup over what it loaded                                                            |
+| `notCarried`                    | A list of `{ field, value }`, sorted by field identifier - "a list ... by field", in the order canonical serialisation sorts members                                                                                                                                                 |
+| `definitionsFor`                | `(type, schemas, fields)`, each `{ version, definition }`: a payload does not know its own version, which is the artifact row's. Returns `{ kind, id, version }[]` sorted by kind, identifier and version, because a version's definitions are a set (ADR-0024)                      |
+| A default resolution cannot use | `resolveComponentFields` throws `DefinitionConflictError`, carrying `field`, `schemas` and `rule`, never a validation failure. `rule` is `defaultConflict` for disagreeing defaults, and the refusing rule - `maxLength`, `type` and so on - for a default its field version refuses |
+| A missing definition            | Resolution, `checkSchema` and `definitionsFor` throw, naming what was not supplied. Being handed a type without its schemas is the caller's bug, not an author's failure                                                                                                             |
 
 **7. A hand-written generator for the property test, not `fast-check`.** No workspace depends on a
 property-testing library. The property metadata.md names - every value but a clear is carried or
@@ -176,6 +178,7 @@ each test file on purpose: a helper module would be compiled into `dist/`, and e
 | Every validation rule has a test that fails without it | `required`, `fixed`: task 9. `type`, `multiplicity`, `maxValues`, `minLength`, `maxLength`, `min`, `max`, `integer`, `scale`: task 4. Each asserts the exact list of codes and a passing twin, so removing a rule fails its test |
 | A fixture per definition schema version                | Task 6, with a test that every data type, multiplicity and validation member appears in `fields.json`                                                                                                                            |
 | Resolution over a matrix                               | Task 7: 400 cases, two schemas sharing a field, every combination of required, fixed, default and an assignment's `requires`                                                                                                     |
+| A default its field refuses                            | Task 7: a default fixed by two schemas throws under a later field version, naming the field, both schemas and the rule, and resolves under the version it was saved against                                                      |
 | A property test for `carryForward`                     | Task 11: 1,000 seeded cases                                                                                                                                                                                                      |
 | Clears survive                                         | Task 11                                                                                                                                                                                                                          |
 | Nothing present is replaced                            | Task 11, with `validate` naming every schema that fixes the field                                                                                                                                                                |
@@ -195,6 +198,12 @@ each test file on purpose: a helper module would be compiled into `dist/`, and e
 | MET-007 | 7              | MET-030 | 1, 3, 4, 5, 9, 12 |
 | MET-009 | 5, 7, 8, 9     | MET-036 | 9, 10, 11, 12     |
 | MET-010 | 5, 6, 7        |         |                   |
+
+Task 7's default check is cited as MET-006 (a schema declares a default, and resolution throws on one
+its field refuses) and MET-017 (the same default resolves under the field version it was saved
+against). **MET-037 is cited by no task**: it is the refusal of the field version itself, which
+metadata.md leaves to the undesigned definitions-management service. Citing it would also fail
+`pnpm trace check` as `cited-undesigned`.
 
 ---
 
@@ -2346,15 +2355,35 @@ git commit -m "Migrate definitions on read, with a fixture per definition schema
 **Interfaces:**
 
 - Consumes: `type ComponentTypeDefinition`, `type MetadataSchemaDefinition`, `type FieldDefinition`,
-  `canonicalJson`
+  `type MetadataRule`, `checkValue`, `canonicalJson`
 - Produces:
   `resolveComponentFields(type, schemas: readonly MetadataSchemaDefinition[], fields: readonly FieldDefinition[]): EffectiveField[]`,
   `type EffectiveField = { field; required; requiredBy: readonly string[]; fixed; fixedBy: readonly string[]; default?: { value: unknown; from: readonly string[] } }`,
-  `class DefinitionConflictError extends Error { field: string; schemas: readonly string[] }`
+  `class DefinitionConflictError extends Error { field: string; schemas: readonly string[]; rule: MetadataRule }`,
+  constructed as `new DefinitionConflictError(field, schemas, rule, message)`
 
 The rules are metadata.md's Resolution table. Three the Review settled: disagreeing defaults throw,
 naming the field and the schemas; a `requires` naming a field its schema does not group is ignored, not
 thrown; a requirement an assignment imposed is kept under the schema assigned.
+
+**A default its field refuses throws too** (metadata.md, Resolution, as revised). Resolution runs
+`checkValue` on every effective default against the field version it was given - once the defaults are
+known to agree, so checking one checks them all - and throws, naming the field, every schema giving the
+default and the rule that refused it. Without this a field version that tightens below a fixed default
+would hand an author a value nobody can correct. Refusing that field version when it is saved is
+MET-037's, which belongs to the undesigned definitions-management service, so no test here cites it.
+
+**The error gains one member rather than a new kind.** Both cases are "a default resolution cannot
+use", and the editor shows both the same way, as a definition problem. So `DefinitionConflictError`
+keeps its name and its `field` and `schemas`, and gains `rule: MetadataRule`: `defaultConflict` (a rule
+that already exists, for `checkAssignment`) when defaults disagree, and the refusing rule - `maxLength`,
+`type`, `scale` and so on - when a field refuses the default. The caller builds the message, since the
+two read differently.
+
+**The two default tests are written together.** Step 1 includes both the existing disagreement test,
+now also asserting `rule: 'defaultConflict'`, and the two new ones. Written first, the throw test fails
+because nothing checks the default; the "resolves under the saved version" test passes from the start
+and is there to show the check is against the version given, not a rule about the value.
 
 **The stray test is ordered on purpose.** The schema whose `requires` is stray is assigned second, after
 the schema that makes the field effective. Assigned first, the field would not yet be effective when
@@ -2396,6 +2425,25 @@ const schemaOf = (id: string, entries: Entry[]) =>
 
 const typeOf = (assignments: { schema: string; requires: string[] }[]) =>
   componentTypeDefinitionSchema.parse({ ...identity('type-protocol'), assignments });
+
+/** The error `run` throws. Fails the test when it throws nothing. */
+const thrown = (run: () => unknown): unknown => {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  throw new Error('Expected resolution to throw, and it did not');
+};
+
+/** One field at two versions: saved with room for the default, later tightened below it. */
+const studyAt = (maxLength: number) =>
+  fieldDefinitionSchema.parse({
+    ...identity('field-study'),
+    dataType: 'text',
+    multiplicity: 'one',
+    validation: { maxLength },
+  });
 
 const study = fieldOf('field-study');
 const phase = fieldOf('field-phase');
@@ -2512,7 +2560,11 @@ describe('resolveComponentFields', () => {
     try {
       resolveComponentFields(type, [one, two], fields);
     } catch (error) {
-      expect(error).toMatchObject({ field: 'field-phase', schemas: ['schema-one', 'schema-two'] });
+      expect(error).toMatchObject({
+        field: 'field-phase',
+        schemas: ['schema-one', 'schema-two'],
+        rule: 'defaultConflict',
+      });
       expect((error as Error).message).toBe(
         'Field field-phase has different defaults in schemas schema-one and schema-two',
       );
@@ -2531,6 +2583,42 @@ describe('resolveComponentFields', () => {
       fields,
     );
     expect(effective?.default).toEqual({ value: '1', from: ['schema-one', 'schema-two'] });
+  });
+
+  it('MET-006 throws on a default its field version refuses, naming the field, the schemas and the rule', () => {
+    const fixing = schemaOf('schema-reg', [
+      entry('field-study', { default: 'S-123', fixed: true }),
+    ]);
+    const giving = schemaOf('schema-quality', [entry('field-study', { default: 'S-123' })]);
+    const type = typeOf([
+      { schema: 'schema-reg', requires: [] },
+      { schema: 'schema-quality', requires: [] },
+    ]);
+    const error = thrown(() => resolveComponentFields(type, [fixing, giving], [studyAt(3)]));
+    expect(error).toBeInstanceOf(DefinitionConflictError);
+    expect(error).toMatchObject({
+      field: 'field-study',
+      schemas: ['schema-reg', 'schema-quality'],
+      rule: 'maxLength',
+    });
+    expect((error as Error).message).toBe(
+      'Field field-study refuses the default in schemas schema-reg and schema-quality: maxLength, Is longer than 3 characters',
+    );
+  });
+
+  it('MET-017 resolves the same default under the field version it was saved against', () => {
+    const fixing = schemaOf('schema-reg', [
+      entry('field-study', { default: 'S-123', fixed: true }),
+    ]);
+    const [effective] = resolveComponentFields(
+      typeOf([{ schema: 'schema-reg', requires: [] }]),
+      [fixing],
+      [studyAt(10)],
+    );
+    expect(effective).toMatchObject({
+      fixed: true,
+      default: { value: 'S-123', from: ['schema-reg'] },
+    });
   });
 
   it('MET-017 refuses to resolve from definitions it was not given, naming what is missing', () => {
@@ -2620,7 +2708,9 @@ Expected: FAIL, the import `./resolve.js` does not resolve.
 // packages/domain/src/metadata/resolve.ts
 import { canonicalJson } from '../stored/canonical.js';
 
+import { checkValue } from './check-value.js';
 import type { ComponentTypeDefinition } from './component-type.js';
+import type { MetadataRule } from './failure.js';
 import type { FieldDefinition } from './field.js';
 import type { MetadataSchemaDefinition } from './schema.js';
 
@@ -2642,19 +2732,25 @@ export type EffectiveField = {
 };
 
 /**
- * Entries that disagree about a default. A definition problem for an administrator, never a
- * validation failure for an author: MET-008 and MET-035 would refuse it upstream, and neither refusal
- * is designed yet, so a resolver that picked one silently would turn those gaps into wrong data.
+ * A default resolution cannot use: entries that disagree about it (`rule` is `defaultConflict`), or a
+ * default the field version it was given refuses (`rule` is the field's rule that refused it, such as
+ * `maxLength`). Either is a definition problem for an administrator, never a validation failure for an
+ * author. MET-008 and MET-035 would refuse the first upstream and MET-037 the second, and none of those
+ * refusals is designed yet - so a resolver that picked a default silently, or applied one its field
+ * refuses, would turn those gaps into wrong data, and for a fixed field into a value no author can
+ * correct.
  */
 export class DefinitionConflictError extends Error {
   readonly field: string;
   readonly schemas: readonly string[];
+  readonly rule: MetadataRule;
 
-  constructor(field: string, schemas: readonly string[]) {
-    super(`Field ${field} has different defaults in schemas ${schemas.join(' and ')}`);
+  constructor(field: string, schemas: readonly string[], rule: MetadataRule, message: string) {
+    super(message);
     this.name = 'DefinitionConflictError';
     this.field = field;
     this.schemas = schemas;
+    this.rule = rule;
   }
 }
 
@@ -2731,29 +2827,44 @@ function toEffective(draft: Draft): EffectiveField {
   };
   const [first] = draft.defaults;
   if (!first) return base;
+  const schemas = draft.defaults.map((each) => each.schema);
   const distinct = new Set(draft.defaults.map((each) => canonicalJson(each.value)));
   if (distinct.size > 1) {
     throw new DefinitionConflictError(
       draft.field.id,
-      draft.defaults.map((each) => each.schema),
+      schemas,
+      'defaultConflict',
+      `Field ${draft.field.id} has different defaults in schemas ${schemas.join(' and ')}`,
     );
   }
-  return {
-    ...base,
-    default: { value: first.value, from: draft.defaults.map((each) => each.schema) },
-  };
+  // The defaults agree, so checking one checks them all - against the field version this resolution
+  // was given, which need not be the version the schema's default was saved against.
+  const [refused] = checkValue(draft.field, first.value);
+  if (refused) {
+    throw new DefinitionConflictError(
+      draft.field.id,
+      schemas,
+      refused.rule,
+      `Field ${draft.field.id} refuses the default in schemas ${schemas.join(' and ')}: ${refused.rule}, ${refused.detail}`,
+    );
+  }
+  return { ...base, default: { value: first.value, from: schemas } };
 }
 ```
 
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `pnpm --filter @alloy-works/domain test -- src/metadata/resolve`
-Expected: PASS, 11 tests. The matrix test reports 400 cases.
+Expected: PASS, 13 tests. The matrix test reports 400 cases.
 
-- [ ] **Step 5: Prove the stray guard is tested**
+- [ ] **Step 5: Prove the stray guard and the default check are tested**
 
 Change `if (grouped.has(id) && draft)` to `if (draft)`, run the file, and watch
 `MET-009 ignores a requires naming a field the assigned schema does not group` fail. Restore it.
+
+Then change `if (refused)` so it never holds, run the file, and watch
+`MET-006 throws on a default its field version refuses, naming the field, the schemas and the rule`
+fail. Restore it.
 
 - [ ] **Step 6: Regenerate the trace and move the citation pin**
 
@@ -4428,22 +4539,22 @@ makes a value valid, and what a version records about the definitions it was wri
 in [`design/metadata.md`](design/metadata.md). They are pure functions over definition payloads a
 caller hands in. Nothing stores a definition or a value, no route calls them, and no panel shows them.
 
-| File                  | Holds                                                                                                     |
-| --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `lexical.ts`          | The forms a value takes: a decimal as a canonical string, a date, a time, a date and time with its offset |
-| `definition.ts`       | The definition schema version every field, schema and component type records                              |
-| `field.ts`            | Seven closed data types, and the field definition. No `pattern` yet                                       |
-| `schema.ts`           | The metadata schema definition, and `checkSchema`, which checks each default against its field            |
-| `component-type.ts`   | The component type definition, whose assignments name a schema and the fields they require                |
-| `migrate.ts`          | The migration chain per definition kind, applied on read, and `readDefinition`'s report                   |
-| `check-value.ts`      | `checkValue(field, value)`: the field's own rules, and nothing else                                       |
-| `resolve.ts`          | `resolveComponentFields`, and the error disagreeing defaults throw                                        |
-| `check-assignment.ts` | `checkAssignment`: a stray `requires`, and a default that disagrees with one already assigned             |
-| `validate.ts`         | `validate(effective, values)`: every failure, each naming the schemas behind a schema's rule              |
-| `users.ts`            | `checkUserValues` over a lookup the service supplies, and `principalIdsIn` to load it in one query        |
-| `carry.ts`            | `carryForward`: what the next version holds, and `notCarried`                                             |
-| `record.ts`           | `definitionsFor`, and the canonical form of values and `notCarried` in the version digest                 |
-| `fixtures/v1/`        | Stored definitions at definition schema version 1, never deleted                                          |
+| File                  | Holds                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `lexical.ts`          | The forms a value takes: a decimal as a canonical string, a date, a time, a date and time with its offset     |
+| `definition.ts`       | The definition schema version every field, schema and component type records                                  |
+| `field.ts`            | Seven closed data types, and the field definition. No `pattern` yet                                           |
+| `schema.ts`           | The metadata schema definition, and `checkSchema`, which checks each default against its field                |
+| `component-type.ts`   | The component type definition, whose assignments name a schema and the fields they require                    |
+| `migrate.ts`          | The migration chain per definition kind, applied on read, and `readDefinition`'s report                       |
+| `check-value.ts`      | `checkValue(field, value)`: the field's own rules, and nothing else                                           |
+| `resolve.ts`          | `resolveComponentFields`, and the error a default it cannot use throws - disagreeing, or refused by its field |
+| `check-assignment.ts` | `checkAssignment`: a stray `requires`, and a default that disagrees with one already assigned                 |
+| `validate.ts`         | `validate(effective, values)`: every failure, each naming the schemas behind a schema's rule                  |
+| `users.ts`            | `checkUserValues` over a lookup the service supplies, and `principalIdsIn` to load it in one query            |
+| `carry.ts`            | `carryForward`: what the next version holds, and `notCarried`                                                 |
+| `record.ts`           | `definitionsFor`, and the canonical form of values and `notCarried` in the version digest                     |
+| `fixtures/v1/`        | Stored definitions at definition schema version 1, never deleted                                              |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -4552,8 +4663,7 @@ Named here so the next plan starts from a list rather than from a reading of the
 - **Refusing an assignment** (MET-008) and **refusing a schema version** that conflicts anywhere
   (MET-035). `checkAssignment` finds both kinds of conflict; nothing acts on what it finds until the
   definitions-management design exists.
-- **A later field version invalidating a schema's default.** `checkSchema` checks a default against the
-  field versions it is given, and nothing re-runs it when a field changes - so a field whose `maxLength`
-  tightens can leave a fixed default an author cannot satisfy. It is the field-version half of MET-035's
-  conflict, and the design does not name it.
+- **Refusing a field version that would make a schema's default invalid** (MET-037). Resolution throws
+  on such a default meanwhile, so it is never applied; refusing the field version when it is saved needs
+  where-used and belongs to the definitions-management design. No test in this plan cites MET-037.
 - **Whether `text` needs a language** (metadata.md's second open question).
