@@ -16,7 +16,12 @@ create table artifact_version (
   content_hash text not null check (content_hash ~ '^[0-9a-f]{64}$'),
   metadata_values jsonb not null,
   not_carried jsonb not null,
-  component_type_version_id uuid references artifact_version on delete restrict,
+  -- Keyed below to the component type this version records, which is what its digest covers.
+  component_type_version_id uuid,
+  -- Set exactly when the type is, so that key can require the recorded definition be a component type.
+  component_type_kind text generated always as (
+    case when component_type_version_id is not null then 'componentType' end
+  ) stored,
   version_digest text not null check (version_digest ~ '^[0-9a-f]{64}$'),
   foreign key (artifact_id, kind) references artifact (id, kind) on delete restrict,
   unique (artifact_id, revision_no, version_no),
@@ -51,10 +56,21 @@ create table version_definition (
   primary key (version_id, definition_version_id),
   -- One version of each definition: two would say two different things about one field.
   unique (version_id, definition_artifact_id),
+  -- The target of artifact_version_component_type_recorded.
+  constraint version_definition_version_kind unique (version_id, definition_version_id, definition_kind),
   foreign key (definition_version_id, definition_artifact_id, definition_kind)
     references artifact_version (id, artifact_id, kind) on delete restrict
 );
 create index version_definition_definition on version_definition (definition_version_id);
+
+-- A component's type is the component type its version records: a version of kind componentType, by
+-- version_definition's own key, and recorded for this version. Deferred, because a version's definitions
+-- are inserted after it, in the same transaction. A definition version has no type, so no key applies.
+alter table artifact_version
+  add constraint artifact_version_component_type_recorded
+  foreign key (id, component_type_version_id, component_type_kind)
+  references version_definition (version_id, definition_version_id, definition_kind)
+  deferrable initially deferred;
 
 -- VER-008 is a grant rather than a convention: the tenant's runtime role, which shares this schema's
 -- name, may insert and read the chain and do nothing else to it.

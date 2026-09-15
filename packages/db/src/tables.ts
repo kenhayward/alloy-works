@@ -165,6 +165,8 @@ export interface ArtifactVersionTable {
   metadata_values: ColumnType<Record<string, unknown>, string, never>;
   not_carried: ColumnType<unknown[], string, never>;
   component_type_version_id: ColumnType<string | null, string | null, never>;
+  /** Generated: `componentType` when the type is set, the key tying it to what the version records. */
+  component_type_kind: ColumnType<'componentType' | null, never, never>;
   version_digest: ColumnType<string, string, never>;
 }
 

@@ -344,6 +344,6 @@ describe('creating and reading versions', () => {
     ).rejects.toThrow(/artifact_version_author_id_fkey/);
     await expect(
       create(development, { author: ownAuthor, spaceId: ownSpace, substance: substance() }),
-    ).rejects.toThrow(/artifact_version_component_type_version_id_fkey/);
+    ).rejects.toThrow(/version_definition_definition_version_id_definition_artifa_fkey/);
   });
 });

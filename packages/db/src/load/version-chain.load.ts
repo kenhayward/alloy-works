@@ -164,7 +164,10 @@ describe('inline JSONB at authoring volume', () => {
       let artifactRows: unknown[][] = [];
       let versionRows: unknown[][] = [];
       let batchBytes = 0;
+      // One transaction a batch: a component version's type is checked against its recorded
+      // definitions at commit, so the two go in together.
       const flush = async () => {
+        await admin.query('begin');
         if (artifactRows.length > 0) {
           await admin.query(
             `insert into ${schema}.artifact (id, kind, space_id) values ${artifactRows
@@ -190,6 +193,7 @@ describe('inline JSONB at authoring volume', () => {
             [typeVersion, typeArtifact, versionRows.map((row) => row[0])],
           );
         }
+        await admin.query('commit');
         artifactRows = [];
         versionRows = [];
         batchBytes = 0;

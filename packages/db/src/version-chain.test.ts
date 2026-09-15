@@ -188,6 +188,72 @@ describe('the version chain as stored', () => {
     });
   });
 
+  it('refuses, at commit, a component version whose type is not the component type it records', async () => {
+    const record = (
+      trx: TenantTransaction,
+      versionId: string,
+      definition: { version: string; artifact: string; kind: 'field' | 'componentType' },
+    ) =>
+      trx
+        .insertInto('version_definition')
+        .values({
+          version_id: versionId,
+          definition_version_id: definition.version,
+          definition_artifact_id: definition.artifact,
+          definition_kind: definition.kind,
+        })
+        .execute();
+
+    /**
+     * A component version recording a type and a field, whose type column names `typeOf`'s answer.
+     * Every statement succeeds; only the commit is left to refuse it.
+     */
+    const cut = (typeOf: (made: { field: string; second: string }) => string) => {
+      const reached = { commit: false };
+      const work = service.withTenant(production, async (trx) => {
+        const type = await artifact(trx, 'componentType');
+        const typeVersion = await version(trx, { artifactId: type.id, kind: 'componentType' });
+        const second = await version(trx, {
+          artifactId: type.id,
+          kind: 'componentType',
+          versionNo: 2,
+        });
+        const field = await artifact(trx, 'field');
+        const fieldVersion = await version(trx, { artifactId: field.id, kind: 'field' });
+        const made = await artifact(trx, 'component');
+        const cutVersion = await version(trx, {
+          artifactId: made.id,
+          kind: 'component',
+          componentType: typeOf({ field: fieldVersion.id, second: second.id }),
+        });
+        await record(trx, cutVersion.id, {
+          version: typeVersion.id,
+          artifact: type.id,
+          kind: 'componentType',
+        });
+        await record(trx, cutVersion.id, {
+          version: fieldVersion.id,
+          artifact: field.id,
+          kind: 'field',
+        });
+        reached.commit = true;
+      });
+      return { work, reached };
+    };
+
+    const naming = [
+      // A version that is not a component type's, though the component records it.
+      ({ field }: { field: string }) => field,
+      // A component type's version, though not the one the component records.
+      ({ second }: { second: string }) => second,
+    ];
+    for (const typeOf of naming) {
+      const { work, reached } = cut(typeOf);
+      await expect(work).rejects.toThrow(/artifact_version_component_type_recorded/);
+      expect(reached.commit).toBe(true);
+    }
+  });
+
   it('holds metadata values as an object and what was not carried as a list, on a component only', async () => {
     const refusals: [Partial<Row>, RegExp][] = [
       [{ values: '[]' }, /artifact_version_metadata_shape/],
@@ -294,6 +360,7 @@ describe('the version chain as stored', () => {
       [
         'artifact_id',
         'author_id',
+        'component_type_kind',
         'component_type_version_id',
         'content',
         'content_hash',
