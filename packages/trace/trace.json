@@ -7162,7 +7162,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 144
+      "line": 150
     },
     {
       "id": "MET-006",
@@ -7171,7 +7171,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 145
+      "line": 151
     },
     {
       "id": "MET-033",
@@ -7180,7 +7180,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 146
+      "line": 152
     },
     {
       "id": "MET-034",
@@ -7189,7 +7189,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 147
+      "line": 153
     },
     {
       "id": "MET-007",
@@ -7198,7 +7198,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 148
+      "line": 154
     },
     {
       "id": "MET-008",
@@ -7207,7 +7207,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 149
+      "line": 155
     },
     {
       "id": "MET-035",
@@ -7216,7 +7216,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 150
+      "line": 156
+    },
+    {
+      "id": "MET-037",
+      "area": "MET",
+      "statement": "A new version of a field must be refused where it would make invalid the default of any schema grouping that field, naming the field, each such schema and its default",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "MET-metadata-and-component-types.md",
+      "line": 157
     },
     {
       "id": "MET-009",
@@ -7225,7 +7234,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 151
+      "line": 158
     },
     {
       "id": "MET-010",
@@ -7234,7 +7243,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 172
+      "line": 179
     },
     {
       "id": "MET-011",
@@ -7243,7 +7252,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 173
+      "line": 180
     },
     {
       "id": "MET-012",
@@ -7252,7 +7261,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 174
+      "line": 181
     },
     {
       "id": "MET-013",
@@ -7261,7 +7270,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 175
+      "line": 182
     },
     {
       "id": "MET-014",
@@ -7270,7 +7279,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 176
+      "line": 183
     },
     {
       "id": "MET-015",
@@ -7279,7 +7288,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 209
+      "line": 216
     },
     {
       "id": "MET-016",
@@ -7288,7 +7297,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 210
+      "line": 217
     },
     {
       "id": "MET-017",
@@ -7297,7 +7306,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 211
+      "line": 218
     },
     {
       "id": "MET-018",
@@ -7306,7 +7315,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 212
+      "line": 219
     },
     {
       "id": "MET-036",
@@ -7315,7 +7324,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 213
+      "line": 220
     },
     {
       "id": "MET-019",
@@ -7324,7 +7333,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 214
+      "line": 221
     },
     {
       "id": "MET-020",
@@ -7333,7 +7342,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 215
+      "line": 222
     },
     {
       "id": "MET-021",
@@ -7342,7 +7351,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 231
+      "line": 238
     },
     {
       "id": "MET-022",
@@ -7351,7 +7360,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 232
+      "line": 239
     },
     {
       "id": "MET-023",
@@ -7360,7 +7369,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 233
+      "line": 240
     },
     {
       "id": "MET-031",
@@ -7369,7 +7378,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 250
+      "line": 257
     },
     {
       "id": "MET-024",
@@ -7378,7 +7387,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 251
+      "line": 258
     },
     {
       "id": "MET-025",
@@ -7387,7 +7396,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 252
+      "line": 259
     },
     {
       "id": "MET-026",
@@ -7396,7 +7405,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 253
+      "line": 260
     },
     {
       "id": "MET-027",
@@ -7405,7 +7414,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
-      "line": 254
+      "line": 261
     },
     {
       "id": "PUB-001",
@@ -12696,31 +12705,31 @@
       "id": "MET-N01",
       "statement": "**A component type does not govern content.** It decides which fields apply and nothing else; every type has the same closed content vocabulary. See MET-Q01",
       "document": "MET-metadata-and-component-types.md",
-      "line": 260
+      "line": 267
     },
     {
       "id": "MET-N02",
       "statement": "**No override but tightening.** An assignment may make an optional field required and may change nothing else about a schema (MET-009)",
       "document": "MET-metadata-and-component-types.md",
-      "line": 261
+      "line": 268
     },
     {
       "id": "MET-N03",
       "statement": "**No field local to one schema.** Every field is a shared definition, which is what keeps one field one facet",
       "document": "MET-metadata-and-component-types.md",
-      "line": 262
+      "line": 269
     },
     {
       "id": "MET-N04",
       "statement": "**Not a form builder.** A schema describes an artifact; it is not a data-entry application. _Carries TPL-N04 across_",
       "document": "MET-metadata-and-component-types.md",
-      "line": 263
+      "line": 270
     },
     {
       "id": "MET-N05",
       "statement": "**No definitions per space.** Fields, schemas and component types belong to the tenant. See MET-Q04",
       "document": "MET-metadata-and-component-types.md",
-      "line": 264
+      "line": 271
     },
     {
       "id": "PUB-N01",
@@ -13578,28 +13587,28 @@
       "question": "**Should a component type be able to constrain its content?** A stability table section that holds no table is probably a mistake, and MET-N01 says nothing catches it",
       "settledBy": "A real type whose content is wrong often enough to matter. A restriction to a subset of the seven blocks needs no content-model change, but makes validating content depend on the type",
       "document": "MET-metadata-and-component-types.md",
-      "line": 270
+      "line": 277
     },
     {
       "id": "MET-Q02",
       "question": "**Do assets take typed metadata through an asset type?** AST-027 and SCH-004 search assets \"by metadata\" and AST-031 records a fixed set of properties; neither says whether an asset carries fields",
       "settledBy": "Whether a customer needs to classify assets by more than their recorded properties. If so, an asset type is this area's component type again, and should reuse it rather than copy it",
       "document": "MET-metadata-and-component-types.md",
-      "line": 271
+      "line": 278
     },
     {
       "id": "MET-Q03",
       "question": "**Should an approval gate be able to require complete metadata?** Enforcement is at publish (MET-023), so an approved, issued revision can be missing a required field",
       "settledBy": "A decision with **LIF**. LIF-061 already lets a workflow definition declare what a transition requires, which is where a regime needing complete metadata at approval would say so",
       "document": "MET-metadata-and-component-types.md",
-      "line": 272
+      "line": 279
     },
     {
       "id": "MET-Q04",
       "question": "**Should a space be able to narrow the component types and schemas it offers?** A clinical space offered finance component types is noise, and MET-N05 keeps every definition visible everywhere",
       "settledBy": "The first tenant with enough types for the list to be a problem. Narrowing what is offered changes nothing already created, so it can be added later without a migration",
       "document": "MET-metadata-and-component-types.md",
-      "line": 273
+      "line": 280
     },
     {
       "id": "PUB-Q01",
@@ -13911,6 +13920,95 @@
     }
   ],
   "designs": [
+    {
+      "document": "access.md",
+      "owns": [
+        {
+          "id": "IAM-014",
+          "howItIsMet": "A `space` is a row in a tenant's schema, so it belongs to that tenant by construction; a content artifact's `space_id` is not nullable, and grants at a space are the level below the tenant"
+        },
+        {
+          "id": "IAM-018",
+          "howItIsMet": "A grant's level is `tenant`, `space` or `artifact`, and an artifact is any kind - so a template, a document and a component are each a level of their own"
+        },
+        {
+          "id": "IAM-019",
+          "howItIsMet": "`read`, `create`, `edit`, `comment`, `suggest`, `approve`, `publish` and `administer`, with `design` and `manage_definitions` beside them (below)"
+        },
+        {
+          "id": "IAM-021",
+          "howItIsMet": "`role` is a tenant's row - a name and a set of permissions - created, changed and removed through the roles routes. The roles a tenant starts with are rows like any other"
+        },
+        {
+          "id": "IAM-022",
+          "howItIsMet": "A grant's subject is exactly one of a principal or a group"
+        },
+        {
+          "id": "IAM-009",
+          "howItIsMet": "A group can stand for a value the organisation's provider asserts in a configured claim; membership of such a group is replaced from the claim at every sign-in, and granting the group a role maps it"
+        },
+        {
+          "id": "IAM-062",
+          "howItIsMet": "`access_grant` is the only table that confers a permission, and every row names a role, one subject and one level. There is no per-principal permission column anywhere"
+        },
+        {
+          "id": "IAM-024",
+          "howItIsMet": "The decision walks artifact, space, tenant, and a level with nothing to say passes the question up"
+        },
+        {
+          "id": "IAM-025",
+          "howItIsMet": "The nearest level that says anything about the permission decides, so an explicit grant or denial below overrides what that level would inherit"
+        },
+        {
+          "id": "IAM-026",
+          "howItIsMet": "At the deciding level, any denial wins over any allow, whether each reached the principal directly or through a group"
+        },
+        {
+          "id": "IAM-027",
+          "howItIsMet": "No effective permission is stored. Every decision reads the grants at the moment it is asked, so a change at the top applies below at once"
+        },
+        {
+          "id": "IAM-063",
+          "howItIsMet": "Every decision takes a shared lock on the tenant's `access_epoch` row inside the transaction of the act; every change a decision reads - grants, roles, memberships, spaces, a principal's kind - takes it exclusively, so no change can land between a check and its act"
+        },
+        {
+          "id": "IAM-029",
+          "howItIsMet": "An administrator opens **Access** on any artifact, chooses a person, and sees every permission with its answer"
+        },
+        {
+          "id": "IAM-030",
+          "howItIsMet": "Each answer names the level that decided it and every grant at that level that did - role, subject, and whether it reached the person through a group"
+        },
+        {
+          "id": "IAM-031",
+          "howItIsMet": "A refusal names the denying grants, or says that no level grants the permission and lists the levels it looked at"
+        },
+        {
+          "id": "TPL-006",
+          "howItIsMet": "Creating a template needs `design` at its space and `create` does not reach templates; changing one needs `design` on it, not `edit`; and a document never inherits from the template it was made from"
+        },
+        {
+          "id": "MET-024",
+          "howItIsMet": "Changing or creating a field, a metadata schema or a component type needs `manage_definitions`, a permission of its own that a role can hold without `administer` or `design`"
+        },
+        {
+          "id": "IAM-049",
+          "howItIsMet": "A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, so external access cannot be left unset whichever way it arrives"
+        },
+        {
+          "id": "IAM-071",
+          "howItIsMet": "For an external principal, a grant at the tenant is refused where it is made and not read where it is decided, so external access is only ever against a named space or artifact - a publication included, since a publication is an artifact"
+        },
+        {
+          "id": "IAM-051",
+          "howItIsMet": "`GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce"
+        },
+        {
+          "id": "API-053",
+          "howItIsMet": "One refusal vocabulary for every route, below, and a contract test that fails when a route does not declare the permission it checks"
+        }
+      ]
+    },
     {
       "document": "component-editor.md",
       "owns": [

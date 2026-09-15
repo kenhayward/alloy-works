@@ -1,7 +1,7 @@
 # Detailed requirements
 
 > **Status: v1, reviewed.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1362 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1363 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.

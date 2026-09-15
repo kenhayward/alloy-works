@@ -129,6 +129,12 @@ second schema is assigned beside the first, and when a new version of a schema w
 schema already assigned beside it somewhere. Floating assignments make the second moment real, and
 where-used (MET-025) is what lets the refusal name every place.
 
+**A default can also be broken from the field's side.** A schema's default is checked against its
+field when the schema is saved, but the field is a definition of its own and moves on: a new version
+that shortens its maximum length or narrows its range can leave a default no longer valid. For a fixed
+field that is a value every artifact must carry and no author can make valid. So it is refused where
+it happens, as a conflicting schema version is (MET-037).
+
 **A schema can fix a value.** Some fields are not a question at all - every component of a kind carries
 the same classification, and an author must not be able to change it. A fixed value comes from the
 schema's default and cannot be edited on the artifact. Without this, the old TPL-010's "whether that
@@ -148,6 +154,7 @@ places and reading the schema would no longer tell anybody what an artifact must
 | **MET-007** | Where more than one schema applied at the same place (MET-034) groups the same field, the field must apply once, and must be required if any of those schemas requires it                                                                                                                                                                                              | T1         | Specified |
 | **MET-008** | Assigning a schema whose default for a field differs from the default of a schema already applied at the same place must be refused, naming the field and both schemas                                                                                                                                                                                                 | T1         | Specified |
 | **MET-035** | An assignment must always take the latest version of a schema. A new version of a schema must be refused where its default for a field would differ from that of a schema applied beside it at any place, naming the field, the other schema and every such place, and where it would make an existing relationship invalid (**REL-054**)                              | T1         | Specified |
+| **MET-037** | A new version of a field must be refused where it would make invalid the default of any schema grouping that field, naming the field, each such schema and its default                                                                                                                                                                                                 | T1         | Specified |
 | **MET-009** | An assignment of a schema must be able to make an optional field required for that assignment, and must not otherwise alter the schema: not make a required field optional, change a default, fix or unfix a value, or change a field's validation                                                                                                                     | T1         | Specified |
 
 ## 5. Component types
@@ -332,5 +339,20 @@ them, and two it deliberately did not ask for.
 | Counts           | Before | After |
 | ---------------- | ------ | ----- |
 | Requirements     | 36     | 36    |
+| Non-requirements | 5      | 5     |
+| Open questions   | 4      | 4     |
+
+### From planning the metadata rules
+
+Not a review. Writing the implementation plan for [metadata.md](../../design/metadata.md) found a
+conflict the requirements refused from one side only.
+
+| What was found                                                                                                                                                                                                                                               | Change                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A schema's default is valid against its field when the schema is saved, and nothing checks it again. A later field version that tightens validation leaves the default invalid, and a fixed field then fails every publish with no author able to correct it | **MET-037** refuses that field version where it happens, naming the field, each schema and its default - the field-side counterpart of MET-035's refusal of a conflicting schema version |
+
+| Counts           | Before | After |
+| ---------------- | ------ | ----- |
+| Requirements     | 36     | 37    |
 | Non-requirements | 5      | 5     |
 | Open questions   | 4      | 4     |

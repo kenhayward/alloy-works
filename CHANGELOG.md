@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.18.4 - 2026-09-15 (PR #96)
+
+### Added
+
+- A design for access: spaces, tenant-defined roles, and grants at the tenant, a space or a single
+  item, with a decision that names the grants behind every answer, so an administrator can see why
+  somebody may or may not do something. It also sets the rules for people outside the organisation:
+  their access always expires and can never open the whole tenant. Revised against its review, which
+  is kept alongside it.
+
+### Changed
+
+- A new requirement refuses a change to a metadata field that would make a schema's default value
+  invalid, so a fixed field can never hold a value no author is able to correct.
+
 ## 0.18.3 - 2026-09-15 (PR #95)
 
 ### Added
