@@ -92,3 +92,15 @@ is the whole of CNT section 10; and resolution, which needs conditions and sugge
 T4 capabilities even though CNT-116 puts their marks in the first schema version stored; and identity
 through editing, which ADR-0023 settled as a rule of descent rather than arrival and which belongs with
 the editor, because it is a plugin over transactions rather than a property of the schema.
+
+## Metadata
+
+The rules deciding which fields apply to a component, what makes a value valid, and what a version
+records about the definitions it was written against, designed in [metadata.md](../design/metadata.md).
+They are built first as pure functions in `packages/domain`, before anything stores a value or shows a
+field, because the editor's metadata panel, the service's refusals and the publisher all call the same
+ones - and a rule written three times is three rules.
+
+| #   | Plan                                             | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Status  |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [The rules](2026-09-15-metadata-01-the-rules.md) | `packages/domain/src/metadata/`: field, schema and component type definitions with a fixture per definition schema version, `checkValue`, resolution, `checkAssignment`, `validate`, `checkUserValues`, `carryForward`, `definitionsFor` and the canonical form values and `notCarried` take in the version digest - and the content model's canonical rules and migration chain moved to `packages/domain/src/stored/` so both share them. No `pattern`, no storage, no route, no panel | Planned |
