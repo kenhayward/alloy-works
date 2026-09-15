@@ -72,14 +72,14 @@ describe('checkUserValues', () => {
         field: 'field-owner',
         rule: 'user',
         schemas: [],
-        detail: 'Names no user of this organisation',
+        detail: 'Names no known user',
       },
       {
         code: 'metadata.user',
         field: 'field-reviewers',
         rule: 'user',
         schemas: [],
-        detail: 'Value 2 names no user of this organisation',
+        detail: 'Value 2 names no known user',
       },
     ]);
   });

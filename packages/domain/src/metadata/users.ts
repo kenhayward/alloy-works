@@ -59,7 +59,7 @@ export function checkUserValues(
     for (const { value, index } of userElements(each, values)) {
       if (!isUserValue(value) || principals(value.user) !== undefined) continue;
       const which = many ? `Value ${index + 1} names` : 'Names';
-      failures.push(failure(each.field.id, 'user', `${which} no user of this organisation`));
+      failures.push(failure(each.field.id, 'user', `${which} no known user`));
     }
   }
   return failures;
