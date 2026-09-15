@@ -98,7 +98,7 @@ describe('definition schema versions and migration', () => {
     );
   });
 
-  it('MET-017 reports a stored definition that will not parse, with its artifact and version, and yields nothing', () => {
+  it('reports a stored definition that will not parse, with its artifact and version, and yields nothing', () => {
     const outcome = readDefinition(
       'field',
       { schemaVersion: 1, id: 'field-x', name: 'X', dataType: 'colour', multiplicity: 'one' },
