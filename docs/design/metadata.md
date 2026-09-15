@@ -59,7 +59,7 @@ testable without booting anything.
 | MET-019, MET-020            | Existing documents and sections are validated by TPL's recorded versions; auditing a definition change is LIF's                                                                                                                                                                                                |
 | MET-023                     | Failing a publish is the publishing pipeline's, which calls `validate`                                                                                                                                                                                                                                         |
 | MET-003, MET-032            | Vocabulary-backed fields are T2 and T6. No data type is reserved for them; one arrives as a definition-schema version                                                                                                                                                                                          |
-| MET-024 to MET-027, MET-031 | Managing definitions - the permission, where-used, deletion, deprecation, unique names - is the later management design                                                                                                                                                                                        |
+| MET-025 to MET-027, MET-031 | Managing definitions - where-used, deletion, deprecation, unique names - is the later management design. The permission, MET-024, is [access.md](access.md)'s `manage_definitions`                                                                                                                             |
 
 ## Definitions
 

@@ -115,7 +115,7 @@ One interface, four operations:
 
 ### The permission step
 
-The caller's permission set - the spaces they may read, less artifacts restricted from them - is
+The caller's permission set - the spaces they may read, less artifacts denied them there, plus artifacts granted them elsewhere ([access.md](access.md)) - is
 computed once per operation, as for search, and tested **inside the recursive step**. An artifact
 that fails is not returned and not expanded, so a walk never reaches what lies behind something the
 user cannot see (REL-Q02). The edges that led to it are counted, and the result carries whether any

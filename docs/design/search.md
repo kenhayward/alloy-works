@@ -71,7 +71,8 @@ earlier versions searchable on request, which is not designed here.
 ## The permission predicate
 
 A search starts by computing the user's permission set from IAM: the spaces they may read, less the
-artifacts restricted from them. The query receives it as parameters, and two rules apply.
+artifacts denied them there, plus the artifacts granted them outside those spaces ([access.md](access.md)'s
+`readableSet`). The query receives it as parameters, and two rules apply.
 
 **Each search is planned for its own parameters.** The service sets `plan_cache_mode` to
 `force_custom_plan` for search. A plan made once and reused cannot suit both a user who sees five

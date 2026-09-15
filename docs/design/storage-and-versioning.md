@@ -77,7 +77,7 @@ specified and undesigned rather than half claimed.
 ## Stores
 
 **`artifact`** is the identity of a versioned thing: a kind and an id. A component, a document, an outline, an asset, a query definition, a theme, a layout, a template, a field, a metadata schema or a component type are all artifacts, and
-VER-011 is satisfied by that being literally true rather than by seven tables agreeing to behave the
+**a content artifact belongs to exactly one space** (`space_id`, [access.md](access.md)), while a definition belongs to none. VER-011 is satisfied by that being literally true rather than by seven tables agreeing to behave the
 same way. Seven bespoke version tables would be seven implementations of the same rules, and they
 would drift - one would forget the immutability grant or the schema-version column, and the failure
 would not be an error. It would be a baseline that resolves slightly differently in four years.
