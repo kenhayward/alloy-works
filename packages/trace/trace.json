@@ -15547,6 +15547,18 @@
       "kind": "title"
     },
     {
+      "id": "MET-002",
+      "file": "packages/domain/src/metadata/lexical.test.ts",
+      "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "MET-028",
+      "file": "packages/domain/src/metadata/lexical.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
       "id": "CNT-011",
       "file": "packages/domain/src/stored/canonical.test.ts",
       "line": 6,

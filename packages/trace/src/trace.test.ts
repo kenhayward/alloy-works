@@ -81,7 +81,7 @@ describe('the citations in the committed model', () => {
   // that one. Pinned so a citation quietly lost (a test renamed, a title's identifier dropped) fails
   // here rather than nowhere.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(66);
+    expect(model.citations).toHaveLength(68);
   });
 
   it('cites no identifier the corpus does not hold', () => {
