@@ -15703,6 +15703,36 @@
       "kind": "title"
     },
     {
+      "id": "MET-004",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 145,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "MET-017",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
       "id": "CNT-011",
       "file": "packages/domain/src/stored/canonical.test.ts",
       "line": 6,
