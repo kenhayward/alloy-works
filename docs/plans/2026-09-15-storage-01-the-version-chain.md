@@ -194,13 +194,13 @@ once as a constant at the top of `packages/db/src/load/version-chain.load.ts`:
 | Metadata-only versions       | 20% of the versions after the first                                                                     | ADR-0024's case: a value corrected, content untouched. Stored inline in full, since nothing deduplicates yet                                                                                                                                     |
 | One document                 | 900 component versions                                                                                  | PUB-064's 300 pages at three components a page                                                                                                                                                                                                   |
 
-| Measure, each through `withTenant` as the runtime role                       | Pass when                                    | Derived from                                                                                                                           |
-| ---------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cut**: advisory lock, read the latest, insert a version and its definition | p95 at most **50 ms**, none above **500 ms** | The interactive budget's 250 ms, of which storage may take a fifth: the service, the network and the renderer take the rest            |
-| **Open**: the latest version of a component, content and values              | p95 at most **50 ms**, none above **500 ms** | The same                                                                                                                               |
-| **Document**: the content and values of 900 versions, in one query           | p95 at most **1,000 ms**                     | A thirtieth of PUB-064's thirty seconds, leaving the rest to resolution, layout and Typst                                              |
-| **Digests**: the digests of the same 900 versions, without content           | p95 at most **100 ms**                       | Comparison's short-circuit (ADR-0024) reads these; inline content must not tax a read that does not need it                            |
-| **Storage**: the chain's on-disk size, projected to a million components     | at most **250 GB**                           | An assumption: the size at which one tenant's chain stops fitting a mid-sized managed instance's storage and backup window comfortably |
+| Measure, each through `withTenant` as the runtime role                           | Pass when                                    | Derived from                                                                                                                           |
+| -------------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cut**: `recordVersion` - lock, read the latest, parse, hash, insert, read back | p95 at most **50 ms**, none above **500 ms** | The interactive budget's 250 ms, of which storage may take a fifth: the service, the network and the renderer take the rest            |
+| **Open**: `latestVersion` - content, values and definitions                      | p95 at most **50 ms**, none above **500 ms** | The same                                                                                                                               |
+| **Document**: the content and values of 900 versions, in one query               | p95 at most **1,000 ms**                     | A thirtieth of PUB-064's thirty seconds, leaving the rest to resolution, layout and Typst                                              |
+| **Digests**: the digests of the same 900 versions, without content               | p95 at most **100 ms**                       | Comparison's short-circuit (ADR-0024) reads these; inline content must not tax a read that does not need it                            |
+| **Storage**: the chain's on-disk size, projected to a million components         | at most **250 GB**                           | An assumption: the size at which one tenant's chain stops fitting a mid-sized managed instance's storage and backup window comfortably |
 
 **If every measure passes, the plan proceeds as designed.** If any fails, stop after task 5: commit the
 load test and its recorded result, do not start task 6, and take the numbers to Ken. A failure is ADR-0024's "What would change the answer" arriving, in its words "inline JSONB not
@@ -2429,31 +2429,41 @@ git commit -m "Measure inline JSONB at authoring volume before building on it"
 
 ### Task 5 outcome, measured when this plan was written
 
-**Every measure passed, so the plan proceeds as designed.** One run, 15 September 2026, against the
-code in this plan: `ALLOY_LOAD_COMPONENTS=200000`, on this Windows 11 machine running Docker Desktop
-(the compose Postgres), whose Linux VM reports 8 CPUs and 9.7 GB of memory, the compose image's
-PostgreSQL 17.11 with its default `shared_buffers` of 128 MB, Node 24.16. Loading took 738.1 seconds.
+**Every measure passed, so the plan proceeds as designed.** The figures below are a re-run, 15
+September 2026, after the final review found that the first run timed hand-written statements rather
+than the functions: here the cut calls `recordVersion` and the open calls `latestVersion`, against
+migration 0008 with its component type key checked at commit. `ALLOY_LOAD_COMPONENTS=200000`, alone on
+the database, on this Windows 11 machine running Docker Desktop (the compose Postgres), whose Linux VM
+reports 8 CPUs and 9.7 GB of memory, the compose image's PostgreSQL 17.11 with its default
+`shared_buffers` of 128 MB, Node 24.16. Loading took 754.2 seconds. The first run, over the statements,
+gave a cut p95 of 6.01 ms, an open p95 of 3.41 ms, a document p95 of 224.4 ms, a digests p95 of 21.6 ms
+and a 30.7 GB projection; the comparison paragraph after the table is against that run.
 
 | Loaded                   | Measured                                                |
 | ------------------------ | ------------------------------------------------------- |
 | Components               | 200,000                                                 |
 | Versions                 | 1,151,301 (5.76 a component)                            |
 | Content, as JSON         | 13,755 MB (11.95 KB a version)                          |
-| The chain on disk        | 6,135 MB: heap 1,388, TOAST 4,276, indexes 208          |
-| On disk over raw content | 0.446 - TOAST's compression more than pays for the rows |
-| Bytes a version          | 5,328, both tables and their indexes                    |
+| The chain on disk        | 6,253 MB: heap 1,395, TOAST 4,284, indexes 210          |
+| On disk over raw content | 0.455 - TOAST's compression more than pays for the rows |
+| Bytes a version          | 5,431, both tables and their indexes                    |
 
 | Measure                         | Samples | p50      | p95      | p99      | Max      | Threshold             | Result |
 | ------------------------------- | ------- | -------- | -------- | -------- | -------- | --------------------- | ------ |
-| Cut                             | 500     | 4.32 ms  | 6.01 ms  | 8.89 ms  | 27.72 ms | p95 50 ms, max 500 ms | Pass   |
-| - small, 0.5-4 KB               | 336     | 4.20 ms  | 4.93 ms  | 5.64 ms  | 6.01 ms  |                       |        |
-| - medium, 4-32 KB               | 136     | 4.46 ms  | 5.86 ms  | 6.44 ms  | 6.44 ms  |                       |        |
-| - large, 32-128 KB              | 24      | 6.94 ms  | 8.89 ms  | 9.03 ms  | 9.03 ms  |                       |        |
-| - very large, 128 KB-1 MB       | 4       | 19.87 ms | 27.72 ms | 27.72 ms | 27.72 ms |                       |        |
-| Open                            | 1,000   | 2.15 ms  | 3.41 ms  | 4.63 ms  | 13.02 ms | p95 50 ms, max 500 ms | Pass   |
-| Document, 900 contents          | 20      | 122.8 ms | 224.4 ms | 265.5 ms | 265.5 ms | p95 1,000 ms          | Pass   |
-| Digests, 900 without content    | 50      | 17.0 ms  | 21.6 ms  | 22.8 ms  | 22.8 ms  | p95 100 ms            | Pass   |
-| Storage at a million components | -       | -        | -        | -        | 30.7 GB  | 250 GB                | Pass   |
+| Cut                             | 500     | 6.73 ms  | 11.92 ms | 23.19 ms | 66.46 ms | p95 50 ms, max 500 ms | Pass   |
+| - small, 0.5-4 KB               | 336     | 6.41 ms  | 7.74 ms  | 8.58 ms  | 19.53 ms |                       |        |
+| - medium, 4-32 KB               | 136     | 7.56 ms  | 9.30 ms  | 11.24 ms | 11.93 ms |                       |        |
+| - large, 32-128 KB              | 24      | 13.76 ms | 23.19 ms | 24.55 ms | 24.55 ms |                       |        |
+| - very large, 128 KB-1 MB       | 4       | 54.22 ms | 66.46 ms | 66.46 ms | 66.46 ms |                       |        |
+| Open                            | 1,000   | 2.98 ms  | 4.41 ms  | 6.02 ms  | 14.31 ms | p95 50 ms, max 500 ms | Pass   |
+| Document, 900 contents          | 20      | 118.9 ms | 148.8 ms | 153.1 ms | 153.1 ms | p95 1,000 ms          | Pass   |
+| Digests, 900 without content    | 50      | 15.0 ms  | 17.0 ms  | 19.6 ms  | 19.6 ms  | p95 100 ms            | Pass   |
+| Storage at a million components | -       | -        | -        | -        | 31.3 GB  | 250 GB                | Pass   |
+
+The cut roughly doubled against the first run, as expected of calling the function: it parses the
+content and hashes it twice (content and version), reads the whole latest row with its content, and
+reads the new version back. It grows with content size, which the statements alone did not: the very
+large class, parsing and hashing up to a megabyte, is the cut's maximum at 66 ms.
 
 On the plan author's reference run, a run at the default 20,000 components the same day gave a cut p95
 of 5.5 ms, an open p95 of 3.2 ms, a document p95 of 83.7 ms, a digests p95 of 5.8 ms and a 30.2 GB
@@ -2462,14 +2472,14 @@ and the point reads and the cut hardly at all.
 
 **What this does not show, and the plan does not claim.**
 
-- **A cold cache at a million components.** The 6.1 GB chain is larger than Postgres's buffers and a
+- **A cold cache at a million components.** The 6.3 GB chain is larger than Postgres's buffers and a
   little larger than the cache the VM had free, so some reads went to disk - which is why the digest
   read grew most - but a million-component tenant's 31 GB chain on a server with less memory than that
   is not measured. The digest read is the number to watch there: 900 heap rows fetched by primary key,
   and it grew faster than the data did.
 - **Concurrency.** Every measure ran one request at a time. Many authors cutting at once is measured
   with the service, not here.
-- **The very large class has four samples.** Its 26 ms is the cut's maximum; four samples say it is not
+- **The very large class has four samples.** Its 66 ms is the cut's maximum; four samples say it is not
   near 500 ms, and nothing finer.
 - **Real content.** The text is generated syllables, which compress about as well as prose; tables of
   numbers may compress better or worse.

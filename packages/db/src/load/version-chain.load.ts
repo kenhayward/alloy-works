@@ -1,11 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
   canonicalise,
-  parseContentDocument,
   type ComponentSubstance,
   type ComponentTypeDefinition,
 } from '@alloy-works/domain';
-import { sql } from 'kysely';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from '../bootstrap.js';
@@ -14,6 +12,7 @@ import { createTenant, type Tenant } from '../provision.js';
 import { createTenantDatabase, type TenantDatabase } from '../tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '../testing/database.js';
 import { versionDigests } from '../version-digest.js';
+import { latestVersion, recordVersion } from '../versions.js';
 import {
   generateContent,
   logUniform,
@@ -298,64 +297,31 @@ describe('inline JSONB at authoring volume', () => {
   const sample = (count: number) =>
     Array.from({ length: count }, () => components[Math.floor(random() * components.length)]!);
 
-  it('cuts a version: lock, read the latest, insert the version and its definition', async () => {
+  it('cuts a version: recordVersion, as the service will call it', async () => {
     const byClass = new Map<string, number[]>();
     const all: number[] = [];
     const targets = sample(550);
     for (const [index, component] of targets.entries()) {
-      const content = parseContentDocument(
+      // Generated outside the timing; parsing, hashing, the lock, the reads and the insert are inside.
+      const record = substance(
         generateContent(logUniform(component.size.min, component.size.max, random), random),
+        valuesFor(index, component.latest.versionNo + 1),
       );
-      const record = substance(content, valuesFor(index, component.latest.versionNo + 1));
-      const digests = versionDigests(record);
       const started = performance.now();
-      const inserted = await service.withTenant(tenant, async (trx) => {
-        await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${component.artifactId}`}, 0))`.execute(
-          trx,
-        );
-        const latest = await trx
-          .selectFrom('artifact_version')
-          .select(['id', 'revision_no', 'version_no', 'version_digest'])
-          .where('artifact_id', '=', component.artifactId)
-          .orderBy('revision_no', 'desc')
-          .orderBy('version_no', 'desc')
-          .limit(1)
-          .executeTakeFirstOrThrow();
-        const row = await trx
-          .insertInto('artifact_version')
-          .values({
-            artifact_id: component.artifactId,
-            kind: 'component',
-            revision_no: latest.revision_no,
-            version_no: latest.version_no + 1,
-            author_id: author,
-            note: null,
-            schema_version: 1,
-            content: JSON.stringify(content),
-            content_hash: digests.contentHash,
-            metadata_values: JSON.stringify(record.values),
-            not_carried: '[]',
-            component_type_version_id: typeVersion,
-            version_digest: digests.versionDigest,
-          })
-          .returning(['id', 'version_no'])
-          .executeTakeFirstOrThrow();
-        await trx
-          .insertInto('version_definition')
-          .values({
-            version_id: row.id,
-            definition_version_id: typeVersion,
-            definition_artifact_id: typeArtifact,
-            definition_kind: 'componentType',
-          })
-          .execute();
-        return row;
-      });
+      const answer = await service.withTenant(tenant, (trx) =>
+        recordVersion(trx, {
+          artifactId: component.artifactId,
+          openedFrom: component.latest.id,
+          author,
+          substance: record,
+        }),
+      );
       const elapsed = performance.now() - started;
+      if (answer.answer !== 'recorded') throw new Error(`Expected a version, got ${answer.answer}`);
       component.latest = {
-        id: inserted.id,
-        versionNo: inserted.version_no,
-        digest: digests.versionDigest,
+        id: answer.version.id,
+        versionNo: answer.version.version,
+        digest: answer.version.versionDigest,
       };
       if (index < 50) continue; // warm-up
       all.push(elapsed);
@@ -369,22 +335,15 @@ describe('inline JSONB at authoring volume', () => {
     expect(Math.max(...all)).toBeLessThanOrEqual(THRESHOLDS.anyMax);
   }, 600_000);
 
-  it('opens a component: its latest version, content and values', async () => {
+  it('opens a component: latestVersion, with its content, values and definitions', async () => {
     const all: number[] = [];
     for (const [index, component] of sample(1_050).entries()) {
       const started = performance.now();
-      const row = await service.withTenant(tenant, (trx) =>
-        trx
-          .selectFrom('artifact_version')
-          .selectAll()
-          .where('artifact_id', '=', component.artifactId)
-          .orderBy('revision_no', 'desc')
-          .orderBy('version_no', 'desc')
-          .limit(1)
-          .executeTakeFirstOrThrow(),
+      const latest = await service.withTenant(tenant, (trx) =>
+        latestVersion(trx, component.artifactId),
       );
       const elapsed = performance.now() - started;
-      expect(row.version_digest).toBe(component.latest.digest);
+      expect(latest?.versionDigest).toBe(component.latest.digest);
       if (index >= 50) all.push(elapsed);
     }
     report.open = summary(all);
