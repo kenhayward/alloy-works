@@ -1,4 +1,5 @@
 import type { ColumnType, Generated, Transaction } from 'kysely';
+import type { ArtifactKind } from './artifact-kind.js';
 
 // Written by hand while there are two tenant tables; generated from a migrated template schema once
 // there are enough that keeping them in step by hand is a risk (service-foundations.md).
@@ -129,6 +130,20 @@ export interface SampleTable {
   finished_at: Date | null;
 }
 
+export interface SpaceTable {
+  id: Generated<string>;
+  name: string;
+  created_at: Generated<Date>;
+}
+
+/** No update: an artifact's identity does not change, and the runtime role holds no such grant. */
+export interface ArtifactTable {
+  id: ColumnType<string, string | undefined, never>;
+  kind: ColumnType<ArtifactKind, ArtifactKind, never>;
+  space_id: ColumnType<string | null, string | null, never>;
+  created_at: ColumnType<Date, never, never>;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -141,6 +156,8 @@ export interface TenantTables {
   sign_in_handoff: SignInHandoffTable;
   object_store_credential: ObjectStoreCredentialTable;
   sample: SampleTable;
+  space: SpaceTable;
+  artifact: ArtifactTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */
