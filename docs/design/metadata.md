@@ -55,6 +55,7 @@ testable without booting anything.
 | MET-015, MET-016            | [storage-and-versioning.md](storage-and-versioning.md)'s: values are a column of the insert-only version row, beside `content`, whose closed root refuses them. Here values only take part in the digest, below                                                                                                |
 | MET-029                     | Its entry half is designed here: `checkUserValues`, below, refuses a value naming no principal of this tenant. Showing a departed user as no longer active is [component-editor.md](component-editor.md)'s for a component and undesigned for a document or a section                                          |
 | MET-034                     | Only the component place is designed here. A document's and a section's fields come through a template (TPL), and a relationship's through REL                                                                                                                                                                 |
+| MET-037                     | Refusing a field version that would make a schema's default invalid is the definitions-management service's, which is not designed. Resolution refuses to resolve one meanwhile, below                                                                                                                         |
 | MET-035                     | Refusing a new schema version that conflicts "at any place" needs where-used (MET-025, T2) and REL-054's guard, neither designed                                                                                                                                                                               |
 | MET-019, MET-020            | Existing documents and sections are validated by TPL's recorded versions; auditing a definition change is LIF's                                                                                                                                                                                                |
 | MET-023                     | Failing a publish is the publishing pipeline's, which calls `validate`                                                                                                                                                                                                                                         |
@@ -129,12 +130,16 @@ For each field reached through any assignment:
 | `default`        | The entries' default. Entries that disagree are a **resolution error**, never a silent pick                                                                                 |
 | `order`          | Assignment order, then entry order, first occurrence - so the editor lists fields predictably                                                                               |
 
-**Disagreeing defaults are an error rather than impossible.** MET-008 refuses them at assignment and
-MET-035 refuses a schema version that would introduce them, so a correct tenant never reaches the
-error - but neither refusal is designed yet: `checkAssignment` finds the conflict and nothing acts on it,
-and MET-035 waits on where-used. A resolver that picked one default silently would turn those gaps into
-wrong data. It throws, naming the field and the schemas, and the editor shows it as a definition problem
-for an administrator rather than a validation failure for an author.
+**Disagreeing defaults, and a default its field refuses, are errors rather than impossible.** MET-008
+refuses disagreeing defaults at assignment, MET-035 refuses a schema version that would introduce them,
+and MET-037 refuses a field version that would make a default invalid, so a correct tenant never reaches
+either error - but none of those refusals is designed yet: `checkAssignment` finds a conflict and
+nothing acts on it, and MET-035 and MET-037 wait on where-used. So resolution checks every effective
+default with `checkValue` against the field version it was given, as well as comparing defaults. A
+resolver that picked one default silently, or applied one its field refuses, would turn those gaps into
+wrong data - and for a fixed field into a value no author can correct. It throws, naming the field, the
+schemas and the rule, and the editor shows it as a definition problem for an administrator rather than
+a validation failure for an author.
 
 **A `requires` naming a field its schema no longer groups is ignored, not thrown.** `checkAssignment`
 refuses one when the assignment is saved, but assignments float to the latest schema version, so a
@@ -232,6 +237,9 @@ function the service passes in. The service loads definitions, calls these, and 
   default, are still cleared after `carryForward`.
 - **Nothing present is replaced**: a fixed field holding another value comes out of `carryForward`
   unchanged, and `validate` names it with every schema that fixes it.
+- **A default its field refuses**: resolution over a schema whose default fails a later field version
+  throws, naming the field, the schema and the rule; the same default under the field version it was
+  saved against resolves.
 - **Assignments**: `checkAssignment` refuses a `requires` naming a field the schema does not group, and
   resolution given one produces the same fields as without it. A requirement from an assignment names
   the schema assigned.
