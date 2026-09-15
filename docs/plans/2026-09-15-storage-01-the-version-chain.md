@@ -2430,35 +2430,30 @@ git commit -m "Measure inline JSONB at authoring volume before building on it"
 ### Task 5 outcome, measured when this plan was written
 
 **Every measure passed, so the plan proceeds as designed.** One run, 15 September 2026, against the
-code in this plan: `ALLOY_LOAD_COMPONENTS=200000`, Windows 11 with Docker Desktop's Linux VM (8 CPUs,
-10 GB of memory, about 5 GB of it available for the page cache), the compose image's PostgreSQL 17.11
-with its default `shared_buffers` of 128 MB, Node 24.16. Loading took 692 seconds.
+code in this plan: `ALLOY_LOAD_COMPONENTS=200000`, on this Windows 11 machine running Docker Desktop
+(the compose Postgres), whose Linux VM reports 8 CPUs and 9.7 GB of memory, the compose image's
+PostgreSQL 17.11 with its default `shared_buffers` of 128 MB, Node 24.16. Loading took 738.1 seconds.
 
 | Loaded                   | Measured                                                |
 | ------------------------ | ------------------------------------------------------- |
 | Components               | 200,000                                                 |
 | Versions                 | 1,151,301 (5.76 a component)                            |
 | Content, as JSON         | 13,755 MB (11.95 KB a version)                          |
-| The chain on disk        | 6,136 MB: heap 1,388, TOAST 4,276, indexes 208          |
+| The chain on disk        | 6,135 MB: heap 1,388, TOAST 4,276, indexes 208          |
 | On disk over raw content | 0.446 - TOAST's compression more than pays for the rows |
-| Bytes a version          | 5,329, both tables and their indexes                    |
+| Bytes a version          | 5,328, both tables and their indexes                    |
 
 | Measure                         | Samples | p50      | p95      | p99      | Max      | Threshold             | Result |
 | ------------------------------- | ------- | -------- | -------- | -------- | -------- | --------------------- | ------ |
-| Cut                             | 500     | 4.47 ms  | 6.41 ms  | 8.56 ms  | 26.32 ms | p95 50 ms, max 500 ms | Pass   |
-| - small, 0.5-4 KB               | 336     | 4.32 ms  | 5.25 ms  | 6.06 ms  | 6.54 ms  |                       |        |
-| - medium, 4-32 KB               | 136     | 4.68 ms  | 6.05 ms  | 6.72 ms  | 7.45 ms  |                       |        |
-| - large, 32-128 KB              | 24      | 6.81 ms  | 8.56 ms  | 8.98 ms  | 8.98 ms  |                       |        |
-| - very large, 128 KB-1 MB       | 4       | 19.30 ms | 26.32 ms | 26.32 ms | 26.32 ms |                       |        |
-| Open                            | 1,000   | 2.21 ms  | 3.39 ms  | 4.68 ms  | 10.81 ms | p95 50 ms, max 500 ms | Pass   |
-| Document, 900 contents          | 20      | 125.4 ms | 143.3 ms | 164.3 ms | 164.3 ms | p95 1,000 ms          | Pass   |
-| Digests, 900 without content    | 50      | 28.5 ms  | 37.3 ms  | 60.3 ms  | 60.3 ms  | p95 100 ms            | Pass   |
+| Cut                             | 500     | 4.32 ms  | 6.01 ms  | 8.89 ms  | 27.72 ms | p95 50 ms, max 500 ms | Pass   |
+| - small, 0.5-4 KB               | 336     | 4.20 ms  | 4.93 ms  | 5.64 ms  | 6.01 ms  |                       |        |
+| - medium, 4-32 KB               | 136     | 4.46 ms  | 5.86 ms  | 6.44 ms  | 6.44 ms  |                       |        |
+| - large, 32-128 KB              | 24      | 6.94 ms  | 8.89 ms  | 9.03 ms  | 9.03 ms  |                       |        |
+| - very large, 128 KB-1 MB       | 4       | 19.87 ms | 27.72 ms | 27.72 ms | 27.72 ms |                       |        |
+| Open                            | 1,000   | 2.15 ms  | 3.41 ms  | 4.63 ms  | 13.02 ms | p95 50 ms, max 500 ms | Pass   |
+| Document, 900 contents          | 20      | 122.8 ms | 224.4 ms | 265.5 ms | 265.5 ms | p95 1,000 ms          | Pass   |
+| Digests, 900 without content    | 50      | 17.0 ms  | 21.6 ms  | 22.8 ms  | 22.8 ms  | p95 100 ms            | Pass   |
 | Storage at a million components | -       | -        | -        | -        | 30.7 GB  | 250 GB                | Pass   |
-
-A run at the default 20,000 components the same day gave a cut p95 of 5.5 ms, an open p95 of 3.2 ms, a
-document p95 of 83.7 ms, a digests p95 of 5.8 ms and a 30.2 GB projection: ten times the data moved the
-document read by 1.7 times and the digest read by 6.5 times, and the point reads and the cut hardly at
-all.
 
 **What this does not show, and the plan does not claim.**
 

@@ -106,6 +106,13 @@ removes with the database; the files run one at a time because they share the lo
 the same suite against a Postgres service container. Point `ALLOY_TEST_DATABASE_URL` at another
 server to use one.
 
+**The version chain's load test is not part of `pnpm test`.** `pnpm --filter @alloy-works/db test:load`
+seeds a throwaway database with a tenant's worth of components and versions and measures cutting,
+opening and reading them against thresholds; `ALLOY_LOAD_COMPONENTS` sets the volume, 20,000 by
+default. It takes over the compose Postgres while it runs, so run nothing else against it. Its volumes,
+thresholds and last recorded result are in
+[the storage plan](plans/2026-09-15-storage-01-the-version-chain.md), decision 9 and task 5.
+
 ## The service suite and the contract
 
 `apps/service` is tested in process with Fastify's `inject`, against a real Postgres through the
