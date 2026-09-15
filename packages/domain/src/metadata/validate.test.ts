@@ -98,7 +98,7 @@ describe('validate', () => {
     ]);
   });
 
-  it('MET-022 fails required for a clear: null on a one field and an empty list on a many field', () => {
+  it('fails required for a clear: null on a one field and an empty list on a many field', () => {
     expect(codes({ ...valid, 'field-study': null })).toEqual(['metadata.required']);
     expect(codes({ ...valid, 'field-sites': [] })).toEqual(['metadata.required']);
   });
