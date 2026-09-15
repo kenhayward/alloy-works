@@ -1,0 +1,25 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "schema-regulatory",
+    "name": "Regulatory",
+    "entries": [
+      { "field": "field-study-number", "required": true, "fixed": false },
+      { "field": "field-phase", "required": false, "default": "1", "fixed": false },
+      { "field": "field-controlled", "required": true, "default": true, "fixed": true }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "schema-review",
+    "name": "Review",
+    "entries": [
+      { "field": "field-reviewers", "required": false, "fixed": false },
+      { "field": "field-keywords", "required": false, "default": ["protocol"], "fixed": false },
+      { "field": "field-effective-date", "required": false, "fixed": false },
+      { "field": "field-review-time", "required": false, "fixed": false },
+      { "field": "field-approved-at", "required": false, "fixed": false },
+      { "field": "field-dose", "required": false, "fixed": false }
+    ]
+  }
+]

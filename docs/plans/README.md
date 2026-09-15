@@ -92,3 +92,38 @@ is the whole of CNT section 10; and resolution, which needs conditions and sugge
 T4 capabilities even though CNT-116 puts their marks in the first schema version stored; and identity
 through editing, which ADR-0023 settled as a rule of descent rather than arrival and which belongs with
 the editor, because it is a plugin over transactions rather than a property of the schema.
+
+## Metadata
+
+The rules deciding which fields apply to a component, what makes a value valid, and what a version
+records about the definitions it was written against, designed in [metadata.md](../design/metadata.md).
+They are built first as pure functions in `packages/domain`, before anything stores a value or shows a
+field, because the editor's metadata panel, the service's refusals and the publisher all call the same
+ones - and a rule written three times is three rules.
+
+| #   | Plan                                             | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Status         |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | [The rules](2026-09-15-metadata-01-the-rules.md) | `packages/domain/src/metadata/`: field, schema and component type definitions with a fixture per definition schema version, `checkValue`, resolution, `checkAssignment`, `validate`, `checkUserValues`, `carryForward`, `definitionsFor` and the canonical form values and `notCarried` take in the version digest - and the content model's canonical rules and migration chain moved to `packages/domain/src/stored/` so both share them. No `pattern`, no storage, no route, no panel | Built (PR #97) |
+
+**Plan 1 is built.** The rules exist as pure functions over definitions a caller hands in: all fifteen
+requirements metadata.md owns are cited by its tests, plus CNT-011, CNT-012 and CNT-056 in the
+canonical rules and migration chain now shared with the content model, and `docs/architecture.md`
+describes it as built rather than planned. Two things differ from the table's Builds cell:
+`values.test.ts` was added, covering the predicates `carryForward`, `checkAssignment`, `checkValue`,
+`checkSchema`, `checkUserValues` and `validate` share, and
+`checkUserValues`' failure names a value with no known user rather than one outside the organisation,
+because an organisation groups several tenants and "tenant" is not vocabulary an author sees. What
+this is not: rules that validate are not a product that stores, shows or refuses anything, and
+[`../features.md`](../features.md) stays the honest account of the distance.
+
+Six things plan 1 deliberately leaves, named so the next plan starts from a list rather than from a
+reading of the diff: `pattern`, unanswered by metadata.md's open question on bounding its
+backtracking, which the field definition refuses until it is answered; storing anything - the
+`values` and `not_carried` columns, `version_definition` and the version digest - which
+storage-and-versioning.md's plan composes from what this package hands it; the service's refusals -
+`metadata.fixed`, `metadata.type`, `metadata.user` - inside service-foundations' error shape, and the
+metadata panel with re-resolution when definitions change mid-session, both component-editor.md's;
+refusing an assignment (MET-008), a schema version that conflicts anywhere (MET-035) and a field
+version that would make a schema's default invalid (MET-037), which `checkAssignment` and resolution
+find but nothing acts on until the definitions-management design exists; and whether `text` needs a
+language, metadata.md's second open question.

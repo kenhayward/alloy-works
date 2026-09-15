@@ -1,0 +1,76 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "field-study-number",
+    "name": "Study number",
+    "dataType": "text",
+    "multiplicity": "one",
+    "validation": { "minLength": 3, "maxLength": 20 }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-keywords",
+    "name": "Keywords",
+    "dataType": "text",
+    "multiplicity": "many",
+    "maxValues": 10,
+    "validation": {}
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-dose",
+    "name": "Dose in mg",
+    "dataType": "number",
+    "multiplicity": "one",
+    "validation": { "min": "0", "max": "1000", "scale": 3 }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-phase",
+    "name": "Trial phase",
+    "dataType": "number",
+    "multiplicity": "one",
+    "validation": { "integer": true, "min": "1", "max": "4" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-effective-date",
+    "name": "Effective date",
+    "dataType": "date",
+    "multiplicity": "one",
+    "validation": { "min": "2000-01-01", "max": "2099-12-31" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-review-time",
+    "name": "Review time",
+    "dataType": "time",
+    "multiplicity": "one",
+    "validation": { "min": "09:00", "max": "17:30:00" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-approved-at",
+    "name": "Approved at",
+    "dataType": "dateTime",
+    "multiplicity": "one",
+    "validation": { "min": "2026-01-01T00:00Z", "max": "2099-12-31T23:59:59.999+14:00" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-controlled",
+    "name": "Controlled",
+    "dataType": "boolean",
+    "multiplicity": "one",
+    "validation": {}
+  },
+  {
+    "schemaVersion": 1,
+    "id": "field-reviewers",
+    "name": "Reviewers",
+    "dataType": "user",
+    "multiplicity": "many",
+    "maxValues": 3,
+    "validation": {}
+  }
+]

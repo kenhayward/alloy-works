@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as domain from './index.js';
 
 describe('the domain package', () => {
-  it('exports the content model as its public surface', () => {
+  it('exports the content model and the metadata rules as its public surface', () => {
     expect(Object.keys(domain).sort()).toEqual(
       [
         // The content model, promoted deliberately rather than by drift.
@@ -20,6 +20,28 @@ describe('the domain package', () => {
         'outputMapping',
         'parseContentDocument',
         'readContent',
+        // Metadata, promoted in the plan that built it, on the same terms.
+        'DEFINITION_SCHEMA_VERSION',
+        'DefinitionConflictError',
+        'canonicaliseDecimal',
+        'canonicaliseNotCarried',
+        'canonicaliseValues',
+        'carryForward',
+        'checkAssignment',
+        'checkSchema',
+        'checkUserValues',
+        'checkValue',
+        'componentTypeDefinitionSchema',
+        'dataTypes',
+        'definitionKinds',
+        'definitionsFor',
+        'fieldDefinitionSchema',
+        'metadataSchemaDefinitionSchema',
+        'migrateDefinition',
+        'principalIdsIn',
+        'readDefinition',
+        'resolveComponentFields',
+        'validate',
         // Scaffolding, and not a decision about the content model. See CLAUDE.md.
         'componentSchema',
         'componentTypes',

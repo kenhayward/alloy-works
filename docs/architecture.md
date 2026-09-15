@@ -1,9 +1,10 @@
 # Architecture - the repository as built
 
-> Status: scaffolding, plus the content model's stored shape. The workspaces, the split between web
-> and desktop, and the seam between them are real and tested, and so is the schema a component's
-> content is held in - [the content model](#the-content-model) below. Nothing authors it, stores it or
-> publishes it yet. The single `Component` beside it in `packages/domain` is still the scaffolding that
+> Status: scaffolding, plus the content model's stored shape and the metadata rules. The workspaces, the
+> split between web and desktop, and the seam between them are real and tested, and so are the schema a
+> component's content is held in - [the content model](#the-content-model) below - and the rules deciding
+> its metadata - [metadata](#metadata). Nothing authors, stores or publishes either yet. The single
+> `Component` beside it in `packages/domain` is still the scaffolding that
 > proved the path end to end, and is not a decision about content.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
@@ -21,7 +22,7 @@ One pnpm workspace, one lock file, eleven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                                                                                                                                                                                                |
+| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                                                                               |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI                                                                                                                                                                                                                                                                                                                                                                    |
@@ -91,13 +92,66 @@ and a test fails when a type has no row or a row has a blank cell. A cell that c
 finding about the node rather than a comment in the file.
 
 Hashing is deliberately not here. `canonicalise` returns a string and the caller hashes it, because
-`node:crypto` is not platform-free and `crypto.subtle` would make parsing async for nothing.
+`node:crypto` is not platform-free and `crypto.subtle` would make parsing async for nothing. The
+canonical rules and the migration chain themselves live in `packages/domain/src/stored/`, shared
+with the metadata definitions; `canonicalise` names `marks` as the one member whose array is a set.
 
 **The content model spike's schema still stands beside this one**, in `packages/domain/src/content/`,
 with `compare.ts`, `resolve.ts`, `binding.ts`, the OOXML reader and writer, and the four gate-case
 tests that are the evidence ADR-0005 rests on. Retiring it, and moving the OOXML pair out of this
 package as `design/content-model.md` requires, is a later plan's work - named in
 [`plans/README.md`](plans/README.md) so it is a debt rather than a surprise.
+
+## Metadata
+
+`packages/domain/src/metadata/` holds the rules that decide which fields apply to a component, what
+makes a value valid, and what a version records about the definitions it was written against, designed
+in [`design/metadata.md`](design/metadata.md). They are pure functions over definition payloads a
+caller hands in. Nothing stores a definition or a value, no route calls them, and no panel shows them.
+
+| File                  | Holds                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `lexical.ts`          | The forms a value takes: a decimal as a canonical string, a date, a time, a date and time with its offset                              |
+| `definition.ts`       | The definition schema version every field, schema and component type records                                                           |
+| `field.ts`            | Seven closed data types, and the field definition. No `pattern` yet                                                                    |
+| `schema.ts`           | The metadata schema definition, and `checkSchema`, which checks each default against its field                                         |
+| `component-type.ts`   | The component type definition, whose assignments name a schema and the fields they require                                             |
+| `migrate.ts`          | The migration chain per definition kind, applied on read, and `readDefinition`'s report                                                |
+| `failure.ts`          | `MetadataFailure`, its stable `code` and the rule union, and `failure()` to build one - the shape the service's error shape will carry |
+| `check-value.ts`      | `checkValue(field, value)`: the field's own rules, and nothing else                                                                    |
+| `values.ts`           | `MetadataValues`, `hasMember`, `isClear`, `isUserValue` and `sameValue` - the value-shape rules the rest of the package shares         |
+| `resolve.ts`          | `resolveComponentFields`, and the error a default it cannot use throws - disagreeing, or refused by its field                          |
+| `check-assignment.ts` | `checkAssignment`: a stray `requires`, and a default that disagrees with one already assigned                                          |
+| `validate.ts`         | `validate(effective, values)`: every failure, each naming the schemas behind a schema's rule                                           |
+| `users.ts`            | `checkUserValues` over a lookup the service supplies, and `principalIdsIn` to load it in one query                                     |
+| `carry.ts`            | `carryForward`: what the next version holds, and `notCarried`                                                                          |
+| `record.ts`           | `definitionsFor`, and the canonical form of values and `notCarried` in the version digest                                              |
+| `fixtures/v1/`        | Stored definitions at definition schema version 1, never deleted                                                                       |
+
+The canonical form and the migration chain both rest on `packages/domain/src/stored/`, shared with the
+content model - see [above](#the-content-model).
+
+**Four properties, because each is a decision rather than an implementation detail.**
+
+**A value is valid or not by its field alone.** `checkValue` takes the field and the value. The two
+rules a schema imposes - required and fixed - are `validate`'s, and name every schema that imposed
+them; checking that a user value names somebody needs the directory, so it is `checkUserValues`, apart
+from `validate`, which runs at publish with no directory to hand.
+
+**A number is the string entered.** It is valid only in canonical form - no leading zeros, no trailing
+fractional zeros - and `canonicaliseDecimal` is how a caller gets there. Comparison is exact, so a bound
+of `9007199254740993` means that number and not its nearest float.
+
+**Carrying forward never changes a value that is present.** No member and a clear are different: only
+a field with no member takes a default, so a clear survives, and a present value on a fixed field that
+differs from its default stays for `validate` to name rather than being replaced.
+
+**Definitions are read the way content is.** Every payload records its definition schema version and is
+migrated on read, never on write, through the chain `packages/domain/src/stored/` now provides to
+content and definitions alike, beside the canonical rules both serialise with.
+
+`pattern` does not exist yet: metadata.md's open question on bounding its backtracking is unanswered,
+and the field definition refuses one.
 
 ## One renderer, two deliveries
 

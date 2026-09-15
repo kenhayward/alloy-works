@@ -1,5 +1,8 @@
 export * from './content/model/index.js';
 
+// Metadata: which fields apply to a component, what makes a value valid, and what a version records.
+export * from './metadata/index.js';
+
 // Scaffolding. This is NOT the content model - see docs/design/content-model.md for that, and
 // CLAUDE.md for why this exists. `apps/web` still uses it; retiring it is that app's change.
 export {

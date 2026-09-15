@@ -1,3 +1,5 @@
+import { canonicalJson } from '../../stored/canonical.js';
+
 import type { ContentDocument } from './document.js';
 
 /**
@@ -17,28 +19,12 @@ import type { ContentDocument } from './document.js';
  * platform-free, or `crypto.subtle`, which would make parsing async for no gain. The caller hashes.
  */
 export function canonicalise(document: ContentDocument): string {
-  return emit(document);
+  return canonicalJson(document, marksAsASet);
 }
 
-function emit(value: unknown): string {
-  if (value === null || typeof value === 'number' || typeof value === 'boolean') {
-    return JSON.stringify(value);
-  }
-  if (typeof value === 'string') return JSON.stringify(value.normalize('NFC'));
-  if (Array.isArray(value)) return `[${value.map(emit).join(',')}]`;
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, member]) => member !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    return `{${entries.map(([key, member]) => `${JSON.stringify(key)}:${emitMember(key, member)}`).join(',')}}`;
-  }
-  throw new Error(`Cannot canonicalise a value of type ${typeof value}`);
-}
-
-function emitMember(key: string, member: unknown): string {
-  if (key !== 'marks' || !Array.isArray(member)) return emit(member);
-  const sorted = [...(member as { type: string; id: string }[])].sort((a, b) =>
+function marksAsASet(member: string, array: readonly unknown[]): readonly unknown[] {
+  if (member !== 'marks') return array;
+  return [...(array as { type: string; id: string }[])].sort((a, b) =>
     a.type === b.type ? (a.id < b.id ? -1 : 1) : a.type < b.type ? -1 : 1,
   );
-  return `[${sorted.map(emit).join(',')}]`;
 }

@@ -1,48 +1,21 @@
-import { CURRENT_SCHEMA_VERSION, parseContentDocument, type ContentDocument } from './document.js';
+import { migrateStored, type MigrationChain } from '../../stored/migrate.js';
 
-/**
- * A migration from one schema version to the next. Total and pure: it takes whatever was stored at
- * `from` and returns whatever `from + 1` expects, and it reads nothing outside its argument.
- */
-type Migration = (value: Record<string, unknown>) => Record<string, unknown>;
+import { CURRENT_SCHEMA_VERSION, parseContentDocument, type ContentDocument } from './document.js';
 
 /**
  * Empty while there is one schema version. It exists now rather than when it is needed, because the
  * first schema change is the moment a chain nobody built is discovered to be missing - and by then
  * there is stored content that needs it.
  */
-const migrations: Record<number, Migration> = {};
+const chain: MigrationChain = {
+  subject: 'content',
+  current: CURRENT_SCHEMA_VERSION,
+  migrations: {},
+};
 
-/**
- * Migration is a READ-TIME PROJECTION, never a rewrite. Version rows take inserts only and
- * `content_hash` is the hash of what was written, so migrating a stored version would either
- * invalidate its hash or need a version row nobody authored. The stored bytes never change.
- */
+/** Content's chain, through the harness every stored payload in this package shares. */
 export function migrate(value: unknown): unknown {
-  if (typeof value !== 'object' || value === null || !('schemaVersion' in value)) {
-    throw new Error('Stored content records no schema version, so it cannot be migrated (CNT-011)');
-  }
-  const record = { ...(value as Record<string, unknown>) };
-  const from = record.schemaVersion;
-  if (typeof from !== 'number' || !Number.isInteger(from) || from < 1) {
-    throw new Error(
-      `Stored content records a schema version that is not a version: ${String(from)}`,
-    );
-  }
-  if (from > CURRENT_SCHEMA_VERSION) {
-    throw new Error(
-      `Stored content was written against schema version ${from}, which is newer than this build's ${CURRENT_SCHEMA_VERSION}`,
-    );
-  }
-
-  let migrated = record;
-  for (let version = from; version < CURRENT_SCHEMA_VERSION; version += 1) {
-    const step = migrations[version];
-    if (!step) throw new Error(`No migration from schema version ${version} to ${version + 1}`);
-    migrated = step(migrated);
-    migrated.schemaVersion = version + 1;
-  }
-  return migrated;
+  return migrateStored(value, chain);
 }
 
 export type ReadOutcome =

@@ -15543,7 +15543,259 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 33,
+      "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/carry.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-036",
+      "file": "packages/domain/src/metadata/carry.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/check-assignment.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "MET-004",
+      "file": "packages/domain/src/metadata/check-value.test.ts",
+      "line": 32,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/check-value.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "MET-028",
+      "file": "packages/domain/src/metadata/check-value.test.ts",
+      "line": 71,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/check-value.test.ts",
+      "line": 83,
+      "kind": "title"
+    },
+    {
+      "id": "MET-001",
+      "file": "packages/domain/src/metadata/field.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "MET-002",
+      "file": "packages/domain/src/metadata/field.test.ts",
+      "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "MET-004",
+      "file": "packages/domain/src/metadata/field.test.ts",
+      "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "MET-028",
+      "file": "packages/domain/src/metadata/field.test.ts",
+      "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/field.test.ts",
+      "line": 43,
+      "kind": "title"
+    },
+    {
+      "id": "MET-028",
+      "file": "packages/domain/src/metadata/lexical.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "MET-002",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "MET-018",
+      "file": "packages/domain/src/metadata/record.test.ts",
+      "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/record.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "MET-036",
+      "file": "packages/domain/src/metadata/record.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 179,
+      "kind": "title"
+    },
+    {
+      "id": "MET-007",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
+      "id": "MET-013",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 143,
+      "kind": "title"
+    },
+    {
+      "id": "MET-017",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 214,
+      "kind": "title"
+    },
+    {
+      "id": "MET-005",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 36,
+      "kind": "title"
+    },
+    {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 146,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 130,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "MET-004",
+      "file": "packages/domain/src/metadata/users.test.ts",
+      "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/users.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-004",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 145,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "MET-017",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/validate.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-011",
+      "file": "packages/domain/src/stored/canonical.test.ts",
+      "line": 6,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-056",
+      "file": "packages/domain/src/stored/canonical.test.ts",
+      "line": 12,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/stored/canonical.test.ts",
+      "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-011",
+      "file": "packages/domain/src/stored/migrate.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-012",
+      "file": "packages/domain/src/stored/migrate.test.ts",
+      "line": 15,
       "kind": "title"
     },
     {
