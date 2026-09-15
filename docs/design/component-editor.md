@@ -418,8 +418,9 @@ in T1, since changing it is MET-014, T2 - and its effective fields in resolution
 - **Values are part of the iteration**, so they autosave, recover and version with the content.
 
 **The service refuses only what cannot be stored honestly.** An iteration is refused if a fixed value
-differs from its default (`metadata.fixed`, MET-033), a value is not the JSON its data type takes, or it
-would change the component's type. Every other failure - a required field left empty, a pattern not
+differs from its default (`metadata.fixed`, MET-033), a value is not the JSON its data type takes, a user
+value names no principal of this tenant (`metadata.user`, metadata.md), or it would change the
+component's type. Every other failure - a required field left empty, a pattern not
 matched - is saved and shown, and fails the publish (MET-023). An author mid-draft is never blocked from
 saving. Refusals use service-foundations' error shape, with the field, the rule and the schemas as members
 rather than prose.
@@ -437,6 +438,8 @@ discovering it at a refusal.**
   longer applying keeps its value, listed as one the next version will not carry.
 - **An iteration in flight when a field becomes fixed** is refused with `metadata.fixed`, carrying the
   current definitions; the renderer applies them as above and resends, without the author having to act.
+  **A cut is refused the same way** when a field became fixed after the last acknowledged iteration,
+  because carrying forward never replaces a value that is present (metadata.md).
 - **The cut uses the definitions current at the cut**, and shows what will not be carried first, so nothing
   the author entered disappears unseen.
 
