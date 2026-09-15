@@ -2453,7 +2453,7 @@
       "area": "CNT",
       "statement": "Spelling must be checked against the language of the run being edited (CNT-083), not against one language for the whole editor",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by CNT-147",
       "document": "CNT-content-and-authoring.md",
       "line": 413
     },
@@ -2471,9 +2471,27 @@
       "area": "CNT",
       "statement": "Spelling must behave identically in both deliveries. The browser supplies it; the desktop shell must wire the platform's checker through the platform bridge rather than silently losing it",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by CNT-148",
       "document": "CNT-content-and-authoring.md",
       "line": 415
+    },
+    {
+      "id": "CNT-147",
+      "area": "CNT",
+      "statement": "Spelling must be checked by the checker the delivery provides. A run whose language differs from its component's base language (**CNT-140**) must not be checked, so that a passage in another language is never flagged as misspelt",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 416
+    },
+    {
+      "id": "CNT-148",
+      "area": "CNT",
+      "statement": "Neither delivery may lack a spelling checker. The web delivery uses the browser's; the desktop shell must wire the platform's checker through the platform bridge and enable it for the base languages of the components open, rather than silently losing it",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 417
     },
     {
       "id": "CNT-072",
@@ -2482,7 +2500,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 428
+      "line": 436
     },
     {
       "id": "CNT-073",
@@ -2491,7 +2509,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 429
+      "line": 437
     },
     {
       "id": "CNT-074",
@@ -2500,7 +2518,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 430
+      "line": 438
     },
     {
       "id": "CNT-075",
@@ -2509,7 +2527,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 431
+      "line": 439
     },
     {
       "id": "CNT-076",
@@ -2518,7 +2536,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 432
+      "line": 440
     },
     {
       "id": "CNT-082",
@@ -2527,7 +2545,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 433
+      "line": 441
     },
     {
       "id": "CNT-097",
@@ -2536,7 +2554,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 434
+      "line": 442
     },
     {
       "id": "CNT-115",
@@ -2545,7 +2563,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 435
+      "line": 443
     },
     {
       "id": "CNT-095",
@@ -2554,7 +2572,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 436
+      "line": 444
     },
     {
       "id": "CNT-096",
@@ -2563,7 +2581,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 437
+      "line": 445
     },
     {
       "id": "CNT-114",
@@ -2572,7 +2590,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-136",
       "document": "CNT-content-and-authoring.md",
-      "line": 438
+      "line": 446
     },
     {
       "id": "CNT-136",
@@ -2581,7 +2599,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 439
+      "line": 447
     },
     {
       "id": "CNT-104",
@@ -2590,7 +2608,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 445
+      "line": 453
     },
     {
       "id": "CNT-105",
@@ -2599,7 +2617,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 446
+      "line": 454
     },
     {
       "id": "CNT-106",
@@ -2608,7 +2626,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 447
+      "line": 455
     },
     {
       "id": "CNT-108",
@@ -2617,7 +2635,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 453
+      "line": 461
     },
     {
       "id": "CNT-109",
@@ -2626,7 +2644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 454
+      "line": 462
     },
     {
       "id": "CNT-110",
@@ -2635,7 +2653,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 455
+      "line": 463
     },
     {
       "id": "CNT-141",
@@ -2644,7 +2662,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 456
+      "line": 464
     },
     {
       "id": "CNT-111",
@@ -2653,7 +2671,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 457
+      "line": 465
     },
     {
       "id": "CNT-112",
@@ -2662,7 +2680,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 458
+      "line": 466
     },
     {
       "id": "CNT-113",
@@ -2671,7 +2689,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 459
+      "line": 467
     },
     {
       "id": "CNT-077",
@@ -2680,7 +2698,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 500
+      "line": 508
     },
     {
       "id": "CNT-078",
@@ -2689,7 +2707,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 501
+      "line": 509
     },
     {
       "id": "CNT-079",
@@ -2698,7 +2716,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 502
+      "line": 510
     },
     {
       "id": "CNT-080",
@@ -2707,7 +2725,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 503
+      "line": 511
     },
     {
       "id": "CNT-137",
@@ -2716,7 +2734,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 504
+      "line": 512
     },
     {
       "id": "CNT-138",
@@ -2725,7 +2743,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 505
+      "line": 513
     },
     {
       "id": "CNT-139",
@@ -2734,7 +2752,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 506
+      "line": 514
     },
     {
       "id": "COL-001",
@@ -12330,61 +12348,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 524
+      "line": 532
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 525
+      "line": 533
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 526
+      "line": 534
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 527
+      "line": 535
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 528
+      "line": 536
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 529
+      "line": 537
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 530
+      "line": 538
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 531
+      "line": 539
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 532
+      "line": 540
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 533
+      "line": 541
     },
     {
       "id": "COL-N01",
@@ -13091,105 +13109,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 539
+      "line": 547
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 540
+      "line": 548
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 541
+      "line": 549
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 542
+      "line": 550
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 543
+      "line": 551
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 544
+      "line": 552
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 545
+      "line": 553
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 546
+      "line": 554
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 547
+      "line": 555
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 548
+      "line": 556
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 549
+      "line": 557
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-136)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 550
+      "line": 558
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 551
+      "line": 559
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 552
+      "line": 560
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 553
+      "line": 561
     },
     {
       "id": "COL-Q01",
@@ -13894,6 +13912,107 @@
   ],
   "designs": [
     {
+      "document": "component-editor.md",
+      "owns": [
+        {
+          "id": "CNT-066",
+          "howItIsMet": "After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts"
+        },
+        {
+          "id": "CNT-067",
+          "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one"
+        },
+        {
+          "id": "CNT-068",
+          "howItIsMet": "A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced"
+        },
+        {
+          "id": "CNT-069",
+          "howItIsMet": "One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from"
+        },
+        {
+          "id": "CNT-103",
+          "howItIsMet": "Cutting a version clears the history and the stored steps, and a reload that finds steps recorded against an older version discards them, so undo never reaches past a version"
+        },
+        {
+          "id": "CNT-070",
+          "howItIsMet": "A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout"
+        },
+        {
+          "id": "CNT-089",
+          "howItIsMet": "The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and visible only to the lock holder (VER-001 to VER-003)"
+        },
+        {
+          "id": "CNT-090",
+          "howItIsMet": "A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration"
+        },
+        {
+          "id": "CNT-071",
+          "howItIsMet": "Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write"
+        },
+        {
+          "id": "COL-005",
+          "howItIsMet": "The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused"
+        },
+        {
+          "id": "COL-006",
+          "howItIsMet": "The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it"
+        },
+        {
+          "id": "COL-008",
+          "howItIsMet": "A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it"
+        },
+        {
+          "id": "COL-010",
+          "howItIsMet": "**Done editing** releases the lock and cuts a version of what changed; a lock expiring cuts nothing"
+        },
+        {
+          "id": "COL-011",
+          "howItIsMet": "The lock is a row per component; nothing locks a document"
+        },
+        {
+          "id": "API-039",
+          "howItIsMet": "The service checks the lock on every mutating component request and refuses one from anybody but the holder with `lock.held`, naming the holder and the expected release"
+        },
+        {
+          "id": "MET-011",
+          "howItIsMet": "Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it"
+        },
+        {
+          "id": "MET-033",
+          "howItIsMet": "A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration or a cut whose value for it differs from the default, naming field and schema"
+        },
+        {
+          "id": "CNT-057",
+          "howItIsMet": "An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters"
+        },
+        {
+          "id": "CNT-077",
+          "howItIsMet": "Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view"
+        },
+        {
+          "id": "CNT-048",
+          "howItIsMet": "An equation's alternative is generated from its MathML wherever a generator is available - on entry, and on load for any equation that lacks one - stored as `alttext`, and always editable"
+        },
+        {
+          "id": "CNT-080",
+          "howItIsMet": "Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard"
+        },
+        {
+          "id": "CNT-098",
+          "howItIsMet": "The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types"
+        },
+        {
+          "id": "CNT-147",
+          "howItIsMet": "A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck=\"false\"`, so a passage in another language is never flagged"
+        },
+        {
+          "id": "CNT-148",
+          "howItIsMet": "The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker"
+        }
+      ]
+    },
+    {
       "document": "content-model.md",
       "owns": [
         {
@@ -14219,6 +14338,71 @@
         {
           "id": "AST-039",
           "howItIsMet": "Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it"
+        }
+      ]
+    },
+    {
+      "document": "metadata.md",
+      "owns": [
+        {
+          "id": "MET-001",
+          "howItIsMet": "A field definition carries `id`, `name`, `dataType` and `validation`; schemas refer to a field by `id`, so a field grouped by two schemas is one definition"
+        },
+        {
+          "id": "MET-002",
+          "howItIsMet": "`dataType` is a closed enum - `text`, `number`, `date`, `time`, `dateTime`, `boolean`, `user` - and `multiplicity` is `one` or `many`. Adding a type is a definition-schema version with a migration"
+        },
+        {
+          "id": "MET-028",
+          "howItIsMet": "A `dateTime` value must parse as ISO 8601 with an explicit offset or `Z`; a `date` or `time` value with an offset is refused"
+        },
+        {
+          "id": "MET-030",
+          "howItIsMet": "A `many` field's value is an array with no duplicate after normalisation, in the order given; `required` means at least one element; a default is an array; `maxValues` is optional"
+        },
+        {
+          "id": "MET-004",
+          "howItIsMet": "`checkValue(field, value)` takes the field and the value and nothing else, so no context can make a value valid in one place and invalid in another"
+        },
+        {
+          "id": "MET-005",
+          "howItIsMet": "A schema definition carries `id`, `name` and its entries, and is an artifact kind versioned by the one mechanism (ADR-0024)"
+        },
+        {
+          "id": "MET-006",
+          "howItIsMet": "Each schema entry is `{ field, required, default?, fixed }`"
+        },
+        {
+          "id": "MET-007",
+          "howItIsMet": "Resolution keys effective fields by field `id`, so a field reached through several schemas appears once, required if any entry or assignment requires it"
+        },
+        {
+          "id": "MET-009",
+          "howItIsMet": "A component type's assignment is `{ schema, requires: fieldId[] }`. There is no member that could loosen a field, change a default or fix a value, so an assignment cannot do those by construction. `requires` can only name a field the assigned schema groups, and a field becomes effective only through a schema entry, so `requires` cannot add one"
+        },
+        {
+          "id": "MET-010",
+          "howItIsMet": "A component type definition carries `id`, `name` and zero or more assignments, and nothing about content"
+        },
+        {
+          "id": "MET-013",
+          "howItIsMet": "`resolveComponentFields` takes a component type and its definitions and nothing about any document, so there is no input through which a document could contribute a field"
+        },
+        {
+          "id": "MET-017",
+          "howItIsMet": "`validate` takes the definition versions it is given; checking a stored version passes the versions recorded in `version_definition`, never the current ones"
+        },
+        {
+          "id": "MET-018",
+          "howItIsMet": "`definitionsFor(type)` names the current version of the type, each schema it assigns and each field those group; the service stamps that list on a version at promotion"
+        },
+        {
+          "id": "MET-036",
+          "howItIsMet": "`carryForward(values, effective)` returns the values whose field still applies, unchanged, and a `notCarried` list of every other value by field, which the version records. It fills only a field with no member, so it never changes a value that is present"
+        },
+        {
+          "id": "MET-022",
+          "howItIsMet": "Every failure is `{ code, field, rule, schemas, detail }`, with a stable `code`; the caller adds the artifact. A rule a schema imposed - required, fixed - lists every schema that imposed it, since more than one can. A requirement an assignment imposed names the schema assigned"
         }
       ]
     },

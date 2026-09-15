@@ -21,13 +21,17 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
-    // 1360, not 1306: specifying metadata and component types added the MET area's 36 rows and 18
+    // 1362, from 1360: CNT-147 and CNT-148 replaced CNT-099 and CNT-101, because native spellcheck
+    // ignores an element's language. 1360, not 1306: specifying metadata and component types added the MET area's 36 rows and 18
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1360);
+    expect(model.requirements).toHaveLength(1362);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 295, from 256: metadata.md claims 15 - the rules resolving, validating and carrying a
+    // component's metadata - and component-editor.md claims 24, the editor, its session and the
+    // metadata panel. Neither claims a requirement it answers only for a component.
     // 256, from 252: storage-and-versioning.md claims MET-015, MET-016, CNT-145 and VER-042 once a
     // version records its metadata values, its component type and a digest over all of it, which
     // ADR-0024 decided when a metadata-only change would otherwise have been refused as unchanged.
@@ -43,7 +47,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(256);
+    ).toBe(295);
   });
 });
 

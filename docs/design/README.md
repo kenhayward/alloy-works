@@ -13,17 +13,19 @@ understand the storage layer, rather than something to be thrown away.
 
 ## Documents
 
-| Document                                               | Subsystem                                                                                            |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| [system.md](system.md)                                 | The whole system: containers, languages, and the data flowing between them                           |
-| [service-foundations.md](service-foundations.md)       | How a request reaches one tenant, and how an endpoint is written                                     |
-| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                          |
-| [content-model.md](content-model.md)                   | The stored shape of a component: nodes, marks, identity, and what may enter the model                |
-| [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                          |
-| [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement           |
-| [realtime.md](realtime.md)                             | Presence, locks and notifications on one stream, and model output on its own request                 |
-| [relationships.md](relationships.md)                   | Declared relationships and references, and walking them without revealing what the user may not read |
-| [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask                |
+| Document                                               | Subsystem                                                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| [system.md](system.md)                                 | The whole system: containers, languages, and the data flowing between them                                    |
+| [service-foundations.md](service-foundations.md)       | How a request reaches one tenant, and how an endpoint is written                                              |
+| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                                   |
+| [content-model.md](content-model.md)                   | The stored shape of a component: nodes, marks, identity, and what may enter the model                         |
+| [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                                   |
+| [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement                    |
+| [realtime.md](realtime.md)                             | Presence, locks and notifications on one stream, and model output on its own request                          |
+| [relationships.md](relationships.md)                   | Declared relationships and references, and walking them without revealing what the user may not read          |
+| [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask                         |
+| [metadata.md](metadata.md)                             | Which fields apply to a component, what makes a value valid, and what a version records about its definitions |
+| [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata          |
 
 ## Why these are not one per requirement area
 

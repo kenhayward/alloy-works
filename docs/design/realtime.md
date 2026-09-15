@@ -12,7 +12,7 @@ per tenant (ADR-0008) and runs in the web service; the desktop app loads the sam
 
 ## The shape in one paragraph
 
-Each open document holds one Server-Sent Events stream to the service. The stream only ever says
+Each open document - or a component opened on its own, outside any document - holds one Server-Sent Events stream to the service. The stream only ever says
 that something changed, by id; it carries no content and decides nothing. Anything a person does -
 taking a lock, moving to another component, reading a notification - is an ordinary request, and the
 transaction that records it also notifies Postgres, so the event and the change commit together.
@@ -118,6 +118,13 @@ notifies; releasing it, letting it expire and taking it from an idle holder are 
 expected release shown to others (COL-007) is the row's expiry, which the holder's editing activity
 extends. The stream tells screens; it never grants anything, and a client that believes it holds a
 lock it does not will find out from the request that tries to save.
+
+**A stream has a scope: an open document, or one component opened on its own.** The component editor
+edits a component outside any document before the document view exists, and COL-007 wants a held lock
+visible wherever the component appears. So a stream may be opened for a single component: its snapshot
+is that component's lock and the presence of whoever else has it open, its events are the same `lock`
+and `presence` events, and who hears what follows the same rules. Nothing about the transport changes;
+the scope is only which components a stream's snapshot and filter range over.
 
 ## Model output
 

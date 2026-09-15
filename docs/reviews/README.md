@@ -22,6 +22,16 @@ written can sell, and what would extend its reach. They are for later considerat
 the early tranches, nothing in them has been written into the requirements, and
 [its own README](market/README.md) says why.
 
+**[`design-reviews/`](design-reviews/) holds reviews of designs** in [`../design/`](../design/),
+one file per design. A design answers its review in a section of its own, point by point, rather than
+in a requirements change history; where answering one changed a requirement, that requirements
+document's change history says so.
+
+| Review                                                 | Reviews                                              | Answered in                                                |
+| ------------------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------------------- |
+| [component-editor](design-reviews/component-editor.md) | [component-editor.md](../design/component-editor.md) | [its Review section](../design/component-editor.md#review) |
+| [metadata-review](design-reviews/metadata-review.md)   | [metadata.md](../design/metadata.md)                 | [its Review section](../design/metadata.md#review)         |
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.
