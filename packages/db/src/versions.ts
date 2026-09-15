@@ -9,6 +9,7 @@ import {
   type NotCarried,
   type VersionSubstance,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
@@ -234,4 +235,67 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
     };
   }
   return { kind: stored.kind, content: stored.content } as VersionSubstance;
+}
+
+export interface NextVersion extends Authorship {
+  readonly artifactId: string;
+  /** The version the caller's session opened from, which must still be the latest. */
+  readonly openedFrom: string;
+  readonly substance: VersionSubstance;
+}
+
+export type RecordAnswer =
+  | { readonly answer: 'recorded'; readonly version: StoredVersion }
+  /** The digest equals the latest version's: nothing to cut, and not an error to the author. */
+  | { readonly answer: 'version.unchanged'; readonly current: StoredVersion }
+  /** The latest version is not the one the caller opened from. Names the current one. */
+  | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
+  /** This tenant holds no such artifact. */
+  | { readonly answer: 'artifact.missing' };
+
+/**
+ * Records the next version of an artifact, in the caller's transaction, answering what
+ * component-editor.md's "Cutting a version" says the store answers: `version.precondition` when the
+ * latest version is not the one stated, `version.unchanged` when the version digest equals the
+ * latest version's, and otherwise the version recorded, numbered next within its revision.
+ *
+ * The lock, the definitions and carrying values forward are the caller's, done before this is called
+ * and inside the same transaction. Two callers cutting one artifact at once take turns on a
+ * transaction-scoped advisory lock, so the second sees the first's version and is answered
+ * `version.precondition` rather than colliding on a number.
+ */
+export async function recordVersion(
+  trx: TenantTransaction,
+  input: NextVersion,
+): Promise<RecordAnswer> {
+  if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${input.artifactId}`}, 0))`.execute(
+    trx,
+  );
+  const current = await latestVersion(trx, input.artifactId);
+  if (!current) return { answer: 'artifact.missing' };
+  if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
+  if (input.substance.kind !== current.kind) {
+    throw new Error(
+      `Artifact ${input.artifactId} is a ${current.kind}, not a ${input.substance.kind}`,
+    );
+  }
+
+  const substance = prepare(input.substance);
+  if (substance.kind !== 'component' && substance.content.id !== input.artifactId) {
+    throw new Error(
+      `A version of ${input.artifactId} cannot carry the identity ${substance.content.id}`,
+    );
+  }
+  if (versionDigests(substance).versionDigest === current.versionDigest) {
+    return { answer: 'version.unchanged', current };
+  }
+  const version = await insertVersion(
+    trx,
+    input.artifactId,
+    { revision: current.revision, version: current.version + 1 },
+    input,
+    substance,
+  );
+  return { answer: 'recorded', version };
 }

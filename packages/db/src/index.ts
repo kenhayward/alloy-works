@@ -65,8 +65,11 @@ export {
   createArtifact,
   latestVersion,
   readVersion,
+  recordVersion,
   substanceOf,
   type Authorship,
   type NewArtifact,
+  type NextVersion,
+  type RecordAnswer,
   type StoredVersion,
 } from './versions.js';
