@@ -6,11 +6,11 @@ Checked against FullTrace2.txt: every row of Requirements owned, every row of Wh
 
 **External access is granted by this model, but its requirements are unlisted and mostly unmet.** IAM-071 (which supersedes IAM-048) says external access must be granted against named artifacts through the permission model in section 6, and PUB-084 requires a publication share to create "a named, time-bounded grant scoped to that publication alone" that appears in the external-access listing. The Grants section does exactly this granting - grants to an external principal at space or artifact level - so IAM-071 is met but absent from Requirements owned. Its companions are not met and appear nowhere:
 
-| ID      | What it asks for                                                                                          | Where the design falls short                                                                                                                                     |
-| ------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IAM-049 | External access carries an expiry, defaulted and capped by tenant policy, never left unset                | `access_grant` has no expiry; nothing defaults or caps one                                                                                                       |
-| IAM-050 | Extending external access is a positive act inside the tenant, audited                                    | No route or rule for extension. A grant is "created and removed, never changed," so an extension would be a new grant with no stated link to the one it extends |
-| IAM-051 | An administrator lists every external principal and everything each can reach - IAM-029 from the other end | No route enumerates one principal's grants across levels. `explain` answers per target, and needs `administer` at that target's level or above                |
+| ID      | What it asks for                                                                                           | Where the design falls short                                                                                                                                    |
+| ------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IAM-049 | External access carries an expiry, defaulted and capped by tenant policy, never left unset                 | `access_grant` has no expiry; nothing defaults or caps one                                                                                                      |
+| IAM-050 | Extending external access is a positive act inside the tenant, audited                                     | No route or rule for extension. A grant is "created and removed, never changed," so an extension would be a new grant with no stated link to the one it extends |
+| IAM-051 | An administrator lists every external principal and everything each can reach - IAM-029 from the other end | No route enumerates one principal's grants across levels. `explain` answers per target, and needs `administer` at that target's level or above                  |
 
 Either add an expiry to `access_grant` (at least for external subjects), an extension act, and a listing route - or move all four IDs into What this document does not own with the tranche they land in. As it stands, PUB-084 cannot be met from this design.
 
@@ -31,7 +31,7 @@ Either add an expiry to `access_grant` (at least for external subjects), an exte
 
 **Step 1 of Deciding and the permissions table disagree on `administer`.** The table says administer is decided at "the level"; step 1 folds it into "the rest ask about the artifact." Neither states what happens when the target of a question is itself a space or the tenant - for example, asking whether a principal may change grants at a space. Presumably the walk starts at that level; that is not written down.
 
-**`modesFor` is owned in code but unspecified.** Where the code live lists `modesFor` beside `decide` and `readableSet`, and two routes return it, but no sentence states which permission yields read, review or author (CNT-104, CNT-106). The What-this-document-does-not-own row defers *offering* modes to the document view; *deriving* them is left here without a rule.
+**`modesFor` is owned in code but unspecified.** Where the code live lists `modesFor` beside `decide` and `readableSet`, and two routes return it, but no sentence states which permission yields read, review or author (CNT-104, CNT-106). The What-this-document-does-not-own row defers _offering_ modes to the document view; _deriving_ them is left here without a rule.
 
 ## Verification missing from the list
 
