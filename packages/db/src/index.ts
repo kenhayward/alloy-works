@@ -16,6 +16,7 @@ export {
 } from './artifact-kind.js';
 export type {
   ArtifactTable,
+  ArtifactVersionTable,
   GoogleDomainTable,
   JobTable,
   IdentityProviderTable,
@@ -32,6 +33,7 @@ export type {
   SpaceTable,
   TenantTables,
   TenantTransaction,
+  VersionDefinitionTable,
 } from './tables.js';
 export {
   closeSignInRoute,

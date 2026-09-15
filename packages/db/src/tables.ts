@@ -1,3 +1,4 @@
+import type { DefinitionKind } from '@alloy-works/domain';
 import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 
@@ -144,6 +145,37 @@ export interface ArtifactTable {
   created_at: ColumnType<Date, never, never>;
 }
 
+/**
+ * Insert and read, nothing else (VER-008): every column's update type is `never`, as the grant is.
+ * JSONB goes in as the text of a JSON document, because `pg` would send a JavaScript array as a
+ * Postgres array rather than as JSON.
+ */
+export interface ArtifactVersionTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<ArtifactKind, ArtifactKind, never>;
+  revision_no: ColumnType<number, number, never>;
+  version_no: ColumnType<number, number, never>;
+  author_id: ColumnType<string, string, never>;
+  created_at: ColumnType<Date, never, never>;
+  note: ColumnType<string | null, string | null, never>;
+  schema_version: ColumnType<number, number, never>;
+  content: ColumnType<unknown, string, never>;
+  content_hash: ColumnType<string, string, never>;
+  metadata_values: ColumnType<Record<string, unknown>, string, never>;
+  not_carried: ColumnType<unknown[], string, never>;
+  component_type_version_id: ColumnType<string | null, string | null, never>;
+  version_digest: ColumnType<string, string, never>;
+}
+
+/** Insert and read, nothing else, on the same terms as the version row. */
+export interface VersionDefinitionTable {
+  version_id: ColumnType<string, string, never>;
+  definition_version_id: ColumnType<string, string, never>;
+  definition_artifact_id: ColumnType<string, string, never>;
+  definition_kind: ColumnType<DefinitionKind, DefinitionKind, never>;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -158,6 +190,8 @@ export interface TenantTables {
   sample: SampleTable;
   space: SpaceTable;
   artifact: ArtifactTable;
+  artifact_version: ArtifactVersionTable;
+  version_definition: VersionDefinitionTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */
