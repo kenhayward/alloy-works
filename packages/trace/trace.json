@@ -15704,6 +15704,18 @@
     },
     {
       "id": "MET-004",
+      "file": "packages/domain/src/metadata/users.test.ts",
+      "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/users.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-004",
       "file": "packages/domain/src/metadata/validate.test.ts",
       "line": 145,
       "kind": "title"
