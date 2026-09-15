@@ -69,6 +69,12 @@ describe('carryForward', () => {
     });
   });
 
+  it('takes the default for a member explicitly set to undefined, the same as no member at all', () => {
+    const study = effectiveOf(textField('field-study'), { default: 'S-0' });
+    const { values } = carryForward({ 'field-study': undefined }, [study]);
+    expect(values).toEqual({ 'field-study': 'S-0' });
+  });
+
   it('copies a default, so changing the values carried cannot change a definition', () => {
     const markets = effectiveOf(textField('field-markets', 'many'), { default: ['uk'] });
     const { values } = carryForward({}, [markets]);

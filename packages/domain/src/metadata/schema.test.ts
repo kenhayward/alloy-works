@@ -60,7 +60,7 @@ describe('a metadata schema definition', () => {
     ).toThrow(/no default/);
   });
 
-  it('MET-006 refuses a default that is a clear rather than a value', () => {
+  it('refuses a default that is a clear rather than a value', () => {
     for (const clear of [null, []]) {
       expect(() =>
         metadataSchemaDefinitionSchema.parse(
@@ -98,6 +98,15 @@ describe('a metadata schema definition', () => {
         detail: 'The default fails max: Is above the maximum, 4',
       },
     ]);
+  });
+
+  it('refuses two versions of one field supplied to checkSchema', () => {
+    const schema = metadataSchemaDefinitionSchema.parse(
+      schemaWith([{ field: 'field-phase', required: false, fixed: false }]),
+    );
+    expect(() => checkSchema(schema, [phase, phase])).toThrow(
+      /Two versions of field field-phase were supplied/,
+    );
   });
 
   it('MET-030 fails a default on a many field that is not a list', () => {

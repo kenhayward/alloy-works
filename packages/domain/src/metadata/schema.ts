@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { checkValue } from './check-value.js';
 import { definitionIdentity } from './definition.js';
+import { indexDefinitions, requireDefinition } from './definition-index.js';
 import { failure, type MetadataFailure } from './failure.js';
 import type { FieldDefinition } from './field.js';
 import { isClear } from './values.js';
@@ -66,13 +67,14 @@ export function checkSchema(
   schema: MetadataSchemaDefinition,
   fields: readonly FieldDefinition[],
 ): MetadataFailure[] {
-  const byId = new Map(fields.map((field) => [field.id, field]));
+  const byId = indexDefinitions('field', fields, (field) => field.id);
   const failures: MetadataFailure[] = [];
   for (const entry of schema.entries) {
-    const field = byId.get(entry.field);
-    if (!field) {
-      throw new Error(`Schema ${schema.id} groups field ${entry.field}, which was not supplied`);
-    }
+    const field = requireDefinition(
+      byId,
+      entry.field,
+      `Schema ${schema.id} groups field ${entry.field}`,
+    );
     if (entry.default === undefined) continue;
     for (const each of checkValue(field, entry.default)) {
       failures.push(

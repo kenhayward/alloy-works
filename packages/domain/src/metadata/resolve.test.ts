@@ -226,7 +226,7 @@ describe('resolveComponentFields', () => {
     });
   });
 
-  it('MET-017 refuses to resolve from definitions it was not given, naming what is missing', () => {
+  it('refuses to resolve from definitions it was not given, naming what is missing', () => {
     const regulatory = schemaOf('schema-reg', [entry('field-study')]);
     expect(() =>
       resolveComponentFields(typeOf([{ schema: 'schema-reg', requires: [] }]), [], fields),
@@ -234,6 +234,24 @@ describe('resolveComponentFields', () => {
     expect(() =>
       resolveComponentFields(typeOf([{ schema: 'schema-reg', requires: [] }]), [regulatory], []),
     ).toThrow(/field-study/);
+  });
+
+  it('refuses two versions of one field, or one schema, supplied together, naming the kind and id', () => {
+    const regulatory = schemaOf('schema-reg', [entry('field-study')]);
+    expect(() =>
+      resolveComponentFields(
+        typeOf([{ schema: 'schema-reg', requires: [] }]),
+        [regulatory],
+        [study, fieldOf('field-study')],
+      ),
+    ).toThrow(/Two versions of field field-study were supplied/);
+    expect(() =>
+      resolveComponentFields(
+        typeOf([{ schema: 'schema-reg', requires: [] }]),
+        [regulatory, schemaOf('schema-reg', [])],
+        fields,
+      ),
+    ).toThrow(/Two versions of schema schema-reg were supplied/);
   });
 
   it('MET-007 and MET-009 resolve every combination of required, fixed and default across two schemas', () => {

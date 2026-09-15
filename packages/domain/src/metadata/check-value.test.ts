@@ -75,7 +75,7 @@ describe('checkValue', () => {
     expect(codes(fieldOf('dateTime'), '2026-09-15T09:00-05:00')).toEqual([]);
   });
 
-  it('MET-030 treats null on a one field and an empty list on a many field as a clear, not a failure', () => {
+  it('treats null on a one field and an empty list on a many field as a clear, not a failure', () => {
     expect(codes(fieldOf('text'), null)).toEqual([]);
     expect(codes(many('text'), [])).toEqual([]);
   });

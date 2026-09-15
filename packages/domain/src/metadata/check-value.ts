@@ -22,6 +22,8 @@ import { isUserValue } from './values.js';
  */
 export function checkValue(field: FieldDefinition, value: unknown): MetadataFailure[] {
   if (field.multiplicity === 'one') {
+    // Not `isClear`: an empty list on a one field is not a clear here, it is the multiplicity
+    // failure below - only `null` clears a field that holds one value.
     if (value === null) return [];
     if (Array.isArray(value)) {
       return [failure(field.id, 'multiplicity', 'Holds a list, and this field holds one value')];

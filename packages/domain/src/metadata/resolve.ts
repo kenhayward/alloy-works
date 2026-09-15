@@ -1,10 +1,10 @@
-import { canonicalJson } from '../stored/canonical.js';
-
 import { checkValue } from './check-value.js';
 import type { ComponentTypeDefinition } from './component-type.js';
+import { indexDefinitions, requireDefinition } from './definition-index.js';
 import type { MetadataRule } from './failure.js';
 import type { FieldDefinition } from './field.js';
 import type { MetadataSchemaDefinition } from './schema.js';
+import { sameValue } from './values.js';
 
 /**
  * One field as it applies to a component of a type (metadata.md, Resolution). The array
@@ -73,22 +73,22 @@ export function resolveComponentFields(
   schemas: readonly MetadataSchemaDefinition[],
   fields: readonly FieldDefinition[],
 ): EffectiveField[] {
-  const schemaById = new Map(schemas.map((schema) => [schema.id, schema]));
-  const fieldById = new Map(fields.map((field) => [field.id, field]));
+  const schemaById = indexDefinitions('schema', schemas, (schema) => schema.id);
+  const fieldById = indexDefinitions('field', fields, (field) => field.id);
   const drafts = new Map<string, Draft>();
 
   for (const assignment of type.assignments) {
-    const schema = schemaById.get(assignment.schema);
-    if (!schema) {
-      throw new Error(
-        `Component type ${type.id} assigns schema ${assignment.schema}, which was not supplied`,
-      );
-    }
+    const schema = requireDefinition(
+      schemaById,
+      assignment.schema,
+      `Component type ${type.id} assigns schema ${assignment.schema}`,
+    );
     for (const entry of schema.entries) {
-      const field = fieldById.get(entry.field);
-      if (!field) {
-        throw new Error(`Schema ${schema.id} groups field ${entry.field}, which was not supplied`);
-      }
+      const field = requireDefinition(
+        fieldById,
+        entry.field,
+        `Schema ${schema.id} groups field ${entry.field}`,
+      );
       let draft = drafts.get(field.id);
       if (!draft) {
         draft = { field, requiredBy: [], fixedBy: [], defaults: [] };
@@ -120,8 +120,8 @@ function toEffective(draft: Draft): EffectiveField {
   const [first] = draft.defaults;
   if (!first) return base;
   const schemas = draft.defaults.map((each) => each.schema);
-  const distinct = new Set(draft.defaults.map((each) => canonicalJson(each.value)));
-  if (distinct.size > 1) {
+  const disagrees = draft.defaults.some((each) => !sameValue(each.value, first.value));
+  if (disagrees) {
     throw new DefinitionConflictError(
       draft.field.id,
       schemas,

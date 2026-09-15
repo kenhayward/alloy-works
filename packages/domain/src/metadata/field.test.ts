@@ -100,7 +100,7 @@ describe('a field definition', () => {
     ).not.toThrow();
   });
 
-  it('MET-001 records the definition schema version it was written against', () => {
+  it('records the definition schema version it was written against', () => {
     expect(() => fieldDefinitionSchema.parse(field({ schemaVersion: 99 }))).toThrow();
   });
 });

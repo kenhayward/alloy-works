@@ -80,7 +80,7 @@ describe('definition schema versions and migration', () => {
     expect(types.some((type) => type.assignments.length === 0)).toBe(true);
   });
 
-  it('MET-006 keeps schema fixtures whose every default passes its own field', () => {
+  it('keeps schema fixtures whose every default passes its own field', () => {
     const fields = load('v1', 'fields.json').map((each) => fieldDefinitionSchema.parse(each));
     for (const stored of load('v1', 'metadata-schemas.json')) {
       const schema = metadataSchemaDefinitionSchema.parse(stored);

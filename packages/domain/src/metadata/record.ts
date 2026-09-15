@@ -2,6 +2,7 @@ import { canonicalJson } from '../stored/canonical.js';
 
 import type { NotCarried } from './carry.js';
 import type { ComponentTypeDefinition } from './component-type.js';
+import { indexDefinitions, requireDefinition } from './definition-index.js';
 import type { FieldDefinition } from './field.js';
 import type { DefinitionKind } from './migrate.js';
 import type { MetadataSchemaDefinition } from './schema.js';
@@ -32,28 +33,26 @@ export function definitionsFor(
   schemas: readonly Versioned<MetadataSchemaDefinition>[],
   fields: readonly Versioned<FieldDefinition>[],
 ): DefinitionRef[] {
-  const schemaById = byId(schemas, 'schema');
-  const fieldById = byId(fields, 'field');
+  const schemaById = indexDefinitions('schema', schemas, (each) => each.definition.id);
+  const fieldById = indexDefinitions('field', fields, (each) => each.definition.id);
   const refs = new Map<string, DefinitionRef>();
   const add = (kind: DefinitionKind, id: string, version: string) =>
     refs.set(`${kind}:${id}`, { kind, id, version });
 
   add('componentType', type.definition.id, type.version);
   for (const assignment of type.definition.assignments) {
-    const schema = schemaById.get(assignment.schema);
-    if (!schema) {
-      throw new Error(
-        `Component type ${type.definition.id} assigns schema ${assignment.schema}, which was not supplied`,
-      );
-    }
+    const schema = requireDefinition(
+      schemaById,
+      assignment.schema,
+      `Component type ${type.definition.id} assigns schema ${assignment.schema}`,
+    );
     add('metadataSchema', schema.definition.id, schema.version);
     for (const entry of schema.definition.entries) {
-      const field = fieldById.get(entry.field);
-      if (!field) {
-        throw new Error(
-          `Schema ${schema.definition.id} groups field ${entry.field}, which was not supplied`,
-        );
-      }
+      const field = requireDefinition(
+        fieldById,
+        entry.field,
+        `Schema ${schema.definition.id} groups field ${entry.field}`,
+      );
       add('field', field.definition.id, field.version);
     }
   }
@@ -61,20 +60,6 @@ export function definitionsFor(
   return [...refs.values()].sort(
     (a, b) => compare(a.kind, b.kind) || compare(a.id, b.id) || compare(a.version, b.version),
   );
-}
-
-function byId<T extends { readonly id: string }>(
-  list: readonly Versioned<T>[],
-  kind: string,
-): Map<string, Versioned<T>> {
-  const map = new Map<string, Versioned<T>>();
-  for (const each of list) {
-    if (map.has(each.definition.id)) {
-      throw new Error(`Two versions of ${kind} ${each.definition.id} were supplied`);
-    }
-    map.set(each.definition.id, each);
-  }
-  return map;
 }
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
