@@ -15547,6 +15547,12 @@
       "kind": "title"
     },
     {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/check-assignment.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
       "id": "MET-004",
       "file": "packages/domain/src/metadata/check-value.test.ts",
       "line": 32,
