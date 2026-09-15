@@ -15607,6 +15607,42 @@
       "kind": "title"
     },
     {
+      "id": "MET-005",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 36,
+      "kind": "title"
+    },
+    {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "MET-022",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "MET-030",
+      "file": "packages/domain/src/metadata/schema.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
       "id": "CNT-011",
       "file": "packages/domain/src/stored/canonical.test.ts",
       "line": 6,
