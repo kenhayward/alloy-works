@@ -87,7 +87,7 @@ describe('the citations in the committed model', () => {
   // final review's fix wave then drops one more: migrate.test.ts's only MET-006 citation, ruled a
   // mention of a nearby requirement rather than a demonstration of its own, taking 104 to 103.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(106);
+    expect(model.citations).toHaveLength(111);
   });
 
   it('cites no identifier the corpus does not hold', () => {
