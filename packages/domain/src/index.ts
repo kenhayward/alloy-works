@@ -3,6 +3,18 @@ export * from './content/model/index.js';
 // Metadata: which fields apply to a component, what makes a value valid, and what a version records.
 export * from './metadata/index.js';
 
+// The whole version, as its digest serialises it (ADR-0024). The caller hashes.
+export {
+  canonicaliseVersion,
+  canonicaliseVersionContent,
+  componentTypeOf,
+} from './version/substance.js';
+export type {
+  ComponentSubstance,
+  DefinitionSubstance,
+  VersionSubstance,
+} from './version/substance.js';
+
 // Scaffolding. This is NOT the content model - see docs/design/content-model.md for that, and
 // CLAUDE.md for why this exists. `apps/web` still uses it; retiring it is that app's change.
 export {

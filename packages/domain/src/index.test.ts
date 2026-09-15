@@ -42,6 +42,10 @@ describe('the domain package', () => {
         'readDefinition',
         'resolveComponentFields',
         'validate',
+        // The version record's serialisation, promoted in the storage plan that composes it.
+        'canonicaliseVersion',
+        'canonicaliseVersionContent',
+        'componentTypeOf',
         // Scaffolding, and not a decision about the content model. See CLAUDE.md.
         'componentSchema',
         'componentTypes',
