@@ -15607,6 +15607,30 @@
       "kind": "title"
     },
     {
+      "id": "MET-002",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 83,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "MET-017",
+      "file": "packages/domain/src/metadata/migrate.test.ts",
+      "line": 101,
+      "kind": "title"
+    },
+    {
       "id": "MET-005",
       "file": "packages/domain/src/metadata/schema.test.ts",
       "line": 36,

@@ -1,0 +1,17 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "type-protocol-section",
+    "name": "Protocol section",
+    "assignments": [
+      { "schema": "schema-regulatory", "requires": [] },
+      { "schema": "schema-review", "requires": ["field-reviewers"] }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "type-untyped",
+    "name": "Untyped",
+    "assignments": []
+  }
+]
