@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.19.0 - 2026-09-15 (PR #97)
+
+### Added
+
+- **The rules for a component's metadata**, in `packages/domain/src/metadata/`, built from
+  [the metadata design](docs/design/metadata.md). Fields, metadata schemas and component types are
+  definitions that record the version of their own format and are read forward from it, with a stored
+  example of each kept for good.
+- **Validation that reports every problem at once**, each naming the field, the rule and, where a schema
+  made the rule, every schema that did. A number is held as the decimal text entered, so a value such
+  as 0.1 is never changed by rounding, and a date and time must say its offset from UTC.
+- **Carrying values into the next version without changing any value that is there**: a cleared value
+  stays cleared, a field with no value takes its default, and a value whose field no longer applies is
+  recorded with the version rather than lost.
+- **A check that every person named in a value belongs to the organisation**, which still accepts a
+  person who has since left.
+- Nothing in the application shows or stores metadata yet; these are the rules the editor, the service
+  and publishing will share.
+
+### Changed
+
+- The content model's canonical form and its migration chain are now shared with metadata. Content
+  serialises and migrates exactly as before.
+
 ## 0.18.4 - 2026-09-15 (PR #96)
 
 ### Added
