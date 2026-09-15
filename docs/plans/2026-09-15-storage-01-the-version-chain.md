@@ -2437,7 +2437,7 @@ the database, on this Windows 11 machine running Docker Desktop (the compose Pos
 reports 8 CPUs and 9.7 GB of memory, the compose image's PostgreSQL 17.11 with its default
 `shared_buffers` of 128 MB, Node 24.16. Loading took 754.2 seconds. The first run, over the statements,
 gave a cut p95 of 6.01 ms, an open p95 of 3.41 ms, a document p95 of 224.4 ms, a digests p95 of 21.6 ms
-and a 30.7 GB projection; the comparison paragraph after the table is against that run.
+and a 30.7 GB projection. The comparison paragraph after the table is against the plan author's reference run, not this machine's.
 
 | Loaded                   | Measured                                                |
 | ------------------------ | ------------------------------------------------------- |
