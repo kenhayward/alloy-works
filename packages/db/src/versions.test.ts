@@ -8,6 +8,7 @@ import {
   type FieldDefinition,
   type MetadataSchemaDefinition,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
@@ -168,7 +169,13 @@ describe('creating and reading versions', () => {
   });
 
   it('VER-007 records who cut a version, when, and the note when there is one', async () => {
-    const before = Date.now();
+    // The database's clock, not the host's: Docker Desktop's VM clock can drift from the host's.
+    const now = () =>
+      service.withTenant(production, async (trx) => {
+        const { rows } = await sql<{ now: Date }>`select now() as now`.execute(trx);
+        return rows[0]!.now.getTime();
+      });
+    const before = await now();
     const noted = await create(production, {
       author,
       note: 'First draft',
@@ -176,11 +183,18 @@ describe('creating and reading versions', () => {
       substance: substance(),
     });
     const plain = await create(production, { author, spaceId, substance: substance() });
+    const after = await now();
 
     expect(noted).toMatchObject({ author, note: 'First draft' });
     expect(plain).toMatchObject({ author, note: null });
-    expect(noted.createdAt.getTime()).toBeGreaterThanOrEqual(before - 5_000);
-    expect(noted.createdAt.getTime()).toBeLessThanOrEqual(Date.now() + 5_000);
+    expect(noted.createdAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(noted.createdAt.getTime()).toBeLessThanOrEqual(after);
+  });
+
+  it('refuses an empty note, which is a caller leaving out a note it does not have', async () => {
+    await expect(
+      create(production, { author, note: '', spaceId, substance: substance() }),
+    ).rejects.toThrow(/A version's note is left out when there is none, never an empty string/);
   });
 
   it('VER-010 records the schema version the content was written against', async () => {
@@ -212,11 +226,51 @@ describe('creating and reading versions', () => {
     );
     expect(stored.content).toMatchObject({ title: 'Dosing', language: 'en-GB', schemaVersion: 1 });
     expect(stored.schemaVersion).toBe(1);
+
+    // Closed: a structural attribute the set does not name is refused, not stored beside the rest.
+    const widened = { ...content('Dosing'), audience: 'Clinicians' };
+    await expect(
+      create(production, {
+        author,
+        spaceId,
+        substance: substance({ content: widened as ComponentSubstance['content'] }),
+      }),
+    ).rejects.toThrow(/audience/);
   });
 
   it('records every definition version the component was written against, as the digest names them', async () => {
     const stored = await create(production, { author, spaceId, substance: substance() });
     expect(stored.definitions).toEqual(definitions);
+  });
+
+  it('refuses a component naming a definition by anything but a lower-case hyphenated UUID, naming it', async () => {
+    const field = definitions.find((each) => each.kind === 'field')!;
+    const shouted = definitions.map((each) =>
+      each.kind === 'field' ? { ...each, version: each.version.toUpperCase() } : each,
+    );
+    await expect(
+      create(production, { author, spaceId, substance: substance({ definitions: shouted }) }),
+    ).rejects.toThrow(
+      `A component version names each definition by lower-case hyphenated UUIDs, not field ${field.id} at ${field.version.toUpperCase()}`,
+    );
+
+    const braced = definitions.map((each) =>
+      each.kind === 'field' ? { ...each, id: `{${each.id}}` } : each,
+    );
+    await expect(
+      create(production, { author, spaceId, substance: substance({ definitions: braced }) }),
+    ).rejects.toThrow(`not field {${field.id}} at ${field.version}`);
+  });
+
+  it('recomputes both digests from a version read back in another transaction', async () => {
+    const created = await create(production, { author, spaceId, substance: substance() });
+    const read = (await service.withTenant(production, (trx) =>
+      readVersion(trx, created.id),
+    )) as StoredVersion;
+    expect(versionDigests(substanceOf(read))).toEqual({
+      contentHash: created.contentHash,
+      versionDigest: created.versionDigest,
+    });
   });
 
   it('refuses a component version naming a definition version this tenant does not hold', async () => {

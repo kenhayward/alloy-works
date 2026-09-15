@@ -73,6 +73,15 @@ const definitionSchemas = {
  */
 function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'component') {
+    // Postgres reads any spelling of a UUID and answers in this one, so a definition named any other
+    // way would be stored in a spelling its digest was not computed over.
+    for (const each of substance.definitions) {
+      if (!UUID.test(each.id) || !UUID.test(each.version)) {
+        throw new Error(
+          `A component version names each definition by lower-case hyphenated UUIDs, not ${each.kind} ${each.id} at ${each.version}`,
+        );
+      }
+    }
     componentTypeOf(substance.definitions);
     return { ...substance, content: parseContentDocument(substance.content) };
   }
@@ -85,14 +94,21 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   return { kind: substance.kind, content } as VersionSubstance;
 }
 
+/** A caller with no note leaves it out: the column refuses an empty one, and says so opaquely. */
+function checkAuthorship(authorship: Authorship): void {
+  if (authorship.note === '') {
+    throw new Error(`A version's note is left out when there is none, never an empty string`);
+  }
+}
+
 async function insertVersion(
   trx: TenantTransaction,
   artifactId: string,
   numbering: { readonly revision: number; readonly version: number },
   authorship: Authorship,
   substance: VersionSubstance,
+  digests = versionDigests(substance),
 ): Promise<StoredVersion> {
-  const digests = versionDigests(substance);
   const component = substance.kind === 'component' ? substance : undefined;
   const row = await trx
     .insertInto('artifact_version')
@@ -143,6 +159,7 @@ export async function createArtifact(
   trx: TenantTransaction,
   input: NewArtifact,
 ): Promise<StoredVersion> {
+  checkAuthorship(input);
   const substance = prepare(input.substance);
   const artifact = await trx
     .insertInto('artifact')
@@ -269,6 +286,13 @@ export async function recordVersion(
   input: NextVersion,
 ): Promise<RecordAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
+  checkAuthorship(input);
+  // Compared with the latest version's id as Postgres spells it, so any other spelling is a bug.
+  if (!UUID.test(input.openedFrom)) {
+    throw new Error(
+      `A version cannot be opened from ${input.openedFrom}, which is not a lower-case hyphenated UUID`,
+    );
+  }
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${input.artifactId}`}, 0))`.execute(
     trx,
   );
@@ -287,7 +311,8 @@ export async function recordVersion(
       `A version of ${input.artifactId} cannot carry the identity ${substance.content.id}`,
     );
   }
-  if (versionDigests(substance).versionDigest === current.versionDigest) {
+  const digests = versionDigests(substance);
+  if (digests.versionDigest === current.versionDigest) {
     return { answer: 'version.unchanged', current };
   }
   const version = await insertVersion(
@@ -296,6 +321,7 @@ export async function recordVersion(
     { revision: current.revision, version: current.version + 1 },
     input,
     substance,
+    digests,
   );
   return { answer: 'recorded', version };
 }

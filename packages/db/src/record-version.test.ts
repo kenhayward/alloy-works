@@ -259,6 +259,33 @@ describe('recording the next version', () => {
     ).rejects.toThrow(/is a component, not a field/);
   });
 
+  it('refuses a read-back resubmitted with its UUIDs upper-cased, rather than cutting a version of it', async () => {
+    const first = await created();
+    const shouted = first.definitions.map((each) => ({
+      ...each,
+      id: each.id.toUpperCase(),
+      version: each.version.toUpperCase(),
+    }));
+    await expect(
+      record(production, next(first, { substance: substance({ definitions: shouted }) })),
+    ).rejects.toThrow(/names each definition by lower-case hyphenated UUIDs/);
+    await expect(
+      record(production, next(first, { openedFrom: first.id.toUpperCase() })),
+    ).rejects.toThrow(
+      `opened from ${first.id.toUpperCase()}, which is not a lower-case hyphenated UUID`,
+    );
+    await service.withTenant(production, async (trx) => {
+      expect(await latestVersion(trx, first.artifactId)).toEqual(first);
+    });
+  });
+
+  it('refuses an empty note, even on a version that says nothing new', async () => {
+    const first = await created();
+    await expect(record(production, next(first, { note: '' }))).rejects.toThrow(
+      /A version's note is left out when there is none, never an empty string/,
+    );
+  });
+
   it('answers artifact.missing for an artifact this tenant does not hold', async () => {
     expect(
       await record(production, { ...next(await created()), artifactId: randomUUID() }),
