@@ -15585,7 +15585,7 @@
     {
       "id": "MET-030",
       "file": "packages/domain/src/metadata/check-value.test.ts",
-      "line": 78,
+      "line": 83,
       "kind": "title"
     },
     {
@@ -15628,12 +15628,6 @@
       "id": "MET-002",
       "file": "packages/domain/src/metadata/migrate.test.ts",
       "line": 24,
-      "kind": "title"
-    },
-    {
-      "id": "MET-006",
-      "file": "packages/domain/src/metadata/migrate.test.ts",
-      "line": 83,
       "kind": "title"
     },
     {
@@ -15711,13 +15705,13 @@
     {
       "id": "MET-009",
       "file": "packages/domain/src/metadata/schema.test.ts",
-      "line": 137,
+      "line": 146,
       "kind": "title"
     },
     {
       "id": "MET-010",
       "file": "packages/domain/src/metadata/schema.test.ts",
-      "line": 121,
+      "line": 130,
       "kind": "title"
     },
     {
@@ -15729,7 +15723,7 @@
     {
       "id": "MET-030",
       "file": "packages/domain/src/metadata/schema.test.ts",
-      "line": 103,
+      "line": 112,
       "kind": "title"
     },
     {

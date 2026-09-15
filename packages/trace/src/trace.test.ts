@@ -80,12 +80,14 @@ describe('the citations in the committed model', () => {
   // and third one in the Word and Typst projection tests - would move this count without moving
   // that one. Pinned so a citation quietly lost (a test renamed, a title's identifier dropped) fails
   // here rather than nowhere.
-  // 104, from 61: the metadata rules (docs/plans/2026-09-15-metadata-01-the-rules.md) add 43
+  // 103, from 61: the metadata rules (docs/plans/2026-09-15-metadata-01-the-rules.md) add 43
   // citations across the metadata test files, fewer than the plan's predicted 112 - implementation
   // dropped several titles' requirement identifiers under the controller's rule that a test cites a
-  // requirement only when it demonstrates that requirement's own statement, not one nearby.
+  // requirement only when it demonstrates that requirement's own statement, not one nearby. The
+  // final review's fix wave then drops one more: migrate.test.ts's only MET-006 citation, ruled a
+  // mention of a nearby requirement rather than a demonstration of its own, taking 104 to 103.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(104);
+    expect(model.citations).toHaveLength(103);
   });
 
   it('cites no identifier the corpus does not hold', () => {

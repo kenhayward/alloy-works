@@ -17,8 +17,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Carrying values into the next version without changing any value that is there**: a cleared value
   stays cleared, a field with no value takes its default, and a value whose field no longer applies is
   recorded with the version rather than lost.
-- **A check that every person named in a value belongs to the organisation**, which still accepts a
-  person who has since left.
+- **A check that every person named in a value names a known user**, which still accepts a person who
+  has since left.
 - Nothing in the application shows or stores metadata yet; these are the rules the editor, the service
   and publishing will share.
 

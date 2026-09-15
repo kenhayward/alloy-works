@@ -3,7 +3,7 @@
 > Status: scaffolding, plus the content model's stored shape and the metadata rules. The workspaces, the
 > split between web and desktop, and the seam between them are real and tested, and so are the schema a
 > component's content is held in - [the content model](#the-content-model) below - and the rules deciding
-> its metadata - [metadata](#metadata). Nothing authors either, stores it or publishes it yet. The single
+> its metadata - [metadata](#metadata). Nothing authors, stores or publishes either yet. The single
 > `Component` beside it in `packages/domain` is still the scaffolding that
 > proved the path end to end, and is not a decision about content.
 >
@@ -109,22 +109,27 @@ makes a value valid, and what a version records about the definitions it was wri
 in [`design/metadata.md`](design/metadata.md). They are pure functions over definition payloads a
 caller hands in. Nothing stores a definition or a value, no route calls them, and no panel shows them.
 
-| File                  | Holds                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `lexical.ts`          | The forms a value takes: a decimal as a canonical string, a date, a time, a date and time with its offset     |
-| `definition.ts`       | The definition schema version every field, schema and component type records                                  |
-| `field.ts`            | Seven closed data types, and the field definition. No `pattern` yet                                           |
-| `schema.ts`           | The metadata schema definition, and `checkSchema`, which checks each default against its field                |
-| `component-type.ts`   | The component type definition, whose assignments name a schema and the fields they require                    |
-| `migrate.ts`          | The migration chain per definition kind, applied on read, and `readDefinition`'s report                       |
-| `check-value.ts`      | `checkValue(field, value)`: the field's own rules, and nothing else                                           |
-| `resolve.ts`          | `resolveComponentFields`, and the error a default it cannot use throws - disagreeing, or refused by its field |
-| `check-assignment.ts` | `checkAssignment`: a stray `requires`, and a default that disagrees with one already assigned                 |
-| `validate.ts`         | `validate(effective, values)`: every failure, each naming the schemas behind a schema's rule                  |
-| `users.ts`            | `checkUserValues` over a lookup the service supplies, and `principalIdsIn` to load it in one query            |
-| `carry.ts`            | `carryForward`: what the next version holds, and `notCarried`                                                 |
-| `record.ts`           | `definitionsFor`, and the canonical form of values and `notCarried` in the version digest                     |
-| `fixtures/v1/`        | Stored definitions at definition schema version 1, never deleted                                              |
+| File                  | Holds                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `lexical.ts`          | The forms a value takes: a decimal as a canonical string, a date, a time, a date and time with its offset                              |
+| `definition.ts`       | The definition schema version every field, schema and component type records                                                           |
+| `field.ts`            | Seven closed data types, and the field definition. No `pattern` yet                                                                    |
+| `schema.ts`           | The metadata schema definition, and `checkSchema`, which checks each default against its field                                         |
+| `component-type.ts`   | The component type definition, whose assignments name a schema and the fields they require                                             |
+| `migrate.ts`          | The migration chain per definition kind, applied on read, and `readDefinition`'s report                                                |
+| `failure.ts`          | `MetadataFailure`, its stable `code` and the rule union, and `failure()` to build one - the shape the service's error shape will carry |
+| `check-value.ts`      | `checkValue(field, value)`: the field's own rules, and nothing else                                                                    |
+| `values.ts`           | `MetadataValues`, `hasMember`, `isClear`, `isUserValue` and `sameValue` - the value-shape rules the rest of the package shares         |
+| `resolve.ts`          | `resolveComponentFields`, and the error a default it cannot use throws - disagreeing, or refused by its field                          |
+| `check-assignment.ts` | `checkAssignment`: a stray `requires`, and a default that disagrees with one already assigned                                          |
+| `validate.ts`         | `validate(effective, values)`: every failure, each naming the schemas behind a schema's rule                                           |
+| `users.ts`            | `checkUserValues` over a lookup the service supplies, and `principalIdsIn` to load it in one query                                     |
+| `carry.ts`            | `carryForward`: what the next version holds, and `notCarried`                                                                          |
+| `record.ts`           | `definitionsFor`, and the canonical form of values and `notCarried` in the version digest                                              |
+| `fixtures/v1/`        | Stored definitions at definition schema version 1, never deleted                                                                       |
+
+The canonical form and the migration chain both rest on `packages/domain/src/stored/`, shared with the
+content model - see [above](#the-content-model).
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
