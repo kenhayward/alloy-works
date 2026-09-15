@@ -136,6 +136,25 @@ The permanent record every versioned thing is kept in, designed in
 iterations, revisions or baselines, because each of those refers to a version row and none of them can be
 built against a table that does not exist.
 
-| #   | Plan                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Status  |
-| --- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | [The version chain](2026-09-15-storage-01-the-version-chain.md) | The canonical serialisation of a whole version in `packages/domain`; in `packages/db`, both digests, `space` and `artifact`, the insert-only `artifact_version` and `version_definition`, `createArtifact`, `readVersion`, `latestVersion` and `recordVersion` with its `version.unchanged` and `version.precondition` answers - and, before those functions, a load test of inline JSONB at 200,000 components. No iteration, lock, revision, baseline or route | Planned |
+| #   | Plan                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Status         |
+| --- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | [The version chain](2026-09-15-storage-01-the-version-chain.md) | The canonical serialisation of a whole version in `packages/domain`; in `packages/db`, both digests, `space` and `artifact`, the insert-only `artifact_version` and `version_definition`, `createArtifact`, `readVersion`, `latestVersion` and `recordVersion` with its `version.unchanged` and `version.precondition` answers - and, before those functions, a load test of inline JSONB at 200,000 components. No iteration, lock, revision, baseline or route | Built (PR #98) |
+
+Eleven things plan 1 deliberately leaves, named so the next plan starts from a list rather than from a
+reading of the diff: iterations, the lock, and the cut that promotes the latest iteration - checking the
+lock, loading `definitionsFor`, running `carryForward` and calling `recordVersion` - and whether the
+store refuses a component version whose component type differs from its predecessor's, all the editor
+session plan's; revisions and designations, the lifecycle service's gate, and the numbering of a version
+cut after a designation, the revisions plan's; baselines, the condition set, and the foreign keys that
+make a pinned version undeletable - already in place on `artifact_version` - the baselines plan's;
+restore, legal hold and retention, which the design does not yet answer, each its own plan's; derived
+data - `embedding`, keyed by content hash, block id, model and model version - the search plan's, with
+`content_hash` already on every row for it; the other artifact kinds - documents, outlines, templates,
+assets, query definitions, style catalogues, themes and layouts - each a migration widening `artifact`'s
+two checks when its content has a shape; roles, grants, groups and `decide`, who may create a space, the
+_General_ space every tenant starts with, and a space's name folding, the access plan's; every route and
+every screen, idempotency, and the error shape `version.unchanged` and `version.precondition` travel in,
+the editor session plan's, with the service; erasure - what is removed from a principal and what the
+record keeps; a cold cache at a million components, unmeasured and belonging with the hosting decision;
+and deduplicating content, whose cost the load test measured without yet being worth a content-addressed
+store.
