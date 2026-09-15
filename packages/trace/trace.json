@@ -15547,6 +15547,18 @@
       "kind": "title"
     },
     {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/carry.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-036",
+      "file": "packages/domain/src/metadata/carry.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
       "id": "MET-009",
       "file": "packages/domain/src/metadata/check-assignment.test.ts",
       "line": 21,
