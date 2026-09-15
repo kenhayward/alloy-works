@@ -12,7 +12,7 @@ import {
 } from './lexical.js';
 
 describe('the lexical forms of metadata values', () => {
-  it('MET-002 holds a number as a canonical decimal string, never a JSON number', () => {
+  it('holds a number as a canonical decimal string, never a JSON number', () => {
     for (const value of ['0', '7', '-7', '0.1', '-0.25', '120', '9007199254740993']) {
       expect(isCanonicalDecimal(value), value).toBe(true);
     }
@@ -21,7 +21,7 @@ describe('the lexical forms of metadata values', () => {
     }
   });
 
-  it('MET-002 canonicalises a number as entered without changing its value', () => {
+  it('canonicalises a number as entered without changing its value', () => {
     expect(canonicaliseDecimal('007.50')).toBe('7.5');
     expect(canonicaliseDecimal('-0.000')).toBe('0');
     expect(canonicaliseDecimal('.5')).toBe('0.5');
@@ -31,7 +31,7 @@ describe('the lexical forms of metadata values', () => {
     expect(canonicaliseDecimal('.')).toBeUndefined();
   });
 
-  it('MET-002 compares decimals exactly, beyond what a float can hold', () => {
+  it('compares decimals exactly, beyond what a float can hold', () => {
     expect(compareDecimal('9007199254740993', '9007199254740992')).toBeGreaterThan(0);
     expect(compareDecimal('0.1', '0.10000000000000001')).toBeLessThan(0);
     expect(compareDecimal('-2', '-10')).toBeGreaterThan(0);
@@ -51,7 +51,7 @@ describe('the lexical forms of metadata values', () => {
     expect(isIsoTime('09:30:15+01:00')).toBe(false);
   });
 
-  it('MET-002 refuses a date that is not a calendar day, and a time that is not a time of day', () => {
+  it('refuses a date that is not a calendar day, and a time that is not a time of day', () => {
     expect(isIsoDate('2024-02-29')).toBe(true);
     expect(isIsoDate('2026-02-29')).toBe(false);
     expect(isIsoDate('1900-02-29')).toBe(false);

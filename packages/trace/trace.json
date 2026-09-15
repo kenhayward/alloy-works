@@ -15547,12 +15547,6 @@
       "kind": "title"
     },
     {
-      "id": "MET-002",
-      "file": "packages/domain/src/metadata/lexical.test.ts",
-      "line": 15,
-      "kind": "title"
-    },
-    {
       "id": "MET-028",
       "file": "packages/domain/src/metadata/lexical.test.ts",
       "line": 44,
