@@ -127,3 +127,15 @@ refusing an assignment (MET-008), a schema version that conflicts anywhere (MET-
 version that would make a schema's default invalid (MET-037), which `checkAssignment` and resolution
 find but nothing acts on until the definitions-management design exists; and whether `text` needs a
 language, metadata.md's second open question.
+
+## Storage
+
+The permanent record every versioned thing is kept in, designed in
+[storage-and-versioning.md](../design/storage-and-versioning.md) under
+[ADR-0024](../decisions/0024-a-version-digest-over-the-whole-version.md). The chain comes first, before
+iterations, revisions or baselines, because each of those refers to a version row and none of them can be
+built against a table that does not exist.
+
+| #   | Plan                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Status  |
+| --- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [The version chain](2026-09-15-storage-01-the-version-chain.md) | The canonical serialisation of a whole version in `packages/domain`; in `packages/db`, both digests, `space` and `artifact`, the insert-only `artifact_version` and `version_definition`, `createArtifact`, `readVersion`, `latestVersion` and `recordVersion` with its `version.unchanged` and `version.precondition` answers - and, before those functions, a load test of inline JSONB at 200,000 components. No iteration, lock, revision, baseline or route | Planned |
