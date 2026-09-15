@@ -15625,6 +15625,42 @@
       "kind": "title"
     },
     {
+      "id": "MET-006",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 179,
+      "kind": "title"
+    },
+    {
+      "id": "MET-007",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "MET-009",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "MET-010",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
+      "id": "MET-013",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 143,
+      "kind": "title"
+    },
+    {
+      "id": "MET-017",
+      "file": "packages/domain/src/metadata/resolve.test.ts",
+      "line": 214,
+      "kind": "title"
+    },
+    {
       "id": "MET-005",
       "file": "packages/domain/src/metadata/schema.test.ts",
       "line": 36,
