@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.18.3 - 2026-09-15 (PR #95)
+
+### Added
+
+- A design for metadata: which fields apply to a component, what makes a value valid, how values carry
+  into the next version, and how a cleared value stays cleared. Revised against its review, which is
+  kept alongside it.
+- A design for the component editor: the editing surface, the lock, continuous saving, cutting a
+  version, and the metadata panel. Revised against its review, which is kept alongside it.
+
+### Changed
+
+- Two spelling requirements are replaced, because the spellchecker built into browsers and the desktop
+  cannot check each passage in its own language. A passage in another language is now not checked
+  rather than wrongly flagged, and the desktop checks the languages the open components are written in.
+
 ## 0.18.2 - 2026-09-14 (PR #94)
 
 ### Fixed

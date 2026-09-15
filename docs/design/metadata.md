@@ -1,9 +1,5 @@
 # Metadata
 
-> **Status: DRAFT for review.** Committed as it stood when handed over, so `git diff` shows exactly
-> what changed. Edit anything directly; where you want to say something rather than change it, add a
-> line starting `> **Ken:**` under the paragraph or table it is about.
-
 The rules that decide which fields apply to a component, what makes a value valid, and what a version
 records about the definitions it was written against.
 

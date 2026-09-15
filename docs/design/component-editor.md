@@ -1,10 +1,5 @@
 # The component editor and its editing session
 
-> **Status: DRAFT, reviewed.** [The review](../reviews/design-reviews/component-editor.md) is
-> answered in [section Review](#review), point by point. Committed as it stood when handed over, so
-> `git diff` shows exactly what changed. Edit anything directly; where you want to say something rather
-> than change it, add a line starting `> **Ken:**` under the paragraph or table it is about.
-
 Editing one component, end to end: the surface an author types into, the lock that makes them the one
 editing it, continuous saving, cutting a version, and the component's type and metadata alongside its
 content.
@@ -54,7 +49,7 @@ noticed and explained rather than discovered at a refusal.
 | **COL-011** | The lock is a row per component; nothing locks a document                                                                                                                                        |
 | **API-039** | The service checks the lock on every mutating component request and refuses one from anybody but the holder with `lock.held`, naming the holder and the expected release                         |
 | **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it             |
-| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration whose value for it differs from the default, naming field and schema              |
+| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration or a cut whose value for it differs from the default, naming field and schema     |
 | **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                                          |
 | **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                        |
 | **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - on entry, and on load for any equation that lacks one - stored as `alttext`, and always editable      |
