@@ -49,22 +49,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is set aside and reported rather than quietly repaired. Every construct has a checked route into Word
   and into tagged PDF. It is pure TypeScript: no React, no Electron, no filesystem.
 
-  **This is the shape, not the product.** Nothing authors this content, stores it, imports it from
-  another format or publishes it yet.
+  **This is the shape, not the product.** Nothing authors this content, imports it from another format
+  or publishes it yet, and the store below holds it only when a test puts it there.
 
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
 
-- No content storage, persistence, import or export. The content model above defines the shape; nothing
-  writes it to a database, reads it from a Word file or sends it anywhere. The one sample document is a
-  fixed template with no content of yours in it.
+- No content storage anybody can use. A store of versioned artifacts exists - components and the
+  definitions they are written against, each version kept for good - and nothing uses it yet: no route
+  writes to it and no editor reads from it. Nothing imports content from a Word file or exports it
+  anywhere. The one sample document is a fixed template with no content of yours in it.
 - No authoring UI - no editor, no component tree, no reuse or transclusion.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search, no metadata, no taxonomy, no workflow, no versioning of content beyond the `version`
-  counter on a single component. Numbering, cross-reference resolution, conditional text and suggestion
+- No search, no metadata, no taxonomy, no workflow, and no versioning of content anybody can use: the
+  store above keeps versions, and nothing cuts one. Numbering, cross-reference resolution, conditional text and suggestion
   handling are all described in the content model and none of them runs: content can say a paragraph
   refers to a figure, and nothing resolves it.
 - No signed or published release - the installer builds locally and is unsigned.

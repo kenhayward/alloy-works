@@ -187,10 +187,20 @@ values, what was not carried, and the definitions as a set - and decides whether
 content hash is over content alone and will key derived data. Authorship is in neither. Both are
 recomputable from a row read back, by `versionDigests(substanceOf(row))`.
 
-**What a version records is checked by the database.** A version's kind is its artifact's; only a
-component records a component type or carries values; its schema version is its content's; and each
-recorded definition's kind, identifier and version are exactly a stored definition version's, by a
-composite foreign key. A definition's payload `id` is its artifact's id.
+**The database checks the shape of what a version records, not its substance.** It checks that a
+version's kind is its artifact's; that only a component records a component type or carries values,
+held as an object and a list; that its schema version is its content's; that each recorded
+definition's kind, identifier and version are exactly a stored definition version's, by a composite
+foreign key; and that a component's type is the component type version it records among those
+definitions, by a key checked at commit (`artifact_version_component_type_recorded`). It does not
+check the content against the content model, that a definition's payload `id` is its artifact's id,
+that every identifier is spelled as a lower-case hyphenated UUID, or that the digests match the row:
+`createArtifact` and `recordVersion` do those before they write, and anybody holding the row can
+recompute the digests. **One gap is named rather than closed:** nothing refuses a later transaction
+inserting a `version_definition` row against a version already cut. The version digest detects it, since
+the definitions are part of what it covers, but nothing prevents it; refusing it would take a trigger,
+which the plan's decision 5 disfavours. storage-and-versioning.md names the same gap beside VER-008 and
+VER-042.
 
 **Content is inline JSONB, and was measured before it was built on.** The load test's volumes,
 thresholds and result are in [the plan](plans/2026-09-15-storage-01-the-version-chain.md), task 5.

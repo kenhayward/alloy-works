@@ -5,8 +5,9 @@ revisable components that publications assemble rather than own - delivered as *
 application and a desktop application**.
 
 > **Status: research, and scaffolding.** One path runs end to end - open an environment, sign in,
-> ask for a document, watch a worker make it - and that is the whole of it. There is no content
-> storage, no authoring UI and no publishing yet.
+> ask for a document, watch a worker make it - and that is the whole of it. A store of versioned
+> content exists and nothing uses it yet: no route, no editor. There is no authoring UI and no
+> publishing yet.
 > [`docs/features.md`](docs/features.md) is explicit about what does and does not exist.
 
 ## What it is for
@@ -123,7 +124,7 @@ apps/
   worker/     @alloy-works/worker   Claims queued jobs and runs them; carries the pinned Typst.
 packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
-  db/         @alloy-works/db       Roles, tenants, migrations, withTenant. Node and pg.
+  db/         @alloy-works/db       Roles, tenants, migrations, withTenant; the version store, unused yet.
   api-contract/ @alloy-works/api-contract  Routes as zod schemas; the generated openapi.json.
   api-client/ @alloy-works/api-client  The generated client, and the live stream reader.
   stand-in-idp/ @alloy-works/stand-in-idp  A sign-in provider with invented people, for development.

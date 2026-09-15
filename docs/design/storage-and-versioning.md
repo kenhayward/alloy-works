@@ -54,6 +54,16 @@ designation applied to a row in that chain rather than a second history beside i
 | **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                        |
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                          |
 
+**A gap beside VER-008 and VER-042: a definition can be recorded against a version already cut.**
+`version_definition` takes inserts only, on the same terms as the version row, but an insert naming a
+`version_id` that an earlier transaction committed is not refused, so what an old version records can
+be added to. The version digest detects it - the definitions a version records are part of what it
+covers, so recomputing it from the row no longer matches the digest the row carries - and nothing
+prevents it. Refusing it in the database would take a trigger, which
+[the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)'s decision 5 disfavours,
+or a closed record of the definitions on the version row itself. Until a design chooses, both claims
+stand on the grant and the digest, and this is what they do not cover.
+
 **VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that
 with VER-023's foreign key. VER-044 records why that answer was aimed at nothing: a restore inserts a

@@ -101,6 +101,33 @@ describe('the canonical serialisation of a whole version', () => {
     ).toBe(canonicaliseVersion(component));
   });
 
+  it('orders two definitions of one kind by identifier, whatever order they were listed in', () => {
+    const serialised = canonicaliseVersion({
+      ...component,
+      definitions: [
+        { kind: 'componentType', id: 'type-protocol', version: TYPE },
+        // Listed in reverse identifier order, and with versions that sort the other way round.
+        { kind: 'field', id: 'field-study', version: SCHEMA },
+        { kind: 'field', id: 'field-dose', version: FIELD },
+        { kind: 'metadataSchema', id: 'schema-reg', version: SCHEMA },
+      ],
+    });
+    expect(serialised).toContain(
+      '"definitions":[{"id":"type-protocol","kind":"componentType","version":"' +
+        TYPE +
+        '"},' +
+        '{"id":"field-dose","kind":"field","version":"' +
+        FIELD +
+        '"},' +
+        '{"id":"field-study","kind":"field","version":"' +
+        SCHEMA +
+        '"},' +
+        '{"id":"schema-reg","kind":"metadataSchema","version":"' +
+        SCHEMA +
+        '"}]',
+    );
+  });
+
   it('refuses two versions of one definition, which would record neither honestly', () => {
     expect(() =>
       canonicaliseVersion({

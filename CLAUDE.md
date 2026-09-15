@@ -10,7 +10,8 @@ independently revisable components that publications assemble rather than own - 
 a web application and a desktop application**.
 
 > **Status: scaffolding.** The workspaces, the split between web and desktop, and the seam between
-> them are real and tested. There is no content storage, no authoring UI and no publishing. The
+> them are real and tested. A store of versioned artifacts exists in `packages/db` and nothing uses it
+> yet - no route, no editor. There is no authoring UI and no publishing. The
 > single `Component` in `packages/domain` exists to prove the path end to end; it is not a decision
 > about the content model. [`docs/features.md`](docs/features.md) lists what does and does not exist.
 
