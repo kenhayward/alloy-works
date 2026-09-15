@@ -1,10 +1,11 @@
 # Architecture - the repository as built
 
-> Status: scaffolding, plus the content model's stored shape and the metadata rules. The workspaces, the
-> split between web and desktop, and the seam between them are real and tested, and so are the schema a
-> component's content is held in - [the content model](#the-content-model) below - and the rules deciding
-> its metadata - [metadata](#metadata). Nothing authors, stores or publishes either yet. The single
-> `Component` beside it in `packages/domain` is still the scaffolding that
+> Status: scaffolding, plus the content model's stored shape, the metadata rules and the version chain.
+> The workspaces, the split between web and desktop, and the seam between them are real and tested, and
+> so are the schema a component's content is held in - [the content model](#the-content-model) below -
+> the rules deciding its metadata - [metadata](#metadata) - and the insert-only chain its versions are
+> stored in - [the version chain](#the-version-chain). Nothing authors, cuts or publishes any of it yet.
+> The single `Component` beside it in `packages/domain` is still the scaffolding that
 > proved the path end to end, and is not a decision about content.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
@@ -22,10 +23,10 @@ One pnpm workspace, one lock file, eleven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                                                                               |
+| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the canonical serialisation of a whole version, the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                               |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data. Node and `pg`; no UI                                                                                                                                                                                                                                                                                                                                                                    |
+| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                                                                                                                            |
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas, and the OpenAPI document generated from them                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes, and the built renderer beside them                                                                                                                                                                                                                                                                                                                                                                                             |
 | `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only                                                                                                                                                                                                                                                                                                                                                                    |
@@ -46,7 +47,9 @@ the publishing pipeline first needs it.
 
 Dependencies point one way: `apps/web` depends on `@alloy-works/domain` and on
 `@alloy-works/api-client`, which is the only way it calls the service (API-001); `apps/desktop`
-depends on `@alloy-works/web` **for types only** (see the platform bridge below). The domain package
+depends on `@alloy-works/web` **for types only** (see the platform bridge below). `packages/db`
+depends on `@alloy-works/domain`, for the version's canonical serialisation and the schemas a
+version's content is checked against. The domain package
 depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
 along.
 
@@ -95,6 +98,8 @@ Hashing is deliberately not here. `canonicalise` returns a string and the caller
 `node:crypto` is not platform-free and `crypto.subtle` would make parsing async for nothing. The
 canonical rules and the migration chain themselves live in `packages/domain/src/stored/`, shared
 with the metadata definitions; `canonicalise` names `marks` as the one member whose array is a set.
+The whole version's serialisation is `packages/domain/src/version/`, and the hashing of it and of
+content is `packages/db/src/version-digest.ts`.
 
 **The content model spike's schema still stands beside this one**, in `packages/domain/src/content/`,
 with `compare.ts`, `resolve.ts`, `binding.ts`, the OOXML reader and writer, and the four gate-case
@@ -152,6 +157,54 @@ content and definitions alike, beside the canonical rules both serialise with.
 
 `pattern` does not exist yet: metadata.md's open question on bounding its backtracking is unanswered,
 and the field definition refuses one.
+
+## The version chain
+
+`packages/db` holds the permanent record every versioned thing is kept in, designed in
+[`design/storage-and-versioning.md`](design/storage-and-versioning.md) under
+[ADR-0024](decisions/0024-a-version-digest-over-the-whole-version.md). Two tenant migrations and five
+functions, each taking the transaction `withTenant` opened. Nothing calls them yet: no route cuts a
+version, and there is no iteration, lock, revision or baseline.
+
+| Where                                         | Holds                                                                                                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0007_spaces_and_artifacts` | `space`, name unique in the tenant; `artifact`, an id and a kind, in exactly one space for a component and in none for a field, schema or type             |
+| `migrations/tenant/0008_version_chain`        | `artifact_version` - numbers, author, time, note, schema version, content, values, what was not carried, the type, both digests - and `version_definition` |
+| `src/version-digest.ts`                       | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                              |
+| `src/spaces.ts`                               | `createSpace`                                                                                                                                              |
+| `src/versions.ts`                             | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`                                                              |
+| `src/load/`                                   | The load test, outside `pnpm test`: `pnpm --filter @alloy-works/db test:load`                                                                              |
+
+**Four properties, because each is a decision rather than an implementation detail.**
+
+**Insert-only is a grant.** The tenant's runtime role holds `INSERT` and `SELECT` on `artifact_version`
+and `version_definition` and nothing else, and no `UPDATE` on `artifact`; a test attempts each refused
+statement as that role. A correction is another version.
+
+**Two digests, each with one meaning.** The version digest is over the whole version - content, type,
+values, what was not carried, and the definitions as a set - and decides whether a version changed:
+`recordVersion` answers `version.unchanged` rather than inserting a version that says nothing new. The
+content hash is over content alone and will key derived data. Authorship is in neither. Both are
+recomputable from a row read back, by `versionDigests(substanceOf(row))`.
+
+**The database checks the shape of what a version records, not its substance.** It checks that a
+version's kind is its artifact's; that only a component records a component type or carries values,
+held as an object and a list; that its schema version is its content's; that each recorded
+definition's kind, identifier and version are exactly a stored definition version's, by a composite
+foreign key; and that a component's type is the component type version it records among those
+definitions, by a key checked at commit (`artifact_version_component_type_recorded`). It does not
+check the content against the content model, that a definition's payload `id` is its artifact's id,
+that every identifier is spelled as a lower-case hyphenated UUID, or that the digests match the row:
+`createArtifact` and `recordVersion` do those before they write, and anybody holding the row can
+recompute the digests. **One gap is named rather than closed:** nothing refuses a later transaction
+inserting a `version_definition` row against a version already cut. The version digest detects it, since
+the definitions are part of what it covers, but nothing prevents it; refusing it would take a trigger,
+which the plan's decision 5 disfavours. storage-and-versioning.md names the same gap beside VER-008 and
+VER-042.
+
+**Content is inline JSONB, and was measured before it was built on.** The load test's volumes,
+thresholds and result are in [the plan](plans/2026-09-15-storage-01-the-version-chain.md), task 5.
+Content is stored as parsed and never rewritten; migration stays a projection on read.
 
 ## One renderer, two deliveries
 

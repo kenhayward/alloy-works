@@ -86,8 +86,12 @@ describe('the citations in the committed model', () => {
   // requirement only when it demonstrates that requirement's own statement, not one nearby. The
   // final review's fix wave then drops one more: migrate.test.ts's only MET-006 citation, ruled a
   // mention of a nearby requirement rather than a demonstration of its own, taking 104 to 103.
+  // 112, from 103: the version chain (docs/plans/2026-09-15-storage-01-the-version-chain.md) cites
+  // six of the requirements storage-and-versioning.md owns - VER-007, VER-008, VER-010, VER-042,
+  // CNT-145 and MET-016 - nine times across three database test files. The rest it builds in part
+  // and leaves uncited, and the plan names each and what it waits for.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(103);
+    expect(model.citations).toHaveLength(112);
   });
 
   it('cites no identifier the corpus does not hold', () => {

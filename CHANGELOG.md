@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.20.0 - 2026-09-15 (PR #98)
+
+### Added
+
+- **A permanent record of every version**, built from
+  [the storage design](docs/design/storage-and-versioning.md). A component's versions, and those of the
+  fields, metadata schemas and component types it is written against, are kept in its environment's own
+  database and can be added to but never changed or deleted, by the database's own permissions rather
+  than by the application remembering not to.
+- **Each version records who made it, when, an optional note, its content and metadata values, the
+  values it did not carry forward, and exactly which versions of its type, schemas and fields it was
+  written against.**
+- **A fingerprint of each version that anybody holding it can recompute**, so a version changed behind
+  the application's back is detectable. A version that would change nothing is not recorded, and a
+  version that corrects only a metadata value is.
+- **Spaces**, which hold components; fields, schemas and component types belong to none.
+- **A load test for the version store**, run by hand, whose measured result is recorded with the plan.
+- Nothing in the application creates or shows a version yet; this is the store the editor will use.
+
 ## 0.19.0 - 2026-09-15 (PR #97)
 
 ### Added

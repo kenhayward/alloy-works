@@ -232,6 +232,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@alloy-works/domain':
+        specifier: workspace:^
+        version: link:../domain
       kysely:
         specifier: ^0.29.5
         version: 0.29.5

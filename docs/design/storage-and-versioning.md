@@ -54,6 +54,16 @@ designation applied to a row in that chain rather than a second history beside i
 | **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                        |
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                          |
 
+**A gap beside VER-008 and VER-042: a definition can be recorded against a version already cut.**
+`version_definition` takes inserts only, on the same terms as the version row, but an insert naming a
+`version_id` that an earlier transaction committed is not refused, so what an old version records can
+be added to. The version digest detects it - the definitions a version records are part of what it
+covers, so recomputing it from the row no longer matches the digest the row carries - and nothing
+prevents it. Refusing it in the database would take a trigger, which
+[the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)'s decision 5 disfavours,
+or a closed record of the definitions on the version row itself. Until a design chooses, both claims
+stand on the grant and the digest, and this is what they do not cover.
+
 **VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that
 with VER-023's foreign key. VER-044 records why that answer was aimed at nothing: a restore inserts a
@@ -211,8 +221,8 @@ half that pays.
 
 ## Open questions
 
-| ID          | Question                                                                                                                                                                                                                |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **VER-Q01** | The iteration retention window still has no number behind it, and this design makes the cost of getting it wrong concrete: the sweep is cheap, the storage is not                                                       |
-| **VER-Q03** | Erasure against immutable history. VER-038 points at the resolution - the author is a reference, not a copy - and this design adopts it, but the legal question of what else must go is not answered here               |
-| New         | Whether inline JSONB holds up at authoring volumes, which decides when the content store is extracted. A sizing question, answerable by load rather than by argument, and needed before build rather than before design |
+| ID          | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **VER-Q01** | The iteration retention window still has no number behind it, and this design makes the cost of getting it wrong concrete: the sweep is cheap, the storage is not                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **VER-Q03** | Erasure against immutable history. VER-038 points at the resolution - the author is a reference, not a copy - and this design adopts it, but the legal question of what else must go is not answered here                                                                                                                                                                                                                                                                                                                                                                           |
+| Answered    | Whether inline JSONB holds up at authoring volumes. Measured by [the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)'s load test at 200,000 components: every measure passed - a cut through `recordVersion` at p95 11.92 ms, opening a component through `latestVersion` at p95 4.41 ms, 900 versions' content in one read at p95 148.8 ms - and the chain projects to 31.3 GB for a tenant of a million components, so content stays inline. What it did not measure - a chain several times the machine's memory - stays open with the hosting decision |

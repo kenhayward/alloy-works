@@ -23,9 +23,11 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:load": "vitest run --config vitest.load.config.ts",
     "dev:setup": "tsx src/dev-setup.ts"
   },
   "dependencies": {
+    "@alloy-works/domain": "workspace:^",
     "kysely": "^0.29.5",
     "pg": "^8.23.0"
   },

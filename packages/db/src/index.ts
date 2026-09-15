@@ -8,7 +8,15 @@ export {
   type NewTenant,
   type Tenant,
 } from './provision.js';
+export {
+  artifactKinds,
+  contentKinds,
+  type ArtifactKind,
+  type ContentKind,
+} from './artifact-kind.js';
 export type {
+  ArtifactTable,
+  ArtifactVersionTable,
   GoogleDomainTable,
   JobTable,
   IdentityProviderTable,
@@ -22,8 +30,10 @@ export type {
   SignInAttemptTable,
   SignInHandoffTable,
   SignInRouteTable,
+  SpaceTable,
   TenantTables,
   TenantTransaction,
+  VersionDefinitionTable,
 } from './tables.js';
 export {
   closeSignInRoute,
@@ -49,3 +59,17 @@ export {
   type TenantListener,
 } from './realtime.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
+export { createSpace, type Space } from './spaces.js';
+export {
+  createArtifact,
+  latestVersion,
+  readVersion,
+  recordVersion,
+  substanceOf,
+  type Authorship,
+  type NewArtifact,
+  type NextVersion,
+  type RecordAnswer,
+  type StoredVersion,
+} from './versions.js';
