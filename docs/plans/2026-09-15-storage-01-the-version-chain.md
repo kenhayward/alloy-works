@@ -2455,6 +2455,11 @@ PostgreSQL 17.11 with its default `shared_buffers` of 128 MB, Node 24.16. Loadin
 | Digests, 900 without content    | 50      | 17.0 ms  | 21.6 ms  | 22.8 ms  | 22.8 ms  | p95 100 ms            | Pass   |
 | Storage at a million components | -       | -        | -        | -        | 30.7 GB  | 250 GB                | Pass   |
 
+On the plan author's reference run, a run at the default 20,000 components the same day gave a cut p95
+of 5.5 ms, an open p95 of 3.2 ms, a document p95 of 83.7 ms, a digests p95 of 5.8 ms and a 30.2 GB
+projection: ten times the data moved the document read by 1.7 times and the digest read by 6.5 times,
+and the point reads and the cut hardly at all.
+
 **What this does not show, and the plan does not claim.**
 
 - **A cold cache at a million components.** The 6.1 GB chain is larger than Postgres's buffers and a
