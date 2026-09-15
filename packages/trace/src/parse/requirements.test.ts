@@ -126,12 +126,13 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
+    // 1363, from 1362: MET-037, the field-side counterpart of MET-035's refusal.
     // 1362, from 1360: CNT-147 and CNT-148, replacing the spelling rows native spellcheck cannot meet.
     // 1360, from 1306: the MET area's 36, and 18 rows elsewhere replacing the 18 that specifying
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1362);
+    expect(total((document) => document.requirements)).toBe(1363);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

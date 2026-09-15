@@ -1,9 +1,5 @@
 # Access
 
-> **Status: DRAFT for review.** Committed as it stood when handed over, so `git diff` shows exactly
-> what changed. Edit anything directly; where you want to say something rather than change it, add a
-> line starting `> **Ken:**` under the paragraph or table it is about.
-
 What a principal may do to an artifact, how the service decides it, and how anybody can find out why.
 
 This realises the permission model of [IAM](../specification/requirements/IAM-identity-tenancy-and-access-control.md)

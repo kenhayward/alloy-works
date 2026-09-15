@@ -31,6 +31,7 @@ document's change history says so.
 | ------------------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------------------- |
 | [component-editor](design-reviews/component-editor.md) | [component-editor.md](../design/component-editor.md) | [its Review section](../design/component-editor.md#review) |
 | [metadata-review](design-reviews/metadata-review.md)   | [metadata.md](../design/metadata.md)                 | [its Review section](../design/metadata.md#review)         |
+| [access-review](design-reviews/access-review.md)       | [access.md](../design/access.md)                     | [its Review section](../design/access.md#review)           |
 
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
