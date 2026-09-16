@@ -1,4 +1,5 @@
 import { allowable, externalCap, type Level, type Permission } from '@alloy-works/domain';
+import { lockAccessForChange } from './access-facts.js';
 import type { TenantTransaction } from './tables.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -105,6 +106,10 @@ async function reachesExternal(
  * making another.
  */
 export async function grant(trx: TenantTransaction, input: NewGrant): Promise<GrantAnswer> {
+  // Locked before the first read: a concurrent grant or membership change on the same group must not
+  // land unseen between this check and the write that acts on it (finding 7).
+  await lockAccessForChange(trx);
+
   const role = await trx
     .selectFrom('role')
     .select('permissions')

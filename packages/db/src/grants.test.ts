@@ -15,12 +15,20 @@ const DAY = 24 * 60 * 60 * 1000;
 describe('making a grant', () => {
   let db: TestDatabase;
   let production: Tenant;
+  let development: Tenant;
   let service: TenantDatabase;
   let ada: string;
   let alice: string;
   let spaceId: string;
   let artifactId: string;
   const roles: Record<string, string> = {};
+  let theirs: {
+    role: string;
+    principal: string;
+    space: string;
+    artifact: string;
+    group: string;
+  };
 
   const principal = (trx: TenantTransaction, subject: string, kind: 'user' | 'external') =>
     trx
@@ -50,6 +58,11 @@ describe('making a grant', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
+    development = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
+    });
     service = createTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = await principal(trx, 'ada', 'user');
@@ -65,6 +78,25 @@ describe('making a grant', () => {
       for (const name of ['Reader', 'Reviewer', 'Author', 'Administrator', 'Editing']) {
         roles[name] = (await findRole(trx, name))!.id;
       }
+    });
+    theirs = await service.withTenant(development, async (trx) => {
+      const role = await findRole(trx, 'Reader');
+      const space = await createSpace(trx, 'Theirs');
+      const artifact = await trx
+        .insertInto('artifact')
+        .values({ kind: 'component', space_id: space.id })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const grace = await principal(trx, 'grace', 'user');
+      const group = await createGroup(trx, 'Theirs');
+      if (!('group' in group)) throw new Error('the group was not made');
+      return {
+        role: role!.id,
+        space: space.id,
+        artifact: artifact.id,
+        principal: grace,
+        group: group.group.id,
+      };
     });
   });
 
@@ -247,6 +279,257 @@ describe('making a grant', () => {
     ).resolves.toEqual({ refused: 'grant.external_capped' });
     await expect(
       service.withTenant(production, (trx) => addToGroup(trx, staff.group.id, ada)),
+    ).resolves.toEqual({ added: true });
+  });
+
+  it('locks the epoch before either reads, so a grant and a membership change take turns', async () => {
+    const group = await service.withTenant(production, (trx) => createGroup(trx, 'Race A'));
+    if (!('group' in group)) throw new Error('the group was not made');
+    const groupId = group.group.id;
+
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+
+    const first = service.withTenant(production, async (trx) => {
+      const answer = await grant(trx, {
+        roleId: roles.Reader!,
+        subject: { group: groupId },
+        level: { kind: 'space', id: spaceId },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() + 120 * DAY),
+        grantedBy: ada,
+      });
+      await held;
+      return answer;
+    });
+    // Give the grant time to take the epoch's lock, then start the membership change behind it.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const second = service.withTenant(production, (trx) => addToGroup(trx, groupId, alice));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    release();
+
+    const [granted, membership] = await Promise.all([first, second]);
+    expect(granted).toHaveProperty('granted');
+    expect(membership).toEqual({ refused: 'grant.external_past_cap' });
+
+    const members = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('group_member')
+        .select('principal_id')
+        .where('group_id', '=', groupId)
+        .execute(),
+    );
+    expect(members).toEqual([]);
+  });
+
+  it('takes the other order too: a membership change first, then a grant that would exceed the cap', async () => {
+    const group = await service.withTenant(production, (trx) => createGroup(trx, 'Race B'));
+    if (!('group' in group)) throw new Error('the group was not made');
+    const groupId = group.group.id;
+
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+
+    const first = service.withTenant(production, async (trx) => {
+      const answer = await addToGroup(trx, groupId, alice);
+      await held;
+      return answer;
+    });
+    // Give the membership change time to take the epoch's lock, then start the grant behind it.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const second = service.withTenant(production, (trx) =>
+      grant(trx, {
+        roleId: roles.Reader!,
+        subject: { group: groupId },
+        level: { kind: 'space', id: spaceId },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() + 120 * DAY),
+        grantedBy: ada,
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    release();
+
+    const [membership, granted] = await Promise.all([first, second]);
+    expect(membership).toEqual({ added: true });
+    expect(granted).toEqual({ refused: 'grant.external_past_cap' });
+
+    const stored = await service.withTenant(production, (trx) =>
+      trx.selectFrom('access_grant').select('id').where('group_id', '=', groupId).execute(),
+    );
+    expect(stored).toEqual([]);
+  });
+
+  it('cannot grant using a role, principal, group, space or artifact from another tenant, and stores nothing', async () => {
+    const count = () =>
+      service.withTenant(production, (trx) =>
+        trx
+          .selectFrom('access_grant')
+          .select((eb) => eb.fn.countAll().as('count'))
+          .executeTakeFirstOrThrow(),
+      );
+    const before = await count();
+
+    await expect(
+      make({
+        roleId: theirs.role,
+        subject: { principal: ada },
+        level: { kind: 'space', id: spaceId },
+        effect: 'allow',
+      }),
+    ).rejects.toThrow();
+    await expect(
+      make({
+        roleId: roles.Reader!,
+        subject: { principal: theirs.principal },
+        level: { kind: 'space', id: spaceId },
+        effect: 'allow',
+      }),
+    ).rejects.toThrow();
+    await expect(
+      make({
+        roleId: roles.Reader!,
+        subject: { group: theirs.group },
+        level: { kind: 'space', id: spaceId },
+        effect: 'allow',
+      }),
+    ).rejects.toThrow();
+    await expect(
+      make({
+        roleId: roles.Reader!,
+        subject: { principal: ada },
+        level: { kind: 'space', id: theirs.space },
+        effect: 'allow',
+      }),
+    ).rejects.toThrow();
+    await expect(
+      make({
+        roleId: roles.Reader!,
+        subject: { principal: ada },
+        level: { kind: 'artifact', id: theirs.artifact },
+        effect: 'allow',
+      }),
+    ).rejects.toThrow();
+
+    expect((await count()).count).toEqual(before.count);
+  });
+
+  it("cannot add a group's member using a group or a principal from another tenant, and stores nothing", async () => {
+    const own = await service.withTenant(production, (trx) => createGroup(trx, 'Cross-tenant'));
+    if (!('group' in own)) throw new Error('the group was not made');
+
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, theirs.group, ada)),
+    ).rejects.toThrow();
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, own.group.id, theirs.principal)),
+    ).rejects.toThrow();
+
+    const members = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('group_member')
+        .select('principal_id')
+        .where('group_id', '=', own.group.id)
+        .execute(),
+    );
+    expect(members).toEqual([]);
+  });
+
+  it('lets two tenants use the same group name', async () => {
+    const here = await service.withTenant(production, (trx) => createGroup(trx, 'Shared name'));
+    const there = await service.withTenant(development, (trx) => createGroup(trx, 'Shared name'));
+    expect(here).toMatchObject({ group: { name: 'Shared name', source: 'tenant' } });
+    expect(there).toMatchObject({ group: { name: 'Shared name', source: 'tenant' } });
+  });
+
+  it('refuses to add a member to a group the provider asserts', async () => {
+    const provider = await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('access_group')
+        .values({ name: 'Provider staff', source: 'provider', provider_value: 'staff' })
+        .returning('id')
+        .executeTakeFirstOrThrow(),
+    );
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, provider.id, ada)),
+    ).resolves.toEqual({ refused: 'group.from_provider' });
+  });
+
+  it('refuses to add an external principal where a grant the group holds is at the tenant or past the cap', async () => {
+    const atTenant = await service.withTenant(production, (trx) => createGroup(trx, 'At tenant'));
+    if (!('group' in atTenant)) throw new Error('the group was not made');
+    await make({
+      roleId: roles.Reader!,
+      subject: { group: atTenant.group.id },
+      level: { kind: 'tenant' },
+      effect: 'allow',
+    });
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, atTenant.group.id, alice)),
+    ).resolves.toEqual({ refused: 'grant.external_at_tenant' });
+
+    const pastCap = await service.withTenant(production, (trx) => createGroup(trx, 'Past cap'));
+    if (!('group' in pastCap)) throw new Error('the group was not made');
+    await make({
+      roleId: roles.Reader!,
+      subject: { group: pastCap.group.id },
+      level: { kind: 'space', id: spaceId },
+      effect: 'allow',
+      expiresAt: new Date(Date.now() + 120 * DAY),
+    });
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, pastCap.group.id, alice)),
+    ).resolves.toEqual({ refused: 'grant.external_past_cap' });
+  });
+
+  it('answers a re-add of an already-present member without repeating checks that could refuse it fresh', async () => {
+    const group = await service.withTenant(production, (trx) => createGroup(trx, 'Already there'));
+    if (!('group' in group)) throw new Error('the group was not made');
+
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, group.group.id, alice)),
+    ).resolves.toEqual({ added: true });
+
+    // Recorded directly: what re-adding Alice must not re-litigate, since `grant` itself would now
+    // refuse this to the group she is already inside.
+    await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('access_grant')
+        .values({
+          role_id: roles.Author!,
+          group_id: group.group.id,
+          level: 'artifact',
+          artifact_id: artifactId,
+          effect: 'allow',
+          granted_by: ada,
+        })
+        .execute(),
+    );
+
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, group.group.id, alice)),
+    ).resolves.toEqual({ added: true });
+  });
+
+  it('ignores an expired grant when deciding whether an external principal may join', async () => {
+    const group = await service.withTenant(production, (trx) => createGroup(trx, 'Expired'));
+    if (!('group' in group)) throw new Error('the group was not made');
+    await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('access_grant')
+        .values({
+          role_id: roles.Author!,
+          group_id: group.group.id,
+          level: 'artifact',
+          artifact_id: artifactId,
+          effect: 'allow',
+          granted_by: ada,
+          expires_at: new Date(Date.now() - DAY),
+        })
+        .execute(),
+    );
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, group.group.id, alice)),
     ).resolves.toEqual({ added: true });
   });
 });

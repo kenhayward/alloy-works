@@ -1,3 +1,4 @@
+import { lockAccessForChange } from './access-facts.js';
 import { accessPolicy, externalRefusal, type ExternalRefusal } from './grants.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -27,15 +28,28 @@ export type MembershipAnswer =
   { readonly added: true } | { readonly refused: ExternalRefusal | 'group.from_provider' };
 
 /**
- * Adds a principal to a tenant-managed group; adding one already there changes nothing. An external
- * principal is refused where any grant the group holds could not have been made to them directly
- * (access.md, "External principals"), so a group is never a way round those rules.
+ * Adds a principal to a tenant-managed group; adding one already there changes nothing, and answers
+ * without running the checks below, which could otherwise refuse a no-op that changes nothing. An
+ * external principal is refused where any unexpired grant the group holds could not have been made to
+ * them directly (access.md, "External principals"), so a group is never a way round those rules.
  */
 export async function addToGroup(
   trx: TenantTransaction,
   groupId: string,
   principalId: string,
 ): Promise<MembershipAnswer> {
+  // Locked before the first read: a concurrent grant on the same group must not land unseen between
+  // this check and the write that acts on it (finding 7).
+  await lockAccessForChange(trx);
+
+  const already = await trx
+    .selectFrom('group_member')
+    .select('principal_id')
+    .where('group_id', '=', groupId)
+    .where('principal_id', '=', principalId)
+    .executeTakeFirst();
+  if (already) return { added: true };
+
   const group = await trx
     .selectFrom('access_group')
     .select('source')
@@ -55,6 +69,7 @@ export async function addToGroup(
       .innerJoin('role as r', 'r.id', 'g.role_id')
       .select(['r.permissions', 'g.level', 'g.effect', 'g.expires_at'])
       .where('g.group_id', '=', groupId)
+      .where((eb) => eb.or([eb('g.expires_at', 'is', null), eb('g.expires_at', '>', policy.now)]))
       .execute();
     for (const grant of held) {
       const refusal = externalRefusal(
