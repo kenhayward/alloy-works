@@ -47,5 +47,7 @@ export interface RouteContract {
   /** Path parameters, named as the path names them. The service validates them before a handler. */
   readonly params?: z.ZodObject;
   readonly query?: z.ZodObject;
+  /** A JSON request body. The service validates it before a handler, as it does parameters. */
+  readonly body?: z.ZodObject;
   readonly responses: Readonly<Record<number, RouteResponse>>;
 }

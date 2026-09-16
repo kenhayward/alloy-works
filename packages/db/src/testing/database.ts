@@ -1,5 +1,24 @@
 import { randomBytes } from 'node:crypto';
+import { sql } from 'kysely';
 import pg from 'pg';
+import type { Tenant } from '../provision.js';
+import type { TenantDatabase } from '../tenant-database.js';
+
+/**
+ * Runs `work` while another transaction holds the tenant's access epoch FOR SHARE, as every decision in
+ * flight does. A write that took the epoch FOR UPDATE would wait for this transaction, which waits for
+ * `work` - so a test racing `work` against a timeout shows the write never needs it exclusively.
+ */
+export async function whileAccessIsDecided<T>(
+  db: TenantDatabase,
+  tenant: Tenant,
+  work: () => Promise<T>,
+): Promise<T> {
+  return db.withTenant(tenant, async (trx) => {
+    await sql`select singleton from access_epoch for share`.execute(trx);
+    return work();
+  });
+}
 
 const DEFAULT_SERVER_URL = 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
 

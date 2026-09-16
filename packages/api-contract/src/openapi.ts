@@ -82,6 +82,13 @@ function pathParameters(params: z.ZodObject): Json[] {
   }));
 }
 
+/** A JSON request body, as its input schema describes it: required, and published open like the rest. */
+function requestBody(body: z.ZodObject): Json {
+  const json: Json = { ...z.toJSONSchema(body, { io: 'input' }) };
+  delete json.$schema;
+  return { required: true, content: { 'application/json': { schema: open(json) } } };
+}
+
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
   const ordered = [...routes].sort(
@@ -105,6 +112,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
       summary: route.summary,
       security: route.access.check === 'none' ? [] : [{ session: [] }],
       ...(parameters.length > 0 ? { parameters } : {}),
+      ...(route.body ? { requestBody: requestBody(route.body) } : {}),
       responses,
     };
   }

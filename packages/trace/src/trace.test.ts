@@ -103,8 +103,9 @@ describe('the citations in the committed model', () => {
   // 135, from 134: opening, editing and saving a component (docs/plans/2026-09-16-editor-01-open-edit-and-save.md)
   // cites VER-001, which storage-and-versioning.md owns, in the database tests of the lock and iterations.
   // 137, from 135: the same plan cites VER-006 and COL-010 in the database tests of cutting and releasing.
+  // 139, from 137: and API-039 and CNT-071, which component-editor.md owns, in the service's session tests.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(137);
+    expect(model.citations).toHaveLength(139);
   });
 
   it('cites no identifier the corpus does not hold', () => {

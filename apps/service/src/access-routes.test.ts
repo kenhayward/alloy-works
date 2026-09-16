@@ -476,7 +476,14 @@ describe('routes that check a permission', () => {
    * cross-tenant.test.ts does for path parameters.
    */
   const HOLDING_NOTHING: Readonly<
-    Record<string, () => { readonly url: string; readonly status: 403 | 404 }>
+    Record<
+      string,
+      () => {
+        readonly url: string;
+        readonly status: 403 | 404;
+        readonly payload?: Record<string, unknown>;
+      }
+    >
   > = {
     getAccess: () => ({ url: `/v1/access?target=artifact:${dosing}`, status: 404 }),
     explainAccess: () => ({
@@ -484,6 +491,34 @@ describe('routes that check a permission', () => {
       status: 403,
     }),
     getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
+    claimLock: () => ({
+      url: `/v1/components/${dosing}/lock`,
+      status: 404,
+      payload: { session: MISSING },
+    }),
+    releaseLock: () => ({
+      url: `/v1/components/${dosing}/lock?session=${MISSING}&openedFrom=${MISSING}`,
+      status: 404,
+    }),
+    cutVersion: () => ({
+      url: `/v1/components/${dosing}/versions`,
+      status: 404,
+      payload: { session: MISSING, openedFrom: MISSING },
+    }),
+    saveIteration: () => ({
+      url: `/v1/components/${dosing}/iterations/${MISSING}/1`,
+      status: 404,
+      payload: {
+        openedFrom: MISSING,
+        content: {
+          schemaVersion: 1,
+          title: 'Dosing',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+        },
+      },
+    }),
   };
 
   const checked = allRoutes.filter((route) => route.access.check === 'permission');
@@ -493,11 +528,12 @@ describe('routes that check a permission', () => {
     for (const route of checked) {
       const address = HOLDING_NOTHING[route.operationId];
       expect(address, `${route.operationId} has no address in HOLDING_NOTHING`).toBeDefined();
-      const { url, status } = address!();
+      const { url, status, payload } = address!();
       const response = await app.inject({
         method: route.method,
         url,
         headers: { host: HOST, cookie: cookies.alice! },
+        ...(payload ? { payload } : {}),
       });
       expect(response.statusCode, route.operationId).toBe(status);
     }

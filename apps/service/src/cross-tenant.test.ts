@@ -32,6 +32,9 @@ const B = 'dev.acme.alloy.test';
 
 const authenticated = allRoutes.filter((route) => route.access.check !== 'none');
 
+/** An editing session and a version id, well formed: what the request's shape needs, and no more. */
+const SESSION = '11111111-1111-4111-8111-111111111111';
+
 /**
  * For each route with path parameters: how to name, in its path, something belonging to environment
  * B. A route with parameters must have an entry here, or the harness fails - the case this table
@@ -61,6 +64,39 @@ const OTHER_TENANT_IDS: Readonly<
     }),
   }),
   getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  saveIteration: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    session: SESSION,
+    sequence: '1',
+  }),
+};
+
+/**
+ * For each route taking a body, or a query that is not its target: a valid one, so that what the harness
+ * sees is the environment's refusal and never the request's shape. A route with a body missing here
+ * fails the harness.
+ */
+const VALID_INPUT: Readonly<
+  Record<string, { readonly query?: string; readonly payload?: Record<string, unknown> }>
+> = {
+  claimLock: { payload: { session: SESSION } },
+  releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
+  cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  saveIteration: {
+    payload: {
+      openedFrom: SESSION,
+      content: {
+        schemaVersion: 1,
+        title: 'Elsewhere',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+      },
+    },
+  },
 };
 
 const CONTENT = {
@@ -157,6 +193,15 @@ const withQueryTargets = allRoutes.filter(
 );
 const fill = (path: string, ids: Record<string, string>) =>
   path.replace(/\{(\w+)\}/g, (_match, name: string) => ids[name] ?? '');
+/** The route's address with its valid query, and its valid body, as `inject` takes them. */
+const request = (name: string, url: string) => {
+  const input = VALID_INPUT[name] ?? {};
+  return {
+    url: input.query ? `${url}?${input.query}` : url,
+    ...(input.payload ? { payload: input.payload } : {}),
+  };
+};
+
 describe("no environment accepts another environment's session (IAM-004)", () => {
   let db: TestDatabase;
   let idp: StandInProvider;
@@ -270,7 +315,7 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     async (name, route) => {
       const response = await app.inject({
         method: route.method,
-        url: fill(route.path, othersIds[name] ?? {}),
+        ...request(name, fill(route.path, othersIds[name] ?? {})),
         headers: { host: B, cookie: fromA },
       });
       expect(response.statusCode).toBe(401);
@@ -283,12 +328,18 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     async (name, route) => {
       const response = await app.inject({
         method: route.method,
-        url: fill(route.path, othersIds[name] ?? {}),
+        ...request(name, fill(route.path, othersIds[name] ?? {})),
         headers: { host: A, cookie: fromA },
       });
       expect(response.statusCode).toBe(404);
     },
   );
+
+  it('knows a valid body for every route that takes one', () => {
+    for (const route of authenticated.filter((each) => each.body)) {
+      expect(VALID_INPUT[route.operationId]?.payload, route.operationId).toBeDefined();
+    }
+  });
 
   it('opens a component in another environment exactly as one that does not exist, never its content', async () => {
     const route = withParameters.find((each) => each.operationId === 'getComponent')!;

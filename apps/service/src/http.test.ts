@@ -48,6 +48,13 @@ function testApp() {
   app.get('/broken', async () => {
     throw new Error('connection to postgres://aw_service:hunter2@db failed');
   });
+  app.get('/held', async () => {
+    throw new AppError(409, 'held', 'Somebody else has this.', undefined, {
+      holder: { id: 'p1', name: 'Grace' },
+      code: 'not-this-one',
+      traceId: 'not-this-either',
+    });
+  });
   return { app, logs };
 }
 
@@ -81,6 +88,19 @@ describe('the HTTP layer', () => {
       message: 'You may not do that here.',
       rule: 'ZZZ-001',
     });
+  });
+
+  it("sends a refusal's members beside its code, message and trace id, never in place of them", async () => {
+    const { app } = testApp();
+    const response = await app.inject('/held');
+    expect(response.statusCode).toBe(409);
+    const body = response.json();
+    expect(body).toMatchObject({
+      code: 'held',
+      message: 'Somebody else has this.',
+      holder: { id: 'p1', name: 'Grace' },
+    });
+    expect(body.traceId).toMatch(TRACE);
   });
 
   it('turns an unexpected failure into a generic 500 and logs the detail instead', async () => {

@@ -28,6 +28,7 @@ import type { z } from 'zod';
 import { administerOrAbove, authorise, notFound, type Authorised } from './access.js';
 import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
+import { editingHandlers } from './editing.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
@@ -288,6 +289,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
+    ...editingHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 
@@ -647,6 +649,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         response,
         ...(route.query ? { querystring: route.query } : {}),
         ...(route.params ? { params: route.params } : {}),
+        ...(route.body ? { body: route.body } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
       handler: permissionChecked(route.access, handlers[name]),
