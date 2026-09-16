@@ -41,6 +41,13 @@ const content = (...texts: string[]): ContentDocument => ({
   })),
 });
 
+/** A promise and the function that settles it: what two transactions take turns on. */
+function latch() {
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => (open = resolve));
+  return { opened, open };
+}
+
 describe('editing a component: its lock and its iterations', () => {
   let db: TestDatabase;
   let production: Tenant;
@@ -235,6 +242,15 @@ describe('editing a component: its lock and its iterations', () => {
       );
       expect(elsewhere).toEqual({ answer: 'artifact.missing' });
     });
+
+    it('reads nothing from another tenant, however the component is named', async () => {
+      const component = await newComponent();
+      await service.withTenant(production, (trx) =>
+        claimLock(trx, { artifactId: component.id, principal: ada, session: randomUUID() }),
+      );
+      const elsewhere = await service.withTenant(development, (trx) => readLock(trx, component.id));
+      expect(elsewhere).toBe(undefined);
+    });
   });
 
   describe('iterations', () => {
@@ -380,6 +396,108 @@ describe('editing a component: its lock and its iterations', () => {
         }),
       );
       expect(answer).toEqual({ answer: 'artifact.missing' });
+    });
+
+    it('refuses a sequence above what the column can hold, before it ever reaches the database', async () => {
+      const component = await held();
+      await expect(component.save(2147483648, 'Too big')).rejects.toThrow(
+        /whole number from 1 to 2147483647/,
+      );
+    });
+  });
+
+  describe('two sessions racing the same lock, genuinely overlapping in Postgres', () => {
+    it('lets only one of two concurrent claims win, never both', async () => {
+      const component = await newComponent();
+      const sessionA = randomUUID();
+      const sessionG = randomUUID();
+      const claimed = latch();
+      const release = latch();
+
+      let answerA: Awaited<ReturnType<typeof claimLock>> | undefined;
+      const first = service.withTenant(production, async (trx) => {
+        answerA = await claimLock(trx, {
+          artifactId: component.id,
+          principal: ada,
+          session: sessionA,
+        });
+        claimed.open();
+        await release.opened;
+      });
+      await claimed.opened;
+
+      // Started while the first is still open, uncommitted: a real second transaction, not a second
+      // call in the same one. Given a moment to reach its own read and write before the first is
+      // released, so the two genuinely overlap in Postgres rather than merely in program order.
+      const second = service.withTenant(production, (trx) =>
+        claimLock(trx, { artifactId: component.id, principal: grace, session: sessionG }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release.open();
+      await first;
+      const answerG = await second;
+
+      expect(answerA).toMatchObject({
+        answer: 'claimed',
+        lock: { holder: ada, session: sessionA },
+      });
+      expect(answerG).toMatchObject({
+        answer: 'lock.held',
+        lock: { holder: ada, session: sessionA },
+      });
+    });
+
+    it('never lets an old session save land once another session has moved the lock underneath it', async () => {
+      const component = await newComponent();
+      const sessionA = randomUUID();
+      const sessionB = randomUUID();
+      await service.withTenant(production, (trx) =>
+        claimLock(trx, { artifactId: component.id, principal: ada, session: sessionA }),
+      );
+
+      const moved = latch();
+      const release = latch();
+
+      let moveAnswer: Awaited<ReturnType<typeof claimLock>> | undefined;
+      const move = service.withTenant(production, async (trx) => {
+        moveAnswer = await claimLock(trx, {
+          artifactId: component.id,
+          principal: ada,
+          session: sessionB,
+          move: true,
+        });
+        moved.open();
+        await release.opened;
+      });
+      await moved.opened;
+
+      // The old session's save starts while the move is still open, uncommitted, and is given a
+      // moment to reach its own read and write before the move is released, so the two genuinely
+      // overlap in Postgres rather than merely in program order.
+      let saveAnswer: Awaited<ReturnType<typeof saveIteration>> | undefined;
+      const save = service.withTenant(production, async (trx) => {
+        saveAnswer = await saveIteration(trx, {
+          artifactId: component.id,
+          principal: ada,
+          session: sessionA,
+          sequence: 1,
+          openedFrom: component.openedFrom,
+          content: content('Unbox the printer.'),
+        });
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release.open();
+      await move;
+      await save;
+
+      expect(moveAnswer).toMatchObject({ answer: 'claimed', lock: { session: sessionB } });
+      // Never 'accepted': the old session's write is refused once the lock has genuinely moved,
+      // rather than landing after the move on a stale read of who held it.
+      expect(saveAnswer).toMatchObject({
+        answer: 'lock.held',
+        lock: { holder: ada, session: sessionB },
+      });
     });
   });
 

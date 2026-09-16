@@ -17,7 +17,15 @@ import { latestVersion, type StoredVersion } from './versions.js';
  */
 export const LOCK_PERIOD_MINUTES = 15;
 
-/** How long an iteration is kept after it is written (VER-003). VER-Q01 has no number; this is one. */
+/**
+ * How long an iteration is kept after it is written (VER-003). VER-Q01 has no number; this is one.
+ *
+ * This only sizes the window `expires_at` is set from at insert; it does not by itself make a row
+ * removable. VER-003 keeps an iteration until the component's next version is cut, and for this window
+ * after that, so a sweep may remove a row only once it is past `expires_at` AND a later version of its
+ * artifact exists - never on `expires_at` alone, which would delete the only copy of unsaved work while
+ * its session is still open.
+ */
 export const ITERATION_RETENTION_DAYS = 30;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -70,6 +78,13 @@ export type IterationAnswer =
  * Serialises every write to one component's lock, iterations and versions, in the caller's
  * transaction: the key `recordVersion` takes, and Postgres' transaction advisory locks are re-entrant,
  * so a cut that takes it here and again inside `recordVersion` waits for nothing.
+ *
+ * Every write to `component_lock` takes this first, with no exception. The one-holder invariant rests
+ * on it, not on the table's own constraints: the runtime role keeps its default `update` and `delete`
+ * grants on `component_lock` (unlike `iteration`, which has them revoked), and the primary key on
+ * `artifact_id` stops two rows for one component but not two callers each believing they hold it from
+ * a read taken before the other's write. A caller that reads or writes `component_lock` without calling
+ * this first can observe, or leave, a lock silently moved or overwritten underneath it.
  */
 export async function serialise(trx: TenantTransaction, artifactId: string): Promise<void> {
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${artifactId}`}, 0))`.execute(
@@ -190,8 +205,12 @@ export async function saveIteration(
   input: NewIteration,
 ): Promise<IterationAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
-  if (!Number.isInteger(input.sequence) || input.sequence < 1) {
-    throw new Error(`An iteration's sequence is a whole number from 1, not ${input.sequence}`);
+  // 2147483647 is the largest value the column's `integer` type holds: bounded here, before an insert
+  // ever reaches Postgres, whose refusal for it would name a type rather than what a caller sent.
+  if (!Number.isInteger(input.sequence) || input.sequence < 1 || input.sequence > 2147483647) {
+    throw new Error(
+      `An iteration's sequence is a whole number from 1 to 2147483647, not ${input.sequence}`,
+    );
   }
   await serialise(trx, input.artifactId);
   const lock = await holding(trx, input);

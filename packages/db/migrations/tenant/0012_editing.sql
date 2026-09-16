@@ -17,6 +17,11 @@ create table component_lock (
 -- The ephemeral store (storage-and-versioning.md, "Stores"): a whole snapshot of a component's content
 -- and metadata values, written by its lock holder's editing session. Nothing references this table, which
 -- is what keeps iterations out of comparison, audit and anything a reader sees (VER-005).
+--
+-- VER-003 keeps an iteration until the component's next version is cut, and for a declared window after
+-- that: a sweep may remove a row only once it is past expires_at AND a later version of its artifact_id
+-- exists. A sweep that instead deletes on expires_at alone, before any cut, could remove the only copy
+-- of unsaved work while its session is still open (the editor plan's finding 2). Nothing here sweeps yet.
 create table iteration (
   id uuid primary key default gen_random_uuid(),
   artifact_id uuid not null,
@@ -28,7 +33,8 @@ create table iteration (
   -- The version the session opened from, which was the latest when this was accepted.
   opened_from uuid not null references artifact_version on delete restrict,
   created_at timestamptz not null default now(),
-  -- Set at insert from the retention window, so changing the window never revives a row (VER-004).
+  -- Set at insert from the retention window, so changing the window never revives a row (VER-004). Not
+  -- itself a deletion trigger: a row past expires_at is swept only once a later version also exists.
   expires_at timestamptz not null,
   content jsonb not null,
   metadata_values jsonb not null,
