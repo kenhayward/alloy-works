@@ -365,6 +365,21 @@ describe('editing a component: its lock and its iterations', () => {
       expect(await component.save(1, 'Too late')).toEqual({ answer: 'lock.required' });
     });
 
+    it('accepts a sequence a second principal saves under a reused session id, even when the first principal already used that sequence number', async () => {
+      const component = await held();
+      await component.save(1, 'Ada, sequence one');
+      await expireLock(component.id);
+      await service.withTenant(production, (trx) =>
+        claimLock(trx, { artifactId: component.id, principal: grace, session: component.session }),
+      );
+      expect(
+        await component.save(1, 'Grace, sequence one too', {
+          principal: grace,
+          session: component.session,
+        }),
+      ).toMatchObject({ answer: 'accepted', sequence: 1, repeated: false });
+    });
+
     it('refuses an iteration against a version that is not the latest, naming the latest', async () => {
       const component = await held();
       const answer = await service.withTenant(production, (trx) =>

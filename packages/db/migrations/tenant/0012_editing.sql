@@ -41,8 +41,12 @@ create table iteration (
   -- SHA-256 over the canonical content and values: how a repeated sequence is told from a conflict.
   digest text not null check (digest ~ '^[0-9a-f]{64}$'),
   foreign key (artifact_id, kind) references artifact (id, kind) on delete restrict,
-  -- A sequence is accepted once per session: a retry makes no second row.
-  unique (artifact_id, session_id, sequence),
+  -- A sequence is accepted once per session, for its own principal: a retry makes no second row. A
+  -- session id is chosen by the client and is not unique per principal, so principal_id is part of
+  -- this key too - otherwise a session id reused by a second principal could collide on a sequence
+  -- number the first principal already holds, rather than being accepted as that second principal's
+  -- own row.
+  unique (artifact_id, principal_id, session_id, sequence),
   constraint iteration_values_shape check (jsonb_typeof(metadata_values) = 'object'),
   constraint iteration_expires_after_creation check (expires_at > created_at)
 );
