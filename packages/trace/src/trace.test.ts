@@ -94,8 +94,10 @@ describe('the citations in the committed model', () => {
   // cites nine of the requirements content-model.md claims for admission - CNT-056, CNT-064, CNT-065,
   // CNT-127, CNT-131, CNT-132, CNT-133, CNT-134 and CNT-135 - nine times across three domain test files.
   // CNT-130 and CNT-063 are built in part and left uncited, and the plan says what each waits for.
+  // 122, from 121: roles, grants and the decision (docs/plans/2026-09-16-access-01-roles-grants-and-the-decision.md)
+  // cite IAM-019 once so far, in a domain test file. The plan's later tasks move this comment with the pin.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(121);
+    expect(model.citations).toHaveLength(122);
   });
 
   it('cites no identifier the corpus does not hold', () => {
