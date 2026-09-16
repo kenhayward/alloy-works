@@ -15373,6 +15373,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-132",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-133",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-135",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
       "id": "CNT-134",
       "file": "packages/domain/src/content/admission/migrate.test.ts",
       "line": 27,

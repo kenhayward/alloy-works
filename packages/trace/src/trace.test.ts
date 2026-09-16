@@ -100,8 +100,12 @@ describe('the citations in the committed model', () => {
   // the build can read, and CNT-134's statement is about an earlier one; review ruled that a mention
   // rather than a demonstration, and the identifier came out of that title, leaving CNT-134's only
   // citation the one migrate.test.ts already carries.
+  // 121, from 118: the admission pipeline's product clipboard
+  // (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md) cites the three remaining
+  // requirements content-model.md owns for this plan - CNT-132, CNT-133 and CNT-135 - once each in
+  // clipboard.test.ts, through the writer, the reader and the whole pipeline together.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(118);
+    expect(model.citations).toHaveLength(121);
   });
 
   it('cites no identifier the corpus does not hold', () => {
