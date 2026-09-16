@@ -361,20 +361,20 @@ would compile into `dist/`.
 content-model.md claims CNT-060 to CNT-065, CNT-127, CNT-130 to CNT-135 and CNT-056 for admission.
 **This plan cites nine**, each only in a test that shows its own statement:
 
-| ID      | Statement, in short                                                                                   | Cited in                           | Tasks |
-| ------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------- | ----- |
-| CNT-134 | Earlier schema versions migrated before entry, or refused with a named error; never stored unmigrated | `migrate.test.ts`, `admit.test.ts` | 6, 9  |
-| CNT-056 | Text normalised to one Unicode form on ingest                                                         | `admit.test.ts`                    | 9     |
-| CNT-064 | Nothing discarded may be absent from the report; tests assert what was dropped and what survived      | `admit.test.ts`                    | 9     |
-| CNT-065 | Pasted content never carries typeface, size or colour into the model                                  | `admit.test.ts`                    | 9     |
-| CNT-127 | A target whose scheme is not allowlisted is refused on entry and never stored                         | `admit.test.ts`                    | 9     |
-| CNT-131 | A link dropped or rewritten on paste is named individually, with the target it had                    | `admit.test.ts`                    | 9     |
-| CNT-132 | Copied content re-identified on paste: every block a new identifier, unique in the receiver           | `clipboard.test.ts`                | 10    |
-| CNT-133 | A comment anchor or suggestion pasted into another component is dropped and named                     | `clipboard.test.ts`                | 10    |
-| CNT-135 | A copy within the product reported to the same standard as a foreign paste                            | `clipboard.test.ts`                | 10    |
+| ID      | Statement, in short                                                                                   | Cited in            | Tasks |
+| ------- | ----------------------------------------------------------------------------------------------------- | ------------------- | ----- |
+| CNT-134 | Earlier schema versions migrated before entry, or refused with a named error; never stored unmigrated | `migrate.test.ts`   | 6     |
+| CNT-056 | Text normalised to one Unicode form on ingest                                                         | `admit.test.ts`     | 9     |
+| CNT-064 | Nothing discarded may be absent from the report; tests assert what was dropped and what survived      | `admit.test.ts`     | 9     |
+| CNT-065 | Pasted content never carries typeface, size or colour into the model                                  | `admit.test.ts`     | 9     |
+| CNT-127 | A target whose scheme is not allowlisted is refused on entry and never stored                         | `admit.test.ts`     | 9     |
+| CNT-131 | A link dropped or rewritten on paste is named individually, with the target it had                    | `admit.test.ts`     | 9     |
+| CNT-132 | Copied content re-identified on paste: every block a new identifier, unique in the receiver           | `clipboard.test.ts` | 10    |
+| CNT-133 | A comment anchor or suggestion pasted into another component is dropped and named                     | `clipboard.test.ts` | 10    |
+| CNT-135 | A copy within the product reported to the same standard as a foreign paste                            | `clipboard.test.ts` | 10    |
 
-That is ten citations in three files, taking the pin from 112 to 122: 113 after task 6, 119 after task 9,
-122 after task 10. CNT-056 and CNT-127 are already `Covered` by the model's tests; the other seven move from
+That is nine citations in three files, taking the pin from 112 to 121: 113 after task 6, 118 after task 9,
+121 after task 10. CNT-056 and CNT-127 are already `Covered` by the model's tests; the other seven move from
 `Designed` to `Covered`.
 
 **Claimed, built in part here, and not cited** - each waits for the plan named:
@@ -3236,7 +3236,7 @@ git commit -m "Re-identify admitted blocks, footnotes and marks, and drop annota
   - `type AdmissionOutcome = { ok: true; content: readonly BlockNode[]; report: readonly ReportEntry[] } | AdmissionRefused`
   - `admit(input: AdmissionInput, receiver: Receiver): AdmissionOutcome`
 
-See decisions 2, 3, 5 and 13. This task cites six identifiers; check each title against
+See decisions 2, 3, 5 and 13. This task cites five identifiers; check each title against
 `pnpm trace show` before committing.
 
 **Three tests make the design's order observable**, and each fails if its stage moves: a script dressed as
@@ -3672,7 +3672,7 @@ describe('admitting content', () => {
 });
 
 describe('refusing an admission', () => {
-  it('CNT-134 refuses content from a schema version it cannot migrate, by name, and admits nothing', () => {
+  it('refuses content from a schema version it cannot migrate, by name, and admits nothing', () => {
     const outcome = admit(
       { candidate: { schemaVersion: 2, content: [paragraph([text('x')])] }, report: [] },
       receiver(),
@@ -3910,8 +3910,12 @@ pnpm --filter @alloy-works/trace generate
 pnpm trace check
 ```
 
-Expected: `No problems in the corpus.` Change the pin to `toHaveLength(119)` - CNT-056, CNT-064, CNT-065,
-CNT-127, CNT-131 and CNT-134 in `admit.test.ts`.
+Expected: `No problems in the corpus.` Change the pin to `toHaveLength(118)` - CNT-056, CNT-064, CNT-065,
+CNT-127 and CNT-131 in `admit.test.ts`.
+
+**Amended in the build:** the plan first had the newer-version refusal's title cite CNT-134 as well, for a
+pin of 119. Its statement is content written against an earlier schema version, and a newer one is not
+that, so the citation was dropped and `migrate.test.ts` alone demonstrates it.
 
 Run: `pnpm --filter @alloy-works/trace test`
 Expected: PASS.
@@ -4293,7 +4297,7 @@ pnpm --filter @alloy-works/trace generate
 pnpm trace check
 ```
 
-Expected: `No problems in the corpus.` Change the pin to `toHaveLength(122)`.
+Expected: `No problems in the corpus.` Change the pin to `toHaveLength(121)`.
 
 Run: `pnpm --filter @alloy-works/trace test`
 Expected: PASS.
@@ -4407,12 +4411,13 @@ git commit -m "Promote the admission pipeline to the domain package's public sur
 
 - [ ] **Step 1: Say where the pin came from**
 
-In `packages/trace/src/trace.test.ts`, above `expect(model.citations).toHaveLength(122);`, add:
+In `packages/trace/src/trace.test.ts`, replace the comments the build's tasks left above
+`expect(model.citations).toHaveLength(121);` with one:
 
 ```ts
-// 122, from 112: the admission pipeline (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md)
+// 121, from 112: the admission pipeline (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md)
 // cites nine of the requirements content-model.md claims for admission - CNT-056, CNT-064, CNT-065,
-// CNT-127, CNT-131, CNT-132, CNT-133, CNT-134 and CNT-135 - ten times across three domain test files.
+// CNT-127, CNT-131, CNT-132, CNT-133, CNT-134 and CNT-135 - nine times across three domain test files.
 // CNT-130 and CNT-063 are built in part and left uncited, and the plan says what each waits for.
 ```
 
