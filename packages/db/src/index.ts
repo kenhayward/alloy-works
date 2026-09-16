@@ -133,3 +133,4 @@ export {
   type CutAnswer,
   type ReleaseAnswer,
 } from './promotion.js';
+export { seedDevelopmentContent, TOPIC_TYPE_ID, type SeededContent } from './dev-content.js';

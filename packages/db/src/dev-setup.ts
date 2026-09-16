@@ -2,11 +2,13 @@
 // reachable at acme.localhost and dev.acme.localhost. Safe to run again.
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
+import { seedDevelopmentContent } from './dev-content.js';
 import { nameFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
 import { configureOrganisationSignIn, inviteToTenant, permitGoogleSignIn } from './sign-in.js';
+import { createTenantDatabase } from './tenant-database.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
 const server =
@@ -80,6 +82,23 @@ for (const environment of environments) {
   });
   if ('named' in answer) console.log(`Ada will administer ${environment.hostnames[0]}`);
 }
+// Something to edit, and Ada and Grace allowed to edit it: nothing in the product grants a content
+// role or creates a component yet. As the service's own login, so it is written the way the service
+// writes.
+const serviceDb = createTenantDatabase(
+  inDatabase(server, database, 'aw_service', TEST_PASSWORDS.service),
+);
+for (const environment of environments) {
+  const tenant = tenantNames(environment.tenant.id);
+  const seeded = await serviceDb.withTenant(
+    { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
+    (trx) => seedDevelopmentContent(trx, { issuer: standInIssuer }),
+  );
+  if (seeded.created) {
+    console.log(`Made "Install the printer" at ${environment.hostnames[0]}, for Ada and Grace`);
+  }
+}
+await serviceDb.close();
 // The development environment also takes Google accounts, the stand-in playing Google: Grace is
 // invited, as a demonstration's first administrator would be; Alice is not, so she is refused.
 const development = tenantNames('acmedev');
