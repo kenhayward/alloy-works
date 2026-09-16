@@ -95,17 +95,28 @@ function identifiersIn(document: ContentDocument): Set<string> {
   return found;
 }
 
+const EXHAUSTED = `${ATTEMPTS} identifiers in a row were empty or already used in the receiving component`;
+
+/**
+ * `newIdentifier` is the caller's, and a caller can throw (the identity plugin not being ready, say)
+ * instead of returning. That is refused the same way as running out of usable identifiers - the same
+ * subject, the same fixed message - never the thrown error's own message, which is the caller's and
+ * not something to repeat in an author-facing report (decision 5: an outcome, never an exception).
+ */
 function allocate(state: State): string {
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
-    const identifier = state.newIdentifier();
+    let identifier: unknown;
+    try {
+      identifier = state.newIdentifier();
+    } catch {
+      throw new AllocationFailed(EXHAUSTED);
+    }
     if (typeof identifier === 'string' && identifier !== '' && !state.taken.has(identifier)) {
       state.taken.add(identifier);
       return identifier;
     }
   }
-  throw new AllocationFailed(
-    `${ATTEMPTS} identifiers in a row were empty or already used in the receiving component`,
-  );
+  throw new AllocationFailed(EXHAUSTED);
 }
 
 function mapArray(value: unknown, map: (member: unknown) => unknown[]): unknown {

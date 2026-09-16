@@ -251,4 +251,20 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([{ stage: 'reidentify', action: 'refused', subject: 'identifiers' }]);
   });
+
+  it("refuses, the same way, when the caller's allocator throws instead of returning", () => {
+    const { outcome, entries } = run(
+      { schemaVersion: 1, content: [paragraph('b', [text('x')])] },
+      receiver({
+        newIdentifier: () => {
+          throw new Error('the identity plugin is not ready');
+        },
+      }),
+    );
+    expect(outcome).toEqual({
+      ok: false,
+      failure: '8 identifiers in a row were empty or already used in the receiving component',
+    });
+    expect(entries).toEqual([{ stage: 'reidentify', action: 'refused', subject: 'identifiers' }]);
+  });
 });
