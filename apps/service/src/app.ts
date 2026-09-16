@@ -516,7 +516,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         reply.log = request.log;
       });
     }
-    if (route.authenticated) {
+    if (route.access.check !== 'none') {
       // After the tenant is known, and before the request's own parameters are looked at: a session
       // is found only in the tenant whose hostname this is, so another environment's is simply not
       // there (IAM-003).

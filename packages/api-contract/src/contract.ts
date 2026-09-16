@@ -1,3 +1,4 @@
+import type { Permission } from '@alloy-works/domain';
 import type { z } from 'zod';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -11,6 +12,25 @@ export interface RouteResponse {
 }
 
 /**
+ * What a permission-checked route asks about. A space or an artifact names the path parameter holding
+ * its id; a query names the member holding a target spelled `tenant`, `space:<id>` or `artifact:<id>`.
+ */
+export type RouteTarget =
+  | { readonly tenant: true }
+  | { readonly space: string }
+  | { readonly artifact: string }
+  | { readonly query: string };
+
+/**
+ * What a route checks before its handler runs (access.md, "Refusing"): nothing; a session; or a
+ * session and a permission on a target, decided in the transaction the handler then runs in.
+ */
+export type RouteAccess =
+  | { readonly check: 'none' }
+  | { readonly check: 'session' }
+  | { readonly check: 'permission'; readonly permission: Permission; readonly target: RouteTarget };
+
+/**
  * One route, declared once. The service registers it, validates and serialises with its schemas,
  * and the OpenAPI document is generated from it - so the three cannot disagree (API-002, API-003).
  */
@@ -22,8 +42,8 @@ export interface RouteContract {
   readonly summary: string;
   /** Whether the hostname must name a tenant before the route runs. */
   readonly tenantScoped: boolean;
-  /** Whether the route needs a session; the cross-tenant harness tests every one that does. */
-  readonly authenticated: boolean;
+  /** What it checks. Anything but `none` needs a session, and the cross-tenant harness tests it. */
+  readonly access: RouteAccess;
   /** Path parameters, named as the path names them. The service validates them before a handler. */
   readonly params?: z.ZodObject;
   readonly query?: z.ZodObject;

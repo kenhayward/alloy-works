@@ -20,7 +20,7 @@ import { signIn } from './test/sign-in.js';
 const A = 'acme.alloy.test';
 const B = 'dev.acme.alloy.test';
 
-const authenticated = allRoutes.filter((route) => route.authenticated);
+const authenticated = allRoutes.filter((route) => route.access.check !== 'none');
 
 /**
  * For each route with path parameters: how to name, in its path, something belonging to environment

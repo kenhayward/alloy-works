@@ -13,6 +13,7 @@
   "dependencies": {
     "@alloy-works/api-contract": "workspace:^",
     "@alloy-works/db": "workspace:^",
+    "@alloy-works/domain": "workspace:^",
     "@alloy-works/objects": "workspace:^",
     "@fastify/cookie": "^11.1.2",
     "@fastify/static": "^10.1.3",

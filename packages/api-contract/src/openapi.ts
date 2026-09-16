@@ -103,7 +103,7 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     (paths[route.path] ??= {})[route.method.toLowerCase()] = {
       operationId: route.operationId,
       summary: route.summary,
-      security: route.authenticated ? [{ session: [] }] : [],
+      security: route.access.check === 'none' ? [] : [{ session: [] }],
       ...(parameters.length > 0 ? { parameters } : {}),
       responses,
     };
