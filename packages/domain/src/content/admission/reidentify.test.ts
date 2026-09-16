@@ -66,7 +66,7 @@ describe('the re-identify stage', () => {
   });
 
   it('reaches blocks inside lists, tables, quotations and footnotes', () => {
-    const { outcome } = run({
+    const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
         {
@@ -115,6 +115,12 @@ describe('the re-identify stage', () => {
     };
     collect(outcome.ok ? outcome.value : undefined);
     expect(ids).toEqual(['n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10']);
+    // Eight blocks: the list, its item's paragraph, the table, its cell's paragraph, the
+    // blockquote, its paragraph, the footnote and the footnote's paragraph. No text in this
+    // fixture carries a mark, so no markIdentifier entry is reported.
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 8 },
+    ]);
   });
 
   it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {
@@ -154,7 +160,7 @@ describe('the re-identify stage', () => {
   });
 
   it('does not merge two marks of different types that arrive with one identifier', () => {
-    const { outcome } = run({
+    const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
         paragraph('b', [
@@ -172,6 +178,12 @@ describe('the re-identify stage', () => {
           { type: 'strong', id: 'n5' },
         ]),
       ]),
+    ]);
+    // One block (the paragraph); two marks, because the same arriving identifier on two
+    // different types is two annotations, not one.
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 2 },
     ]);
   });
 
