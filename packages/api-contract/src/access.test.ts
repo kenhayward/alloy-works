@@ -28,13 +28,15 @@ describe('what each route checks', () => {
     }
   });
 
-  it('declares a 403 for every route whose target may be the tenant, which is never refused as not found', () => {
-    const queryTargeted = allRoutes.filter(
-      (route) => route.access.check === 'permission' && 'query' in route.access.target,
-    );
-    expect(queryTargeted.length).toBeGreaterThan(0);
-    for (const route of queryTargeted) {
+  it('declares a 403 and a 404 on every route that checks a permission', () => {
+    // Not just a query-targeted route (whose target may be the tenant, never refused as not found):
+    // every permission-checked route can 404 an unreadable target and 403 a readable one refused
+    // (final review, item 7).
+    const checked = allRoutes.filter((route) => route.access.check === 'permission');
+    expect(checked.length).toBeGreaterThan(0);
+    for (const route of checked) {
       expect(route.responses[403], route.operationId).toBeDefined();
+      expect(route.responses[404], route.operationId).toBeDefined();
     }
   });
 
