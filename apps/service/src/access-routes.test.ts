@@ -444,6 +444,7 @@ describe('routes that check a permission', () => {
       url: `/v1/access/explain?principal=${ids.ada}&target=tenant`,
       status: 403,
     }),
+    getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
   };
 
   const checked = allRoutes.filter((route) => route.access.check === 'permission');

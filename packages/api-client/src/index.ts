@@ -9,6 +9,10 @@ export type { FollowOptions, StreamSample, StreamSnapshot } from './stream.js';
 export type Me = paths['/v1/me']['get']['responses']['200']['content']['application/json'];
 export type Sample =
   paths['/v1/samples/{sampleId}']['get']['responses']['200']['content']['application/json'];
+export type ComponentList =
+  paths['/v1/components']['get']['responses']['200']['content']['application/json'];
+export type ComponentView =
+  paths['/v1/components/{id}']['get']['responses']['200']['content']['application/json'];
 
 /**
  * The one way a client calls the service (API-001): generated from the committed document, so a

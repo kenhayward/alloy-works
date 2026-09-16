@@ -26,6 +26,7 @@ import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import { administerOrAbove, authorise, notFound, type Authorised } from './access.js';
+import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -286,6 +287,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
   }
 
   const handlers: Handlers = {
+    ...componentHandlers(db, tenantOf, principalOf),
+
     getHealth: async () => ({ status: 'ok' }),
 
     getTenant: async (request) => {

@@ -53,10 +53,11 @@ const OTHER_TENANT_IDS: Readonly<
       return sample.id;
     }),
   }),
+  getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
 };
 
-/** A component in environment B's General space, as a query's target names it. */
-const componentIn = (tenant: Tenant, db: TenantDatabase) =>
+/** A component in environment B's General space. */
+const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx
       .selectFrom('space')
@@ -68,8 +69,12 @@ const componentIn = (tenant: Tenant, db: TenantDatabase) =>
       .values({ kind: 'component', space_id: general.id })
       .returning('id')
       .executeTakeFirstOrThrow();
-    return `artifact:${artifact.id}`;
+    return artifact.id;
   });
+
+/** The same, as a query's target names it. */
+const componentIn = async (tenant: Tenant, db: TenantDatabase) =>
+  `artifact:${await componentIdIn(tenant, db)}`;
 
 /**
  * For each route whose permission's target is a query member: the query naming something belonging to
@@ -102,7 +107,6 @@ const withQueryTargets = allRoutes.filter(
 );
 const fill = (path: string, ids: Record<string, string>) =>
   path.replace(/\{(\w+)\}/g, (_match, name: string) => ids[name] ?? '');
-
 describe("no environment accepts another environment's session (IAM-004)", () => {
   let db: TestDatabase;
   let idp: StandInProvider;

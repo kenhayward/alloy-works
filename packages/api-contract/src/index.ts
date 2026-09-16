@@ -5,6 +5,7 @@ export type {
   RouteResponse,
   RouteTarget,
 } from './contract.js';
+export { ComponentList, ComponentListQuery, ComponentParams, ComponentView } from './components.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {

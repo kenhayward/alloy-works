@@ -1,3 +1,4 @@
+import { componentRoutes } from './components.js';
 import type { RouteContract } from './contract.js';
 import {
   AccessAnswers,
@@ -235,6 +236,8 @@ export const routes = {
       404: notFound,
     },
   },
+  // Finding, opening and editing components, each declared beside its schemas.
+  ...componentRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);
