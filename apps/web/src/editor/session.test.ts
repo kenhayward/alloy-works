@@ -58,12 +58,26 @@ class FakeService implements SessionService {
   readonly calls: string[] = [];
   readonly saved: { sequence: number; openedFrom: string; text: string }[] = [];
   /** The session id this fake is currently claimed under - changes only when `claim` is asked for a
-   * fresh one, modelling the adapter's contract (fix round 2, finding 2) so a test can tell a reclaim
-   * under the old, poisoned id from a genuine fresh one. */
+   * fresh one (fix round 2, finding 2), and survives everything else, including a release: one session
+   * id per window (decision 14), same as the real adapter. */
   sessionId = 'session-0';
   private freshCount = 0;
+  /**
+   * The latest sequence and content this fake has accepted, per session id - modelling
+   * packages/db/src/editing.ts's bookkeeping kept per artifact, principal and session, which a release
+   * does not reset (fix round 3). `save` is refused against it exactly as the real service refuses: a
+   * sequence at or below the one on record is `iteration_stale`, unless it repeats the same sequence
+   * with different content, which is `iteration_conflict`.
+   */
+  private readonly accepted = new Map<string, { sequence: number; text: string }>();
   claimAnswer: () => Promise<ClaimResult> = async () => ({ ok: true });
-  saveAnswer: () => Promise<SaveResult> = async () => ({ ok: true });
+  /**
+   * `undefined` defers to this fake's own sequence bookkeeping above; a test overrides this only for a
+   * failure the bookkeeping would not itself produce - a timeout, `lock_held`, a canned `failed`. An
+   * override that answers `ok: true` is still recorded below, so the bookkeeping stays consistent for
+   * whatever call comes after it.
+   */
+  saveAnswer: () => Promise<SaveResult | undefined> = async () => undefined;
   cutAnswer: (openedFrom: string) => Promise<CutResult> = async () => ({
     ok: true,
     outcome: 'cut',
@@ -78,15 +92,33 @@ class FakeService implements SessionService {
     this.calls.push(move ? 'claim, moving' : 'claim');
     return this.claimAnswer();
   }
-  async save(sequence: number, openedFrom: string, content: ContentDocument) {
+  async save(sequence: number, openedFrom: string, content: ContentDocument): Promise<SaveResult> {
     this.calls.push(`save ${sequence}`);
     const paragraph = content.content[0];
     const text =
       paragraph?.type === 'paragraph'
         ? paragraph.content.map((inline) => (inline.type === 'text' ? inline.value : '')).join('')
         : '';
-    this.saved.push({ sequence, openedFrom, text });
-    return this.saveAnswer();
+    const overridden = await this.saveAnswer();
+    let result: SaveResult;
+    if (overridden) {
+      result = overridden;
+    } else {
+      const last = this.accepted.get(this.sessionId);
+      if (last && sequence <= last.sequence) {
+        result =
+          sequence === last.sequence && text !== last.text
+            ? { ok: false, code: 'iteration_conflict', latest: last.sequence }
+            : { ok: false, code: 'iteration_stale', latest: last.sequence };
+      } else {
+        result = { ok: true };
+      }
+    }
+    if (result.ok) {
+      this.accepted.set(this.sessionId, { sequence, text });
+      this.saved.push({ sequence, openedFrom, text });
+    }
+    return result;
   }
   async cut(openedFrom: string) {
     this.calls.push(`cut from ${openedFrom}`);
@@ -95,6 +127,11 @@ class FakeService implements SessionService {
   async release(openedFrom: string) {
     this.calls.push(`release from ${openedFrom}`);
     return this.cutAnswer(openedFrom);
+  }
+  /** Test setup only: pretend an earlier session under this same id already saved past this sequence -
+   * as if this window's session id had been used before a reload (fix round 3). */
+  seedAccepted(sequence: number, text: string) {
+    this.accepted.set(this.sessionId, { sequence, text });
   }
 }
 
@@ -547,7 +584,7 @@ describe('the editing session', () => {
     expect(session.view().phase).toBe('lost');
   });
 
-  it('reclaims and saves an edit that lands on the wire during Done editing, rather than stranding it', async () => {
+  it('an edit on the wire during Done editing is saved after the re-claim', async () => {
     const { clock, service, session, type } = harness();
     let resolveRelease: (result: CutResult) => void = () => {};
     service.cutAnswer = () => new Promise((resolve) => (resolveRelease = resolve));
@@ -563,7 +600,11 @@ describe('the editing session', () => {
     // schedule, same as any other change.
     expect(session.view().phase).toBe('editing');
     await clock.advance(2_000);
-    expect(service.calls).toEqual(['claim', 'save 1', 'release from v1', 'claim', 'save 1']);
+    // The re-claim is not fresh - it is the same session id picking its lock back up, and the service
+    // keeps that id's sequence across a release - so the next save continues at 2, not 1 (fix round 3:
+    // resetting it here, as rounds 1 and 2 did, sent this exact save in under a sequence the fake (now
+    // modelling the real service's per-session bookkeeping) had already passed).
+    expect(service.calls).toEqual(['claim', 'save 1', 'release from v1', 'claim', 'save 2']);
     expect(service.saved.map((each) => each.text)).toEqual(['Unbox', 'Unbox the']);
   });
 
@@ -642,5 +683,36 @@ describe('the editing session', () => {
       phase: 'lost',
       notice: 'This session no longer holds the component.',
     });
+  });
+
+  it('Done editing, then edit again in the same window saves normally', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    await session.doneEditing();
+    expect(session.view().phase).toBe('reading');
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    // The window's session id survived Done editing (decision 14), and so did its sequence on the
+    // service - continuing it, not restarting at 1, is what lets this second edit save at all (fix
+    // round 3: restarting it, as rounds 1 and 2 did, was answered `iteration_stale` against the
+    // sequence the service already held for this id, and lost the session on a false "newer text"
+    // notice).
+    expect(service.calls).toEqual(['claim', 'save 1', 'release from v1', 'claim', 'save 2']);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved' });
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 2, text: 'Unbox the printer' });
+  });
+
+  it('a reload starting a new page at sequence 0 under the surviving session id goes to lost, never overwriting what was saved before', async () => {
+    const { clock, service, session, type } = harness();
+    // Stands in for an earlier load of this same window having already saved past sequence 1 under
+    // this session id, the way sessionStorage would carry the id across a reload (decision 14) while
+    // this fresh `createSession` call - a new page - starts counting from 0 again, same as a real
+    // reload does.
+    service.seedAccepted(5, 'Unbox the printer.');
+    type('Unbox');
+    await clock.advance(2_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    expect(session.view().phase).toBe('lost');
   });
 });

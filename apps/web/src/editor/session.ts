@@ -326,12 +326,18 @@ export function createSession(options: SessionOptions): Session {
     phase = 'claiming';
     holder = null;
     notice = 'Starting to edit.';
-    // A claim starts a clean count and a clean backoff - the reset is a no-op for the very first
-    // claim (everything is already at its initial value), and is exactly what a re-claim needs: the
-    // sequence, the failure streak and its backoff all belonged to the session this call is about to
-    // replace or resume, not to whatever this claim is about to do (fix round 2, finding 6; the
-    // sequence reset is finding 1 from round 1).
-    sequence = 0;
+    // The sequence belongs to the session id, not to this call: the id survives Done editing within
+    // the same window (decision 14), and the service keeps the latest sequence it has accepted per
+    // artifact, principal and session - a release does not reset it (packages/db/src/editing.ts).
+    // Resetting it on every claim, as round 1 and round 2 did, sent every second edit in a window, and
+    // the reclaim after a release, in under a sequence the service had already passed - answered
+    // `iteration_stale`/`iteration_conflict` and lost the session on a false "newer text" notice (fix
+    // round 3, the critical finding). Only a fresh claim - a genuinely new session id, because the old
+    // one just went stale - starts the count over; a reload already starts a session at 0 on its own,
+    // so reload detection needs no help from this reset. The failure streak and its backoff are the
+    // opposite: they are this session's own bookkeeping, not the service's, so they always start clean
+    // on any claim (fix round 2, finding 6).
+    if (fresh) sequence = 0;
     failures = 0;
     hasFailed = false;
     publish();
@@ -445,7 +451,8 @@ export function createSession(options: SessionOptions): Session {
       lose(lockGoneMessage());
       return;
     }
-    sequence = 0;
+    // Not fresh: this is the same session id picking its own lock back up, so its sequence continues
+    // rather than resetting (fix round 3).
     failures = 0;
     hasFailed = false;
     phase = 'editing';
