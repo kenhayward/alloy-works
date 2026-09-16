@@ -25,14 +25,28 @@ function inSet(set: ReadableSet, id: string, spaceId: string | null): boolean {
   return (contained && !set.excluded.includes(id)) || set.included.includes(id);
 }
 
-function chainOf(id: string): Level[] {
-  const spaceId = ARTIFACTS.get(id) ?? null;
+function chainFor(id: string, spaceId: string | null): Level[] {
   return [
     { kind: 'artifact', id },
     ...(spaceId === null ? [] : [{ kind: 'space', id: spaceId } as const]),
     { kind: 'tenant' },
   ];
 }
+
+function chainOf(id: string): Level[] {
+  return chainFor(id, ARTIFACTS.get(id) ?? null);
+}
+
+/**
+ * Artifacts no grant in the generated tenants ever names, so `facts.artifacts` never carries them:
+ * only `spaces` and `tenant` can decide these, one per space and one in no space. Load-bearing check
+ * for `ReadableFacts.artifacts`'s own doc comment - see the property test below.
+ */
+const UNTOUCHED: ReadonlyArray<readonly [string, string | null]> = [
+  ['artifact-clinical-untouched', 'space-clinical'],
+  ['artifact-quality-untouched', 'space-quality'],
+  ['artifact-tenant-untouched', null],
+];
 
 /** mulberry32: a small seeded generator, so a failure names a seed that reproduces it. */
 function random(seed: number): () => number {
@@ -152,6 +166,10 @@ describe('the readable set', () => {
       const set = readableSet(facts);
       for (const [id, spaceId] of ARTIFACTS) {
         const decision = decide('read', { ...facts, chain: chainOf(id) });
+        expect(inSet(set, id, spaceId), `seed ${seed}, ${id}`).toBe(decision.allowed);
+      }
+      for (const [id, spaceId] of UNTOUCHED) {
+        const decision = decide('read', { ...facts, chain: chainFor(id, spaceId) });
         expect(inSet(set, id, spaceId), `seed ${seed}, ${id}`).toBe(decision.allowed);
       }
     }

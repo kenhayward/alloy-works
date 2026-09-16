@@ -71,12 +71,14 @@ function walkFor(permission: Permission, chain: readonly Level[]): readonly Leve
 }
 
 /**
- * An external principal's grants at the tenant, and grants with no expiry, are not read (IAM-049,
+ * An external principal's allows at the tenant, and allows with no expiry, are not read (IAM-049,
  * IAM-071). That covers what no administrator made - a provider asserting an external principal
- * into a group - which cannot be refused where it happens.
+ * into a group - which cannot be refused where it happens. A denial is never ignored on that
+ * account: it can only remove access, so nothing a provider asserts needs refusing there, and
+ * dropping it would let an untimed or tenant-wide denial of a group lose to a narrower allow.
  */
 function readable(grant: AccessGrant, facts: AccessFacts): boolean {
-  if (facts.principal.kind !== 'external') return true;
+  if (facts.principal.kind !== 'external' || grant.effect === 'deny') return true;
   return grant.level.kind !== 'tenant' && grant.expiresAt !== null;
 }
 

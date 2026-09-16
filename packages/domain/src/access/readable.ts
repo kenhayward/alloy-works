@@ -10,6 +10,11 @@ export interface ReadableFacts {
   readonly principal: AccessFacts['principal'];
   readonly groups: readonly string[];
   readonly spaces: readonly string[];
+  /**
+   * Load-bearing: every artifact any grant in `grants` names at the artifact level must be a key
+   * here, or `readableSet` and `decide` disagree for it - an artifact-level grant this map does not
+   * know about cannot move that artifact into `excluded` or `included`.
+   */
   readonly artifacts: ReadonlyMap<string, string | null>;
   readonly grants: readonly AccessGrant[];
   readonly now: Date;

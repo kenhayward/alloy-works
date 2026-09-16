@@ -187,8 +187,9 @@ denials at the deciding level if any, otherwise its allows, each with `through` 
 principal through, or null; `checked` is every level the walk looked at. **Where the walk starts:**
 `manage_definitions` at the tenant whatever it is asked of; `create` at the target's space, skipping an
 artifact - and at the tenant for an artifact in no space; everything else at the target. An expired grant
-(`expiresAt <= now`) is ignored. For an external principal, grants at the tenant and grants with no expiry
-are ignored whatever their effect, and then `create`, `edit`, `approve`, `publish`, `design`,
+(`expiresAt <= now`) is ignored. For an external principal, allows at the tenant and allows with no expiry
+are ignored, while every unexpired denial counts (amended in the build: a denial can only take access away,
+so an administrator's open-ended group denial holds for the group's external members too), and then `create`, `edit`, `approve`, `publish`, `design`,
 `manage_definitions` and `administer` answer `capped` with the level and grants the walk found.
 
 **6. The epoch is locked by triggers, not by each write path.** access.md said every change "updates it";
@@ -1288,6 +1289,8 @@ describe('an external principal', () => {
     ).toBe(true);
   });
 
+  // Amended in the build: this test was reversed. An external principal is held to every unexpired
+  // denial, at the tenant or with no expiry included; see decision 5.
   it('is refused nothing by a denial it ignores: what is ignored is ignored whatever its effect', () => {
     const facts = external([grant(artifact, null, 'deny'), grant(space, LATER)]);
     expect(decide('comment', facts)).toMatchObject({ allowed: true, level: space });
@@ -6199,7 +6202,7 @@ external member, the decision ignores a grant with no expiry. Adding an external
 refused where any grant the group holds would be refused to them directly.
 
 **Where a decision is taken**, an external principal's grants at the tenant and grants with no expiry
-are ignored, whatever their effect, and then the cap applies. That covers the membership no
+are ignored when they allow, every unexpired denial counts, and then the cap applies. That covers the membership no
 administrator made - a provider asserting an external principal into a group - which cannot be refused
 where it happens.
 

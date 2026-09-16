@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { decide, type AccessFacts, type AccessGrant } from './decide.js';
 import type { Level } from './level.js';
 import { externalCap, permissions } from './permissions.js';
+import { readableSet } from './readable.js';
 
 const ALICE = '00000000-0000-4000-8000-0000000a11ce';
 const PARTNERS = '00000000-0000-4000-8000-00000000fa27';
 const CLINICAL = '00000000-0000-4000-8000-00000000c11c';
 const DOSING = '00000000-0000-4000-8000-00000000d05e';
+const SECRET = '00000000-0000-4000-8000-00000005ecae';
 
 const tenant: Level = { kind: 'tenant' };
 const space: Level = { kind: 'space', id: CLINICAL };
@@ -73,12 +75,38 @@ describe('an external principal', () => {
     ).toBe(true);
   });
 
-  it('is refused nothing by a denial it ignores: what is ignored is ignored whatever its effect', () => {
+  it('is refused by a denial with no expiry: a denial is never ignored, only an allow is', () => {
     const facts = external([grant(artifact, null, 'deny'), grant(space, LATER)]);
-    expect(decide('comment', facts)).toMatchObject({ allowed: true, level: space });
+    expect(decide('comment', facts)).toMatchObject({ allowed: false, level: artifact });
     expect(decide('comment', external(facts.grants, 'user'))).toMatchObject({
       allowed: false,
       level: artifact,
     });
+  });
+
+  it('is refused read by a denial to a group it belongs to, though its own allow reaches further, and readableSet agrees', () => {
+    const secret: Level = { kind: 'artifact', id: SECRET };
+    const facts: AccessFacts = {
+      principal: { id: ALICE, kind: 'external' },
+      groups: [PARTNERS],
+      chain: [secret, space, tenant],
+      grants: [grant(secret, null, 'deny', { group: PARTNERS }), grant(space, LATER, 'allow')],
+      now: NOW,
+    };
+    expect(decide('read', facts)).toMatchObject({
+      allowed: false,
+      reason: 'denied',
+      level: secret,
+    });
+
+    const set = readableSet({
+      principal: facts.principal,
+      groups: facts.groups,
+      spaces: [CLINICAL],
+      artifacts: new Map([[SECRET, CLINICAL]]),
+      grants: facts.grants,
+      now: NOW,
+    });
+    expect(set.excluded).toEqual([SECRET]);
   });
 });
