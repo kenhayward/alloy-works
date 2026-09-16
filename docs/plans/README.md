@@ -178,3 +178,17 @@ the editor session plan's, with the service; erasure - what is removed from a pr
 record keeps; a cold cache at a million components, unmeasured and belonging with the hosting decision;
 and deduplicating content, whose cost the load test measured without yet being worth a content-addressed
 store.
+
+## Access
+
+Who may do what to which artifact, designed in [access.md](../design/access.md). It comes before the
+editor session, because every route that session adds is checked, and a route written before the check
+exists is a route that has to be revisited.
+
+| #   | Plan                                                                                    | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |
+| --- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [Roles, grants and the decision](2026-09-16-access-01-roles-grants-and-the-decision.md) | `packages/domain/src/access/`: the closed permission set, `checkRole` and the starter roles, `decide` with its explanation and the external cap, and `readableSet`; in `packages/db`, `role`, `access_group`, `group_member`, the insert-only `access_grant`, `access_policy`, `principal.kind`, the seven roles and _General_ every tenant starts with, `access_epoch` locked by triggers on every fact, `grant` with the external rules, and the facts loaders; in the service, every route declaring what it checks, the route helper, and `GET /v1/access` and `GET /v1/access/explain`. No roles, groups or grants routes, no lock-out guard, no first administrator, no provider groups, no `modesFor`, no panel | Planned |
+
+The plan leads with seven findings against access.md - among them that nobody can be made read-only on one
+artifact inside a space they author, and that no tenant can start with an administrator as designed - and
+each needs Ken's ruling before the plan that depends on it.
