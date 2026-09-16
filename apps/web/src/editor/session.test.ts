@@ -146,6 +146,8 @@ function harness() {
   let text = 'Unbox the printer.';
   const views: SessionView[] = [];
   const refused: Holder[] = [];
+  /** Whether each refusal had something pending when it started (fix round 2, finding 1). */
+  const refusedPending: boolean[] = [];
   const versions: VersionRef[] = [];
   const session = createSession({
     service,
@@ -167,14 +169,17 @@ function harness() {
       ],
     }),
     onChange: (view) => views.push(view),
-    onRefused: (holder) => refused.push(holder),
+    onRefused: (holder, hadPending) => {
+      refused.push(holder);
+      refusedPending.push(hadPending);
+    },
     onVersion: (version) => versions.push(version),
   });
   const type = (next: string) => {
     text = next;
     session.changed();
   };
-  return { clock, service, session, type, views, refused, versions };
+  return { clock, service, session, type, views, refused, refusedPending, versions };
 }
 
 describe('the editing session', () => {
@@ -812,13 +817,42 @@ describe('the editing session', () => {
     expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped' });
   });
 
-  it('says saved, not stopped, when a claim is retried with nothing pending, fix round 1 finding 3', async () => {
+  it('says saved, not stopped, when a claim is retried with nothing ever pending, fix round 1 finding 3', async () => {
     const { clock, service, session } = harness();
     const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
     service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
     session.claimAgain(false);
     await clock.advance(0);
     expect(session.view()).toMatchObject({ phase: 'reading', save: 'saved' });
+  });
+
+  it('keeps saying stopped, not saved, when a bare retry follows a refusal that already discarded something, fix round 2 finding 2', async () => {
+    const { clock, service, session, type } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    type('Unbox');
+    await clock.advance(0);
+    expect(session.view().save).toBe('stopped');
+    // A bare retry - nothing typed since - has nothing new to lose, but what an earlier refusal
+    // already discarded is still only kept, not written anywhere, so the indicator must not swing
+    // back to "saved" as though everything were fine.
+    session.claimAgain(false);
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped' });
+  });
+
+  it('tells the caller whether anything was actually pending when a claim was refused, fix round 2 finding 1', async () => {
+    const { clock, service, session, type, refusedPending } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    // A bare retry with nothing typed: nothing was pending.
+    session.claimAgain(false);
+    await clock.advance(0);
+    expect(refusedPending).toEqual([false]);
+    // Typing, then a refusal: something was pending.
+    type('Unbox');
+    await clock.advance(0);
+    expect(refusedPending).toEqual([false, true]);
   });
 
   it('offers a holder to retry against even when a claim merely times out, fix round 1 finding 1', async () => {
@@ -832,6 +866,36 @@ describe('the editing session', () => {
     });
   });
 
+  it('sets the indicator from the real state on a successful claim, saved with nothing pending, fix round 2 finding 3', async () => {
+    const { clock, service, session, type } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    type('Unbox');
+    await clock.advance(0);
+    expect(session.view().save).toBe('stopped');
+    service.claimAnswer = async () => ({ ok: true });
+    session.claimAgain(false);
+    await clock.advance(0);
+    // Editing again, with nothing pending and the kept text moot: `saved` is the true state, not the
+    // `stopped` left over from the refusal this claim has now resolved.
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved' });
+  });
+
+  it('sets the indicator from the real state on a successful claim, saving when something is pending, fix round 2 finding 3', async () => {
+    const { clock, service, session, type } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    type('Unbox');
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped' });
+    service.claimAnswer = async () => ({ ok: true });
+    // Typing again while still `reading` both marks it dirty and re-triggers the claim - this one
+    // succeeds carrying that pending change.
+    type('Unbox the printer');
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saving' });
+  });
+
   it('flushes a pending change on dispose, best effort, rather than dropping it silently, fix round 1 finding 4', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');
@@ -843,17 +907,25 @@ describe('the editing session', () => {
     expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox the printer' }]);
   });
 
-  it('never double-sends on dispose when a save is already in flight, fix round 1 finding 4', async () => {
+  it('sends a newer snapshot after an in-flight save settles, rather than dropping it, fix round 2 finding 4', async () => {
     const { clock, service, session, type } = harness();
     let answer: (result: SaveResult) => void = () => {};
     service.saveAnswer = () => new Promise((resolve) => (answer = resolve));
     type('Unbox');
     await clock.advance(2_000);
+    // Arrives after the in-flight save's snapshot was taken - not in that request, and must not be
+    // dropped just because a save is already on the wire (fix round 2, finding 4).
     type('more');
     session.dispose();
     await settle();
+    // Nothing sent concurrently with the one already in flight.
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    service.saveAnswer = async () => ({ ok: true });
     answer({ ok: true });
+    await settle();
+    // The queued follow-up, exactly once, over the next sequence, once the first settles.
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 2, text: 'more' });
   });
 
   it('does not flush on dispose once the session is already lost', async () => {
@@ -867,5 +939,15 @@ describe('the editing session', () => {
     session.dispose();
     await settle();
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+  });
+
+  it('flushes typing that arrived during claiming on dispose, not only during editing, fix round 2 minor', async () => {
+    const { service, session, type } = harness();
+    service.claimAnswer = () => new Promise(() => {});
+    type('Unbox');
+    expect(session.view().phase).toBe('claiming');
+    session.dispose();
+    await settle();
+    expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox' }]);
   });
 });

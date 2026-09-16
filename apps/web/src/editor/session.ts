@@ -142,8 +142,13 @@ export interface SessionOptions {
   /** The whole content as the editor holds it now, through `fromEditor`. */
   readonly snapshot: () => ContentDocument;
   readonly onChange: (view: SessionView) => void;
-  /** A claim was refused: the held changes are the component's to undo and offer as text. */
-  readonly onRefused: (holder: Holder) => void;
+  /**
+   * A claim was refused: the held changes are the component's to undo and offer as text.
+   * `hadPending` (fix round 2, finding 1): whether anything was actually pending when this claim
+   * started - false for a bare retry with nothing typed since the last refusal, which has nothing new
+   * to undo or offer.
+   */
+  readonly onRefused: (holder: Holder, hadPending: boolean) => void;
   /** A version was cut or the session opened from a new one: undo must not reach past it (CNT-103). */
   readonly onVersion: (version: VersionRef) => void;
 }
@@ -199,6 +204,11 @@ export function createSession(options: SessionOptions): Session {
    * gone stays unrecoverable here - Recovery is the next plan's. */
   let lostFromStale = false;
   let disposed = false;
+  /** Set once a claim has ever discarded a pending change (fix round 2, finding 2): stays true across
+   * a later bare retry that has nothing new to lose, so the indicator keeps saying not saved for as
+   * long as that earlier text is still only kept, not written anywhere. Cleared only by a successful
+   * claim, which puts the kept text behind it (fix round 2, finding 3). */
+  let somethingKept = false;
 
   const view = (): SessionView => ({
     phase,
@@ -393,25 +403,34 @@ export function createSession(options: SessionOptions): Session {
     if (result.ok) {
       phase = 'editing';
       notice = 'You are editing this component.';
+      // A successful claim is the real state, told plainly (fix round 2, finding 3): the previous
+      // value could be `stopped`, left over from a refusal this claim has now resolved, which would
+      // otherwise say "not saved" while there was nothing left unsaved. Whatever was kept as text
+      // stands behind this session now, so it no longer keeps `save` pinned at `stopped` either.
+      save = dirty ? 'saving' : 'saved';
+      somethingKept = false;
       publish();
       if (dirty) schedule();
       return;
     }
     // Whatever was pending when this claim started is discarded - the held changes are the caller's to
     // undo and offer as text (`onRefused`, below) - so `stopped` says plainly that it is not saved and
-    // nothing is retrying it; `saved` only when there was nothing pending to lose (fix round 1, finding
-    // 3), such as a bare retry with no further typing since the last refusal.
+    // nothing is retrying it; `saved` only when nothing has ever been discarded this way (fix round 1,
+    // finding 3; fix round 2, finding 2): a bare retry with nothing typed since the last refusal has
+    // nothing new to lose, but whatever an earlier refusal already discarded is still only kept, not
+    // written anywhere, so `save` must not swing back to `saved` while that stays true.
     const hadPending = dirty;
+    if (hadPending) somethingKept = true;
     phase = 'reading';
     dirty = false;
-    save = hadPending ? 'stopped' : 'saved';
+    save = somethingKept ? 'stopped' : 'saved';
     if (result.code === HELD) {
       holder = result.holder;
       notice = result.holder.yours
         ? 'You are editing this component in another window.'
         : `${result.holder.name ?? 'Someone else'} is editing this component.`;
       publish();
-      options.onRefused(result.holder);
+      options.onRefused(result.holder, hadPending);
       return;
     }
     // A holder that is nobody's (fix round 1, finding 1): a claim that merely failed or timed out - not
@@ -420,7 +439,7 @@ export function createSession(options: SessionOptions): Session {
     holder = { name: null, expectedRelease: '', yours: false };
     notice = 'Could not start editing. Try again.';
     publish();
-    options.onRefused(holder);
+    options.onRefused(holder, hadPending);
   };
 
   const finish = async (
@@ -545,18 +564,44 @@ export function createSession(options: SessionOptions): Session {
       // Best effort: an unmount must not drop a change silently (fix round 1, finding 4). Fired before
       // `disposed` is set, so the guards inside `send` do not refuse it - but nothing here awaits the
       // result, retries it, or publishes a view for it: whatever would show either is already gone.
-      // Skipped when a save is already in flight (that request already carries the snapshot as of when
-      // it was sent; a second one over it would race it for no benefit) or the session is `lost` (there
-      // is no lock left to save under).
+      // `claiming` counts too (fix round 2, minor): typing that arrived while the very first claim is
+      // still on the wire is exactly as unsent as typing during `editing`. `lost` does not: there is no
+      // lock left to save under.
       if (
-        !inFlight &&
         dirty &&
-        (phase === 'editing' || phase === 'cutting' || phase === 'releasing')
+        (phase === 'claiming' ||
+          phase === 'editing' ||
+          phase === 'cutting' ||
+          phase === 'releasing')
       ) {
-        sequence += 1;
-        const sent = sequence;
-        dirty = false;
-        void service.save(sent, version.id, options.snapshot()).catch(() => {});
+        const alreadyInFlight = inFlight;
+        // A cut or release already manages its own in-flight save's lifecycle (`finish`, above), and
+        // notices this disposal on its own next checkpoint (`if (disposed) return;`) - queuing a
+        // second request over the very save it is still waiting on would race what it still does with
+        // that same promise, so this leaves it alone rather than adding to it.
+        const alreadySupervised = alreadyInFlight && (phase === 'cutting' || phase === 'releasing');
+        if (!alreadySupervised) {
+          // The snapshot must be taken now, synchronously: the caller destroys the view the instant
+          // this returns, and `options.snapshot()` reads it.
+          const content = options.snapshot();
+          const openedFrom = version.id;
+          dirty = false;
+          if (alreadyInFlight) {
+            // A save is already on the wire, sent from an earlier snapshot - this typing arrived after
+            // that one was taken, so it is not in that request and must not be dropped just because
+            // another is already running (fix round 2, finding 4). Queued after it settles, over the
+            // next sequence, rather than sent alongside it: never two requests for one session at
+            // once, and never more than this one follow-up, since nothing can arrive after the view is
+            // destroyed.
+            void alreadyInFlight.then(() => {
+              sequence += 1;
+              void service.save(sequence, openedFrom, content).catch(() => {});
+            });
+          } else {
+            sequence += 1;
+            void service.save(sequence, openedFrom, content).catch(() => {});
+          }
+        }
       }
       disposed = true;
       stopTimers();

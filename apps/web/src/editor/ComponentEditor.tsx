@@ -82,6 +82,11 @@ export function ComponentEditor({
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
   // shown again for the life of this session.
   const staleLockKnown = useRef(false);
+  // Whether `kept` already reflects the surface exactly as it stands (fix round 2, minor): true right
+  // after `lost` or a refusal captures it, false again the moment a real change arrives. Without this,
+  // a second refusal that found nothing new to lose - the reclaim from `lost` failing again, or a bare
+  // Try again - would append the very same unchanged text a second time.
+  const keptIsCurrent = useRef(false);
 
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
@@ -142,6 +147,14 @@ export function ComponentEditor({
       });
     let base = opened.doc;
     let phase: SessionView['phase'] = 'reading';
+    keptIsCurrent.current = false;
+    /** Captures the surface into `kept`, once for whatever it currently holds (fix round 2, minor). */
+    const captureKept = () => {
+      if (keptIsCurrent.current) return;
+      const now = textOf(view);
+      setKept((previous) => (previous ? `${previous}\n\n${now}` : now));
+      keptIsCurrent.current = true;
+    };
     // Which id this page starts with (task 10, finding C): kept only if this component's lock, as the
     // GET just answered, says this caller already holds it under that very id - a reload while
     // holding keeps its lock, while reopening after Done editing (nothing holds it any longer) starts
@@ -163,21 +176,27 @@ export function ComponentEditor({
         setSession(next);
         if (next.notice) setNotice(next.notice);
         if (next.phase !== 'reading') staleLockKnown.current = true;
-        if (next.phase === 'lost') setKept(textOf(view));
+        if (next.phase === 'lost') captureKept();
         // The kept text is only good until the next successful claim puts this session back in
         // control (fix round 1, finding 2): from then on it is stale, not something still worth
-        // offering back.
-        if (next.phase === 'editing') setKept(null);
+        // offering back. A later refusal starts capturing fresh too (fix round 2, minor).
+        if (next.phase === 'editing') {
+          setKept(null);
+          keptIsCurrent.current = false;
+        }
         view.setProps({});
       },
-      onRefused: () => {
+      onRefused: (_holder, hadPending) => {
+        // Nothing was pending: there is nothing new to undo or offer, so nothing here changes (fix
+        // round 2, finding 1) - a bare Try again must not add another copy of the unchanged, already
+        // saved version to the kept text.
+        if (!hadPending) return;
         // The held changes are not applied: the surface goes back to the version, and what was typed
-        // is offered as text, the one thing that can be kept without writing to the component. A
-        // second refusal appends rather than replaces (fix round 1, finding 2): the surface was put
-        // back to `base` after the first one, so what it holds now is only what was typed since -
-        // discarding the earlier kept text here would lose it for good.
-        const now = textOf(view);
-        setKept((previous) => (previous ? `${previous}\n\n${now}` : now));
+        // is offered as text, the one thing that can be kept without writing to the component.
+        // `captureKept` appends rather than replaces (fix round 1, finding 2) and is a no-op when the
+        // surface's current content was already captured - a refused Continue after `lost` already
+        // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
+        captureKept();
         view.updateState(fresh(base));
       },
       onVersion: () => {
@@ -199,6 +218,9 @@ export function ComponentEditor({
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
         if (transaction.docChanged) {
+          // A real change invalidates whatever `kept` already captured (fix round 2, minor): the next
+          // refusal, if there is one, has something new to capture again.
+          keptIsCurrent.current = false;
           editing.changed();
         }
       },
@@ -214,18 +236,22 @@ export function ComponentEditor({
 
   // While there is something the service has not acknowledged, an unmount already flushes it best
   // effort (Session.dispose) but a page close does not run that cleanup at all - so a close is
-  // guarded for as long as anything is dirty or being sent (fix round 1, finding 4), and the guard
-  // comes off the moment that stops being true.
+  // guarded for as long as anything is dirty or being sent (fix round 1, finding 4): while dirty,
+  // while a save is in flight, while a retry is failing with content it has not yet acknowledged, or
+  // while there is still text kept from a refusal that was never written anywhere (fix round 2,
+  // minor). The guard comes off the moment none of those is true any longer.
   useEffect(() => {
     if (!session) return undefined;
-    if (!(session.dirty || session.save === 'saving')) return undefined;
+    const unacknowledged =
+      session.dirty || session.save === 'saving' || session.save === 'failing' || kept !== null;
+    if (!unacknowledged) return undefined;
     const warnBeforeClose = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warnBeforeClose);
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
-  }, [session]);
+  }, [session, kept]);
 
   if (loaded.state === 'loading') return <p>Opening...</p>;
   if (loaded.state === 'missing') {
