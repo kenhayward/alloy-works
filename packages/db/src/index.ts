@@ -79,4 +79,20 @@ export {
   type StoredVersion,
 } from './versions.js';
 export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
-export { createGroup, type Group, type GroupAnswer } from './groups.js';
+export {
+  addToGroup,
+  createGroup,
+  type Group,
+  type GroupAnswer,
+  type MembershipAnswer,
+} from './groups.js';
+export {
+  accessPolicy,
+  grant,
+  type AccessPolicy,
+  type ExternalRefusal,
+  type GrantAnswer,
+  type GrantRefusal,
+  type NewGrant,
+  type StoredGrant,
+} from './grants.js';
