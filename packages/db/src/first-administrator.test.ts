@@ -253,6 +253,62 @@ describe('the first administrator', () => {
     });
   });
 
+  it('treats an existing identical Administrator allow as already satisfying the claim, rather than failing the sign-in', async () => {
+    const outpost = await tenant('Outpost');
+    await nameFirstAdministrator(db.adminUrl, outpost, {
+      issuer: ISSUER,
+      subject: 'mallory',
+      namedBy: 'provisioning',
+    });
+    // Made directly, not through `signingIn` plus `claimFirstAdministrator`, and as an external
+    // principal so `administered()` - which excludes external principals - does not itself already
+    // see this as "somebody administers the tenant" and skip the insert this exercises.
+    const mallory = await service.withTenant(outpost, async (trx) => {
+      const principal = await trx
+        .insertInto('principal')
+        .values({
+          issuer: ISSUER,
+          subject: 'mallory',
+          email: null,
+          display_name: null,
+          kind: 'external',
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const administrator = await findRole(trx, 'Administrator');
+      await trx
+        .insertInto('access_grant')
+        .values({
+          role_id: administrator!.id,
+          principal_id: principal.id,
+          level: 'tenant',
+          effect: 'allow',
+          granted_by: principal.id,
+        })
+        .execute();
+      return principal.id;
+    });
+
+    await service.withTenant(outpost, async (trx) => {
+      await expect(
+        claimFirstAdministrator(trx, { id: mallory, issuer: ISSUER, subject: 'mallory' }),
+      ).resolves.toBe('granted');
+    });
+    await expect(namings(outpost)).resolves.toEqual([
+      {
+        issuer: ISSUER,
+        subject: 'mallory',
+        named_by: 'provisioning',
+        claimed_by: mallory,
+        outcome: 'granted',
+      },
+    ]);
+    const grants = await service.withTenant(outpost, (trx) =>
+      trx.selectFrom('access_grant').select('id').execute(),
+    );
+    expect(grants).toHaveLength(1);
+  });
+
   it('claims nothing across tenants: a naming in one tenant leaves another untouched', async () => {
     const alpha = await tenant('Alpha');
     const beta = await tenant('Beta');

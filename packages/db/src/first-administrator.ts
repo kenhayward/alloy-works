@@ -117,6 +117,11 @@ export async function claimFirstAdministrator(
   const { rows } = await sql<{ administered: boolean }>`${sql.raw(administered(''))}`.execute(trx);
   const outcome = rows[0]?.administered ? 'refused_administrator_exists' : 'granted';
   if (outcome === 'granted') {
+    // `onConflict` rather than `grant`: an identical grant already existing - held by a principal
+    // `administered()` does not count, an external one today - already gives the named role what
+    // this claim would, so it is treated as satisfying the claim rather than thrown as a unique
+    // violation that would 500 the sign-in, roll back the whole transaction, and leave the naming
+    // open forever.
     await trx
       .insertInto('access_grant')
       .values({
@@ -126,6 +131,7 @@ export async function claimFirstAdministrator(
         effect: 'allow',
         granted_by: principal.id,
       })
+      .onConflict((conflict) => conflict.constraint('access_grant_once').doNothing())
       .execute();
   }
   await trx
