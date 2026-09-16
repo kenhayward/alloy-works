@@ -1,6 +1,8 @@
+import { decide } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { grant, type NewGrant } from './grants.js';
+import { accessPolicy, grant, type NewGrant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -226,6 +228,51 @@ describe('making a grant', () => {
     await expect(at({ kind: 'artifact', id: artifactId })).resolves.toHaveProperty('granted');
   });
 
+  it('accepts a denial of Reader at the tenant to an external principal, which the allow-only refusals leave alone', async () => {
+    const denied = await make({
+      roleId: roles.Reader!,
+      subject: { principal: alice },
+      level: { kind: 'tenant' },
+      effect: 'deny',
+    });
+    expect(denied).toHaveProperty('granted');
+
+    const facts = await service.withTenant(production, (trx) =>
+      loadFacts(trx, alice, { kind: 'tenant' }),
+    );
+    expect(decide('read', facts!).allowed).toBe(false);
+  });
+
+  it('stores a no-expiry denial to an external principal with a null expiry, not the tenant default, so it still denies past the default period', async () => {
+    // A fresh artifact, so no grant an earlier test made against `artifactId` decides here instead.
+    const target = await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('artifact')
+        .values({ kind: 'component', space_id: spaceId })
+        .returning('id')
+        .executeTakeFirstOrThrow()
+        .then((row) => row.id),
+    );
+    const denied = await make({
+      roleId: roles.Reader!,
+      subject: { principal: alice },
+      level: { kind: 'artifact', id: target },
+      effect: 'deny',
+    });
+    if (!('granted' in denied)) throw new Error(`refused: ${denied.refused}`);
+    expect(denied.granted.expiresAt).toBeNull();
+
+    const policy = await service.withTenant(production, accessPolicy);
+    const facts = await service.withTenant(production, (trx) =>
+      loadFacts(trx, alice, { kind: 'artifact', id: target }),
+    );
+    const pastTheDefault = {
+      ...facts!,
+      now: new Date(policy.now.getTime() + (policy.externalDefaultDays + 1) * DAY),
+    };
+    expect(decide('read', pastTheDefault).allowed).toBe(false);
+  });
+
   it('refuses to give an external principal a capped permission, but lets a denial of one stand', async () => {
     const author = {
       roleId: roles.Author!,
@@ -279,6 +326,23 @@ describe('making a grant', () => {
     ).resolves.toEqual({ refused: 'grant.external_capped' });
     await expect(
       service.withTenant(production, (trx) => addToGroup(trx, staff.group.id, ada)),
+    ).resolves.toEqual({ added: true });
+  });
+
+  it('lets an external principal join a group that holds a tenant-level denial', async () => {
+    const wardens = await service.withTenant(production, (trx) => createGroup(trx, 'Wardens'));
+    if (!('group' in wardens)) throw new Error('the group was not made');
+    await expect(
+      make({
+        roleId: roles.Reader!,
+        subject: { group: wardens.group.id },
+        level: { kind: 'tenant' },
+        effect: 'deny',
+      }),
+    ).resolves.toHaveProperty('granted');
+
+    await expect(
+      service.withTenant(production, (trx) => addToGroup(trx, wardens.group.id, alice)),
     ).resolves.toEqual({ added: true });
   });
 

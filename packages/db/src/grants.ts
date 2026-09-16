@@ -58,7 +58,9 @@ export async function accessPolicy(trx: TenantTransaction): Promise<AccessPolicy
 /**
  * Why a grant may not reach an external principal where it is made (access.md, "External
  * principals"): at the tenant (IAM-071), allowing a capped permission, or reaching past the cap
- * (IAM-049). A denial of a capped permission gives nothing, so it stands.
+ * (IAM-049). These refusals, and the default expiry that comes with them, apply to an allow only -
+ * `decide` counts every unexpired denial whatever it names, because a denial can only remove access,
+ * so none of these reasons to refuse ever apply to one.
  */
 export function externalRefusal(
   held: { readonly permissions: readonly Permission[]; readonly level: Level['kind'] },
@@ -66,11 +68,9 @@ export function externalRefusal(
   expiresAt: Date | null,
   policy: AccessPolicy,
 ): ExternalRefusal | undefined {
+  if (effect === 'deny') return undefined;
   if (held.level === 'tenant') return 'grant.external_at_tenant';
-  if (
-    effect === 'allow' &&
-    held.permissions.some((permission) => externalCap.includes(permission))
-  ) {
+  if (held.permissions.some((permission) => externalCap.includes(permission))) {
     return 'grant.external_capped';
   }
   const cap = policy.now.getTime() + policy.externalCapDays * DAY_MS;
@@ -139,9 +139,10 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
       policy,
     );
     if (refusal) return { refused: refusal };
-    // Defaulted for a principal only: a group's other members keep what they are given, and the
-    // decision ignores a grant with no expiry for the external member among them.
-    if (expiresAt === null && 'principal' in input.subject) {
+    // Defaulted for an allow to a principal only: a denial needs no expiry to stand, and a group's
+    // other members keep what they are given, so the decision ignores a grant with no expiry for the
+    // external member among them.
+    if (expiresAt === null && input.effect === 'allow' && 'principal' in input.subject) {
       expiresAt = new Date(policy.now.getTime() + policy.externalDefaultDays * DAY_MS);
     }
   }
