@@ -77,6 +77,10 @@ and `http://dev.acme.localhost:8080/v1/me` says who you are. On another port, te
 where the service is, since it only returns people to addresses it knows:
 `STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
 
+`pnpm dev:setup` names Ada as each environment's first administrator, so the first time she signs in she
+is granted Administrator there; nobody else holds a role until something grants one.
+`http://dev.acme.localhost:8080/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8080` as the one address it returns to. Open
 `http://dev.acme.localhost:8080/v1/sign-in/google`: Grace is invited and gets in; Alice is not, and

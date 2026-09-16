@@ -12,6 +12,16 @@ the boundary **inside** a tenant. Signing in, sessions and tokens stay where the
 It is written now, before the component tables are built, for one reason: an artifact's space is a
 column on the artifact, and adding it after content exists is a migration of everything written.
 
+> **Part of this is built.** The permission set, `checkRole`, `decide` and `readableSet` are in
+> `packages/domain/src/access/`; roles, groups, grants, the access epoch, the facts a decision reads and
+> the first administrator are in `packages/db`; and the service checks what each route declares, through
+> `GET /v1/access` and `GET /v1/access/explain`. [`../architecture.md`](../architecture.md) describes them
+> as they stand, and [the plan that built them](../plans/2026-09-16-access-01-roles-grants-and-the-decision.md)
+> changed this document where planning the build found it wrong or unfinished - see
+> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
+> `modesFor`, the roles, groups, grants and principals routes, the lock-out guard, provider groups, the
+> external listing and the Access panel.
+
 ## The shape in one paragraph
 
 A tenant holds **spaces**, and every artifact that is content lives in exactly one. The product
@@ -60,6 +70,7 @@ enforcing it cannot disagree.
 | IAM-057, IAM-047          | The decision caps an external principal whatever the grants say, which is IAM-057's "no effect", and a grant is refused where it would give one a capped permission. But a provider-asserted membership cannot be refused where it happens, and IAM-047's gates and signing are LIF's: signing is not a permission here, and nothing designs how it is refused |
 | IAM-050                   | An extension is a new grant naming the one it extends, which is removed in the same change - a positive act by an administrator, with the cap applied afresh. Auditing it is LIF's, and the log is not designed                                                                                                                                                |
 | IAM-036                   | Every route decides for the principal its session or token belongs to, and no route takes the acting principal from a parameter. That a model's tool call or an MCP caller has no other path into the service is API's and GEN's to show, and neither is designed                                                                                              |
+| IAM-059                   | The first administrator arrives by a naming of the provider's issuer and subject, claimed at their first sign-in (below). IAM-059 asks for an invitation to a named address, which a naming by subject is not, and for the bootstrap to be audited into the tenant's log, which is LIF's                                                                       |
 | PUB-084                   | A publication share can be exactly the grant IAM-049 and IAM-071 describe, and it appears in IAM-051's listing. Proving identity before first access and recording every access are PUB's and not designed                                                                                                                                                     |
 | IAM-056                   | Provider groups are re-read at sign-in and at no other time, so a removal at the provider takes effect at the next sign-in. That is not the stated, tested bound IAM-056 asks for                                                                                                                                                                              |
 | IAM-015, IAM-028          | Moving an artifact is T2. Because nothing is copied down, a move is an update of `space_id` and the next decision is already right - but the act of moving is not designed                                                                                                                                                                                     |
@@ -108,14 +119,18 @@ separately" would mean only that somebody could add a denial.
 themselves a role that allows it, and that grant is visible in every explanation afterwards. It is
 still a way to reach anything, and IAM-070 exists to split the riskiest parts of it out.
 
-**No permission implies another in the decision.** Instead, a role is refused if it holds anything
-without `read`: a role with `edit` and no `read` describes nobody real, and refusing it where it is
-made is simpler than an implication table every explanation would have to show.
+**No permission implies another in the decision.** Instead, **an allow of a role that does not hold
+`read` is refused** where the grant is made: allowing `edit` without `read` describes nobody real, and
+refusing it there is simpler than an implication table every explanation would have to show. **A
+denial may name any role**, and that is what makes one artifact read-only for somebody who authors its
+space: denying them a role holding `edit` alone, on that artifact, decides `edit` there and says nothing
+about `read`, `comment` or `suggest`, which the space still decides. Denying a role that holds `read`
+denies `read` too, as it denies everything the role holds.
 
 ## Roles
 
-A **role** is `id`, a `name` unique in the tenant, and its permissions. A tenant starts with seven,
-which are ordinary rows it may rename, change or remove:
+A **role** is `id`, a `name` unique in the tenant, and its permissions - at least one, each once. A
+tenant starts with eight, which are ordinary rows it may rename, change or remove:
 
 | Role                | Permissions                                    |
 | ------------------- | ---------------------------------------------- |
@@ -126,23 +141,40 @@ which are ordinary rows it may rename, change or remove:
 | Designer            | `read`, `design`                               |
 | Definitions manager | `read`, `manage_definitions`                   |
 | Administrator       | `read`, `administer`                           |
+| Editing             | `edit` - for denials; it cannot be allowed     |
+
+Editing is a starter role rather than one each tenant makes, because "read-only here" is the first
+denial anybody reaches for, and a role a tenant must think to create before it can do that is a role
+nobody finds.
 
 Changing a role changes the access of everybody holding it, at once, which is what a bundle is for.
 Removing a role that any grant names is refused; the grants go first, so nobody loses access as a
-side effect of tidying.
+side effect of tidying. Taking `read` out of a role that any allow names is refused for the same reason
+an allow of such a role is.
 
-**A tenant cannot lock itself out.** Provisioning makes one grant of Administrator at the tenant
-directly to the first administrator, so a tenant always starts with one. After that, **a change is
-refused if it would leave no principal holding `administer` at the tenant through a direct grant with
-no expiry** - removing that grant, taking `administer` out of its role, removing the role, or making that
-principal external, since the cap would then refuse it. A change that does not reduce that number is
-never refused by this rule, whatever the number is. A grant with an expiry does not count, because it
-would end the tenant's administration on a date with nobody acting.
+**A tenant cannot lock itself out.** A tenant's first administrator is **named** by whoever provisions
+it, by the identity provider's issuer and subject - never an address, or any claim a user could set on
+themselves - and only an administrator of the database can name one. The first sign-in as that identity,
+in the same transaction as the sign-in, takes the access epoch exclusively and grants Administrator at
+the tenant directly to that principal; the naming is then used, whatever happened, and is kept with who
+claimed it, when, and whether it was granted. A naming is refused while another waits and once somebody
+administers the tenant, and a claim that finds somebody already administering records a refusal and
+grants nothing.
+
+After that, **a change is refused if it would leave no principal holding `administer` at the tenant
+through a direct grant with no expiry** - removing that grant, taking `administer` out of its role,
+removing the role, or making that principal external, since the cap would then refuse it. A change that
+does not reduce that number is never refused by this rule, whatever the number is. A grant with an
+expiry does not count, because it would end the tenant's administration on a date with nobody acting.
+**A denial of a role holding `administer` at the tenant is refused where it is made**: the count counts
+allows, and a denial reaching the last administrator - directly or through a group - would leave the
+count unchanged and nobody able to undo it.
 
 Only direct grants count, which is why removing somebody from a group, or removing a group, never trips
-it: neither can change the count. Tenant-managed groups are left out as well as provider groups, because
-a guard that counted them would need a second rule for what leaving one does, and a rule an
-administrator can state in one sentence is worth more than the case it would save.
+it: neither can change the count, and no group can carry a denial of `administer` at the tenant.
+Tenant-managed groups are left out as well as provider groups, because a guard that counted them would
+need a second rule for what leaving one does, and a rule an administrator can state in one sentence is
+worth more than the case it would save.
 
 ## Grants
 
@@ -159,7 +191,18 @@ administrator can state in one sentence is worth more than the case it would sav
 A grant is created and removed, never changed: changing one is removing it and making another, so
 the record of who granted what stays whole. **An expired grant is ignored by every decision**, compared
 with the transaction's own clock, so a check and its act see the same answer. The same role, subject,
-level and effect cannot be granted twice. Making or removing a grant needs `administer` at its level or above.
+level and effect cannot be granted twice.
+
+**Making or removing a grant needs `administer` at its level or above**, and "or above" is meant
+literally: it is allowed when `administer`, asked of the grant's level or of any level above it on that
+level's chain, is allowed - each asked as its own walk from that level. A tenant administrator therefore
+manages every level below, even one where a denial of `administer` refuses them the nearer walk; a space
+administrator manages that space and its artifacts. The nearest-level walk alone would let a denial at a
+space stand against the tenant's own administrators, which nobody could then remove.
+
+A route that changes access **takes the access epoch `FOR UPDATE` before it decides**. Deciding takes the
+row `FOR SHARE`, and the change's own write takes it exclusively, so a change that decided first would
+upgrade its lock - and two such changes at once would each wait for the other until Postgres aborted one.
 
 ### External principals
 
@@ -176,24 +219,29 @@ and a grant made before its rule existed is a grant nobody re-checks.
 | `design`, `manage_definitions` | **This design's choice.** Each changes what everybody inside the tenant must write                                                |
 | `administer`                   | **This design's choice.** An external administrator could grant themselves past every other line here                             |
 
-**Where a grant is made**, it is refused if it would give an external principal a capped permission, if
-it is at the tenant (IAM-071), or if its expiry is past the tenant's cap; one given no expiry takes the
-tenant's default (IAM-049). The same checks apply to a grant to a tenant-managed group with an external
-member, and to adding an external principal to a group holding such a grant.
+**Where a grant is made**, a grant to an external principal is refused if it allows a capped permission,
+if it is at the tenant (IAM-071), or if its expiry is past the tenant's cap; one given no expiry takes the
+tenant's default (IAM-049). A denial of a capped permission gives nothing, so it stands. A grant to a
+tenant-managed group with an external member is refused on the same three counts but **is not given the
+default expiry**, because the group's other members would lose access on a date nobody chose; for the
+external member, the decision ignores a grant with no expiry. Adding an external principal to a group is
+refused where any grant the group holds would be refused to them directly.
 
 **Where a decision is taken**, an external principal's grants at the tenant and grants with no expiry
-are ignored, and then the cap applies. That covers the membership no administrator made - a provider
-asserting an external principal into a group - which cannot be refused where it happens.
+are ignored when they allow, every unexpired denial counts, and then the cap applies. That covers the membership no
+administrator made - a provider asserting an external principal into a group - which cannot be refused
+where it happens.
 
 **Extending external access** (IAM-050) is a new grant with its own expiry, naming the grant it
 `extends`, which is removed in the same change: a positive act by an administrator, capped afresh, and
-never a clock that renews itself. The tenant's default and cap are two settings in days; the cap can
-be raised and never removed.
+never a clock that renews itself. The tenant's default and cap are two settings in days, 30 and 90 unless
+the tenant changes them; the cap can be raised and never removed.
 
 ### Denials
 
 **A denial is a role too** (IAM-062). "Deny Author on this component to Grace" names a bundle, so its
-explanation reads the same way an allow does.
+explanation reads the same way an allow does; so does "Deny Editing on this component to Grace", which
+leaves her reading it.
 
 ## Groups
 
@@ -202,9 +250,11 @@ A **group** is `id`, a `name`, and its source:
 - **Tenant-managed**: members added and removed by an administrator.
 - **From the organisation's provider**: the group names a value, and the tenant's provider
   configuration names the claim that carries values (`groups` by default). At every sign-in through
-  that provider, the principal's memberships of provider groups are replaced by the values in the
-  claim. A value with no group is ignored, so an administrator decides which of the directory's
-  groups mean anything here (IAM-009).
+  that provider, the principal's memberships of provider groups are brought into line with the values
+  in the claim - **only the memberships that differ are added or removed**, because each change takes
+  the access epoch exclusively, and replacing them all would take it at every sign-in. A value with no
+  group is ignored, so an administrator decides which of the directory's groups mean anything here
+  (IAM-009).
 
 **The Google route asserts no groups.** Reading a Workspace user's groups needs a directory scope,
 which IAM-044 forbids requesting. A principal who signs in with Google is placed in groups by an
@@ -214,13 +264,14 @@ configures its own provider.
 ## Deciding
 
 `decide(question, facts)` is pure. The question is a principal, a permission and a target, and a
-target is an artifact, a space or the tenant. The facts are what the service loads in one query: the
-principal's kind, the groups they are in, the target's chain from itself upwards, and every unexpired
-grant at those levels whose subject is the principal or one of their groups, with each role's
-permissions.
+target is an artifact, a space or the tenant. The facts are what the service loads in the transaction of
+the act, under the access epoch's shared lock: the principal's kind, the groups they are in, the target's
+chain from itself upwards, and every unexpired grant at those levels whose subject is the principal or one
+of their groups, with each role's permissions.
 
 1. **Where the walk starts.** Creating asks about the space the artifact will be created in - `design`
-   for a template, `create` for any other kind. `manage_definitions` asks about the tenant. Every other
+   for a template, `create` for any other kind; `create` asked of an artifact starts at its space, or at
+   the tenant for an artifact in no space. `manage_definitions` asks about the tenant. Every other
    permission, `administer` included, asks about the target itself: whether somebody may change grants
    at a space is `administer` asked of that space, whose chain is the space and the tenant.
 2. From there upwards, take the grants whose role holds the permission - for an external principal,
@@ -231,9 +282,10 @@ permissions.
 5. After that, **the external cap** from the table above, whatever step 3 found; the explanation says
    the cap refused it.
 
-The answer is `{ allowed, level, grants, cap }`: the deciding level, the grants that decided at it, or
-none with the levels checked. **Enforcement reads `allowed`; the Access view shows the rest.** They are
-one call, which is what makes IAM-030 and IAM-031 true rather than hoped for.
+The answer is `{ allowed, reason, level, grants, checked }`: whether it is allowed; `allowed`, `denied`,
+`not_granted` or `capped`; the deciding level, or none; the grants that decided at it, each with the group
+it came through; and every level checked. **Enforcement reads `allowed`; the Access view shows the rest.**
+They are one call, which is what makes IAM-030 and IAM-031 true rather than hoped for.
 
 **The nearest level wins, and that has a consequence worth stating.** IAM-025 lets an allow on one
 artifact open it inside a space the person cannot otherwise read. That is what the requirement asks
@@ -247,15 +299,32 @@ quotes. A component's chain is the component, its space and the tenant, never a 
 component inside a document therefore needs `read` on the component, which is the rule IAM-016 and
 IAM-017 already state for T4.
 
+**A definition is read through what uses it.** A field, a metadata schema and a component type live in
+no space, so an author granted only a space would otherwise be refused `read` on the very definitions
+their component is written against. A route authorised on a component - reading it, editing it - loads
+the definition versions that component records, and the fields they resolve to, without a second
+decision: what the author sees of them is what the component needs. Reading a definition on its own -
+listing fields, opening a component type - is `read` asked of the definition, whose chain is itself and
+the tenant.
+
 ### Taking the decision with the act
 
-IAM-063 is met with one row. Each tenant schema holds `access_epoch`, a single row. **Every change to
-access** - a grant, a role's permissions, a group membership, a space, an artifact's space, a
-principal's `kind` - updates it, which takes the row's exclusive lock. The rule is that anything
-`decide` reads as a fact counts, and a test holds the facts and the writes that take the lock against
-each other. Removing an unused role or an empty group does not take it, because no decision reads
-either. **Every decision** reads it `FOR SHARE` in the transaction of the act it authorises. So a revocation that starts while a write is authorised waits for that write to commit,
-and a write that starts after a revocation waits for the revocation and then sees it.
+IAM-063 is met with one row. Each tenant schema holds `access_epoch`, a single row. **Every change to a
+fact a decision reads** - a grant made or removed, a role's permissions, a group membership, an
+artifact's space, a principal's `kind` - updates it, which takes the row's exclusive lock. **A trigger on
+each of those writes does the update**, rather than each write path, because the rule is "every write",
+and a write path that forgot would be silent; a test holds the list of facts the loaders read against the
+triggers, and fails for a fact no trigger locks. The triggers are per row, so a statement that changes
+nothing - removing an empty group, whose cascade removes no member - takes no lock. Creating a role, a
+group, a space or an artifact changes no decision anybody could already ask, and a role can be removed
+only while no grant names it, so none of those takes it. **Every decision** reads the row `FOR SHARE` in
+the transaction of the act it authorises, before any other fact. So a revocation that starts while a write
+is authorised waits for that write to commit, and a write that starts after a revocation waits for the
+revocation and then sees it.
+
+The facts are several statements in that transaction rather than one query: under read committed each
+statement has its own snapshot, but no change to access can commit while the shared lock is held, so they
+agree.
 
 Writes proceed together, because shared locks do not conflict with each other. Access changes queue
 behind in-flight writes, which are short, and a change to access is an administrator's act measured in
@@ -266,14 +335,18 @@ stream on a permission change and authorises the reconnect afresh (API-016).
 
 Search, traversal and the stream filter many artifacts at once, and do it inside a query rather than
 by calling `decide` per row (SCH-005, REL-019). `readableSet(principal, facts)` returns what they need,
-from the same grants and the same rules:
+computed by `decide` itself so the two cannot disagree:
 
+- **tenant**: whether `read` is allowed at the tenant, which is what an artifact in no space - a
+  definition - inherits;
 - **spaces**: every space where `read` is allowed at the space, or inherited from the tenant;
-- **excluded**: artifacts in those spaces where an artifact-level grant decides `read` as refused;
-- **included**: artifacts in any other space where an artifact-level grant decides `read` as allowed.
+- **excluded**: artifacts in those spaces, or in no space when the tenant allows, where an
+  artifact-level grant decides `read` as refused;
+- **included**: artifacts anywhere else where an artifact-level grant decides `read` as allowed.
 
-The predicate is `(space_id = any(spaces) and id <> all(excluded)) or id = any(included)`.
-search.md and relationships.md described the set as the first half only; both now say all of it.
+The predicate is `((space_id = any(spaces) or (space_id is null and tenant)) and id <> all(excluded))
+or id = any(included)`. search.md and relationships.md described the set as the first half only; both now
+say all of it.
 
 ### Modes
 
@@ -296,7 +369,8 @@ mode shows is the document view's (CNT-106).
 | The target does not exist, **or** the caller may not read it | 404    | `not_found`       |
 | The caller may read it and is refused what they asked        | 403    | `forbidden`       |
 
-These are the codes the service already returns; this design fixes when each applies.
+These are the codes the service already returns; this design fixes when each applies. The tenant as a
+target always exists, so asking of it is never 404.
 
 **An artifact the caller may not read is indistinguishable from one that does not exist**, so an
 identifier cannot be probed for existence - the rule relationships.md already applies to a walk. A
@@ -305,8 +379,8 @@ through Access, not a caller's to learn from an error.
 
 **Every route declares its permission and target** in `packages/api-contract` beside its schema. The
 service's route helper takes them from there, decides inside `withTenant`, and runs the handler only
-on an allow. A contract test fails for any route without a declaration, and every route has the
-cross-tenant test IAM-004 already requires plus one as a principal holding nothing.
+on an allow, in the same transaction. A contract test fails for any route without a declaration, and
+every route has the cross-tenant test IAM-004 already requires plus one as a principal holding nothing.
 
 ## Routes
 
@@ -323,6 +397,8 @@ cross-tenant test IAM-004 already requires plus one as a principal holding nothi
 | `GET /v1/access?target=`                                | `read` on the target                        | The caller's own answer for every permission on it, and `modesFor` - what the renderer offers from                          |
 | `GET /v1/access/explain?principal=&target=`             | `administer` at the target's level or above | Every permission for that principal on that target, each with its full explanation (IAM-029 to IAM-031)                     |
 
+A target is spelled `tenant`, `space:<id>` or `artifact:<id>`.
+
 **Access** is a panel on any artifact, for an administrator: choose a person, and read a row per
 permission - allowed or refused, the deciding level, the grants that decided it, and the cap where it
 applied. It is read-only; grants are made from the same panel's second tab, one role, one subject and
@@ -332,33 +408,38 @@ one effect at a time.
 
 In each tenant's schema:
 
-| Table          | One row per          | Carries                                                                                                                              |
-| -------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `space`        | Space                | Name, created at                                                                                                                     |
-| `role`         | Role                 | Name, permissions as an array checked against the closed set                                                                         |
-| `access_group` | Group                | Name, source, the provider value where it has one                                                                                    |
-| `group_member` | Principal in a group | The source of the membership, when it was last asserted                                                                              |
-| `access_grant` | Grant                | Role, principal or group (a check allows exactly one), level and its target, effect, expiry, the grant it extends, granted by and at |
-| `access_epoch` | Tenant - one row     | When access last changed                                                                                                             |
+| Table                 | One row per                     | Carries                                                                                                                              |
+| --------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `space`               | Space                           | Name, created at                                                                                                                     |
+| `role`                | Role                            | Name, permissions as an array checked against the closed set                                                                         |
+| `access_group`        | Group                           | Name, source, the provider value where it has one                                                                                    |
+| `group_member`        | Principal in a group            | When a provider last asserted it; its source is its group's                                                                          |
+| `access_grant`        | Grant                           | Role, principal or group (a check allows exactly one), level and its target, effect, expiry, the grant it extends, granted by and at |
+| `access_epoch`        | Tenant - one row                | When access last changed                                                                                                             |
+| `access_policy`       | Tenant - one row                | The default and the cap on external expiry, in days                                                                                  |
+| `first_administrator` | Naming of a first administrator | Issuer, subject, the role, who named them and when; who claimed it, when, and whether it was granted                                 |
 
-The tenant's settings gain the default and the cap on external expiry, in days. Two existing tables
-change: `principal` gains `kind` - `user`, `service` or `external`, defaulting to
+Two existing tables change: `principal` gains `kind` - `user`, `service` or `external`, defaulting to
 `user` - so the cap has something to read; `identity_provider` gains the name of its groups claim.
 [storage-and-versioning.md](storage-and-versioning.md)'s `artifact` gains `space_id`.
 
 ## Where the code lives
 
 `packages/domain/src/access/`: the permission set, role validation, `decide`, `readableSet` and
-`modesFor`. No database: the service loads the facts for a question in one query and passes them in.
-The route helper and the stores are `apps/service` and `packages/db`.
+`modesFor`. No database: the service loads the facts for a question and passes them in. The route helper
+and the stores are `apps/service` and `packages/db`.
 
 ## Verification
 
 - **A decision table as tests**: for every permission, an allow and a denial at each of the three
   levels in every combination, direct and through a group, asserting the answer and the level and
   grants named - so IAM-024 to IAM-026 are exercised rather than argued.
-- **`decide` and `readableSet` agree**: a property test generating grants over a small tenant and
-  asserting that an artifact is in the readable set exactly when `decide` allows `read` on it.
+- **Read-only on one artifact**: an author of a space denied Editing on one component reads it and does
+  not edit it; a denial of a role holding `read` refuses `read`; an allow of a role without `read` is
+  refused where it is made.
+- **`decide` and `readableSet` agree**: a property test generating grants over a small tenant - with an
+  artifact in no space - and asserting that an artifact is in the readable set exactly when `decide`
+  allows `read` on it.
 - **Explanations are the decision**: every refusal names grants or levels checked, and never an empty
   reason.
 - **The lock**: two transactions - a write authorised and a revocation - interleaved at each point, in
@@ -368,8 +449,11 @@ The route helper and the stores are `apps/service` and `packages/db`.
 - **404, not 403**, for an artifact the caller may not read, compared byte for byte with the answer for
   an identifier that does not exist.
 - **Lock-out**: a grant with an expiry never counts as the last administrator; removing the last direct
-  tenant administrator's grant, their role's `administer`, the
-  role itself, or making them external is refused; removing a group or a member never is.
+  tenant administrator's grant, their role's `administer`, the role itself, or making them external is
+  refused; removing a group or a member never is; a denial of `administer` at the tenant is refused.
+- **The first administrator**: only the named issuer and subject are granted, once; a naming is refused
+  while one waits and once somebody administers; a claim finding an administrator records a refusal and
+  grants nothing; the runtime role can neither name nor change a naming.
 - **The external rules**: a grant of a capped role to an external principal, at the tenant, past the
   cap, or to a tenant-managed group with an external member is refused, and so is adding an external
   principal to such a group. Where such grants exist anyway - inserted directly, as a provider
@@ -394,14 +478,22 @@ The route helper and the stores are `apps/service` and `packages/db`.
   of `decide` can see it.
 - **Group over individual, or individual over group, at the same level.** IAM-026 says denial wins at a
   level, and a precedence between subjects would be a second rule an administrator has to learn.
+- **A denial naming permissions rather than a role.** It would make "read-only here" one grant, but an
+  explanation would then name a list rather than a bundle, and IAM-062 holds every permission to a role.
+  A role for denials does the same and reads the same way.
+- **The first administrator named by address, made as the first to sign in, or granted by a command run
+  after they sign in.** An address is a claim some providers let a user change, so naming one would let
+  whoever can set it become administrator; the first to sign in is whoever is quickest through a route
+  the tenant permits; and a command after sign-in leaves the tenant unusable until an operator acts, and
+  needs a principal id somebody has to find.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                                                |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | How many artifact-level grants a principal can hold before `readableSet`'s explicit lists stop being a good predicate. Artifact grants are meant to be exceptions; a tenant that uses them as its main model would find out by load     |
-| New | Whether a tenant's first administrator should arrive through this design's grants at provisioning, or wait for IAM-059's bootstrap. Provisioning grants Administrator at the tenant to the first invited address until that is designed |
-| New | Whether `comment` and `suggest` are worth separating in T1, when both are T3 capabilities. They are in the set because IAM-019 names them, and a role editor showing two permissions nothing checks yet should say so                   |
+| ID       | Question                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New      | How many artifact-level grants a principal can hold before `readableSet`'s explicit lists stop being a good predicate. Artifact grants are meant to be exceptions; a tenant that uses them as its main model would find out by load                                                                                                                                                          |
+| Answered | Whether a tenant's first administrator should arrive through this design's grants at provisioning, or wait for IAM-059's bootstrap. Through a naming by issuer and subject, claimed at first sign-in ("Roles"). A tenant that signs in only through Google must learn the subject Google assigns, which it cannot know before the first sign-in; naming by invitation is IAM-059's to design |
+| New      | Whether `comment` and `suggest` are worth separating in T1, when both are T3 capabilities. They are in the set because IAM-019 names them, and a role editor showing two permissions nothing checks yet should say so                                                                                                                                                                        |
 
 ## Review
 
@@ -424,3 +516,22 @@ declined.
 | Verification missing the external rules and IAM-027's immediacy | **Accepted**                                    | Tests for both, including grants inserted directly to stand for a provider membership                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | IAM-036 met by construction                                     | **Declined as a claim**                         | The route half is met: every route decides for the caller's principal. "No path to exceeding them" also covers an MCP caller and a model's tool call, whose paths API and GEN have not designed, so claiming it would claim their half. It is recorded as unclaimed with that reason                                                                                                                                                                                                                                                                                               |
 | Removing an unused role or empty group                          | **Accepted**                                    | Stated: neither takes the lock, because no decision reads either                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+## Changed while planning the build
+
+[The access plan](../plans/2026-09-16-access-01-roles-grants-and-the-decision.md) was written against
+this document and proved in code before it was built. Planning found seven places where the document was
+wrong or unfinished; Ken ruled on the two that needed a decision, and the rest are corrected here. No
+requirement claim changed, because every one is still answered in full. IAM-063's row is read with
+"Taking the decision with the act": of roles and spaces, what takes the lock is a change to a role's
+permissions and to an artifact's space, since nothing else about either is a fact a decision reads.
+
+| Found                                                                                                                                                              | Change                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nobody could be made read-only on one artifact inside a space they author**: every role held `read`, and a denial denies the whole role                          | **Ruled by Ken.** An allow must hold `read`; a denial may name any role; Editing, `edit` alone, is a starter role ("Permissions", "Roles")                                                                 |
+| **A denial of `administer` could lock a tenant out**, unseen by a guard that counts allows                                                                         | A denial of a role holding `administer` at the tenant is refused where it is made ("Roles")                                                                                                                |
+| **No tenant could get its first administrator**: a grant needs a principal, and provisioning happens before anyone signs in                                        | **Ruled by Ken.** A naming by issuer and subject, claimed once at first sign-in under the access lock ("Roles"); IAM-059 joins the unclaimed table, because a naming is not an invitation to an address    |
+| **The readable set left out every artifact in no space**, so it disagreed with `decide` for definitions                                                            | `tenant` joins the set and the predicate ("The readable set")                                                                                                                                              |
+| **An author granted only a space could not read the definitions their component uses**                                                                             | A definition is read through the component a route is authorised on ("Deciding")                                                                                                                           |
+| **"`administer` at its level or above" disagreed with the nearest-level walk**, which lets a denial at a space stand against the tenant's administrators           | "Or above" means any level on the chain, each asked as its own walk ("Grants")                                                                                                                             |
+| **Two lock costs**: a change that decides first upgrades its lock and can deadlock another; replacing provider memberships at every sign-in locks at every sign-in | Changes take the epoch `FOR UPDATE` before deciding ("Grants"); provider memberships change only where they differ ("Groups"). The lock is taken by triggers, listed in "Taking the decision with the act" |
