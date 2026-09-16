@@ -23,6 +23,7 @@
     "generate": "tsx src/generate.ts"
   },
   "dependencies": {
+    "@alloy-works/domain": "workspace:^",
     "zod": "^4.6.1"
   },
   "devDependencies": {

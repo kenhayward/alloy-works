@@ -71,6 +71,9 @@ importers:
       '@alloy-works/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@alloy-works/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
       '@alloy-works/objects':
         specifier: workspace:^
         version: link:../../packages/objects
@@ -213,6 +216,9 @@ importers:
 
   packages/api-contract:
     dependencies:
+      '@alloy-works/domain':
+        specifier: workspace:^
+        version: link:../domain
       zod:
         specifier: ^4.6.1
         version: 4.6.1

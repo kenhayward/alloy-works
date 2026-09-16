@@ -52,6 +52,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **This is the shape, not the product.** Nothing authors this content, imports it from another format
   or publishes it yet, and the store below holds it only when a test puts it there.
 
+- **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
+  denial, on the whole environment, one space, or one item. Every environment starts with eight roles and
+  a space called General. An environment's first administrator is named, by their sign-in identity, by
+  whoever sets it up, and is granted the role once, at their first sign-in; in development, Ada
+  administers both environments from hers. Two read-only routes answer what a caller may do to something,
+  and, for an administrator, what someone else may do and why.
+
+  **This is the model, not the management.** There are no screens and no routes yet to create a role,
+  make a grant, or manage a group or a principal - the first sign-in's grant is the only one anything
+  makes.
+
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:

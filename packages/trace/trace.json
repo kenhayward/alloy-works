@@ -15247,9 +15247,15 @@
   ],
   "citations": [
     {
+      "id": "API-053",
+      "file": "apps/service/src/access-routes.test.ts",
+      "line": 239,
+      "kind": "title"
+    },
+    {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 59,
+      "line": 106,
       "kind": "title"
     },
     {
@@ -15289,9 +15295,57 @@
       "kind": "rule"
     },
     {
+      "id": "IAM-014",
+      "file": "packages/db/src/access-facts.test.ts",
+      "line": 220,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-027",
+      "file": "packages/db/src/access-facts.test.ts",
+      "line": 238,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-063",
+      "file": "packages/db/src/access-facts.test.ts",
+      "line": 259,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-062",
+      "file": "packages/db/src/access-schema.test.ts",
+      "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-022",
+      "file": "packages/db/src/grants.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-049",
+      "file": "packages/db/src/grants.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-071",
+      "file": "packages/db/src/grants.test.ts",
+      "line": 218,
+      "kind": "title"
+    },
+    {
       "id": "VER-008",
       "file": "packages/db/src/record-version.test.ts",
       "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-021",
+      "file": "packages/db/src/roles.test.ts",
+      "line": 39,
       "kind": "title"
     },
     {
@@ -15340,6 +15394,30 @@
       "id": "VER-042",
       "file": "packages/db/src/versions.test.ts",
       "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-025",
+      "file": "packages/domain/src/access/decide.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-026",
+      "file": "packages/domain/src/access/decide.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "MET-024",
+      "file": "packages/domain/src/access/decide.test.ts",
+      "line": 227,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-019",
+      "file": "packages/domain/src/access/permissions.test.ts",
+      "line": 6,
       "kind": "title"
     },
     {
@@ -15651,7 +15729,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 65,
+      "line": 78,
       "kind": "title"
     },
     {

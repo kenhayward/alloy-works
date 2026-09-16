@@ -11,9 +11,26 @@ import {
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp } from './app.js';
+import { buildApp, type Handlers } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+
+/**
+ * Type-only, never called: a permission-checked handler receives no `FastifyReply` at all -
+ * `permissionChecked` (app.ts) never passes one to it - so it has nothing to send early with,
+ * whatever its own return type would infer. A return-type restriction alone does not hold this:
+ * `FastifyReply` has its own `then` (`fastify/types/reply.d.ts`,
+ * `then(fulfilled: () => void, rejected: (err: Error) => void): void`), so an un-annotated async
+ * handler that returns `reply` or `reply.send(...)` has that value unwrapped as a thenable, and
+ * because `then`'s callback takes no value parameter to infer from, `Awaited<FastifyReply>` resolves
+ * to something assignable to anything - silently. This is the shape that fooled the first version of
+ * this guard: a bare literal for a handler that still expects a `reply` parameter.
+ */
+const illegalHandlers: Pick<Handlers, 'getAccess'> = {
+  // @ts-expect-error a permission-checked handler takes no `reply`; there is nothing here to send with
+  getAccess: async (_request, reply, { target }) => reply.status(200).send({ target }),
+};
+void illegalHandlers;
 
 describe('the service', () => {
   let db: TestDatabase;

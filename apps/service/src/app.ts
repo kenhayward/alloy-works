@@ -3,22 +3,29 @@ import cookie from '@fastify/cookie';
 import {
   routes,
   SESSION_COOKIE,
+  type AccessExplanation,
+  type ExplainQuery,
   type GoogleHandoff,
+  type RouteAccess,
   type RouteContract,
   type Sample,
   type SampleParams,
   type SignInCallback,
 } from '@alloy-works/api-contract';
 import {
+  claimFirstAdministrator,
   enqueueJob,
+  loadFacts,
   type SignInRoute,
   type Tenant,
   type TenantDatabase,
   type TenantListener,
 } from '@alloy-works/db';
+import { decide, formatLevel, permissions, type Decision } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
+import { administerOrAbove, authorise, notFound, type Authorised } from './access.js';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -87,12 +94,47 @@ type Success<R extends RouteContract> = R['responses'] extends {
   ? z.input<S>
   : never;
 
-type Handlers = {
-  [K in keyof typeof routes]: (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
+/**
+ * A route that checks a permission is handed what was decided, and runs in the transaction it was
+ * decided in. Its handler receives no `FastifyReply` at all - `permissionChecked` never passes one -
+ * so it cannot send early: nothing is sent before that transaction commits, and it must return its
+ * body instead. A return-type restriction alone would not hold this: `FastifyReply` has its own
+ * `then` (`fastify/types/reply.d.ts`, `then(fulfilled: () => void, ...)`), so an un-annotated async
+ * handler that returns `reply` or `reply.send(...)` has that value unwrapped as a thenable - and
+ * because `then`'s callback takes no value parameter to infer from, TypeScript resolves
+ * `Awaited<FastifyReply>` to something assignable to anything, silently. Withholding the parameter,
+ * rather than trying to out-type its return, is what actually closes that. The serializer that turns
+ * the returned body into bytes still runs only after the commit, so a body that fails its own
+ * response schema on some future write route would surface as a 500 after the act has already
+ * committed, not before it - this is about ordering, not the body's own shape.
+ */
+export type Handlers = {
+  [K in keyof typeof routes]: (typeof routes)[K]['access'] extends { check: 'permission' }
+    ? (request: FastifyRequest, authorised: Authorised) => Promise<Success<(typeof routes)[K]>>
+    : (
+        request: FastifyRequest,
+        reply: FastifyReply,
+      ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
 };
+
+/** A decided grant as the explanation publishes it. */
+function explained(decision: Decision): AccessExplanation['permissions'][number] {
+  return {
+    permission: decision.permission,
+    allowed: decision.allowed,
+    reason: decision.reason,
+    level: decision.level && formatLevel(decision.level),
+    checked: decision.checked.map(formatLevel),
+    grants: decision.grants.map((reached) => ({
+      id: reached.id,
+      role: reached.role.name,
+      effect: reached.effect,
+      subject: reached.subject,
+      through: reached.through,
+      expiresAt: reached.expiresAt && reached.expiresAt.toISOString(),
+    })),
+  };
+}
 
 function tenantOf(request: FastifyRequest): Tenant {
   if (!request.tenant) throw new Error('A tenant-scoped handler ran without a tenant');
@@ -120,8 +162,6 @@ const routeClosed = () =>
     'This environment does not permit signing in this way.',
     'IAM-043',
   );
-
-const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
 
 const storageUnavailable = () =>
   new AppError(
@@ -289,8 +329,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         codeVerifier: attempt.code_verifier,
       });
       // Found by issuer and subject, never by email address, which can be reassigned.
-      const principal = await db.withTenant(tenant, (trx) =>
-        trx
+      const principal = await db.withTenant(tenant, async (trx) => {
+        const found = await trx
           .insertInto('principal')
           .values({
             issuer: identity.issuer,
@@ -304,8 +344,18 @@ export function buildApp(options: AppOptions): FastifyInstance {
               .doUpdateSet({ email: identity.email, display_name: identity.name }),
           )
           .returning('id')
-          .executeTakeFirstOrThrow(),
-      );
+          .executeTakeFirstOrThrow();
+        // In the same transaction: the first administrator is granted exactly when they sign in.
+        // Named explicitly, not spread from identity: the only fields that may reach a call granting
+        // Administrator are the ones this route itself decided are the principal's id, issuer and
+        // subject - never whatever else a future Identity field might add.
+        await claimFirstAdministrator(trx, {
+          id: found.id,
+          issuer: identity.issuer,
+          subject: identity.subject,
+        });
+        return found;
+      });
       return signInAs(reply, tenant, principal.id, 'organisation');
     },
 
@@ -357,6 +407,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const admitted = await db.withTenant(tenant, async (trx) => {
         const principalId = await admitGoogleAccount(trx, identity);
         if (principalId === undefined) return false;
+        // Named explicitly - see the organisation route's own claim, above, for why.
+        await claimFirstAdministrator(trx, {
+          id: principalId,
+          issuer: identity.issuer,
+          subject: identity.subject,
+        });
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
         await trx
@@ -493,7 +549,58 @@ export function buildApp(options: AppOptions): FastifyInstance {
       await streamToViewer({ request, reply, db, events, tenant });
       return reply;
     },
+
+    getAccess: async (_request, { target, facts }) => ({
+      target: formatLevel(target),
+      permissions: permissions.map((permission) => ({
+        permission,
+        // administer by "at its level or above" (final review, item 3): the same rule a route
+        // checking it would use, so this answers exactly what such a route would decide here.
+        allowed: (permission === 'administer'
+          ? administerOrAbove(facts)
+          : decide(permission, facts)
+        ).allowed,
+      })),
+    }),
+
+    explainAccess: async (request, { trx, target }) => {
+      const { principal } = request.query as ExplainQuery;
+      const facts = await loadFacts(trx, principal, target);
+      if (!facts) throw notFound();
+      return {
+        principal,
+        target: formatLevel(target),
+        // administer by "at its level or above" (final review, item B): the same rule GET /v1/access
+        // and the route helper use, so this explains the decision that actually governs the permission,
+        // not a plain nearest-level walk that could show a denial "or above" already overrides.
+        permissions: permissions.map((permission) =>
+          explained(
+            permission === 'administer' ? administerOrAbove(facts) : decide(permission, facts),
+          ),
+        ),
+      };
+    },
   };
+
+  /**
+   * The handler as registered. A route declaring a permission is decided inside `withTenant` and its
+   * handler runs only on an allow, in the same transaction (access.md, "Refusing") - and is never
+   * handed this route's `reply`, so it has nothing to send with even if it tried.
+   */
+  function permissionChecked(
+    access: RouteAccess,
+    handler: Handlers[keyof Handlers],
+  ): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
+    if (access.check !== 'permission') {
+      const run = handler as (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
+      return (request, reply) => run(request, reply);
+    }
+    const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
+    return (request) =>
+      db.withTenant(tenantOf(request), async (trx) =>
+        run(request, await authorise(trx, principalOf(request).principalId, access, request)),
+      );
+  }
 
   const http = app.withTypeProvider<ZodTypeProvider>();
   for (const [name, route] of Object.entries(routes) as [keyof Handlers, RouteContract][]) {
@@ -516,7 +623,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         reply.log = request.log;
       });
     }
-    if (route.authenticated) {
+    if (route.access.check !== 'none') {
       // After the tenant is known, and before the request's own parameters are looked at: a session
       // is found only in the tenant whose hostname this is, so another environment's is simply not
       // there (IAM-003).
@@ -539,7 +646,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...(route.params ? { params: route.params } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
-      handler: handlers[name],
+      handler: permissionChecked(route.access, handlers[name]),
     });
   }
   return app;

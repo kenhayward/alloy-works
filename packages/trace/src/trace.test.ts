@@ -94,8 +94,14 @@ describe('the citations in the committed model', () => {
   // cites nine of the requirements content-model.md claims for admission - CNT-056, CNT-064, CNT-065,
   // CNT-127, CNT-131, CNT-132, CNT-133, CNT-134 and CNT-135 - nine times across three domain test files.
   // CNT-130 and CNT-063 are built in part and left uncited, and the plan says what each waits for.
+  // 134, from 121: roles, grants and the decision (docs/plans/2026-09-16-access-01-roles-grants-and-the-decision.md)
+  // cite thirteen of the requirements access.md owns - IAM-014, IAM-019, IAM-021, IAM-022, IAM-025,
+  // IAM-026, IAM-027, IAM-049, IAM-062, IAM-063, IAM-071, MET-024 and API-053 - once each, across two
+  // domain, four database and one service test file. Inheritance through templates and documents
+  // (IAM-024, IAM-018), the Access view (IAM-029 to IAM-031) and provider groups (IAM-009) wait, and
+  // the plan names each and what it waits for.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(121);
+    expect(model.citations).toHaveLength(134);
   });
 
   it('cites no identifier the corpus does not hold', () => {

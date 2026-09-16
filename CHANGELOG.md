@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.22.0 - 2026-09-16 (PR #105)
+
+### Added
+
+- **Who may do what, decided one way everywhere**, built from [the access design](docs/design/access.md).
+  Ten permissions - read, create, edit, comment, suggest, approve, publish, design, managing definitions
+  and administer - are held only through roles, and a role is granted to a person or a group on the whole
+  environment, one space, or one item, as an allow or a denial.
+- **The nearest grant decides.** A grant on an item overrides its space, a space overrides the
+  environment, and a denial wins over an allow made at the same place. Every answer names the grants and
+  the place that decided it, or the places it looked at when nothing did.
+- **Every environment starts with eight roles** - Reader, Reviewer, Author, Approver, Designer,
+  Definitions manager, Administrator and Editing - and a space called General. They are the environment's
+  own to change.
+- **Read-only on one item**: denying someone Editing on an item leaves them reading, commenting and
+  suggesting there while they still author the rest of its space. Editing can only be denied, because
+  allowing a change without allowing a read describes nobody.
+- **An environment's first administrator**: whoever sets it up names that person by their sign-in
+  identity, and their first sign-in makes them Administrator, once. In development, Ada administers both
+  environments from her first sign-in.
+- **Access for people outside the organisation is limited by design**: never across the whole
+  environment, never to create, edit, approve, publish, design, manage definitions or administer, and
+  always with an end date, which defaults to 30 days and can reach at most 90.
+- **A change to access cannot slip between a check and the act it allowed**: the act finishes first, or
+  it sees the change.
+- **Two ways to ask**: what you may do to something, and, for an administrator, what someone else may do
+  and why. An item you may not read answers exactly as one that does not exist.
+- There are no screens for roles or access yet; the editor's routes will be the first to be checked.
+
 ## 0.21.0 - 2026-09-16 (PR #104)
 
 ### Added

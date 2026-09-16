@@ -15,9 +15,14 @@ export {
   type ContentKind,
 } from './artifact-kind.js';
 export type {
+  AccessGrantTable,
+  AccessGroupTable,
+  AccessPolicyTable,
   ArtifactTable,
   ArtifactVersionTable,
+  FirstAdministratorTable,
   GoogleDomainTable,
+  GroupMemberTable,
   JobTable,
   IdentityProviderTable,
   InvitationTable,
@@ -25,6 +30,7 @@ export type {
   PlatformTables,
   PrincipalTable,
   ProfileTable,
+  RoleTable,
   SampleTable,
   SessionTable,
   SignInAttemptTable,
@@ -73,3 +79,34 @@ export {
   type RecordAnswer,
   type StoredVersion,
 } from './versions.js';
+export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
+export {
+  addToGroup,
+  createGroup,
+  type Group,
+  type GroupAnswer,
+  type MembershipAnswer,
+} from './groups.js';
+export {
+  accessPolicy,
+  grant,
+  type AccessPolicy,
+  type ExternalRefusal,
+  type GrantAnswer,
+  type GrantRefusal,
+  type NewGrant,
+  type StoredGrant,
+} from './grants.js';
+export {
+  accessFactSources,
+  loadFacts,
+  loadReadableSet,
+  type AccessFactSource,
+} from './access-facts.js';
+export {
+  claimFirstAdministrator,
+  nameFirstAdministrator,
+  type ClaimAnswer,
+  type NamedIdentity,
+  type NamingAnswer,
+} from './first-administrator.js';
