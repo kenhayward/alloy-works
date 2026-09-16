@@ -167,6 +167,38 @@ describe('routes that check a permission', () => {
     ).rejects.toMatchObject({ status: 404, code: 'not_found' });
   });
 
+  it('refuses edit as not found, not forbidden or allowed, when the caller may edit above but is denied read on the target itself (regression, item A)', async () => {
+    // Grace holds Author (read, edit, ...) at the Clinical space, but is denied Reader - so read
+    // alone, a denial may name any role - on `dosing` itself. No permission implies another, so
+    // decide('edit') still walks up to the space's allow; skipping the read gate for any allowed
+    // permission (rather than for `administer` alone) would let her act on, and learn of, an artifact
+    // she may not read, which access.md forbids.
+    const denied = await give({
+      role: 'Reader',
+      subject: { principal: ids.grace! },
+      level: { kind: 'artifact', id: dosing },
+      effect: 'deny',
+    });
+    try {
+      const check: PermissionCheck = {
+        check: 'permission',
+        permission: 'edit',
+        target: { query: 'target' },
+      };
+      const request = {
+        params: {},
+        query: { target: `artifact:${dosing}` },
+      } as unknown as FastifyRequest;
+      await expect(
+        tenantDb.withTenant(tenant, (trx) => authorise(trx, ids.grace!, check, request)),
+      ).rejects.toMatchObject({ status: 404, code: 'not_found' });
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),
+      );
+    }
+  });
+
   it('explains, for an administrator, the level and grants behind every answer and every refusal', async () => {
     const response = await get(
       `/v1/access/explain?principal=${ids.grace}&target=artifact:${dosing}`,
@@ -364,6 +396,34 @@ describe('routes that check a permission', () => {
         .json<{ permissions: { permission: string; allowed: boolean }[] }>()
         .permissions.find((answer) => answer.permission === 'administer');
       expect(administer).toMatchObject({ allowed: true });
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),
+      );
+    }
+  });
+
+  it('explains administer by "at its level or above" too, the same value the route helper reads (item B)', async () => {
+    const administerOnly = await tenantDb.withTenant(tenant, (trx) =>
+      createRole(trx, 'Administer only for explaining', ['administer']),
+    );
+    if (!('role' in administerOnly)) throw new Error(`refused: ${administerOnly.refused}`);
+    const denied = await give({
+      role: administerOnly.role.name,
+      subject: { principal: ids.ada! },
+      level: { kind: 'space', id: clinical },
+      effect: 'deny',
+    });
+    try {
+      const response = await get(
+        `/v1/access/explain?principal=${ids.ada}&target=space:${clinical}`,
+        'ada',
+      );
+      expect(response.statusCode).toBe(200);
+      const administer = response
+        .json<{ permissions: { permission: string; allowed: boolean; level: string | null }[] }>()
+        .permissions.find((answer) => answer.permission === 'administer');
+      expect(administer).toMatchObject({ allowed: true, level: 'tenant' });
     } finally {
       await tenantDb.withTenant(tenant, (trx) =>
         trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),

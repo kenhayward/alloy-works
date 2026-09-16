@@ -227,9 +227,8 @@ the tenant stands, and a denial with no expiry denies for good, exactly as `deci
 grant to a tenant-managed group with an external member is held to the same three refusals when it is an
 allow, but **is not given the default expiry**, because the group's other members would lose access on a
 date nobody chose; for the external member, the decision ignores an allow with no expiry. Adding an
-external principal to a group is refused where any allow the group holds would be refused to them directly
-
-- a denial the group holds is never a reason to refuse the addition.
+external principal to a group is refused where any allow the group holds would be refused to them
+directly; a denial the group holds is never a reason to refuse the addition.
 
 **Where a decision is taken**, an external principal's grants at the tenant and grants with no expiry
 are ignored when they allow, every unexpired denial counts, and then the cap applies. That covers the membership no

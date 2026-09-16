@@ -208,20 +208,19 @@ levels. Under read committed each statement has its own snapshot; the lock, not 
 consistent, because no change to access can commit while it is held. `now` is the transaction's own, read
 with the lock, and expiry is filtered in SQL and again in `decide`.
 
-**8. External rules where a grant is made.** These refusals and the default expiry apply to an allow only
-
-- a denial can only remove access, so none of them ever apply to one, and `decide` already counts every
-  unexpired denial on that basis. An **allow** to an external principal is refused at the tenant
-  (`grant.external_at_tenant`), if its role holds a capped permission (`grant.external_capped` - a denial of
-  one gives nothing and stands, and is never refused here either), and past the tenant's cap
-  (`grant.external_past_cap`); given no expiry, an allow to the principal takes the tenant's default. **A
-  grant to a group with an external member is held to the same three refusals when it is an allow, but is not
-  defaulted**, because the group's other members would lose access on a date nobody chose; the decision
-  ignores an allow's missing expiry for the external member. Adding an external principal to a group is
-  refused when any allow the group holds would be refused to them directly - a denial the group holds is
-  never a reason to refuse the addition. The policy is a singleton `access_policy` with
-  `external_default_days` 30 and `external_cap_days` 90 - numbers for Ken to change - neither nullable, and
-  the default within the cap.
+**8. External rules where a grant is made.** These refusals and the default expiry apply to an allow
+only: a denial can only remove access, so none of them ever apply to one, and `decide` already counts
+every unexpired denial on that basis. An **allow** to an external principal is refused at the tenant
+(`grant.external_at_tenant`), if its role holds a capped permission (`grant.external_capped` - a denial of
+one gives nothing and stands, and is never refused here either), and past the tenant's cap
+(`grant.external_past_cap`); given no expiry, an allow to the principal takes the tenant's default. **A
+grant to a group with an external member is held to the same three refusals when it is an allow, but is not
+defaulted**, because the group's other members would lose access on a date nobody chose; the decision
+ignores an allow's missing expiry for the external member. Adding an external principal to a group is
+refused when any allow the group holds would be refused to them directly; a denial the group holds
+is never a reason to refuse the addition. The policy is a singleton `access_policy` with
+`external_default_days` 30 and `external_cap_days` 90 - numbers for Ken to change - neither nullable, and
+the default within the cap.
 
 **9. What a tenant starts with is written by the migration**, so every existing tenant gets it too: the
 eight starter roles (the domain's `starterRoles`, which a test holds the rows to) and a space named
@@ -6701,7 +6700,7 @@ Named here so the next plan starts from a list rather than from a reading of the
   `edit` on a component for its routes.
 - **Managing access** - the roles, groups, grants and principals routes; removing a grant, changing a
   role, setting a principal's kind; refusing to take `read` out of a role an allow names; the lock-out
-  guard; "`administer` at its level or above" as access.md now defines it; taking the epoch `FOR UPDATE`
+  guard; "`administer` at its level or above" for grant management; taking the epoch `FOR UPDATE`
   before deciding a change; extending external access (IAM-050); the external listing (IAM-051); and the
   Access panel (IAM-029 to IAM-031). **The access management plan.**
 - **A route that changes access, checked inside a permission-checked handler, deadlocks against another

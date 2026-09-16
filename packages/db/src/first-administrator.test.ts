@@ -309,6 +309,54 @@ describe('the first administrator', () => {
     expect(grants).toHaveLength(1);
   });
 
+  it('leaves the naming open rather than spend it on an existing allow that would lapse (item C)', async () => {
+    const drift = await tenant('Drift');
+    await nameFirstAdministrator(db.adminUrl, drift, {
+      issuer: ISSUER,
+      subject: 'mallory',
+      namedBy: 'provisioning',
+    });
+    // An identical allow already exists, but it expires - `administered()` excludes it exactly as it
+    // excludes an external principal's, so the claim would otherwise reach the insert. Recording
+    // `granted` over it would spend the naming on a grant that lapses, leaving the tenant
+    // unadministered with nothing left to claim.
+    const mallory = await service.withTenant(drift, async (trx) => {
+      const principal = await signingIn(trx, 'mallory');
+      const administrator = await findRole(trx, 'Administrator');
+      await trx
+        .insertInto('access_grant')
+        .values({
+          role_id: administrator!.id,
+          principal_id: principal.id,
+          level: 'tenant',
+          effect: 'allow',
+          granted_by: principal.id,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        })
+        .execute();
+      return principal.id;
+    });
+
+    await service.withTenant(drift, async (trx) => {
+      await expect(
+        claimFirstAdministrator(trx, { id: mallory, issuer: ISSUER, subject: 'mallory' }),
+      ).resolves.toBeUndefined();
+    });
+    await expect(namings(drift)).resolves.toEqual([
+      {
+        issuer: ISSUER,
+        subject: 'mallory',
+        named_by: 'provisioning',
+        claimed_by: null,
+        outcome: null,
+      },
+    ]);
+    const grants = await service.withTenant(drift, (trx) =>
+      trx.selectFrom('access_grant').select('id').execute(),
+    );
+    expect(grants).toHaveLength(1);
+  });
+
   it('claims nothing across tenants: a naming in one tenant leaves another untouched', async () => {
     const alpha = await tenant('Alpha');
     const beta = await tenant('Beta');

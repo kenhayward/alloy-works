@@ -72,11 +72,15 @@ export function administerOrAbove(facts: AccessFacts): Decision {
  * A target the tenant does not hold, or one the caller may not read, is refused as not found; a
  * readable target is refused as forbidden, naming only the permission.
  *
- * `administer` is decided first, by `administerOrAbove` rather than the ordinary nearest-level walk:
- * a target the principal may administer at its level or above is never refused as unreadable on that
- * account (final review, item 2) - a tenant administrator denied Administrator, which holds `read`, at
- * a space would otherwise be 404'd there by the read gate below before "or above" got a chance to run.
- * Only when that walk does not already allow it does an unreadable target 404 ahead of the ordinary 403.
+ * `administer` alone skips the read gate ahead of its own decision: a target the principal may
+ * administer at its level or above is never refused as unreadable on that account (final review, item
+ * 2) - a tenant administrator denied Administrator, which holds `read`, at a space would otherwise be
+ * 404'd there before "or above" got a chance to run. No other permission gets this treatment: no
+ * permission implies another, and a denial may name a role that does not hold `read` (decision 2), so
+ * an allowed `edit` (walking up to a space's grant, say) says nothing about whether `read` holds on
+ * the target itself - skipping the gate for any allowed permission, not `administer` specifically, was
+ * a regression caught in re-review: it let a caller act on, and learn of, an artifact denied to them
+ * for reading.
  */
 export async function authorise(
   trx: TenantTransaction,
@@ -88,11 +92,14 @@ export async function authorise(
   if (!target) throw notFound();
   const facts = await loadFacts(trx, principalId, target);
   if (!facts) throw notFound();
-  const decision =
-    check.permission === 'administer' ? administerOrAbove(facts) : decide(check.permission, facts);
-  if (!decision.allowed && target.kind !== 'tenant' && !decide('read', facts).allowed) {
-    throw notFound();
+  if (check.permission === 'administer') {
+    const decision = administerOrAbove(facts);
+    if (decision.allowed) return { trx, principalId, target, facts, decision };
+    if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
+    throw forbidden(check.permission);
   }
+  if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
+  const decision = decide(check.permission, facts);
   if (!decision.allowed) throw forbidden(check.permission);
   return { trx, principalId, target, facts, decision };
 }

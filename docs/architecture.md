@@ -291,7 +291,10 @@ so a change to access waits for an act already authorised and an act begun after
 holds the list of facts against the triggers.
 
 **Unreadable is absent.** A target the caller may not read answers 404 exactly as a missing one does; a
-readable target refused answers 403 and names only the permission.
+readable target refused answers 403 and names only the permission. `administer` is the one exception:
+asked "at the target's level or above", a target the caller may administer from a level above is never
+refused as unreadable on that account, `GET /v1/access/explain` included, because the walk that answers
+it is not the ordinary nearest-level one that decided whether the target is readable in the first place.
 
 `pnpm dev:setup` names the stand-in's Ada as the first administrator of both development environments, so
 she administers each from her first sign-in there.

@@ -117,22 +117,39 @@ export async function claimFirstAdministrator(
   const { rows } = await sql<{ administered: boolean }>`${sql.raw(administered(''))}`.execute(trx);
   const outcome = rows[0]?.administered ? 'refused_administrator_exists' : 'granted';
   if (outcome === 'granted') {
-    // `onConflict` rather than `grant`: an identical grant already existing - held by a principal
-    // `administered()` does not count, an external one today - already gives the named role what
-    // this claim would, so it is treated as satisfying the claim rather than thrown as a unique
-    // violation that would 500 the sign-in, roll back the whole transaction, and leave the naming
-    // open forever.
-    await trx
-      .insertInto('access_grant')
-      .values({
-        role_id: naming.role_id,
-        principal_id: principal.id,
-        level: 'tenant',
-        effect: 'allow',
-        granted_by: principal.id,
-      })
-      .onConflict((conflict) => conflict.constraint('access_grant_once').doNothing())
-      .execute();
+    // An identical grant may already exist - held by a principal `administered()` does not count: an
+    // external one, or one whose grant expires (both excluded by its `expires_at is null` and
+    // `kind <> 'external'`). Only a permanent one (no expiry) administers the tenant the way this claim
+    // would, so only that is treated as already satisfying it - inserting again would otherwise throw a
+    // unique violation on `access_grant_once`, 500ing the sign-in. An expiring one is not equivalent:
+    // recording `granted` over it would spend the naming on a grant that lapses, leaving the tenant
+    // unadministered with nothing left to claim, so the naming is left open instead - a later sign-in,
+    // once the temporary grant is gone or made permanent, can claim it for real. The epoch's already
+    // held FOR UPDATE above rules out a race between this read and the insert below.
+    const existing = await trx
+      .selectFrom('access_grant')
+      .select('expires_at')
+      .where('role_id', '=', naming.role_id)
+      .where('principal_id', '=', principal.id)
+      .where('group_id', 'is', null)
+      .where('level', '=', 'tenant')
+      .where('space_id', 'is', null)
+      .where('artifact_id', 'is', null)
+      .where('effect', '=', 'allow')
+      .executeTakeFirst();
+    if (existing && existing.expires_at !== null) return undefined;
+    if (!existing) {
+      await trx
+        .insertInto('access_grant')
+        .values({
+          role_id: naming.role_id,
+          principal_id: principal.id,
+          level: 'tenant',
+          effect: 'allow',
+          granted_by: principal.id,
+        })
+        .execute();
+    }
   }
   await trx
     .updateTable('first_administrator')

@@ -570,7 +570,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return {
         principal,
         target: formatLevel(target),
-        permissions: permissions.map((permission) => explained(decide(permission, facts))),
+        // administer by "at its level or above" (final review, item B): the same rule GET /v1/access
+        // and the route helper use, so this explains the decision that actually governs the permission,
+        // not a plain nearest-level walk that could show a denial "or above" already overrides.
+        permissions: permissions.map((permission) =>
+          explained(
+            permission === 'administer' ? administerOrAbove(facts) : decide(permission, facts),
+          ),
+        ),
       };
     },
   };
