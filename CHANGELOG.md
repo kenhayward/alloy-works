@@ -3,6 +3,26 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.21.0 - 2026-09-16 (PR #104)
+
+### Added
+
+- **One way in for content**, built from [the content model design](docs/design/content-model.md).
+  Everything pasted or copied into a component will pass through the same checks, in the same order,
+  wherever it came from.
+- **Anything that could run code or navigate is removed before content is kept**: scripts, embedded
+  objects, event handlers, links that are not web or email addresses, formatting that could run code, and
+  anything in an equation that is not standard MathML. An equation is only ever kept in one standard form,
+  however it arrives.
+- **Formatting is dropped and spacing paragraphs are removed**, because the theme decides how content
+  looks. Text is kept in one Unicode form, and text copied from a component in another language keeps its
+  language.
+- **Copied content gets new identifiers**, so a copy is never mistaken for the original, and comments and
+  suggestions stay with the component they were made on.
+- **A report of everything removed or changed**, returned with the content so it can be shown at the
+  time. Content that cannot be kept whole is refused whole, with a reason.
+- Nothing in the application pastes through it yet; the editor will.
+
 ## 0.20.1 - 2026-09-16 (PR #100)
 
 ### Fixed

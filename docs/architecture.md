@@ -1,10 +1,11 @@
 # Architecture - the repository as built
 
-> Status: scaffolding, plus the content model's stored shape, the metadata rules and the version chain.
-> The workspaces, the split between web and desktop, and the seam between them are real and tested, and
-> so are the schema a component's content is held in - [the content model](#the-content-model) below -
-> the rules deciding its metadata - [metadata](#metadata) - and the insert-only chain its versions are
-> stored in - [the version chain](#the-version-chain). Nothing authors, cuts or publishes any of it yet.
+> Status: scaffolding, plus the content model's stored shape and admission pipeline, the metadata rules
+> and the version chain. The workspaces, the split between web and desktop, and the seam between them are
+> real and tested, and so are the schema a component's content is held in - [the content model](#the-content-model)
+> below - the one way content enters it - [the admission pipeline](#the-admission-pipeline) - the rules
+> deciding its metadata - [metadata](#metadata) - and the insert-only chain its versions are stored in -
+> [the version chain](#the-version-chain). Nothing authors, pastes, cuts or publishes any of it yet.
 > The single `Component` beside it in `packages/domain` is still the scaffolding that
 > proved the path end to end, and is not a decision about content.
 >
@@ -23,7 +24,7 @@ One pnpm workspace, one lock file, eleven packages.
 
 | Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the canonical serialisation of a whole version, the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                                                                                               |
+| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the admission pipeline everything entering a component passes through - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the canonical serialisation of a whole version, the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs`                                                       |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                                                                                                                            |
@@ -106,6 +107,48 @@ with `compare.ts`, `resolve.ts`, `binding.ts`, the OOXML reader and writer, and 
 tests that are the evidence ADR-0005 rests on. Retiring it, and moving the OOXML pair out of this
 package as `design/content-model.md` requires, is a later plan's work - named in
 [`plans/README.md`](plans/README.md) so it is a debt rather than a surprise.
+
+## The admission pipeline
+
+`packages/domain/src/content/admission/` is the one way content enters a component from outside it - a
+paste, a copy from another component, and later an import - designed in
+[`design/content-model.md`](design/content-model.md), "The admission boundary". Nothing calls it yet: the
+editor that pastes through it, and the readers of Word, Markdown and HTML that will feed it, are later
+plans.
+
+| File            | Holds                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `report.ts`     | The entries every stage appends, with fixed messages; what arrived travels in `detail`, never in a message                                          |
+| `limits.ts`     | The provisional limits one admission is held to, measured without recursion before any stage walks the content                                      |
+| `mathml.ts`     | A strict reader of an equation's MathML, an allowlist of MathML Core, the one form it is written back in, and the check validation makes against it |
+| `sanitise.ts`   | Scripts, embedded objects, event handlers, links whose scheme is not allowlisted, executable formatting, MathML                                     |
+| `migrate.ts`    | Content at an earlier schema version brought to current through content's own chain, or refused                                                     |
+| `normalise.ts`  | Formatting dropped, NFC, empty runs and adjacent empty paragraphs removed, the source's language kept as a mark                                     |
+| `reidentify.ts` | A new identifier for every block, footnote and mark; comments, suggestions and conditions without an axis dropped                                   |
+| `admit.ts`      | The stages in order, validation last, and the outcome: blocks and the report, or a named refusal and the report                                     |
+| `clipboard.ts`  | The product's own clipboard format, written on copy and read on paste                                                                               |
+
+**Four properties, because each is a decision rather than an implementation detail.**
+
+**One pipeline, and it does not know the source.** A reader turns its format into untrusted JSON, using a
+fixed vocabulary for what the pipeline removes, and never removes it itself; a copy within the product and
+a foreign paste are therefore reported to one standard. Anything inside the content that no stage knows is
+refused by validation, with the whole admission - the candidate's root contributes only its content,
+schema version, language and direction, so any other root member (a stray `title`, say) is dropped in
+silence rather than refused.
+
+**The report comes back with the content.** Every stage that discards or rewrites appends to it, and a
+refusal returns it too, ending with why. Messages are fixed strings; content is never interpolated into one.
+
+**An outcome, never an exception, and never part of the content.** Either every block that survived,
+validated as a whole under the receiving component's root, or a named refusal and nothing.
+
+**MathML is the one markup this package reads.** An equation is rendered as markup, so it is the one string
+a script could hide in. The reader refuses rather than guesses, and writes every combining mark as a
+reference so that NFC cannot fuse one with a tag. Validation asks the same reader: `parseContentDocument`
+refuses an equation whose MathML the reader would not keep exactly as it stands, so content that reaches
+validation without passing through admission meets the same rule, and there is no second description of
+the form to drift from the first.
 
 ## Metadata
 

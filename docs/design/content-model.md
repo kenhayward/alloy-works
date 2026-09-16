@@ -15,11 +15,13 @@ validated against its four gate cases. It is stored by
 
 > **Part of this is built.** The stored shape - the nodes, the marks, the root a version holds, the
 > canonical serialisation, the migration chain and the output mapping - is in
-> `packages/domain/src/content/model/`, and [`../architecture.md`](../architecture.md) describes it as
-> it stands rather than as it was planned. What is still design here: the admission boundary (section 10
-> of CNT), resolution, and the round-trip test CNT-001 is satisfied by, which needs an editor. This
-> document keeps the argument and the requirements it owns, because the reasoning is not a thing the
-> code records.
+> `packages/domain/src/content/model/`, and the admission pipeline's five non-reading stages, its report
+> and the product clipboard's reader are in `packages/domain/src/content/admission/`. Validation refuses
+> an equation whose MathML the pipeline's reader would not keep as it stands.
+> [`../architecture.md`](../architecture.md) describes both as they stand rather than as they were
+> planned. What is still design here: the Word, Markdown and HTML readers, resolution, and the round-trip
+> test CNT-001 is satisfied by, which needs an editor. This document keeps the argument and the
+> requirements it owns, because the reasoning is not a thing the code records.
 
 ## The shape in one paragraph
 
@@ -413,9 +415,11 @@ in its index. Add a node with no way out and the build fails.
 
 **The model stays in `packages/domain`**: the schema, validation, the migration chain, the canonical
 serialisation, resolution, and the admission pipeline's five non-reading stages. All of them are model
-rules, none needs a parser, and the package already forbids React, Electron, `fs` and the DOM - the
-right home for the one part of the product that has to be testable without booting anything
-(ADR-0005).
+rules, and the package already forbids React, Electron, `fs` and the DOM - the right home for the one
+part of the product that has to be testable without booting anything (ADR-0005). One exception: an
+equation's MathML is the one string the model renders as markup, so sanitise reads it with a strict
+reader of its own - hand-written, not a general parser, no dependency - and validation asks the same
+reader on save and on read-back (the admission plan's decisions 7 and 17).
 
 The spike schema was not exported from the package's public surface, and the findings say promoting a
 schema "is a deliberate act for whoever starts the authoring work, not something that should happen by
@@ -433,7 +437,8 @@ reader join them there rather than in the domain package.
 this one.
 
 The pipeline itself stays in the domain package and takes a reader's output as its input, which is what
-lets all six stages be tested with no parser in the room.
+lets five of the six stages be tested with no parser in the room - sanitise is the exception, carrying
+the MathML reader described above.
 
 ## Verification
 

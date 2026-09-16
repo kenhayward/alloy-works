@@ -7,7 +7,7 @@ import { CURRENT_SCHEMA_VERSION, parseContentDocument, type ContentDocument } fr
  * first schema change is the moment a chain nobody built is discovered to be missing - and by then
  * there is stored content that needs it.
  */
-const chain: MigrationChain = {
+export const contentMigrationChain: MigrationChain = {
   subject: 'content',
   current: CURRENT_SCHEMA_VERSION,
   migrations: {},
@@ -15,7 +15,7 @@ const chain: MigrationChain = {
 
 /** Content's chain, through the harness every stored payload in this package shares. */
 export function migrate(value: unknown): unknown {
-  return migrateStored(value, chain);
+  return migrateStored(value, contentMigrationChain);
 }
 
 export type ReadOutcome =

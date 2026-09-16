@@ -15343,6 +15343,60 @@
       "kind": "title"
     },
     {
+      "id": "CNT-056",
+      "file": "packages/domain/src/content/admission/admit.test.ts",
+      "line": 223,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-064",
+      "file": "packages/domain/src/content/admission/admit.test.ts",
+      "line": 307,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-065",
+      "file": "packages/domain/src/content/admission/admit.test.ts",
+      "line": 187,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-127",
+      "file": "packages/domain/src/content/admission/admit.test.ts",
+      "line": 115,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-131",
+      "file": "packages/domain/src/content/admission/admit.test.ts",
+      "line": 140,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-132",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-133",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-135",
+      "file": "packages/domain/src/content/admission/clipboard.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-134",
+      "file": "packages/domain/src/content/admission/migrate.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "CNT-011",
       "file": "packages/domain/src/content/model/canonical.test.ts",
       "line": 14,
@@ -15357,175 +15411,175 @@
     {
       "id": "CNT-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 21,
+      "line": 24,
       "kind": "title"
     },
     {
       "id": "CNT-002",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 62,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "CNT-011",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 31,
+      "line": 34,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 110,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 123,
+      "line": 126,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 146,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "CNT-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 139,
+      "line": 142,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 123,
+      "line": 126,
       "kind": "title"
     },
     {
       "id": "CNT-023",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 72,
+      "line": 75,
       "kind": "title"
     },
     {
       "id": "CNT-059",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 49,
+      "line": 52,
       "kind": "title"
     },
     {
       "id": "CNT-107",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 110,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 78,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 94,
+      "line": 97,
       "kind": "title"
     },
     {
       "id": "CNT-119",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 78,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "CNT-124",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 58,
+      "line": 61,
       "kind": "title"
     },
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 153,
+      "line": 160,
       "kind": "title"
     },
     {
       "id": "CNT-140",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 43,
+      "line": 46,
       "kind": "title"
     },
     {
       "id": "CNT-142",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 38,
+      "line": 41,
       "kind": "title"
     },
     {
       "id": "CNT-146",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 25,
+      "line": 28,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 72,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 72,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "CNT-024",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 8,
+      "line": 10,
       "kind": "title"
     },
     {
       "id": "CNT-027",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 17,
+      "line": 19,
       "kind": "title"
     },
     {
       "id": "CNT-029",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 47,
+      "line": 49,
       "kind": "title"
     },
     {
       "id": "CNT-030",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 54,
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "CNT-043",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 59,
+      "line": 61,
       "kind": "title"
     },
     {
       "id": "CNT-050",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 34,
+      "line": 36,
       "kind": "title"
     },
     {
       "id": "CNT-052",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 39,
+      "line": 41,
       "kind": "title"
     },
     {
       "id": "CNT-123",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 80,
+      "line": 79,
       "kind": "title"
     },
     {
@@ -15597,7 +15651,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 59,
+      "line": 65,
       "kind": "title"
     },
     {

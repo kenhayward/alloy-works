@@ -75,7 +75,11 @@
           "value": "and a passage in another language.",
           "marks": [{ "type": "language", "id": "m13", "tag": "pt-BR" }]
         },
-        { "type": "equation", "mathml": "<math><mi>x</mi></math>", "latex": "x" },
+        {
+          "type": "equation",
+          "mathml": "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math>",
+          "latex": "x"
+        },
         {
           "type": "footnote",
           "id": "f1",
@@ -299,7 +303,7 @@
     {
       "type": "equation",
       "id": "b13",
-      "mathml": "<math display=\"block\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>",
+      "mathml": "<math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>",
       "latex": "\\frac{a}{b}",
       "numbered": true
     }

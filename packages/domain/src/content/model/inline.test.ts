@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { MATHML_NAMESPACE } from '../admission/mathml.js';
+
 import { alternativeSchema, inlineNodeSchema } from './inline.js';
 
 const text = (value: string, marks: unknown[] = []) => ({ type: 'text', value, marks });
@@ -57,12 +59,9 @@ describe('the inline vocabulary', () => {
   });
 
   it('CNT-043 stores an equation as MathML, with the LaTeX typed kept beside it', () => {
-    const node = inlineNodeSchema.parse({
-      type: 'equation',
-      mathml: '<math><mi>x</mi></math>',
-      latex: 'x',
-    });
-    expect(node).toMatchObject({ mathml: '<math><mi>x</mi></math>', latex: 'x' });
+    const mathml = `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>`;
+    const node = inlineNodeSchema.parse({ type: 'equation', mathml, latex: 'x' });
+    expect(node).toMatchObject({ mathml, latex: 'x' });
   });
 
   it('CNT-043 refuses an equation with no MathML, whatever else it carries', () => {
