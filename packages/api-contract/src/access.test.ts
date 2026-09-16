@@ -11,6 +11,7 @@ describe('what each route checks', () => {
   });
 
   it('names, for a permission, one from the closed set and a target the route itself carries', () => {
+    expect(allRoutes.some((route) => route.access.check === 'permission')).toBe(true);
     for (const route of allRoutes) {
       if (route.access.check !== 'permission') continue;
       const { permission, target } = route.access;

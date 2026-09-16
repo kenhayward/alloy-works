@@ -1,3 +1,4 @@
+import { parseLevel, permissions } from '@alloy-works/domain';
 import { z } from 'zod';
 
 export const ErrorBody = z.object({
@@ -51,3 +52,63 @@ export type Sample = z.infer<typeof Sample>;
 
 export const SampleParams = z.object({ sampleId: z.uuid() });
 export type SampleParams = z.infer<typeof SampleParams>;
+
+/** A target: the environment, one space or one artifact (access.md, "Deciding"). */
+const Target = z
+  .string()
+  .refine((text) => parseLevel(text) !== undefined, {
+    message: 'Expected tenant, space:<id> or artifact:<id>',
+  })
+  .describe('`tenant`, `space:<id>` or `artifact:<id>`');
+
+const PermissionName = z.enum(permissions);
+
+export const AccessQuery = z.object({ target: Target });
+export type AccessQuery = z.infer<typeof AccessQuery>;
+
+export const AccessAnswers = z.object({
+  target: z.string(),
+  permissions: z.array(z.object({ permission: PermissionName, allowed: z.boolean() })),
+});
+export type AccessAnswers = z.infer<typeof AccessAnswers>;
+
+export const ExplainQuery = z.object({
+  principal: z.uuid().describe('The principal whose access is explained'),
+  target: Target,
+});
+export type ExplainQuery = z.infer<typeof ExplainQuery>;
+
+export const AccessExplanation = z.object({
+  principal: z.string(),
+  target: z.string(),
+  permissions: z.array(
+    z.object({
+      permission: PermissionName,
+      allowed: z.boolean(),
+      reason: z
+        .enum(['allowed', 'denied', 'not_granted', 'capped'])
+        .describe('capped: an external principal, refused whatever the grants say'),
+      level: z
+        .string()
+        .nullable()
+        .describe('The level that decided, or null when none said anything'),
+      checked: z.array(z.string()).describe('Every level looked at, nearest first'),
+      grants: z
+        .array(
+          z.object({
+            id: z.string(),
+            role: z.string(),
+            effect: z.enum(['allow', 'deny']),
+            subject: z.union([
+              z.object({ principal: z.string() }),
+              z.object({ group: z.string() }),
+            ]),
+            through: z.string().nullable().describe('The group it reached the principal through'),
+            expiresAt: z.string().nullable(),
+          }),
+        )
+        .describe('The grants that decided, at the deciding level'),
+    }),
+  ),
+});
+export type AccessExplanation = z.infer<typeof AccessExplanation>;

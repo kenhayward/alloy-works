@@ -3,7 +3,10 @@ import cookie from '@fastify/cookie';
 import {
   routes,
   SESSION_COOKIE,
+  type AccessExplanation,
+  type ExplainQuery,
   type GoogleHandoff,
+  type RouteAccess,
   type RouteContract,
   type Sample,
   type SampleParams,
@@ -11,14 +14,17 @@ import {
 } from '@alloy-works/api-contract';
 import {
   enqueueJob,
+  loadFacts,
   type SignInRoute,
   type Tenant,
   type TenantDatabase,
   type TenantListener,
 } from '@alloy-works/db';
+import { decide, formatLevel, permissions, type Decision } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
+import { authorise, type Authorised } from './access.js';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -87,12 +93,36 @@ type Success<R extends RouteContract> = R['responses'] extends {
   ? z.input<S>
   : never;
 
+/**
+ * A route that checks a permission is handed what was decided, and runs in the transaction it was
+ * decided in; it returns its body rather than sending it, so nothing is sent before that commits.
+ */
 type Handlers = {
   [K in keyof typeof routes]: (
     request: FastifyRequest,
     reply: FastifyReply,
+    ...authorised: (typeof routes)[K]['access'] extends { check: 'permission' } ? [Authorised] : []
   ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
 };
+
+/** A decided grant as the explanation publishes it. */
+function explained(decision: Decision): AccessExplanation['permissions'][number] {
+  return {
+    permission: decision.permission,
+    allowed: decision.allowed,
+    reason: decision.reason,
+    level: decision.level && formatLevel(decision.level),
+    checked: decision.checked.map(formatLevel),
+    grants: decision.grants.map((reached) => ({
+      id: reached.id,
+      role: reached.role.name,
+      effect: reached.effect,
+      subject: reached.subject,
+      through: reached.through,
+      expiresAt: reached.expiresAt && reached.expiresAt.toISOString(),
+    })),
+  };
+}
 
 function tenantOf(request: FastifyRequest): Tenant {
   if (!request.tenant) throw new Error('A tenant-scoped handler ran without a tenant');
@@ -493,7 +523,50 @@ export function buildApp(options: AppOptions): FastifyInstance {
       await streamToViewer({ request, reply, db, events, tenant });
       return reply;
     },
+
+    getAccess: async (_request, _reply, { target, facts }) => ({
+      target: formatLevel(target),
+      permissions: permissions.map((permission) => ({
+        permission,
+        allowed: decide(permission, facts).allowed,
+      })),
+    }),
+
+    explainAccess: async (request, _reply, { trx, target }) => {
+      const { principal } = request.query as ExplainQuery;
+      const facts = await loadFacts(trx, principal, target);
+      if (!facts) throw notFound();
+      return {
+        principal,
+        target: formatLevel(target),
+        permissions: permissions.map((permission) => explained(decide(permission, facts))),
+      };
+    },
   };
+
+  /**
+   * The handler as registered. A route declaring a permission is decided inside `withTenant` and its
+   * handler runs only on an allow, in the same transaction (access.md, "Refusing").
+   */
+  function permissionChecked(
+    access: RouteAccess,
+    handler: Handlers[keyof Handlers],
+  ): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
+    const run = handler as (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      authorised?: Authorised,
+    ) => Promise<unknown>;
+    if (access.check !== 'permission') return (request, reply) => run(request, reply);
+    return (request, reply) =>
+      db.withTenant(tenantOf(request), async (trx) =>
+        run(
+          request,
+          reply,
+          await authorise(trx, principalOf(request).principalId, access, request),
+        ),
+      );
+  }
 
   const http = app.withTypeProvider<ZodTypeProvider>();
   for (const [name, route] of Object.entries(routes) as [keyof Handlers, RouteContract][]) {
@@ -539,7 +612,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...(route.params ? { params: route.params } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
-      handler: handlers[name],
+      handler: permissionChecked(route.access, handlers[name]),
     });
   }
   return app;

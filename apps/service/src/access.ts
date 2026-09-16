@@ -1,0 +1,66 @@
+// apps/service/src/access.ts
+import type { RouteAccess, RouteTarget } from '@alloy-works/api-contract';
+import { loadFacts, type TenantTransaction } from '@alloy-works/db';
+import {
+  decide,
+  parseLevel,
+  type AccessFacts,
+  type Decision,
+  type Level,
+} from '@alloy-works/domain';
+import type { FastifyRequest } from 'fastify';
+import { AppError } from './errors.js';
+
+/** What a permission-checked handler is given: the transaction it was decided in, and the answer. */
+export interface Authorised {
+  readonly trx: TenantTransaction;
+  readonly principalId: string;
+  readonly target: Level;
+  /** The caller's facts on the target, as the decision read them. */
+  readonly facts: AccessFacts;
+  readonly decision: Decision;
+}
+
+export type PermissionCheck = Extract<RouteAccess, { check: 'permission' }>;
+
+/** access.md, "Refusing": the same words whether the target is missing or merely unreadable. */
+const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
+
+const forbidden = (permission: string) =>
+  new AppError(403, 'forbidden', `This needs the ${permission} permission.`);
+
+/** The level a route's declaration names, from the request's validated parameters or query. */
+function targetOf(declared: RouteTarget, request: FastifyRequest): Level | undefined {
+  if ('tenant' in declared) return { kind: 'tenant' };
+  if ('query' in declared) {
+    const value = (request.query as Record<string, unknown>)[declared.query];
+    return typeof value === 'string' ? parseLevel(value) : undefined;
+  }
+  const params = request.params as Record<string, unknown>;
+  const [kind, name] =
+    'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
+  const id = params[name];
+  return typeof id === 'string' ? { kind: kind as 'space' | 'artifact', id } : undefined;
+}
+
+/**
+ * Decides a route's permission for the signed-in principal, inside the transaction its handler will
+ * run in, taking the access epoch FOR SHARE so no change to access lands between the two (IAM-063).
+ * A target the tenant does not hold, or one the caller may not read, is refused as not found; a
+ * readable target is refused as forbidden, naming only the permission.
+ */
+export async function authorise(
+  trx: TenantTransaction,
+  principalId: string,
+  check: PermissionCheck,
+  request: FastifyRequest,
+): Promise<Authorised> {
+  const target = targetOf(check.target, request);
+  if (!target) throw notFound();
+  const facts = await loadFacts(trx, principalId, target);
+  if (!facts) throw notFound();
+  if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
+  const decision = decide(check.permission, facts);
+  if (!decision.allowed) throw forbidden(check.permission);
+  return { trx, principalId, target, facts, decision };
+}

@@ -1,6 +1,10 @@
 import type { RouteContract } from './contract.js';
 import {
+  AccessAnswers,
+  AccessExplanation,
+  AccessQuery,
   ErrorBody,
+  ExplainQuery,
   GoogleHandoff,
   Health,
   Me,
@@ -28,6 +32,18 @@ const routeClosed = {
 
 const signInFailed = {
   description: 'The sign-in could not be completed',
+  schema: ErrorBody,
+} as const;
+
+/** access.md, "Refusing": an artifact the caller may not read is one that does not exist. */
+const notFound = {
+  description: 'No such target in this environment, or none the caller may read',
+  schema: ErrorBody,
+} as const;
+
+/** The caller may read the target and is refused what they asked; the body names the permission. */
+const forbidden = {
+  description: 'The caller may read the target but lacks the permission this needs',
   schema: ErrorBody,
 } as const;
 
@@ -184,6 +200,35 @@ export const routes = {
       200: { description: 'The sample', schema: Sample },
       401: unauthenticated,
       404: { description: 'No such sample in this environment', schema: ErrorBody },
+    },
+  },
+  getAccess: {
+    operationId: 'getAccess',
+    method: 'GET',
+    path: '/v1/access',
+    summary: "The caller's own answer for every permission on a target",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { query: 'target' } },
+    query: AccessQuery,
+    responses: {
+      200: { description: 'Every permission, allowed or not', schema: AccessAnswers },
+      401: unauthenticated,
+      404: notFound,
+    },
+  },
+  explainAccess: {
+    operationId: 'explainAccess',
+    method: 'GET',
+    path: '/v1/access/explain',
+    summary: 'Every permission a principal has on a target, and the grants and level behind each',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { query: 'target' } },
+    query: ExplainQuery,
+    responses: {
+      200: { description: 'Every permission, with its explanation', schema: AccessExplanation },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
     },
   },
 } as const satisfies Record<string, RouteContract>;
