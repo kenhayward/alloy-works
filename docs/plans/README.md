@@ -211,3 +211,15 @@ IAM-024, TPL-006), each kind's plan, widening `artifact`; auditing every change 
 refusal (IAM-013, IAM-037, IAM-060), LIF's plan; moving an artifact (IAM-015, IAM-028), for which
 `artifact_space_changed` already takes the lock, T2; and a space's name folding, and creating or renaming
 a space, whichever plan adds the spaces routes.
+
+## The editor
+
+Opening, editing and saving components, designed in [component-editor.md](../design/component-editor.md)
+over [storage-and-versioning.md](../design/storage-and-versioning.md)'s iterations. It comes after access,
+because every route it adds is checked, and its first plan builds the least of that design a person can
+use honestly - with the lock and iterations, because a version must be promoted from an iteration - so
+that each later slice arrives into something that runs.
+
+| #   | Plan                                                              | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status  |
+| --- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [Open, edit and save](2026-09-16-editor-01-open-edit-and-save.md) | `packages/editor`: a schema for paragraphs of text, the mapping that refuses what it lacks, the identity plugin, no two adjacent empty paragraphs, and a view that refuses paste; in `packages/db`, `component_lock` and the insert-only `iteration`, claiming, saving under the sequence rules, cutting from the latest iteration and releasing, the readable listing, and a component Ada and Grace may edit in development; six routes, request bodies in the contract and refusals carrying members; and in `apps/web`, the session as a state machine, the save indicator, the editor and the list. No creating, paste, marks, lists, tables, equations, metadata panel, recovery or undo across a reload | Planned |
