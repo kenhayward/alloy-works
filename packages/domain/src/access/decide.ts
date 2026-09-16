@@ -1,5 +1,5 @@
 import { sameLevel, type Level } from './level.js';
-import type { Permission, PrincipalKind } from './permissions.js';
+import { externalCap, type Permission, type PrincipalKind } from './permissions.js';
 
 /** A grant as a decision reads it: a role, one subject, one level, an effect and an expiry. */
 export interface AccessGrant {
@@ -36,7 +36,8 @@ export type DecidingGrant = AccessGrant & { readonly through: string | null };
 export interface Decision {
   readonly permission: Permission;
   readonly allowed: boolean;
-  readonly reason: 'allowed' | 'denied' | 'not_granted';
+  /** `capped`: an external principal, refused whatever the walk found, which `level` still names. */
+  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped';
   /** The level that decided; null when no level said anything. */
   readonly level: Level | null;
   /** The grants that decided at that level: the denials, or else the allows. */
@@ -69,6 +70,16 @@ function walkFor(permission: Permission, chain: readonly Level[]): readonly Leve
   return chain;
 }
 
+/**
+ * An external principal's grants at the tenant, and grants with no expiry, are not read (IAM-049,
+ * IAM-071). That covers what no administrator made - a provider asserting an external principal
+ * into a group - which cannot be refused where it happens.
+ */
+function readable(grant: AccessGrant, facts: AccessFacts): boolean {
+  if (facts.principal.kind !== 'external') return true;
+  return grant.level.kind !== 'tenant' && grant.expiresAt !== null;
+}
+
 function through(grant: AccessGrant, facts: AccessFacts): string | null | undefined {
   if ('principal' in grant.subject) {
     return grant.subject.principal === facts.principal.id ? null : undefined;
@@ -83,11 +94,19 @@ function through(grant: AccessGrant, facts: AccessFacts): string | null | undefi
  * a refusal. Enforcement reads `allowed`; the explanation is the rest of the same answer.
  */
 export function decide(permission: Permission, facts: AccessFacts): Decision {
+  const walked = walk(permission, facts);
+  if (facts.principal.kind === 'external' && externalCap.includes(permission)) {
+    return { ...walked, allowed: false, reason: 'capped' };
+  }
+  return walked;
+}
+
+function walk(permission: Permission, facts: AccessFacts): Decision {
   checkChain(facts.chain);
   const checked = walkFor(permission, facts.chain);
   const reaching = facts.grants.flatMap((grant): DecidingGrant[] => {
     const via = through(grant, facts);
-    if (via === undefined) return [];
+    if (via === undefined || !readable(grant, facts)) return [];
     if (grant.expiresAt !== null && grant.expiresAt <= facts.now) return [];
     if (!grant.role.permissions.includes(permission)) return [];
     return [{ ...grant, through: via }];
