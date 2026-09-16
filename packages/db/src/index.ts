@@ -78,3 +78,5 @@ export {
   type RecordAnswer,
   type StoredVersion,
 } from './versions.js';
+export { createRole, findRole, type Role, type RoleAnswer } from './roles.js';
+export { createGroup, type Group, type GroupAnswer } from './groups.js';
