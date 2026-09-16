@@ -57,6 +57,11 @@ const settle = async () => {
 class FakeService implements SessionService {
   readonly calls: string[] = [];
   readonly saved: { sequence: number; openedFrom: string; text: string }[] = [];
+  /** The session id this fake is currently claimed under - changes only when `claim` is asked for a
+   * fresh one, modelling the adapter's contract (fix round 2, finding 2) so a test can tell a reclaim
+   * under the old, poisoned id from a genuine fresh one. */
+  sessionId = 'session-0';
+  private freshCount = 0;
   claimAnswer: () => Promise<ClaimResult> = async () => ({ ok: true });
   saveAnswer: () => Promise<SaveResult> = async () => ({ ok: true });
   cutAnswer: (openedFrom: string) => Promise<CutResult> = async () => ({
@@ -65,7 +70,11 @@ class FakeService implements SessionService {
     version: { id: 'v2', number: '0.2' },
   });
 
-  async claim(move: boolean) {
+  async claim(move: boolean, fresh: boolean) {
+    if (fresh) {
+      this.freshCount += 1;
+      this.sessionId = `session-${this.freshCount}`;
+    }
     this.calls.push(move ? 'claim, moving' : 'claim');
     return this.claimAnswer();
   }
@@ -442,10 +451,11 @@ describe('the editing session', () => {
     await clock.advance(0);
     service.cutAnswer = async () => ({ ok: false, code: 'lock_held' });
     await session.saveVersion();
+    // Everything was flushed before the cut was ever asked for, so there is nothing left unsaved to
+    // offer back (fix round 2, finding 7).
     expect(session.view()).toMatchObject({
       phase: 'lost',
-      notice:
-        'This session no longer holds the component. Your unsaved text is kept below to copy.',
+      notice: 'This session no longer holds the component.',
     });
   });
 
@@ -457,8 +467,7 @@ describe('the editing session', () => {
     await session.doneEditing();
     expect(session.view()).toMatchObject({
       phase: 'lost',
-      notice:
-        'This session no longer holds the component. Your unsaved text is kept below to copy.',
+      notice: 'This session no longer holds the component.',
     });
   });
 
@@ -498,5 +507,140 @@ describe('the editing session', () => {
     answer({ ok: true });
     await clock.advance(0);
     expect(session.view()).toMatchObject({ save: 'saving', savedAt: 2_000 });
+  });
+
+  it('shows failing at every sample after the first failure while the author keeps typing, not just between saves', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    type('Unbox 0');
+    await clock.advance(12_000);
+    expect(session.view().save).toBe('failing');
+    for (let second = 1; second <= 20; second += 1) {
+      type(`Unbox ${second}`);
+      await clock.advance(3_000);
+      expect(session.view().save).toBe('failing');
+    }
+  });
+
+  it('claims under a new session id when recovering from a stale lock, never the poisoned one', async () => {
+    const { clock, service, session, type } = harness();
+    const staleSessionId = service.sessionId;
+    service.saveAnswer = async () =>
+      service.sessionId === staleSessionId
+        ? { ok: false, code: 'iteration_stale', latest: 7 }
+        : { ok: true };
+    type('Unbox');
+    await clock.advance(2_000);
+    expect(session.view().phase).toBe('lost');
+    session.claimAgain(true);
+    await clock.advance(2_000);
+    expect(service.sessionId).not.toBe(staleSessionId);
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved' });
+  });
+
+  it('stops on a stale or conflicting save even when the service gives no latest to check', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'iteration_stale' });
+    type('Unbox');
+    await clock.advance(2_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    expect(session.view().phase).toBe('lost');
+  });
+
+  it('reclaims and saves an edit that lands on the wire during Done editing, rather than stranding it', async () => {
+    const { clock, service, session, type } = harness();
+    let resolveRelease: (result: CutResult) => void = () => {};
+    service.cutAnswer = () => new Promise((resolve) => (resolveRelease = resolve));
+    type('Unbox');
+    await clock.advance(0);
+    const donePromise = session.doneEditing();
+    await clock.advance(0);
+    type('Unbox the');
+    resolveRelease({ ok: true, outcome: 'cut', version: { id: 'v2', number: '0.2' } });
+    await clock.advance(0);
+    await donePromise;
+    // Reclaimed and back to editing with the change still held; the save itself follows on its own
+    // schedule, same as any other change.
+    expect(session.view().phase).toBe('editing');
+    await clock.advance(2_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'release from v1', 'claim', 'save 1']);
+    expect(service.saved.map((each) => each.text)).toEqual(['Unbox', 'Unbox the']);
+  });
+
+  it('goes to lost, offering the text to copy, when the reclaim after Done editing is refused', async () => {
+    const { clock, service, session, type } = harness();
+    let resolveRelease: (result: CutResult) => void = () => {};
+    service.cutAnswer = () => new Promise((resolve) => (resolveRelease = resolve));
+    type('Unbox');
+    await clock.advance(0);
+    const donePromise = session.doneEditing();
+    await clock.advance(0);
+    type('Unbox the');
+    service.claimAnswer = async () => ({ ok: false, code: 'failed' });
+    resolveRelease({ ok: true, outcome: 'cut', version: { id: 'v2', number: '0.2' } });
+    await clock.advance(0);
+    await donePromise;
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice:
+        'This session no longer holds the component. Your unsaved text is kept below to copy.',
+    });
+  });
+
+  it('backs off after a hung attempt fails, instead of retrying the instant it resolves', async () => {
+    const { clock, service, type } = harness();
+    let resolveFirst: (result: SaveResult) => void = () => {};
+    service.saveAnswer = () => new Promise((resolve) => (resolveFirst = resolve));
+    type('Unbox 0');
+    await clock.advance(2_000);
+    type('Unbox 1');
+    await clock.advance(3_000);
+    resolveFirst({ ok: false, code: 'failed' });
+    await clock.advance(500);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    await clock.advance(2_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+  });
+
+  it('resets the failing streak and its backoff when a session is reclaimed', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    type('Unbox');
+    await clock.advance(12_000);
+    expect(session.view().save).toBe('failing');
+    service.saveAnswer = async () => ({ ok: false, code: 'iteration_stale' });
+    await clock.advance(4_000);
+    expect(session.view().phase).toBe('lost');
+    let resolveFresh: (result: SaveResult) => void = () => {};
+    service.saveAnswer = () => new Promise((resolve) => (resolveFresh = resolve));
+    session.claimAgain(true);
+    await clock.advance(0);
+    await clock.advance(2_000);
+    expect(session.view().save).toBe('saving');
+    resolveFresh({ ok: true });
+  });
+
+  it('clears the "no version was made" notice once a later save succeeds', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    service.saveAnswer = async () => ({ ok: false, code: 'failed' });
+    await session.saveVersion();
+    expect(session.view().notice).toBe('Not saved, so no version was made.');
+    service.saveAnswer = async () => ({ ok: true });
+    await clock.advance(30_000);
+    expect(session.view().notice).toBeNull();
+  });
+
+  it('does not claim unsaved text is kept when a cut or release refusal follows a complete flush', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.cutAnswer = async () => ({ ok: false, code: 'lock_held' });
+    await session.saveVersion();
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice: 'This session no longer holds the component.',
+    });
   });
 });

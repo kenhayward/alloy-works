@@ -43,7 +43,16 @@ export type CutResult =
  * adapter adds. A hand-written fake stands in for it in tests.
  */
 export interface SessionService {
-  claim(move: boolean): Promise<ClaimResult>;
+  /**
+   * `fresh` (fix round 2, finding 2): true asks the adapter to discard whatever session id it is
+   * currently claiming under and mint a new one before claiming, because the id this call would
+   * otherwise reuse has already been told by the service that it is behind - an `iteration_stale` or
+   * `iteration_conflict` refusal - and reusing it would go stale again under the very same sequence,
+   * forever. Only this module's stale-lost recovery ever passes `true`; every other call - the first
+   * claim, a retry after a claim timeout, the reclaim after a release races an edit onto the wire -
+   * passes `false` and keeps the session id this call already holds.
+   */
+  claim(move: boolean, fresh: boolean): Promise<ClaimResult>;
   save(sequence: number, openedFrom: string, content: ContentDocument): Promise<SaveResult>;
   cut(openedFrom: string): Promise<CutResult>;
   release(openedFrom: string): Promise<CutResult>;
@@ -190,6 +199,12 @@ export function createSession(options: SessionOptions): Session {
     publish();
   };
 
+  /** "Kept to copy" is only true when there is something unsaved to copy (fix round 2, finding 7). */
+  const lockGoneMessage = () =>
+    dirty
+      ? 'This session no longer holds the component. Your unsaved text is kept below to copy.'
+      : 'This session no longer holds the component.';
+
   /** Sends what the editor holds now, once; answers whether everything changed so far is acknowledged. */
   const send = async (): Promise<boolean> => {
     if (disposed) return false;
@@ -218,7 +233,9 @@ export function createSession(options: SessionOptions): Session {
       cancel(failing);
       failing = null;
       savedAt = clock.now();
-      if (notice === 'Not saved. Retrying.') notice = null;
+      if (notice === 'Not saved. Retrying.' || notice === 'Not saved, so no version was made.') {
+        notice = null;
+      }
       save = dirty ? 'saving' : 'saved';
       publish();
       return !dirty;
@@ -230,19 +247,18 @@ export function createSession(options: SessionOptions): Session {
     ) {
       dirty = true;
       save = 'failing';
-      lose('This session no longer holds the component. Your unsaved text is kept below to copy.');
+      lose(lockGoneMessage());
       return false;
     }
-    if (
-      (result.code === 'iteration_stale' || result.code === 'iteration_conflict') &&
-      result.latest !== undefined &&
-      result.latest >= sent
-    ) {
-      // The service already holds iterations this page never sent - another window, or this same
+    if (result.code === 'iteration_stale' || result.code === 'iteration_conflict') {
+      // The service already holds an iteration this page never sent - another window, or this same
       // window from before a reload - so sending the whole snapshot again over a raised sequence
-      // would overwrite them. Nothing here can tell whether what is on screen is newer or older than
-      // what was overwritten, so it stops rather than guess: the author is offered a fresh session,
-      // starting from what is on screen now (component-editor.md, "Undo across a reload").
+      // would overwrite it. This holds regardless of whether the refusal named `latest`: climbing the
+      // sequence by the ordinary retry backoff until it happens to clear whatever the service is
+      // holding is the same overwrite, just arrived at by accident instead of by design (fix round 2,
+      // finding 3). Nothing here can tell whether what is on screen is newer or older than what was
+      // overwritten, so it stops rather than guess: the author is offered a fresh session, starting
+      // from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
       save = 'failing';
       lose(
@@ -280,9 +296,13 @@ export function createSession(options: SessionOptions): Session {
     cancel(idle);
     cancel(continuous);
     idle = continuous = null;
-    if (!force && retry !== null) return false;
+    // The backoff check happens after waiting on whatever is already in flight, not before: an
+    // attempt already under way can fail while this call is waiting on it and arm its own retry - a
+    // check made before the wait would be checking a `retry` that did not exist yet (fix round 2,
+    // finding 5).
     while (inFlight) await inFlight;
     if (disposed) return false;
+    if (!force && retry !== null) return false;
     if (!dirty) return save === 'saved';
     if (phase !== 'editing' && phase !== 'cutting' && phase !== 'releasing') return false;
     inFlight = send();
@@ -302,20 +322,24 @@ export function createSession(options: SessionOptions): Session {
     }, timing.continuousMs);
   };
 
-  const claim = async (move: boolean) => {
+  const claim = async (move: boolean, fresh: boolean) => {
     phase = 'claiming';
     holder = null;
     notice = 'Starting to edit.';
-    // A fresh claim starts a fresh count - the one already covered by this call's own reset when it
-    // is the very first claim, and the one that matters when it follows a stale session (finding 1):
-    // the sequence that was refused belongs to a session this call is about to replace.
+    // A claim starts a clean count and a clean backoff - the reset is a no-op for the very first
+    // claim (everything is already at its initial value), and is exactly what a re-claim needs: the
+    // sequence, the failure streak and its backoff all belonged to the session this call is about to
+    // replace or resume, not to whatever this claim is about to do (fix round 2, finding 6; the
+    // sequence reset is finding 1 from round 1).
     sequence = 0;
+    failures = 0;
+    hasFailed = false;
     publish();
     let timer: unknown = null;
     const timedOut = new Promise<ClaimResult>((resolve) => {
       timer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
     });
-    const result = await Promise.race([service.claim(move), timedOut]);
+    const result = await Promise.race([service.claim(move, fresh), timedOut]);
     cancel(timer);
     if (disposed) return;
     if (result.ok) {
@@ -376,9 +400,7 @@ export function createSession(options: SessionOptions): Session {
         result.code === 'lock_required' ||
         result.code === 'version_precondition'
       ) {
-        lose(
-          'This session no longer holds the component. Your unsaved text is kept below to copy.',
-        );
+        lose(lockGoneMessage());
         return;
       }
       phase = 'editing';
@@ -394,18 +416,54 @@ export function createSession(options: SessionOptions): Session {
       version = result.version;
       options.onVersion(version);
     }
-    phase = during === 'releasing' ? 'reading' : 'editing';
+    if (during === 'cutting') {
+      phase = 'editing';
+      publish();
+      if (dirty) schedule();
+      return;
+    }
+    if (!dirty) {
+      phase = 'reading';
+      publish();
+      return;
+    }
+    // An edit landed while the release call was itself on the wire: the lock is gone, but there is
+    // unsaved text on screen. Reclaim it at once - not fresh, this is the same session picking its own
+    // lock back up, not recovering from a stale one - rather than stranding the edit in `reading` with
+    // no lock and nothing left scheduled to save it (fix round 2, finding 4).
+    phase = 'claiming';
+    notice = 'Starting to edit.';
     publish();
-    if (dirty && phase === 'editing') schedule();
+    let reclaimTimer: unknown = null;
+    const reclaimTimedOut = new Promise<ClaimResult>((resolve) => {
+      reclaimTimer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
+    });
+    const reclaimed = await Promise.race([service.claim(false, false), reclaimTimedOut]);
+    cancel(reclaimTimer);
+    if (disposed) return;
+    if (!reclaimed.ok) {
+      lose(lockGoneMessage());
+      return;
+    }
+    sequence = 0;
+    failures = 0;
+    hasFailed = false;
+    phase = 'editing';
+    notice = 'You are editing this component.';
+    publish();
+    schedule();
   };
 
   return {
     changed() {
       if (phase === 'lost' || disposed) return;
       dirty = true;
-      save = 'saving';
+      // A live failure streak stays shown through a keystroke too - not just through send()'s own
+      // attempts - or every keystroke during an outage paints "saving" over "failing" (fix round 2,
+      // finding 2).
+      save = hasFailed ? 'failing' : 'saving';
       if (phase === 'reading') {
-        void claim(false);
+        void claim(false, false);
         return;
       }
       publish();
@@ -414,7 +472,8 @@ export function createSession(options: SessionOptions): Session {
     saveVersion: () => finish('cutting', (openedFrom) => service.cut(openedFrom)),
     doneEditing: () => finish('releasing', (openedFrom) => service.release(openedFrom)),
     claimAgain(move) {
-      if (phase === 'reading' || (phase === 'lost' && lostFromStale)) void claim(move);
+      if (phase === 'reading') void claim(move, false);
+      else if (phase === 'lost' && lostFromStale) void claim(move, true);
     },
     view,
     dispose() {
