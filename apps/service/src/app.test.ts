@@ -9,29 +9,28 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type Handlers } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 
 /**
- * Type-only, never called: a route whose `access.check` is `'permission'` must resolve with its
- * body alone. Replying early (`reply.send(...)`) would ship a response before `permissionChecked`'s
- * transaction commits (app.ts, `permissionChecked`), so that must not typecheck. Declared with its
- * own explicit signature, rather than assigned inline, because TypeScript's contextual inference for
- * a bare function literal does not reliably check a return type against an indexed conditional type
- * like `Handlers['getAccess']` - an already-typed function value does.
+ * Type-only, never called: a permission-checked handler receives no `FastifyReply` at all -
+ * `permissionChecked` (app.ts) never passes one to it - so it has nothing to send early with,
+ * whatever its own return type would infer. A return-type restriction alone does not hold this:
+ * `FastifyReply` has its own `then` (`fastify/types/reply.d.ts`,
+ * `then(fulfilled: () => void, rejected: (err: Error) => void): void`), so an un-annotated async
+ * handler that returns `reply` or `reply.send(...)` has that value unwrapped as a thenable, and
+ * because `then`'s callback takes no value parameter to infer from, `Awaited<FastifyReply>` resolves
+ * to something assignable to anything - silently. This is the shape that fooled the first version of
+ * this guard: a bare literal for a handler that still expects a `reply` parameter.
  */
-async function earlyReply(
-  _request: Parameters<Handlers['getAccess']>[0],
-  reply: Parameters<Handlers['getAccess']>[1],
-): Promise<FastifyReply> {
-  return reply.status(200).send({});
-}
-// @ts-expect-error a permission-checked handler may not resolve with a FastifyReply
-const _illegalHandler: Handlers['getAccess'] = earlyReply;
-void _illegalHandler;
+const illegalHandlers: Pick<Handlers, 'getAccess'> = {
+  // @ts-expect-error a permission-checked handler takes no `reply`; there is nothing here to send with
+  getAccess: async (_request, reply, { target }) => reply.status(200).send({ target }),
+};
+void illegalHandlers;
 
 describe('the service', () => {
   let db: TestDatabase;

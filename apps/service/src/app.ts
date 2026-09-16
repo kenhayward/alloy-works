@@ -95,20 +95,21 @@ type Success<R extends RouteContract> = R['responses'] extends {
 
 /**
  * A route that checks a permission is handed what was decided, and runs in the transaction it was
- * decided in. Its handler's return type excludes `FastifyReply` - it must return its body rather
- * than send it, so nothing is sent before that transaction commits; a `reply.send(...)` there
- * fails to typecheck rather than shipping a response the act might still roll back. The serializer
- * that turns the returned body into bytes still runs only after the commit, so a body that fails its
- * own response schema on some future write route would surface as a 500 after the act has already
- * committed, not before it - this return type guards the ordering, not the body's own shape.
+ * decided in. Its handler receives no `FastifyReply` at all - `permissionChecked` never passes one -
+ * so it cannot send early: nothing is sent before that transaction commits, and it must return its
+ * body instead. A return-type restriction alone would not hold this: `FastifyReply` has its own
+ * `then` (`fastify/types/reply.d.ts`, `then(fulfilled: () => void, ...)`), so an un-annotated async
+ * handler that returns `reply` or `reply.send(...)` has that value unwrapped as a thenable - and
+ * because `then`'s callback takes no value parameter to infer from, TypeScript resolves
+ * `Awaited<FastifyReply>` to something assignable to anything, silently. Withholding the parameter,
+ * rather than trying to out-type its return, is what actually closes that. The serializer that turns
+ * the returned body into bytes still runs only after the commit, so a body that fails its own
+ * response schema on some future write route would surface as a 500 after the act has already
+ * committed, not before it - this is about ordering, not the body's own shape.
  */
 export type Handlers = {
   [K in keyof typeof routes]: (typeof routes)[K]['access'] extends { check: 'permission' }
-    ? (
-        request: FastifyRequest,
-        reply: FastifyReply,
-        authorised: Authorised,
-      ) => Promise<Success<(typeof routes)[K]>>
+    ? (request: FastifyRequest, authorised: Authorised) => Promise<Success<(typeof routes)[K]>>
     : (
         request: FastifyRequest,
         reply: FastifyReply,
@@ -532,7 +533,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return reply;
     },
 
-    getAccess: async (_request, _reply, { target, facts }) => ({
+    getAccess: async (_request, { target, facts }) => ({
       target: formatLevel(target),
       permissions: permissions.map((permission) => ({
         permission,
@@ -540,7 +541,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       })),
     }),
 
-    explainAccess: async (request, _reply, { trx, target }) => {
+    explainAccess: async (request, { trx, target }) => {
       const { principal } = request.query as ExplainQuery;
       const facts = await loadFacts(trx, principal, target);
       if (!facts) throw notFound();
@@ -554,25 +555,21 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   /**
    * The handler as registered. A route declaring a permission is decided inside `withTenant` and its
-   * handler runs only on an allow, in the same transaction (access.md, "Refusing").
+   * handler runs only on an allow, in the same transaction (access.md, "Refusing") - and is never
+   * handed this route's `reply`, so it has nothing to send with even if it tried.
    */
   function permissionChecked(
     access: RouteAccess,
     handler: Handlers[keyof Handlers],
   ): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
-    const run = handler as (
-      request: FastifyRequest,
-      reply: FastifyReply,
-      authorised?: Authorised,
-    ) => Promise<unknown>;
-    if (access.check !== 'permission') return (request, reply) => run(request, reply);
-    return (request, reply) =>
+    if (access.check !== 'permission') {
+      const run = handler as (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
+      return (request, reply) => run(request, reply);
+    }
+    const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
+    return (request) =>
       db.withTenant(tenantOf(request), async (trx) =>
-        run(
-          request,
-          reply,
-          await authorise(trx, principalOf(request).principalId, access, request),
-        ),
+        run(request, await authorise(trx, principalOf(request).principalId, access, request)),
       );
   }
 
