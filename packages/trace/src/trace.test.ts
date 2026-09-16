@@ -90,8 +90,11 @@ describe('the citations in the committed model', () => {
   // six of the requirements storage-and-versioning.md owns - VER-007, VER-008, VER-010, VER-042,
   // CNT-145 and MET-016 - nine times across three database test files. The rest it builds in part
   // and leaves uncited, and the plan names each and what it waits for.
+  // 113, from 112: the admission pipeline's migrate stage
+  // (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md) cites CNT-134 once in
+  // migrate.test.ts, counted once for the file however many titles name it.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(112);
+    expect(model.citations).toHaveLength(113);
   });
 
   it('cites no identifier the corpus does not hold', () => {
