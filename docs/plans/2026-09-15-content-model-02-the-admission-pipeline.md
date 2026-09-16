@@ -14,7 +14,8 @@ stage is its own module taking a reader's output as plain JSON and a report coll
 in the design's order, validates last through `parseContentDocument`, and returns an outcome rather than
 throwing. The one reader built here is the product's own clipboard, whose format is the model's and needs
 no parser. The one piece of markup inside the model - an equation's MathML - is read by a strict,
-hand-written reader inside the sanitise stage.
+hand-written reader inside the sanitise stage, and validation asks the same reader whether an equation's
+MathML is already in its form, so content that never passed through admission meets the same rule.
 
 **Tech Stack:** TypeScript strict (with `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`),
 zod 4, Vitest 5. No new dependency of any kind.
@@ -45,6 +46,10 @@ says foreign paste waiting for the pipeline is build order, "and nothing ships t
 format is the model's own JSON - and it is the source CNT-132 to CNT-135 are about. Without it, internal
 copy could not be tested end to end, and the editor would have nothing to paste from itself.
 
+**One change to the model's validation is in scope**: refusing an equation whose MathML the pipeline's
+reader would not keep as it stands (decision 17). Without it, the MathML sanitise cleans on a paste could
+reach storage uncleaned by any other path, and the rule has to be the reader this plan builds.
+
 **The HTML, Markdown and OOXML readers are out, and belong to a readers plan that creates their
 workspace.** content-model.md: "Every format reader and writer moves out ... an HTML reader needs a
 parser and a sanitiser, which `packages/domain` exists to exclude. The OOXML reader and writer move to
@@ -68,8 +73,10 @@ built against a pipeline that already exists.
 **The code below was run before the plan was committed.** Against `main` at 0.20.0 (merge `08fa3d4`),
 every block was applied in task order: the domain suite passed (397 tests, 114 of them new), the trace
 suite passed with the pin at 122, and `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm format` and
-`pnpm trace check` were clean. The database and service suites were not run: nothing here touches either
-package, and both need the compose stack. The citation counts each task names were measured from a
+`pnpm trace check` were clean. Task 4 was added after that run, and every block was then applied again,
+in task order, against the same merge: the domain suite passed with 413 tests, 130 of them new, the trace
+suite passed with the pin still at 122, and the same five commands were clean. The database and service
+suites were not run: nothing here touches either package, and both need the compose stack. The citation counts each task names were measured from a
 regenerated `trace.json`, not estimated. Then the code was removed, so the plan's tasks can be executed
 test first. It is still worth watching each test fail: the run proves the code, not the order of an
 executor's steps.
@@ -84,8 +91,9 @@ Every task's requirements include these.
   through a stage or through `admit` asserts both what came out and every entry the report holds - the
   whole list, with `toEqual`, never `toContainEqual`. A test that asserts only what came through is the
   spike's silent-drop defect waiting to happen again. The only tests exempt are those that admit
-  nothing: the limits measure, the report collector itself, and the clipboard writer. The MathML
-  reader's tests assert its findings, which are the report's entries before task 4 appends them.
+  nothing: the limits measure, the report collector itself, validation's MathML rule, and the clipboard
+  writer. The MathML reader's tests assert its findings, which are the report's entries before task 5
+  appends them.
 - **Name the requirement in the `describe` or `it` title** only when the test demonstrates that
   requirement's own statement, checked with `pnpm trace show <ID>`, and only if content-model.md claims
   it. Not a requirement nearby. The table in
@@ -272,8 +280,9 @@ candidate. It adds no entries of its own on success. **Which clipboard type it t
 **15. Five runtime exports join the package's public surface.** `admit`, `admissionLimits`,
 `readProductClipboard`, `writeProductClipboard` and `readerEntry`, with their types. The stages,
 `sanitiseMathml` and `contentMigrationChain` stay unexported until something outside the package needs
-them: the editor may want `sanitiseMathml` for equations typed as LaTeX, and exporting it then is a
-decision in that plan, pinned by `index.test.ts`.
+them: the editor will need `sanitiseMathml` for equations typed as LaTeX, because decision 17 refuses to
+store an equation in any other form, and exporting it then is a decision in that plan, pinned by
+`index.test.ts`.
 
 **16. Two claimed requirements are built in part and deliberately not cited.** CNT-130 says "pasted
 HTML must be sanitised", and no HTML is read here: every test hands the pipeline a reader's output. The
@@ -281,25 +290,49 @@ sanitise stage answers the whole of the rest of its statement, and the HTML read
 real HTML through reader and pipeline together. CNT-063 says the report is "shown to the author at the
 time", which the editor does. Citing either here would be citing the half this package can show.
 
+**17. Validation refuses an equation the MathML reader would not keep exactly as it stands, by asking the
+reader.** Decision 7 cleans MathML on the way in, and only on the way in. `parseContentDocument` accepted
+any non-empty `mathml`, so content reaching validation by another path - an iteration the service parses,
+a version read back from storage - could carry an equation sanitise would have cleaned, although CNT-010
+validates on every creation, change and read-back. **The ruling:** `equationContentSchema.mathml` is
+refined by `isKeptMathml`, which runs `sanitiseMathml` and passes only a readable result with no findings
+whose output is the input, byte for byte. Anything the reader would drop, rewrite or refuse fails. It is the
+reader itself rather than a description of its output kept in step by hand, because a second implementation
+is two readers that can disagree - what decision 7 refused. The failure is a zod issue with a fixed message,
+as the model's other value rules are (`not a BCP 47 tag`), so `readContent` quarantines it (CNT-013) and
+`admit` refuses it as `invalid`. It cannot refuse what the pipeline admits: sanitise writes the one form,
+normalise's NFC leaves that form as it is (decision 7), and tasks 9 and 10 run with the rule in place. Three
+consequences, each deliberate:
+
+- **The model imports `admission/mathml.ts`.** The reader stays where decision 7 put it; it imports nothing
+  but `limits.ts`, so no module cycle forms.
+- **Schema version 1's validation tightens without a new schema version.** That is safe only because no
+  content is stored anywhere yet. Task 4 puts the model's own fixtures, `every-node.json` included, in the
+  one form. Once iterations are stored, a rule like this needs a migration rather than a fixture edit.
+- **Anything that writes an equation must write it in the reader's form**, the editor's LaTeX converter
+  included, or its save is refused.
+
 ---
 
 ## Files
 
-| File                                                            | Responsibility                                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `packages/domain/src/content/admission/report.ts`               | `admissionStages`, `reportMessages`, `ReportEntry`, `createReport`, `readerEntry`           |
-| `packages/domain/src/content/admission/limits.ts`               | `admissionLimits`, `exceedsLimits`                                                          |
-| `packages/domain/src/content/admission/mathml.ts`               | `MATHML_NAMESPACE`, `sanitiseMathml`: the strict reader, the allowlist and the one form     |
-| `packages/domain/src/content/admission/sanitise.ts`             | `sanitise`                                                                                  |
-| `packages/domain/src/content/admission/migrate.ts`              | `StageResult`, `migrateCandidate`                                                           |
-| `packages/domain/src/content/model/migrate.ts`                  | Modified: `chain` exported as `contentMigrationChain`                                       |
-| `packages/domain/src/content/admission/normalise.ts`            | `normalise`                                                                                 |
-| `packages/domain/src/content/admission/reidentify.ts`           | `Receiver`, `reidentify`                                                                    |
-| `packages/domain/src/content/admission/admit.ts`                | `AdmissionInput`, `AdmissionOutcome`, `AdmissionRefused`, `AdmissionRefusal`, `admit`       |
-| `packages/domain/src/content/admission/clipboard.ts`            | `PRODUCT_CLIPBOARD_FORMAT`, `writeProductClipboard`, `readProductClipboard`, `ReaderResult` |
-| `packages/domain/src/content/admission/index.ts`                | The folder's barrel                                                                         |
-| `packages/domain/src/index.ts`, `index.test.ts`                 | Modified: the five exports, promoted and pinned                                             |
-| `packages/trace/src/trace.test.ts`, `packages/trace/trace.json` | Modified: the pin and the regenerated corpus                                                |
+| File                                                                                                  | Responsibility                                                                                          |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `packages/domain/src/content/admission/report.ts`                                                     | `admissionStages`, `reportMessages`, `ReportEntry`, `createReport`, `readerEntry`                       |
+| `packages/domain/src/content/admission/limits.ts`                                                     | `admissionLimits`, `exceedsLimits`                                                                      |
+| `packages/domain/src/content/admission/mathml.ts`                                                     | `MATHML_NAMESPACE`, `sanitiseMathml`: the strict reader, the allowlist and the one form; `isKeptMathml` |
+| `packages/domain/src/content/model/inline.ts`                                                         | Modified: an equation's MathML refused unless `isKeptMathml` holds                                      |
+| `packages/domain/src/content/model/document.test.ts`, `inline.test.ts`, `fixtures/v1/every-node.json` | Modified: their equations written in the one form, and the rule's tests                                 |
+| `packages/domain/src/content/admission/sanitise.ts`                                                   | `sanitise`                                                                                              |
+| `packages/domain/src/content/admission/migrate.ts`                                                    | `StageResult`, `migrateCandidate`                                                                       |
+| `packages/domain/src/content/model/migrate.ts`                                                        | Modified: `chain` exported as `contentMigrationChain`                                                   |
+| `packages/domain/src/content/admission/normalise.ts`                                                  | `normalise`                                                                                             |
+| `packages/domain/src/content/admission/reidentify.ts`                                                 | `Receiver`, `reidentify`                                                                                |
+| `packages/domain/src/content/admission/admit.ts`                                                      | `AdmissionInput`, `AdmissionOutcome`, `AdmissionRefused`, `AdmissionRefusal`, `admit`                   |
+| `packages/domain/src/content/admission/clipboard.ts`                                                  | `PRODUCT_CLIPBOARD_FORMAT`, `writeProductClipboard`, `readProductClipboard`, `ReaderResult`             |
+| `packages/domain/src/content/admission/index.ts`                                                      | The folder's barrel                                                                                     |
+| `packages/domain/src/index.ts`, `index.test.ts`                                                       | Modified: the five exports, promoted and pinned                                                         |
+| `packages/trace/src/trace.test.ts`, `packages/trace/trace.json`                                       | Modified: the pin and the regenerated corpus                                                            |
 
 Each module has a `.test.ts` beside it except `index.ts`. Test helpers - `text`, `paragraph`, a counter
 allocator - are repeated per test file, as the model's tests do, rather than shared through a module that
@@ -309,18 +342,19 @@ would compile into `dist/`.
 
 | content-model.md and component-editor.md say                                                    | Where                                                               |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| One pipeline, not one per source; copy and paste reported to one standard (CNT-135)             | Task 9: a copy and a foreign paste of one content, equal outcomes   |
-| Sanitise: scripts, event handlers, embedded objects, disallowed link targets, never stored      | Tasks 3 and 4 per construct; task 8 end to end                      |
-| Each dropped or rewritten link its own entry, naming the target it had (CNT-131)                | Task 4; task 8                                                      |
-| Migrate: brought to current or refused with a named error (CNT-134)                             | Task 5 with a stand-in second version; task 8 refused               |
-| Normalise: NFC; typeface, size and colour dropped; adjacent empty paragraphs collapsed          | Task 6; task 8 (CNT-056, CNT-065)                                   |
+| One pipeline, not one per source; copy and paste reported to one standard (CNT-135)             | Task 10: a copy and a foreign paste of one content, equal outcomes  |
+| Sanitise: scripts, event handlers, embedded objects, disallowed link targets, never stored      | Tasks 3 and 5 per construct; task 9 end to end                      |
+| Each dropped or rewritten link its own entry, naming the target it had (CNT-131)                | Task 5; task 9                                                      |
+| Migrate: brought to current or refused with a named error (CNT-134)                             | Task 6 with a stand-in second version; task 9 refused               |
+| Normalise: NFC; typeface, size and colour dropped; adjacent empty paragraphs collapsed          | Task 7; task 9 (CNT-056, CNT-065)                                   |
 | MathML normalised on entry, so identical input stores identical bytes                           | Task 3                                                              |
-| Re-identify: a new identifier for every block and every mark (CNT-132)                          | Task 7; task 9 pasted back into its own component                   |
-| Annotations whose owner does not travel dropped, one entry each (CNT-133)                       | Task 7; task 9                                                      |
-| Validate: the whole admission refused rather than partly stored                                 | Task 8                                                              |
-| The order is load-bearing: sanitise before normalise, migrate before re-identify, validate last | Task 8, each as an observable property                              |
+| Content validated on creation, change and read-back (CNT-010), so no path stores unkept MathML  | Task 4                                                              |
+| Re-identify: a new identifier for every block and every mark (CNT-132)                          | Task 8; task 10 pasted back into its own component                  |
+| Annotations whose owner does not travel dropped, one entry each (CNT-133)                       | Task 8; task 10                                                     |
+| Validate: the whole admission refused rather than partly stored                                 | Task 9                                                              |
+| The order is load-bearing: sanitise before normalise, migrate before re-identify, validate last | Task 9, each as an observable property                              |
 | The report threaded through all stages and returned, not logged                                 | Task 1; every test after it                                         |
-| Every admission test asserts the report as well as the output (CNT-064)                         | Every task; task 8's test asserting it over every construct at once |
+| Every admission test asserts the report as well as the output (CNT-064)                         | Every task; task 9's test asserting it over every construct at once |
 
 ## Requirements this plan cites, and those it does not
 
@@ -339,26 +373,28 @@ content-model.md claims CNT-060 to CNT-065, CNT-127, CNT-130 to CNT-135 and CNT-
 | CNT-133 | A comment anchor or suggestion pasted into another component is dropped and named                     | `clipboard.test.ts`                | 9     |
 | CNT-135 | A copy within the product reported to the same standard as a foreign paste                            | `clipboard.test.ts`                | 9     |
 
-That is ten citations in three files, taking the pin from 112 to 122: 113 after task 5, 119 after task 8,
-122 after task 9. CNT-056 and CNT-127 are already `Covered` by the model's tests; the other seven move from
+That is ten citations in three files, taking the pin from 112 to 122: 113 after task 6, 119 after task 9,
+122 after task 10. CNT-056 and CNT-127 are already `Covered` by the model's tests; the other seven move from
 `Designed` to `Covered`.
 
 **Claimed, built in part here, and not cited** - each waits for the plan named:
 
-| ID                        | What is built                                                                | What is missing, and whose                                                                                                       |
-| ------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| CNT-130                   | The sanitise stage, for all four constructs, over a reader's output          | Its statement is about pasted HTML, and nothing here reads HTML (decision 16). **The readers plan**                              |
-| CNT-063                   | A report naming what was normalised and discarded, returned with the content | "Shown to the author at the time". **The editor session plan**                                                                   |
-| CNT-060, CNT-061, CNT-062 | The pipeline those readers feed, and the contract they write to              | The Word, Markdown and HTML readers. **The readers plan**                                                                        |
-| CNT-010                   | Admitted content is validated through the one entry point                    | Its statement names creation, change and read-back; it is already cited by `index.test.ts`, and admission is one path among them |
-| CNT-023                   | Normalise collapses adjacent empty paragraphs                                | Its statement is that spacing blocks are not representable, which `document.test.ts` already cites                               |
+| ID                        | What is built                                                                                                               | What is missing, and whose                                                                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-130                   | The sanitise stage, for all four constructs, over a reader's output                                                         | Its statement is about pasted HTML, and nothing here reads HTML (decision 16). **The readers plan**                                                                                                      |
+| CNT-063                   | A report naming what was normalised and discarded, returned with the content                                                | "Shown to the author at the time". **The editor session plan**                                                                                                                                           |
+| CNT-060, CNT-061, CNT-062 | The pipeline those readers feed, and the contract they write to                                                             | The Word, Markdown and HTML readers. **The readers plan**                                                                                                                                                |
+| CNT-010                   | Admitted content is validated through the one entry point, and validation refuses MathML the reader would not keep (task 4) | Its statement is when validation runs - creation, change and read-back - and `index.test.ts` already cites it for the one entry point. Task 4's tests show one thing validation checks, not when it runs |
+| CNT-023                   | Normalise collapses adjacent empty paragraphs                                                                               | Its statement is that spacing blocks are not representable, which `document.test.ts` already cites                                                                                                       |
 
-**Nearby, and not cited even where a test comes close:** CNT-004 (task 7 keeps a fragmented annotation
-under one new identifier, but the statement is the model's, and `marks.test.ts` cites it); CNT-140 (task 6
+**Nearby, and not cited even where a test comes close:** CNT-004 (task 8 keeps a fragmented annotation
+under one new identifier, but the statement is the model's, and `marks.test.ts` cites it); CNT-140 (task 7
 keeps the source's language as a mark, but the statement is what the model can carry); CNT-043 (task 3
-writes one form of MathML, but the statement is one representation whatever the entry route, which is
-LaTeX against MathML); CNT-044 and CNT-048, the editor's. **IMP-047** is what this pipeline will answer for
-imports, and no design claims it, so `pnpm trace check` would refuse a citation.
+writes one form of MathML and task 4 refuses to store any other, but the statement is one representation
+whatever the entry route, which is LaTeX against MathML, and `inline.test.ts` cites it); CNT-013 (task 4
+quarantines stored content holding an equation the reader would not keep, but that is one more reason for a
+quarantine `migrate.test.ts` already cites); CNT-044 and CNT-048, the editor's. **IMP-047** is what this
+pipeline will answer for imports, and no design claims it, so `pnpm trace check` would refuse a citation.
 
 ---
 
@@ -640,7 +676,7 @@ git commit -m "Add the admission report every stage appends to"
   - `exceedsLimits(value: unknown): string | undefined` - the first limit exceeded, as a sentence, or `undefined`
 
 See decision 6. These tests hold no content to admit, so they assert no report: `admit` reports a refusal
-in task 8.
+in task 9.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -784,7 +820,7 @@ git commit -m "Bound what one admission may hold before any stage walks it"
   - `type MathmlResult = { ok: true; mathml: string; findings: readonly MathmlFinding[] } | { ok: false; failure: string }`
   - `sanitiseMathml(source: string): MathmlResult`
 
-See decision 7. The findings are what task 4 turns into report entries, so these tests assert the
+See decision 7. The findings are what task 5 turns into report entries, so these tests assert the
 findings as well as the output - the report's precursor, on the same terms.
 
 **The adversarial fixtures are the point of this task**, and a reviewer should check each is present:
@@ -1346,7 +1382,299 @@ git commit -m "Read an equation's MathML strictly and write it back in one form"
 
 ---
 
-## Task 4: The sanitise stage
+## Task 4: Validation keeps only the MathML the reader keeps
+
+**Files:**
+
+- Modify: `packages/domain/src/content/admission/mathml.ts`, `packages/domain/src/content/admission/mathml.test.ts`
+- Modify: `packages/domain/src/content/model/inline.ts`
+- Modify: `packages/domain/src/content/model/document.test.ts`, `packages/domain/src/content/model/inline.test.ts`
+- Modify: `packages/domain/src/content/model/fixtures/v1/every-node.json`
+
+**Interfaces:**
+
+- Consumes: `sanitiseMathml` and `MATHML_NAMESPACE` (task 3); `parseContentDocument` (`content/model/document.ts`) and `readContent` (`content/model/migrate.ts`), unchanged.
+- Produces:
+  - `isKeptMathml(source: string): boolean` - true only when `sanitiseMathml(source)` is readable, has no findings, and writes `source` back byte for byte
+  - `equationContentSchema.mathml` (`content/model/inline.ts`) refined by `isKeptMathml`, failing with the zod issue message `not in the one form the MathML reader writes`, so `parseContentDocument` throws it and `readContent` quarantines it
+
+See decision 17. The task comes straight after the reader, so every later task - the pipeline's validation
+in task 9 above all - runs with the rule in place, and a regression in the reader's one form shows up there
+as a refused admission rather than as bytes nobody compared.
+
+No identifier is cited. CNT-010's statement is when validation runs, and `index.test.ts` cites it; these
+tests show one thing validation checks. CNT-043 and CNT-013 are already cited by the model's tests, and
+[the requirements section](#requirements-this-plan-cites-and-those-it-does-not) says why neither is cited
+again. These tests admit nothing, so there is no report to assert.
+
+**The fixtures a reviewer should find:** one equation placed as a block, inline, and inline inside a
+footnote, because a footnote's content is validated by a second parse; and twelve ways to miss the one
+form - no namespace, whitespace between elements, the namespace declared again inside, attributes out of
+order, an empty element not self-closed, text not in NFC, a combining mark written raw, an event handler, a
+script, a link, a colour, and an element left open.
+
+- [ ] **Step 1: Write the failing tests**
+
+In `packages/domain/src/content/admission/mathml.test.ts`, import `isKeptMathml` beside the other two
+names:
+
+```ts
+import { isKeptMathml, MATHML_NAMESPACE, sanitiseMathml } from './mathml.js';
+```
+
+and add at the end of the file:
+
+```ts
+describe('MathML kept exactly as it stands', () => {
+  it('is everything the reader writes', () => {
+    for (const source of [
+      `<math display="block" alttext="x equals two">\n  <mi> x </mi>\n  <mo>=</mo>\n  <mn>2</mn>\n</math>`,
+      math('<mo>&lt;</mo><mo>></mo><mi>&#x3B1;</mi><mtext>A &amp; "B"</mtext>'),
+      math('<mspace width="1em"></mspace>'),
+      math('<mi>e\u{301}</mi><mi>q\u{301}</mi>'),
+      math('<mi>\u{338} onmouseover=alert(1) x=</mi>'),
+      math('<mi alttext="a&#9;&quot;b&quot;">x</mi>'),
+      math('<mi onclick="alert(1)">x</mi><script>alert(2)</script>'),
+    ]) {
+      const written = readable(source).mathml;
+      expect(isKeptMathml(written), written).toBe(true);
+    }
+  });
+
+  it('is nothing the reader would rewrite, remove anything from, or refuse', () => {
+    for (const source of [
+      '<math><mi>x</mi></math>',
+      math('\n<mi>x</mi>\n'),
+      math(`<mi xmlns="${MATHML_NAMESPACE}">x</mi>`),
+      math('<mi>x</mi>', ' display="block" alttext="x"'),
+      math('<mspace width="1em"></mspace>'),
+      math('<mo>></mo>'),
+      math('<mi>e\u{301}</mi>'),
+      math('<mi>\u{338}</mi>'),
+      math('<mi onclick="alert(1)">x</mi>'),
+      math('<mi>x</mi><script>alert(1)</script>'),
+      math('<mi mathcolor="red">x</mi>'),
+      math('<mi>x</mi>stray'),
+      math('<mi>x'),
+      '',
+    ]) {
+      expect(isKeptMathml(source), JSON.stringify(source)).toBe(false);
+    }
+  });
+});
+```
+
+In `packages/domain/src/content/model/document.test.ts`, replace the one import from `./document.js` with:
+
+```ts
+import { MATHML_NAMESPACE } from '../admission/mathml.js';
+
+import { CURRENT_SCHEMA_VERSION, contentDocumentSchema, parseContentDocument } from './document.js';
+import { readContent } from './migrate.js';
+```
+
+and add at the end of the file:
+
+```ts
+describe('an equation, stored only as the MathML reader writes it', () => {
+  const kept = `<math xmlns="${MATHML_NAMESPACE}" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>`;
+
+  /** One equation in each place one can stand: a block, inline, and inline inside a footnote. */
+  const placed = (mathml: string) =>
+    [
+      ['as a block', doc([{ type: 'equation', id: 'b1', mathml, numbered: false }])],
+      [
+        'inline',
+        doc([
+          { type: 'paragraph', id: 'b1', style: 'body', content: [{ type: 'equation', mathml }] },
+        ]),
+      ],
+      [
+        'inside a footnote',
+        doc([
+          {
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [
+              {
+                type: 'footnote',
+                id: 'f1',
+                anchor: { kind: 'span' },
+                content: [
+                  {
+                    type: 'paragraph',
+                    id: 'b2',
+                    style: 'footnote',
+                    content: [{ type: 'equation', mathml }],
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+      ],
+    ] as const;
+
+  it('admits MathML the reader would keep exactly as it stands, wherever the equation stands', () => {
+    for (const [where, document] of placed(kept)) {
+      expect(() => parseContentDocument(document), where).not.toThrow();
+    }
+  });
+
+  it.each([
+    [
+      'with no namespace declared',
+      '<math display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>',
+    ],
+    ['with whitespace between elements', kept.replace('<mfrac>', '\n  <mfrac>')],
+    [
+      'with its namespace declared again inside',
+      kept.replace('<mfrac>', `<mfrac xmlns="${MATHML_NAMESPACE}">`),
+    ],
+    [
+      'with attributes out of order',
+      kept.replace('display="block"', 'display="block" alttext="a over b"'),
+    ],
+    ['with an empty element not self-closed', kept.replace('<mi>b</mi>', '<mi></mi>')],
+    ['with text not in NFC', kept.replace('<mi>a</mi>', '<mi>e\u{301}</mi>')],
+    ['with a combining mark written raw', kept.replace('<mi>a</mi>', '<mi>\u{338}</mi>')],
+    ['with an event handler', kept.replace('<mi>a</mi>', '<mi onclick="alert(1)">a</mi>')],
+    ['with a script', kept.replace('<mi>a</mi>', '<mi>a</mi><script>alert(1)</script>')],
+    ['with a link', kept.replace('<mi>a</mi>', '<mi href="javascript:alert(1)">a</mi>')],
+    ['with a colour', kept.replace('<mi>a</mi>', '<mi mathcolor="red">a</mi>')],
+    ['that cannot be read', kept.replace('</mfrac>', '')],
+  ])('refuses an equation %s, wherever it stands', (_, mathml) => {
+    for (const [where, document] of placed(mathml)) {
+      expect(() => parseContentDocument(document), where).toThrow(
+        /not in the one form the MathML reader writes/,
+      );
+    }
+  });
+
+  it('quarantines stored content holding an equation the reader would not keep as it stands', () => {
+    const outcome = readContent(
+      doc([
+        {
+          type: 'equation',
+          id: 'b1',
+          mathml: kept.replace('<mi>a</mi>', '<mi onclick="alert(1)">a</mi>'),
+          numbered: true,
+        },
+      ]),
+      { artifact: 'component-10', version: '1.0' },
+    );
+    expect(outcome).toMatchObject({ ok: false, artifact: 'component-10', version: '1.0' });
+    expect(outcome).not.toHaveProperty('document');
+    expect(!outcome.ok && outcome.failure).toMatch(/not in the one form the MathML reader writes/);
+  });
+});
+```
+
+- [ ] **Step 2: Run them and watch them fail**
+
+Run: `pnpm --filter @alloy-works/domain exec vitest run src/content/admission/mathml.test.ts src/content/model/document.test.ts`
+Expected: FAIL, 15 of 69 tests. Both new `mathml.test.ts` tests fail with
+`TypeError: isKeptMathml is not a function`; the twelve refusals fail with
+`AssertionError: as a block: expected [Function] to throw an error`; the quarantine fails with
+`expected { ok: true, document: { …(5) } } to match object { ok: false, …(2) }`. The admitting test passes
+already. It is there so that refusing every equation cannot pass for the rule.
+
+- [ ] **Step 3: Write the model's own equations in the one form**
+
+Three places in the model's tests hold MathML the reader would rewrite, and in each the namespace is all it
+would change. They pass before the rule and after it.
+
+In `packages/domain/src/content/model/fixtures/v1/every-node.json`, change the inline equation's
+`"<math><mi>x</mi></math>"` to `"<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math>"`,
+and the block equation's `"<math display=\"block\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>"` to
+`"<math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>"`.
+Editing a schema version's fixture is safe only because nothing stores content yet - decision 17.
+
+In `packages/domain/src/content/model/document.test.ts`, in `CNT-021 stores a block equation as numbered or
+explicitly unnumbered`, change `mathml: '<math/>'` to ``mathml: `<math xmlns="${MATHML_NAMESPACE}"/>` ``.
+
+In `packages/domain/src/content/model/inline.test.ts`, add below the `vitest` import:
+
+```ts
+import { MATHML_NAMESPACE } from '../admission/mathml.js';
+```
+
+and in `CNT-043 stores an equation as MathML, with the LaTeX typed kept beside it`, change both
+`'<math><mi>x</mi></math>'` to `` `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` ``.
+
+Run: `pnpm --filter @alloy-works/domain exec vitest run src/content/model`
+Expected: FAIL only in the thirteen tests step 2 left failing in `document.test.ts`; every other model test
+passes.
+
+- [ ] **Step 4: Ask the reader, from validation**
+
+Add at the end of `packages/domain/src/content/admission/mathml.ts`:
+
+```ts
+/**
+ * Whether MathML is already what this reader keeps: readable, with nothing to remove, and written
+ * exactly as `sanitiseMathml` writes it. Validation asks this of every equation it is handed
+ * (`model/inline.ts`), so the rule a stored equation meets is this reader rather than a second
+ * description of it - anything the reader would drop, rewrite or refuse is refused.
+ *
+ * All three conditions are checked. A namespace declared again, or whitespace between elements, is
+ * removed with no finding, so findings alone would pass them; a finding always changes the string, but
+ * checking it costs nothing and does not rest on that.
+ */
+export function isKeptMathml(source: string): boolean {
+  const result = sanitiseMathml(source);
+  return result.ok && result.findings.length === 0 && result.mathml === source;
+}
+```
+
+In `packages/domain/src/content/model/inline.ts`, add below the `zod` import:
+
+```ts
+import { isKeptMathml } from '../admission/mathml.js';
+```
+
+and replace `equationContentSchema` and the comment above it with:
+
+```ts
+/**
+ * CNT-043: MathML is canonical. The LaTeX typed is a non-authoritative input record.
+ *
+ * The MathML is refused unless the admission pipeline's strict reader would keep it exactly as it
+ * stands, because it is the one string in the model rendered as markup: content reaching validation
+ * by any path but admission - an iteration the service parses, a version read back - must not carry
+ * what sanitise removes from a paste. The check is the reader itself, never a second description.
+ */
+export const equationContentSchema = {
+  mathml: z.string().min(1).refine(isKeptMathml, 'not in the one form the MathML reader writes'),
+  latex: z.string().min(1).optional(),
+};
+```
+
+- [ ] **Step 5: Run the whole domain suite and watch it pass**
+
+Run: `pnpm --filter @alloy-works/domain exec vitest run`
+Expected: PASS, 345 tests - 283 before this plan, 46 from tasks 1 to 3, and 16 here. Every fixture of every
+schema version still migrates and validates.
+
+Then check the byte comparison is doing its job: in `isKeptMathml`, temporarily delete
+`&& result.mathml === source`, run the suite again, and watch eight tests fail - `is nothing the reader
+would rewrite, remove anything from, or refuse`, and the seven refusals from `with no namespace declared`
+to `with a combining mark written raw`. Restore it.
+
+- [ ] **Step 6: Typecheck, lint, format, commit**
+
+```bash
+pnpm exec prettier --write packages/domain/src/content
+pnpm --filter @alloy-works/domain typecheck
+pnpm lint
+git add packages/domain/src/content/admission/mathml.ts packages/domain/src/content/admission/mathml.test.ts packages/domain/src/content/model/inline.ts packages/domain/src/content/model/inline.test.ts packages/domain/src/content/model/document.test.ts packages/domain/src/content/model/fixtures/v1/every-node.json
+git commit -m "Refuse at validation any MathML the strict reader would not keep as it stands"
+```
+
+---
+
+## Task 5: The sanitise stage
 
 **Files:**
 
@@ -1359,7 +1687,7 @@ git commit -m "Read an equation's MathML strictly and write it back in one form"
 - Produces: `sanitise(candidate: unknown, report: ReportCollector): unknown` - a new value; the argument is never mutated.
 
 See decisions 2, 8 and 9. No identifier is cited: CNT-130's statement is about pasted HTML (decision 16),
-and CNT-127 and CNT-131 are cited in task 8, through the whole pipeline.
+and CNT-127 and CNT-131 are cited in task 9, through the whole pipeline.
 
 **Adversarial fixtures a reviewer should find:** a script at the root and inline; an embedded object with
 fallback content; handlers on a block and on a mark; nine link targets - `javascript:` in three spellings
@@ -1803,7 +2131,7 @@ is why `readsDifferently` compares code points instead.
 
 ---
 
-## Task 5: The migrate stage
+## Task 6: The migrate stage
 
 **Files:**
 
@@ -1993,7 +2321,7 @@ git commit -m "Migrate admitted content to the current schema version, or refuse
 
 ---
 
-## Task 6: The normalise stage
+## Task 7: The normalise stage
 
 **Files:**
 
@@ -2003,7 +2331,7 @@ git commit -m "Migrate admitted content to the current schema version, or refuse
 **Interfaces:**
 
 - Consumes: `type ContentDocument` (`content/model/document.ts`); `markSchema` (`content/model/marks.ts`); `ReportCollector` (task 1).
-- Produces: `normalise(candidate: Record<string, unknown>, receiver: ContentDocument, report: ReportCollector): Record<string, unknown>` - with the root's `language` and `direction` removed, because task 8 validates under the receiving component's.
+- Produces: `normalise(candidate: Record<string, unknown>, receiver: ContentDocument, report: ReportCollector): Record<string, unknown>` - with the root's `language` and `direction` removed, because task 9 validates under the receiving component's.
 
 See decision 11.
 
@@ -2387,7 +2715,7 @@ git commit -m "Normalise admitted content: no formatting, one Unicode form, no s
 
 ---
 
-## Task 7: The re-identify stage
+## Task 8: The re-identify stage
 
 **Files:**
 
@@ -2396,13 +2724,13 @@ git commit -m "Normalise admitted content: no formatting, one Unicode form, no s
 
 **Interfaces:**
 
-- Consumes: `type ContentDocument`; `type StageResult` (task 5); `ReportCollector` (task 1).
+- Consumes: `type ContentDocument`; `type StageResult` (task 6); `ReportCollector` (task 1).
 - Produces:
   - `type Receiver = { document: ContentDocument; conditionAxes: readonly string[]; newIdentifier: () => string }`
   - `reidentify(candidate: Record<string, unknown>, receiver: Receiver, report: ReportCollector): StageResult<Record<string, unknown>>`
 
 See decision 12. No identifier is cited: CNT-132, CNT-133 and CNT-135 are about content copied within the
-product and pasted, which task 9 shows through the clipboard and the whole pipeline.
+product and pasted, which task 10 shows through the clipboard and the whole pipeline.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2890,7 +3218,7 @@ git commit -m "Re-identify admitted blocks, footnotes and marks, and drop annota
 
 ---
 
-## Task 8: The pipeline, in order, validated last
+## Task 9: The pipeline, in order, validated last
 
 **Files:**
 
@@ -2900,7 +3228,7 @@ git commit -m "Re-identify admitted blocks, footnotes and marks, and drop annota
 
 **Interfaces:**
 
-- Consumes: `exceedsLimits` (task 2), `sanitise` (task 4), `migrateCandidate` (task 5), `normalise` (task 6), `reidentify` and `Receiver` (task 7), `createReport` and `ReportEntry` (task 1); `parseContentDocument`, `CURRENT_SCHEMA_VERSION` and `type BlockNode` from the model.
+- Consumes: `exceedsLimits` (task 2), `sanitise` (task 5), `migrateCandidate` (task 6), `normalise` (task 7), `reidentify` and `Receiver` (task 8), `createReport` and `ReportEntry` (task 1); `parseContentDocument`, `CURRENT_SCHEMA_VERSION` and `type BlockNode` from the model.
 - Produces:
   - `type AdmissionInput = { candidate: unknown; report: readonly ReportEntry[] }`
   - `type AdmissionRefusal = 'oversized' | 'unreadable' | 'schemaVersion' | 'identifiers' | 'invalid' | 'empty'`
@@ -2917,7 +3245,7 @@ is admitted, which it would not be if validation read what arrived; and a report
 backwards. The fourth order - migrate before re-identify - cannot be observed with one schema version, and
 decision 10 names the plan where it can.
 
-**Adversarial fixtures end to end:** every construct task 4 removes, eight link spellings, a combining mark
+**Adversarial fixtures end to end:** every construct task 5 removes, eight link spellings, a combining mark
 set to fuse with a tag, nesting 100,000 deep carrying a handler that must never be reported, content the
 model cannot hold beside content it can, content left empty, an allocator that only returns a used
 identifier, and a member named `__proto__`.
@@ -3600,7 +3928,7 @@ git commit -m "Admit content through every stage in order, validating last"
 
 ---
 
-## Task 9: The product clipboard, and copying within the product
+## Task 10: The product clipboard, and copying within the product
 
 **Files:**
 
@@ -3610,7 +3938,7 @@ git commit -m "Admit content through every stage in order, validating last"
 
 **Interfaces:**
 
-- Consumes: `admit`, `AdmissionInput`, `AdmissionRefused` (task 8); `admissionLimits` (task 2); `createReport` (task 1); `type BlockNode`, `type ContentDocument` from the model.
+- Consumes: `admit`, `AdmissionInput`, `AdmissionRefused` (task 9); `admissionLimits` (task 2); `createReport` (task 1); `type BlockNode`, `type ContentDocument` from the model.
 - Produces:
   - `PRODUCT_CLIPBOARD_FORMAT = 'alloy-works/content'`
   - `writeProductClipboard(source: ContentDocument, blocks: readonly BlockNode[]): string`
@@ -3982,7 +4310,7 @@ git commit -m "Copy and paste within the product through the admission pipeline"
 
 ---
 
-## Task 10: Promote the pipeline to the package's public surface
+## Task 11: Promote the pipeline to the package's public surface
 
 **Files:**
 
@@ -3991,7 +4319,7 @@ git commit -m "Copy and paste within the product through the admission pipeline"
 
 **Interfaces:**
 
-- Consumes: everything tasks 1 to 9 produce.
+- Consumes: everything tasks 1 to 10 produce.
 - Produces, from `@alloy-works/domain`: `admit`, `admissionLimits`, `readProductClipboard`,
   `writeProductClipboard`, `readerEntry`; and the types `AdmissionInput`, `AdmissionOutcome`,
   `AdmissionRefusal`, `AdmissionRefused`, `ReaderResult`, `Receiver`, `AdmissionStage`, `ReportAction`,
@@ -4053,7 +4381,7 @@ pnpm --filter @alloy-works/domain test
 pnpm build
 ```
 
-Expected: the domain suite passes, 397 tests; the build succeeds, because `apps/web`, `packages/db` and
+Expected: the domain suite passes, 413 tests; the build succeeds, because `apps/web`, `packages/db` and
 the service import the package's `dist/` and none of the new names collides with an existing export.
 
 - [ ] **Step 4: Typecheck, lint, format, commit**
@@ -4068,7 +4396,7 @@ git commit -m "Promote the admission pipeline to the domain package's public sur
 
 ---
 
-## Task 11: The trace, the docs and the release
+## Task 12: The trace, the docs and the release
 
 **Files:**
 
@@ -4149,17 +4477,17 @@ paste, a copy from another component, and later an import - designed in
 editor that pastes through it, and the readers of Word, Markdown and HTML that will feed it, are later
 plans.
 
-| File            | Holds                                                                                                             |
-| --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `report.ts`     | The entries every stage appends, with fixed messages; what arrived travels in `detail`, never in a message        |
-| `limits.ts`     | The provisional limits one admission is held to, measured without recursion before any stage walks the content    |
-| `mathml.ts`     | A strict reader of an equation's MathML, an allowlist of MathML Core, and the one form it is written back in      |
-| `sanitise.ts`   | Scripts, embedded objects, event handlers, links whose scheme is not allowlisted, executable formatting, MathML   |
-| `migrate.ts`    | Content at an earlier schema version brought to current through content's own chain, or refused                   |
-| `normalise.ts`  | Formatting dropped, NFC, empty runs and adjacent empty paragraphs removed, the source's language kept as a mark   |
-| `reidentify.ts` | A new identifier for every block, footnote and mark; comments, suggestions and conditions without an axis dropped |
-| `admit.ts`      | The stages in order, validation last, and the outcome: blocks and the report, or a named refusal and the report   |
-| `clipboard.ts`  | The product's own clipboard format, written on copy and read on paste                                             |
+| File            | Holds                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `report.ts`     | The entries every stage appends, with fixed messages; what arrived travels in `detail`, never in a message                                          |
+| `limits.ts`     | The provisional limits one admission is held to, measured without recursion before any stage walks the content                                      |
+| `mathml.ts`     | A strict reader of an equation's MathML, an allowlist of MathML Core, the one form it is written back in, and the check validation makes against it |
+| `sanitise.ts`   | Scripts, embedded objects, event handlers, links whose scheme is not allowlisted, executable formatting, MathML                                     |
+| `migrate.ts`    | Content at an earlier schema version brought to current through content's own chain, or refused                                                     |
+| `normalise.ts`  | Formatting dropped, NFC, empty runs and adjacent empty paragraphs removed, the source's language kept as a mark                                     |
+| `reidentify.ts` | A new identifier for every block, footnote and mark; comments, suggestions and conditions without an axis dropped                                   |
+| `admit.ts`      | The stages in order, validation last, and the outcome: blocks and the report, or a named refusal and the report                                     |
+| `clipboard.ts`  | The product's own clipboard format, written on copy and read on paste                                                                               |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -4176,7 +4504,10 @@ validated as a whole under the receiving component's root, or a named refusal an
 
 **MathML is the one markup this package reads.** An equation is rendered as markup, so it is the one string
 a script could hide in. The reader refuses rather than guesses, and writes every combining mark as a
-reference so that NFC cannot fuse one with a tag.
+reference so that NFC cannot fuse one with a tag. Validation asks the same reader: `parseContentDocument`
+refuses an equation whose MathML the reader would not keep exactly as it stands, so content that reaches
+validation without passing through admission meets the same rule, and there is no second description of
+the form to drift from the first.
 ```
 
 - [ ] **Step 6: Say in the design what is now built**
@@ -4188,7 +4519,8 @@ under the introduction - with:
 > **Part of this is built.** The stored shape - the nodes, the marks, the root a version holds, the
 > canonical serialisation, the migration chain and the output mapping - is in
 > `packages/domain/src/content/model/`, and the admission pipeline's five non-reading stages, its report
-> and the product clipboard's reader are in `packages/domain/src/content/admission/`.
+> and the product clipboard's reader are in `packages/domain/src/content/admission/`. Validation refuses
+> an equation whose MathML the pipeline's reader would not keep as it stands.
 > [`../architecture.md`](../architecture.md) describes both as they stand rather than as they were
 > planned. What is still design here: the Word, Markdown and HTML readers, resolution, and the round-trip
 > test CNT-001 is satisfied by, which needs an editor. This document keeps the argument and the
@@ -4228,7 +4560,8 @@ Add to the top of `CHANGELOG.md`:
   wherever it came from.
 - **Anything that could run code or navigate is removed before content is kept**: scripts, embedded
   objects, event handlers, links that are not web or email addresses, formatting that could run code, and
-  anything in an equation that is not standard MathML.
+  anything in an equation that is not standard MathML. An equation is only ever kept in one standard form,
+  however it arrives.
 - **Formatting is dropped and spacing paragraphs are removed**, because the theme decides how content
   looks. Text is kept in one Unicode form, and text copied from a component in another language keeps its
   language.
@@ -4262,14 +4595,9 @@ Named here so the next plan starts from a list rather than from a reading of the
   from real HTML. It also answers what content-model.md does not: whether a heading pasted into a component
   becomes a paragraph with a reader entry, since headings are outline nodes rather than content.
 - **Pasting in the editor** - the paste handler, fitting admitted blocks into a slice, the adjacency seam,
-  showing the report (CNT-063), the clipboard's MIME type, plain-text paste, and whether equations typed as
-  LaTeX go through `sanitiseMathml`. **The editor session plan.**
-- **Validation does not check MathML.** `parseContentDocument` accepts any non-empty `mathml` string, so
-  content reaching storage by a path other than admission - an iteration the service parses - can carry an
-  equation sanitise would have cleaned. The fix is a model rule that an equation's MathML is already in
-  `sanitiseMathml`'s form, and it needs deciding before the editor session plan's service route stores
-  iterations. **Raise it as an issue**; it is not this plan's to change, because it changes what
-  `parseContentDocument` refuses.
+  showing the report (CNT-063), the clipboard's MIME type, plain-text paste, and exporting `sanitiseMathml`
+  so that an equation typed as LaTeX is written in the reader's form, which validation now requires before
+  it will store one (decision 17). **The editor session plan.**
 - **A run's direction has no member in the model.** content-model.md says "a run whose direction differs
   carries its own", and the built marks have no direction. Normalise reports a direction it cannot keep.
   **Raise it as an issue against the content model**, beside #88.
