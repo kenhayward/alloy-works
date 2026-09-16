@@ -273,10 +273,10 @@ describe('admitting content', () => {
       foreign([paragraph([text('x')], { presentation: { size: '9pt' } })]),
       receiver(),
     );
-    expect(outcome.ok).toBe(true);
-    expect(happened(outcome.report).map((entry) => entry.stage)).toEqual([
-      'normalise',
-      'reidentify',
+    expect(outcome.ok && outcome.content).toEqual([paragraph([text('x')], { id: 'a1' })]);
+    expect(happened(outcome.report)).toEqual([
+      { stage: 'normalise', action: 'discarded', subject: 'size', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
     ]);
   });
 
@@ -416,7 +416,7 @@ describe('admitting content', () => {
 });
 
 describe('refusing an admission', () => {
-  it('CNT-134 refuses content from a schema version it cannot migrate, by name, and admits nothing', () => {
+  it('refuses content from a schema version newer than the build can read, by name, and admits nothing', () => {
     const outcome = admit(
       { candidate: { schemaVersion: 2, content: [paragraph([text('x')])] }, report: [] },
       receiver(),
