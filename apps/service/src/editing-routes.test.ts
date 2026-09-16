@@ -243,6 +243,8 @@ describe('writing in an editing session through the service', () => {
       const theirs = randomUUID();
       const writes = [
         call('grace', 'POST', `/v1/components/${made.id}/lock`, { session: theirs }),
+        // move does not let a different principal steal or move another's lock: still lock_held.
+        call('grace', 'POST', `/v1/components/${made.id}/lock`, { session: theirs, move: true }),
         call('grace', 'PUT', `/v1/components/${made.id}/iterations/${theirs}/1`, {
           openedFrom: made.openedFrom,
           content: paragraphs('Hers'),
@@ -267,6 +269,25 @@ describe('writing in an editing session through the service', () => {
         // Held is not forbidden: Grace may edit this component, and the refusal does not say otherwise.
         expect(response.json().message).not.toMatch(/permission/);
       }
+
+      // None of Grace's refused writes left a trace: no iteration of hers, and no version beyond 0.1.
+      const gracesIterations = await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('iteration')
+          .select('id')
+          .where('artifact_id', '=', made.id)
+          .where('principal_id', '=', ids.grace!)
+          .execute(),
+      );
+      expect(gracesIterations).toHaveLength(0);
+      const versions = await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('artifact_version')
+          .select('id')
+          .where('artifact_id', '=', made.id)
+          .execute(),
+      );
+      expect(versions).toHaveLength(1);
     });
 
     it('CNT-071 governs every write by the lock, even between two sessions of one author', async () => {
@@ -287,11 +308,13 @@ describe('writing in an editing session through the service', () => {
         session: second,
         move: true,
       });
+      expect(moved.statusCode).toBe(200);
       expect(moved.json()).toMatchObject({ lock: { session: second } });
       const stranded = await call('ada', 'PUT', `/v1/components/${made.id}/iterations/${first}/1`, {
         openedFrom: made.openedFrom,
         content: paragraphs('From the first window'),
       });
+      expect(stranded.statusCode).toBe(409);
       expect(stranded.json()).toMatchObject({ code: 'lock_held', holder: { id: ids.ada } });
 
       const unheld = await component();
@@ -370,6 +393,38 @@ describe('writing in an editing session through the service', () => {
       expect(response.json()).toMatchObject({ code: 'content_invalid' });
       expect(response.body).not.toContain('Secret');
       expect(response.body).not.toContain('p1');
+    });
+
+    it('refuses an uppercase session as invalid, on claim and on save, rather than comparing it wrong forever', async () => {
+      const made = await component();
+      const upper = randomUUID().toUpperCase();
+      const claimed = await call('ada', 'POST', `/v1/components/${made.id}/lock`, {
+        session: upper,
+      });
+      expect(claimed.statusCode).toBe(400);
+      expect(claimed.json()).toMatchObject({ code: 'invalid_request' });
+
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+      const saved = await call('ada', 'PUT', `/v1/components/${made.id}/iterations/${upper}/1`, {
+        openedFrom: made.openedFrom,
+        content: paragraphs('Upper'),
+      });
+      expect(saved.statusCode).toBe(400);
+      expect(saved.json()).toMatchObject({ code: 'invalid_request' });
+    });
+
+    it('refuses an unknown member in a write body as invalid, rather than silently dropping it', async () => {
+      const made = await component();
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+      const cut = await call('ada', 'POST', `/v1/components/${made.id}/versions`, {
+        session,
+        openedFrom: made.openedFrom,
+        notes: 'Keep the box',
+      });
+      expect(cut.statusCode).toBe(400);
+      expect(cut.json()).toMatchObject({ code: 'invalid_request' });
     });
 
     it('refuses a reader who may not edit as forbidden, and a component they may not read as not found', async () => {

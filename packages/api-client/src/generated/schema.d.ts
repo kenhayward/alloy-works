@@ -826,8 +826,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
-                session: string;
+                id: string & (unknown & unknown);
+                session: string & (unknown & unknown);
                 sequence: string;
             };
             cookie?: never;
@@ -835,11 +835,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The version the session opened from, which must be the latest
-                     */
-                    openedFrom: string;
+                    /** @description The version the session opened from, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
                     /** @description The whole content document */
                     content: {
                         [key: string]: unknown;
@@ -1008,8 +1005,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: uuid */
-                    session: string;
+                    session: string & (unknown & unknown);
                     /** @description Continue here: move a lock this principal holds elsewhere */
                     move?: boolean;
                 };
@@ -1148,8 +1144,8 @@ export interface operations {
     releaseLock: {
         parameters: {
             query: {
-                session: string;
-                openedFrom: string;
+                session: string & (unknown & unknown);
+                openedFrom: string & (unknown & unknown);
             };
             header?: never;
             path: {
@@ -1303,10 +1299,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: uuid */
-                    session: string;
-                    /** Format: uuid */
-                    openedFrom: string;
+                    session: string & (unknown & unknown);
+                    openedFrom: string & (unknown & unknown);
                     note?: string;
                 };
             };

@@ -82,11 +82,17 @@ function pathParameters(params: z.ZodObject): Json[] {
   }));
 }
 
-/** A JSON request body, as its input schema describes it: required, and published open like the rest. */
+/**
+ * A JSON request body, as its input schema describes it: required, and closed to a member the schema
+ * did not declare (`additionalProperties: false`, where the schema is strict) - unlike a response,
+ * published open, a request body is never run through `open()`: a caller that sends an unknown member
+ * is telling the service something it does not understand, and dropping it silently would accept and
+ * discard part of the request rather than refuse it.
+ */
 function requestBody(body: z.ZodObject): Json {
   const json: Json = { ...z.toJSONSchema(body, { io: 'input' }) };
   delete json.$schema;
-  return { required: true, content: { 'application/json': { schema: open(json) } } };
+  return { required: true, content: { 'application/json': { schema: json } } };
 }
 
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {

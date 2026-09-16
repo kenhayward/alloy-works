@@ -3,10 +3,24 @@ import { ComponentParams, Lock, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
+const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * A uuid, lowercase only. Postgres' `uuid` type returns its canonical form lowercase regardless of the
+ * case it was written in, and a session or an opened-from version is compared against that reading in
+ * JavaScript - never through Postgres' own case-insensitive equality - so an uppercase one sent back
+ * would compare unequal to the very record it names, for as long as the session or the version lasts.
+ * Refusing it at the door, rather than downcasing it, keeps what a caller sent and what is stored the
+ * same string everywhere this is echoed back (a lock's `session`, a refusal's `holder`).
+ */
+const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
+
 /** An iteration's address: the component, the editing session, and the session's sequence number. */
 export const IterationParams = z.object({
-  id: z.uuid(),
-  session: z.uuid().describe('The editing session, which the renderer makes and keeps per window'),
+  id: LowercaseUuid,
+  session: LowercaseUuid.describe(
+    'The editing session, which the renderer makes and keeps per window',
+  ),
   sequence: z
     .string()
     .regex(/^[1-9][0-9]{0,8}$/, 'Expected a whole number from 1')
@@ -14,8 +28,8 @@ export const IterationParams = z.object({
 });
 export type IterationParams = z.infer<typeof IterationParams>;
 
-export const ClaimBody = z.object({
-  session: z.uuid(),
+export const ClaimBody = z.strictObject({
+  session: LowercaseUuid,
   move: z
     .boolean()
     .optional()
@@ -26,8 +40,10 @@ export type ClaimBody = z.infer<typeof ClaimBody>;
 export const LockAnswer = z.object({ lock: Lock });
 export type LockAnswer = z.infer<typeof LockAnswer>;
 
-export const IterationBody = z.object({
-  openedFrom: z.uuid().describe('The version the session opened from, which must be the latest'),
+export const IterationBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe(
+    'The version the session opened from, which must be the latest',
+  ),
   content: z.record(z.string(), z.unknown()).describe('The whole content document'),
 });
 export type IterationBody = z.infer<typeof IterationBody>;
@@ -35,14 +51,14 @@ export type IterationBody = z.infer<typeof IterationBody>;
 export const IterationAccepted = z.object({ sequence: z.number(), lock: Lock });
 export type IterationAccepted = z.infer<typeof IterationAccepted>;
 
-export const CutBody = z.object({
-  session: z.uuid(),
-  openedFrom: z.uuid(),
+export const CutBody = z.strictObject({
+  session: LowercaseUuid,
+  openedFrom: LowercaseUuid,
   note: z.string().min(1).max(500).optional(),
 });
 export type CutBody = z.infer<typeof CutBody>;
 
-export const ReleaseQuery = z.object({ session: z.uuid(), openedFrom: z.uuid() });
+export const ReleaseQuery = z.object({ session: LowercaseUuid, openedFrom: LowercaseUuid });
 export type ReleaseQuery = z.infer<typeof ReleaseQuery>;
 
 export const CutAnswer = z.object({

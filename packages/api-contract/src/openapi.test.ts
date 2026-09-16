@@ -31,7 +31,13 @@ describe('the OpenAPI document', () => {
   });
 
   it('publishes response objects open, so a field added later never breaks a client', () => {
-    expect(JSON.stringify(document)).not.toContain('"additionalProperties":false');
+    // Scoped to responses: a request body is published closed on purpose (an unknown member is
+    // refused, not silently dropped), and openapi.ts's own requestBody() test covers that.
+    for (const byMethod of Object.values(document.paths)) {
+      for (const operation of Object.values(byMethod) as { responses?: unknown }[]) {
+        expect(JSON.stringify(operation.responses)).not.toContain('"additionalProperties":false');
+      }
+    }
   });
 
   it('carries no JSON Schema dialect markers inside the document', () => {

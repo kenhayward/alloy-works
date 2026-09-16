@@ -19,10 +19,11 @@ describe('the editing routes in the published document', () => {
           schema: {
             type: 'object',
             properties: {
-              session: expect.objectContaining({ type: 'string', format: 'uuid' }),
+              session: expect.objectContaining({ type: 'string' }),
               move: expect.objectContaining({ type: 'boolean' }),
             },
             required: ['session'],
+            additionalProperties: false,
           },
         },
       },
@@ -32,6 +33,32 @@ describe('the editing routes in the published document', () => {
   it('gives no request body to a route that declares none', () => {
     expect(operation('/v1/components/{id}', 'get').requestBody).toBeUndefined();
     expect(operation('/v1/components/{id}/lock', 'delete').requestBody).toBeUndefined();
+  });
+
+  it('requires a lowercase uuid for a session, matching what Postgres returns', () => {
+    const claim = operation('/v1/components/{id}/lock', 'post');
+    const schema = (
+      claim.requestBody as {
+        content: Record<
+          string,
+          { schema: { properties: Record<string, { allOf?: { pattern: string }[] }> } }
+        >;
+      }
+    ).content['application/json']!.schema;
+    const patterns = schema.properties.session?.allOf?.map((each) => each.pattern) ?? [];
+    expect(patterns).toContainEqual(
+      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    );
+  });
+
+  it('closes a request body to unknown members, publishing additionalProperties: false', () => {
+    const claim = operation('/v1/components/{id}/lock', 'post');
+    const schema = (
+      claim.requestBody as {
+        content: Record<string, { schema: { additionalProperties?: boolean } }>;
+      }
+    ).content['application/json']!.schema;
+    expect(schema.additionalProperties).toBe(false);
   });
 
   it('checks edit on the component for every write, and declares the refusals a session meets', () => {
