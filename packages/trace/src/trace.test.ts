@@ -96,7 +96,7 @@ describe('the citations in the committed model', () => {
   // CNT-130 and CNT-063 are built in part and left uncited, and the plan says what each waits for.
   // 133, from 121: roles, grants and the decision (docs/plans/2026-09-16-access-01-roles-grants-and-the-decision.md)
   // cite IAM-014, IAM-019, IAM-021, IAM-022, IAM-025, IAM-026, IAM-027, IAM-049, IAM-062, IAM-063,
-  // IAM-071 and MET-024 so far, once each, in three domain and four database test files.
+  // IAM-071 and MET-024 so far, once each, in two domain and four database test files.
   // The plan's later tasks move this comment with the pin.
   it('cites exactly as many times as the corpus currently does', () => {
     expect(model.citations).toHaveLength(133);

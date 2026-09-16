@@ -36,18 +36,28 @@ export async function lockAccessForChange(trx: TenantTransaction): Promise<void>
 }
 
 /**
- * Takes the epoch FOR SHARE, and answers the transaction's own clock (IAM-063). Every loader starts
- * here, so no decision reads a fact an uncommitted change to access could be about to replace. FOR
- * SHARE, not FOR UPDATE: any number of decisions may hold the epoch together, and only a change
- * (`lockAccessForChange`, FOR UPDATE) has to wait for all of them to finish.
+ * Takes the epoch FOR SHARE, then answers the real clock at the moment the lock was granted, not the
+ * transaction's own start (IAM-063). Every loader starts here, so no decision reads a fact an
+ * uncommitted change to access could be about to replace. FOR SHARE, not FOR UPDATE: any number of
+ * decisions may hold the epoch together, and only a change (`lockAccessForChange`, FOR UPDATE) has to
+ * wait for all of them to finish.
+ *
+ * Two statements, not one: Postgres' own `now()` is the transaction's start time, constant for its
+ * whole life, so a grant expiring after BEGIN but before this call would still read as unexpired -
+ * worst when a decision has waited behind `lockAccessForChange` for a while. `clock_timestamp()` is
+ * read here in its own statement, after the FOR SHARE has been granted, rather than in the locking
+ * statement's own select list, which Postgres could evaluate for a row before that row's lock wait
+ * completes.
  */
 async function holdAccess(trx: TenantTransaction): Promise<Date> {
-  const { rows } = await sql<{ now: Date }>`
-    select now() as now from access_epoch for share
+  const locked = await sql<{ singleton: boolean }>`
+    select singleton from access_epoch for share
   `.execute(trx);
-  const row = rows[0];
-  if (!row) throw new Error('The tenant has no access epoch row; its migrations are incomplete');
-  return row.now;
+  if (!locked.rows[0]) {
+    throw new Error('The tenant has no access epoch row; its migrations are incomplete');
+  }
+  const { rows } = await sql<{ now: Date }>`select clock_timestamp() as now`.execute(trx);
+  return rows[0]!.now;
 }
 
 async function principalOf(trx: TenantTransaction, principalId: string) {
@@ -121,11 +131,16 @@ function grantOf(row: GrantRow): AccessGrant {
   };
 }
 
-/** Every unexpired grant to the principal or one of their groups, at the levels given or at all. */
+/**
+ * Every unexpired grant to the principal or one of their groups, at the levels given or at all.
+ * `now` is the caller's own `holdAccess` clock, not SQL's `now()` - see `holdAccess` for why - so
+ * this filter and `decide`'s own expiry check always agree on what "unexpired" means.
+ */
 async function grantsReaching(
   trx: TenantTransaction,
   principalId: string,
   groups: readonly string[],
+  now: Date,
   levels?: readonly Level[],
 ): Promise<AccessGrant[]> {
   let query = trx
@@ -150,9 +165,7 @@ async function grantsReaching(
         ...(groups.length > 0 ? [eb('g.group_id', 'in', groups)] : []),
       ]),
     )
-    .where((eb) =>
-      eb.or([eb('g.expires_at', 'is', null), eb('g.expires_at', '>', sql<Date>`now()`)]),
-    );
+    .where((eb) => eb.or([eb('g.expires_at', 'is', null), eb('g.expires_at', '>', now)]));
   if (levels) {
     const spaces = levels.flatMap((level) => (level.kind === 'space' ? [level.id] : []));
     const artifacts = levels.flatMap((level) => (level.kind === 'artifact' ? [level.id] : []));
@@ -173,6 +186,12 @@ async function grantsReaching(
  * transaction of the act they authorise; undefined when the tenant holds no such principal or target.
  * Several statements rather than one query: the lock, not a snapshot, is what keeps them consistent,
  * since no change to access can commit while it is held.
+ *
+ * A transaction that is going to change access takes `lockAccessForChange` (FOR UPDATE) before it
+ * decides anything, never this loader's FOR SHARE first: FOR SHARE then FOR UPDATE in one
+ * transaction, against another doing the same in the opposite order, deadlocks (decisions.md,
+ * finding 7). A caller that only decides - never writes a grant or a membership in the same
+ * transaction - has nothing to invert and just calls this.
  */
 export async function loadFacts(
   trx: TenantTransaction,
@@ -183,7 +202,7 @@ export async function loadFacts(
   const who = await principalOf(trx, principalId);
   const chain = who && (await chainOf(trx, target));
   if (!who || !chain) return undefined;
-  const grants = await grantsReaching(trx, principalId, who.groups, chain);
+  const grants = await grantsReaching(trx, principalId, who.groups, now, chain);
   return { principal: who.principal, groups: who.groups, chain, grants, now };
 }
 
@@ -198,7 +217,7 @@ export async function loadReadableSet(
   const now = await holdAccess(trx);
   const who = await principalOf(trx, principalId);
   if (!who) return undefined;
-  const grants = await grantsReaching(trx, principalId, who.groups);
+  const grants = await grantsReaching(trx, principalId, who.groups, now);
   const spaces = await trx.selectFrom('space').select('id').orderBy('id').execute();
   const named = [
     ...new Set(

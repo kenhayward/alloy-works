@@ -1,7 +1,7 @@
 import { decide, type Level } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { loadFacts, loadReadableSet } from './access-facts.js';
+import { lockAccessForChange, loadFacts, loadReadableSet } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { grant, type NewGrant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
@@ -403,5 +403,91 @@ describe('the facts a decision reads', () => {
       return rows.map((row) => row.id);
     });
     expect(predicate).toEqual([audit, warnings].sort());
+  });
+
+  it("reads the true clock rather than the transaction's own start, so a grant that expires while the transaction is open is not read", async () => {
+    const soon = await service.withTenant(production, (trx) => principal(trx, 'soon'));
+    await give({
+      roleId: roles.Reader!,
+      subject: { principal: soon },
+      level: { kind: 'tenant' },
+      effect: 'allow',
+      expiresAt: new Date(Date.now() + 300),
+    });
+
+    const facts = await service.withTenant(production, async (trx) => {
+      // Postgres' own now() would still read the moment the transaction began, well before the
+      // grant's expiry; only clock_timestamp(), read after this wait, sees that it has passed.
+      await sql`select pg_sleep(1)`.execute(trx);
+      return loadFacts(trx, soon, { kind: 'tenant' });
+    });
+    expect(facts!.grants).toEqual([]);
+    expect(decide('read', facts!).allowed).toBe(false);
+  });
+
+  it('answers a decision queued behind a change with the clock at the moment it proceeds, not the moment it was asked', async () => {
+    const waiting = await service.withTenant(production, (trx) => principal(trx, 'waiting'));
+    await give({
+      roleId: roles.Reader!,
+      subject: { principal: waiting },
+      level: { kind: 'tenant' },
+      effect: 'allow',
+      expiresAt: new Date(Date.now() + 500),
+    });
+
+    const holding = latch();
+    const release = latch();
+    const change = service.withTenant(production, async (trx) => {
+      await lockAccessForChange(trx);
+      holding.open();
+      await release.opened;
+    });
+    await holding.opened;
+
+    // Queued behind the change's FOR UPDATE lock while the grant's expiry passes for real.
+    const decision = service.withTenant(production, (trx) =>
+      loadFacts(trx, waiting, { kind: 'tenant' }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    release.open();
+    await change;
+
+    const facts = await decision;
+    expect(facts!.grants).toEqual([]);
+    expect(decide('read', facts!).allowed).toBe(false);
+  });
+
+  it("loadReadableSet reads the true clock too, not the transaction's own start", async () => {
+    const transient = await service.withTenant(production, (trx) => principal(trx, 'transient'));
+    await give({
+      roleId: roles.Reader!,
+      subject: { principal: transient },
+      level: { kind: 'tenant' },
+      effect: 'allow',
+      expiresAt: new Date(Date.now() + 300),
+    });
+
+    const set = await service.withTenant(production, async (trx) => {
+      await sql`select pg_sleep(1)`.execute(trx);
+      return loadReadableSet(trx, transient);
+    });
+    expect(set).toEqual({ tenant: false, spaces: [], excluded: [], included: [] });
+  });
+
+  it("loadReadableSet answers nothing for another tenant's principal, and never lists another tenant's spaces or artifacts", async () => {
+    const theirs = await service.withTenant(development, async (trx) => ({
+      principal: await principal(trx, 'bob'),
+      space: (await createSpace(trx, 'TheirsToo')).id,
+      artifact: await artifact(trx, null),
+    }));
+
+    await expect(
+      service.withTenant(production, (trx) => loadReadableSet(trx, theirs.principal)),
+    ).resolves.toBeUndefined();
+
+    const set = await service.withTenant(production, (trx) => loadReadableSet(trx, ada));
+    expect(set!.spaces).not.toContain(theirs.space);
+    expect(set!.excluded).not.toContain(theirs.artifact);
+    expect(set!.included).not.toContain(theirs.artifact);
   });
 });
