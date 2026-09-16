@@ -96,3 +96,9 @@ export {
   type NewGrant,
   type StoredGrant,
 } from './grants.js';
+export {
+  accessFactSources,
+  loadFacts,
+  loadReadableSet,
+  type AccessFactSource,
+} from './access-facts.js';
