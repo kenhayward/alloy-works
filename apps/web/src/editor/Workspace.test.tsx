@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -88,5 +88,135 @@ describe('the workspace', () => {
     const { container } = render(<Workspace fetch={fetching} />);
     await vi.waitFor(() => expect(fetching).toHaveBeenCalled());
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('offers to try again when the first page fails to load, and succeeds on retry', async () => {
+    let attempt = 0;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') {
+        attempt += 1;
+        if (attempt === 1) return json(500, { code: 'failed', message: 'x', traceId: 't' });
+        return json(200, {
+          items: [
+            {
+              id: COMPONENT,
+              title: 'Install the printer',
+              space: { id: 's1', name: 'General' },
+              version: '0.2',
+            },
+          ],
+          next: null,
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    render(<Workspace fetch={fetching} />);
+    expect(await screen.findByText('The components could not be loaded.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('link', { name: 'Install the printer' })).toBeInTheDocument();
+  });
+
+  it('keeps what is already shown, and offers to try again, when a later page fails to load', async () => {
+    let nextAttempts = 0;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') {
+        const cursor = url.searchParams.get('cursor');
+        if (cursor === null) {
+          return json(200, {
+            items: [
+              {
+                id: COMPONENT,
+                title: 'Install the printer',
+                space: { id: 's1', name: 'General' },
+                version: '0.2',
+              },
+            ],
+            next: 'page-two',
+          });
+        }
+        nextAttempts += 1;
+        if (nextAttempts === 1) return json(500, { code: 'failed', message: 'x', traceId: 't' });
+        return json(200, {
+          items: [
+            {
+              id: '7b1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21',
+              title: 'Replace the toner',
+              space: { id: 's1', name: 'General' },
+              version: '0.1',
+            },
+          ],
+          next: null,
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    render(<Workspace fetch={fetching} />);
+    await screen.findByRole('link', { name: 'Install the printer' });
+    await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+    expect(await screen.findByText('The components could not be loaded.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Install the printer' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
+  });
+
+  it('sends one request, not two, when Show more is clicked again before the first answers', async () => {
+    const release: { current: (() => void) | null } = { current: null };
+    let pageTwoRequests = 0;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') {
+        const cursor = url.searchParams.get('cursor');
+        if (cursor === null) {
+          return json(200, {
+            items: [
+              {
+                id: COMPONENT,
+                title: 'Install the printer',
+                space: { id: 's1', name: 'General' },
+                version: '0.2',
+              },
+            ],
+            next: 'page-two',
+          });
+        }
+        pageTwoRequests += 1;
+        return new Promise<Response>((resolve) => {
+          release.current = () =>
+            resolve(
+              json(200, {
+                items: [
+                  {
+                    id: '7b1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21',
+                    title: 'Replace the toner',
+                    space: { id: 's1', name: 'General' },
+                    version: '0.1',
+                  },
+                ],
+                next: null,
+              }),
+            );
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    render(<Workspace fetch={fetching} />);
+    const button = await screen.findByRole('button', { name: 'Show more' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    release.current?.();
+    expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
+    expect(pageTwoRequests).toBe(1);
+    expect(screen.getAllByRole('link', { name: 'Replace the toner' })).toHaveLength(1);
   });
 });
