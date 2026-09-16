@@ -57,6 +57,10 @@ describe('an equation written in one form', () => {
   it('puts text in NFC', () => {
     expect(readable(math('<mi>e\u{301}</mi>')).mathml).toBe(math('<mi>\u{E9}</mi>'));
   });
+
+  it('keeps a non-breaking space inside a token, unlike XML whitespace', () => {
+    expect(readable(math('<mtext>&#xA0;</mtext>')).mathml).toBe(math('<mtext>\u{A0}</mtext>'));
+  });
 });
 
 describe('what an equation may not carry', () => {
@@ -91,12 +95,12 @@ describe('what an equation may not carry', () => {
       math('<mi mathcolor="red" mathsize="2em" style="color: red" class="big" id="x1">x</mi>'),
     );
     expect(result.mathml).toBe(math('<mi>x</mi>'));
-    expect(result.findings.map((finding) => finding.detail)).toEqual([
-      'mathcolor',
-      'mathsize',
-      'style',
-      'class',
-      'id',
+    expect(result.findings).toEqual([
+      { subject: 'mathAttribute', detail: 'mathcolor' },
+      { subject: 'mathAttribute', detail: 'mathsize' },
+      { subject: 'mathAttribute', detail: 'style' },
+      { subject: 'mathAttribute', detail: 'class' },
+      { subject: 'mathAttribute', detail: 'id' },
     ]);
   });
 
@@ -131,6 +135,12 @@ describe('what an equation may not carry', () => {
     expect(result.findings).toEqual([{ subject: 'mathText', detail: 'stray' }]);
   });
 
+  it('reports a non-breaking space standing outside any token, unlike XML whitespace', () => {
+    const result = readable(math('<mrow>\u{A0}<mi>x</mi></mrow>'));
+    expect(result.mathml).toBe(math('<mrow><mi>x</mi></mrow>'));
+    expect(result.findings).toEqual([{ subject: 'mathText', detail: '\u{A0}' }]);
+  });
+
   it('writes a combining mark as a reference, so NFC cannot fuse it with the tag before it', () => {
     // `>` followed by U+0338 composes to U+226F under NFC. Written raw, the tag's `>` would be eaten
     // and the text after it read by a browser as attributes of <mi>.
@@ -152,6 +162,12 @@ describe('an equation that cannot be read', () => {
     ['an attribute value holding <', math('<mi alttext="<script>">x</mi>')],
     ['a bare ampersand', math('<mtext>A & B</mtext>')],
     ['a named entity XML does not define', math('<mi>&alpha;</mi>')],
+    ['a named entity that names an inherited object member', math('<mi>&constructor;</mi>')],
+    ['a named entity that names the prototype itself', math('<mi>&__proto__;</mi>')],
+    [
+      'a named entity that names an inherited object member, in an attribute value',
+      math('<mi alttext="&toString;">x</mi>'),
+    ],
     ['a reference to a character XML does not allow', math('<mi>&#0;</mi>')],
     ['a comment', math('<!-- note --><mi>x</mi>')],
     ['CDATA', math('<mtext><![CDATA[<script>alert(1)</script>]]></mtext>')],
@@ -159,6 +175,7 @@ describe('an equation that cannot be read', () => {
     ['a processing instruction', `<?xml version="1.0"?>${math('<mi>x</mi>')}`],
     ['two roots', `${math('<mi>x</mi>')}${math('<mi>y</mi>')}`],
     ['text beside the root', `x${math('<mi>x</mi>')}`],
+    ['a non-breaking space beside the root, unlike XML whitespace', `\u{A0}${math('<mi>x</mi>')}`],
     ['a root that is not math', '<mrow><mi>x</mi></mrow>'],
     ['another namespace', '<math xmlns="http://www.w3.org/1999/xhtml"><mi>x</mi></math>'],
     ['a NUL character', math('<mi>\u{0}</mi>')],

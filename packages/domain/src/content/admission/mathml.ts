@@ -107,13 +107,18 @@ class Unreadable extends Error {}
 
 const NAME = /[A-Za-z_][A-Za-z0-9._:-]*/y;
 const NOT_AN_XML_CHARACTER = /[^\t\n\r\u{20}-\u{D7FF}\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF}]/u;
-const ENTITIES: Readonly<Record<string, string>> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-};
+/**
+ * A `Map`, not a plain object: an object literal's lookup resolves an unset key against
+ * `Object.prototype`, so `&constructor;` or `&__proto__;` would read back an inherited function or
+ * the prototype itself instead of being refused. A `Map` has no inherited keys to fall through to.
+ */
+const ENTITIES: ReadonlyMap<string, string> = new Map([
+  ['amp', '&'],
+  ['lt', '<'],
+  ['gt', '>'],
+  ['quot', '"'],
+  ['apos', "'"],
+]);
 
 export function sanitiseMathml(source: string): MathmlResult {
   try {
@@ -142,6 +147,20 @@ function skipWhitespace(source: string, at: number): number {
   return index;
 }
 
+/**
+ * Trims only the four XML whitespace characters, unlike `String.prototype.trim`, which also strips
+ * a non-breaking space, other Unicode space separators and the byte-order mark. Those are content -
+ * a non-breaking space inside a token is meant to render as one, and one standing where only markup
+ * whitespace belongs is text this reader must not swallow in silence.
+ */
+function trimXml(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && ' \t\n\r'.includes(value[start]!)) start += 1;
+  while (end > start && ' \t\n\r'.includes(value[end - 1]!)) end -= 1;
+  return value.slice(start, end);
+}
+
 function decode(raw: string): string {
   let decoded = '';
   let index = 0;
@@ -150,7 +169,7 @@ function decode(raw: string): string {
     if (amp === -1) return decoded + raw.slice(index);
     const semicolon = raw.indexOf(';', amp);
     const entity = semicolon === -1 ? '' : raw.slice(amp + 1, semicolon);
-    let character: string | undefined = ENTITIES[entity];
+    let character: string | undefined = ENTITIES.get(entity);
     const numeric = /^#(?:x([0-9A-Fa-f]{1,6})|([0-9]{1,7}))$/.exec(entity);
     if (numeric) {
       const codePoint = numeric[1] ? Number.parseInt(numeric[1], 16) : Number(numeric[2]);
@@ -253,7 +272,7 @@ function parse(source: string): MathElement {
   if (open.length > 1) throw new Unreadable(`<${open[open.length - 1]!.name}> is never closed`);
   const elements = documentNode.children.filter((child) => typeof child !== 'string');
   const strayText = documentNode.children.some(
-    (child) => typeof child === 'string' && child.trim() !== '',
+    (child) => typeof child === 'string' && trimXml(child) !== '',
   );
   if (elements.length !== 1 || strayText) {
     throw new Unreadable('it does not have exactly one root element');
@@ -285,7 +304,8 @@ function clean(element: MathElement, findings: MathmlFinding[]): MathElement {
   for (const child of element.children) {
     if (typeof child === 'string') {
       if (isToken) text += child;
-      else if (child.trim() !== '') findings.push({ subject: 'mathText', detail: child.trim() });
+      else if (trimXml(child) !== '')
+        findings.push({ subject: 'mathText', detail: trimXml(child) });
       continue;
     }
     const local = child.name.slice(child.name.indexOf(':') + 1).toLowerCase();
@@ -296,10 +316,7 @@ function clean(element: MathElement, findings: MathmlFinding[]): MathElement {
     children.push(clean(child, findings));
   }
   if (isToken) {
-    const collapsed = text
-      .replace(/[ \t\n\r]+/g, ' ')
-      .trim()
-      .normalize('NFC');
+    const collapsed = trimXml(text.replace(/[ \t\n\r]+/g, ' ')).normalize('NFC');
     if (collapsed !== '') children.push(collapsed);
   }
   return { name: element.name, attributes, children };
