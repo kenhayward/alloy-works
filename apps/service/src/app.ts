@@ -25,7 +25,7 @@ import { decide, formatLevel, permissions, type Decision } from '@alloy-works/do
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
-import { authorise, notFound, type Authorised } from './access.js';
+import { administerOrAbove, authorise, notFound, type Authorised } from './access.js';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -554,7 +554,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       target: formatLevel(target),
       permissions: permissions.map((permission) => ({
         permission,
-        allowed: decide(permission, facts).allowed,
+        // administer by "at its level or above" (final review, item 3): the same rule a route
+        // checking it would use, so this answers exactly what such a route would decide here.
+        allowed: (permission === 'administer'
+          ? administerOrAbove(facts)
+          : decide(permission, facts)
+        ).allowed,
       })),
     }),
 

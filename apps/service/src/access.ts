@@ -58,7 +58,7 @@ function targetOf(declared: RouteTarget, request: FastifyRequest): Level | undef
  * would. Tries the target's own walk first, then each level above it in turn, and returns the first
  * that allows; the target's own result otherwise, since that is the refusal closest to what was asked.
  */
-function administerOrAbove(facts: AccessFacts): Decision {
+export function administerOrAbove(facts: AccessFacts): Decision {
   for (let start = 0; start < facts.chain.length; start += 1) {
     const decision = decide('administer', { ...facts, chain: facts.chain.slice(start) });
     if (decision.allowed) return decision;
@@ -71,6 +71,12 @@ function administerOrAbove(facts: AccessFacts): Decision {
  * run in, taking the access epoch FOR SHARE so no change to access lands between the two (IAM-063).
  * A target the tenant does not hold, or one the caller may not read, is refused as not found; a
  * readable target is refused as forbidden, naming only the permission.
+ *
+ * `administer` is decided first, by `administerOrAbove` rather than the ordinary nearest-level walk:
+ * a target the principal may administer at its level or above is never refused as unreadable on that
+ * account (final review, item 2) - a tenant administrator denied Administrator, which holds `read`, at
+ * a space would otherwise be 404'd there by the read gate below before "or above" got a chance to run.
+ * Only when that walk does not already allow it does an unreadable target 404 ahead of the ordinary 403.
  */
 export async function authorise(
   trx: TenantTransaction,
@@ -82,9 +88,11 @@ export async function authorise(
   if (!target) throw notFound();
   const facts = await loadFacts(trx, principalId, target);
   if (!facts) throw notFound();
-  if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
   const decision =
     check.permission === 'administer' ? administerOrAbove(facts) : decide(check.permission, facts);
+  if (!decision.allowed && target.kind !== 'tenant' && !decide('read', facts).allowed) {
+    throw notFound();
+  }
   if (!decision.allowed) throw forbidden(check.permission);
   return { trx, principalId, target, facts, decision };
 }

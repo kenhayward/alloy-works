@@ -311,6 +311,66 @@ describe('routes that check a permission', () => {
     expect(noAdministerAnywhere.statusCode).toBe(403);
   });
 
+  it('explains a space and its artifact for a tenant administrator denied the starter Administrator role there, rather than 404 for being unreadable', async () => {
+    // The starter Administrator role holds `read`, so its denial used to trip the 404 read gate
+    // before "administer at its level or above" got a chance to run (final review, item 2).
+    const denied = await give({
+      role: 'Administrator',
+      subject: { principal: ids.ada! },
+      level: { kind: 'space', id: clinical },
+      effect: 'deny',
+    });
+    try {
+      const space = await get(
+        `/v1/access/explain?principal=${ids.grace}&target=space:${clinical}`,
+        'ada',
+      );
+      expect(space.statusCode).toBe(200);
+      const artifact = await get(
+        `/v1/access/explain?principal=${ids.grace}&target=artifact:${dosing}`,
+        'ada',
+      );
+      expect(artifact.statusCode).toBe(200);
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),
+      );
+    }
+
+    // Alice holds neither administer nor read anywhere on that chain: the fix must not turn an
+    // ordinary unreadable target into anything other than 404.
+    const unreadable = await get(
+      `/v1/access/explain?principal=${ids.grace}&target=space:${clinical}`,
+      'alice',
+    );
+    expect(unreadable.statusCode).toBe(404);
+  });
+
+  it('reports administer on GET /v1/access by "at its level or above", the same rule the route check uses', async () => {
+    const administerOnly = await tenantDb.withTenant(tenant, (trx) =>
+      createRole(trx, 'Administer only for reporting', ['administer']),
+    );
+    if (!('role' in administerOnly)) throw new Error(`refused: ${administerOnly.refused}`);
+    const denied = await give({
+      role: administerOnly.role.name,
+      subject: { principal: ids.ada! },
+      level: { kind: 'space', id: clinical },
+      effect: 'deny',
+    });
+    try {
+      const response = await get(`/v1/access?target=space:${clinical}`, 'ada');
+      expect(response.statusCode).toBe(200);
+      const administer = response
+        .json<{ permissions: { permission: string; allowed: boolean }[] }>()
+        .permissions.find((answer) => answer.permission === 'administer');
+      expect(administer).toMatchObject({ allowed: true });
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),
+      );
+    }
+  });
+
   /**
    * For each permission-checked route: an address naming something in this environment that a
    * principal holding nothing is refused. A route missing here fails the harness, as
