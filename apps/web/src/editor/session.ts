@@ -574,33 +574,33 @@ export function createSession(options: SessionOptions): Session {
           phase === 'cutting' ||
           phase === 'releasing')
       ) {
+        // The snapshot must be taken now, synchronously: the caller destroys the view the instant
+        // this returns, and `options.snapshot()` reads it.
+        const content = options.snapshot();
+        const openedFrom = version.id;
         const alreadyInFlight = inFlight;
-        // A cut or release already manages its own in-flight save's lifecycle (`finish`, above), and
-        // notices this disposal on its own next checkpoint (`if (disposed) return;`) - queuing a
-        // second request over the very save it is still waiting on would race what it still does with
-        // that same promise, so this leaves it alone rather than adding to it.
-        const alreadySupervised = alreadyInFlight && (phase === 'cutting' || phase === 'releasing');
-        if (!alreadySupervised) {
-          // The snapshot must be taken now, synchronously: the caller destroys the view the instant
-          // this returns, and `options.snapshot()` reads it.
-          const content = options.snapshot();
-          const openedFrom = version.id;
-          dirty = false;
-          if (alreadyInFlight) {
-            // A save is already on the wire, sent from an earlier snapshot - this typing arrived after
-            // that one was taken, so it is not in that request and must not be dropped just because
-            // another is already running (fix round 2, finding 4). Queued after it settles, over the
-            // next sequence, rather than sent alongside it: never two requests for one session at
-            // once, and never more than this one follow-up, since nothing can arrive after the view is
-            // destroyed.
-            void alreadyInFlight.then(() => {
-              sequence += 1;
-              void service.save(sequence, openedFrom, content).catch(() => {});
-            });
-          } else {
+        dirty = false;
+        if (alreadyInFlight) {
+          // A save is already on the wire, sent from an earlier snapshot - this typing arrived after
+          // that one was taken, so it is not in that request and must not be dropped just because
+          // another is already running (fix round 2, finding 4). Queued after it settles, over the
+          // next sequence, rather than sent alongside it: never two requests for one session at once,
+          // and never more than this one follow-up, since nothing can arrive after the view is
+          // destroyed.
+          //
+          // This holds during `cutting`/`releasing` too (fix round 3): `finish`, above, is also
+          // waiting on this same in-flight save through its own `flush`, but once it notices this
+          // disposal (`if (disposed) return;`, its very next checkpoint) it returns without cutting a
+          // version or sending anything of its own - it does not queue this follow-up itself, so
+          // skipping it here, as an earlier attempt at this fix did, dropped the typing silently
+          // instead of racing anything.
+          void alreadyInFlight.then(() => {
             sequence += 1;
             void service.save(sequence, openedFrom, content).catch(() => {});
-          }
+          });
+        } else {
+          sequence += 1;
+          void service.save(sequence, openedFrom, content).catch(() => {});
         }
       }
       disposed = true;

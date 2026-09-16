@@ -544,13 +544,18 @@ describe('the component editor', () => {
         }),
     });
     const view = await surface();
-    const addSpy = vi.spyOn(window, 'addEventListener');
     view.dispatch(view.state.tr.insertText(' Mine.', 19));
     await screen.findByRole('textbox', { name: 'Text that was not saved' });
     // Nothing is dirty (the surface went back to the version) and nothing is saving or retrying -
     // only the kept text itself says there is something a close would still lose.
     expect(screen.getByText('Not saved')).toBeInTheDocument();
-    await waitFor(() => expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function)));
+    // A real event dispatch, not a captured handler reference (fix round 3): the guard must still be
+    // registered with `window` now that the refusal has settled, not merely have been registered at
+    // some earlier moment (during `claiming`, briefly dirty) and then torn down without a replacement
+    // - which a check against the mock's call history alone would not have told apart from this.
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it('keeps warning before an unmount while a retry is failing (fix round 2 minor)', async () => {

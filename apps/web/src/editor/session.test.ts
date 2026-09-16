@@ -521,19 +521,47 @@ describe('the editing session', () => {
     });
   });
 
-  it('never sends again after dispose, even if a flush was waiting on an in-flight save', async () => {
+  it('queues the newer snapshot when disposed while Save version is waiting on an in-flight save, fix round 3', async () => {
+    const { clock, service, session, type } = harness();
+    let answer: (result: SaveResult) => void = () => {};
+    service.saveAnswer = () => new Promise((resolve) => (answer = resolve));
+    type('Unbox');
+    await clock.advance(2_000);
+    // Arrives after the in-flight save's snapshot, while Save version's own flush is waiting on it -
+    // dropping it here would be exactly the finding: dispose must not defer to `finish`, which never
+    // sends anything itself once it notices disposal (fix round 3).
+    type('more');
+    const donePromise = session.saveVersion();
+    session.dispose();
+    service.saveAnswer = async () => ({ ok: true });
+    answer({ ok: true });
+    await clock.advance(0);
+    await donePromise;
+    await settle();
+    // The queued follow-up, exactly once, over the next sequence - and nothing further from `finish`,
+    // which finds itself disposed and returns without cutting a version or sending anything of its own.
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(service.calls.some((call) => call.startsWith('cut'))).toBe(false);
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 2, text: 'more' });
+  });
+
+  it('queues the newer snapshot when disposed while Done editing is waiting on an in-flight save, fix round 3', async () => {
     const { clock, service, session, type } = harness();
     let answer: (result: SaveResult) => void = () => {};
     service.saveAnswer = () => new Promise((resolve) => (answer = resolve));
     type('Unbox');
     await clock.advance(2_000);
     type('more');
-    const donePromise = session.saveVersion();
+    const donePromise = session.doneEditing();
     session.dispose();
+    service.saveAnswer = async () => ({ ok: true });
     answer({ ok: true });
     await clock.advance(0);
     await donePromise;
-    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    await settle();
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(service.calls.some((call) => call.startsWith('release'))).toBe(false);
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 2, text: 'more' });
   });
 
   it('clears the retrying notice once a later save succeeds', async () => {
