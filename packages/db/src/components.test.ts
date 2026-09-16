@@ -4,6 +4,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { listReadableComponents } from './components.js';
 import { seedDevelopmentContent } from './dev-content.js';
 import { grant } from './grants.js';
+import { addToGroup, createGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -159,5 +160,92 @@ describe('listing the components a principal may read', () => {
       listReadableComponents(trx, ada, { limit: 50 }),
     );
     expect(stranger).toBeUndefined();
+  });
+
+  it('includes an artifact granted individually, even in a space the principal cannot otherwise read', async () => {
+    await service.withTenant(production, async (trx) => {
+      const reader = await findRole(trx, 'Reader');
+      const answer = await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: grace },
+        level: { kind: 'artifact', id: hidden },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      if ('refused' in answer) throw new Error(`Grace's grant on ${hidden} was refused`);
+    });
+    const seen = await all(grace, 50);
+    expect(seen.map((item) => item.id).sort()).toEqual(
+      [seeded, others[1]!, others[2]!, hidden].sort(),
+    );
+  });
+
+  it('includes everything a tenant-level grant reaches, minus what an artifact denies', async () => {
+    const priya = await service.withTenant(production, async (trx) => {
+      const row = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'priya', email: null, display_name: 'Priya' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const reader = await findRole(trx, 'Reader');
+      const allowed = await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: row.id },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      if ('refused' in allowed) throw new Error(`Priya's tenant grant was refused`);
+      const denied = await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: row.id },
+        level: { kind: 'artifact', id: hidden },
+        effect: 'deny',
+        grantedBy: ada,
+      });
+      if ('refused' in denied) throw new Error(`Priya's denial on ${hidden} was refused`);
+      return row.id;
+    });
+    const seen = await all(priya, 50);
+    expect(seen.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
+  });
+
+  it('includes what a group grant on a space reaches, for its member', async () => {
+    const member = await service.withTenant(production, async (trx) => {
+      const row = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'walt', email: null, display_name: 'Walt' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const created = await createGroup(trx, 'Quality readers');
+      if (!('group' in created)) throw new Error('The group name was already taken');
+      const joined = await addToGroup(trx, created.group.id, row.id);
+      if (!('added' in joined)) throw new Error('Walt did not join the group');
+      const quality = await trx
+        .selectFrom('artifact')
+        .select('space_id')
+        .where('id', '=', hidden)
+        .executeTakeFirstOrThrow();
+      const reader = await findRole(trx, 'Reader');
+      const allowed = await grant(trx, {
+        roleId: reader!.id,
+        subject: { group: created.group.id },
+        level: { kind: 'space', id: quality.space_id! },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      if ('refused' in allowed) throw new Error("The group's grant on Quality was refused");
+      return row.id;
+    });
+    const seen = await all(member, 50);
+    expect(seen.map((item) => item.id)).toEqual([hidden]);
+  });
+
+  it('refuses a limit outside 1 to 100', async () => {
+    for (const limit of [0, -1, 101, 1.5]) {
+      await expect(
+        service.withTenant(production, (trx) => listReadableComponents(trx, ada, { limit })),
+      ).rejects.toThrow(/1 to 100/);
+    }
   });
 });

@@ -30,6 +30,9 @@ export async function listReadableComponents(
   principalId: string,
   page: { readonly after?: string; readonly limit: number },
 ): Promise<ComponentPage | undefined> {
+  if (!Number.isInteger(page.limit) || page.limit < 1 || page.limit > 100) {
+    throw new Error(`A page's limit is 1 to 100, not ${page.limit}`);
+  }
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
   if (page.after !== undefined && !UUID.test(page.after)) return { items: [], after: null };
@@ -54,6 +57,10 @@ export async function listReadableComponents(
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
     .select(['latest.revision_no', 'latest.version_no'])
     .where('a.kind', '=', 'component')
+    // access.md's readable-set predicate has a third disjunct, "space_id is null and tenant", for an
+    // artifact that lives in no space. A component always has one - `artifact_space_by_kind` in
+    // 0007_spaces_and_artifacts.sql requires `kind = 'component'` to carry a non-null `space_id` - so
+    // that branch never applies here and is left out rather than written dead.
     .where((eb) =>
       eb.or([
         eb.and([
