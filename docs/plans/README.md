@@ -78,7 +78,7 @@ design.
 | #   | Plan                                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                      | Status         |
 | --- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md)  | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface                                                                    | Built (PR #79) |
-| 2   | [The admission pipeline](2026-09-15-content-model-02-the-admission-pipeline.md) | `packages/domain/src/content/admission/`: the report every stage appends to, the limits one admission is held to, a strict MathML reader keeping MathML Core that validation also asks of every stored equation, then sanitise, migrate, normalise, re-identify and validate in that order behind `admit`, and the product clipboard's reader and writer. No Word, Markdown or HTML reader, no editor, no route, no storage | Planned        |
+| 2   | [The admission pipeline](2026-09-15-content-model-02-the-admission-pipeline.md) | `packages/domain/src/content/admission/`: the report every stage appends to, the limits one admission is held to, a strict MathML reader keeping MathML Core that validation also asks of every stored equation, then sanitise, migrate, normalise, re-identify and validate in that order behind `admit`, and the product clipboard's reader and writer. No Word, Markdown or HTML reader, no editor, no route, no storage | Built (PR #n)  |
 
 **Plan 1 is built.** The stored shape exists, 39 requirements are cited by its tests and
 `docs/architecture.md` describes it as built rather than planned. What that is not: a schema that
@@ -93,6 +93,23 @@ is the whole of CNT section 10; and resolution, which needs conditions and sugge
 T4 capabilities even though CNT-116 puts their marks in the first schema version stored; and identity
 through editing, which ADR-0023 settled as a rule of descent rather than arrival and which belongs with
 the editor, because it is a plugin over transactions rather than a property of the schema.
+
+**Plan 2 is built.** The admission pipeline exists - sanitise, MathML, migrate, normalise, re-identify
+and validate in that order behind `admit`, the report every stage appends to, and the product
+clipboard's reader and writer - and `docs/architecture.md` describes it as built rather than planned.
+What that is not: nothing in the application pastes through it yet.
+
+What plan 2 deliberately leaves, named so the next plan starts from a list rather than from a reading of
+the diff: the Word, Markdown and HTML readers (CNT-060 to CNT-062) and the workspace and parsers each
+needs, which is the readers plan; pasting in the editor - the paste handler, fitting admitted blocks into
+a slice, showing the report (CNT-063), the clipboard's MIME type, plain-text paste and exporting
+`sanitiseMathml` for a typed equation - which is the editor session plan; a run's direction, which the
+built marks have none of and normalise reports one it cannot keep, raised as an issue beside #88; what a
+cross-reference target names, and so whether re-identify should re-point one at a copied block, for STR;
+whether a paste within one component keeps its comments and suggestions, for COL in T3; condition axes,
+every caller passing `conditionAxes: []` until REU designs them; when the pipeline needs streaming
+(CMD-Q03), for IMP's first real import; import as a product feature, for IMP's design; and retiring the
+spike schema and its gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
 
 ## Metadata
 

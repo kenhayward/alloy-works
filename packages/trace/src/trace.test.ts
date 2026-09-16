@@ -90,20 +90,10 @@ describe('the citations in the committed model', () => {
   // six of the requirements storage-and-versioning.md owns - VER-007, VER-008, VER-010, VER-042,
   // CNT-145 and MET-016 - nine times across three database test files. The rest it builds in part
   // and leaves uncited, and the plan names each and what it waits for.
-  // 113, from 112: the admission pipeline's migrate stage
-  // (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md) cites CNT-134 once in
-  // migrate.test.ts, counted once for the file however many titles name it.
-  // 118, from 113: the admission pipeline's admit stage
-  // (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md) cites five more of the
-  // requirements content-model.md owns - CNT-056, CNT-064, CNT-065, CNT-127 and CNT-131 - once each
-  // in admit.test.ts. A sixth title named CNT-134 too, but it refuses a schema version newer than
-  // the build can read, and CNT-134's statement is about an earlier one; review ruled that a mention
-  // rather than a demonstration, and the identifier came out of that title, leaving CNT-134's only
-  // citation the one migrate.test.ts already carries.
-  // 121, from 118: the admission pipeline's product clipboard
-  // (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md) cites the three remaining
-  // requirements content-model.md owns for this plan - CNT-132, CNT-133 and CNT-135 - once each in
-  // clipboard.test.ts, through the writer, the reader and the whole pipeline together.
+  // 121, from 112: the admission pipeline (docs/plans/2026-09-15-content-model-02-the-admission-pipeline.md)
+  // cites nine of the requirements content-model.md claims for admission - CNT-056, CNT-064, CNT-065,
+  // CNT-127, CNT-131, CNT-132, CNT-133, CNT-134 and CNT-135 - nine times across three domain test files.
+  // CNT-130 and CNT-063 are built in part and left uncited, and the plan says what each waits for.
   it('cites exactly as many times as the corpus currently does', () => {
     expect(model.citations).toHaveLength(121);
   });
