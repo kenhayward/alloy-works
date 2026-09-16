@@ -53,6 +53,18 @@ export function listenToTenants(
   let client: pg.Client | undefined;
   let connecting: Promise<pg.Client> | undefined;
   let closed = false;
+  // A pg client runs one query at a time. Every listen and unlisten waits its turn here, so none is
+  // sent while another is in flight - pg 8 warns about that, and pg 9 refuses it.
+  let turns: Promise<void> = Promise.resolve();
+
+  function inTurn(work: () => Promise<unknown>): void {
+    turns = turns
+      .then(() => (closed ? undefined : work()))
+      .then(
+        () => undefined,
+        (error: unknown) => options.onError?.(error),
+      );
+  }
 
   async function connect(): Promise<pg.Client> {
     const made = new pg.Client({ connectionString: url, application_name: LISTENER });
@@ -102,17 +114,13 @@ export function listenToTenants(
       listeners.add(handler);
       handlers.set(channel, listeners);
       if (first) {
-        void connection()
-          .then((made) => made.query(`listen ${channel}`))
-          .catch((error: unknown) => options.onError?.(error));
+        inTurn(async () => (await connection()).query(`listen ${channel}`));
       }
       return () => {
         listeners.delete(handler);
         if (listeners.size > 0) return;
         handlers.delete(channel);
-        void client
-          ?.query(`unlisten ${channel}`)
-          .catch((error: unknown) => options.onError?.(error));
+        inTurn(async () => client?.query(`unlisten ${channel}`));
       };
     },
 
@@ -121,6 +129,7 @@ export function listenToTenants(
     async close() {
       closed = true;
       handlers.clear();
+      await turns;
       const made = client;
       client = undefined;
       await made?.end();
