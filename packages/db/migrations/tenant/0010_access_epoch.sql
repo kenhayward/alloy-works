@@ -35,8 +35,11 @@ create trigger access_grant_changed after insert or delete on access_grant
   for each row execute function access_changed();
 create trigger role_permissions_changed after update of permissions on role
   for each row execute function access_changed();
-create trigger group_member_changed after insert or update or delete on group_member
-  for each row execute function access_changed();
+-- Not `update of asserted_at`: replacing provider memberships at every sign-in would otherwise lock
+-- the epoch on every sign-in (finding 7). A membership's presence is what a decision reads; when it
+-- was last asserted is not.
+create trigger group_member_changed after insert or delete or update of group_id, principal_id
+  on group_member for each row execute function access_changed();
 create trigger principal_kind_changed after update of kind on principal
   for each row execute function access_changed();
 create trigger artifact_space_changed after update of space_id on artifact

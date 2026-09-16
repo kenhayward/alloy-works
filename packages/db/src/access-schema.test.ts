@@ -33,6 +33,10 @@ describe('the access tables', () => {
       .executeTakeFirstOrThrow()
       .then((row) => row.id);
 
+  /** Sorted by name: the starter roles share one `created_at`, so an order test cannot rely on it. */
+  const byName = <T extends { name: string }>(rows: readonly T[]) =>
+    [...rows].sort((a, b) => a.name.localeCompare(b.name));
+
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
@@ -63,10 +67,10 @@ describe('the access tables', () => {
   it('starts every tenant with the eight starter roles and one space, General', async () => {
     for (const tenant of [production, development]) {
       const roles = await service.withTenant(tenant, (trx) =>
-        trx.selectFrom('role').select(['name', 'permissions']).orderBy('created_at').execute(),
+        trx.selectFrom('role').select(['name', 'permissions']).execute(),
       );
-      expect(roles).toEqual(
-        starterRoles.map((role) => ({ name: role.name, permissions: role.permissions })),
+      expect(byName(roles)).toEqual(
+        byName(starterRoles.map((role) => ({ name: role.name, permissions: role.permissions }))),
       );
       const spaces = await service.withTenant(tenant, (trx) =>
         trx.selectFrom('space').select('name').execute(),
@@ -87,6 +91,13 @@ describe('the access tables', () => {
     await expect(
       service.withTenant(production, (trx) =>
         sql`insert into role (name, permissions) values ('Deleter', array['read', 'delete'])`.execute(
+          trx,
+        ),
+      ),
+    ).rejects.toThrow(/role_permissions_closed/);
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`insert into role (name, permissions) values ('Nested', array[array['read']])`.execute(
           trx,
         ),
       ),
@@ -207,6 +218,17 @@ describe('the access tables', () => {
       trx.selectFrom('access_policy').selectAll().execute(),
     );
     expect(policy).toEqual([{ singleton: true, external_default_days: 30, external_cap_days: 90 }]);
+  });
+
+  it("holds the policy row the runtime role reads for grant's defaults and caps: no insert, no delete", async () => {
+    await expect(
+      service.withTenant(production, (trx) => sql`delete from access_policy`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`insert into access_policy (singleton) values (true)`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
   });
 
   it('cannot grant a role, a space or a principal from another tenant', async () => {

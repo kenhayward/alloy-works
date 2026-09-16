@@ -16,8 +16,18 @@ create table access_policy (
 );
 insert into access_policy default values;
 
+-- The row must always be there for `grant` to read defaults and caps from, so the runtime role keeps
+-- UPDATE and SELECT only, as the epoch does.
+do $$
+begin
+  execute format('revoke insert, delete on access_policy from %I', current_schema());
+end
+$$;
+
 -- The closed set is the check. That a role holds at least one permission, each once, is checkRole's,
--- and that only a role holding read may be allowed is grant's: changing either is a code change.
+-- and that only a role holding read may be allowed is grant's: changing either is a code change. A
+-- two-dimensional array (`array[array['read']]`) is not a set of permissions and is refused here; an
+-- empty array is left to checkRole (`array_ndims('{}') is null`, so it still passes this check).
 create table role (
   id uuid primary key default gen_random_uuid(),
   name text not null unique check (name <> '' and name = btrim(name)),
@@ -28,6 +38,7 @@ create table role (
       'read', 'create', 'edit', 'comment', 'suggest', 'approve', 'publish', 'design',
       'manage_definitions', 'administer'
     ]::text[]
+    and (array_ndims(permissions) = 1 or permissions = '{}')
   )
 );
 

@@ -189,6 +189,21 @@ describe('the access epoch', () => {
   });
 
   it('is not locked by a write no decision reads', async () => {
+    // A dedicated group and membership, so this update - and the earlier "removing an empty group"
+    // write - do not disturb one another.
+    const assertionGroup = await service.withTenant(production, async (trx) => {
+      const group = await trx
+        .insertInto('access_group')
+        .values({ name: 'Assertion group', source: 'tenant', provider_value: null })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('group_member')
+        .values({ group_id: group.id, principal_id: ada })
+        .execute();
+      return group.id;
+    });
+
     const quiet: Record<string, (trx: TenantTransaction) => Promise<unknown>> = {
       'a new role': (trx) =>
         trx
@@ -209,6 +224,13 @@ describe('the access epoch', () => {
         trx.insertInto('artifact').values({ kind: 'component', space_id: spaceId }).execute(),
       "a sign-in refreshing a principal's name": (trx) =>
         trx.updateTable('principal').set({ display_name: 'Ada L' }).where('id', '=', ada).execute(),
+      "a provider refreshing only a membership's asserted_at": (trx) =>
+        trx
+          .updateTable('group_member')
+          .set({ asserted_at: new Date() })
+          .where('group_id', '=', assertionGroup)
+          .where('principal_id', '=', ada)
+          .execute(),
     };
     for (const [name, write] of Object.entries(quiet)) {
       await expect(whileHeld(write), name).resolves.toBe(true);
