@@ -54,6 +54,27 @@ describe('what an environment says has happened', () => {
     expect(() => tenantChannel('acme; drop')).toThrow(/tenant/i);
   });
 
+  it('sends one query at a time on its connection, however fast watchers come and go', async () => {
+    // pg 8 queues an overlapping query and warns once per process; pg 9 refuses it. So this runs
+    // before anything else here could have used up the warning.
+    const warnings: Error[] = [];
+    const record = (warning: Error) => warnings.push(warning);
+    process.on('warning', record);
+    try {
+      const stops = ['burst1', 'burst2', 'burst3', 'burst4'].map((id) =>
+        listener.subscribe(id, () => {}),
+      );
+      for (const stop of stops) stop();
+      const event = heard(listener, a.id);
+      await announce(a, '11111111-2222-4333-8444-444444444444');
+      await event;
+      await new Promise((resolve) => setImmediate(resolve));
+    } finally {
+      process.off('warning', record);
+    }
+    expect(warnings.map((warning) => warning.message)).toEqual([]);
+  });
+
   it('carries a kind, an id and a state to whoever is listening', async () => {
     const event = heard(listener, a.id);
     await announce(a, '11111111-2222-4333-8444-555555555555');

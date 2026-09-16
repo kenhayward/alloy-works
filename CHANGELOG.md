@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.20.1 - 2026-09-16 (PR #100)
+
+### Fixed
+
+- **The database test suite no longer prints a warning from the Postgres driver.** The connection that
+  hears each environment's events now sends one request at a time, instead of starting a new one before
+  the last had finished - which the driver warns about today and its next major version will refuse.
+
 ## 0.20.0 - 2026-09-15 (PR #98)
 
 ### Added
