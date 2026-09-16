@@ -100,8 +100,10 @@ describe('the citations in the committed model', () => {
   // domain, four database and one service test file. Inheritance through templates and documents
   // (IAM-024, IAM-018), the Access view (IAM-029 to IAM-031) and provider groups (IAM-009) wait, and
   // the plan names each and what it waits for.
+  // 135, from 134: opening, editing and saving a component (docs/plans/2026-09-16-editor-01-open-edit-and-save.md)
+  // cites VER-001, which storage-and-versioning.md owns, in the database tests of the lock and iterations.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(134);
+    expect(model.citations).toHaveLength(135);
   });
 
   it('cites no identifier the corpus does not hold', () => {

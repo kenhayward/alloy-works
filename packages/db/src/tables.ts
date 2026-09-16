@@ -239,7 +239,35 @@ export interface FirstAdministratorTable {
   >;
 }
 
+/** Claimed, extended, moved and released: the runtime role may change it, and nothing else may. */
+export interface ComponentLockTable {
+  artifact_id: string;
+  kind: ColumnType<'component', never, never>;
+  principal_id: string;
+  session_id: string;
+  claimed_at: ColumnType<Date, Date | undefined, Date>;
+  expires_at: Date;
+}
+
+/** Insert and read, nothing else (VER-001): every column's update type is `never`, as the grant is. */
+export interface IterationTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<'component', never, never>;
+  principal_id: ColumnType<string, string, never>;
+  session_id: ColumnType<string, string, never>;
+  sequence: ColumnType<number, number, never>;
+  opened_from: ColumnType<string, string, never>;
+  created_at: ColumnType<Date, Date | undefined, never>;
+  expires_at: ColumnType<Date, Date, never>;
+  content: ColumnType<unknown, string, never>;
+  metadata_values: ColumnType<Record<string, unknown>, string, never>;
+  digest: ColumnType<string, string, never>;
+}
+
 export interface TenantTables {
+  component_lock: ComponentLockTable;
+  iteration: IterationTable;
   principal: PrincipalTable;
   profile: ProfileTable;
   identity_provider: IdentityProviderTable;
