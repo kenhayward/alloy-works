@@ -289,14 +289,61 @@ describe('cutting a version from an editing session, and releasing its lock', ()
         }),
       );
       await expireLock(component.id);
-      await service.withTenant(production, (trx) =>
+      const cutAfterTimeout = await service.withTenant(production, (trx) =>
+        cutVersion(trx, { ...again, openedFrom: released.version!.id }),
+      );
+      expect(cutAfterTimeout).toMatchObject({ answer: 'lock.required' });
+      const releasedAfterTimeout = await service.withTenant(production, (trx) =>
+        releaseLock(trx, { ...again, openedFrom: released.version!.id }),
+      );
+      expect(releasedAfterTimeout).toMatchObject({ answer: 'lock.required' });
+      expect(await versionsOf(component.id)).toBe(2);
+
+      const claimed = await service.withTenant(production, (trx) =>
         claimLock(trx, { artifactId: component.id, principal: grace, session: randomUUID() }),
       );
+      expect(claimed).toMatchObject({ answer: 'claimed' });
       expect(await versionsOf(component.id)).toBe(2);
       const latest = await service.withTenant(production, (trx) =>
         latestVersion(trx, component.id),
       );
       expect(latest?.content).toEqual(content('Released'));
+    });
+
+    it('answers lock.required to a cut when nobody has ever claimed the lock', async () => {
+      const component = await newComponent();
+      const cut = await service.withTenant(production, (trx) =>
+        cutVersion(trx, {
+          artifactId: component.id,
+          principal: ada,
+          session: randomUUID(),
+          openedFrom: component.openedFrom,
+        }),
+      );
+      expect(cut).toMatchObject({ answer: 'lock.required' });
+      expect(await versionsOf(component.id)).toBe(1);
+    });
+
+    it('releases with nothing cut when the saved iteration already matches the latest version', async () => {
+      const component = await newComponent();
+      const as = { artifactId: component.id, principal: ada, session: randomUUID() };
+      await service.withTenant(production, (trx) => claimLock(trx, as));
+      await service.withTenant(production, (trx) =>
+        saveIteration(trx, {
+          ...as,
+          sequence: 1,
+          openedFrom: component.openedFrom,
+          content: content(''),
+        }),
+      );
+      const released = await service.withTenant(production, (trx) =>
+        releaseLock(trx, { ...as, openedFrom: component.openedFrom }),
+      );
+      expect(released).toEqual({ answer: 'released', version: null });
+      expect(await service.withTenant(production, (trx) => readLock(trx, component.id))).toBe(
+        undefined,
+      );
+      expect(await versionsOf(component.id)).toBe(1);
     });
 
     it('releases with nothing cut when nothing changed', async () => {
@@ -322,6 +369,45 @@ describe('cutting a version from an editing session, and releasing its lock', ()
         await service.withTenant(production, (trx) => readLock(trx, component.id)),
       ).toMatchObject({ holder: ada });
     });
+  });
+
+  it('finds none of the lapsed holders iterations when another principal reuses its session id, and judges its own sequence alone', async () => {
+    const component = await newComponent();
+    const session = randomUUID();
+    const adaAs = { artifactId: component.id, principal: ada, session };
+    await service.withTenant(production, (trx) => claimLock(trx, adaAs));
+    await service.withTenant(production, (trx) =>
+      saveIteration(trx, {
+        ...adaAs,
+        sequence: 5,
+        openedFrom: component.openedFrom,
+        content: content('Ada private work'),
+      }),
+    );
+    await expireLock(component.id);
+
+    const graceAs = { artifactId: component.id, principal: grace, session };
+    const claimed = await service.withTenant(production, (trx) => claimLock(trx, graceAs));
+    expect(claimed).toMatchObject({ answer: 'claimed' });
+
+    const cut = await service.withTenant(production, (trx) =>
+      cutVersion(trx, { ...graceAs, openedFrom: component.openedFrom }),
+    );
+    expect(cut).toMatchObject({
+      answer: 'version.unchanged',
+      current: { id: component.openedFrom },
+    });
+    expect(await versionsOf(component.id)).toBe(1);
+
+    const saved = await service.withTenant(production, (trx) =>
+      saveIteration(trx, {
+        ...graceAs,
+        sequence: 1,
+        openedFrom: component.openedFrom,
+        content: content('Grace, first save in a reused session'),
+      }),
+    );
+    expect(saved).toMatchObject({ answer: 'accepted', sequence: 1, repeated: false });
   });
 
   it('answers artifact.missing to another tenant cutting or releasing, however the component is named', async () => {

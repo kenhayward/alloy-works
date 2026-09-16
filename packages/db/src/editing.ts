@@ -221,10 +221,14 @@ export async function saveIteration(
 
   const content = parseContentDocument(input.content);
   const digest = iterationDigest(content, current.values);
+  // Filtered by principal as well as session, for the same reason cutVersion is (promotion.ts): a
+  // session id is chosen by the client and is not unique per principal, so a session id reused by a
+  // second principal must judge its own sequence alone, never against the first principal's.
   const latest = await trx
     .selectFrom('iteration')
     .select(['sequence', 'digest'])
     .where('artifact_id', '=', input.artifactId)
+    .where('principal_id', '=', input.principal)
     .where('session_id', '=', input.session)
     .orderBy('sequence', 'desc')
     .limit(1)

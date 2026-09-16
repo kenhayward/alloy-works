@@ -66,10 +66,14 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
   if (!current) return { answer: 'artifact.missing' };
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
 
+  // Filtered by principal as well as session: a session id is chosen by the client, not unique per
+  // principal, so a session id reused by a second principal after the first's lock lapses must find
+  // none of the first's iterations here.
   const iteration = await trx
     .selectFrom('iteration')
     .select(['content', 'metadata_values'])
     .where('artifact_id', '=', input.artifactId)
+    .where('principal_id', '=', input.principal)
     .where('session_id', '=', input.session)
     .where('opened_from', '=', input.openedFrom)
     .orderBy('sequence', 'desc')
