@@ -101,15 +101,17 @@ What that is not: nothing in the application pastes through it yet.
 
 What plan 2 deliberately leaves, named so the next plan starts from a list rather than from a reading of
 the diff: the Word, Markdown and HTML readers (CNT-060 to CNT-062) and the workspace and parsers each
-needs, which is the readers plan; pasting in the editor - the paste handler, fitting admitted blocks into
-a slice, showing the report (CNT-063), the clipboard's MIME type, plain-text paste and exporting
-`sanitiseMathml` for a typed equation - which is the editor session plan; a run's direction, which the
-built marks have none of and normalise reports one it cannot keep, raised as an issue beside #88; what a
-cross-reference target names, and so whether re-identify should re-point one at a copied block, for STR;
-whether a paste within one component keeps its comments and suggestions, for COL in T3; condition axes,
-every caller passing `conditionAxes: []` until REU designs them; when the pipeline needs streaming
-(CMD-Q03), for IMP's first real import; import as a product feature, for IMP's design; and retiring the
-spike schema and its gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
+needs, which is the readers plan; pasting in the editor - the paste handler, the adjacency seam, fitting
+admitted blocks into a slice, showing the report (CNT-063), the clipboard's MIME type, plain-text paste
+and exporting `sanitiseMathml` for a typed equation - which is the editor session plan; a run's
+direction, which the built marks have none of and normalise reports one it cannot keep, raised as an
+issue beside #101; what a cross-reference target names, and so whether re-identify should re-point one
+at a copied block, for STR; whether a paste within one component keeps its comments and suggestions, for
+COL in T3; condition axes and CNT-Q14, every caller passing `conditionAxes: []` until REU designs the
+axes and decides the question; when the pipeline needs streaming (CMD-Q03) and whether the provisional
+limits hold, for IMP's first real import; import as a product feature - IMP-047's report, an import
+route and a component split from a document - for IMP's design; and retiring the spike schema and its
+gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
 
 ## Metadata
 

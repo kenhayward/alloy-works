@@ -132,8 +132,10 @@ plans.
 
 **One pipeline, and it does not know the source.** A reader turns its format into untrusted JSON, using a
 fixed vocabulary for what the pipeline removes, and never removes it itself; a copy within the product and
-a foreign paste are therefore reported to one standard. Anything no stage knows is refused by validation,
-with the whole admission.
+a foreign paste are therefore reported to one standard. Anything inside the content that no stage knows is
+refused by validation, with the whole admission - the candidate's root contributes only its content,
+schema version, language and direction, so any other root member (a stray `title`, say) is dropped in
+silence rather than refused.
 
 **The report comes back with the content.** Every stage that discards or rewrites appends to it, and a
 refusal returns it too, ending with why. Messages are fixed strings; content is never interpolated into one.

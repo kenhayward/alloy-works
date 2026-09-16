@@ -39,7 +39,11 @@ export type AdmissionRefusal =
 export type AdmissionRefused = {
   readonly ok: false;
   readonly refusal: AdmissionRefusal;
-  /** For the developer. The author is shown the report, whose last entry says why. */
+  /**
+   * For the developer, not the author - the author is shown the report, whose last entry says why.
+   * Unlike the report, `failure` can quote names and values that arrived: a zod issue's path, or a
+   * migration's schema version. It must never be logged or sent as telemetry.
+   */
   readonly failure: string;
   readonly report: readonly ReportEntry[];
 };

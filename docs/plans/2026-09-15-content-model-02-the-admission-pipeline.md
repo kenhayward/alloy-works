@@ -4605,7 +4605,7 @@ Named here so the next plan starts from a list rather than from a reading of the
   it will store one (decision 17). **The editor session plan.**
 - **A run's direction has no member in the model.** content-model.md says "a run whose direction differs
   carries its own", and the built marks have no direction. Normalise reports a direction it cannot keep.
-  **Raise it as an issue against the content model**, beside #88.
+  **Raised as an issue against the content model, #101.**
 - **What a cross-reference target names**, and so whether re-identify should re-point one at a copied
   block. **STR.**
 - **Whether a paste within one component keeps its comments and suggestions.** **COL, T3.**
@@ -4616,3 +4616,20 @@ Named here so the next plan starts from a list rather than from a reading of the
 - **Import as a product feature** - IMP-047's report, an import route, a component split from a document.
   **IMP's design.**
 - **Retiring the spike schema and its gate-case tests**, and resolution. Plan 1's leftovers, unchanged.
+- **Normalise's NFC can change a link target** - a combining sequence in a path becomes a precomposed
+  character - and that is reported only in the unicode count, not individually. The canonical form applies
+  NFC to every string anyway, so the tension is in the design. **Content model, CNT-131.**
+- **A target a browser follows the same way but other consumers may not** (`https:\\evil.test`,
+  `https:evil.test`) is kept as it arrived. **The publishing plan's renderers** (Typst, PDF) must treat a
+  stored target as untrusted.
+- **A disallowed link split across runs is reported once per fragment**, while comments and suggestions are
+  de-duplicated by type and identifier.
+- **Untrusted references pass admission unexamined** - a binding's query, an image or figure's asset, a
+  citation's entry, a cross-reference's target. Whatever evaluates bindings and resolves assets must treat
+  them as untrusted, tenant and path boundaries included.
+- **A source language tag in lower case** (`en-gb`, common in HTML `lang`) fails the model's case-sensitive
+  BCP 47 check and is dropped rather than case-corrected. **The readers plan.**
+- **A lone empty paragraph, or a script beside one, is admitted as one empty paragraph** rather than refused
+  as `empty`, where decision 5 arguably says refuse. **A question for Ken, or the editor session plan.**
+- **#102** (the report does not name scripts, handlers or links inside something removed whole) **and
+  #103** (MathML size and offset attributes; clip equations where they are rendered).

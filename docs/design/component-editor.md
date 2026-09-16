@@ -210,11 +210,14 @@ inline content CNT-129 allows, and no table or image - so the restriction is str
 **MathML is canonical and LaTeX is an input record**, as content-model.md decided (CNT-043): rendering,
 comparison and publishing read the MathML only. An author types LaTeX, converted as they type by a
 converter that emits MathML - Temml is the candidate, being small and MIT-licensed - **pinned to a
-version**, and the MathML is **normalised on entry** by the pipeline's normalise stage - one attribute
-order, no insignificant whitespace, one namespace declaration - so identical input stores identical
-bytes and does not churn the version digest. Equations entered by different paths that mean the same
-thing are not detected as equal; nothing requires it, and a comparison showing a re-entered equation as
-changed is honest.
+version**. What the converter emits is not stored as it stands: the pipeline's sanitise stage reads an
+equation's MathML with a strict reader of its own - not a general parser, no dependency - and writes it
+back in one form, one attribute order, no insignificant whitespace, one namespace declaration - so
+identical input stores identical bytes and does not churn the version digest. Whatever writes an
+equation, this conversion included, must write the reader's form: validation asks the same reader, and
+an equation not already in that form is refused, on save and on read-back alike (the admission plan's
+decisions 7 and 17). Equations entered by different paths that mean the same thing are not detected as
+equal; nothing requires it, and a comparison showing a re-entered equation as changed is honest.
 
 Chromium renders MathML Core and Electron is Chromium, so there is no typesetting library in the editor.
 
