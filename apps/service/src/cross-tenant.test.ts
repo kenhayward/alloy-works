@@ -111,6 +111,8 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
   let fromA = '';
   let a: Tenant;
   let b: Tenant;
+  let foreignPrincipal = '';
+  let ownTarget = '';
   const othersIds: Record<string, Record<string, string>> = {};
   const othersQueries: Record<string, string> = {};
 
@@ -172,6 +174,24 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       const query = OTHER_TENANT_QUERIES[route.operationId];
       if (query) othersQueries[route.operationId] = await query(b, tenantDb);
     }
+    // A principal belonging to B, and a target belonging to A: explainAccess takes both from its
+    // query, so mixing environments across the two - not just naming both from the other one - is
+    // its own escape to close.
+    foreignPrincipal = await tenantDb
+      .withTenant(b, (trx) =>
+        trx
+          .insertInto('principal')
+          .values({
+            issuer: 'https://idp.example',
+            subject: 'carol',
+            email: null,
+            display_name: null,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow(),
+      )
+      .then((row) => row.id);
+    ownTarget = await componentIn(a, tenantDb);
   });
 
   afterAll(async () => {
@@ -235,6 +255,16 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       expect(response.json()).toMatchObject({ code: 'not_found' });
     },
   );
+
+  it("explainAccess will not reach a target this environment holds through another environment's principal", async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/access/explain?principal=${foreignPrincipal}&target=${ownTarget}`,
+      headers: { host: A, cookie: fromA },
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ code: 'not_found' });
+  });
 
   it('leaves the session working where it was issued, whatever was tried elsewhere', async () => {
     const me = await app.inject({ url: '/v1/me', headers: { host: A, cookie: fromA } });

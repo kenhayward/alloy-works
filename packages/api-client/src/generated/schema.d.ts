@@ -335,6 +335,24 @@ export interface operations {
                     };
                 };
             };
+            /** @description The caller may address the target but lacks the permission this needs */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description No such target in this environment, or none the caller may read */
             404: {
                 headers: {
@@ -444,7 +462,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the target but lacks the permission this needs */
+            /** @description The caller may address the target but lacks the permission this needs */
             403: {
                 headers: {
                     [name: string]: unknown;

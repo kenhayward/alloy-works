@@ -3,6 +3,7 @@ import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createRole,
   createSpace,
   createTenant,
   createTenantDatabase,
@@ -15,8 +16,9 @@ import {
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { authorise, type PermissionCheck } from './access.js';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
@@ -150,6 +152,21 @@ describe('routes that check a permission', () => {
     expect(response.json()).toMatchObject({ code: 'invalid_request' });
   });
 
+  it('answers a malformed path-parameter target as not found, never a database error', async () => {
+    // No route names a path parameter as its target yet (task 10's `RouteTarget` already has the
+    // shape for one), so this calls `authorise` directly with a check built for the occasion - the
+    // one way to exercise `targetOf`'s path-parameter branch before such a route exists.
+    const check: PermissionCheck = {
+      check: 'permission',
+      permission: 'read',
+      target: { space: 'spaceId' },
+    };
+    const request = { params: { spaceId: 'not-a-uuid' }, query: {} } as unknown as FastifyRequest;
+    await expect(
+      tenantDb.withTenant(tenant, (trx) => authorise(trx, ids.grace!, check, request)),
+    ).rejects.toMatchObject({ status: 404, code: 'not_found' });
+  });
+
   it('explains, for an administrator, the level and grants behind every answer and every refusal', async () => {
     const response = await get(
       `/v1/access/explain?principal=${ids.grace}&target=artifact:${dosing}`,
@@ -202,18 +219,33 @@ describe('routes that check a permission', () => {
     expect(reader.json()).not.toHaveProperty('rule');
   });
 
+  it('answers 403, not 404, for the tenant target when the caller lacks read there', async () => {
+    // The tenant is never a 404 (decisions.md, item 12), so a caller who cannot read at the tenant
+    // is refused as forbidden - getAccess checks `read`, so this is that route's own case of it.
+    const response = await get('/v1/access?target=tenant', 'alice');
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      code: 'forbidden',
+      message: 'This needs the read permission.',
+    });
+  });
+
   it('answers a target the caller may not read exactly as one that does not exist', async () => {
     const unreadable = await get(`/v1/access?target=artifact:${audit}`, 'grace');
     const missing = await get(`/v1/access?target=artifact:${MISSING}`, 'grace');
     expect(unreadable.statusCode).toBe(404);
     expect(missing.statusCode).toBe(404);
-    // Byte for byte but for the trace id, which is every request's own.
-    const untraced = (body: Record<string, string>) =>
+    // Byte for byte but for the trace id, which is every request's own, and the date, which is
+    // every response's own; no header carries the trace id.
+    const untracedBody = (body: Record<string, string>) =>
       Object.fromEntries(Object.entries(body).filter(([member]) => member !== 'traceId'));
-    const refused = untraced(unreadable.json());
-    const absent = untraced(missing.json());
+    const untracedHeaders = (headers: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(headers).filter(([name]) => name !== 'date'));
+    const refused = untracedBody(unreadable.json());
+    const absent = untracedBody(missing.json());
     expect(refused).toEqual(absent);
     expect(refused).toEqual({ code: 'not_found', message: 'There is nothing at this address.' });
+    expect(untracedHeaders(unreadable.headers)).toEqual(untracedHeaders(missing.headers));
 
     const space = await get(`/v1/access?target=space:${quality}`, 'grace');
     expect(space.statusCode).toBe(404);
@@ -236,6 +268,47 @@ describe('routes that check a permission', () => {
       trx.deleteFrom('access_grant').where('id', '=', readable.id).execute(),
     );
     expect((await get(`/v1/access?target=artifact:${audit}`, 'alice')).statusCode).toBe(404);
+  });
+
+  it('explains at a space or an artifact despite a denial there, because the tenant administrator stands above it', async () => {
+    // decisions.md, finding 6: "administer at its level or above" is each level's own walk, so a
+    // denial of an administer-holding role at the space does not stand against ada's tenant grant.
+    // Held alone (no `read`), so the denial does not also make the space unreadable to ada - the
+    // 404 gate for an unreadable target is unaffected by this fix and must still pass first.
+    const administerOnly = await tenantDb.withTenant(tenant, (trx) =>
+      createRole(trx, 'Administer only', ['administer']),
+    );
+    if (!('role' in administerOnly)) throw new Error(`refused: ${administerOnly.refused}`);
+    const denied = await give({
+      role: administerOnly.role.name,
+      subject: { principal: ids.ada! },
+      level: { kind: 'space', id: clinical },
+      effect: 'deny',
+    });
+    try {
+      const space = await get(
+        `/v1/access/explain?principal=${ids.grace}&target=space:${clinical}`,
+        'ada',
+      );
+      expect(space.statusCode).toBe(200);
+      const artifact = await get(
+        `/v1/access/explain?principal=${ids.grace}&target=artifact:${dosing}`,
+        'ada',
+      );
+      expect(artifact.statusCode).toBe(200);
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx.deleteFrom('access_grant').where('id', '=', denied.id).execute(),
+      );
+    }
+
+    // Grace holds no administer anywhere on that chain - not at the artifact, the space or the
+    // tenant - so she is refused, above or not.
+    const noAdministerAnywhere = await get(
+      `/v1/access/explain?principal=${ids.ada}&target=artifact:${dosing}`,
+      'grace',
+    );
+    expect(noAdministerAnywhere.statusCode).toBe(403);
   });
 
   /**

@@ -41,9 +41,12 @@ const notFound = {
   schema: ErrorBody,
 } as const;
 
-/** The caller may read the target and is refused what they asked; the body names the permission. */
+/**
+ * The target answers - readable, or the tenant, which is never 404 - and the caller is refused what
+ * they asked; the body names the permission.
+ */
 const forbidden = {
-  description: 'The caller may read the target but lacks the permission this needs',
+  description: 'The caller may address the target but lacks the permission this needs',
   schema: ErrorBody,
 } as const;
 
@@ -213,6 +216,7 @@ export const routes = {
     responses: {
       200: { description: 'Every permission, allowed or not', schema: AccessAnswers },
       401: unauthenticated,
+      403: forbidden,
       404: notFound,
     },
   },

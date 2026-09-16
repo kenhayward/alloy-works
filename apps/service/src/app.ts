@@ -24,7 +24,7 @@ import { decide, formatLevel, permissions, type Decision } from '@alloy-works/do
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
-import { authorise, type Authorised } from './access.js';
+import { authorise, notFound, type Authorised } from './access.js';
 import type { GoogleSettings } from './config.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
@@ -95,14 +95,24 @@ type Success<R extends RouteContract> = R['responses'] extends {
 
 /**
  * A route that checks a permission is handed what was decided, and runs in the transaction it was
- * decided in; it returns its body rather than sending it, so nothing is sent before that commits.
+ * decided in. Its handler's return type excludes `FastifyReply` - it must return its body rather
+ * than send it, so nothing is sent before that transaction commits; a `reply.send(...)` there
+ * fails to typecheck rather than shipping a response the act might still roll back. The serializer
+ * that turns the returned body into bytes still runs only after the commit, so a body that fails its
+ * own response schema on some future write route would surface as a 500 after the act has already
+ * committed, not before it - this return type guards the ordering, not the body's own shape.
  */
-type Handlers = {
-  [K in keyof typeof routes]: (
-    request: FastifyRequest,
-    reply: FastifyReply,
-    ...authorised: (typeof routes)[K]['access'] extends { check: 'permission' } ? [Authorised] : []
-  ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
+export type Handlers = {
+  [K in keyof typeof routes]: (typeof routes)[K]['access'] extends { check: 'permission' }
+    ? (
+        request: FastifyRequest,
+        reply: FastifyReply,
+        authorised: Authorised,
+      ) => Promise<Success<(typeof routes)[K]>>
+    : (
+        request: FastifyRequest,
+        reply: FastifyReply,
+      ) => Promise<Success<(typeof routes)[K]> | FastifyReply>;
 };
 
 /** A decided grant as the explanation publishes it. */
@@ -150,8 +160,6 @@ const routeClosed = () =>
     'This environment does not permit signing in this way.',
     'IAM-043',
   );
-
-const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
 
 const storageUnavailable = () =>
   new AppError(

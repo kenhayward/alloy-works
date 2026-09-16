@@ -28,6 +28,16 @@ describe('what each route checks', () => {
     }
   });
 
+  it('declares a 403 for every route whose target may be the tenant, which is never refused as not found', () => {
+    const queryTargeted = allRoutes.filter(
+      (route) => route.access.check === 'permission' && 'query' in route.access.target,
+    );
+    expect(queryTargeted.length).toBeGreaterThan(0);
+    for (const route of queryTargeted) {
+      expect(route.responses[403], route.operationId).toBeDefined();
+    }
+  });
+
   it('asks for a session in the published document exactly where a route checks anything', () => {
     const document = buildOpenApi(allRoutes);
     for (const route of allRoutes) {
