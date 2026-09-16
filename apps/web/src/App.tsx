@@ -1,27 +1,21 @@
-import { createComponent } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 
+import { Workspace } from './editor/Workspace.js';
 import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
-
-// A single component, built through the domain package, so the scaffold proves the whole path:
-// domain rules -> renderer -> both deliveries. It is a placeholder for a content store, not a
-// decision about one.
-const sample = createComponent({
-  type: 'topic',
-  title: 'Install the printer',
-  body: 'Unbox the printer, connect it to power, then run the setup assistant.',
-});
 
 interface AppProps {
   bridge?: PlatformBridge;
   /** The environment panel, which calls the service; given by tests that are not about it. */
   environment?: React.ReactNode;
+  /** The components and the editor, which call the service; given by tests that are not about them. */
+  workspace?: React.ReactNode;
 }
 
 export function App({
   bridge = resolveBridge(),
   environment = <Environment />,
+  workspace = <Workspace />,
 }: AppProps): React.JSX.Element {
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
 
@@ -44,13 +38,7 @@ export function App({
           : `Running as ${platform.delivery} on ${platform.runtime}`}
       </p>
       {environment}
-      <article>
-        <h2>{sample.title}</h2>
-        <p>{sample.body}</p>
-        <p>
-          {sample.type} - version {sample.version}
-        </p>
-      </article>
+      {workspace}
     </main>
   );
 }

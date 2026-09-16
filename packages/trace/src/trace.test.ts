@@ -151,6 +151,6 @@ describe('scanning the repository for test files', () => {
     const files = testFilesIn(REPO_ROOT);
 
     expect(files).toContain('apps/web/src/App.test.tsx');
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(4);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(5);
   });
 });
