@@ -76,6 +76,7 @@ bar needs themes, templates, assets and tables as well as an editor. **None of i
 | One renderer, two deliveries | The same React interface is served as a web app and loaded unchanged by the Electron shell                                                                |
 | Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                                                                |
 | Content model                | The stored shape of a component's content: blocks, inline content and overlapping annotations, each identified, versioned by schema and checked both ways |
+| Access                       | Who may do what, decided through roles and grants; a tenant's first administrator is named at provisioning and granted at their first sign-in             |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                          |
 
 Full prose list: [`docs/features.md`](docs/features.md).

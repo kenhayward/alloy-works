@@ -219,13 +219,17 @@ and a grant made before its rule existed is a grant nobody re-checks.
 | `design`, `manage_definitions` | **This design's choice.** Each changes what everybody inside the tenant must write                                                |
 | `administer`                   | **This design's choice.** An external administrator could grant themselves past every other line here                             |
 
-**Where a grant is made**, a grant to an external principal is refused if it allows a capped permission,
-if it is at the tenant (IAM-071), or if its expiry is past the tenant's cap; one given no expiry takes the
-tenant's default (IAM-049). A denial of a capped permission gives nothing, so it stands. A grant to a
-tenant-managed group with an external member is refused on the same three counts but **is not given the
-default expiry**, because the group's other members would lose access on a date nobody chose; for the
-external member, the decision ignores a grant with no expiry. Adding an external principal to a group is
-refused where any grant the group holds would be refused to them directly.
+**Where a grant is made**, these refusals and the default expiry apply to an allow only: an allow to an
+external principal is refused if it holds a capped permission, if it is at the tenant (IAM-071), or if its
+expiry is past the tenant's cap, and one given no expiry takes the tenant's default (IAM-049). A denial is
+never refused on any of those three counts and never defaulted - it can only remove access, so a denial at
+the tenant stands, and a denial with no expiry denies for good, exactly as `decide` already counts it. A
+grant to a tenant-managed group with an external member is held to the same three refusals when it is an
+allow, but **is not given the default expiry**, because the group's other members would lose access on a
+date nobody chose; for the external member, the decision ignores an allow with no expiry. Adding an
+external principal to a group is refused where any allow the group holds would be refused to them directly
+
+- a denial the group holds is never a reason to refuse the addition.
 
 **Where a decision is taken**, an external principal's grants at the tenant and grants with no expiry
 are ignored when they allow, every unexpired denial counts, and then the cap applies. That covers the membership no

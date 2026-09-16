@@ -17,9 +17,10 @@ export interface AccessGrant {
 }
 
 /**
- * What the service loads for one question, in one query and inside the transaction of the act: the
- * principal and their groups, the target's chain, the grants that may reach them, and the
- * transaction's own clock, so a check and its act agree on what has expired.
+ * What the service loads for one question, several statements under the access epoch's lock rather
+ * than one query, and inside the transaction of the act: the principal and their groups, the target's
+ * chain, the grants that may reach them, and the transaction's own clock, so a check and its act agree
+ * on what has expired.
  */
 export interface AccessFacts {
   readonly principal: { readonly id: string; readonly kind: PrincipalKind };

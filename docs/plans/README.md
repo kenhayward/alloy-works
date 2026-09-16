@@ -199,7 +199,7 @@ reading of the diff: reading a definition through a component, as access.md now 
 `create` on a space and `read` and `edit` on a component for its routes; managing access - the roles,
 groups, grants and principals routes, removing a grant, changing a role, setting a principal's kind,
 refusing to take `read` out of a role an allow names, the lock-out guard, "`administer` at its level or
-above" as access.md now defines it, taking the epoch `FOR UPDATE` before deciding a change, extending
+above" for grant management, taking the epoch `FOR UPDATE` before deciding a change, extending
 external access (IAM-050), the external listing (IAM-051) and the Access panel (IAM-029 to IAM-031), all
 the access management plan's; the first administrator by invitation to an address, and auditing the
 bootstrap into the tenant's log (IAM-059, IAM-060), and naming a Google-only tenant's administrator
