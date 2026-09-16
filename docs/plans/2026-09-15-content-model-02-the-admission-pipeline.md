@@ -2205,12 +2205,12 @@ describe('the migrate stage', () => {
   });
 
   it('CNT-134 refuses content from a schema version this build has no path from, by name', () => {
+    const noPathFromOne: MigrationChain = { subject: 'content', current: 2, migrations: {} };
     const report = createReport();
-    const outcome = migrateCandidate({ schemaVersion: 99, content: [] }, report);
+    const outcome = migrateCandidate({ schemaVersion: 1, content: [] }, report, noPathFromOne);
     expect(outcome).toEqual({
       ok: false,
-      failure:
-        "Stored content was written against schema version 99, which is newer than this build's 1",
+      failure: 'No migration for content from schema version 1 to 2',
     });
     expect(entriesOf(report)).toEqual([
       { stage: 'migrate', action: 'refused', subject: 'schemaVersion' },
