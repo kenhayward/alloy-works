@@ -20,6 +20,12 @@ describe('the domain package', () => {
         'outputMapping',
         'parseContentDocument',
         'readContent',
+        // The admission pipeline, promoted in the plan that built it.
+        'admissionLimits',
+        'admit',
+        'readProductClipboard',
+        'readerEntry',
+        'writeProductClipboard',
         // Metadata, promoted in the plan that built it, on the same terms.
         'DEFINITION_SCHEMA_VERSION',
         'DefinitionConflictError',

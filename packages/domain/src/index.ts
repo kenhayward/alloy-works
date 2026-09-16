@@ -1,5 +1,8 @@
 export * from './content/model/index.js';
 
+// The admission pipeline: every paste, copy and import enters a component through it.
+export * from './content/admission/index.js';
+
 // Metadata: which fields apply to a component, what makes a value valid, and what a version records.
 export * from './metadata/index.js';
 
