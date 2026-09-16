@@ -156,8 +156,15 @@ export function createSession(options: SessionOptions): Session {
   let continuous: unknown = null;
   let retry: unknown = null;
   let failures = 0;
-  /** Set at the first failure since the last acknowledgement; says "failing" if nothing lands first. */
+  /** Set at the first failure of a streak; fires once, announcing "failing". */
   let failing: unknown = null;
+  /** True from the moment a streak is announced "failing" until a save next succeeds - so a retry's
+   * own "saving" moment (send() resets it each attempt) never papers back over the indicator. */
+  let hasFailed = false;
+  /** Set when `lost` was entered because the service is ahead of this page (a stale or conflicting
+   * sequence): the one case this slice lets the author recover from, by claiming afresh. A lock simply
+   * gone stays unrecoverable here - Recovery is the next plan's. */
+  let lostFromStale = false;
   let disposed = false;
 
   const view = (): SessionView => ({ phase, save, savedAt, version, holder, notice });
@@ -175,30 +182,44 @@ export function createSession(options: SessionOptions): Session {
     idle = continuous = retry = failing = null;
   };
 
-  const lose = (message: string) => {
+  const lose = (message: string, fromStale = false) => {
     stopTimers();
     phase = 'lost';
+    lostFromStale = fromStale;
     notice = message;
     publish();
   };
 
   /** Sends what the editor holds now, once; answers whether everything changed so far is acknowledged. */
   const send = async (): Promise<boolean> => {
+    if (disposed) return false;
+    // Whenever an attempt starts, any backoff wait it grew out of is spent - never let a stale handle
+    // linger to fire a redundant retry later (finding 3).
+    cancel(retry);
+    retry = null;
     sequence += 1;
     const sent = sequence;
     dirty = false;
-    save = 'saving';
+    save = hasFailed ? 'failing' : 'saving';
     publish();
-    const result = await service.save(sent, version.id, options.snapshot());
+    let timer: unknown = null;
+    const timedOut = new Promise<SaveResult>((resolve) => {
+      timer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
+    });
+    const result = await Promise.race([
+      service.save(sent, version.id, options.snapshot()),
+      timedOut,
+    ]);
+    cancel(timer);
     if (disposed) return false;
     if (result.ok) {
       failures = 0;
+      hasFailed = false;
       cancel(failing);
       failing = null;
-      if (!dirty) {
-        save = 'saved';
-        savedAt = clock.now();
-      }
+      savedAt = clock.now();
+      if (notice === 'Not saved. Retrying.') notice = null;
+      save = dirty ? 'saving' : 'saved';
       publish();
       return !dirty;
     }
@@ -217,17 +238,25 @@ export function createSession(options: SessionOptions): Session {
       result.latest !== undefined &&
       result.latest >= sent
     ) {
-      // The service is ahead of this page - a reload of the same window starts counting again - so
-      // the whole snapshot goes again at once, above what the service already holds (component-editor.md,
-      // "Undo across a reload": the service's record is never overwritten by an older local one).
-      sequence = result.latest;
+      // The service already holds iterations this page never sent - another window, or this same
+      // window from before a reload - so sending the whole snapshot again over a raised sequence
+      // would overwrite them. Nothing here can tell whether what is on screen is newer or older than
+      // what was overwritten, so it stops rather than guess: the author is offered a fresh session,
+      // starting from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
-      return send();
+      save = 'failing';
+      lose(
+        'Newer text was saved from another window, or from before this page was reloaded. ' +
+          'It is kept. Continuing starts a new session from what is on screen.',
+        true,
+      );
+      return false;
     }
     // Held, not lost: the next attempt sends everything again under a higher sequence.
     dirty = true;
     failures += 1;
     failing ??= clock.setTimeout(() => {
+      hasFailed = true;
       save = 'failing';
       notice = 'Not saved. Retrying.';
       publish();
@@ -236,16 +265,24 @@ export function createSession(options: SessionOptions): Session {
     const wait = Math.min(30_000, timing.retryMs * 2 ** (failures - 1));
     retry = clock.setTimeout(() => {
       retry = null;
-      void flush();
+      void flush(true);
     }, wait);
     return false;
   };
 
-  const flush = async (): Promise<boolean> => {
+  /**
+   * `force` bypasses a backoff already under way - the deliberate action a caller takes (a save
+   * flushed before a cut, the backoff's own timer firing) tries now rather than waiting out someone
+   * else's wait. Without it, idle and continuous firing during a backoff would each start a parallel
+   * attempt of their own, defeating the backoff entirely (finding 3).
+   */
+  const flush = async (force = false): Promise<boolean> => {
     cancel(idle);
     cancel(continuous);
     idle = continuous = null;
+    if (!force && retry !== null) return false;
     while (inFlight) await inFlight;
+    if (disposed) return false;
     if (!dirty) return save === 'saved';
     if (phase !== 'editing' && phase !== 'cutting' && phase !== 'releasing') return false;
     inFlight = send();
@@ -269,6 +306,10 @@ export function createSession(options: SessionOptions): Session {
     phase = 'claiming';
     holder = null;
     notice = 'Starting to edit.';
+    // A fresh claim starts a fresh count - the one already covered by this call's own reset when it
+    // is the very first claim, and the one that matters when it follows a stale session (finding 1):
+    // the sequence that was refused belongs to a session this call is about to replace.
+    sequence = 0;
     publish();
     let timer: unknown = null;
     const timedOut = new Promise<ClaimResult>((resolve) => {
@@ -308,9 +349,19 @@ export function createSession(options: SessionOptions): Session {
     if (phase !== 'editing') return;
     phase = during;
     publish();
-    const flushed = await flush();
-    if (disposed) return;
-    if (!flushed && (phase as Phase) === 'lost') return;
+    // Flush to a standstill before asking for the cut or the release: a change that lands while this
+    // loop is running - typing during the flush, or while a save from before is still in flight - is
+    // sent too, rather than being reported as an unexplained failure or, for a release, abandoned
+    // under a lock about to be given up (finding 4). `failures` tells a genuine failure (it climbs)
+    // from a save that succeeded but left something new to send (it does not): only the latter loops.
+    let flushed: boolean;
+    for (;;) {
+      const before = failures;
+      flushed = await flush(true);
+      if (disposed) return;
+      if ((phase as Phase) === 'lost') return;
+      if (flushed || failures > before || !dirty) break;
+    }
     if (!flushed) {
       phase = 'editing';
       notice = 'Not saved, so no version was made.';
@@ -320,6 +371,16 @@ export function createSession(options: SessionOptions): Session {
     const result = await request(version.id);
     if (disposed) return;
     if (!result.ok) {
+      if (
+        result.code === HELD ||
+        result.code === 'lock_required' ||
+        result.code === 'version_precondition'
+      ) {
+        lose(
+          'This session no longer holds the component. Your unsaved text is kept below to copy.',
+        );
+        return;
+      }
       phase = 'editing';
       notice = 'The version could not be made.';
       publish();
@@ -348,12 +409,12 @@ export function createSession(options: SessionOptions): Session {
         return;
       }
       publish();
-      if (phase === 'editing') schedule();
+      if (phase === 'editing' || phase === 'cutting' || phase === 'releasing') schedule();
     },
     saveVersion: () => finish('cutting', (openedFrom) => service.cut(openedFrom)),
     doneEditing: () => finish('releasing', (openedFrom) => service.release(openedFrom)),
     claimAgain(move) {
-      if (phase === 'reading') void claim(move);
+      if (phase === 'reading' || (phase === 'lost' && lostFromStale)) void claim(move);
     },
     view,
     dispose() {
