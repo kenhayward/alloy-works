@@ -222,6 +222,23 @@ export interface AccessGrantTable {
   granted_at: ColumnType<Date, never, never>;
 }
 
+/** Named by an administrator of the database; the runtime role records a claim and nothing else. */
+export interface FirstAdministratorTable {
+  id: ColumnType<string, never, never>;
+  issuer: ColumnType<string, never, never>;
+  subject: ColumnType<string, never, never>;
+  role_id: ColumnType<string, never, never>;
+  named_by: ColumnType<string, never, never>;
+  named_at: ColumnType<Date, never, never>;
+  claimed_at: ColumnType<Date | null, never, Date>;
+  claimed_by: ColumnType<string | null, never, string>;
+  outcome: ColumnType<
+    'granted' | 'refused_administrator_exists' | null,
+    never,
+    'granted' | 'refused_administrator_exists'
+  >;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -243,6 +260,7 @@ export interface TenantTables {
   access_group: AccessGroupTable;
   group_member: GroupMemberTable;
   access_grant: AccessGrantTable;
+  first_administrator: FirstAdministratorTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

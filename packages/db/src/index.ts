@@ -20,6 +20,7 @@ export type {
   AccessPolicyTable,
   ArtifactTable,
   ArtifactVersionTable,
+  FirstAdministratorTable,
   GoogleDomainTable,
   GroupMemberTable,
   JobTable,
@@ -102,3 +103,10 @@ export {
   loadReadableSet,
   type AccessFactSource,
 } from './access-facts.js';
+export {
+  claimFirstAdministrator,
+  nameFirstAdministrator,
+  type ClaimAnswer,
+  type NamedIdentity,
+  type NamingAnswer,
+} from './first-administrator.js';

@@ -2,6 +2,7 @@
 // reachable at acme.localhost and dev.acme.localhost. Safe to run again.
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
+import { nameFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
@@ -64,11 +65,20 @@ for (const environment of environments) {
 await check.end();
 for (const environment of environments) {
   const tenant = tenantNames(environment.tenant.id);
-  await configureOrganisationSignIn(
-    adminUrl,
-    { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
-    { issuer: standInIssuer, clientId: 'alloy-dev', secretName: 'stand_in' },
-  );
+  const named = { id: environment.tenant.id, schema: tenant.schema, role: tenant.role };
+  await configureOrganisationSignIn(adminUrl, named, {
+    issuer: standInIssuer,
+    clientId: 'alloy-dev',
+    secretName: 'stand_in',
+  });
+  // Ada administers each environment from her first sign-in through the stand-in. Running this again
+  // is refused harmlessly: a naming already waits, or Ada already administers.
+  const answer = await nameFirstAdministrator(adminUrl, named, {
+    issuer: standInIssuer,
+    subject: 'ada',
+    namedBy: 'pnpm dev:setup',
+  });
+  if ('named' in answer) console.log(`Ada will administer ${environment.hostnames[0]}`);
 }
 // The development environment also takes Google accounts, the stand-in playing Google: Grace is
 // invited, as a demonstration's first administrator would be; Alice is not, so she is refused.

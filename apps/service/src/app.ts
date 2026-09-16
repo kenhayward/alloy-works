@@ -13,6 +13,7 @@ import {
   type SignInCallback,
 } from '@alloy-works/api-contract';
 import {
+  claimFirstAdministrator,
   enqueueJob,
   loadFacts,
   type SignInRoute,
@@ -328,8 +329,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         codeVerifier: attempt.code_verifier,
       });
       // Found by issuer and subject, never by email address, which can be reassigned.
-      const principal = await db.withTenant(tenant, (trx) =>
-        trx
+      const principal = await db.withTenant(tenant, async (trx) => {
+        const found = await trx
           .insertInto('principal')
           .values({
             issuer: identity.issuer,
@@ -343,8 +344,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
               .doUpdateSet({ email: identity.email, display_name: identity.name }),
           )
           .returning('id')
-          .executeTakeFirstOrThrow(),
-      );
+          .executeTakeFirstOrThrow();
+        // In the same transaction: the first administrator is granted exactly when they sign in.
+        await claimFirstAdministrator(trx, { id: found.id, ...identity });
+        return found;
+      });
       return signInAs(reply, tenant, principal.id, 'organisation');
     },
 
@@ -396,6 +400,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const admitted = await db.withTenant(tenant, async (trx) => {
         const principalId = await admitGoogleAccount(trx, identity);
         if (principalId === undefined) return false;
+        await claimFirstAdministrator(trx, { id: principalId, ...identity });
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
         await trx
