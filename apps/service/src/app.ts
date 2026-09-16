@@ -346,7 +346,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .returning('id')
           .executeTakeFirstOrThrow();
         // In the same transaction: the first administrator is granted exactly when they sign in.
-        await claimFirstAdministrator(trx, { id: found.id, ...identity });
+        // Named explicitly, not spread from identity: the only fields that may reach a call granting
+        // Administrator are the ones this route itself decided are the principal's id, issuer and
+        // subject - never whatever else a future Identity field might add.
+        await claimFirstAdministrator(trx, {
+          id: found.id,
+          issuer: identity.issuer,
+          subject: identity.subject,
+        });
         return found;
       });
       return signInAs(reply, tenant, principal.id, 'organisation');
@@ -400,7 +407,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const admitted = await db.withTenant(tenant, async (trx) => {
         const principalId = await admitGoogleAccount(trx, identity);
         if (principalId === undefined) return false;
-        await claimFirstAdministrator(trx, { id: principalId, ...identity });
+        // Named explicitly - see the organisation route's own claim, above, for why.
+        await claimFirstAdministrator(trx, {
+          id: principalId,
+          issuer: identity.issuer,
+          subject: identity.subject,
+        });
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
         await trx

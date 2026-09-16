@@ -186,7 +186,93 @@ describe('the first administrator', () => {
       ),
     ).rejects.toThrow(/permission denied/);
     await expect(
+      service.withTenant(staging, (trx) =>
+        sql`update first_administrator set role_id = gen_random_uuid()`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      service.withTenant(staging, (trx) =>
+        sql`update first_administrator set named_by = 'mallory'`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      service.withTenant(staging, (trx) =>
+        sql`update first_administrator set issuer = 'https://mallory.example'`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      service.withTenant(staging, (trx) => sql`truncate first_administrator`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
       service.withTenant(staging, (trx) => sql`delete from first_administrator`.execute(trx)),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  it('refuses to clear or rewrite a used naming, though the claim it already made still stands', async () => {
+    const capitol = await tenant('Capitol');
+    await nameFirstAdministrator(db.adminUrl, capitol, {
+      issuer: ISSUER,
+      subject: 'ada',
+      namedBy: 'provisioning',
+    });
+    const { ada, mallory } = await service.withTenant(capitol, async (trx) => {
+      const adaPrincipal = await signingIn(trx, 'ada');
+      await expect(claimFirstAdministrator(trx, adaPrincipal)).resolves.toBe('granted');
+      const malloryPrincipal = await signingIn(trx, 'mallory');
+      return { ada: adaPrincipal.id, mallory: malloryPrincipal.id };
+    });
+    await expect(administers(capitol, ada)).resolves.toBe(true);
+
+    // Clearing a used claim - the runtime role's own UPDATE grant would otherwise let it reopen the
+    // naming, which the next sign-in as ada would claim again.
+    await expect(
+      service.withTenant(capitol, (trx) =>
+        sql`update first_administrator
+            set claimed_at = null, claimed_by = null, outcome = null
+            where subject = 'ada'`.execute(trx),
+      ),
+    ).rejects.toThrow(/first_administrator/);
+
+    // Rewriting who claimed an already-used naming.
+    await expect(
+      service.withTenant(capitol, (trx) =>
+        sql`update first_administrator set claimed_by = ${mallory} where subject = 'ada'`.execute(
+          trx,
+        ),
+      ),
+    ).rejects.toThrow(/first_administrator/);
+
+    // Neither attempt moved anything: ada still administers, mallory does not, and a second sign-in
+    // as ada finds the naming already used rather than open again.
+    await expect(administers(capitol, ada)).resolves.toBe(true);
+    await expect(administers(capitol, mallory)).resolves.toBe(false);
+    await service.withTenant(capitol, async (trx) => {
+      await expect(
+        claimFirstAdministrator(trx, await signingIn(trx, 'ada')),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  it('claims nothing across tenants: a naming in one tenant leaves another untouched', async () => {
+    const alpha = await tenant('Alpha');
+    const beta = await tenant('Beta');
+    await nameFirstAdministrator(db.adminUrl, alpha, {
+      issuer: ISSUER,
+      subject: 'ada',
+      namedBy: 'provisioning',
+    });
+
+    await service.withTenant(beta, async (trx) => {
+      const principal = await signingIn(trx, 'ada');
+      await expect(claimFirstAdministrator(trx, principal)).resolves.toBeUndefined();
+    });
+
+    const betaGrants = await service.withTenant(beta, (trx) =>
+      trx.selectFrom('access_grant').select('id').execute(),
+    );
+    expect(betaGrants).toEqual([]);
+    await expect(namings(alpha)).resolves.toEqual([
+      { issuer: ISSUER, subject: 'ada', named_by: 'provisioning', claimed_by: null, outcome: null },
+    ]);
   });
 });
