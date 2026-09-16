@@ -51,10 +51,22 @@ export interface SessionService {
    * forever. Only this module's stale-lost recovery ever passes `true`; every other call - the first
    * claim, a retry after a claim timeout, the reclaim after a release races an edit onto the wire -
    * passes `false` and keeps the session id this call already holds.
+   *
+   * `signal` (task 10, finding E): aborted the moment this call loses its race against
+   * `timing.claimMs`, so an adapter over a real transport can cancel a request nothing is waiting on
+   * any longer instead of letting it run to completion unread.
    */
-  claim(move: boolean, fresh: boolean): Promise<ClaimResult>;
-  save(sequence: number, openedFrom: string, content: ContentDocument): Promise<SaveResult>;
+  claim(move: boolean, fresh: boolean, signal?: AbortSignal): Promise<ClaimResult>;
+  /** `signal`: as `claim`'s - aborted when this save loses its race against `timing.claimMs`. */
+  save(
+    sequence: number,
+    openedFrom: string,
+    content: ContentDocument,
+    signal?: AbortSignal,
+  ): Promise<SaveResult>;
+  /** Never raced against a timeout, so never carries a signal to abort. */
   cut(openedFrom: string): Promise<CutResult>;
+  /** As `cut`'s. */
   release(openedFrom: string): Promise<CutResult>;
 }
 
@@ -217,12 +229,16 @@ export function createSession(options: SessionOptions): Session {
     dirty = false;
     save = hasFailed ? 'failing' : 'saving';
     publish();
+    const controller = new AbortController();
     let timer: unknown = null;
     const timedOut = new Promise<SaveResult>((resolve) => {
-      timer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
+      timer = clock.setTimeout(() => {
+        controller.abort();
+        resolve({ ok: false, code: 'failed' });
+      }, timing.claimMs);
     });
     const result = await Promise.race([
-      service.save(sent, version.id, options.snapshot()),
+      service.save(sent, version.id, options.snapshot(), controller.signal),
       timedOut,
     ]);
     cancel(timer);
@@ -341,11 +357,15 @@ export function createSession(options: SessionOptions): Session {
     failures = 0;
     hasFailed = false;
     publish();
+    const controller = new AbortController();
     let timer: unknown = null;
     const timedOut = new Promise<ClaimResult>((resolve) => {
-      timer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
+      timer = clock.setTimeout(() => {
+        controller.abort();
+        resolve({ ok: false, code: 'failed' });
+      }, timing.claimMs);
     });
-    const result = await Promise.race([service.claim(move, fresh), timedOut]);
+    const result = await Promise.race([service.claim(move, fresh, controller.signal), timedOut]);
     cancel(timer);
     if (disposed) return;
     if (result.ok) {
@@ -440,11 +460,18 @@ export function createSession(options: SessionOptions): Session {
     phase = 'claiming';
     notice = 'Starting to edit.';
     publish();
+    const reclaimController = new AbortController();
     let reclaimTimer: unknown = null;
     const reclaimTimedOut = new Promise<ClaimResult>((resolve) => {
-      reclaimTimer = clock.setTimeout(() => resolve({ ok: false, code: 'failed' }), timing.claimMs);
+      reclaimTimer = clock.setTimeout(() => {
+        reclaimController.abort();
+        resolve({ ok: false, code: 'failed' });
+      }, timing.claimMs);
     });
-    const reclaimed = await Promise.race([service.claim(false, false), reclaimTimedOut]);
+    const reclaimed = await Promise.race([
+      service.claim(false, false, reclaimController.signal),
+      reclaimTimedOut,
+    ]);
     cancel(reclaimTimer);
     if (disposed) return;
     if (!reclaimed.ok) {

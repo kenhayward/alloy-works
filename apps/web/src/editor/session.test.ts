@@ -70,36 +70,41 @@ class FakeService implements SessionService {
    * with different content, which is `iteration_conflict`.
    */
   private readonly accepted = new Map<string, { sequence: number; text: string }>();
-  claimAnswer: () => Promise<ClaimResult> = async () => ({ ok: true });
+  claimAnswer: (signal?: AbortSignal) => Promise<ClaimResult> = async () => ({ ok: true });
   /**
    * `undefined` defers to this fake's own sequence bookkeeping above; a test overrides this only for a
    * failure the bookkeeping would not itself produce - a timeout, `lock_held`, a canned `failed`. An
    * override that answers `ok: true` is still recorded below, so the bookkeeping stays consistent for
    * whatever call comes after it.
    */
-  saveAnswer: () => Promise<SaveResult | undefined> = async () => undefined;
+  saveAnswer: (signal?: AbortSignal) => Promise<SaveResult | undefined> = async () => undefined;
   cutAnswer: (openedFrom: string) => Promise<CutResult> = async () => ({
     ok: true,
     outcome: 'cut',
     version: { id: 'v2', number: '0.2' },
   });
 
-  async claim(move: boolean, fresh: boolean) {
+  async claim(move: boolean, fresh: boolean, signal?: AbortSignal) {
     if (fresh) {
       this.freshCount += 1;
       this.sessionId = `session-${this.freshCount}`;
     }
     this.calls.push(move ? 'claim, moving' : 'claim');
-    return this.claimAnswer();
+    return this.claimAnswer(signal);
   }
-  async save(sequence: number, openedFrom: string, content: ContentDocument): Promise<SaveResult> {
+  async save(
+    sequence: number,
+    openedFrom: string,
+    content: ContentDocument,
+    signal?: AbortSignal,
+  ): Promise<SaveResult> {
     this.calls.push(`save ${sequence}`);
     const paragraph = content.content[0];
     const text =
       paragraph?.type === 'paragraph'
         ? paragraph.content.map((inline) => (inline.type === 'text' ? inline.value : '')).join('')
         : '';
-    const overridden = await this.saveAnswer();
+    const overridden = await this.saveAnswer(signal);
     let result: SaveResult;
     if (overridden) {
       result = overridden;
@@ -714,5 +719,47 @@ describe('the editing session', () => {
     await clock.advance(2_000);
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
     expect(session.view().phase).toBe('lost');
+  });
+
+  it('aborts a claim that has already lost its race against the timeout (task 10, finding E)', async () => {
+    const { clock, service, type } = harness();
+    let signal: AbortSignal | undefined;
+    service.claimAnswer = (given) => {
+      signal = given;
+      return new Promise(() => {});
+    };
+    type('Unbox');
+    expect(signal?.aborted).toBe(false);
+    await clock.advance(designTiming.claimMs);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('aborts a save that has already lost its race against the timeout (task 10, finding E)', async () => {
+    const { clock, service, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    let signal: AbortSignal | undefined;
+    service.saveAnswer = (given) => {
+      signal = given;
+      return new Promise(() => {});
+    };
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(signal?.aborted).toBe(false);
+    await clock.advance(designTiming.claimMs);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('never aborts a claim that answers before its timeout', async () => {
+    const { clock, service, type } = harness();
+    let signal: AbortSignal | undefined;
+    service.claimAnswer = async (given) => {
+      signal = given;
+      return { ok: true };
+    };
+    type('Unbox');
+    await clock.advance(0);
+    expect(signal).toBeDefined();
+    expect(signal?.aborted).toBe(false);
   });
 });

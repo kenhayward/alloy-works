@@ -21,6 +21,7 @@ COPY apps/worker/package.json apps/worker/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/api-contract/package.json packages/api-contract/
 COPY packages/db/package.json packages/db/
+COPY packages/editor/package.json packages/editor/
 COPY packages/domain/package.json packages/domain/
 COPY packages/objects/package.json packages/objects/
 COPY packages/stand-in-idp/package.json packages/stand-in-idp/
