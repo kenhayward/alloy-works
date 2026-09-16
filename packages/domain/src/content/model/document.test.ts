@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { MATHML_NAMESPACE } from '../admission/mathml.js';
+
 import { CURRENT_SCHEMA_VERSION, contentDocumentSchema, parseContentDocument } from './document.js';
+import { readContent } from './migrate.js';
 
 const paragraph = (id: string, value = 'A sentence.') => ({
   type: 'paragraph',
@@ -137,7 +140,11 @@ describe('the content document', () => {
   // number - belongs to STR, which owns the sequence, so content-model.md declines the claim.
   // Citing it here would compute Covered for a requirement no design answers in full.
   it('CNT-021 stores a block equation as numbered or explicitly unnumbered', () => {
-    const withoutNumbered = { type: 'equation', id: 'b7', mathml: '<math/>' };
+    const withoutNumbered = {
+      type: 'equation',
+      id: 'b7',
+      mathml: `<math xmlns="${MATHML_NAMESPACE}"/>`,
+    };
     const equation = { ...withoutNumbered, numbered: false };
     expect(parseContentDocument(doc([equation])).content[0]).toMatchObject({ numbered: false });
     expect(() => contentDocumentSchema.parse(doc([withoutNumbered]))).toThrow();
@@ -163,5 +170,99 @@ describe('the content document', () => {
       },
     ] as never;
     expect(() => parseContentDocument(doc([withTable]))).toThrow();
+  });
+});
+
+describe('an equation, stored only as the MathML reader writes it', () => {
+  const kept = `<math xmlns="${MATHML_NAMESPACE}" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>`;
+
+  /** One equation in each place one can stand: a block, inline, and inline inside a footnote. */
+  const placed = (mathml: string) =>
+    [
+      ['as a block', doc([{ type: 'equation', id: 'b1', mathml, numbered: false }])],
+      [
+        'inline',
+        doc([
+          { type: 'paragraph', id: 'b1', style: 'body', content: [{ type: 'equation', mathml }] },
+        ]),
+      ],
+      [
+        'inside a footnote',
+        doc([
+          {
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [
+              {
+                type: 'footnote',
+                id: 'f1',
+                anchor: { kind: 'span' },
+                content: [
+                  {
+                    type: 'paragraph',
+                    id: 'b2',
+                    style: 'footnote',
+                    content: [{ type: 'equation', mathml }],
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+      ],
+    ] as const;
+
+  it('admits MathML the reader would keep exactly as it stands, wherever the equation stands', () => {
+    for (const [where, document] of placed(kept)) {
+      expect(() => parseContentDocument(document), where).not.toThrow();
+    }
+  });
+
+  it.each([
+    [
+      'with no namespace declared',
+      '<math display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>',
+    ],
+    ['with whitespace between elements', kept.replace('<mfrac>', '\n  <mfrac>')],
+    [
+      'with its namespace declared again inside',
+      kept.replace('<mfrac>', `<mfrac xmlns="${MATHML_NAMESPACE}">`),
+    ],
+    [
+      'with attributes out of order',
+      kept.replace('display="block"', 'display="block" alttext="a over b"'),
+    ],
+    ['with an empty element not self-closed', kept.replace('<mi>b</mi>', '<mi></mi>')],
+    ['with text not in NFC', kept.replace('<mi>a</mi>', '<mi>e\u{301}</mi>')],
+    ['with a combining mark written raw', kept.replace('<mi>a</mi>', '<mi>\u{338}</mi>')],
+    ['with an event handler', kept.replace('<mi>a</mi>', '<mi onclick="alert(1)">a</mi>')],
+    ['with a script', kept.replace('<mi>a</mi>', '<mi>a</mi><script>alert(1)</script>')],
+    ['with a link', kept.replace('<mi>a</mi>', '<mi href="javascript:alert(1)">a</mi>')],
+    ['with a colour', kept.replace('<mi>a</mi>', '<mi mathcolor="red">a</mi>')],
+    ['that cannot be read', kept.replace('</mfrac>', '')],
+  ])('refuses an equation %s, wherever it stands', (_, mathml) => {
+    for (const [where, document] of placed(mathml)) {
+      expect(() => parseContentDocument(document), where).toThrow(
+        /not in the one form the MathML reader writes/,
+      );
+    }
+  });
+
+  it('quarantines stored content holding an equation the reader would not keep as it stands', () => {
+    const outcome = readContent(
+      doc([
+        {
+          type: 'equation',
+          id: 'b1',
+          mathml: kept.replace('<mi>a</mi>', '<mi onclick="alert(1)">a</mi>'),
+          numbered: true,
+        },
+      ]),
+      { artifact: 'component-10', version: '1.0' },
+    );
+    expect(outcome).toMatchObject({ ok: false, artifact: 'component-10', version: '1.0' });
+    expect(outcome).not.toHaveProperty('document');
+    expect(!outcome.ok && outcome.failure).toMatch(/not in the one form the MathML reader writes/);
   });
 });

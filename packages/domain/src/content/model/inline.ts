@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isKeptMathml } from '../admission/mathml.js';
+
 import { markSchema } from './marks.js';
 
 /**
@@ -21,9 +23,16 @@ export const textNodeSchema = z.strictObject({
   marks: z.array(markSchema).default([]),
 });
 
-/** CNT-043: MathML is canonical. The LaTeX typed is a non-authoritative input record. */
+/**
+ * CNT-043: MathML is canonical. The LaTeX typed is a non-authoritative input record.
+ *
+ * The MathML is refused unless the admission pipeline's strict reader would keep it exactly as it
+ * stands, because it is the one string in the model rendered as markup: content reaching validation
+ * by any path but admission - an iteration the service parses, a version read back - must not carry
+ * what sanitise removes from a paste. The check is the reader itself, never a second description.
+ */
 export const equationContentSchema = {
-  mathml: z.string().min(1),
+  mathml: z.string().min(1).refine(isKeptMathml, 'not in the one form the MathML reader writes'),
   latex: z.string().min(1).optional(),
 };
 

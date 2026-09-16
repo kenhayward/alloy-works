@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MATHML_NAMESPACE, sanitiseMathml } from './mathml.js';
+import { isKeptMathml, MATHML_NAMESPACE, sanitiseMathml } from './mathml.js';
 
 const math = (inner: string, attributes = '') =>
   `<math xmlns="${MATHML_NAMESPACE}"${attributes}>${inner}</math>`;
@@ -187,5 +187,43 @@ describe('an equation that cannot be read', () => {
   it('refuses nesting deeper than the limit without exhausting the stack', () => {
     const deep = `<math>${'<mrow>'.repeat(100_000)}<mi>x</mi>${'</mrow>'.repeat(100_000)}</math>`;
     expect(unreadable(deep)).toMatch(/nested more than 64 deep/);
+  });
+});
+
+describe('MathML kept exactly as it stands', () => {
+  it('is everything the reader writes', () => {
+    for (const source of [
+      `<math display="block" alttext="x equals two">\n  <mi> x </mi>\n  <mo>=</mo>\n  <mn>2</mn>\n</math>`,
+      math('<mo>&lt;</mo><mo>></mo><mi>&#x3B1;</mi><mtext>A &amp; "B"</mtext>'),
+      math('<mspace width="1em"></mspace>'),
+      math('<mi>e\u{301}</mi><mi>q\u{301}</mi>'),
+      math('<mi>\u{338} onmouseover=alert(1) x=</mi>'),
+      math('<mi alttext="a&#9;&quot;b&quot;">x</mi>'),
+      math('<mi onclick="alert(1)">x</mi><script>alert(2)</script>'),
+    ]) {
+      const written = readable(source).mathml;
+      expect(isKeptMathml(written), written).toBe(true);
+    }
+  });
+
+  it('is nothing the reader would rewrite, remove anything from, or refuse', () => {
+    for (const source of [
+      '<math><mi>x</mi></math>',
+      math('\n<mi>x</mi>\n'),
+      math(`<mi xmlns="${MATHML_NAMESPACE}">x</mi>`),
+      math('<mi>x</mi>', ' display="block" alttext="x"'),
+      math('<mspace width="1em"></mspace>'),
+      math('<mo>></mo>'),
+      math('<mi>e\u{301}</mi>'),
+      math('<mi>\u{338}</mi>'),
+      math('<mi onclick="alert(1)">x</mi>'),
+      math('<mi>x</mi><script>alert(1)</script>'),
+      math('<mi mathcolor="red">x</mi>'),
+      math('<mi>x</mi>stray'),
+      math('<mi>x'),
+      '',
+    ]) {
+      expect(isKeptMathml(source), JSON.stringify(source)).toBe(false);
+    }
   });
 });

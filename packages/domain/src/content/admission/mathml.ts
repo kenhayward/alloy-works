@@ -356,3 +356,18 @@ function escape(value: string, inAttribute: boolean): string {
     return `&#x${character.codePointAt(0)!.toString(16).toUpperCase()};`;
   });
 }
+
+/**
+ * Whether MathML is already what this reader keeps: readable, with nothing to remove, and written
+ * exactly as `sanitiseMathml` writes it. Validation asks this of every equation it is handed
+ * (`model/inline.ts`), so the rule a stored equation meets is this reader rather than a second
+ * description of it - anything the reader would drop, rewrite or refuse is refused.
+ *
+ * All three conditions are checked. A namespace declared again, or whitespace between elements, is
+ * removed with no finding, so findings alone would pass them; a finding always changes the string, but
+ * checking it costs nothing and does not rest on that.
+ */
+export function isKeptMathml(source: string): boolean {
+  const result = sanitiseMathml(source);
+  return result.ok && result.findings.length === 0 && result.mathml === source;
+}
