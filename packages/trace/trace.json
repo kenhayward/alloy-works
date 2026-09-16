@@ -15321,7 +15321,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 261,
+      "line": 277,
       "kind": "title"
     },
     {
@@ -15340,6 +15340,18 @@
       "id": "IAM-071",
       "file": "packages/db/src/grants.test.ts",
       "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "COL-010",
+      "file": "packages/db/src/promotion.test.ts",
+      "line": 257,
+      "kind": "title"
+    },
+    {
+      "id": "VER-006",
+      "file": "packages/db/src/promotion.test.ts",
+      "line": 158,
       "kind": "title"
     },
     {

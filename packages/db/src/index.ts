@@ -126,3 +126,10 @@ export {
   type LockState,
   type NewIteration,
 } from './editing.js';
+export {
+  cutVersion,
+  releaseLock,
+  type Cut,
+  type CutAnswer,
+  type ReleaseAnswer,
+} from './promotion.js';
