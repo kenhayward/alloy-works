@@ -1,4 +1,4 @@
-import type { DefinitionKind } from '@alloy-works/domain';
+import type { DefinitionKind, Permission, PrincipalKind } from '@alloy-works/domain';
 import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 
@@ -55,6 +55,7 @@ export interface PrincipalTable {
   email: string | null;
   display_name: string | null;
   created_at: Generated<Date>;
+  kind: Generated<PrincipalKind>;
 }
 
 export interface ProfileTable {
@@ -178,6 +179,49 @@ export interface VersionDefinitionTable {
   definition_kind: ColumnType<DefinitionKind, DefinitionKind, never>;
 }
 
+export interface AccessPolicyTable {
+  singleton: Generated<boolean>;
+  external_default_days: Generated<number>;
+  external_cap_days: Generated<number>;
+}
+
+export interface RoleTable {
+  id: Generated<string>;
+  name: string;
+  permissions: Permission[];
+  created_at: Generated<Date>;
+}
+
+export interface AccessGroupTable {
+  id: Generated<string>;
+  name: string;
+  source: 'tenant' | 'provider';
+  provider_value: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface GroupMemberTable {
+  group_id: string;
+  principal_id: string;
+  asserted_at: Date | null;
+}
+
+/** Made and removed, never changed: every column's update type is `never`, as the grant is. */
+export interface AccessGrantTable {
+  id: ColumnType<string, string | undefined, never>;
+  role_id: ColumnType<string, string, never>;
+  principal_id: ColumnType<string | null, string | null | undefined, never>;
+  group_id: ColumnType<string | null, string | null | undefined, never>;
+  level: ColumnType<'tenant' | 'space' | 'artifact', 'tenant' | 'space' | 'artifact', never>;
+  space_id: ColumnType<string | null, string | null | undefined, never>;
+  artifact_id: ColumnType<string | null, string | null | undefined, never>;
+  effect: ColumnType<'allow' | 'deny', 'allow' | 'deny', never>;
+  expires_at: ColumnType<Date | null, Date | null | undefined, never>;
+  extends: ColumnType<string | null, string | null | undefined, never>;
+  granted_by: ColumnType<string, string, never>;
+  granted_at: ColumnType<Date, never, never>;
+}
+
 export interface TenantTables {
   principal: PrincipalTable;
   profile: ProfileTable;
@@ -194,6 +238,11 @@ export interface TenantTables {
   artifact: ArtifactTable;
   artifact_version: ArtifactVersionTable;
   version_definition: VersionDefinitionTable;
+  access_policy: AccessPolicyTable;
+  role: RoleTable;
+  access_group: AccessGroupTable;
+  group_member: GroupMemberTable;
+  access_grant: AccessGrantTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

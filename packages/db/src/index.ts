@@ -15,9 +15,13 @@ export {
   type ContentKind,
 } from './artifact-kind.js';
 export type {
+  AccessGrantTable,
+  AccessGroupTable,
+  AccessPolicyTable,
   ArtifactTable,
   ArtifactVersionTable,
   GoogleDomainTable,
+  GroupMemberTable,
   JobTable,
   IdentityProviderTable,
   InvitationTable,
@@ -25,6 +29,7 @@ export type {
   PlatformTables,
   PrincipalTable,
   ProfileTable,
+  RoleTable,
   SampleTable,
   SessionTable,
   SignInAttemptTable,
