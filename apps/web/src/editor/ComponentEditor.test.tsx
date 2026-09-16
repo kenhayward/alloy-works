@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import type { EditorView } from '@alloy-works/editor';
+import { Selection, type EditorView } from '@alloy-works/editor';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -301,8 +301,322 @@ describe('the component editor', () => {
         },
       }),
     );
-    await waitFor(() =>
-      expect(asked.map((each) => each.route)).toContain('DELETE /v1/components/{id}/lock'),
+    // Only true once the release has actually resolved and the session left `releasing` - `asked`
+    // already held the DELETE route the instant the request was made, before it was ever answered, so
+    // asserting that alone (fix round 1 minor) would have passed even without resolving it.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+      ).toHaveAttribute('contenteditable', 'true');
+    });
+  });
+
+  it('offers Continue after a stale save, and saves under a fresh session id once it succeeds (fix round 1 finding 1)', async () => {
+    const asked: { route: string; body: unknown }[] = [];
+    let putCount = 0;
+    const sessionIdsSeen: string[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      const text =
+        request.method === 'GET' || request.method === 'DELETE' ? '' : await request.text();
+      const body = text === '' ? undefined : (JSON.parse(text) as unknown);
+      asked.push({ route: `${request.method} ${url.pathname}`, body });
+      if (request.method === 'GET') return json(200, opened());
+      if (request.method === 'POST' && url.pathname.endsWith('/lock')) return json(200, { lock });
+      const match = /\/iterations\/([^/]+)\//.exec(url.pathname);
+      if (request.method === 'PUT' && match) {
+        putCount += 1;
+        sessionIdsSeen.push(match[1]!);
+        if (putCount === 1) {
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        }
+        return json(200, { sequence: 1, lock });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    });
+    const client = createApiClient({
+      baseUrl: 'http://dev.acme.test',
+      fetch: fetching as unknown as typeof fetch,
+    });
+    let view: EditorView | undefined;
+    render(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+      />,
     );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    view!.dispatch(view!.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    expect(
+      await screen.findByText(
+        'Newer text was saved from another window, or from before this page was reloaded. ' +
+          'It is kept. Continuing starts a new session from what is on screen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
+      'contenteditable',
+      'false',
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+      ).toHaveAttribute('contenteditable', 'true');
+    });
+
+    view!.dispatch(view!.state.tr.insertText('!', view!.state.doc.content.size - 1));
+    await waitFor(() => expect(putCount).toBe(2));
+    expect(sessionIdsSeen[0]).toBe(SESSION);
+    expect(sessionIdsSeen[1]).not.toBe(SESSION);
+  });
+
+  it('offers Try again after a claim merely times out, not only after lock_held (fix round 1 finding 2)', async () => {
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => new Promise(() => {}),
+    });
+    let view: EditorView | undefined;
+    render(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={{ ...quick, claimMs: 20 }}
+        onView={(mounted) => (view = mounted)}
+      />,
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    view!.dispatch(view!.state.tr.insertText(' Mine.', 19));
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('appends what was typed across repeated refusals instead of replacing it (fix round 1 finding 2)', async () => {
+    let refusals = 0;
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => {
+        refusals += 1;
+        return json(409, {
+          code: 'lock_held',
+          message: 'held',
+          traceId: 't',
+          holder: { id: 'grace', name: 'Grace' },
+          expectedRelease: '2026-09-16T09:15:00.000Z',
+        });
+      },
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Mine.', 19));
+    await screen.findByRole('textbox', { name: 'Text that was not saved' });
+    expect(screen.getByRole('textbox', { name: 'Text that was not saved' })).toHaveValue(
+      'Unbox the printer. Mine.',
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(refusals).toBe(2));
+    view.dispatch(view.state.tr.insertText(' Again.', 19));
+    await waitFor(() => {
+      const kept = screen.getByRole('textbox', {
+        name: 'Text that was not saved',
+      }) as HTMLTextAreaElement;
+      expect(kept.value).toContain('Unbox the printer. Mine.');
+      expect(kept.value).toContain('Unbox the printer. Again.');
+    });
+  });
+
+  it('says not saved, not "no unsaved changes", once a claim is refused with text kept (fix round 1 finding 3)', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () =>
+        json(409, {
+          code: 'lock_held',
+          message: 'held',
+          traceId: 't',
+          holder: { id: 'grace', name: 'Grace' },
+          expectedRelease: '2026-09-16T09:15:00.000Z',
+        }),
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Mine.', 19));
+    await screen.findByRole('textbox', { name: 'Text that was not saved' });
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    expect(screen.queryByText('No unsaved changes')).toBeNull();
+  });
+
+  it('warns before an unmount while a change is unsaved, and stops once it is not (fix round 1 finding 4)', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function)));
+    const handler = addSpy.mock.calls.find(([name]) => name === 'beforeunload')![1] as (
+      event: Event,
+    ) => void;
+    const event = new Event('beforeunload', { cancelable: true });
+    handler(event);
+    expect(event.defaultPrevented).toBe(true);
+
+    await waitFor(() => expect(screen.getByText('Saved at', { exact: false })));
+    await waitFor(() => expect(removeSpy).toHaveBeenCalledWith('beforeunload', handler));
+  });
+
+  it('flushes an unsaved change on unmount instead of dropping it silently (fix round 1 finding 4)', async () => {
+    const { asked, surface, unmount } = (() => {
+      const { client, asked: requests } = service({
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      });
+      let view: EditorView | undefined;
+      const result = render(
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+          onView={(mounted) => (view = mounted)}
+        />,
+      );
+      return {
+        asked: requests,
+        unmount: result.unmount,
+        surface: async () => {
+          await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+          return view!;
+        },
+      };
+    })();
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain('POST /v1/components/{id}/lock'),
+    );
+    unmount();
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+  });
+
+  it('does not tear down the session when a parent passes a new inline onView (fix round 1 finding 5)', async () => {
+    const { client, asked } = service({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    let view: EditorView | undefined;
+    const { rerender } = render(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+      />,
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    view!.dispatch(view!.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    const claimsBefore = asked.filter((each) => each.route.endsWith('/lock')).length;
+
+    // A fresh inline function every render, as a parent that does not memoise its callback would
+    // produce - a real remount would tear the surface down and rebuild it from the original content,
+    // losing what was just typed and firing a second claim.
+    rerender(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+      />,
+    );
+
+    expect(
+      screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+    ).toHaveTextContent('Unbox the printer. Keep the box.');
+    expect(asked.filter((each) => each.route.endsWith('/lock')).length).toBe(claimsBefore);
+  });
+
+  it('stops showing a stale lock notice once the author has claimed or released it themselves (fix round 1 minor)', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () =>
+        json(
+          200,
+          opened({ lock: { ...lock, yours: false, holder: { id: 'grace', name: 'Grace' } } }),
+        ),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'DELETE /v1/components/{id}/lock': () =>
+        json(200, {
+          outcome: 'unchanged',
+          version: { id: 'v1', number: '0.1', author: ADA, createdAt: 't', note: null },
+        }),
+    });
+    const view = await surface();
+    expect(screen.getByText('Grace is editing this component.')).toBeInTheDocument();
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(screen.queryByText('Grace is editing this component.')).toBeNull());
+    await userEvent.click(await screen.findByRole('button', { name: 'Done editing' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+      ).toHaveAttribute('contenteditable', 'true'),
+    );
+    // The stale GET-time lock said Grace held it; this author has since claimed and released it
+    // themselves, so the notice must not reappear from that stale snapshot (fix round 1 minor).
+    expect(screen.queryByText('Grace is editing this component.')).toBeNull();
+  });
+
+  it('keeps the selection after Save version instead of jumping to the start (fix round 1 minor)', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'POST /v1/components/{id}/versions': () =>
+        json(200, {
+          outcome: 'cut',
+          version: {
+            id: 'v2',
+            number: '0.2',
+            author: ADA,
+            createdAt: '2026-09-16T09:05:00.000Z',
+            note: null,
+          },
+        }),
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+    );
+    const at = view.state.doc.content.size - 1;
+    view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
+    expect(view.state.selection.from).toBe(at);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
+    await screen.findByText('Version 0.2 saved.');
+    expect(view.state.selection.from).toBe(at);
   });
 });

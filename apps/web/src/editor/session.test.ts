@@ -338,8 +338,10 @@ describe('the editing session', () => {
     await clock.advance(2_000);
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
     expect(session.view()).toMatchObject({
+      // Not saved, and nothing is retrying it - `lose` stops the timers, so `failing` (which always
+      // means a retry is scheduled) would be untrue (fix round 1, finding 3).
       phase: 'lost',
-      save: 'failing',
+      save: 'stopped',
       notice:
         'Newer text was saved from another window, or from before this page was reloaded. ' +
         'It is kept. Continuing starts a new session from what is on screen.',
@@ -380,8 +382,9 @@ describe('the editing session', () => {
     type('Unbox the printer');
     await clock.advance(2_000);
     expect(session.view()).toMatchObject({
+      // As above: stopped, not failing - nothing here is retrying (fix round 1, finding 3).
       phase: 'lost',
-      save: 'failing',
+      save: 'stopped',
       notice:
         'This session no longer holds the component. Your unsaved text is kept below to copy.',
     });
@@ -761,5 +764,108 @@ describe('the editing session', () => {
     await clock.advance(0);
     expect(signal).toBeDefined();
     expect(signal?.aborted).toBe(false);
+  });
+
+  it('marks lost as recoverable only when it came from a stale save, fix round 1 finding 1', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_held' });
+    type('Unbox');
+    await clock.advance(0);
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({ phase: 'lost', recoverable: false });
+  });
+
+  it('marks lost as recoverable when it came from a stale or conflicting save, fix round 1 finding 1', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'iteration_stale', latest: 7 });
+    type('Unbox');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({ phase: 'lost', recoverable: true });
+  });
+
+  it('exposes dirty, so a caller can warn before an unmount drops unsent changes, fix round 1 finding 4', async () => {
+    const { clock, session, type } = harness();
+    expect(session.view().dirty).toBe(false);
+    type('Unbox');
+    expect(session.view().dirty).toBe(true);
+    await clock.advance(2_000);
+    expect(session.view().dirty).toBe(false);
+  });
+
+  it('says stopped, not retrying, once lost - nothing is retrying it, fix round 1 finding 3', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_held' });
+    type('Unbox');
+    await clock.advance(0);
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({ phase: 'lost', save: 'stopped' });
+  });
+
+  it('says stopped, not saved, when a refused claim discards a pending change, fix round 1 finding 3', async () => {
+    const { clock, service, session, type } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    type('Unbox');
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({ phase: 'reading', save: 'stopped' });
+  });
+
+  it('says saved, not stopped, when a claim is retried with nothing pending, fix round 1 finding 3', async () => {
+    const { clock, service, session } = harness();
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    session.claimAgain(false);
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({ phase: 'reading', save: 'saved' });
+  });
+
+  it('offers a holder to retry against even when a claim merely times out, fix round 1 finding 1', async () => {
+    const { clock, service, session, type } = harness();
+    service.claimAnswer = () => new Promise(() => {});
+    type('Unbox');
+    await clock.advance(designTiming.claimMs);
+    expect(session.view()).toMatchObject({
+      phase: 'reading',
+      holder: { name: null, yours: false },
+    });
+  });
+
+  it('flushes a pending change on dispose, best effort, rather than dropping it silently, fix round 1 finding 4', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    type('Unbox the printer');
+    expect(service.saved).toEqual([]);
+    session.dispose();
+    await settle();
+    expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox the printer' }]);
+  });
+
+  it('never double-sends on dispose when a save is already in flight, fix round 1 finding 4', async () => {
+    const { clock, service, session, type } = harness();
+    let answer: (result: SaveResult) => void = () => {};
+    service.saveAnswer = () => new Promise((resolve) => (answer = resolve));
+    type('Unbox');
+    await clock.advance(2_000);
+    type('more');
+    session.dispose();
+    await settle();
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    answer({ ok: true });
+  });
+
+  it('does not flush on dispose once the session is already lost', async () => {
+    const { clock, service, session, type } = harness();
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_held' });
+    type('Unbox');
+    await clock.advance(0);
+    type('more');
+    await clock.advance(2_000);
+    expect(session.view().phase).toBe('lost');
+    session.dispose();
+    await settle();
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
   });
 });

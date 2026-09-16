@@ -86,8 +86,12 @@ export const browserClock: Clock = {
 /** component-editor.md, "The session": the states this slice has. Recovery is the next plan's. */
 export type Phase = 'reading' | 'claiming' | 'editing' | 'cutting' | 'releasing' | 'lost';
 
-/** CNT-068's three states. */
-export type SaveState = 'saved' | 'saving' | 'failing';
+/**
+ * CNT-068's three states, plus `stopped` (fix round 1, finding 3): not saved, and nothing is trying to
+ * save it - true once `lost` (its timers are stopped) or once a refused claim has discarded a pending
+ * change (kept only as text). Distinct from `failing`, which always means a retry is scheduled.
+ */
+export type SaveState = 'saved' | 'saving' | 'failing' | 'stopped';
 
 export interface SessionView {
   readonly phase: Phase;
@@ -95,10 +99,18 @@ export interface SessionView {
   /** When the latest acknowledged save arrived, or null before the first. */
   readonly savedAt: number | null;
   readonly version: VersionRef;
-  /** Who holds the component, after a claim was refused. */
+  /** Who holds the component, after a claim was refused or timed out. */
   readonly holder: Holder | null;
   /** What the author is told, once, through the live region. */
   readonly notice: string | null;
+  /** A change made but not yet acknowledged by the service (fix round 1, finding 4). */
+  readonly dirty: boolean;
+  /**
+   * True in `lost`, when the session can resume with a fresh claim - a stale or conflicting save's own
+   * recovery (fix round 1, finding 1). False otherwise, including every other lock-gone `lost`, which
+   * this slice has no recovery for (Recovery is the next plan's).
+   */
+  readonly recoverable: boolean;
 }
 
 export interface Timing {
@@ -188,7 +200,16 @@ export function createSession(options: SessionOptions): Session {
   let lostFromStale = false;
   let disposed = false;
 
-  const view = (): SessionView => ({ phase, save, savedAt, version, holder, notice });
+  const view = (): SessionView => ({
+    phase,
+    save,
+    savedAt,
+    version,
+    holder,
+    notice,
+    dirty,
+    recoverable: phase === 'lost' && lostFromStale,
+  });
   const publish = () => {
     if (!disposed) options.onChange(view());
   };
@@ -206,6 +227,9 @@ export function createSession(options: SessionOptions): Session {
   const lose = (message: string, fromStale = false) => {
     stopTimers();
     phase = 'lost';
+    // Not saved, and - since the timers are just stopped - nothing is retrying it either (fix round 1,
+    // finding 3): `failing` would say a retry is still scheduled, which is no longer true.
+    save = 'stopped';
     lostFromStale = fromStale;
     notice = message;
     publish();
@@ -262,7 +286,6 @@ export function createSession(options: SessionOptions): Session {
       result.code === 'version_precondition'
     ) {
       dirty = true;
-      save = 'failing';
       lose(lockGoneMessage());
       return false;
     }
@@ -276,7 +299,6 @@ export function createSession(options: SessionOptions): Session {
       // overwritten, so it stops rather than guess: the author is offered a fresh session, starting
       // from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
-      save = 'failing';
       lose(
         'Newer text was saved from another window, or from before this page was reloaded. ' +
           'It is kept. Continuing starts a new session from what is on screen.',
@@ -375,9 +397,14 @@ export function createSession(options: SessionOptions): Session {
       if (dirty) schedule();
       return;
     }
+    // Whatever was pending when this claim started is discarded - the held changes are the caller's to
+    // undo and offer as text (`onRefused`, below) - so `stopped` says plainly that it is not saved and
+    // nothing is retrying it; `saved` only when there was nothing pending to lose (fix round 1, finding
+    // 3), such as a bare retry with no further typing since the last refusal.
+    const hadPending = dirty;
     phase = 'reading';
     dirty = false;
-    save = 'saved';
+    save = hadPending ? 'stopped' : 'saved';
     if (result.code === HELD) {
       holder = result.holder;
       notice = result.holder.yours
@@ -387,9 +414,13 @@ export function createSession(options: SessionOptions): Session {
       options.onRefused(result.holder);
       return;
     }
+    // A holder that is nobody's (fix round 1, finding 1): a claim that merely failed or timed out - not
+    // a `lock_held` refusal - names no one, but still needs to read as "refused" so a caller can offer
+    // a retry control rather than typing being the only way back in.
+    holder = { name: null, expectedRelease: '', yours: false };
     notice = 'Could not start editing. Try again.';
     publish();
-    options.onRefused({ name: null, expectedRelease: '', yours: false });
+    options.onRefused(holder);
   };
 
   const finish = async (
@@ -511,6 +542,22 @@ export function createSession(options: SessionOptions): Session {
     },
     view,
     dispose() {
+      // Best effort: an unmount must not drop a change silently (fix round 1, finding 4). Fired before
+      // `disposed` is set, so the guards inside `send` do not refuse it - but nothing here awaits the
+      // result, retries it, or publishes a view for it: whatever would show either is already gone.
+      // Skipped when a save is already in flight (that request already carries the snapshot as of when
+      // it was sent; a second one over it would race it for no benefit) or the session is `lost` (there
+      // is no lock left to save under).
+      if (
+        !inFlight &&
+        dirty &&
+        (phase === 'editing' || phase === 'cutting' || phase === 'releasing')
+      ) {
+        sequence += 1;
+        const sent = sequence;
+        dirty = false;
+        void service.save(sent, version.id, options.snapshot()).catch(() => {});
+      }
       disposed = true;
       stopTimers();
     },

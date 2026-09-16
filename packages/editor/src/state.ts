@@ -2,7 +2,7 @@ import { baseKeymap, splitBlock } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import type { Node } from 'prosemirror-model';
-import { EditorState, Plugin, type Command } from 'prosemirror-state';
+import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
 
 import { identityPlugin } from './identity.js';
 
@@ -45,6 +45,13 @@ export interface EditorStateOptions {
   readonly doc: Node;
   /** Where new block identifiers come from; `newBlockIdentifier` outside tests. */
   readonly newIdentifier: () => string;
+  /**
+   * Carried into the fresh state when given, for the same `doc` (fix round 1, minor): a fresh history
+   * still needs a fresh selection, but not necessarily one back at the start - cutting a version, for
+   * one, changes nothing about the document itself, so jumping the cursor to the beginning would be a
+   * side effect the cut never asked for. Defaults to the document's own default selection.
+   */
+  readonly selection?: Selection;
 }
 
 /**
@@ -55,6 +62,7 @@ export interface EditorStateOptions {
 export function createEditorState(options: EditorStateOptions): EditorState {
   return EditorState.create({
     doc: options.doc,
+    ...(options.selection ? { selection: options.selection } : {}),
     plugins: [
       history(),
       keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo, Enter: enterWithoutEmpties }),

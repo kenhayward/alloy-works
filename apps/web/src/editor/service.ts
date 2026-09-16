@@ -24,18 +24,22 @@ const storageKeyFor = (componentId: string) => `alloy-works:editing-session:${co
 export function editingSessionFor(
   componentId: string,
   isHeldByMe: (stored: string) => boolean,
-  storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = globalThis.sessionStorage,
+  storage?: Pick<Storage, 'getItem' | 'setItem'>,
 ): string {
   const key = storageKeyFor(componentId);
   try {
-    const kept = storage?.getItem(key);
+    // Reading `sessionStorage` itself, not just calling its methods, can throw (a `SecurityError` in
+    // an embedding that denies storage access) - so the fallback is resolved inside the try, never as
+    // a default parameter, which runs before any try in this function's own body could catch it (fix
+    // round 1, finding 6).
+    const kept = (storage ?? globalThis.sessionStorage).getItem(key);
     if (kept && LOWERCASE_UUID.test(kept) && isHeldByMe(kept)) return kept;
   } catch {
     // Unavailable storage is not an error: the session is simply this page's alone.
   }
   const made = crypto.randomUUID();
   try {
-    storage?.setItem(key, made);
+    (storage ?? globalThis.sessionStorage).setItem(key, made);
   } catch {
     // As above.
   }
@@ -77,7 +81,7 @@ export function sessionService(
   componentId: string,
   initialSession: string,
   principal: string,
-  storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = globalThis.sessionStorage,
+  storage?: Pick<Storage, 'getItem' | 'setItem'>,
 ): SessionService {
   const path = { id: componentId };
   let current = initialSession;
@@ -87,7 +91,8 @@ export function sessionService(
       if (fresh) {
         current = crypto.randomUUID();
         try {
-          storage?.setItem(storageKeyFor(componentId), current);
+          // As `editingSessionFor`'s: the fallback is resolved inside the try (fix round 1, finding 6).
+          (storage ?? globalThis.sessionStorage).setItem(storageKeyFor(componentId), current);
         } catch {
           // Unavailable storage does not stop the session; it just is not remembered across a reload.
         }

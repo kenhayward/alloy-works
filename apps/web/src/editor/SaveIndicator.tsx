@@ -15,6 +15,9 @@ const localTime = (at: number) =>
  * CNT-068: saved, saving, or not saved and retrying, in words, with the time of the last acknowledged
  * save. Not a live region itself - it changes with every keystroke - so the change to "not saved" is
  * announced through the editor's one status region instead (component-editor.md, "Accessibility").
+ *
+ * `stopped` (fix round 1, finding 3) is a fourth, honest state beyond CNT-068's three: not saved, and
+ * nothing is retrying it - unlike `failing`, which always means a retry is scheduled.
  */
 export function SaveIndicator({ save, savedAt, formatTime = localTime }: SaveIndicatorProps) {
   const text =
@@ -22,8 +25,10 @@ export function SaveIndicator({ save, savedAt, formatTime = localTime }: SaveInd
       ? 'Saving'
       : save === 'failing'
         ? 'Not saved, retrying'
-        : savedAt === null
-          ? 'No unsaved changes'
-          : `Saved at ${formatTime(savedAt)}`;
+        : save === 'stopped'
+          ? 'Not saved'
+          : savedAt === null
+            ? 'No unsaved changes'
+            : `Saved at ${formatTime(savedAt)}`;
   return <p data-save={save}>{text}</p>;
 }

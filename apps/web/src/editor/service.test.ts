@@ -1,6 +1,6 @@
 import { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { editingSessionFor, sessionService } from './service.js';
 
@@ -72,6 +72,28 @@ describe('editingSessionFor', () => {
     };
     const id = editingSessionFor(COMPONENT, () => true, storage);
     expect(id).toMatch(LOWERCASE_UUID);
+  });
+
+  describe('when no storage is given (falls back to sessionStorage itself)', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+
+    afterEach(() => {
+      if (original) Object.defineProperty(globalThis, 'sessionStorage', original);
+    });
+
+    it('mints a new id, without failing, when merely reading sessionStorage throws (fix round 1, finding 6)', () => {
+      // A default parameter's expression is evaluated outside any try in the function body - some
+      // embeddings (a sandboxed iframe with storage access denied) throw a SecurityError on the
+      // property read itself, before `.getItem`/`.setItem` are ever reached.
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        get() {
+          throw new DOMException('blocked', 'SecurityError');
+        },
+      });
+      const id = editingSessionFor(COMPONENT, () => true);
+      expect(id).toMatch(LOWERCASE_UUID);
+    });
   });
 });
 
@@ -181,6 +203,36 @@ describe('sessionService', () => {
       await service.save(1, 'v1', doc('Unbox'));
       const savedPath = requests[1]!.path;
       expect(savedPath).toBe(`/v1/components/${COMPONENT}/iterations/${sent.session}/1`);
+    });
+
+    describe('minting fresh with no storage given (falls back to sessionStorage itself)', () => {
+      const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+
+      afterEach(() => {
+        if (original) Object.defineProperty(globalThis, 'sessionStorage', original);
+      });
+
+      it('still claims, without failing, when merely reading sessionStorage throws (fix round 1, finding 6)', async () => {
+        Object.defineProperty(globalThis, 'sessionStorage', {
+          configurable: true,
+          get() {
+            throw new DOMException('blocked', 'SecurityError');
+          },
+        });
+        const { client } = harness(() =>
+          json(200, {
+            lock: {
+              holder: { id: ADA, name: 'Ada' },
+              expectedRelease: 't',
+              yours: true,
+              session: SESSION,
+            },
+          }),
+        );
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        const result = await service.claim(false, true);
+        expect(result).toEqual({ ok: true });
+      });
     });
 
     it('maps a lock_held refusal, computing yours from the principal (task 10, finding A)', async () => {

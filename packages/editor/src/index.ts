@@ -8,5 +8,6 @@ export {
   type EditorStateOptions,
 } from './state.js';
 export { mountEditor, type MountOptions } from './view.js';
+export { Selection } from 'prosemirror-state';
 export type { EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';

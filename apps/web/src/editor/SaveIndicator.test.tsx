@@ -19,4 +19,10 @@ describe('the save indicator', () => {
     render(<SaveIndicator save="saved" savedAt={null} formatTime={at} />);
     expect(screen.getByText('No unsaved changes')).toBeInTheDocument();
   });
+
+  it('says plainly that nothing is saved and nothing is retrying, distinct from failing (fix round 1 finding 3)', () => {
+    render(<SaveIndicator save="stopped" savedAt={1_000} formatTime={at} />);
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    expect(screen.queryByText('Not saved, retrying')).toBeNull();
+  });
 });

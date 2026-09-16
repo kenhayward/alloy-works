@@ -110,6 +110,34 @@ describe('block identity in the editor', () => {
   });
 });
 
+describe('the state a fresh history starts from', () => {
+  it('carries the given selection over, rather than always starting at the beginning (fix round 1, minor)', () => {
+    const opened = toEditor({
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    });
+    if (!opened.editable) throw new Error('expected an editable document');
+    const selection = Selection.near(opened.doc.resolve(6));
+    const state = createEditorState({ doc: opened.doc, newIdentifier: counter(), selection });
+    expect(state.selection.from).toBe(selection.from);
+  });
+
+  it("starts at the document's own default selection when none is given", () => {
+    const state = stateOf([['b1', 'Unbox the printer.']]);
+    expect(state.selection.from).toBe(Selection.atStart(state.doc).from);
+  });
+});
+
 describe('what the editor always holds', () => {
   it('leaves one empty, identified paragraph when everything is deleted', () => {
     const state = stateOf([

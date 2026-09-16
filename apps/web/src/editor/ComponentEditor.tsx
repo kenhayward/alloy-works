@@ -7,6 +7,7 @@ import {
   newBlockIdentifier,
   toEditor,
   type EditorView,
+  type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import { useEffect, useRef, useState } from 'react';
@@ -77,6 +78,23 @@ export function ComponentEditor({
   const [notice, setNotice] = useState<string | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
+  // A stale GET-time lock is only true until this session has claimed or released it itself (fix
+  // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
+  // shown again for the life of this session.
+  const staleLockKnown = useRef(false);
+
+  // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
+  // not memoise its callback, or recreates its timing object, must not tear the session down and
+  // rebuild the surface from the original content on every render. Read fresh at the moment the effect
+  // below actually runs - which is exactly once per (component, client, principal) - never stale.
+  const timingRef = useRef(timing);
+  timingRef.current = timing;
+  const clockRef = useRef(clock);
+  clockRef.current = clock;
+  const onViewRef = useRef(onView);
+  onViewRef.current = onView;
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
 
   useEffect(() => {
     let current = true;
@@ -115,8 +133,13 @@ export function ComponentEditor({
     if (!component || !place.current) return undefined;
     const opened = toEditor(parseContentDocument(component.content));
     if (!opened.editable) return undefined;
-    const fresh = (doc = opened.doc) =>
-      createEditorState({ doc, newIdentifier: newBlockIdentifier });
+    staleLockKnown.current = false;
+    const fresh = (doc = opened.doc, selection?: Selection) =>
+      createEditorState({
+        doc,
+        newIdentifier: newBlockIdentifier,
+        ...(selection ? { selection } : {}),
+      });
     let base = opened.doc;
     let phase: SessionView['phase'] = 'reading';
     // Which id this page starts with (task 10, finding C): kept only if this component's lock, as the
@@ -124,34 +147,46 @@ export function ComponentEditor({
     // holding keeps its lock, while reopening after Done editing (nothing holds it any longer) starts
     // a fresh session at sequence 0, never a false "newer text" notice from reusing a stale one.
     const initialSession =
-      sessionId ??
+      sessionIdRef.current ??
       editingSessionFor(
         component.id,
         (stored) => component.lock?.yours === true && component.lock.session === stored,
       );
     const editing = createSession({
       service: sessionService(client, component.id, initialSession, principalId),
-      clock,
-      timing,
+      clock: clockRef.current,
+      timing: timingRef.current,
       version: { id: component.version.id, number: component.version.number },
       snapshot: () => fromEditor(view.state.doc),
       onChange: (next) => {
         phase = next.phase;
         setSession(next);
         if (next.notice) setNotice(next.notice);
+        if (next.phase !== 'reading') staleLockKnown.current = true;
         if (next.phase === 'lost') setKept(textOf(view));
+        // The kept text is only good until the next successful claim puts this session back in
+        // control (fix round 1, finding 2): from then on it is stale, not something still worth
+        // offering back.
+        if (next.phase === 'editing') setKept(null);
         view.setProps({});
       },
       onRefused: () => {
         // The held changes are not applied: the surface goes back to the version, and what was typed
-        // is offered as text, the one thing that can be kept without writing to the component.
-        setKept(textOf(view));
+        // is offered as text, the one thing that can be kept without writing to the component. A
+        // second refusal appends rather than replaces (fix round 1, finding 2): the surface was put
+        // back to `base` after the first one, so what it holds now is only what was typed since -
+        // discarding the earlier kept text here would lose it for good.
+        const now = textOf(view);
+        setKept((previous) => (previous ? `${previous}\n\n${now}` : now));
         view.updateState(fresh(base));
       },
       onVersion: () => {
-        // Undo must not reach past a version (CNT-103): a fresh state has a fresh history.
+        // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
+        // version changes nothing about the document itself, though, so the selection is carried over
+        // rather than jumping back to the start (fix round 1, minor).
+        const { selection } = view.state;
         base = view.state.doc;
-        view.updateState(fresh(base));
+        view.updateState(fresh(base, selection));
       },
     });
     controls.current = editing;
@@ -164,19 +199,33 @@ export function ComponentEditor({
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
         if (transaction.docChanged) {
-          setKept(null);
           editing.changed();
         }
       },
       refused: () => setNotice('Pasting is not available yet. Type the text instead.'),
     });
-    onView?.(view);
+    onViewRef.current?.(view);
     return () => {
       editing.dispose();
       controls.current = null;
       view.destroy();
     };
-  }, [component, client, clock, timing, sessionId, principalId, onView]);
+  }, [component, client, principalId]);
+
+  // While there is something the service has not acknowledged, an unmount already flushes it best
+  // effort (Session.dispose) but a page close does not run that cleanup at all - so a close is
+  // guarded for as long as anything is dirty or being sent (fix round 1, finding 4), and the guard
+  // comes off the moment that stops being true.
+  useEffect(() => {
+    if (!session) return undefined;
+    if (!(session.dirty || session.save === 'saving')) return undefined;
+    const warnBeforeClose = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeClose);
+    return () => window.removeEventListener('beforeunload', warnBeforeClose);
+  }, [session]);
 
   if (loaded.state === 'loading') return <p>Opening...</p>;
   if (loaded.state === 'missing') {
@@ -184,7 +233,10 @@ export function ComponentEditor({
   }
   const { component: shown } = loaded;
   const title = (shown.content as { title?: unknown }).title;
-  const lock = shown.lock;
+  // Once this session has claimed or released the lock itself, the GET-time snapshot no longer
+  // reflects who holds it (fix round 1, minor) - so it is never consulted again, rather than
+  // reappearing as a stale "someone else is editing" once phase later returns to `reading`.
+  const lock = staleLockKnown.current ? null : shown.lock;
   const held = session?.holder ?? null;
   const phase = session?.phase ?? 'reading';
 
@@ -218,6 +270,11 @@ export function ComponentEditor({
           {held && !held.yours && (
             <button type="button" onClick={() => controls.current?.claimAgain(false)}>
               Try again
+            </button>
+          )}
+          {phase === 'lost' && session?.recoverable && (
+            <button type="button" onClick={() => controls.current?.claimAgain(true)}>
+              Continue
             </button>
           )}
           {shown.mayEdit && (
