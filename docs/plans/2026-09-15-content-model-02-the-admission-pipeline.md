@@ -363,15 +363,15 @@ content-model.md claims CNT-060 to CNT-065, CNT-127, CNT-130 to CNT-135 and CNT-
 
 | ID      | Statement, in short                                                                                   | Cited in                           | Tasks |
 | ------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------- | ----- |
-| CNT-134 | Earlier schema versions migrated before entry, or refused with a named error; never stored unmigrated | `migrate.test.ts`, `admit.test.ts` | 5, 8  |
-| CNT-056 | Text normalised to one Unicode form on ingest                                                         | `admit.test.ts`                    | 8     |
-| CNT-064 | Nothing discarded may be absent from the report; tests assert what was dropped and what survived      | `admit.test.ts`                    | 8     |
-| CNT-065 | Pasted content never carries typeface, size or colour into the model                                  | `admit.test.ts`                    | 8     |
-| CNT-127 | A target whose scheme is not allowlisted is refused on entry and never stored                         | `admit.test.ts`                    | 8     |
-| CNT-131 | A link dropped or rewritten on paste is named individually, with the target it had                    | `admit.test.ts`                    | 8     |
-| CNT-132 | Copied content re-identified on paste: every block a new identifier, unique in the receiver           | `clipboard.test.ts`                | 9     |
-| CNT-133 | A comment anchor or suggestion pasted into another component is dropped and named                     | `clipboard.test.ts`                | 9     |
-| CNT-135 | A copy within the product reported to the same standard as a foreign paste                            | `clipboard.test.ts`                | 9     |
+| CNT-134 | Earlier schema versions migrated before entry, or refused with a named error; never stored unmigrated | `migrate.test.ts`, `admit.test.ts` | 6, 9  |
+| CNT-056 | Text normalised to one Unicode form on ingest                                                         | `admit.test.ts`                    | 9     |
+| CNT-064 | Nothing discarded may be absent from the report; tests assert what was dropped and what survived      | `admit.test.ts`                    | 9     |
+| CNT-065 | Pasted content never carries typeface, size or colour into the model                                  | `admit.test.ts`                    | 9     |
+| CNT-127 | A target whose scheme is not allowlisted is refused on entry and never stored                         | `admit.test.ts`                    | 9     |
+| CNT-131 | A link dropped or rewritten on paste is named individually, with the target it had                    | `admit.test.ts`                    | 9     |
+| CNT-132 | Copied content re-identified on paste: every block a new identifier, unique in the receiver           | `clipboard.test.ts`                | 10    |
+| CNT-133 | A comment anchor or suggestion pasted into another component is dropped and named                     | `clipboard.test.ts`                | 10    |
+| CNT-135 | A copy within the product reported to the same standard as a foreign paste                            | `clipboard.test.ts`                | 10    |
 
 That is ten citations in three files, taking the pin from 112 to 122: 113 after task 6, 119 after task 9,
 122 after task 10. CNT-056 and CNT-127 are already `Covered` by the model's tests; the other seven move from
