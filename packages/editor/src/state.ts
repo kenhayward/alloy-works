@@ -1,0 +1,66 @@
+import { baseKeymap, splitBlock } from 'prosemirror-commands';
+import { history, redo, undo } from 'prosemirror-history';
+import { keymap } from 'prosemirror-keymap';
+import type { Node } from 'prosemirror-model';
+import { EditorState, Plugin, type Command } from 'prosemirror-state';
+
+import { identityPlugin } from './identity.js';
+
+const isEmptyParagraph = (node: Node | null | undefined) =>
+  node?.type.name === 'paragraph' && node.content.size === 0;
+
+/**
+ * CNT-023's invariant, held on every transaction: the second of two adjacent empty paragraphs is
+ * removed, however the pair arose - a join, a deletion, an undo (component-editor.md, "Invariants the
+ * editor holds"). The document keeps at least one paragraph because its content is `paragraph+`.
+ */
+export function noAdjacentEmptyParagraphs(): Plugin {
+  return new Plugin({
+    appendTransaction(transactions, _oldState, newState) {
+      if (!transactions.some((transaction) => transaction.docChanged)) return null;
+      const removals: [number, number][] = [];
+      let previous: Node | null = null;
+      newState.doc.forEach((node, offset) => {
+        if (isEmptyParagraph(previous) && isEmptyParagraph(node)) {
+          removals.push([offset, offset + node.nodeSize]);
+        }
+        previous = node;
+      });
+      if (removals.length === 0) return null;
+      const tr = newState.tr;
+      for (const [from, to] of removals.reverse()) tr.delete(from, to);
+      return tr;
+    },
+  });
+}
+
+/** `Enter`: nothing in an empty paragraph, which would otherwise make a second; a split elsewhere. */
+export const enterWithoutEmpties: Command = (state, dispatch) => {
+  const { $from, empty } = state.selection;
+  if (empty && isEmptyParagraph($from.parent)) return true;
+  return splitBlock(state, dispatch);
+};
+
+export interface EditorStateOptions {
+  readonly doc: Node;
+  /** Where new block identifiers come from; `newBlockIdentifier` outside tests. */
+  readonly newIdentifier: () => string;
+}
+
+/**
+ * The state one component's view holds: its own history (CNT-069 scopes undo to the component, which
+ * is why ADR-0023 gives each component its own view), the keymap, and the two plugins that keep what the
+ * editor holds storable.
+ */
+export function createEditorState(options: EditorStateOptions): EditorState {
+  return EditorState.create({
+    doc: options.doc,
+    plugins: [
+      history(),
+      keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo, Enter: enterWithoutEmpties }),
+      keymap(baseKeymap),
+      identityPlugin(options.newIdentifier),
+      noAdjacentEmptyParagraphs(),
+    ],
+  });
+}

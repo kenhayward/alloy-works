@@ -1,0 +1,17 @@
+/*
+ * What a ProseMirror surface needs from CSS, as prosemirror-view's own stylesheet says: without
+ * `white-space: pre-wrap` a browser collapses the spaces an author types, and the view warns.
+ */
+.ProseMirror {
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0;
+}
+
+.ProseMirror:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
