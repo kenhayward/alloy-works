@@ -1,0 +1,242 @@
+import { describe, expect, it } from 'vitest';
+
+import type { ContentDocument } from '../model/document.js';
+
+import { reidentify, type Receiver } from './reidentify.js';
+import { createReport } from './report.js';
+
+const document: ContentDocument = {
+  schemaVersion: 1,
+  title: 'Site visits',
+  language: 'en-GB',
+  direction: 'ltr',
+  content: [
+    {
+      type: 'paragraph',
+      id: 'n1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Leeds', marks: [{ type: 'strong', id: 'n2' }] }],
+    },
+  ],
+};
+
+/** Hands out n1, n2, n3... in order, so a test can see which identifiers were drawn again. */
+const counter = (): (() => string) => {
+  let next = 0;
+  return () => `n${(next += 1)}`;
+};
+
+const receiver = (overrides: Partial<Receiver> = {}): Receiver => ({
+  document,
+  conditionAxes: [],
+  newIdentifier: counter(),
+  ...overrides,
+});
+
+const text = (value: string, marks: unknown[] = []) => ({ type: 'text', value, marks });
+const paragraph = (id: string | undefined, content: unknown[]) => ({
+  type: 'paragraph',
+  ...(id === undefined ? {} : { id }),
+  style: 'body',
+  content,
+});
+
+const run = (candidate: Record<string, unknown>, to: Receiver = receiver()) => {
+  const report = createReport();
+  const outcome = reidentify(candidate, to, report);
+  return { outcome, entries: report.entries.map(({ message: _, ...entry }) => entry) };
+};
+
+describe('the re-identify stage', () => {
+  it('gives every block a new identifier, skipping those the receiving component holds', () => {
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [paragraph('n1', [text('Copied')]), paragraph(undefined, [text('Foreign')])],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [paragraph('n3', [text('Copied')]), paragraph('n4', [text('Foreign')])],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+    ]);
+  });
+
+  it('reaches blocks inside lists, tables, quotations and footnotes', () => {
+    const { outcome } = run({
+      schemaVersion: 1,
+      content: [
+        {
+          type: 'list',
+          id: 'old-list',
+          kind: 'unordered',
+          items: [{ content: [paragraph('old-item', [text('Item')])] }],
+        },
+        {
+          type: 'table',
+          id: 'old-table',
+          caption: 'Sites',
+          headerRows: 0,
+          headerColumns: 0,
+          note: [text('Note')],
+          rows: [
+            {
+              cells: [{ content: [paragraph('old-cell', [text('York')])], colspan: 1, rowspan: 1 }],
+            },
+          ],
+        },
+        {
+          type: 'blockquote',
+          id: 'old-quote',
+          content: [
+            paragraph('old-quoted', [
+              {
+                type: 'footnote',
+                id: 'old-note',
+                anchor: { kind: 'span' },
+                content: [paragraph('old-note-paragraph', [text('Source')])],
+              },
+            ]),
+          ],
+          attribution: [text('Ada')],
+        },
+      ],
+    });
+    const ids: string[] = [];
+    const collect = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(collect);
+      if (typeof value !== 'object' || value === null) return;
+      const record = value as Record<string, unknown>;
+      if (typeof record.id === 'string') ids.push(record.id);
+      Object.values(record).forEach(collect);
+    };
+    collect(outcome.ok ? outcome.value : undefined);
+    expect(ids).toEqual(['n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10']);
+  });
+
+  it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('b', [
+          text('One ', [
+            { type: 'emphasis', id: 'm1' },
+            { type: 'language', id: 'm2', tag: 'fr-FR' },
+          ]),
+          text('two', [{ type: 'emphasis', id: 'm1' }]),
+          text('three', [{ type: 'strong' }]),
+        ]),
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('One ', [
+              { type: 'emphasis', id: 'n4' },
+              { type: 'language', id: 'n5', tag: 'fr-FR' },
+            ]),
+            text('two', [{ type: 'emphasis', id: 'n4' }]),
+            text('three', [{ type: 'strong', id: 'n6' }]),
+          ]),
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 3 },
+    ]);
+  });
+
+  it('does not merge two marks of different types that arrive with one identifier', () => {
+    const { outcome } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('b', [
+          text('x', [
+            { type: 'emphasis', id: 'same' },
+            { type: 'strong', id: 'same' },
+          ]),
+        ]),
+      ],
+    });
+    expect(outcome.ok && outcome.value.content).toEqual([
+      paragraph('n3', [
+        text('x', [
+          { type: 'emphasis', id: 'n4' },
+          { type: 'strong', id: 'n5' },
+        ]),
+      ]),
+    ]);
+  });
+
+  it('drops comments and suggestions, one entry for each annotation however many runs it covers', () => {
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('b', [
+          text('Kept ', [{ type: 'comment', id: 'c1', threadId: 't1' }]),
+          text('text', [
+            { type: 'comment', id: 'c1', threadId: 't1' },
+            { type: 'suggestion', id: 's1', operation: 'delete', author: 'Grace' },
+          ]),
+        ]),
+      ],
+    });
+    expect(outcome.ok && outcome.value.content).toEqual([
+      paragraph('n3', [text('Kept ', []), text('text', [])]),
+    ]);
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'discarded', subject: 'comment' },
+      { stage: 'reidentify', action: 'discarded', subject: 'suggestion' },
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
+    ]);
+  });
+
+  it('drops a condition whose axis the space lacks, and keeps one whose axis it has', () => {
+    const { outcome, entries } = run(
+      {
+        schemaVersion: 1,
+        content: [
+          paragraph('b', [
+            text('UK only', [
+              { type: 'condition', id: 'k1', axis: 'jurisdiction', values: ['uk'] },
+            ]),
+            text('Vets only', [
+              { type: 'condition', id: 'k2', axis: 'audience', values: ['vets'] },
+            ]),
+          ]),
+        ],
+      },
+      receiver({ conditionAxes: ['audience'] }),
+    );
+    expect(outcome.ok && outcome.value.content).toEqual([
+      paragraph('n3', [
+        text('UK only', []),
+        text('Vets only', [{ type: 'condition', id: 'n4', axis: 'audience', values: ['vets'] }]),
+      ]),
+    ]);
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'discarded', subject: 'condition', detail: 'jurisdiction' },
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 1 },
+    ]);
+  });
+
+  it('refuses when the allocator keeps returning identifiers already used', () => {
+    const { outcome, entries } = run(
+      { schemaVersion: 1, content: [paragraph('b', [text('x')])] },
+      receiver({ newIdentifier: () => 'n1' }),
+    );
+    expect(outcome).toEqual({
+      ok: false,
+      failure: '8 identifiers in a row were empty or already used in the receiving component',
+    });
+    expect(entries).toEqual([{ stage: 'reidentify', action: 'refused', subject: 'identifiers' }]);
+  });
+});
