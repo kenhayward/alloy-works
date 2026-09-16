@@ -110,7 +110,8 @@ function visit(
       continue;
     }
     if (key === 'presentation') {
-      members.push([key, withoutExecutableStyle(member, report)]);
+      const cleaned = withoutExecutableStyle(member, report);
+      if (cleaned !== REMOVE) members.push([key, cleaned]);
       continue;
     }
     const next = visit(member, report, tally);
@@ -124,34 +125,107 @@ function visit(
  * style that runs code cannot be stored whether or not this finds it. This exists so the report says
  * what it was: a script dressed as formatting is a script, and reporting it as a lost typeface would
  * tell the author nothing happened.
+ *
+ * `presentation` is meant to be a flat record of strings, but nothing upstream of this stage
+ * enforces that shape - it is untrusted, exactly like everything else the reader handed over. A
+ * property's own value is searched wherever it hides a string, not just at `String(value)`, so a
+ * nested object cannot hide an attack behind `[object Object]`. When `presentation` itself is not
+ * that flat record - a bare string, an array, anything else - there is no property name to blame it
+ * on, so the whole member is removed if it hides an attack anywhere, with the offending text itself
+ * as `detail`.
  */
 function withoutExecutableStyle(presentation: unknown, report: ReportCollector): unknown {
-  if (typeof presentation !== 'object' || presentation === null || Array.isArray(presentation)) {
-    return presentation;
+  if (typeof presentation === 'object' && presentation !== null && !Array.isArray(presentation)) {
+    return Object.fromEntries(
+      Object.entries(presentation).filter(([property, value]) => {
+        if (!hasExecutableStyle(property, value)) return true;
+        report.add('sanitise', 'discarded', 'executableStyle', { detail: property });
+        return false;
+      }),
+    );
   }
-  return Object.fromEntries(
-    Object.entries(presentation).filter(([property, value]) => {
-      if (!EXECUTABLE_STYLE.test(decodeCss(`${property}:${String(value)}`))) return true;
-      report.add('sanitise', 'discarded', 'executableStyle', { detail: property });
-      return false;
-    }),
-  );
+  const offending = findExecutableStyle(presentation);
+  if (offending === undefined) return presentation;
+  report.add('sanitise', 'discarded', 'executableStyle', { detail: offending });
+  return REMOVE;
 }
 
-/** CSS comments removed and escapes decoded, so a property reads as a browser would run it. */
+/**
+ * Every string reachable inside a value, gathered depth-first. Bounded by the same assumption the
+ * rest of this module's walk relies on: `exceedsLimits` has already run over the whole candidate
+ * before sanitise sees any of it (decision 6), so nothing here meets a depth nobody sized.
+ */
+function collectStrings(value: unknown, into: string[]): void {
+  if (typeof value === 'string') {
+    into.push(value);
+  } else if (Array.isArray(value)) {
+    for (const member of value) collectStrings(member, into);
+  } else if (typeof value === 'object' && value !== null) {
+    for (const member of Object.values(value)) collectStrings(member, into);
+  }
+}
+
+/**
+ * Whether a presentation property's value - however deeply it is nested - holds a string that would
+ * run code or fetch a resource. Each string found is joined to the property name before matching, so
+ * a property literally named `behavior` is still caught the way a flat `{ behavior: 'url(...)' }`
+ * always was.
+ */
+function hasExecutableStyle(property: string, value: unknown): boolean {
+  const strings: string[] = [];
+  collectStrings(value, strings);
+  return strings.some((text) => EXECUTABLE_STYLE.test(decodeCss(`${property}:${text}`)));
+}
+
+/**
+ * The first string reachable inside a value that would run code or fetch a resource, for a
+ * `presentation` that is not a record of properties - so there is no property name to join it to.
+ */
+function findExecutableStyle(value: unknown): string | undefined {
+  const strings: string[] = [];
+  collectStrings(value, strings);
+  return strings.find((text) => EXECUTABLE_STYLE.test(decodeCss(text)));
+}
+
+/**
+ * CSS comments removed and escapes decoded, so a property reads as a browser would run it. A
+ * `/* ... *\/` inside a quoted string is not a comment - a browser keeps it as text - so this tracks
+ * whether it is reading inside a single- or double-quoted string, honouring a backslash escape, and
+ * only treats `/*` as a comment opening outside one. Failing to recognise a real quoted string only
+ * leaves more text for the caller to match against, never less: it cannot hide an attack, only flag
+ * something extra.
+ */
 function decodeCss(value: string): string {
   let withoutComments = '';
   let index = 0;
-  for (;;) {
-    const open = value.indexOf('/*', index);
-    if (open === -1) {
-      withoutComments += value.slice(index);
-      break;
+  let quote: '"' | "'" | undefined;
+  while (index < value.length) {
+    const character = value[index]!;
+    if (quote !== undefined) {
+      if (character === '\\' && index + 1 < value.length) {
+        withoutComments += character + value[index + 1];
+        index += 2;
+        continue;
+      }
+      withoutComments += character;
+      if (character === quote) quote = undefined;
+      index += 1;
+      continue;
     }
-    withoutComments += value.slice(index, open);
-    const close = value.indexOf('*/', open + 2);
-    if (close === -1) break;
-    index = close + 2;
+    if (character === '"' || character === "'") {
+      quote = character;
+      withoutComments += character;
+      index += 1;
+      continue;
+    }
+    if (character === '/' && value[index + 1] === '*') {
+      const close = value.indexOf('*/', index + 2);
+      if (close === -1) break;
+      index = close + 2;
+      continue;
+    }
+    withoutComments += character;
+    index += 1;
   }
   return withoutComments
     .replace(/\\([0-9a-fA-F]{1,6})[ \t\n\r\f]?/g, (_, hex: string) => {

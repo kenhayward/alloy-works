@@ -105,9 +105,10 @@ describe('the sanitise stage', () => {
       'http://example.test/a?b=c#d',
       'mailto:ada@example.test',
     ]) {
-      expect(
-        run(candidate([paragraph([text('x', [{ type: 'hyperlink', href }])])])).entries,
-      ).toEqual([]);
+      const value = candidate([paragraph([text('x', [{ type: 'hyperlink', href }])])]);
+      const { output, entries } = run(value);
+      expect(output).toEqual(value);
+      expect(entries).toEqual([]);
     }
   });
 
@@ -160,6 +161,65 @@ describe('the sanitise stage', () => {
     ]);
   });
 
+  it('keeps quoted comment markers as text, so a hidden expression cannot escape detection', () => {
+    const { output, entries } = run(
+      candidate([
+        paragraph([text('x')], {
+          presentation: { width: '"/*" expression(alert(1)) "*/"' },
+        }),
+      ]),
+    );
+    expect(output).toEqual(candidate([paragraph([text('x')], { presentation: {} })]));
+    expect(entries).toEqual([
+      { stage: 'sanitise', action: 'discarded', subject: 'executableStyle', detail: 'width' },
+    ]);
+  });
+
+  it('finds a hostile target hidden behind quoted comment markers', () => {
+    const { output, entries } = run(
+      candidate([
+        paragraph([text('x')], {
+          presentation: { background: '"/*" url(javascript:alert(1)) "*/"' },
+        }),
+      ]),
+    );
+    expect(output).toEqual(candidate([paragraph([text('x')], { presentation: {} })]));
+    expect(entries).toEqual([
+      { stage: 'sanitise', action: 'discarded', subject: 'executableStyle', detail: 'background' },
+    ]);
+  });
+
+  it('removes a presentation that is a bare string carrying an expression, not just a record of properties', () => {
+    const { output, entries } = run(
+      candidate([paragraph([text('x')], { presentation: 'expression(alert(1))' })]),
+    );
+    expect(output).toEqual(candidate([paragraph([text('x')])]));
+    expect(entries).toEqual([
+      {
+        stage: 'sanitise',
+        action: 'discarded',
+        subject: 'executableStyle',
+        detail: 'expression(alert(1))',
+      },
+    ]);
+  });
+
+  it('finds an expression nested inside a presentation propertys own value, not only at the top level', () => {
+    const { output, entries } = run(
+      candidate([
+        paragraph([text('x')], {
+          presentation: { typeface: 'Leeds Sans', border: { style: 'expression(alert(1))' } },
+        }),
+      ]),
+    );
+    expect(output).toEqual(
+      candidate([paragraph([text('x')], { presentation: { typeface: 'Leeds Sans' } })]),
+    );
+    expect(entries).toEqual([
+      { stage: 'sanitise', action: 'discarded', subject: 'executableStyle', detail: 'border' },
+    ]);
+  });
+
   it('sanitises an equation, reporting each thing removed and the rewrite once', () => {
     const { output, entries } = run(
       candidate([
@@ -209,16 +269,36 @@ describe('the sanitise stage', () => {
     ]);
   });
 
+  it('keeps an own __proto__ member as a data property, leaving the objects prototype alone', () => {
+    const arrived = JSON.parse(
+      '{"schemaVersion":1,"content":[{"type":"paragraph","content":[],"__proto__":{"polluted":true}}]}',
+    ) as unknown;
+    const { output, entries } = run(arrived);
+    const node = (output as { content: unknown[] }).content[0] as Record<string, unknown>;
+    expect(Object.getPrototypeOf(node)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(node, '__proto__')).toBe(true);
+    expect(node['__proto__']).toEqual({ polluted: true });
+    expect(entries).toEqual([]);
+  });
+
   it('leaves the reader output it was given untouched', () => {
     const arrived = candidate([
       paragraph([text('x', [{ type: 'hyperlink', href: 'javascript:alert(1)' }])], {
         handlers: ['onclick'],
       }),
+      paragraph([text('y', [{ type: 'hyperlink', href: 'https://example.test/\tpath\n' }])]),
+      { type: 'equation', mathml: '<math><mi onclick="alert(1)">z</mi></math>' },
     ]);
     const copy = structuredClone(arrived);
     const { output, entries } = run(arrived);
     expect(arrived).toEqual(copy);
-    expect(output).toEqual(candidate([paragraph([text('x', [])])]));
+    expect(output).toEqual(
+      candidate([
+        paragraph([text('x', [])]),
+        paragraph([text('y', [{ type: 'hyperlink', href: 'https://example.test/path' }])]),
+        { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>z</mi></math>` },
+      ]),
+    );
     expect(entries).toEqual([
       {
         stage: 'sanitise',
@@ -227,6 +307,14 @@ describe('the sanitise stage', () => {
         detail: 'javascript:alert(1)',
       },
       { stage: 'sanitise', action: 'discarded', subject: 'eventHandler', detail: 'onclick' },
+      {
+        stage: 'sanitise',
+        action: 'rewritten',
+        subject: 'hyperlink',
+        detail: 'https://example.test/\tpath\n',
+      },
+      { stage: 'sanitise', action: 'discarded', subject: 'eventHandler', detail: 'onclick' },
+      { stage: 'sanitise', action: 'rewritten', subject: 'equation', count: 1 },
     ]);
   });
 });
