@@ -73,7 +73,10 @@ export const componentRoutes = {
     query: ComponentListQuery,
     responses: {
       200: { description: 'A page of components', schema: ComponentList },
-      400: { description: 'A cursor this listing did not give out', schema: ErrorBody },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
     },
   },

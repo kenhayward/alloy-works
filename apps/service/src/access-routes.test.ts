@@ -1,8 +1,10 @@
 // apps/service/src/access-routes.test.ts
+import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createArtifact,
   createRole,
   createSpace,
   createTenant,
@@ -15,6 +17,11 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  definitionsFor,
+  type ComponentTypeDefinition,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -95,15 +102,47 @@ describe('routes that check a permission', () => {
     await tenantDb.withTenant(tenant, async (trx) => {
       clinical = (await createSpace(trx, 'Clinical')).id;
       quality = (await createSpace(trx, 'Quality')).id;
-      const artifact = (spaceId: string) =>
-        trx
-          .insertInto('artifact')
-          .values({ kind: 'component', space_id: spaceId })
-          .returning('id')
-          .executeTakeFirstOrThrow()
-          .then((row) => row.id);
-      dosing = await artifact(clinical);
-      audit = await artifact(quality);
+      // A real version each, not a bare artifact row: a route that opens one (getComponent) must
+      // have something to find, so its refusal proves the permission held rather than just that
+      // nothing was there to read.
+      const type: ComponentTypeDefinition = {
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        id: randomUUID(),
+        name: 'Topic',
+        assignments: [],
+      };
+      const madeType = await createArtifact(trx, {
+        author: ids.ada!,
+        substance: { kind: 'componentType', content: type },
+      });
+      const content = (title: string) => ({
+        schemaVersion: 1,
+        title,
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'p1',
+            style: 'body',
+            content: [{ type: 'text', value: title, marks: [] }],
+          },
+        ],
+      });
+      const artifact = (spaceId: string, title: string) =>
+        createArtifact(trx, {
+          author: ids.ada!,
+          spaceId,
+          substance: {
+            kind: 'component',
+            content: content(title) as never,
+            values: {},
+            notCarried: [],
+            definitions: definitionsFor({ version: madeType.id, definition: type }, [], []),
+          },
+        }).then((made) => made.artifactId);
+      dosing = await artifact(clinical, 'Dosing');
+      audit = await artifact(quality, 'Audit');
     });
     await give({
       role: 'Administrator',

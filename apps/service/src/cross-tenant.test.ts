@@ -1,8 +1,10 @@
 // apps/service/src/cross-tenant.test.ts
+import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createArtifact,
   createTenant,
   createTenantDatabase,
   findRole,
@@ -12,6 +14,11 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  definitionsFor,
+  type ComponentTypeDefinition,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -56,7 +63,24 @@ const OTHER_TENANT_IDS: Readonly<
   getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
 };
 
-/** A component in environment B's General space. */
+const CONTENT = {
+  schemaVersion: 1,
+  title: 'Audit the fleet',
+  language: 'en-GB',
+  direction: 'ltr',
+  content: [
+    {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Audit the fleet.', marks: [] }],
+    },
+  ],
+};
+
+/** A component in environment B's General space, complete with a version, so a route that opens
+ * one has something to actually find - never a bare artifact row a missing-version 404 would
+ * satisfy whether or not the tenant boundary held. */
 const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx
@@ -64,12 +88,38 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .select('id')
       .where('name', '=', 'General')
       .executeTakeFirstOrThrow();
-    const artifact = await trx
-      .insertInto('artifact')
-      .values({ kind: 'component', space_id: general.id })
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
-    return artifact.id;
+    const type: ComponentTypeDefinition = {
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      id: randomUUID(),
+      name: 'Topic',
+      assignments: [],
+    };
+    const madeType = await createArtifact(trx, {
+      author: author.id,
+      substance: { kind: 'componentType', content: type },
+    });
+    const made = await createArtifact(trx, {
+      author: author.id,
+      spaceId: general.id,
+      substance: {
+        kind: 'component',
+        content: CONTENT as never,
+        values: {},
+        notCarried: [],
+        definitions: definitionsFor({ version: madeType.id, definition: type }, [], []),
+      },
+    });
+    return made.artifactId;
   });
 
 /** The same, as a query's target names it. */
@@ -239,6 +289,19 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       expect(response.statusCode).toBe(404);
     },
   );
+
+  it('opens a component in another environment exactly as one that does not exist, never its content', async () => {
+    const route = withParameters.find((each) => each.operationId === 'getComponent')!;
+    const response = await app.inject({
+      method: route.method,
+      url: fill(route.path, othersIds.getComponent ?? {}),
+      headers: { host: A, cookie: fromA },
+    });
+    expect(response.statusCode).toBe(404);
+    const body = response.json<Record<string, unknown>>();
+    expect(body).toMatchObject({ code: 'not_found' });
+    expect(body).not.toHaveProperty('content');
+  });
 
   it('knows how to address the other environment for every route whose target is in its query', () => {
     expect(withQueryTargets.length).toBeGreaterThan(0);

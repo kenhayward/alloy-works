@@ -586,7 +586,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description A cursor this listing did not give out */
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
                     [name: string]: unknown;

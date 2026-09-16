@@ -1,6 +1,8 @@
 // apps/service/src/component-routes.test.ts
+import { randomUUID } from 'node:crypto';
 import {
   bootstrapCluster,
+  claimLock,
   configureOrganisationSignIn,
   createArtifact,
   createSpace,
@@ -11,6 +13,7 @@ import {
   latestVersion,
   migrate,
   seedDevelopmentContent,
+  TOPIC_TYPE_ID,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -225,6 +228,53 @@ describe('finding and opening components through the service', () => {
       const untraced = (body: Json) =>
         Object.fromEntries(Object.entries(body).filter(([member]) => member !== 'traceId'));
       expect(untraced(unreadable.json())).toEqual(untraced(missing.json()));
+    });
+
+    it('answers a definition, not a component, at this address exactly as a missing component', async () => {
+      const asDefinition = await call('ada', 'GET', `/v1/components/${TOPIC_TYPE_ID}`);
+      const missing = await call('ada', 'GET', `/v1/components/${MISSING}`);
+      expect(asDefinition.statusCode).toBe(404);
+      const untraced = (body: Json) =>
+        Object.fromEntries(Object.entries(body).filter(([member]) => member !== 'traceId'));
+      expect(untraced(asDefinition.json())).toEqual(untraced(missing.json()));
+    });
+
+    it('refuses a limit outside 1 to 100, and one that is not a number, with 400 invalid_request', async () => {
+      for (const limit of ['0', '101', 'abc']) {
+        const response = await call('ada', 'GET', `/v1/components?limit=${limit}`);
+        expect(response.statusCode, `limit=${limit}`).toBe(400);
+        expect(response.json()).toMatchObject({ code: 'invalid_request' });
+      }
+    });
+
+    it('refuses a cursor sent twice, with 400 invalid_request', async () => {
+      const response = await call('ada', 'GET', '/v1/components?cursor=a&cursor=b');
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toMatchObject({ code: 'invalid_request' });
+    });
+
+    it('shows a lock it holds to its own principal, and only that its principal holds it to another', async () => {
+      const made = await component();
+      const session = randomUUID();
+      await tenantDb.withTenant(tenant, (trx) =>
+        claimLock(trx, { artifactId: made.id, principal: ids.ada!, session }),
+      );
+      const holder = await call('ada', 'GET', `/v1/components/${made.id}`);
+      expect(holder.json()).toMatchObject({
+        lock: {
+          holder: { id: ids.ada },
+          yours: true,
+          session,
+        },
+      });
+      const other = await call('grace', 'GET', `/v1/components/${made.id}`);
+      expect(other.json()).toMatchObject({
+        lock: {
+          holder: { id: ids.ada },
+          yours: false,
+          session: null,
+        },
+      });
     });
   });
 });
