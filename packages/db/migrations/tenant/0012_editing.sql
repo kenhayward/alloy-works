@@ -50,7 +50,6 @@ create table iteration (
   constraint iteration_values_shape check (jsonb_typeof(metadata_values) = 'object'),
   constraint iteration_expires_after_creation check (expires_at > created_at)
 );
-create index iteration_session on iteration (artifact_id, session_id, sequence desc);
 
 -- VER-001 is a grant: the runtime role inserts and reads iterations and does nothing else to them.
 -- Expiring them is a sweep nothing here runs yet, made by a role that is not the one serving requests.
