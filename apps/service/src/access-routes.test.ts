@@ -46,6 +46,7 @@ describe('routes that check a permission', () => {
   let quality: string;
   let dosing: string;
   let audit: string;
+  let graceAuthors: string;
 
   const give = async (input: Omit<NewGrant, 'grantedBy' | 'roleId'> & { role: string }) => {
     const answer = await tenantDb.withTenant(tenant, async (trx) => {
@@ -150,12 +151,14 @@ describe('routes that check a permission', () => {
       level: { kind: 'tenant' },
       effect: 'allow',
     });
-    await give({
-      role: 'Author',
-      subject: { principal: ids.grace! },
-      level: { kind: 'space', id: clinical },
-      effect: 'allow',
-    });
+    graceAuthors = (
+      await give({
+        role: 'Author',
+        subject: { principal: ids.grace! },
+        level: { kind: 'space', id: clinical },
+        effect: 'allow',
+      })
+    ).id;
   });
 
   afterAll(async () => {
@@ -519,6 +522,18 @@ describe('routes that check a permission', () => {
         },
       },
     }),
+    listGrants: () => ({ url: `/v1/grants?level=artifact:${dosing}`, status: 404 }),
+    makeGrant: () => ({
+      url: '/v1/grants',
+      status: 404,
+      payload: {
+        role: MISSING,
+        subject: { principal: ids.alice },
+        level: `space:${clinical}`,
+        effect: 'allow',
+      },
+    }),
+    removeGrant: () => ({ url: `/v1/grants/${graceAuthors}`, status: 404 }),
   };
 
   const checked = allRoutes.filter((route) => route.access.check === 'permission');

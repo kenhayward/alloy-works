@@ -32,6 +32,7 @@ import { editingHandlers } from './editing.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
+import { managingAccessHandlers } from './managing-access.js';
 import {
   SignInFailed,
   type Identity,
@@ -290,6 +291,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...editingHandlers(),
+    ...managingAccessHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

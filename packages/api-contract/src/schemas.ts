@@ -54,7 +54,7 @@ export const SampleParams = z.object({ sampleId: z.uuid() });
 export type SampleParams = z.infer<typeof SampleParams>;
 
 /** A target: the environment, one space or one artifact (access.md, "Deciding"). */
-const Target = z
+export const Target = z
   .string()
   .refine((text) => parseLevel(text) !== undefined, {
     message: 'Expected tenant, space:<id> or artifact:<id>',

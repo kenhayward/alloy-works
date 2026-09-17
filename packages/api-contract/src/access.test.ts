@@ -25,17 +25,27 @@ describe('what each route checks', () => {
       if ('query' in target) {
         expect(route.query?.shape, route.operationId).toHaveProperty(target.query);
       }
+      if ('body' in target) {
+        expect(route.body?.shape, route.operationId).toHaveProperty(target.body);
+      }
+      if ('grant' in target) {
+        expect(route.path, route.operationId).toContain(`{${target.grant}}`);
+        expect(route.params?.shape, route.operationId).toHaveProperty(target.grant);
+      }
     }
   });
 
   it('declares a 403 and a 404 on every route that checks a permission', () => {
     // Not just a query-targeted route (whose target may be the tenant, never refused as not found):
     // every permission-checked route can 404 an unreadable target and 403 a readable one refused
-    // (final review, item 7).
+    // (final review, item 7) - except a route whose target is a grant, which a caller who may not
+    // manage it is always told is simply not there (access.md, "Refusing"), never 403.
     const checked = allRoutes.filter((route) => route.access.check === 'permission');
     expect(checked.length).toBeGreaterThan(0);
     for (const route of checked) {
-      expect(route.responses[403], route.operationId).toBeDefined();
+      if (route.access.check === 'permission' && !('grant' in route.access.target)) {
+        expect(route.responses[403], route.operationId).toBeDefined();
+      }
       expect(route.responses[404], route.operationId).toBeDefined();
     }
   });

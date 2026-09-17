@@ -40,13 +40,23 @@ export function versionView(version: StoredVersion) {
 }
 
 /** A listing's cursor is the last id it gave, spelled so nobody is tempted to read it as one. */
-function afterCursor(cursor: string | undefined): string | undefined {
+export function afterCursor(cursor: string | undefined): string | undefined {
   if (cursor === undefined) return undefined;
   const after = Buffer.from(cursor, 'base64url').toString('utf8');
   if (!UUID.test(after)) {
     throw new AppError(400, 'invalid_request', 'The cursor is not one this listing gave out.');
   }
   return after;
+}
+
+/** The cursor a listing gives out for the id its next page starts after. */
+export function cursorAfter(after: string | null): string | null {
+  return after === null ? null : Buffer.from(after, 'utf8').toString('base64url');
+}
+
+/** A listing's page size: 50 unless the caller asked for 1 to 100. */
+export function pageLimit(limit: string | undefined): number {
+  return limit === undefined ? PAGE : Number(limit);
 }
 
 /**
@@ -65,7 +75,7 @@ export function componentHandlers(
       const page = await db.withTenant(tenantOf(request), (trx) =>
         listReadableComponents(trx, principalOf(request).principalId, {
           ...(after === undefined ? {} : { after }),
-          limit: query.limit === undefined ? PAGE : Number(query.limit),
+          limit: pageLimit(query.limit),
         }),
       );
       if (!page) throw new Error('A signed-in principal is not in its own tenant');
@@ -76,7 +86,7 @@ export function componentHandlers(
           space: item.space,
           version: `${item.revision}.${item.version}`,
         })),
-        next: page.after === null ? null : Buffer.from(page.after, 'utf8').toString('base64url'),
+        next: cursorAfter(page.after),
       };
     },
 
