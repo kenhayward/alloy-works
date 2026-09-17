@@ -31,6 +31,8 @@ export type ExternalRefusal =
 
 export type GrantRefusal =
   | ExternalRefusal
+  | 'grant.role_missing'
+  | 'grant.subject_missing'
   | 'grant.duplicate'
   | 'grant.allow_without_read'
   | 'grant.administer_denied_at_tenant';
@@ -79,18 +81,25 @@ export function externalRefusal(
   return undefined;
 }
 
+/** Whether the grant reaches an external principal; undefined when the tenant holds no such subject. */
 async function reachesExternal(
   trx: TenantTransaction,
   subject: NewGrant['subject'],
-): Promise<boolean> {
+): Promise<boolean | undefined> {
   if ('principal' in subject) {
     const row = await trx
       .selectFrom('principal')
       .select('kind')
       .where('id', '=', subject.principal)
-      .executeTakeFirstOrThrow();
-    return row.kind === 'external';
+      .executeTakeFirst();
+    return row && row.kind === 'external';
   }
+  const group = await trx
+    .selectFrom('access_group')
+    .select('id')
+    .where('id', '=', subject.group)
+    .executeTakeFirst();
+  if (!group) return undefined;
   const row = await trx
     .selectFrom('group_member as m')
     .innerJoin('principal as p', 'p.id', 'm.principal_id')
@@ -111,11 +120,16 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   // land unseen between this check and the write that acts on it (finding 7).
   await lockAccessForChange(trx);
 
+  // A role or a subject named by id from a caller may not be this tenant's: answered, never thrown
+  // as a foreign key violation, since each tenant's schema holds only its own.
   const role = await trx
     .selectFrom('role')
     .select('permissions')
     .where('id', '=', input.roleId)
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+  if (!role) return { refused: 'grant.role_missing' };
+  const external = await reachesExternal(trx, input.subject);
+  if (external === undefined) return { refused: 'grant.subject_missing' };
   // An allow must hold read; a denial may name any role (access.md, "Permissions").
   if (input.effect === 'allow' && !allowable(role.permissions)) {
     return { refused: 'grant.allow_without_read' };
@@ -131,7 +145,7 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   }
 
   let expiresAt = input.expiresAt ?? null;
-  if (await reachesExternal(trx, input.subject)) {
+  if (external) {
     const policy = await accessPolicy(trx);
     const refusal = externalRefusal(
       { permissions: role.permissions, level: input.level.kind },

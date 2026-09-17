@@ -424,7 +424,7 @@ describe('making a grant', () => {
     expect(stored).toEqual([]);
   });
 
-  it('cannot grant using a role, principal, group, space or artifact from another tenant, and stores nothing', async () => {
+  it('answers a role, principal or group from another tenant as missing, refuses a space or artifact from one, and stores nothing', async () => {
     const count = () =>
       service.withTenant(production, (trx) =>
         trx
@@ -434,6 +434,7 @@ describe('making a grant', () => {
       );
     const before = await count();
 
+    // Named by a caller, so answered rather than thrown: the grants route passes these ids on.
     await expect(
       make({
         roleId: theirs.role,
@@ -441,7 +442,7 @@ describe('making a grant', () => {
         level: { kind: 'space', id: spaceId },
         effect: 'allow',
       }),
-    ).rejects.toThrow();
+    ).resolves.toEqual({ refused: 'grant.role_missing' });
     await expect(
       make({
         roleId: roles.Reader!,
@@ -449,7 +450,7 @@ describe('making a grant', () => {
         level: { kind: 'space', id: spaceId },
         effect: 'allow',
       }),
-    ).rejects.toThrow();
+    ).resolves.toEqual({ refused: 'grant.subject_missing' });
     await expect(
       make({
         roleId: roles.Reader!,
@@ -457,7 +458,9 @@ describe('making a grant', () => {
         level: { kind: 'space', id: spaceId },
         effect: 'allow',
       }),
-    ).rejects.toThrow();
+    ).resolves.toEqual({ refused: 'grant.subject_missing' });
+    // A level is decided before `grant` is called - a route refuses one the tenant does not hold as
+    // not found - so reaching here with another tenant's is a caller's bug, and still stores nothing.
     await expect(
       make({
         roleId: roles.Reader!,

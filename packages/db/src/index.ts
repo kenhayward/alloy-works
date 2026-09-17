@@ -104,6 +104,17 @@ export {
   type StoredGrant,
 } from './grants.js';
 export {
+  listGrants,
+  listPrincipals,
+  listRoles,
+  readGrant,
+  type ListedGrant,
+  type ListedRole,
+  type Page,
+  type PageRequest,
+  type PersonSummary,
+} from './access-listings.js';
+export {
   accessFactSources,
   loadFacts,
   loadReadableSet,
