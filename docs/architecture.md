@@ -324,9 +324,15 @@ it is not the ordinary nearest-level one that decided whether the target is read
 and no subject, which grants name like any other, so every rule is applied where a grant is made. The first
 sign-in through a permitted route whose provider verifies the address gives it an identity. Making or
 claiming one changes no fact a decision reads and takes no epoch - neither sign-in route takes it -
-while two invitations of one address take turns on an advisory lock keyed by the schema and the address;
+while two invitations of one address take turns on an advisory lock keyed by the schema and the address,
+which a first sign-in for a verified address takes too, before claiming and held through the principal it
+makes when it claims nothing, and inviting the first administrator takes right after the epoch;
 withdrawing one removes its grants, so it takes the epoch before the invitation's row, and a claim, which
-takes the row and then the principal's and never the epoch, cannot deadlock against it. Because a claim
+takes the address's lock, the row and then the principal's and never the epoch, cannot deadlock against
+it. The order throughout is: claim - address lock, invitation row, principal; invite - epoch `FOR SHARE`,
+address lock, invitation row; first administrator - epoch `FOR UPDATE`, address lock, invitation rows,
+principal; withdraw - epoch `FOR UPDATE`, invitation row, principal, never the address lock; grant -
+epoch `FOR UPDATE`, then the principal it names. Because a claim
 can commit while an invitation waits on its row, inviting asks again, after that lock, whether somebody has
 signed in with the address; inviting the first administrator asks again, after each such lock, both that
 and whether anybody administers the tenant.

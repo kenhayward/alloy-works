@@ -163,10 +163,15 @@ not granted to write. It is an invitation like any other ("Invitations"), whose 
 Administrator at the tenant when it is made, so the first sign-in through a permitted route whose provider
 verifies the address is that administrator. It takes the access epoch exclusively first, since it makes a
 grant. It is refused once somebody who has signed in administers the tenant, while another address's
-invitation to administer waits unexpired, and for an address somebody who has signed in already shows,
-verified; inviting the same address again renews it, and one that lapsed for another address is
-withdrawn and replaced. A claim never takes the epoch, so it can commit while the invitation waits on an
-invitation's row; both refusals that a claim can change are asked again after each such lock. The
+invitation to administer waits unexpired, for an address somebody who has signed in already shows,
+verified, and for an address whose waiting invitation is external (`first_administrator.external`) -
+renewing it would make an external principal Administrator by a grant that never passed the external
+rules, and would block every other address while it waited. Inviting the same address again renews it,
+and one that lapsed for another address is withdrawn and replaced. After the epoch it takes the
+address's advisory lock, as inviting and a first sign-in do ("Invitations"), so a sign-in with the
+address has committed before it reads or waits until it commits. A claim of another address takes
+neither, so it can commit while the invitation waits on an invitation's row; both refusals that a claim
+can change are asked again after each such lock. The
 `first_administrator` table of namings by issuer and subject is kept as the record of the tenants that
 were bootstrapped that way, and nothing names or claims one any more.
 
@@ -262,7 +267,11 @@ claim.
 
 **Changing no fact.** Making an invitation inserts a principal, which no trigger watches, and claiming
 one gives a principal its issuer and subject, which no decision reads; so neither takes the access epoch,
-and neither sign-in route takes it to claim. **Withdrawing** an invitation nobody has accepted removes its
+and neither sign-in route takes it to claim. One check does read them: the lock-out guard
+(`administeringGrants`, and `administeredQuery` for the first administrator) counts only principals whose
+`issuer is not null`. Reading that without the epoch is safe because a claim only ever adds to the count -
+it gives an identity and removes none - so a count read before a claim commits is lower than the truth,
+and a stale read can only refuse more, never allow a change that leaves nobody administering. **Withdrawing** an invitation nobody has accepted removes its
 principal with every grant and membership that named it, which changes access: the route declares
 `changesAccess`, takes the epoch `FOR UPDATE` and then the invitation's row. A claim takes the
 invitation's row and then the principal's, and never the epoch, so the two cannot wait on each other in
@@ -273,10 +282,23 @@ leaves it with none, where it had none - and keeps its grants; one that says the
 external is refused, to be withdrawn and invited again. Inviting an address somebody who has signed in
 shows, verified at their last sign-in, is refused: they are granted directly. An address shown
 unverified refuses nothing, so an account cannot squat an address to keep its owner from being invited.
-Two invitations of one address at once take turns on a transaction's advisory lock keyed by the tenant's
-schema and the address, so the second renews what the first made; and because a claim takes no epoch and
-can commit while an invitation waits on its row, whether somebody has signed in with the address is
-asked again before a new principal is made.
+A principal from before 0014 has `email_verified` false until its next sign-in, so it refuses nothing
+either; an invitation to its address is never claimed by it, because its sign-in finds it by issuer and
+subject first. Two invitations of one address at once take turns on a transaction's advisory lock keyed
+by the tenant's schema and the address, so the second renews what the first made. **A first sign-in
+takes the same lock**: a claim, for an address the provider verifies, takes it before looking for the
+invitation, and holds it to the end of the sign-in's transaction, through the principal that sign-in
+makes when it claims nothing - so an invitation cannot find nobody signed in with the address while
+that principal is still uncommitted, and make itself a waiting invitation beside them. And because a
+claim can commit while an invitation waits on its row, whether somebody has signed in with the address
+is asked again before a new principal is made.
+
+The locks are taken in one order, so none waits on another in a cycle: a claim takes the address's
+lock, the invitation's row, then the principal's; inviting, the epoch `FOR SHARE` as it decides, the
+address's lock, then the invitation's row; inviting the first administrator, the epoch `FOR UPDATE`, the
+address's lock, the invitation rows, then the principal; withdrawing, the epoch `FOR UPDATE`, the
+invitation's row, then the principal, never the address's lock; and a grant, the epoch `FOR UPDATE`, then
+the principal it names.
 
 **Internal or external** is the administrator's to say when inviting, and the principal's `kind` from
 the first; a sign-in never changes it.
@@ -670,14 +692,18 @@ as since replaced rather than rewritten, because each was true when it was writt
 unclaimed with LIF. IAM-072 joins it, filed as issue #113 when planning found that nothing asked for
 inviting anybody but the first administrator.
 
-| Found                                                                                                                                                             | Change                                                                                                                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Nobody could be granted anything before signing in**, and access.md never said so                                                                               | Invitations make a principal at once, claimed at the first verified sign-in ("Invitations")                                                                                                             |
-| **IAM-059's unclaimed row said it needed the bootstrap audited**, which is IAM-060's statement, not IAM-059's                                                     | IAM-059 is claimed; IAM-060 stays in the unclaimed row with IAM-013 and IAM-037                                                                                                                         |
-| **A Google-only tenant could not get a first administrator**: nobody knows the subject Google assigns before the first sign-in                                    | **Ruled by Ken (the plan's decision A).** The first administrator is invited to an address; the naming by issuer and subject is retired, and its table kept as a record ("Roles", "What was ruled out") |
-| **The lock-out guard counted a grant to anybody**, which would let an administrator remove their own grant while only an unaccepted invitation held Administrator | The guard, and the first administrator's own count, count only principals who have signed in ("Roles")                                                                                                  |
-| **A sign-in that locked an invitation's row and then the epoch would deadlock against a withdrawal**, which locks them the other way round                        | Claiming changes no fact and takes no epoch, in either sign-in route; withdrawing takes the epoch and then the row ("Invitations")                                                                      |
-| **Built: the lock two invitations of one address take turns on was keyed by the address alone**, so two tenants inviting one address contended on one lock        | Keyed by the tenant's schema and the address ("Invitations")                                                                                                                                            |
-| **Built: a claim committing while an invitation waited on its row went unseen**, so a second invitation, or a second Administrator, could be made                 | Inviting, and inviting the first administrator after taking the epoch, ask again whether somebody signed in with the address or administers, after each lock a claim can hold ("Roles", "Invitations")  |
-| **Built: a claim marked an invitation accepted without checking that it gave anybody an identity**                                                                | A claim accepts only where it gave an identity to exactly one principal that had none ("Invitations")                                                                                                   |
-| **Built: "only an administrator of the database names the first administrator" was said and not enforced**: the runtime role could write `named_by`               | Migration 0014 takes insert and update on `invitation` away from the runtime role and grants back only the columns the service writes ("Stores")                                                        |
+| Found                                                                                                                                                                                         | Change                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nobody could be granted anything before signing in**, and access.md never said so                                                                                                           | Invitations make a principal at once, claimed at the first verified sign-in ("Invitations")                                                                                                             |
+| **IAM-059's unclaimed row said it needed the bootstrap audited**, which is IAM-060's statement, not IAM-059's                                                                                 | IAM-059 is claimed; IAM-060 stays in the unclaimed row with IAM-013 and IAM-037                                                                                                                         |
+| **A Google-only tenant could not get a first administrator**: nobody knows the subject Google assigns before the first sign-in                                                                | **Ruled by Ken (the plan's decision A).** The first administrator is invited to an address; the naming by issuer and subject is retired, and its table kept as a record ("Roles", "What was ruled out") |
+| **The lock-out guard counted a grant to anybody**, which would let an administrator remove their own grant while only an unaccepted invitation held Administrator                             | The guard, and the first administrator's own count, count only principals who have signed in ("Roles")                                                                                                  |
+| **A sign-in that locked an invitation's row and then the epoch would deadlock against a withdrawal**, which locks them the other way round                                                    | Claiming changes no fact and takes no epoch, in either sign-in route; withdrawing takes the epoch and then the row ("Invitations")                                                                      |
+| **Built: the lock two invitations of one address take turns on was keyed by the address alone**, so two tenants inviting one address contended on one lock                                    | Keyed by the tenant's schema and the address ("Invitations")                                                                                                                                            |
+| **Built: a claim committing while an invitation waited on its row went unseen**, so a second invitation, or a second Administrator, could be made                                             | Inviting, and inviting the first administrator after taking the epoch, ask again whether somebody signed in with the address or administers, after each lock a claim can hold ("Roles", "Invitations")  |
+| **Built: a claim marked an invitation accepted without checking that it gave anybody an identity**                                                                                            | A claim accepts only where it gave an identity to exactly one principal that had none ("Invitations")                                                                                                   |
+| **Built: "only an administrator of the database names the first administrator" was said and not enforced**: the runtime role could write `named_by`                                           | Migration 0014 takes insert and update on `invitation` away from the runtime role and grants back only the columns the service writes ("Stores")                                                        |
+| **Built: a sign-in that claimed nothing could commit a verified principal while an invitation of its address was being made**, leaving a waiting invitation beside somebody signed in with it | A claim takes the address's advisory lock before looking, held through the principal its sign-in then makes; inviting the first administrator takes it after the epoch ("Invitations")                  |
+| **Built: inviting the first administrator renewed an external invitation to the address**, and granted Administrator by a raw insert the external rules never saw                             | Refused as `first_administrator.external` ("Roles")                                                                                                                                                     |
+| **Built: "no decision reads" a principal's issuer and subject** overlooked the lock-out guard, which counts only principals with an issuer                                                    | Said, with why reading it without the epoch is safe ("Invitations")                                                                                                                                     |
+| **Built: a principal from before 0014 has `email_verified` false**, which was not said                                                                                                        | Said: it refuses no invitation to its address until its next sign-in, and never claims one ("Invitations")                                                                                              |
