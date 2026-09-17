@@ -62,14 +62,17 @@ export interface ComponentHeaderProps {
  * ref during render.
  *
  * A refusal is not the same as a no-op: `setTitle` answers `false` both for a title it refuses and for
- * one the document already holds (retyping the current title with a trailing space, say). The rule
- * itself is asked for - `titleAccepted`, exported beside the command it gates - rather than restated
- * here. Only a refused title reverts the field.
+ * one the document already holds (retyping the current title with a trailing space, say). So the rule
+ * is asked for directly - `titleAccepted`, exported beside the command it gates - rather than restated
+ * here or inferred from the command's answer. Nothing reverts either field.
  *
- * The language field says nothing while a tag is being typed, only once the field is left: reporting a
- * not-yet-complete tag on every keystroke both shouts about text nobody has finished and never stops
- * once they do, because nothing here un-reports it. A blur caused by the field going read-only is not
- * the author leaving, and reports nothing (fix round 2, finding H).
+ * **Both text fields say nothing while a value is being typed, only once the field is left.** For the
+ * language that is because reporting a not-yet-complete tag on every keystroke both shouts about text
+ * nobody has finished and never stops once they do, since nothing here un-reports it. For the title it
+ * is the same reason wearing a worse hat (final review, finding 3): clearing the field to retype a
+ * title used to report "A component needs a title." and put the document's own title back in the same
+ * breath, so the message stood beside a perfectly good title and stayed there. A blur caused by the
+ * field going read-only is not the author leaving, and reports nothing (fix round 2, finding H).
  */
 export function ComponentHeader({ header, editable, onChange, onRefused }: ComponentHeaderProps) {
   const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
@@ -95,17 +98,20 @@ export function ComponentHeader({ header, editable, onChange, onRefused }: Compo
           disabled={!editable}
           onChange={(event) => {
             const value = event.target.value;
-            if (!titleAccepted(value)) {
-              onRefused('A component needs a title.');
-              setTitle((previous) => ({ ...previous, typed: header.title }));
-              return;
-            }
+            // Only a title the model would take is offered to it; a field on its way to a new title -
+            // cleared, or nothing but spaces yet - is shown as typed and leaves the document alone,
+            // exactly as an unfinished language tag does, so `inModel` stays what the document holds.
             // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
-            const answered = onChange('title', value);
+            const answered = titleAccepted(value) ? onChange('title', value) : null;
             setTitle((previous) => ({
               typed: value,
               inModel: answered?.title ?? previous.inModel,
             }));
+          }}
+          onBlur={() => {
+            // As the language field, and for the same reason it is read-only-safe (finding H).
+            if (!editable) return;
+            if (!titleAccepted(title.typed)) onRefused('A component needs a title.');
           }}
         />
       </label>

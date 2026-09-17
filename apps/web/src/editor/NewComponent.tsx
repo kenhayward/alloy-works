@@ -78,6 +78,11 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   const [spacesProblem, setSpacesProblem] = useState<'signedOut' | 'failed' | null>(null);
   const [where, setWhere] = useState<string>('');
   const [types, setTypes] = useState<readonly ComponentType[]>([]);
+  // The same three states as `spacesProblem`, for the same reason (final review): a refused or failed
+  // component-types read otherwise left an empty chooser and no reason at all, beside a spaces read
+  // that reports itself. The form stays up, because a create naming no type takes the environment's
+  // default and can still succeed - so this is said beside the chooser, not instead of the form.
+  const [typesProblem, setTypesProblem] = useState<'signedOut' | 'failed' | null>(null);
   const [componentType, setComponentType] = useState<string>('');
   const [title, setTitle] = useState('');
   const [languageTag, setLanguageTag] = useState('en-GB');
@@ -120,16 +125,26 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   const loadTypes = useCallback(
     async (space: string) => {
       const generation = ++typesRequest.current;
+      setTypesProblem(null);
       try {
-        const { data } = await client.GET('/v1/spaces/{space}/component-types', {
+        const { data, response } = await client.GET('/v1/spaces/{space}/component-types', {
           params: { path: { space } },
         });
         if (typesRequest.current !== generation) return;
-        const offered = typesIn(data) ?? [];
+        const offered = typesIn(data);
+        if (offered === undefined) {
+          setTypes([]);
+          setComponentType('');
+          setTypesProblem(response.status === 401 ? 'signedOut' : 'failed');
+          return;
+        }
         setTypes(offered);
         setComponentType((offered.find((each) => each.isDefault) ?? offered[0])?.id ?? '');
       } catch {
-        if (typesRequest.current === generation) setTypes([]);
+        if (typesRequest.current === generation) {
+          setTypes([]);
+          setTypesProblem('failed');
+        }
       }
     },
     [client],
@@ -190,6 +205,10 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           setNotice('You are signed out. Sign in again to create a component.');
         } else if (response.status === 403) {
           setNotice('You may not create a component here.');
+          // A withdrawn create grant answers 403 rather than 404 - the space is still readable - and
+          // the chooser went on offering it, so every retry was refused again (final review). Read
+          // the spaces afresh, exactly as the 404 branch does.
+          void loadSpaces();
         } else if (response.status === 404) {
           setNotice('This space is no longer open to you. Choose another.');
           void loadSpaces();
@@ -292,6 +311,18 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           ))}
         </select>
       </label>
+      {typesProblem !== null && (
+        <>
+          <p>
+            {typesProblem === 'signedOut'
+              ? 'You are signed out. Sign in again to choose a component type.'
+              : 'The component types could not be loaded.'}
+          </p>
+          <button type="button" onClick={() => void loadTypes(where)}>
+            Try again
+          </button>
+        </>
+      )}
       <button type="button" disabled={sending} onClick={() => void create()}>
         Create
       </button>

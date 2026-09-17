@@ -117,14 +117,15 @@ To make a component by hand, sign in as Ada and use **New component**, above the
    shows **Topic**, the environment's default.
 2. Type `Replace the toner` in **Title**, leave **Language** at `en-GB` and **Direction** at **Left to
    right**, and press **Create**. The page opens the new component at **Version 0.1 in General**, with one
-   empty paragraph and the cursor in it.
+   empty paragraph in it. Nothing focuses that paragraph yet, so click into it.
 3. Type a sentence: the lock is claimed by the first keystroke, not by creating, so the page says **You
    are editing this component.** and then **Saved at** the time.
 4. Change **Title** to `Replace the printer toner`. The heading follows as you type and the page saves
    again, because the title is part of the document; `Ctrl+Z` takes it back a character at a time, in the
-   same history as the text. Clearing it says **A component needs a title.** and changes nothing; typing
-   `english` into **Language** and leaving the field says **A language tag looks like en-GB.**, while
-   `pt-BR` is taken as you type it.
+   same history as the text. Clearing it changes nothing, and says **A component needs a title.** once
+   you leave the field, so retyping a title in place says nothing at all; typing `english` into
+   **Language** and leaving the field says **A language tag looks like en-GB.**, while `pt-BR` is taken
+   as you type it.
 5. **Save version**, then **Back to components**: the list shows the new title at version 0.2.
 
 Signed in as Alice, who holds nothing, the list says there is nothing she may read and there is no **New

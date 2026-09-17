@@ -51,7 +51,10 @@ export const titleAccepted = (title: string) => title.trim() !== '';
  * (`packages/db/src/creation.ts`): a title that is empty after trimming is refused, and what is set is
  * the trimmed form, never the untrimmed one. Trimming only to decide refusal and then setting the
  * untrimmed string would let a component's title carry leading or trailing whitespace that creation
- * itself would never have stored, which is the asymmetry this avoids.
+ * itself would never have stored, which is the asymmetry this avoids. The agreement is between these
+ * two paths only: saving an iteration validates against `contentDocumentSchema`, whose `title` is
+ * `min(1)` with no trim, so a client bypassing this editor can still store and cut a title of spaces
+ * (issue #116).
  */
 export const setTitle =
   (title: string): Command =>

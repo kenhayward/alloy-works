@@ -276,6 +276,102 @@ describe('New component', () => {
     );
   });
 
+  it('re-reads the spaces on a 403, so a space the caller may no longer create in stops being offered', async () => {
+    // A withdrawn create grant answers 403, not 404 (the space is still readable), and the chooser
+    // used to go on offering it: every retry was refused again, and nothing said why the space was
+    // still there (final review). The re-read is the 404 branch's, for the same reason.
+    let spacesCall = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        spacesCall += 1;
+        const items = spacesCall === 1 ? SPACES.items : [SPACES.items[2]];
+        return new Response(JSON.stringify({ items }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        return new Response(JSON.stringify(TYPES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ code: 'forbidden', message: 'No.' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'You may not create a component here.',
+    );
+    await waitFor(() =>
+      expect(
+        [...screen.getByLabelText('Where').querySelectorAll('option')].map(
+          (option) => option.textContent,
+        ),
+      ).toEqual(['Regulatory']),
+    );
+  });
+
+  it('says the component types could not be loaded rather than offering an empty chooser', async () => {
+    // A refused or failed component-types read left an empty chooser and no reason at all, while the
+    // spaces read beside it reported itself (final review). Same shape as `spacesProblem`: what
+    // happened, and a Try again that retries the read rather than the create.
+    let attempts = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        return new Response(JSON.stringify(SPACES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        attempts += 1;
+        if (attempts === 1) return new Response('{}', { status: 500 });
+        return new Response(JSON.stringify(TYPES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 500 });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+
+    expect(await screen.findByText('The component types could not be loaded.')).toBeInTheDocument();
+    expect([...screen.getByLabelText('Component type').querySelectorAll('option')]).toHaveLength(0);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Component type')).toHaveValue(TYPES.items[1]!.id),
+    );
+    expect(screen.queryByText('The component types could not be loaded.')).not.toBeInTheDocument();
+  });
+
+  it('says the author is signed out when the component types answer 401, not that it could be tried again', async () => {
+    const { fetch } = service(
+      { '/v1/spaces': SPACES },
+      { [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: 401 },
+    );
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+
+    expect(
+      await screen.findByText('You are signed out. Sign in again to choose a component type.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('The component types could not be loaded.')).not.toBeInTheDocument();
+  });
+
   it('says the author is signed out when the spaces answer 401, not that it could be tried again', async () => {
     // Signed out is distinct from a failure worth retrying, here as everywhere else in this renderer
     // (fix round 2): the status the read already answered with says which this is.

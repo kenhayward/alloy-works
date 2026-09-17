@@ -3351,3 +3351,39 @@ Found while building this plan, and left rather than widened into it:
   dispatched to an unmounted fiber before it reaches the scheduler, so a suite passes with the guard and
   without it, and the `act(...)` warning it exists to prevent cannot be provoked. The guard is kept;
   nothing pins it. **Whenever React makes the difference observable again.**
+
+Found by the final review of this branch, and recorded rather than fixed in it:
+
+- **Nothing focuses a newly created component's surface.** Creating opens the component with one empty
+  paragraph, as somewhere for the cursor to be (CNT-124), and the author has to click into it; nothing
+  calls `focus()` on the view. **A later editor plan**, with the accessibility plan's `F6` region cycle.
+- **A title of spaces can still be stored through the iteration route** (issue #116). Creating and
+  `setTitle` both trim, and agree with each other; `contentDocumentSchema.title` is `min(1)` with no
+  trim, so `PUT /v1/components/{id}/iteration` takes a title of spaces and a cut records it, and the
+  component then lists with a blank title. Not reachable from the application, which has no path that
+  does not go through one of those two. **Whichever plan picks up #116.**
+- **The contract's `title: z.string().min(1).max(200)`** (`packages/api-contract/src/components.ts`) is a
+  rule neither the content model nor `setTitle` holds: a title of 201 characters is a `400` on creating
+  and is taken without comment through the header and the iteration route. One of the three has to
+  move - most likely the model, since the store is the thing that would have to mean it. **Whichever
+  plan settles the title's rules, with #116.**
+- **The title rule is spelled four times** - `titleAccepted` in `packages/editor`, and `title.trim() ===
+''` again in `packages/db/src/creation.ts`, in `apps/web/src/editor/NewComponent.tsx` and in the
+  contract's `min(1)`. Two of those cannot import the editor's, which is why they were left; a rule the
+  domain owns, the way the language rule is owned, would collapse them. **The same plan as the
+  `languageAccepted` note above.**
+- **A fifth hand-rolled lowercase-UUID regex**, `UUID` at `packages/db/src/creation.ts` line 20, beside
+  the four `packages/db` already had. `LowercaseUuid` now lives in the contract's `schemas.ts`, which
+  `packages/db` does not depend on. **Whichever plan gives the database package its own id type.**
+- **Exports nothing imports**: `Command` (`packages/editor`), `SpaceList`, `ComponentTypeList` and
+  `CurrentDefinitions` (`packages/api-contract`), and `CreateComponentAnswer` (`packages/db`). Each is
+  the named type of something that is used, so each is defensible on its own; together they are a
+  surface nobody is holding to. **Whichever plan next prunes a package's exports.**
+- **`listSpaces` decides outside `decideOnly`.** Every other listing asks its access questions inside the
+  transaction `decideOnly` has narrowed to deciding; `listSpaces` asks `mayCreate` per space in the
+  ordinary one. It reads nothing it may not read, so this is depth rather than a hole. **Whichever plan
+  next touches the spaces routes**, with the once-per-caller read noted above.
+- **The header's steps eat undo depth.** Each keystroke in the title is its own `DocAttrStep`, and
+  ProseMirror's history groups adjacent text steps but not attribute ones, so retyping a title spends one
+  history entry per character against the same budget the prose uses. `Ctrl+Z` behaves correctly; a long
+  title simply costs more history than it looks like it should. **Whichever plan tunes the history.**

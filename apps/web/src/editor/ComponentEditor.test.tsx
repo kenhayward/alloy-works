@@ -922,16 +922,50 @@ describe('the component editor', () => {
     );
   });
 
-  it('refuses to clear the title, saying why, and leaves the document alone', async () => {
+  it('refuses to clear the title, saying why once the field is left, and leaves the document alone', async () => {
     const { surface } = open(
       { 'GET /v1/components/{id}': () => json(200, opened()) },
       designTiming,
+      true,
     );
     const view = await surface();
 
     await userEvent.clear(screen.getByLabelText('Title'));
+    fireEvent.blur(screen.getByLabelText('Title'));
     expect(screen.getByRole('status')).toHaveTextContent('A component needs a title.');
+    // The message stands beside the empty field it is about, not beside a title (final review,
+    // finding 3), and the document still holds the title it had.
+    expect(screen.getByLabelText('Title')).toHaveValue('');
     expect(fromEditor(view.state.doc).title).toBe('Install the printer');
+  });
+
+  it('says nothing about a title being retyped, and never beside a title that is there, under StrictMode', async () => {
+    // Clearing the field used to report "A component needs a title." and put the document's own
+    // title straight back into the field in the same breath, so the message stood beside a perfectly
+    // good title and nothing ever took it down again (final review, finding 3). Retyping a title is
+    // an ordinary thing to do - select all, type the new one - and the language field already has
+    // this shape: what is on its way somewhere is shown as typed and said nothing about.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+
+    await userEvent.clear(field);
+    expect(field).toHaveValue('');
+    expect(screen.getByRole('status')).toHaveTextContent('');
+
+    fireEvent.change(field, { target: { value: 'Replace the toner' } });
+    fireEvent.blur(field);
+
+    expect(screen.getByRole('status')).not.toHaveTextContent('A component needs a title.');
+    expect(field).toHaveValue('Replace the toner');
+    expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
   });
 
   it('does not report a refusal, or revert the field, for a no-op such as the same title with different surrounding space', async () => {
