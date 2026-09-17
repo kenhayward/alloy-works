@@ -3,9 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   describeGrant,
+  describeInvitation,
   explainAnswer,
   isExplainedPermission,
   isShownGrant,
+  isShownInvitation,
   isShownPerson,
   isShownRole,
   permissionName,
@@ -15,6 +17,7 @@ import {
   type ExplainedPermission,
   type Place,
   type ShownGrant,
+  type ShownInvitation,
   type ShownPerson,
   type ShownRole,
 } from './describe.js';
@@ -34,6 +37,14 @@ type Listing =
   | { readonly state: 'unauthorized' }
   | { readonly state: 'failed' }
   | { readonly state: 'loaded'; readonly grants: readonly ShownGrant[] };
+
+/** The environment's invitations, or why they are not shown. */
+type Invitations =
+  | { readonly state: 'loading' }
+  /** The caller may not administer the whole environment, so may not invite. */
+  | { readonly state: 'unmanaged' }
+  | { readonly state: 'failed' }
+  | { readonly state: 'loaded'; readonly waiting: readonly ShownInvitation[] };
 
 type Opened =
   | { readonly state: 'loading' }
@@ -105,6 +116,9 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   const [role, setRole] = useState('');
   const [where, setWhere] = useState('');
   const [effect, setEffect] = useState<'allow' | 'deny'>('allow');
+  const [invitations, setInvitations] = useState<Invitations>({ state: 'loading' });
+  const [address, setAddress] = useState('');
+  const [outside, setOutside] = useState(false);
   const [explainFor, setExplainFor] = useState('');
   const [explainMessage, setExplainMessage] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<{
@@ -118,6 +132,8 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   // an older answer that arrives late is dropped rather than put over a newer one.
   const opening = useRef(0);
   const reading = useRef(0);
+  const invitationsRead = useRef(0);
+  const peopleRead = useRef(0);
   const explaining = useRef(0);
   const mounted = useRef(true);
 
@@ -168,6 +184,67 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     [client],
   );
 
+  /** Every person a grant here can name, read the same way on the first load and on a re-read. */
+  const fetchPeople = useCallback(
+    () =>
+      everyPage<ShownPerson>((cursor) =>
+        client.GET('/v1/principals', {
+          params: {
+            query: {
+              level: `artifact:${componentId}`,
+              limit: '100',
+              ...(cursor ? { cursor } : {}),
+            },
+          },
+        }),
+      ),
+    [client, componentId],
+  );
+
+  /** Every waiting invitation, where the caller administers the whole environment. */
+  const readInvitations = useCallback(async () => {
+    const mine = ++invitationsRead.current;
+    let next: Invitations;
+    try {
+      const answer = await everyPage<ShownInvitation>((cursor) =>
+        client.GET('/v1/invitations', {
+          params: { query: { limit: '100', ...(cursor ? { cursor } : {}) } },
+        }),
+      );
+      if ('items' in answer) {
+        next = answer.items.every(isShownInvitation)
+          ? {
+              state: 'loaded',
+              waiting: answer.items.filter((each) => each.acceptedAt === null),
+            }
+          : { state: 'failed' };
+      } else {
+        next =
+          answer.status === 403 || answer.status === 404
+            ? { state: 'unmanaged' }
+            : { state: 'failed' };
+      }
+    } catch {
+      next = { state: 'failed' };
+    }
+    if (mounted.current && mine === invitationsRead.current) setInvitations(next);
+  }, [client]);
+
+  /** The people to choose from, read again once somebody is invited or an invitation withdrawn. */
+  const readPeople = useCallback(async () => {
+    const mine = ++peopleRead.current;
+    try {
+      const answer = await fetchPeople();
+      if (!mounted.current || mine !== peopleRead.current) return;
+      if ('items' in answer && answer.items.every(isShownPerson)) {
+        const people = answer.items;
+        setOpened((current) => (current.state === 'open' ? { ...current, people } : current));
+      }
+    } catch {
+      // The people already shown stay; the next change reads them again.
+    }
+  }, [fetchPeople]);
+
   const loadComponent = useCallback(async () => {
     const mine = ++opening.current;
     setOpened({ state: 'loading' });
@@ -186,11 +263,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
       // Choosing people and roles needs administer here or above: the most any level on this
       // component's chain can ask, so a refusal here means nothing on the page could be managed.
       const [people, roles] = await Promise.all([
-        everyPage<ShownPerson>((cursor) =>
-          client.GET('/v1/principals', {
-            params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
-          }),
-        ),
+        fetchPeople(),
         everyPage<ShownRole>((cursor) =>
           client.GET('/v1/roles', {
             params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
@@ -214,11 +287,11 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
       const places = placesFor(data);
       setOpened({ state: 'open', title, places, people: people.items, roles: roles.items });
       setWhere(places[0]!.target);
-      await readGrants(places);
+      await Promise.all([readGrants(places), readInvitations()]);
     } catch {
       if (mounted.current && mine === opening.current) setOpened({ state: 'failed' });
     }
-  }, [client, componentId, readGrants]);
+  }, [client, componentId, readGrants, readInvitations, fetchPeople]);
 
   useEffect(() => {
     void loadComponent();
@@ -246,8 +319,11 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   const named = (target: string) =>
     places.find((place) => place.target === target)?.named ?? target;
 
-  /** A change, then the lists read again whatever happened: the service is what is shown. */
-  const change = async (run: () => Promise<string>) => {
+  /**
+   * A change, then the lists read again whatever happened: the service is what is shown. Inviting and
+   * withdrawing change who can be chosen, so they read the people and the invitations again too.
+   */
+  const change = async (run: () => Promise<string>, people = false) => {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -263,7 +339,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     } finally {
       pending.current = false;
       if (mounted.current) setBusy(false);
-      await readGrants(places);
+      await Promise.all([readGrants(places), ...(people ? [readPeople(), readInvitations()] : [])]);
     }
   };
 
@@ -303,6 +379,44 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
       return refusal(response.status, error, 'That grant is gone, or you may no longer manage it.');
     });
 
+  const inviteSomeone = (event: React.FormEvent) => {
+    event.preventDefault();
+    const email = address.trim();
+    if (email === '') {
+      setMessage('Enter the address to invite.');
+      return;
+    }
+    void change(async () => {
+      const { data, error, response } = await client.POST('/v1/invitations', {
+        body: { email, external: outside },
+      });
+      if (data) {
+        if (!isShownInvitation(data.invitation)) {
+          return 'That address was invited, though what exactly could not be shown.';
+        }
+        if (mounted.current) {
+          setAddress('');
+          setOutside(false);
+        }
+        return data.renewed
+          ? `The invitation to ${describeInvitation(data.invitation)} was renewed.`
+          : `Invited ${data.invitation.email}. Choose them under Give access: what they are given is theirs from their first sign-in.`;
+      }
+      return refusal(response.status, error, 'You may not invite anyone to this environment.');
+    }, true);
+  };
+
+  const withdraw = (invitation: ShownInvitation) =>
+    void change(async () => {
+      const { data, error, response } = await client.DELETE('/v1/invitations/{id}', {
+        params: { path: { id: invitation.id } },
+      });
+      if (data) {
+        return `Withdrew the invitation to ${invitation.email}, and everything granted to them.`;
+      }
+      return refusal(response.status, error, 'That invitation is gone already.');
+    }, true);
+
   const explain = async () => {
     const principal = explainFor;
     if (principal === '') return;
@@ -340,6 +454,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
       {personName(each)}
       {each.name !== null && each.email !== null ? ` (${each.email})` : ''}
       {each.kind === 'external' ? ', from outside the organisation' : ''}
+      {each.invited ? ', invited and not signed in yet' : ''}
     </option>
   ));
 
@@ -448,6 +563,64 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
         </button>
       </form>
       {message !== null && <p role="status">{message}</p>}
+
+      {invitations.state === 'failed' && (
+        <p>
+          Invitations could not be loaded.{' '}
+          <button type="button" disabled={busy} onClick={() => void readInvitations()}>
+            Try again
+          </button>
+        </p>
+      )}
+      {invitations.state === 'loaded' && (
+        <section aria-labelledby="invite-heading">
+          <h3 id="invite-heading">Invite someone</h3>
+          <p>
+            Invite somebody who has not signed in yet, then give them access above. What they are
+            given is theirs the first time they sign in with that address.
+          </p>
+          <form aria-labelledby="invite-heading" onSubmit={inviteSomeone}>
+            <label>
+              Address{' '}
+              <input
+                type="email"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+              />
+            </label>{' '}
+            <label>
+              <input
+                type="checkbox"
+                checked={outside}
+                onChange={(event) => setOutside(event.target.checked)}
+              />{' '}
+              From outside the organisation
+            </label>{' '}
+            <button type="submit" disabled={busy}>
+              Invite
+            </button>
+          </form>
+          {invitations.waiting.length === 0 ? (
+            <p>Nobody is waiting to accept an invitation.</p>
+          ) : (
+            <ul aria-label="Waiting invitations">
+              {invitations.waiting.map((invitation) => (
+                <li key={invitation.id}>
+                  {describeInvitation(invitation)}{' '}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Withdraw the invitation to ${invitation.email}`}
+                    onClick={() => withdraw(invitation)}
+                  >
+                    Withdraw
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="explain-heading">
         <h3 id="explain-heading">What someone may do here</h3>

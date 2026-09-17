@@ -28,11 +28,27 @@ const json = (status: number, body: unknown) =>
 const refused = (status: number, code: string, message = 'refused') =>
   json(status, { code, message, traceId: 't' });
 
+const IVY = '6a718293-a4b5-4c6d-9e0f-5b6c7d8e9f0a';
+
 const people = [
-  { id: ADA, name: 'Ada', email: 'ada@example.test', kind: 'user' },
-  { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user' },
-  { id: ALICE, name: 'Alice', email: 'alice@example.test', kind: 'user' },
+  { id: ADA, name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
+  { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user', invited: false },
+  { id: ALICE, name: 'Alice', email: 'alice@example.test', kind: 'user', invited: false },
 ];
+
+/** An invitation exactly as the service lists one. */
+const invitationOf = (id: string, email: string, person: string) => ({
+  id,
+  email,
+  person,
+  external: false,
+  invitedBy: { id: ADA, name: 'Ada' },
+  createdAt: '2026-09-17T09:00:00.000Z',
+  expiresAt: '2026-10-01T09:00:00.000Z',
+  lapsed: false,
+  acceptedAt: null,
+  acceptedThrough: null,
+});
 
 const roles = [
   { id: AUTHOR, name: 'Author', permissions: ['read', 'create', 'edit', 'comment', 'suggest'] },
@@ -73,6 +89,14 @@ function service(
   } = {},
 ) {
   const grants = [...(options.grants ?? [])];
+  const everybody: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    kind: string;
+    invited: boolean;
+  }[] = [...people];
+  const invitations: ReturnType<typeof invitationOf>[] = [];
   const levels = options.levels ?? [`artifact:${COMPONENT}`, `space:${GENERAL}`, 'tenant'];
   const asked: { route: string; body: unknown }[] = [];
   let made = 0;
@@ -101,7 +125,17 @@ function service(
           lock: null,
         });
       case 'GET /v1/principals':
-        return json(200, { items: people, next: null });
+        return json(200, { items: everybody, next: null });
+      case 'GET /v1/invitations':
+        if (!levels.includes('tenant')) return refused(403, 'forbidden');
+        return json(200, { items: invitations, next: null });
+      case 'POST /v1/invitations': {
+        const body = JSON.parse(text) as { email: string; external: boolean };
+        const invitation = invitationOf(`i${invitations.length + 1}`, body.email, IVY);
+        invitations.push(invitation);
+        everybody.push({ id: IVY, name: null, email: body.email, kind: 'user', invited: true });
+        return json(200, { invitation, renewed: false });
+      }
       case 'GET /v1/roles':
         return json(200, { items: roles, next: null });
       case 'GET /v1/grants': {
@@ -121,13 +155,24 @@ function service(
           `90000000-0000-4000-8000-00000000000${made}`,
           body.level,
           roles.find((each) => each.id === body.role)!,
-          people.find((each) => each.id === body.subject.principal)!,
+          everybody.find((each) => each.id === body.subject.principal)! as (typeof people)[number],
           body.effect,
         );
         grants.push(grant);
         return json(200, { grant });
       }
       default: {
+        const withdrawing = /^DELETE \/v1\/invitations\/(.+)$/.exec(route);
+        if (withdrawing) {
+          const index = invitations.findIndex((each) => each.id === withdrawing[1]);
+          if (index < 0) return refused(404, 'not_found');
+          const [gone] = invitations.splice(index, 1);
+          everybody.splice(
+            everybody.findIndex((each) => each.id === gone!.person),
+            1,
+          );
+          return json(200, { withdrawn: withdrawing[1] });
+        }
         const removing = /^DELETE \/v1\/grants\/(.+)$/.exec(route);
         if (removing) {
           const index = grants.findIndex((each) => each.id === removing[1]);
@@ -343,6 +388,104 @@ describe('access to a component', () => {
     release.current!();
     expect(await screen.findByRole('status')).toHaveTextContent('Already granted.');
     expect(asked.filter((each) => each.route === 'POST /v1/grants')).toHaveLength(1);
+  });
+
+  it('invites an address, then offers the person it made to give access to, marked as not signed in yet', async () => {
+    const { fetching, asked } = service();
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    expect(within(inviting).getByText('Nobody is waiting to accept an invitation.')).toBeTruthy();
+
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Invited ivy@example.test. Choose them under Give access: what they are given is theirs from their first sign-in.',
+    );
+    expect(asked.filter((each) => each.route === 'POST /v1/invitations')).toEqual([
+      { route: 'POST /v1/invitations', body: { email: 'ivy@example.test', external: false } },
+    ]);
+    const person = screen.getByRole('combobox', { name: 'Person' });
+    await waitFor(() =>
+      expect(within(person).getByRole('option', { name: /ivy@example\.test/ })).toHaveTextContent(
+        'ivy@example.test, invited and not signed in yet',
+      ),
+    );
+    expect(
+      within(screen.getByRole('list', { name: 'Waiting invitations' })).getByRole('listitem'),
+    ).toHaveTextContent('ivy@example.test, until 2026-10-01');
+
+    await userEvent.selectOptions(person, IVY);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Allowed Author to ivy@example.test on this component.',
+    );
+  });
+
+  it('withdraws a waiting invitation, and no longer offers the person it made', async () => {
+    const { fetching } = service();
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    await screen.findByRole('button', { name: 'Withdraw the invitation to ivy@example.test' });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Withdraw the invitation to ivy@example.test' }),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Withdrew the invitation to ivy@example.test, and everything granted to them.',
+    );
+    await waitFor(() =>
+      expect(within(inviting).getByText('Nobody is waiting to accept an invitation.')).toBeTruthy(),
+    );
+    expect(
+      within(screen.getByRole('combobox', { name: 'Person' })).queryByRole('option', {
+        name: /ivy@example\.test/,
+      }),
+    ).toBeNull();
+  });
+
+  it('shows the service refusal of an invitation in its own words', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/invitations': () =>
+          refused(
+            409,
+            'invitation_signed_in',
+            'Somebody with that address has already signed in. Choose them and give them access directly.',
+          ),
+      },
+    });
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'grace@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Somebody with that address has already signed in. Choose them and give them access directly.',
+    );
+  });
+
+  it('offers no inviting to someone who does not administer the whole environment', async () => {
+    const { fetching, asked } = service({ levels: [`artifact:${COMPONENT}`, `space:${GENERAL}`] });
+    panel(fetching);
+    await within(await screen.findByRole('region', { name: 'The whole environment' })).findByText(
+      'You may not manage access here.',
+    );
+    await waitFor(() =>
+      expect(asked.some((each) => each.route === 'GET /v1/invitations')).toBe(true),
+    );
+    expect(screen.queryByRole('region', { name: 'Invite someone' })).toBeNull();
   });
 
   it('IAM-030 names, for each answer about a chosen person, the level that decided it and the grants that did', async () => {
