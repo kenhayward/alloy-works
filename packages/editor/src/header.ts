@@ -1,13 +1,6 @@
+import { contentDocumentSchema } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
 import type { Command } from 'prosemirror-state';
-
-/**
- * The same tag rule `contentDocumentSchema` applies (CNT-140). Repeated here rather than imported,
- * because `packages/domain` exposes the document's parser and not the pieces of its schema, and a
- * command has to answer before it dispatches rather than by catching a parse failure afterwards. One
- * test in the domain and one here hold them to the same set of examples.
- */
-const BCP_47 = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/;
 
 /** The component's header as the editor holds it: the root's members other than the blocks. */
 export interface ComponentHeader {
@@ -58,11 +51,16 @@ export const setTitle =
     return trimmed === '' ? false : setRoot('title', trimmed)(state, dispatch);
   };
 
-/** As `setTitle`, for the base language (CNT-140). */
+/**
+ * As `setTitle`, for the base language (CNT-140). The rule comes from the domain, the same schema
+ * `parseContentDocument` checks it with, so the editor and creation share one rule rather than two.
+ */
 export const setLanguage =
   (language: string): Command =>
   (state, dispatch) =>
-    BCP_47.test(language) ? setRoot('language', language)(state, dispatch) : false;
+    contentDocumentSchema.shape.language.safeParse(language).success
+      ? setRoot('language', language)(state, dispatch)
+      : false;
 
 /** As `setTitle`, for the base direction (CNT-059). The enum is the model's, so there is no bad value. */
 export const setDirection = (direction: ComponentHeader['direction']): Command =>

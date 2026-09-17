@@ -95,12 +95,26 @@ describe('the component header', () => {
     expect(fromEditor(back.doc).title).toBe('Install the printer');
   });
 
+  it('undoes a language change the same way, one step back', () => {
+    const changed = run(opened(), setLanguage('fr-CA'));
+    expect(fromEditor(changed.state.doc).language).toBe('fr-CA');
+    let back = changed.state;
+    expect(
+      undo(changed.state, (transaction) => {
+        back = changed.state.apply(transaction);
+      }),
+    ).toBe(true);
+    expect(fromEditor(back.doc).language).toBe('en-GB');
+  });
+
   it('makes the document changed, so the session sends it like any other edit', () => {
-    const state = opened();
-    let seen = false;
-    setTitle('Replace the toner')(state, (transaction) => {
-      seen = transaction.docChanged;
-    });
-    expect(seen).toBe(true);
+    for (const command of [setTitle('Replace the toner'), setLanguage('fr-CA')]) {
+      const state = opened();
+      let seen = false;
+      command(state, (transaction) => {
+        seen = transaction.docChanged;
+      });
+      expect(seen).toBe(true);
+    }
   });
 });
