@@ -77,6 +77,7 @@ bar needs themes, templates, assets and tables as well as an editor. **None of i
 | Platform bridge              | A single typed seam for everything that differs between a browser tab and a desktop window                                                                |
 | Content model                | The stored shape of a component's content: blocks, inline content and overlapping annotations, each identified, versioned by schema and checked both ways |
 | Access                       | Who may do what, decided through roles and grants; a tenant's first administrator is named at provisioning and granted at their first sign-in             |
+| Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                            |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                          |
 
 Full prose list: [`docs/features.md`](docs/features.md).
@@ -125,7 +126,9 @@ apps/
   worker/     @alloy-works/worker   Claims queued jobs and runs them; carries the pinned Typst.
 packages/
   domain/     @alloy-works/domain   Content model and rules. No React, no Electron, no fs.
-  db/         @alloy-works/db       Roles, tenants, migrations, withTenant; the version store, unused yet.
+  editor/     @alloy-works/editor   The editor's ProseMirror schema and mapping. Browser code, no React.
+  db/         @alloy-works/db       Roles, tenants, migrations, withTenant; the version chain and access;
+                                     the editor's lock and iterations.
   api-contract/ @alloy-works/api-contract  Routes as zod schemas; the generated openapi.json.
   api-client/ @alloy-works/api-client  The generated client, and the live stream reader.
   stand-in-idp/ @alloy-works/stand-in-idp  A sign-in provider with invented people, for development.

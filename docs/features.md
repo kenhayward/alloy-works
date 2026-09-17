@@ -63,20 +63,34 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   make a grant, or manage a group or a principal - the first sign-in's grant is the only one anything
   makes.
 
+- **Editing a component.** Signed in, you see the components you may read and open one. If you may
+  edit it, your first change starts editing: nobody else can change it while you are, and anyone who
+  tries is told who is editing and until when. Your changes are saved a moment after you stop typing -
+  the page says whether they are saved, saving, or not saved and being retried - and **Save version**
+  or **Done editing** makes a version of them, numbered `0.2`, `0.3` and so on; nothing else does.
+  Undo reaches back within what you have done since the last version. Pasting is refused rather than
+  put in unexamined.
+
+  **This is paragraphs of text, not the editor.** A component holding a list, a table, an equation, a
+  footnote or any formatting opens for reading only. Nothing yet creates a component: in development,
+  `pnpm dev:setup` makes one, "Install the printer", and lets Ada and Grace edit it; outside
+  development nobody can be given permission to edit, because no screen or route grants a role yet.
+  Changes saved but never made into a version are kept and cannot yet be got back, undo does not
+  survive a reload, and there is no metadata to fill in.
+
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
 
-- No content storage anybody can use. A store of versioned artifacts exists - components and the
-  definitions they are written against, each version kept for good - and nothing uses it yet: no route
-  writes to it and no editor reads from it. Nothing imports content from a Word file or exports it
-  anywhere. The one sample document is a fixed template with no content of yours in it.
-- No authoring UI - no editor, no component tree, no reuse or transclusion.
+- No way to create a component, or to author anything but paragraphs of text in one that exists.
+  Nothing imports content from a Word file or exports it anywhere. The one sample document is a fixed
+  template with no content of yours in it.
+- No document view, component tree, reuse or transclusion.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search, no metadata, no taxonomy, no workflow, and no versioning of content anybody can use: the
-  store above keeps versions, and nothing cuts one. Numbering, cross-reference resolution, conditional text and suggestion
+- No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or
+  comparison: versions are cut and kept, and nothing yet compares or designates one. Numbering, cross-reference resolution, conditional text and suggestion
   handling are all described in the content model and none of them runs: content can say a paragraph
   refers to a figure, and nothing resolves it.
 - No signed or published release - the installer builds locally and is unsigned.

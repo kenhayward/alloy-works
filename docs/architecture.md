@@ -5,11 +5,12 @@
 > them are real and tested, and so are the schema a component's content is held in - [the content model](#the-content-model)
 > below - the one way content enters it - [the admission pipeline](#the-admission-pipeline) - the rules
 > deciding its metadata - [metadata](#metadata) - the insert-only chain its versions are stored in -
-> [the version chain](#the-version-chain) - and who may do what to it - [access](#access). Nothing
-> authors, pastes, cuts or publishes any of it yet, and nothing but a tenant's first administrator
-> is granted a role.
-> The single `Component` beside it in `packages/domain` is still the scaffolding that
-> proved the path end to end, and is not a decision about content.
+> [the version chain](#the-version-chain) - and who may do what to it - [access](#access) - and the
+> first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
+> opens a component's paragraphs, saves them as iterations under a lock and cuts versions from them.
+> Nothing yet creates a component, pastes, edits anything but paragraphs of text, or publishes, and
+> nothing grants a role through a route. The single `Component` in `packages/domain` is still the
+> scaffolding's, and nothing renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
@@ -22,11 +23,12 @@ describing something planned and starts describing something here.
 
 ## Workspaces
 
-One pnpm workspace, one lock file, eleven packages.
+One pnpm workspace, one lock file, twelve packages.
 
 | Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the admission pipeline everything entering a component passes through - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the canonical serialisation of a whole version, access - the closed permission set, roles, `decide` and the readable set - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
+| `packages/editor`       | `@alloy-works/editor`       | The editor's ProseMirror schema, the mapping to and from the stored model, the identity plugin, the invariants every transaction keeps, and the view one component is edited in. Browser code, no React; all but the view is tested in Node                                                                                                                                                                                                                                                                              |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests; and access - roles, groups, grants, the access epoch, the facts a decision reads and the first administrator. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                                   |
@@ -48,8 +50,9 @@ exported from the package: a resolver and three projections - CSS for the editor
 Typst template, and Word styles. Like the content model draft, it is promoted when the editor or
 the publishing pipeline first needs it.
 
-Dependencies point one way: `apps/web` depends on `@alloy-works/domain` and on
-`@alloy-works/api-client`, which is the only way it calls the service (API-001); `apps/desktop`
+Dependencies point one way: `apps/web` depends on `@alloy-works/domain`, on `@alloy-works/editor` -
+itself on the domain package and ProseMirror - and on `@alloy-works/api-client`, which is the only way
+it calls the service (API-001); `apps/desktop`
 depends on `@alloy-works/web` **for types only** (see the platform bridge below). `packages/db`
 depends on `@alloy-works/domain`, for the version's canonical serialisation and the schemas a
 version's content is checked against, and for `decide`. `packages/api-contract` and `apps/service`
@@ -299,6 +302,50 @@ it is not the ordinary nearest-level one that decided whether the target is read
 `pnpm dev:setup` names the stand-in's Ada as the first administrator of both development environments, so
 she administers each from her first sign-in there.
 
+## The editor and its session
+
+Opening a component, editing its paragraphs and saving them, designed in
+[`design/component-editor.md`](design/component-editor.md) over
+[`design/storage-and-versioning.md`](design/storage-and-versioning.md)'s iterations and
+[ADR-0023](decisions/0023-prosemirror-as-the-editor-and-its-model.md)'s one view per component. A
+component holding anything but paragraphs of unmarked text opens for reading only; nothing creates a
+component, pastes, recovers an iteration or edits metadata.
+
+| Where                                       | Holds                                                                                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor: src/schema.ts`, `mapping.ts`       | The editor's schema - the root, paragraphs, text - and `toEditor`, which refuses by name what the schema lacks, and `fromEditor`, through `parseContentDocument` |
+| `editor: src/identity.ts`, `state.ts`       | 128-bit block identifiers, ADR-0023's descent rule as a plugin, no two adjacent empty paragraphs, `Enter` that makes none, and one history per component         |
+| `editor: src/view.ts`, `style.css`          | `mountEditor`: spellcheck, language and direction on the surface, and paste and drop refused                                                                     |
+| `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                      |
+| `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                            |
+| `db: src/components.ts`                     | `listReadableComponents`, filtered by the readable set inside its query, a page at a time                                                                        |
+| `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component type, a component, and Ada and Grace allowed Author on General, for development only                                       |
+| `api-contract: components.ts`, `editing.ts` | Six routes and their schemas; a route may now declare a request body                                                                                             |
+| `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                           |
+| `web: src/editor/`                          | The session as a state machine over a service and a clock, the adapter onto the generated client, the save indicator, the editor, the list and the workspace     |
+
+**Four properties, because each is a decision rather than an implementation detail.**
+
+**A version is cut from an iteration, and only when asked.** Saving writes iterations; only Save version
+and Done editing call `cutVersion`, which promotes the session's latest iteration through `recordVersion`.
+A lock that expires cuts nothing.
+
+**The lock is checked where the write is.** `saveIteration`, `cutVersion` and `releaseLock` each check
+that the calling session holds the lock, in the transaction that writes, serialised per component on the
+advisory lock `recordVersion` already takes.
+
+**No write in a session touches access.** A lock, an iteration and a version are not facts a decision
+reads, so none takes the access epoch for update, and the shared lock `authorise` took first is never
+upgraded; a test runs the writes while another transaction holds the epoch.
+
+**What the editor holds is always storable.** Every iteration leaves the renderer through `fromEditor`,
+which runs `parseContentDocument`, and the service parses it again. The identity plugin and the
+empty-paragraph plugin keep that true after any sequence of edits, which a seeded test of two thousand
+operations holds them to.
+
+`pnpm dev:setup` makes "Install the printer" in both development environments and allows Ada and Grace
+Author on General; Alice is left with nothing.
+
 ## One renderer, two deliveries
 
 `apps/web` **is** the web application, and it is also the thing the Electron window loads. There is
@@ -394,9 +441,10 @@ Rules that hold for every channel added later:
 
 ## Data flow today
 
-There is no server and no persistence behind the renderer yet. The renderer builds one `Component`
-through the domain package at module load and renders it, and asks the bridge which delivery it is
-running under.
+The renderer asks the bridge which delivery it is running under, and, once somebody is signed in,
+lists the components they may read. Opening one fetches it at its latest version; its first change
+claims the lock, changes go back as iterations after a pause, and Save version and Done editing cut
+versions from them - every call through the generated client.
 
 Beside it, the web service answers HTTP on its own: a request's hostname names a tenant, found in the
 platform table; the service reads that tenant's data only through `withTenant` in `packages/db`,
@@ -459,6 +507,7 @@ again brings an environment's addresses up to date rather than only creating wha
 | Workspace         | Build                               | Output                                       |
 | ----------------- | ----------------------------------- | -------------------------------------------- |
 | `packages/domain` | `tsc -p tsconfig.build.json`        | `dist/` - JS, `.d.ts` and source maps        |
+| `packages/editor` | `tsc -p tsconfig.build.json`        | `dist/`, beside the `style.css` it exports   |
 | `apps/web`        | `vite build`                        | `dist/` - the static renderer bundle         |
 | `apps/desktop`    | `tsc`, then esbuild for the preload | `dist/main.js`, `dist/preload.js` (CommonJS) |
 

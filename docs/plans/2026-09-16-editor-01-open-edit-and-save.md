@@ -93,13 +93,18 @@ raised, with whose each is; no requirement claim changes.
 6. **No refusal had a status, and one refusal was missing.** A write from a session whose lock lapsed or
    was released cannot be `lock.held`, which names a holder. **Built and amended:** 409 for `lock.held`,
    the new `lock.required`, `version.precondition`, `iteration.stale` and `iteration.conflict`, each
-   carrying its members; 400 `content.invalid` (decision 10).
+   carrying its members; 400 `content.invalid` (decision 10). **Amended in the build, task 12:** the
+   answers named here are the store's own, and stay dotted throughout this plan; the wire that actually
+   reaches a caller spells each with an underscore instead (`lock_held`, `lock_required`,
+   `version_precondition`, `iteration_stale`, `iteration_conflict`, `content_invalid`), per finding 8's
+   ruling below.
 7. **Done editing sent its body with a `DELETE`**, which some clients and proxies drop. **Built and
    amended:** the session and the opened-from version travel in the query (decision 11).
 8. **Two spellings of error code in one API.** The design's codes are dotted (`lock.held`); every code
-   the service returns today is snake_case (`not_found`, `sign_in_failed`). **Built as designed and
-   raised** for service-foundations.md, which owns the vocabulary; renaming is cheap until a client
-   depends on either.
+   the service returns today is snake_case (`not_found`, `sign_in_failed`). **Amended in the build, task
+   12:** Ken accepted decision F rather than waiting for service-foundations.md - every one of this
+   plan's codes is mapped to an underscore at the wire in one place, `apps/service/src/wire-codes.ts` -
+   and service-foundations.md still owns the vocabulary for any future code.
 9. **Where the service keeps each session's latest accepted sequence, and what a cut promotes when
    nothing was saved,** were not said. **Built and amended:** on the iteration rows, and
    `version.unchanged` (decision 12).
@@ -7980,27 +7985,35 @@ docker compose -f deploy/compose.yaml up -d --build --wait
 8. In another private window, sign in as **Alice**: **There are no components you may read.** Opening
    `http://dev.acme.localhost:8080/#/components/<the id from Ada's address bar>` says **There is nothing
    here, or nothing you may read.**
-9. Reload Ada's page while editing: it opens at the latest version, and her session - the same tab - still
-   holds the lock. Unsaved changes typed in the two seconds before a reload are lost from the page, and
-   saved ones that were never made a version are kept in the database but not shown.
+9. Type something and wait for **Saved at** the time, so this session has already saved at least one
+   iteration, then reload the page while still editing: the tab's session id survives the reload,
+   because the lock is still active under it, and the page opens at the latest version. Type again: the
+   service has already accepted more from this same session than a freshly reloaded page remembers
+   sending, so the page says **Newer text was saved from another window, or from before this page was
+   reloaded. It is kept. Continuing starts a new session from what is on screen.**, offers **Continue**,
+   and what is on screen is offered under **Text that was not saved** too. Click **Continue**: a new
+   session claims the lock from what is on screen, and typing saves normally again. Whatever was typed
+   in the two seconds right before the reload is lost from the page either way; every iteration actually
+   saved is kept in the database for thirty days, but nothing in this slice shows it.
 
 ### What a person can see, and what only a test proves
 
-| Claim                                                                                                         | Seen by hand                           | Proven only by a test                                              |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------ |
-| Typing, `Enter`, `Backspace` joining, select-all and delete, undo - in a real browser, with ids kept storable | Steps 2 to 4                           |                                                                    |
-| Saved, saving, and the version number after a cut                                                             | Steps 2, 4                             |                                                                    |
-| Not saved, retrying; a claim with no answer in ten seconds; a save finding the lock gone                      |                                        | `session.test.ts`                                                  |
-| Another person refused with the holder named; the typed text kept                                             | Step 5                                 |                                                                    |
-| Continue here, in a second window of the same person                                                          | Open a second tab as Ada               | `ComponentEditor.test.tsx`                                         |
-| An unreadable component answers exactly as a missing one                                                      | Step 8 (the page)                      | `component-routes.test.ts`, byte for byte                          |
-| A lock expiring cuts nothing, and another person may then claim it                                            |                                        | `promotion.test.ts` (after fifteen minutes it can be seen by hand) |
-| Stale and conflicting sequences, a version that moved on, content that does not parse                         |                                        | `editing.test.ts`, `editing-routes.test.ts`                        |
-| No write in a session can deadlock against a change to access                                                 |                                        | `editing-routes.test.ts`                                           |
-| Another environment's session, component or body refused                                                      |                                        | `cross-tenant.test.ts`                                             |
-| Spellchecking as you type                                                                                     | Step 2, if the browser's checker is on | Only that the attribute is set                                     |
-| Iterations kept, immutable, referenced by nothing                                                             |                                        | `editing.test.ts`                                                  |
-| The desktop app                                                                                               | `pnpm app`, which loads the same page  |                                                                    |
+| Claim                                                                                                                      | Seen by hand                           | Proven only by a test                                              |
+| -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------ |
+| Typing, `Enter`, `Backspace` joining, select-all and delete, undo - in a real browser, with ids kept storable              | Steps 2 to 4                           |                                                                    |
+| Saved, saving, and the version number after a cut                                                                          | Steps 2, 4                             |                                                                    |
+| A reload that finds the service ahead of it: lost, with what could not be sent kept, and Continue starting a fresh session | Step 9                                 |                                                                    |
+| Not saved, retrying; a claim with no answer in ten seconds; a save finding the lock gone for another reason                |                                        | `session.test.ts`                                                  |
+| Another person refused with the holder named; the typed text kept                                                          | Step 5                                 |                                                                    |
+| Continue here, in a second window of the same person                                                                       | Open a second tab as Ada               | `ComponentEditor.test.tsx`                                         |
+| An unreadable component answers exactly as a missing one                                                                   | Step 8 (the page)                      | `component-routes.test.ts`, byte for byte                          |
+| A lock expiring cuts nothing, and another person may then claim it                                                         |                                        | `promotion.test.ts` (after fifteen minutes it can be seen by hand) |
+| Stale and conflicting sequences, a version that moved on, content that does not parse                                      |                                        | `editing.test.ts`, `editing-routes.test.ts`                        |
+| No write in a session can deadlock against a change to access                                                              |                                        | `editing-routes.test.ts`                                           |
+| Another environment's session, component or body refused                                                                   |                                        | `cross-tenant.test.ts`                                             |
+| Spellchecking as you type                                                                                                  | Step 2, if the browser's checker is on | Only that the attribute is set                                     |
+| Iterations kept, immutable, referenced by nothing                                                                          |                                        | `editing.test.ts`                                                  |
+| The desktop app                                                                                                            | `pnpm app`, which loads the same page  |                                                                    |
 
 ---
 
