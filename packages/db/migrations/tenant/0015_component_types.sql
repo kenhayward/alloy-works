@@ -57,3 +57,17 @@ where not exists (
 insert into component_type_default (component_type_id)
   values ('5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01')
   on conflict (singleton) do nothing;
+
+-- The runtime role reads the environment's declared default and nothing else: nothing writes it yet -
+-- no route changes an environment's default component type - the way 0011, 0012 and 0014 restrict a
+-- table to the writes something actually makes. Insert is left alone rather than revoked too, since the
+-- primary key already limits this table to its one row and a later plan may want the runtime role able
+-- to declare a fresh default without a second migration widening the grant back.
+do $$
+begin
+  execute format(
+    'revoke update, delete, truncate on component_type_default from %I',
+    current_schema()
+  );
+end
+$$;

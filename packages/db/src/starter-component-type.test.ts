@@ -3,6 +3,8 @@ import {
   readDefinition,
   type ComponentTypeDefinition,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { defaultComponentType, listComponentTypes, STARTER_COMPONENT_TYPE_ID } from './creation.js';
@@ -91,17 +93,78 @@ describe('the component type every environment starts with', () => {
     expect(types).toEqual([{ id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true }]);
   });
 
-  it('does not list another environment component types', async () => {
-    const made = await service.withTenant(other, async (trx) => {
+  it('does not list another environment component types, which declares its own default', async () => {
+    // A second, genuinely listable type in `other` - an artifact with its own version, not the bare
+    // artifact a first draft of this test left uninhabited, which `listComponentTypes`'s inner join
+    // would have left out of every listing regardless of which tenant asked, proving no isolation at
+    // all. This one must be told from acme's Topic, or the isolation is not being exercised.
+    const procedureId = await service.withTenant(other, async (trx) => {
       const artifact = await trx
         .insertInto('artifact')
         .values({ kind: 'componentType', space_id: null })
         .returning('id')
         .executeTakeFirstOrThrow();
+      const content: ComponentTypeDefinition = {
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        id: artifact.id,
+        name: 'Procedure',
+        assignments: [],
+      };
+      const digests = versionDigests({ kind: 'componentType', content });
+      await trx
+        .insertInto('artifact_version')
+        .values({
+          artifact_id: artifact.id,
+          kind: 'componentType',
+          revision_no: 0,
+          version_no: 1,
+          author_id: null,
+          note: null,
+          schema_version: 1,
+          content: JSON.stringify(content),
+          content_hash: digests.contentHash,
+          metadata_values: '{}',
+          not_carried: '[]',
+          component_type_version_id: null,
+          version_digest: digests.versionDigest,
+        })
+        .execute();
       return artifact.id;
     });
-    const here = await service.withTenant(acme, (trx) => listComponentTypes(trx));
-    expect(here.map((each) => each.id)).not.toContain(made);
+
+    // component_type_default gives the runtime role no update (below), so declaring `other`'s own
+    // default is the owner's write, the same as 0015's own insert is.
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      await admin.query(
+        `update ${admin.escapeIdentifier(other.schema)}.component_type_default set component_type_id = $1`,
+        [procedureId],
+      );
+    } finally {
+      await admin.end();
+    }
+
+    const [here, theirs] = await Promise.all([
+      service.withTenant(acme, (trx) => listComponentTypes(trx)),
+      service.withTenant(other, (trx) => listComponentTypes(trx)),
+    ]);
+    expect(here).toEqual([{ id: STARTER_COMPONENT_TYPE_ID, name: 'Topic', isDefault: true }]);
+    expect(theirs.map((each) => each.name)).toContain('Procedure');
+    expect(await service.withTenant(acme, defaultComponentType)).toBe(STARTER_COMPONENT_TYPE_ID);
+    expect(await service.withTenant(other, defaultComponentType)).toBe(procedureId);
+  });
+
+  it('gives the runtime role no update, delete or truncate on the environment default, since nothing writes it yet', async () => {
+    for (const statement of [
+      sql`update component_type_default set component_type_id = ${STARTER_COMPONENT_TYPE_ID}`,
+      sql`delete from component_type_default`,
+      sql`truncate component_type_default`,
+    ]) {
+      await expect(service.withTenant(acme, (trx) => statement.execute(trx))).rejects.toThrow(
+        /permission denied/,
+      );
+    }
   });
 
   it('still refuses a component version with no author', async () => {
