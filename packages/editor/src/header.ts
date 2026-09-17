@@ -1,0 +1,69 @@
+import type { Node } from 'prosemirror-model';
+import type { Command } from 'prosemirror-state';
+
+/**
+ * The same tag rule `contentDocumentSchema` applies (CNT-140). Repeated here rather than imported,
+ * because `packages/domain` exposes the document's parser and not the pieces of its schema, and a
+ * command has to answer before it dispatches rather than by catching a parse failure afterwards. One
+ * test in the domain and one here hold them to the same set of examples.
+ */
+const BCP_47 = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/;
+
+/** The component's header as the editor holds it: the root's members other than the blocks. */
+export interface ComponentHeader {
+  readonly title: string;
+  readonly language: string;
+  readonly direction: 'ltr' | 'rtl';
+}
+
+/** What the document says now, for a surface that has to show it. */
+export function headerOf(doc: Node): ComponentHeader {
+  return {
+    title: doc.attrs.title as string,
+    language: doc.attrs.language as string,
+    direction: doc.attrs.direction as ComponentHeader['direction'],
+  };
+}
+
+/**
+ * Sets an attribute of the root as a step - `DocAttrStep`, through `Transform.setDocAttribute` - so it
+ * joins the same history the content is in, makes the document changed, and travels in the whole
+ * content document the session already sends (component-editor.md, "The surface": each is saved,
+ * undoable and versioned like content).
+ */
+const setRoot =
+  (attribute: keyof ComponentHeader, value: string): Command =>
+  (state, dispatch) => {
+    if (state.doc.attrs[attribute] === value) return false;
+    dispatch?.(state.tr.setDocAttribute(attribute, value));
+    return true;
+  };
+
+/**
+ * A title the content model would refuse is refused here instead, without dispatching: the document
+ * must never reach a state `fromEditor` cannot serialise, because the session takes its snapshot
+ * inside the save path where nothing is waiting to catch a throw. The same rule as the editor's other
+ * invariants (ADR-0023, and editor 1's decision 5).
+ *
+ * Stored trimmed - the same agreement `createComponent` holds at creation
+ * (`packages/db/src/creation.ts`): a title that is empty after trimming is refused, and what is set is
+ * the trimmed form, never the untrimmed one. Trimming only to decide refusal and then setting the
+ * untrimmed string would let a component's title carry leading or trailing whitespace that creation
+ * itself would never have stored, which is the asymmetry this avoids.
+ */
+export const setTitle =
+  (title: string): Command =>
+  (state, dispatch) => {
+    const trimmed = title.trim();
+    return trimmed === '' ? false : setRoot('title', trimmed)(state, dispatch);
+  };
+
+/** As `setTitle`, for the base language (CNT-140). */
+export const setLanguage =
+  (language: string): Command =>
+  (state, dispatch) =>
+    BCP_47.test(language) ? setRoot('language', language)(state, dispatch) : false;
+
+/** As `setTitle`, for the base direction (CNT-059). The enum is the model's, so there is no bad value. */
+export const setDirection = (direction: ComponentHeader['direction']): Command =>
+  setRoot('direction', direction);

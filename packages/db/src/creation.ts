@@ -176,10 +176,10 @@ export type CreateComponentAnswer =
  *
  * The title, language and direction are validated here, before anything is written:
  * `contentDocumentSchema.title` is `min(1)` with no trim, so a title of spaces alone would otherwise
- * parse - trimmed here, and refused if trimming leaves nothing. Trimmed once, at creation, rather than
- * on every keystroke: `packages/editor`'s `setTitle` (task 4) only refuses a title that is blank after
- * trimming and otherwise stores exactly what was typed, so an edit is never silently rewritten. The
- * language is checked against `contentDocumentSchema.shape.language`, the same schema `parseContentDocument`
+ * parse - trimmed here, and refused if trimming leaves nothing. `packages/editor`'s `setTitle` holds
+ * the same agreement on every edit: trimmed before it is set, and refused only when trimming leaves
+ * nothing, so a component's title never carries whitespace one path would have stripped and the other
+ * would not. The language is checked against `contentDocumentSchema.shape.language`, the same schema `parseContentDocument`
  * checks it with. Validating first, rather than catching whatever `createArtifact` throws, means
  * nothing else in this content can be mistaken for a bad header: the block identifier is freshly made
  * and the empty paragraph is fixed, so `createArtifact` throwing past this point is a bug, not a
