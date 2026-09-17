@@ -130,6 +130,20 @@ export {
   type NamingAnswer,
 } from './first-administrator.js';
 export {
+  claimInvitation,
+  INVITATION_DAYS,
+  invite,
+  invitedAddress,
+  listInvitations,
+  readInvitation,
+  withdrawInvitation,
+  type ClaimingIdentity,
+  type InvitationAnswer,
+  type InvitationRefusal,
+  type StoredInvitation,
+  type WithdrawalAnswer,
+} from './invitations.js';
+export {
   claimLock,
   ITERATION_RETENTION_DAYS,
   iterationDigest,

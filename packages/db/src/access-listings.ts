@@ -1,4 +1,5 @@
 import type { Level, Permission } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -10,6 +11,8 @@ export interface PersonSummary {
   readonly name: string | null;
   readonly email: string | null;
   readonly kind: 'user' | 'service' | 'external';
+  /** Invited by address, and not yet signed in. */
+  readonly invited: boolean;
 }
 
 export interface ListedGrant {
@@ -154,9 +157,8 @@ export async function listRoles(
 }
 
 /**
- * Everybody who is a principal of this tenant - who has signed in, or was made one before they did -
- * a page at a time in the order of their ids. Nobody who has not is anywhere to be chosen: a grant
- * names a principal, and inviting an address is not built.
+ * Everybody who is a principal of this tenant - who has signed in, or was invited by address and has
+ * not yet - a page at a time in the order of their ids.
  */
 export async function listPrincipals(
   trx: TenantTransaction,
@@ -167,6 +169,7 @@ export async function listPrincipals(
   const rows = await trx
     .selectFrom('principal')
     .select(['id', 'display_name as name', 'email', 'kind'])
+    .select(sql<boolean>`issuer is null`.as('invited'))
     .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
     .orderBy('id')
     .limit(page.limit + 1)

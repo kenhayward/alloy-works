@@ -54,7 +54,7 @@ describe('who a Google account may enter as (IAM-054)', () => {
     service.withTenant(tenant, (trx) =>
       trx
         .selectFrom('invitation')
-        .select('principal_id')
+        .select(['principal_id', 'accepted_at'])
         .where('email', '=', email)
         .executeTakeFirstOrThrow(),
     );
@@ -67,6 +67,7 @@ describe('who a Google account may enter as (IAM-054)', () => {
 
   it('finds that account again by issuer and subject, whatever its address becomes', async () => {
     const first = await admit(account('ada-1', 'ada@example.com'));
+    expect(first).toBeDefined();
     expect(await admit(account('ada-1', 'ada@elsewhere.example'))).toBe(first);
   });
 
@@ -79,7 +80,7 @@ describe('who a Google account may enter as (IAM-054)', () => {
     expect(
       await admit(account('grace-1', 'grace@example.com', { emailVerified: false })),
     ).toBeUndefined();
-    expect((await invitation('grace@example.com')).principal_id).toBeNull();
+    expect((await invitation('grace@example.com')).accepted_at).toBeNull();
   });
 
   it('admits any account of a named Workspace domain', async () => {

@@ -256,6 +256,8 @@ export async function administeringGrants(trx: TenantTransaction): Promise<strin
     .where('g.effect', '=', 'allow')
     .where('g.expires_at', 'is', null)
     .where('p.kind', '<>', 'external')
+    // Somebody invited who has not signed in administers nothing yet, and may never.
+    .where('p.issuer', 'is not', null)
     .where(sql<boolean>`'administer' = any (r.permissions)`)
     .orderBy('g.id')
     .execute();
