@@ -251,6 +251,10 @@ the tenant changes them; the cap can be raised and never removed.
 explanation reads the same way an allow does; so does "Deny Editing on this component to Grace", which
 leaves her reading it.
 
+**A denial does not reach past a nearer allow.** Because the nearest level decides, a denial at the
+tenant does not bind inside a space where someone administers and allows it; a tenant-wide rule that
+must hold everywhere is not expressible as a denial.
+
 ## Groups
 
 A **group** is `id`, a `name`, and its source:

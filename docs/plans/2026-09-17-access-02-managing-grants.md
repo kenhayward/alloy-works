@@ -5853,3 +5853,13 @@ Named here so the next plan starts from a list rather than from a reading of the
   component open ends their access at their next request, not on the open page. **The realtime plan.**
 - **Idempotency** on making and removing a grant (API-008): a make retried after its answer was lost is
   refused `grant_duplicate`, and a remove `not_found`. **Service foundations' idempotency work.**
+- **An administrator reaching a level they cannot read** - a space administrator can deny Reader there to
+  the tenant's own administrators, who then lose the component from their list and from its Access page;
+  the API still lets them remove the denial, but nothing on screen gets them back to it. **The Access
+  panel plan.**
+- **Choosing a person who signed in after the page opened** - the people listed are read once, when the
+  page opens; someone who signs in afterwards can be chosen only once the page is reloaded. **The Access
+  panel plan.**
+- **Giving an expired external grant again** - refused `grant_duplicate`, because expiry sits outside the
+  unique key a duplicate is decided against; the expired grant must be removed before the same one can be
+  made again. **The external access plan.**
