@@ -27,14 +27,19 @@ export interface SeededContent {
 
 /**
  * A principal by the identity the stand-in gives them: found by it once they have signed in; found by
- * a waiting invitation to their address - Ada's, which `pnpm dev:setup` makes - until they do; and
- * otherwise made now, by that identity, so a grant can name them before they sign in.
+ * a waiting invitation to their address - Ada's, which `pnpm dev:setup` makes, and only ever checked
+ * for Ada - until they do; and otherwise made now, by that identity, so a grant can name them before
+ * they sign in. Restricted to Ada's own address: anybody else's `person()` call never reads the
+ * invitation table at all, so a waiting invitation that happens to name their address - one somebody
+ * made a different way, through the service's own invitation route in a development database that has
+ * seen one - is never mistaken for identifying them.
  */
 async function person(
   trx: TenantTransaction,
   issuer: string,
   subject: string,
   name: string,
+  checkInvitation = false,
 ): Promise<string> {
   const email = `${subject}@example.com`;
   const known = await trx
@@ -44,13 +49,15 @@ async function person(
     .where('subject', '=', subject)
     .executeTakeFirst();
   if (known) return known.id;
-  const invited = await trx
-    .selectFrom('invitation')
-    .select('principal_id')
-    .where('email', '=', email)
-    .where('accepted_at', 'is', null)
-    .executeTakeFirst();
-  if (invited) return invited.principal_id;
+  if (checkInvitation) {
+    const invited = await trx
+      .selectFrom('invitation')
+      .select('principal_id')
+      .where('email', '=', email)
+      .where('accepted_at', 'is', null)
+      .executeTakeFirst();
+    if (invited) return invited.principal_id;
+  }
   const made = await trx
     .insertInto('principal')
     .values({ issuer, subject, email, display_name: name })
@@ -77,7 +84,7 @@ export async function seedDevelopmentContent(
   trx: TenantTransaction,
   input: DevelopmentContent,
 ): Promise<SeededContent> {
-  const ada = await person(trx, input.issuer, 'ada', 'Ada');
+  const ada = await person(trx, input.issuer, 'ada', 'Ada', true);
   const grace = await person(trx, input.issuer, 'grace', 'Grace');
   const general = await trx
     .selectFrom('space')

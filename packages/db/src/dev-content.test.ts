@@ -122,4 +122,45 @@ describe('the development content', () => {
       expect(component?.author).toBe(grace.id);
     });
   });
+
+  it('never resolves Grace to a waiting invitation, even one that happens to name her address', async () => {
+    const impostor = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Impostor' },
+      hostnames: ['impostor.acme.alloy.test'],
+    });
+    // A waiting invitation to Grace's address, made the way any invitation route would - never through
+    // `inviteFirstAdministrator`, which is Ada's alone in `person()` below. Only Ada's own lookup may
+    // ever resolve to a waiting invitation; Grace must always be found or made by her identity, since
+    // she authors content (the docstring above), which a principal still waiting on an invitation
+    // cannot.
+    const stray = await service.withTenant(impostor, async (trx) => {
+      const principal = await trx
+        .insertInto('principal')
+        .values({ email: 'grace@example.com', display_name: null })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('invitation')
+        .values({ email: 'grace@example.com', principal_id: principal.id })
+        .execute();
+      return principal.id;
+    });
+
+    const seeded = await service.withTenant(impostor, (trx) =>
+      seedDevelopmentContent(trx, { issuer: ISSUER }),
+    );
+    expect(seeded.created).toBe(true);
+
+    const grace = await service.withTenant(impostor, (trx) =>
+      trx
+        .selectFrom('principal')
+        .select(['id', 'issuer'])
+        .where('issuer', '=', ISSUER)
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow(),
+    );
+    expect(grace.id).not.toBe(stray);
+    expect(grace.issuer).toBe(ISSUER);
+  });
 });

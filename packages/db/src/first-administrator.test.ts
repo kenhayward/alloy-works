@@ -3,7 +3,11 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { administeredQuery, inviteFirstAdministrator } from './first-administrator.js';
+import {
+  administeredQuery,
+  inviteFirstAdministrator,
+  type FirstAdministratorAnswer,
+} from './first-administrator.js';
 import { administeringGrants, grant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
 import { claimInvitation } from './invitations.js';
@@ -13,10 +17,28 @@ import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  untilBlockedBy,
+  type TestDatabase,
+} from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
 const DAY = 24 * 60 * 60 * 1000;
+
+function latch() {
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => (open = resolve));
+  return { opened, open };
+}
+
+/** Like `latch`, but the opener carries a value out - here, a transaction's own backend pid. */
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
 
 describe('the first administrator, invited by address', () => {
   let db: TestDatabase;
@@ -144,6 +166,105 @@ describe('the first administrator, invited by address', () => {
     await expect(inviting(development, 'grace@example.com')).resolves.toEqual({
       refused: 'first_administrator.administrator_exists',
     });
+  });
+
+  /**
+   * Starts Ada's claim, waits until `inviteFirstAdministrator` is genuinely blocked behind it - on the
+   * `for update of i` that locks her still-open invitation, the same row `claimInvitation` locks - then
+   * lets the claim commit and returns what `inviteFirstAdministrator` answered. A claim takes no epoch
+   * (invitations.ts), so nothing here waits on that; it waits on the invitation row itself.
+   */
+  const racingInviteFirstAdministrator = async (
+    on: Tenant,
+    email: string,
+  ): Promise<FirstAdministratorAnswer> => {
+    const claimedPid = deferred<number>();
+    const claimed = latch();
+    const commit = latch();
+    const claim = service.withTenant(on, async (trx) => {
+      const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+      claimedPid.resolve(rows[0]!.pid);
+      const principalId = await claimInvitation(
+        trx,
+        {
+          issuer: ISSUER,
+          subject: 'ada',
+          email: 'ada@example.com',
+          emailVerified: true,
+          name: 'ada',
+        },
+        'organisation',
+      );
+      claimed.open();
+      await commit.opened;
+      return principalId;
+    });
+    const pid = await claimedPid.promise;
+    await claimed.opened;
+
+    const invitingWhileClaiming = inviting(on, email);
+    await untilBlockedBy(db.adminUrl, pid, 1);
+    commit.open();
+
+    await expect(claim).resolves.toBeDefined();
+    return invitingWhileClaiming;
+  };
+
+  it('refuses to invite another address while a claim to the waiting administrator invitation is in flight', async () => {
+    const racing = await tenant('Racing');
+    await inviting(racing, 'ada@example.com');
+
+    await expect(racingInviteFirstAdministrator(racing, 'grace@example.com')).resolves.toEqual({
+      refused: 'first_administrator.administrator_exists',
+    });
+    // Nothing left for the checks made before the wait to have missed: still one invitation, Ada's,
+    // now accepted, and no second one for Grace.
+    const invitations = await service.withTenant(racing, (trx) =>
+      trx.selectFrom('invitation').select('email').execute(),
+    );
+    expect(invitations).toEqual([{ email: 'ada@example.com' }]);
+  });
+
+  it('refuses to re-invite the same address while a claim to it is in flight, rather than making a second principal for it', async () => {
+    const racing = await tenant('Racing Again');
+    await inviting(racing, 'ada@example.com');
+
+    await expect(racingInviteFirstAdministrator(racing, 'ada@example.com')).resolves.toEqual({
+      refused: 'first_administrator.administrator_exists',
+    });
+    const invitations = await service.withTenant(racing, (trx) =>
+      trx.selectFrom('invitation').select(['email', 'principal_id']).execute(),
+    );
+    expect(invitations).toHaveLength(1);
+  });
+
+  it('cannot set who named an invitation, by the runtime role the service uses', async () => {
+    const provenance = await tenant('Provenance');
+    await inviting(provenance, 'ada@example.com');
+    const row = await service.withTenant(provenance, (trx) =>
+      trx.selectFrom('invitation').select('id').executeTakeFirstOrThrow(),
+    );
+
+    await expect(
+      service.withTenant(provenance, (trx) =>
+        sql`update invitation set named_by = 'mallory' where id = ${row.id}`.execute(trx),
+      ),
+    ).rejects.toThrow(/permission denied/);
+
+    await expect(
+      service.withTenant(provenance, (trx) =>
+        sql`insert into invitation (email, principal_id, named_by)
+            select 'mallory@example.com', principal_id, 'mallory' from invitation where id = ${row.id}`.execute(
+          trx,
+        ),
+      ),
+    ).rejects.toThrow(/permission denied/);
+
+    // Neither attempt moved anything: the invitation still names provisioning, and nothing else.
+    const invitations = await service.withTenant(provenance, (trx) =>
+      trx.selectFrom('invitation').select(['email', 'named_by']).execute(),
+    );
+    expect(invitations).toEqual([{ email: 'ada@example.com', named_by: 'provisioning' }]);
   });
 
   it('replaces an invitation that lapsed for another address, and never lets the lapsed one be claimed', async () => {

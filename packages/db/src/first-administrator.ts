@@ -1,5 +1,9 @@
 import { asAdministrator } from './admin.js';
-import { INVITATION_DAYS, invitedAddress } from './invitations.js';
+import {
+  INVITATION_DAYS,
+  INVITED_PRINCIPAL_CLEANUP_TABLES,
+  invitedAddress,
+} from './invitations.js';
 import type { Tenant } from './provision.js';
 import { signedInAddressQuery } from './sign-in.js';
 
@@ -43,9 +47,10 @@ export type FirstAdministratorAnswer =
  * Invites a tenant's first administrator by address (IAM-059): an invitation, as any administrator
  * makes, whose principal is granted Administrator at the tenant now, so the first sign-in the provider
  * verifies the address for is that administrator. Run by whoever provisions the tenant, as an
- * administrator of the database - the runtime role cannot make an invitation nobody inside the tenant
- * made - and best run before any sign-in route is permitted, so nobody can have signed in with the
- * address first.
+ * administrator of the database - `named_by` is what records that, and 0014 revokes the runtime role's
+ * privilege to write that one column, table-level, so nothing a request through the service does can
+ * make an invitation carry provisioning's own provenance - and best run before any sign-in route is
+ * permitted, so nobody can have signed in with the address first.
  *
  * Refused once somebody who has signed in administers the tenant; while another address's invitation
  * to administer waits unexpired; and where somebody who has signed in already shows this address,
@@ -63,15 +68,27 @@ export async function inviteFirstAdministrator(
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(`select 1 from ${schema}.access_epoch for update`);
 
-    const { rows: held } = await client.query<{ administered: boolean }>(
-      administeredQuery(`${schema}.`),
-    );
-    if (held[0]?.administered) {
+    // A claim (`claimInvitation`) takes no epoch, by design (invitations.ts), so it can commit
+    // between any two statements here. Each of these two checks is run again below, right after a
+    // `for update` that a concurrent claim of the tenant's waiting administrator invitation blocks
+    // behind - which is exactly what would let its commit slip past a check made only once, before
+    // the wait, still holding this address's or another's answer as it stood before that commit.
+    const checkAdministered = async (): Promise<boolean> => {
+      const { rows } = await client.query<{ administered: boolean }>(
+        administeredQuery(`${schema}.`),
+      );
+      return rows[0]?.administered ?? false;
+    };
+    const checkSignedIn = async (): Promise<boolean> => {
+      const { rowCount } = await client.query(signedInAddressQuery(`${schema}.`), [email]);
+      return (rowCount ?? 0) > 0;
+    };
+
+    if (await checkAdministered()) {
       answer = { refused: 'first_administrator.administrator_exists' };
       return;
     }
-    const signedIn = await client.query(signedInAddressQuery(`${schema}.`), [email]);
-    if (signedIn.rowCount) {
+    if (await checkSignedIn()) {
       answer = { refused: 'first_administrator.signed_in' };
       return;
     }
@@ -99,15 +116,28 @@ export async function inviteFirstAdministrator(
          and 'administer' = any (r.permissions)
        for update of i`,
     );
+    // Re-checked: this wait is exactly where a concurrent claim of one of these rows would have
+    // blocked us, so its commit - now visible to the fresh statements above - must be answered here,
+    // before the loop below ever treats the claimed row as still merely "waiting".
+    if (await checkAdministered()) {
+      answer = { refused: 'first_administrator.administrator_exists' };
+      return;
+    }
+    if (await checkSignedIn()) {
+      answer = { refused: 'first_administrator.signed_in' };
+      return;
+    }
     for (const other of waiting.rows) {
       if (other.email === email) continue;
       if (!other.lapsed) {
         answer = { refused: 'first_administrator.already_invited' };
         return;
       }
-      await client.query(`delete from ${schema}.access_grant where principal_id = $1`, [
-        other.principal_id,
-      ]);
+      for (const table of INVITED_PRINCIPAL_CLEANUP_TABLES) {
+        await client.query(`delete from ${schema}.${table} where principal_id = $1`, [
+          other.principal_id,
+        ]);
+      }
       await client.query(`delete from ${schema}.principal where id = $1`, [other.principal_id]);
     }
 
@@ -116,6 +146,18 @@ export async function inviteFirstAdministrator(
        where email = $1 and accepted_at is null for update`,
       [email],
     );
+    // Re-checked again: this address's own row, specifically, is what a claim of it locks - the same
+    // wait as above when it is the one already caught there, but this address can also reach this
+    // point with nothing to wait on above (no other administrator invitation exists yet) while a
+    // claim of its own, prior invitation is still in flight.
+    if (await checkAdministered()) {
+      answer = { refused: 'first_administrator.administrator_exists' };
+      return;
+    }
+    if (await checkSignedIn()) {
+      answer = { refused: 'first_administrator.signed_in' };
+      return;
+    }
     let principalId = open.rows[0]?.principal_id;
     if (open.rows[0]) {
       await client.query(

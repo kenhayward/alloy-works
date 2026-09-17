@@ -1,6 +1,5 @@
 import { decide } from '@alloy-works/domain';
 import { sql } from 'kysely';
-import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
@@ -22,6 +21,7 @@ import { createTenantDatabase, type TenantDatabase } from './tenant-database.js'
 import {
   freshDatabase,
   TEST_PASSWORDS,
+  untilBlockedBy,
   untilWaitingOnLocks,
   whileAccessIsDecided,
   type TestDatabase,
@@ -49,43 +49,6 @@ function deferred<T>() {
   let resolve: (value: T) => void = () => {};
   const promise = new Promise<T>((r) => (resolve = r));
   return { promise, resolve };
-}
-
-/**
- * Waits until at least `count` other connections are blocked specifically behind `blockerPid`, found
- * through `pg_blocking_pids` rather than `wait_event` alone: the access epoch is FOR SHARE/FOR UPDATE
- * over a row too, so a wait on it shows the identical `wait_event_type = 'Lock', wait_event =
- * 'transactionid'` as a wait on an ordinary row - a poll on the wait event alone cannot tell a wait on
- * the epoch from a wait on the claim's row, and would let the test proceed before the interleaving it
- * names is actually reached. `pg_blocking_pids(pid)` names exactly who a backend is waiting behind, so
- * asking for a wait behind this specific pid does. Local to this file: only this test needs to tell
- * the two waits apart.
- */
-async function untilBlockedBy(adminUrl: string, blockerPid: number, count: number): Promise<void> {
-  const client = new pg.Client({ connectionString: adminUrl });
-  await client.connect();
-  try {
-    const deadline = Date.now() + 5_000;
-    for (;;) {
-      const { rows } = await client.query<{ waiting: number }>(
-        `select count(*)::int as waiting from pg_stat_activity
-         where datname = current_database()
-           and backend_type = 'client backend'
-           and pid <> pg_backend_pid()
-           and $1 = any (pg_blocking_pids(pid))`,
-        [blockerPid],
-      );
-      if ((rows[0]?.waiting ?? 0) >= count) return;
-      if (Date.now() > deadline) {
-        throw new Error(
-          `Fewer than ${count} connections were blocked behind backend ${blockerPid} after five seconds`,
-        );
-      }
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-  } finally {
-    await client.end();
-  }
 }
 
 describe('inviting somebody by address, before they sign in', () => {

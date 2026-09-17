@@ -7,10 +7,9 @@ import {
   inviteFirstAdministrator,
   migrate,
   permitGoogleSignIn,
-  type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import {
   STAND_IN_USERS,
   startStandInProvider,
@@ -27,6 +26,7 @@ import { signIn } from './test/sign-in.js';
 const HOST = 'acme.alloy.test';
 const GOOGLE_HOST = 'acme-google.alloy.test';
 const GOOGLE_SIGN_IN = 'signin.acme-google.alloy.test';
+const CLOSING_HOST = 'closing.acme.alloy.test';
 
 type Explained = { permissions: { permission: string; allowed: boolean }[] };
 
@@ -35,8 +35,6 @@ describe('the first administrator, arriving by invitation', () => {
   let idp: StandInProvider;
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
-  let organisation: Tenant;
-  let google: Tenant;
 
   /** Whether `cookie`'s holder administers the environment at `host`, asked of the service itself. */
   const administers = async (host: string, cookie: string) => {
@@ -85,7 +83,10 @@ describe('the first administrator, arriving by invitation', () => {
         {
           clientId: 'alloy',
           clientSecret: 'stand-in-secret',
-          redirectUris: [`http://${HOST}/v1/sign-in/organisation/callback`],
+          redirectUris: [
+            `http://${HOST}/v1/sign-in/organisation/callback`,
+            `http://${CLOSING_HOST}/v1/sign-in/organisation/callback`,
+          ],
         },
         {
           clientId: 'alloy-google',
@@ -98,31 +99,6 @@ describe('the first administrator, arriving by invitation', () => {
         { id: 'ada-unverified', name: 'Ada', email: 'ada@example.com', emailVerified: false },
       ],
     });
-    organisation = await createTenant(db.adminUrl, db.migratorUrl, {
-      organisation: { id: 'acme', name: 'Acme' },
-      tenant: { id: db.newTenantId(), name: 'Production' },
-      hostnames: [HOST],
-    });
-    google = await createTenant(db.adminUrl, db.migratorUrl, {
-      organisation: { id: 'acme', name: 'Acme' },
-      tenant: { id: db.newTenantId(), name: 'Demonstration' },
-      hostnames: [GOOGLE_HOST],
-    });
-    // Invited before any route is permitted, as provisioning does it.
-    for (const tenant of [organisation, google]) {
-      await expect(
-        inviteFirstAdministrator(db.adminUrl, tenant, {
-          email: 'ada@example.com',
-          namedBy: 'provisioning',
-        }),
-      ).resolves.toEqual({ invited: true, renewed: false });
-    }
-    await configureOrganisationSignIn(db.adminUrl, organisation, {
-      issuer: idp.issuer,
-      clientId: 'alloy',
-      secretName: 'stand_in',
-    });
-    await permitGoogleSignIn(db.adminUrl, google);
     tenantDb = createTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
@@ -145,6 +121,33 @@ describe('the first administrator, arriving by invitation', () => {
   });
 
   it('IAM-059 arrives by an invitation to a named address, through a sign-in route the environment permits', async () => {
+    const organisation = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Production' },
+      hostnames: [HOST],
+    });
+    const google = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Demonstration' },
+      hostnames: [GOOGLE_HOST],
+    });
+    // Invited before any route is permitted, as provisioning does it - and asserted here, not left to
+    // a `beforeAll` this test's own title cites nothing of.
+    for (const tenant of [organisation, google]) {
+      await expect(
+        inviteFirstAdministrator(db.adminUrl, tenant, {
+          email: 'ada@example.com',
+          namedBy: 'provisioning',
+        }),
+      ).resolves.toEqual({ invited: true, renewed: false });
+    }
+    await configureOrganisationSignIn(db.adminUrl, organisation, {
+      issuer: idp.issuer,
+      clientId: 'alloy',
+      secretName: 'stand_in',
+    });
+    await permitGoogleSignIn(db.adminUrl, google);
+
     // Through the organisation's provider: somebody else first, then the address unverified, then Ada.
     expect(await administers(HOST, await signIn(app, HOST, 'grace', idp.issuer))).toBe(false);
     expect(await administers(HOST, await signIn(app, HOST, 'ada-unverified', idp.issuer))).toBe(
@@ -186,6 +189,52 @@ describe('the first administrator, arriving by invitation', () => {
     });
     expect(started.statusCode).toBe(404);
     const waiting = await tenantDb.withTenant(closed, (trx) =>
+      trx.selectFrom('invitation').select('accepted_at').execute(),
+    );
+    expect(waiting).toEqual([{ accepted_at: null }]);
+  });
+
+  it('cannot claim through a route that closes between starting and finishing a sign-in', async () => {
+    const closing = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Closing' },
+      hostnames: [CLOSING_HOST],
+    });
+    await inviteFirstAdministrator(db.adminUrl, closing, {
+      email: 'ada@example.com',
+      namedBy: 'provisioning',
+    });
+    await configureOrganisationSignIn(db.adminUrl, closing, {
+      issuer: idp.issuer,
+      clientId: 'alloy',
+      secretName: 'stand_in',
+    });
+
+    const started = await app.inject({
+      url: '/v1/sign-in/organisation',
+      headers: { host: CLOSING_HOST },
+    });
+    const attempt = started.cookies.find((cookie) => cookie.name === '__Host-aw_signin');
+    if (started.statusCode !== 302 || !attempt || !started.headers.location) {
+      throw new Error(`Starting sign-in did not redirect: ${started.statusCode}`);
+    }
+    const back = await completeAtStandIn(started.headers.location, 'ada', idp.issuer);
+
+    // Closes only the route, not through `closeSignInRoute` - which also clears every attempt, and
+    // would then fail the callback below over a missing attempt rather than what this test means to
+    // show: the callback looks the route up again on its own, not only trusting that starting found
+    // it open. `closing.schema` is generated by `newTenantId` above, never user input.
+    await queryAs(
+      db.adminUrl,
+      `delete from ${closing.schema}.sign_in_route where route = 'organisation'`,
+    );
+
+    const finished = await app.inject({
+      url: `${back.pathname}${back.search}`,
+      headers: { host: CLOSING_HOST, cookie: `${attempt.name}=${attempt.value}` },
+    });
+    expect(finished.statusCode).toBe(401);
+    const waiting = await tenantDb.withTenant(closing, (trx) =>
       trx.selectFrom('invitation').select('accepted_at').execute(),
     );
     expect(waiting).toEqual([{ accepted_at: null }]);

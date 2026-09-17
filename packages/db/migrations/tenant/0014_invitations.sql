@@ -54,3 +54,25 @@ alter table invitation add constraint invitation_accepted_through
   check (accepted_through is null or accepted_at is not null);
 -- At most one invitation waits for an address.
 create unique index invitation_open on invitation (email) where accepted_at is null;
+
+-- The runtime role never sets who invited on the tenant's behalf: `invited_by` it may write itself -
+-- an administrator inviting through the service - but `named_by` records only what an administrator
+-- of the database put there while provisioning, and no request through the service may write it.
+-- Table-level insert and update are dropped and re-granted only for the columns the service actually
+-- writes, the way 0011 restricted `first_administrator`'s own claim columns - naming `named_by` out of
+-- both lists, rather than revoking it by name, is what makes the exclusion hold: Postgres ignores
+-- `revoke insert (col)` / `revoke update (col)` once a role already holds the unqualified, table-level
+-- privilege a column-level grant would otherwise narrow.
+do $$
+begin
+  execute format('revoke insert, update on invitation from %I', current_schema());
+  execute format(
+    'grant insert (email, principal_id, invited_by, expires_at) on invitation to %I',
+    current_schema()
+  );
+  execute format(
+    'grant update (expires_at, accepted_at, accepted_through) on invitation to %I',
+    current_schema()
+  );
+end
+$$;

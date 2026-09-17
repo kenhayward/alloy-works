@@ -196,6 +196,19 @@ export async function invite(
 }
 
 /**
+ * The tables cleared, in order, to remove an invitation's principal entirely - its grants, then its
+ * group memberships - before the principal itself goes, cascading away the invitation row through its
+ * own foreign key. Its own grants first: a first administrator's names the principal as its grantor
+ * too, which the grant's `granted_by` restricts, so the principal cannot go while one stands.
+ *
+ * Shared between `withdrawInvitation` here, inside a `TenantTransaction`, and
+ * `inviteFirstAdministrator`'s cleanup of another address's lapsed administrator invitation
+ * (first-administrator.ts), which runs outside one, over an administrator's own raw connection - so
+ * the two cannot list different tables, or a different order, without one of them changing here too.
+ */
+export const INVITED_PRINCIPAL_CLEANUP_TABLES = ['access_grant', 'group_member'] as const;
+
+/**
  * Withdraws an invitation nobody has accepted: its principal goes, and every grant and membership that
  * named it. Refused once accepted, since the principal is then somebody who signs in, whose grants are
  * removed one by one. Who may withdraw - `administer` at the tenant - is the caller's to decide first.
@@ -218,10 +231,9 @@ export async function withdrawInvitation(
     .executeTakeFirst();
   if (!row) return { refused: 'invitation.missing' };
   if (row.accepted_at !== null) return { refused: 'invitation.accepted' };
-  // Its own grants first: a first administrator's names the principal as its grantor too, which the
-  // grant's `granted_by` restricts, so the principal cannot go while one stands.
-  await trx.deleteFrom('access_grant').where('principal_id', '=', row.principal_id).execute();
-  await trx.deleteFrom('group_member').where('principal_id', '=', row.principal_id).execute();
+  for (const table of INVITED_PRINCIPAL_CLEANUP_TABLES) {
+    await trx.deleteFrom(table).where('principal_id', '=', row.principal_id).execute();
+  }
   // The invitation goes with it, by its key's cascade.
   await trx.deleteFrom('principal').where('id', '=', row.principal_id).execute();
   return { withdrawn: row.id };
