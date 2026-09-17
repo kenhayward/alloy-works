@@ -147,6 +147,14 @@ describe('the first administrator, arriving by invitation', () => {
       secretName: 'stand_in',
     });
     await permitGoogleSignIn(db.adminUrl, google);
+    // The Google environment has an organisation provider on record too, and its route closed: so the
+    // refusal below is the environment not permitting the route, not a provider nobody configured.
+    await configureOrganisationSignIn(db.adminUrl, google, {
+      issuer: idp.issuer,
+      clientId: 'alloy',
+      secretName: 'stand_in',
+    });
+    await closeSignInRoute(db.adminUrl, google, 'organisation');
 
     // Through the organisation's provider: somebody else first, then the address unverified, then Ada.
     expect(await administers(HOST, await signIn(app, HOST, 'grace', idp.issuer))).toBe(false);
@@ -154,6 +162,20 @@ describe('the first administrator, arriving by invitation', () => {
       false,
     );
     expect(await administers(HOST, await signIn(app, HOST, 'ada', idp.issuer))).toBe(true);
+
+    // In the environment that permits only Google, the organisation's route is refused before any
+    // identity is asked for, and its invitation is still waiting for Ada.
+    const closed = await app.inject({
+      url: '/v1/sign-in/organisation',
+      headers: { host: GOOGLE_HOST },
+    });
+    expect(closed.statusCode).toBe(404);
+    expect(closed.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    await expect(
+      tenantDb.withTenant(google, (trx) =>
+        trx.selectFrom('invitation').select('accepted_at').execute(),
+      ),
+    ).resolves.toEqual([{ accepted_at: null }]);
 
     // Through Google, in an environment that permits only Google: the same invitation's shape.
     expect(await administers(GOOGLE_HOST, await signInWithGoogle('ada'))).toBe(true);

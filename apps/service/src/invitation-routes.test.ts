@@ -25,6 +25,7 @@ import { environmentSecrets } from './secrets.js';
 import { signIn } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
+const GOOGLE_SIGN_IN = 'signin.acme.alloy.test';
 const MISSING = '00000000-0000-4000-8000-000000000000';
 
 type Json = Record<string, unknown>;
@@ -68,6 +69,11 @@ describe('inviting people through the service', () => {
           clientSecret: 'stand-in-secret',
           redirectUris: [`http://${HOST}/v1/sign-in/organisation/callback`],
         },
+        {
+          clientId: 'alloy-google',
+          clientSecret: 'google-secret',
+          redirectUris: [`http://${GOOGLE_SIGN_IN}/v1/sign-in/google/callback`],
+        },
       ],
       users: [
         ...STAND_IN_USERS,
@@ -90,7 +96,15 @@ describe('inviting people through the service', () => {
       db: tenantDb,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      secrets: environmentSecrets({
+        SECRET_STAND_IN: 'stand-in-secret',
+        SECRET_GOOGLE: 'google-secret',
+        SECRET_SIGN_IN_STATE: 'test-only-state-key-0123456789abcdef',
+      }),
+      // A Google client the service is configured with, which this environment does not permit - so
+      // the closed Google route below is closed by the environment's own settings, not by a service
+      // that could never offer Google to anybody.
+      google: { issuer: idp.issuer, clientId: 'alloy-google', signInHost: GOOGLE_SIGN_IN },
     });
     for (const user of ['ada', 'grace']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
@@ -178,8 +192,9 @@ describe('inviting people through the service', () => {
     });
     expect(stranger.statusCode).toBe(404);
 
-    // Google - a route this environment does not permit - never claims the invitation either: it is
-    // refused closed before any identity is even asked for, and the invitation is still waiting.
+    // Google - a route the service offers but this environment does not permit - never claims the
+    // invitation either: it is refused closed before any identity is even asked for, and the
+    // invitation is still waiting.
     const closedGoogle = await app.inject({ url: '/v1/sign-in/google', headers: { host: HOST } });
     expect(closedGoogle.statusCode).toBe(404);
     expect(closedGoogle.json()).toMatchObject({ code: 'sign_in_route_closed' });
