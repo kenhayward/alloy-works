@@ -171,14 +171,25 @@ describe('creating a component', () => {
       'field',
       'metadataSchema',
     ]);
+    // Pins createArtifact's identity rule for a definition: the artifact id is the payload's own id,
+    // not a generated one - which is what makes referencing a field or schema by that id later (above)
+    // find the one made here.
     expect(made.field).toBe('22222222-2222-4222-8222-222222222222');
     expect(made.schema).toBe('33333333-3333-4333-8333-333333333333');
+  });
+
+  it("trims the title before storing it - task 4's setTitle only refuses a blank one, and stores what was typed", async () => {
+    const answer = await make({ title: '  Replace the toner  ' });
+    if (answer.answer !== 'created') throw new Error('not created');
+    const document = parseContentDocument(answer.version.content);
+    expect(document.title).toBe('Replace the toner');
   });
 
   it('refuses a title, a language or a direction the model would not accept', async () => {
     expect((await make({ title: '' })).answer).toBe('content.invalid');
     expect((await make({ title: '   ' })).answer).toBe('content.invalid');
     expect((await make({ language: 'english' })).answer).toBe('content.invalid');
+    expect((await make({ direction: 'up' as never })).answer).toBe('content.invalid');
   });
 
   it('refuses a component type this environment does not hold, and one that is not a type', async () => {
@@ -188,6 +199,10 @@ describe('creating a component', () => {
     expect((await make({ componentTypeId: component.version.artifactId })).answer).toBe(
       'component_type.missing',
     );
+  });
+
+  it('refuses a space that is not a lower-case uuid, rather than letting Postgres raise it', async () => {
+    expect((await make({ spaceId: 'not-a-uuid' })).answer).toBe('space.missing');
   });
 
   it("refuses another environment's space, and another environment's component type", async () => {
@@ -203,6 +218,20 @@ describe('creating a component', () => {
 
     const quality = await service.withTenant(other, (trx) => createSpace(trx, 'Quality'));
     const graceThere = await person(other, 'grace');
+
+    // Acme's own custom component type ('applies every default...' above made it): the starter type
+    // shares one id in every environment, so only a custom type distinguishes one environment's from
+    // another's.
+    const usingAcmesType = await make(
+      {
+        spaceId: quality.id,
+        author: graceThere,
+        componentTypeId: '44444444-4444-4444-8444-444444444444',
+      },
+      other,
+    );
+    expect(usingAcmesType.answer).toBe('component_type.missing');
+
     const madeThere = await make({ spaceId: quality.id, author: graceThere }, other);
     expect(madeThere.answer).toBe('created');
     if (madeThere.answer !== 'created') return;

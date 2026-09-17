@@ -5,10 +5,9 @@ import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact } from './versions.js';
 
-// The starter component type's identifier now lives in `creation.ts`, since 0015 gives every
-// environment one at migration time rather than this module making it. Re-exported so nothing that
-// named `TOPIC_TYPE_ID` here has to change where it looks.
-export { STARTER_COMPONENT_TYPE_ID } from './creation.js';
+// The starter component type's identifier lives in `creation.ts` and is exported from there directly
+// (`@alloy-works/db`'s `index.ts`), since 0015 gives every environment one at migration time rather
+// than this module making it.
 
 export interface DevelopmentContent {
   /** The stand-in provider's issuer, which the people below sign in through. */

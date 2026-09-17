@@ -2,10 +2,12 @@ import { randomBytes } from 'node:crypto';
 import {
   blockIdentifierFrom,
   carryForward,
+  contentDocumentSchema,
   definitionsFor,
   readDefinition,
   resolveComponentFields,
   type ComponentTypeDefinition,
+  type ContentDocument,
   type DefinitionKind,
   type DefinitionOf,
   type FieldDefinition,
@@ -14,6 +16,8 @@ import {
 } from '@alloy-works/domain';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, type StoredVersion } from './versions.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**
  * The component type 0015 gives every environment: Topic, assigning no schemas (MET-012). Fixed, so a
@@ -116,7 +120,11 @@ export async function currentDefinitionsFor(
   const schemas: Versioned<MetadataSchemaDefinition>[] = [];
   for (const assignment of type.definition.assignments) {
     const schema = await currentDefinition(trx, 'metadataSchema', assignment.schema);
-    if (!schema) throw new Error(`Component type ${typeId} assigns schema ${assignment.schema}`);
+    if (!schema) {
+      throw new Error(
+        `Component type ${typeId} assigns schema ${assignment.schema}, which is not stored in this tenant`,
+      );
+    }
     schemas.push(schema);
   }
   // A field two schemas group is one definition, supplied once.
@@ -126,7 +134,11 @@ export async function currentDefinitionsFor(
   const fields: Versioned<FieldDefinition>[] = [];
   for (const id of fieldIds) {
     const field = await currentDefinition(trx, 'field', id);
-    if (!field) throw new Error(`A schema of component type ${typeId} groups field ${id}`);
+    if (!field) {
+      throw new Error(
+        `A schema of component type ${typeId} groups field ${id}, which is not stored in this tenant`,
+      );
+    }
     fields.push(field);
   }
   return { type, schemas, fields };
@@ -151,11 +163,6 @@ export type CreateComponentAnswer =
   /** The title, language or direction is not one the content model accepts. */
   | { readonly answer: 'content.invalid' };
 
-// The same pattern `contentDocumentSchema.language` checks (packages/domain/src/content/model/document.ts)
-// - duplicated here, as `CreateComponentBody.language` duplicates it a third time in the API contract,
-// because the domain does not export the pattern itself, only the schema built from it.
-const BCP47 = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/;
-
 /**
  * Creates a component and its version 0.1 (component-editor.md, "Creating a component"): one empty
  * paragraph, as somewhere for the cursor to be (CNT-124); every default the type resolves to applied,
@@ -169,19 +176,29 @@ const BCP47 = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*
  *
  * The title, language and direction are validated here, before anything is written:
  * `contentDocumentSchema.title` is `min(1)` with no trim, so a title of spaces alone would otherwise
- * parse - trimmed here, and refused if trimming leaves nothing. Validating first, rather than catching
- * whatever `createArtifact` throws, means nothing else in this content can be mistaken for a bad
- * header: the block identifier is freshly made and the empty paragraph is fixed, so `createArtifact`
- * throwing past this point is a bug, not a caller's mistake, and is left to propagate.
+ * parse - trimmed here, and refused if trimming leaves nothing. Trimmed once, at creation, rather than
+ * on every keystroke: `packages/editor`'s `setTitle` (task 4) only refuses a title that is blank after
+ * trimming and otherwise stores exactly what was typed, so an edit is never silently rewritten. The
+ * language is checked against `contentDocumentSchema.shape.language`, the same schema `parseContentDocument`
+ * checks it with. Validating first, rather than catching whatever `createArtifact` throws, means
+ * nothing else in this content can be mistaken for a bad header: the block identifier is freshly made
+ * and the empty paragraph is fixed, so `createArtifact` throwing past this point is a bug, not a
+ * caller's mistake, and is left to propagate.
  */
 export async function createComponent(
   trx: TenantTransaction,
   input: NewComponent,
 ): Promise<CreateComponentAnswer> {
   const title = input.title.trim();
-  if (title === '' || !BCP47.test(input.language)) return { answer: 'content.invalid' };
+  if (title === '' || !contentDocumentSchema.shape.language.safeParse(input.language).success) {
+    return { answer: 'content.invalid' };
+  }
   if (input.direction !== 'ltr' && input.direction !== 'rtl') return { answer: 'content.invalid' };
 
+  // Checked here, rather than left to Postgres, so a malformed id is refused the same way
+  // `latestVersion`/`readVersion` refuse one: politely, and as `space.missing` rather than a raised
+  // 22P02.
+  if (!UUID.test(input.spaceId)) return { answer: 'space.missing' };
   const space = await trx
     .selectFrom('space')
     .select('id')
@@ -198,7 +215,7 @@ export async function createComponent(
     definitions.fields.map((each) => each.definition),
   );
   const carried = carryForward({}, effective);
-  const content = {
+  const content: ContentDocument = {
     schemaVersion: 1,
     title,
     language: input.language,
@@ -217,7 +234,7 @@ export async function createComponent(
     spaceId: input.spaceId,
     substance: {
       kind: 'component',
-      content: content as never,
+      content,
       values: carried.values,
       notCarried: carried.notCarried,
       definitions: definitionsFor(definitions.type, definitions.schemas, definitions.fields),
