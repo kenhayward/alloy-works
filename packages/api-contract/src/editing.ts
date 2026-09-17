@@ -13,7 +13,7 @@ const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
  * Refusing it at the door, rather than downcasing it, keeps what a caller sent and what is stored the
  * same string everywhere this is echoed back (a lock's `session`, a refusal's `holder`).
  */
-const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
+export const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
 
 /** An iteration's address: the component, the editing session, and the session's sequence number. */
 export const IterationParams = z.object({

@@ -8,8 +8,8 @@
 > [the version chain](#the-version-chain) - and who may do what to it - [access](#access) - and the
 > first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
 > opens a component's paragraphs, saves them as iterations under a lock and cuts versions from them.
-> Nothing yet creates a component, pastes, edits anything but paragraphs of text, or publishes, and
-> nothing grants a role through a route. The single `Component` in `packages/domain` is still the
+> Nothing yet creates a component, pastes, edits anything but paragraphs of text, or publishes; an
+> administrator grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the
 > scaffolding's, and nothing renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
@@ -59,6 +59,12 @@ version's content is checked against, and for `decide`. `packages/api-contract` 
 depend on it for the permission set a route declares and the decision it is checked by. The domain package
 depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
 along.
+
+**The access page checks what arrives, as well as its type.** It was written while the client's answers
+reached the renderer as `any` (issue #110, fixed by PR #111), so `apps/web/src/access/describe.ts` checks
+each response's shape by hand before reading it. The generated types now reach the renderer too; the
+hand-written shapes stay as a check on the body a service actually sent, and can become aliases of the
+generated types when the page is next touched.
 
 ## The content model
 
@@ -259,9 +265,9 @@ Content is stored as parsed and never rewritten; migration stays a projection on
 
 Who may do what to which artifact, designed in [`design/access.md`](design/access.md): a pure decision in
 `packages/domain/src/access/`, the stores and the facts it reads in `packages/db`, and a route helper in
-`apps/service` that checks what each route declares. There are no roles, groups or grants routes and no
-Access panel; the only grant anything makes is a tenant's first administrator's, at their first sign-in,
-and two read-only routes are the only ones checked.
+`apps/service` that checks what each route declares. Grants are listed, made and removed through routes,
+and a component's access page in `apps/web` calls them; roles and people are listed to choose from.
+Nothing manages a role, a group or a principal's kind.
 
 | Where                                            | Holds                                                                                                                                |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -275,8 +281,13 @@ and two read-only routes are the only ones checked.
 | `db: migrations/tenant/0011_first_administrator` | `first_administrator`: a naming by issuer and subject, which the runtime role may only record a claim on                             |
 | `db: src/roles.ts`, `groups.ts`, `grants.ts`     | `createRole`, `findRole`, `createGroup`, `addToGroup` and `grant`, with the external rules where a grant is made                     |
 | `db: src/access-facts.ts`                        | `loadFacts` and `loadReadableSet`, each under the epoch's shared lock, and the list of facts the triggers are held to                |
+| `db: migrations/tenant/0013_deciding_only`       | `access_changed()` again, refusing a change in a transaction that declared it only decides                                           |
+| `db: src/grants.ts` (removing)                   | `removeGrant` under the lock-out guard, `administeringGrants` - what the guard counts - and `grantLevel`                             |
+| `db: src/access-listings.ts`                     | `listGrants` at one level, `readGrant`, `listRoles` and `listPrincipals`, each paged by id                                           |
 | `db: src/first-administrator.ts`                 | `nameFirstAdministrator`, run as a database administrator, and `claimFirstAdministrator`, called in every sign-in's transaction      |
 | `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from                              |
+| `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                      |
+| `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, and an explanation per person                            |
 | `service: src/access.ts`                         | `authorise`: 404 for a target missing or unreadable, 403 naming the permission, in the transaction the handler runs in               |
 
 **Four properties, because each is a decision rather than an implementation detail.**
@@ -292,6 +303,12 @@ it looked at, and the route helper reads `allowed` from the same value `GET /v1/
 `FOR SHARE` in the transaction of its act, and a trigger on every fact a decision reads takes it exclusively,
 so a change to access waits for an act already authorised and an act begun after a change sees it. A test
 holds the list of facts against the triggers.
+
+**A change to access says so, or cannot happen.** A route declaring `changesAccess` takes the epoch
+`FOR UPDATE` before it decides, so its decision never upgrades a shared lock into a deadlock; every other
+permission-checked route marks its transaction as deciding only, and the epoch's trigger and
+`lockAccessForChange` refuse a change there, so a route that forgets fails its first test rather than
+deadlocking under load.
 
 **Unreadable is absent.** A target the caller may not read answers 404 exactly as a missing one does; a
 readable target refused answers 403 and names only the permission. `administer` is the one exception:

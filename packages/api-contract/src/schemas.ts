@@ -54,14 +54,14 @@ export const SampleParams = z.object({ sampleId: z.uuid() });
 export type SampleParams = z.infer<typeof SampleParams>;
 
 /** A target: the environment, one space or one artifact (access.md, "Deciding"). */
-const Target = z
+export const Target = z
   .string()
   .refine((text) => parseLevel(text) !== undefined, {
     message: 'Expected tenant, space:<id> or artifact:<id>',
   })
   .describe('`tenant`, `space:<id>` or `artifact:<id>`');
 
-const PermissionName = z.enum(permissions);
+export const PermissionName = z.enum(permissions);
 
 export const AccessQuery = z.object({ target: Target });
 export type AccessQuery = z.infer<typeof AccessQuery>;

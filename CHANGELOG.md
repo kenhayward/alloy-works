@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.24.0 - 2026-09-17 (PR #112)
+
+### Added
+
+- **Managing who may do what.** An administrator opening a component now sees **Manage access**. It
+  lists what is granted on the component, on its space and across the whole environment, wherever
+  they may manage it, and lets them give a person a role at any of those, as an allow or a denial,
+  and take a grant away. A change applies at the person's next request.
+- **What someone may do, and why.** On the same page, choose a person and **Show**: every permission,
+  whether it is allowed, and the level and grants that decided it, or every level that granted
+  nothing.
+- **A tenant cannot lose its last administrator.** Removing the last grant that lets anyone administer
+  the whole environment is refused, and says so.
+
+### Changed
+
+- **Somebody new is given access after they first sign in.** A person signs in once, sees nothing,
+  and can then be chosen; inviting an address before that is not built yet.
+
 ## 0.23.3 - 2026-09-17 (PR #111)
 
 ### Fixed

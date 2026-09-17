@@ -1,6 +1,7 @@
 import { componentRoutes } from './components.js';
 import type { RouteContract } from './contract.js';
 import { editingRoutes } from './editing.js';
+import { managingAccessRoutes } from './managing-access.js';
 import {
   AccessAnswers,
   AccessExplanation,
@@ -240,6 +241,7 @@ export const routes = {
   // Finding, opening and editing components, each declared beside its schemas.
   ...componentRoutes,
   ...editingRoutes,
+  ...managingAccessRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

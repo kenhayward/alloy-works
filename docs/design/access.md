@@ -18,9 +18,11 @@ column on the artifact, and adding it after content exists is a migration of eve
 > `GET /v1/access` and `GET /v1/access/explain`. [`../architecture.md`](../architecture.md) describes them
 > as they stand, and [the plan that built them](../plans/2026-09-16-access-01-roles-grants-and-the-decision.md)
 > changed this document where planning the build found it wrong or unfinished - see
-> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
-> `modesFor`, the roles, groups, grants and principals routes, the lock-out guard, provider groups, the
-> external listing and the Access panel.
+> [Changed while planning the build](#changed-while-planning-the-build). [The grants plan](../plans/2026-09-17-access-02-managing-grants.md)
+> built listing, making and removing grants to principals, listing roles and people, the lock-out guard
+> for removing a grant, and an access page on a component. What is still design here: `modesFor`,
+> managing roles and groups, a principal's kind, extending a grant, provider groups, the external
+> listing, and Access on anything but a component.
 
 ## The shape in one paragraph
 
@@ -203,6 +205,9 @@ space stand against the tenant's own administrators, which nobody could then rem
 A route that changes access **takes the access epoch `FOR UPDATE` before it decides**. Deciding takes the
 row `FOR SHARE`, and the change's own write takes it exclusively, so a change that decided first would
 upgrade its lock - and two such changes at once would each wait for the other until Postgres aborted one.
+**The known cost**: the lock is taken before `administer` is decided, not after, so any signed-in caller
+of a change route holds the epoch exclusively for a moment before being refused, whatever they may do -
+accepted so that no route can forget the ordering and deadlock another instead.
 
 ### External principals
 
@@ -245,6 +250,10 @@ the tenant changes them; the cap can be raised and never removed.
 **A denial is a role too** (IAM-062). "Deny Author on this component to Grace" names a bundle, so its
 explanation reads the same way an allow does; so does "Deny Editing on this component to Grace", which
 leaves her reading it.
+
+**A denial does not reach past a nearer allow.** Because the nearest level decides, a denial at the
+tenant does not bind inside a space where someone administers and allows it; a tenant-wide rule that
+must hold everywhere is not expressible as a denial.
 
 ## Groups
 
@@ -391,10 +400,12 @@ every route has the cross-tenant test IAM-004 already requires plus one as a pri
 | ------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `GET /v1/spaces`                                        | Signed in                                   | The spaces the caller may read, and whether they may create in each                                                         |
 | `POST /v1/spaces`, `PATCH /v1/spaces/{id}`              | `administer`, tenant                        | Creates or renames a space                                                                                                  |
-| `GET`, `POST /v1/roles`; `PUT`, `DELETE /v1/roles/{id}` | `administer`, tenant                        | Lists, creates, changes and removes roles, with the role and lock-out guards above                                          |
+| `GET /v1/roles?level=`                                  | `administer` at the level or above          | The roles a grant can name, to anyone who may grant at that level                                                           |
+| `GET /v1/principals?level=`                             | `administer` at the level or above          | Everybody who has signed in, to choose a subject or a person to explain                                                     |
+| `POST /v1/roles`; `PUT`, `DELETE /v1/roles/{id}`        | `administer`, tenant                        | Creates, changes and removes roles, with the role and lock-out guards above                                                 |
 | `GET`, `POST /v1/groups`; `PUT /v1/groups/{id}/members` | `administer`, tenant                        | Lists and creates groups; sets a tenant-managed group's members                                                             |
 | `GET /v1/grants?level=`                                 | `administer` at the level or above          | The grants made at one level                                                                                                |
-| `POST /v1/grants`, `DELETE /v1/grants/{id}`             | `administer` at the level or above          | Makes or removes a grant                                                                                                    |
+| `POST /v1/grants`, `DELETE /v1/grants/{id}`             | `administer` at the level or above          | Makes or removes a grant; a grant the caller may not manage answers as one that does not exist                              |
 | `GET /v1/access/external`                               | `administer`, tenant                        | Every external principal, each grant reaching them with its level and expiry, and what those grants let them read (IAM-051) |
 | `PUT /v1/principals/{id}/kind`                          | `administer`, tenant                        | Marks a principal external or not, under the lock-out guard. Nothing in T1 offers it on screen                              |
 | `GET /v1/access?target=`                                | `read` on the target                        | The caller's own answer for every permission on it, and `modesFor` - what the renderer offers from                          |
@@ -538,3 +549,15 @@ permissions and to an artifact's space, since nothing else about either is a fac
 | **An author granted only a space could not read the definitions their component uses**                                                                             | A definition is read through the component a route is authorised on ("Deciding")                                                                                                                           |
 | **"`administer` at its level or above" disagreed with the nearest-level walk**, which lets a denial at a space stand against the tenant's administrators           | "Or above" means any level on the chain, each asked as its own walk ("Grants")                                                                                                                             |
 | **Two lock costs**: a change that decides first upgrades its lock and can deadlock another; replacing provider memberships at every sign-in locks at every sign-in | Changes take the epoch `FOR UPDATE` before deciding ("Grants"); provider memberships change only where they differ ("Groups"). The lock is taken by triggers, listed in "Taking the decision with the act" |
+
+[The grants plan](../plans/2026-09-17-access-02-managing-grants.md) was written against this document in
+turn, and found six more. No requirement claim changed.
+
+| Found                                                                                                                                 | Change                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A space administrator could grant nothing**: listing roles needed `administer` at the tenant                                        | Roles, and the people to choose from, are listed to whoever administers the level asked about ("Routes")                                                                                       |
+| **Nothing listed a person**, though the Access panel chooses one and a grant names one                                                | `GET /v1/principals?level=`: everybody who has signed in. A person who has not cannot be granted anything until IAM-059's invitations are designed                                             |
+| **Removing a grant had no target to decide against**, and making one names its level in the body                                      | A route's target can be a body member or a grant, whose level is read under the lock; a grant the caller may not manage answers 404, since grants are an administrator's to see ("Routes")     |
+| **"Takes the epoch `FOR UPDATE` before it decides" was a rule nothing checked**: a route that forgot passed every test that ran alone | A route declares `changesAccess`; every other permission-checked route decides only, and a change in its transaction is refused by the epoch's trigger and by `lockAccessForChange` ("Grants") |
+| **The lock-out guard named three changes, and one exists**                                                                            | Built for removing a grant, counting through `administeringGrants`; changing a role's permissions and a principal's kind call it when their routes are built ("Roles")                         |
+| **An explanation names a group only by its id**, so a view cannot say which group a grant came through                                | Not changed: the access page says "through a group" until the groups routes give a group a name to show                                                                                        |

@@ -12,4 +12,16 @@ describe('wireCode', () => {
     expect(wireCode('content.invalid')).toBe('content_invalid');
     expect(wireCode('artifact.missing')).toBe('artifact_missing');
   });
+
+  it('spells every refusal where a grant is made or removed with an underscore too', () => {
+    expect(wireCode('grant.duplicate')).toBe('grant_duplicate');
+    expect(wireCode('grant.allow_without_read')).toBe('grant_allow_without_read');
+    expect(wireCode('grant.administer_denied_at_tenant')).toBe('grant_administer_denied_at_tenant');
+    expect(wireCode('grant.role_missing')).toBe('grant_role_missing');
+    expect(wireCode('grant.subject_missing')).toBe('grant_subject_missing');
+    expect(wireCode('grant.external_at_tenant')).toBe('grant_external_at_tenant');
+    expect(wireCode('grant.external_capped')).toBe('grant_external_capped');
+    expect(wireCode('grant.external_past_cap')).toBe('grant_external_past_cap');
+    expect(wireCode('grant.last_administrator')).toBe('grant_last_administrator');
+  });
 });

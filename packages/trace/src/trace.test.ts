@@ -108,8 +108,12 @@ describe('the citations in the committed model', () => {
   // 142, from 141: and CNT-068 in the save indicator's, eight citations in all, once each. The lock's
   // tenant setting (COL-008), recovery (CNT-067, CNT-090), undo across a reload (CNT-069, CNT-103) and
   // paste (CNT-063) wait, and the plan names each and what it waits for.
+  // 144, from 142: managing grants (docs/plans/2026-09-17-access-02-managing-grants.md) cites IAM-030
+  // and IAM-031, which access.md owns, in the Access page's tests: each answer names its level and
+  // grants, and a refusal its denials or the levels that granted nothing. IAM-029 waits for an Access
+  // page on every kind of artifact, and the plan names it and the rest.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(142);
+    expect(model.citations).toHaveLength(144);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -151,6 +155,6 @@ describe('scanning the repository for test files', () => {
     const files = testFilesIn(REPO_ROOT);
 
     expect(files).toContain('apps/web/src/App.test.tsx');
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(5);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(6);
   });
 });

@@ -20,6 +20,38 @@ export async function whileAccessIsDecided<T>(
   });
 }
 
+/**
+ * Waits until at least `count` connections to the test database are waiting on a lock, so a test can
+ * release what they wait behind knowing each has reached its wait rather than guessing with a sleep.
+ * Reads `pg_stat_activity` as an administrator of the database, since the runtime role cannot see
+ * another session's wait; fails after five seconds rather than hanging the suite.
+ */
+export async function untilWaitingOnLocks(adminUrl: string, count: number): Promise<void> {
+  const client = new pg.Client({ connectionString: adminUrl });
+  await client.connect();
+  try {
+    const deadline = Date.now() + 5_000;
+    for (;;) {
+      const { rows } = await client.query<{ waiting: number }>(
+        `select count(*)::int as waiting from pg_stat_activity
+         where datname = current_database()
+           and backend_type = 'client backend'
+           and pid <> pg_backend_pid()
+           and wait_event_type = 'Lock'`,
+      );
+      if ((rows[0]?.waiting ?? 0) >= count) return;
+      if (Date.now() > deadline) {
+        throw new Error(
+          `Fewer than ${count} connections were waiting on a lock after five seconds`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  } finally {
+    await client.end();
+  }
+}
+
 const DEFAULT_SERVER_URL = 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
 
 export const TEST_PASSWORDS = {

@@ -72,6 +72,7 @@ const OTHER_TENANT_IDS: Readonly<
     session: SESSION,
     sequence: '1',
   }),
+  removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
 };
 
 /**
@@ -85,6 +86,9 @@ const VALID_INPUT: Readonly<
   claimLock: { payload: { session: SESSION } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  makeGrant: {
+    payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
+  },
   saveIteration: {
     payload: {
       openedFrom: SESSION,
@@ -158,6 +162,36 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
     return made.artifactId;
   });
 
+/** A grant in environment B: Reader on its General space, to a principal of its own. */
+const grantIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const holder = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const reader = await findRole(trx, 'Reader');
+    const made = await grant(trx, {
+      roleId: reader!.id,
+      subject: { principal: holder.id },
+      level: { kind: 'space', id: general.id },
+      effect: 'allow',
+      grantedBy: holder.id,
+    });
+    if (!('granted' in made)) throw new Error(`refused: ${made.refused}`);
+    return made.granted.id;
+  });
+
 /** The same, as a query's target names it. */
 const componentIn = async (tenant: Tenant, db: TenantDatabase) =>
   `artifact:${await componentIdIn(tenant, db)}`;
@@ -170,6 +204,9 @@ const OTHER_TENANT_QUERIES: Readonly<
   Record<string, (tenant: Tenant, db: TenantDatabase) => Promise<string>>
 > = {
   getAccess: async (tenant, db) => `target=${await componentIn(tenant, db)}`,
+  listGrants: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
+  listRoles: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
+  listPrincipals: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
   explainAccess: async (tenant, db) => {
     const principal = await db.withTenant(tenant, (trx) =>
       trx
@@ -382,6 +419,61 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     });
     expect(response.statusCode).toBe(404);
     expect(response.json()).toMatchObject({ code: 'not_found' });
+  });
+
+  it("makeGrant will not grant at another environment's level, or name another environment's role or person", async () => {
+    const reader = (tenant: Tenant) =>
+      tenantDb.withTenant(tenant, async (trx) => ({
+        role: (await findRole(trx, 'Reader'))!.id,
+        space: (
+          await trx
+            .selectFrom('space')
+            .select('id')
+            .where('name', '=', 'General')
+            .executeTakeFirstOrThrow()
+        ).id,
+        person: (await trx.selectFrom('principal').select('id').executeTakeFirstOrThrow()).id,
+        grants: (
+          await trx
+            .selectFrom('access_grant')
+            .select((eb) => eb.fn.countAll<string>().as('count'))
+            .executeTakeFirstOrThrow()
+        ).count,
+      }));
+    const ours = await reader(a);
+    const theirs = await reader(b);
+    const make = (payload: Record<string, unknown>) =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/grants',
+        headers: { host: A, cookie: fromA },
+        payload: { effect: 'allow', ...payload },
+      });
+
+    const elsewhere = await make({
+      role: ours.role,
+      subject: { principal: ours.person },
+      level: `space:${theirs.space}`,
+    });
+    expect(elsewhere.statusCode).toBe(404);
+    expect(elsewhere.json()).toMatchObject({ code: 'not_found' });
+    const theirRole = await make({
+      role: theirs.role,
+      subject: { principal: ours.person },
+      level: `space:${ours.space}`,
+    });
+    expect(theirRole.statusCode).toBe(409);
+    expect(theirRole.json()).toMatchObject({ code: 'grant_role_missing' });
+    const theirPerson = await make({
+      role: ours.role,
+      subject: { principal: theirs.person },
+      level: `space:${ours.space}`,
+    });
+    expect(theirPerson.statusCode).toBe(409);
+    expect(theirPerson.json()).toMatchObject({ code: 'grant_subject_missing' });
+
+    expect((await reader(a)).grants).toBe(ours.grants);
+    expect((await reader(b)).grants).toBe(theirs.grants);
   });
 
   it('leaves the session working where it was issued, whatever was tried elsewhere', async () => {

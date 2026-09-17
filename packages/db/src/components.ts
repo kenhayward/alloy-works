@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
 /** One component as a listing shows it: its title and number at the latest version, and its space. */
@@ -11,13 +12,8 @@ export interface ComponentSummary {
   readonly version: number;
 }
 
-export interface ComponentPage {
-  readonly items: readonly ComponentSummary[];
-  /** The id the next page starts after, or null when this page is the last. */
-  readonly after: string | null;
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** Kept as its own name - nothing outside this file needs `Page<ComponentSummary>` spelled out. */
+export type ComponentPage = Page<ComponentSummary>;
 
 /**
  * The components a principal may read, a page at a time in the stable order of their ids (API-007),
@@ -28,14 +24,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export async function listReadableComponents(
   trx: TenantTransaction,
   principalId: string,
-  page: { readonly after?: string; readonly limit: number },
+  request: PageRequest,
 ): Promise<ComponentPage | undefined> {
-  if (!Number.isInteger(page.limit) || page.limit < 1 || page.limit > 100) {
-    throw new Error(`A page's limit is 1 to 100, not ${page.limit}`);
-  }
+  const page = checkedPage(request);
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
-  if (page.after !== undefined && !UUID.test(page.after)) return { items: [], after: null };
+  if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
   const none = ['00000000-0000-0000-0000-000000000000'];
   const listed = <T extends string>(ids: readonly T[]) => (ids.length > 0 ? [...ids] : none);
 
@@ -75,15 +69,14 @@ export async function listReadableComponents(
     .limit(page.limit + 1)
     .execute();
 
-  const items = rows.slice(0, page.limit).map((row) => ({
-    id: row.id,
-    title: row.title,
-    space: { id: row.space_id, name: row.space_name },
-    revision: row.revision_no,
-    version: row.version_no,
-  }));
-  return {
-    items,
-    after: rows.length > page.limit ? (items[items.length - 1]?.id ?? null) : null,
-  };
+  return paged(
+    rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      space: { id: row.space_id, name: row.space_name },
+      revision: row.revision_no,
+      version: row.version_no,
+    })),
+    page.limit,
+  );
 }

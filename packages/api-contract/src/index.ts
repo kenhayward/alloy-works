@@ -17,6 +17,19 @@ export {
   LockAnswer,
   ReleaseQuery,
 } from './editing.js';
+export {
+  GrantBody,
+  GrantList,
+  GrantListQuery,
+  GrantMade,
+  GrantParams,
+  GrantRemoved,
+  GrantView,
+  PrincipalList,
+  PrincipalListQuery,
+  RoleList,
+  RoleListQuery,
+} from './managing-access.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {

@@ -91,18 +91,35 @@ export {
 } from './groups.js';
 export {
   accessPolicy,
+  administeringGrants,
   grant,
+  grantLevel,
+  removeGrant,
   type AccessPolicy,
   type ExternalRefusal,
   type GrantAnswer,
   type GrantRefusal,
   type NewGrant,
+  type RemovalAnswer,
   type StoredGrant,
 } from './grants.js';
 export {
+  listGrants,
+  listPrincipals,
+  listRoles,
+  readGrant,
+  type ListedGrant,
+  type ListedRole,
+  type Page,
+  type PageRequest,
+  type PersonSummary,
+} from './access-listings.js';
+export {
   accessFactSources,
+  decideOnly,
   loadFacts,
   loadReadableSet,
+  lockAccessForChange,
   type AccessFactSource,
 } from './access-facts.js';
 export {

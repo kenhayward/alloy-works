@@ -1,6 +1,8 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AccessPanel } from '../access/AccessPanel.js';
+import { isAccessAnswers } from '../access/describe.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
 
@@ -9,7 +11,49 @@ export interface WorkspaceProps {
   readonly fetch?: typeof fetch;
 }
 
-const OPEN = /^#\/components\/([0-9a-f-]{36})$/;
+const OPEN = /^#\/components\/([0-9a-f-]{36})(\/access)?$/;
+
+type Client = ReturnType<typeof createApiClient>;
+
+/**
+ * A link to the component's access, shown only to someone the service says may administer it - at
+ * the component or anywhere above it - so nobody is offered a page that would only refuse them. The
+ * check is a convenience for the link alone: the access page itself enforces permission again,
+ * server-side.
+ */
+function ManageAccessLink({ client, componentId }: { client: Client; componentId: string }) {
+  const [administers, setAdministers] = useState(false);
+  useEffect(() => {
+    let current = true;
+    setAdministers(false);
+    client
+      .GET('/v1/access', { params: { query: { target: `artifact:${componentId}` } } })
+      .then(({ data }) => {
+        if (!current) return;
+        // The client's response body is `any` (packages/api-client's generated types never reach
+        // the renderer), so it is checked rather than trusted before a field of it is read.
+        if (!isAccessAnswers(data)) {
+          setAdministers(false);
+          return;
+        }
+        const answer = data.permissions.find((each) => each.permission === 'administer');
+        setAdministers(answer?.allowed === true);
+      })
+      .catch(() => {
+        if (current) setAdministers(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, componentId]);
+  if (!administers) return null;
+  return (
+    <>
+      {' '}
+      <a href={`#/components/${componentId}/access`}>Manage access</a>
+    </>
+  );
+}
 
 /** The address after `#`, followed as it changes: a hash never reaches the service or a reload's path. */
 function useHash(): string {
@@ -75,12 +119,24 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     );
   }
   if (me === null) return null;
-  const opened = OPEN.exec(hash)?.[1];
+  const address = OPEN.exec(hash);
+  const opened = address?.[1];
+  if (opened && address?.[2]) {
+    return (
+      <>
+        <p>
+          <a href={`#/components/${opened}`}>Back to the component</a>
+        </p>
+        <AccessPanel key={opened} componentId={opened} client={client} />
+      </>
+    );
+  }
   if (opened) {
     return (
       <>
         <p>
           <a href="#">Back to components</a>
+          <ManageAccessLink client={client} componentId={opened} />
         </p>
         <ComponentEditor key={opened} componentId={opened} client={client} principalId={me} />
       </>
