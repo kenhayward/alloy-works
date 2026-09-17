@@ -118,7 +118,9 @@ describe('the development content', () => {
         .executeTakeFirstOrThrow();
       const type = await latestVersion(trx, TOPIC_TYPE_ID);
       const component = await latestVersion(trx, seeded.componentId);
-      expect(type?.author).toBe(grace.id);
+      // 0015 (task 1) now gives every tenant this component type unauthored, at migration time -
+      // nobody made it, the same as the roles and General. Only the component is still cut by Grace.
+      expect(type?.author).toBeNull();
       expect(component?.author).toBe(grace.id);
     });
   });

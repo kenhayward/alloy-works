@@ -164,3 +164,9 @@ export {
 } from './promotion.js';
 export { seedDevelopmentContent, TOPIC_TYPE_ID, type SeededContent } from './dev-content.js';
 export { listReadableComponents, type ComponentPage, type ComponentSummary } from './components.js';
+export {
+  defaultComponentType,
+  listComponentTypes,
+  STARTER_COMPONENT_TYPE_ID,
+  type ComponentTypeSummary,
+} from './creation.js';

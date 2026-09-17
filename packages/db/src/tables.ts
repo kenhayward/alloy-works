@@ -166,7 +166,8 @@ export interface ArtifactVersionTable {
   kind: ColumnType<ArtifactKind, ArtifactKind, never>;
   revision_no: ColumnType<number, number, never>;
   version_no: ColumnType<number, number, never>;
-  author_id: ColumnType<string, string, never>;
+  /** Null for a definition the environment itself started with (0015); never for a component. */
+  author_id: ColumnType<string | null, string | null, never>;
   created_at: ColumnType<Date, never, never>;
   note: ColumnType<string | null, string | null, never>;
   schema_version: ColumnType<number, number, never>;
@@ -186,6 +187,14 @@ export interface VersionDefinitionTable {
   definition_version_id: ColumnType<string, string, never>;
   definition_artifact_id: ColumnType<string, string, never>;
   definition_kind: ColumnType<DefinitionKind, DefinitionKind, never>;
+}
+
+/** The environment's declared default component type (MET-012): one row, set by 0015. */
+export interface ComponentTypeDefaultTable {
+  singleton: ColumnType<boolean, boolean | undefined, never>;
+  component_type_id: ColumnType<string, string, string>;
+  component_type_kind: ColumnType<'componentType', never, never>;
+  set_at: ColumnType<Date, never, Date>;
 }
 
 export interface AccessPolicyTable {
@@ -298,6 +307,7 @@ export interface TenantTables {
   group_member: GroupMemberTable;
   access_grant: AccessGrantTable;
   first_administrator: FirstAdministratorTable;
+  component_type_default: ComponentTypeDefaultTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

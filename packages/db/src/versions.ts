@@ -22,8 +22,8 @@ export interface StoredVersion {
   /** `revision.version`, as VER-009 presents it. Zero until a revision is designated. */
   readonly revision: number;
   readonly version: number;
-  /** The principal who cut it: a reference, never a copy of their details. */
-  readonly author: string;
+  /** The principal who cut it, or null for a definition the environment itself started with. */
+  readonly author: string | null;
   readonly createdAt: Date;
   readonly note: string | null;
   readonly schemaVersion: number;
