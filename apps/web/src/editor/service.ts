@@ -121,7 +121,7 @@ export function sessionService(
         const { data, error, response } = await client.POST('/v1/components/{id}/lock', {
           params: { path },
           body: { session: current, ...(move ? { move } : {}) },
-          signal,
+          ...(signal ? { signal } : {}),
         });
         if (data) return { ok: true };
         if (error && codeOf(error) === 'lock_held' && 'holder' in error && error.holder) {
@@ -148,7 +148,7 @@ export function sessionService(
           {
             params: { path: { ...path, session: current, sequence: String(sequence) } },
             body: { openedFrom, content: content as unknown as Record<string, unknown> },
-            signal,
+            ...(signal ? { signal } : {}),
           },
         );
         if (data) return { ok: true };
