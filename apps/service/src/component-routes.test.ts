@@ -13,7 +13,7 @@ import {
   latestVersion,
   migrate,
   seedDevelopmentContent,
-  TOPIC_TYPE_ID,
+  STARTER_COMPONENT_TYPE_ID,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -231,7 +231,7 @@ describe('finding and opening components through the service', () => {
     });
 
     it('answers a definition, not a component, at this address exactly as a missing component', async () => {
-      const asDefinition = await call('ada', 'GET', `/v1/components/${TOPIC_TYPE_ID}`);
+      const asDefinition = await call('ada', 'GET', `/v1/components/${STARTER_COMPONENT_TYPE_ID}`);
       const missing = await call('ada', 'GET', `/v1/components/${MISSING}`);
       expect(asDefinition.statusCode).toBe(404);
       const untraced = (body: Json) =>

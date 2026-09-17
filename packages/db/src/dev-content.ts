@@ -1,18 +1,14 @@
-import {
-  DEFINITION_SCHEMA_VERSION,
-  definitionsFor,
-  type ComponentTypeDefinition,
-} from '@alloy-works/domain';
+import { definitionsFor } from '@alloy-works/domain';
+import { currentDefinitionsFor, defaultComponentType } from './creation.js';
 import { grant } from './grants.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createArtifact, latestVersion } from './versions.js';
+import { createArtifact } from './versions.js';
 
-/**
- * The development environment's one component type, by a fixed identifier so that running the setup
- * again finds it rather than making a second. Nothing in the product creates a definition yet.
- */
-export const TOPIC_TYPE_ID = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
+// The starter component type's identifier now lives in `creation.ts`, since 0015 gives every
+// environment one at migration time rather than this module making it. Re-exported so nothing that
+// named `TOPIC_TYPE_ID` here has to change where it looks.
+export { STARTER_COMPONENT_TYPE_ID } from './creation.js';
 
 export interface DevelopmentContent {
   /** The stand-in provider's issuer, which the people below sign in through. */
@@ -21,7 +17,7 @@ export interface DevelopmentContent {
 
 export interface SeededContent {
   readonly componentId: string;
-  /** Whether this run made the type and the component, or found them. */
+  /** Whether this run made the component, or found it. */
   readonly created: boolean;
 }
 
@@ -67,12 +63,13 @@ async function person(
 }
 
 /**
- * Development only: something to open in the editor, and somebody allowed to edit it. Nothing in the
- * product yet creates a component type, creates a component or grants a role through a route (the editor
- * plan's decisions 2 and 3), so this makes, in the environment's General space:
+ * Development only: something to open in the editor, and somebody allowed to edit it. The component
+ * type is no longer this module's to make - 0015 gives every environment one, unauthored, at migration
+ * time (STARTER_COMPONENT_TYPE_ID) - and nothing in the product yet creates a component or grants a
+ * role through a route (the editor plan's decision 3), so this makes, in the environment's General
+ * space:
  *
- * - the component type Topic, assigning no schemas;
- * - the component "Install the printer", at 0.1;
+ * - the component "Install the printer", at 0.1, over the environment's default component type;
  * - Ada, through her invitation where one waits, and Grace, as a principal by the identity the stand-in
  *   gives her, each allowed Author on General, so either can edit and each can see the other's lock.
  *   Grace authors the component: a principal still waiting on an invitation must be able to go when
@@ -106,28 +103,22 @@ export async function seedDevelopmentContent(
     }
   }
 
-  const existing = await latestVersion(trx, TOPIC_TYPE_ID);
-  if (existing) {
-    const component = await trx
-      .selectFrom('artifact')
-      .select('id')
-      .where('kind', '=', 'component')
-      .where('space_id', '=', general.id)
-      .orderBy('created_at')
-      .executeTakeFirstOrThrow();
-    return { componentId: component.id, created: false };
-  }
+  // Already run: the component in General, not the component type, which 0015 now writes for every
+  // environment before anything here runs.
+  const seeded = await trx
+    .selectFrom('artifact')
+    .select('id')
+    .where('kind', '=', 'component')
+    .where('space_id', '=', general.id)
+    .orderBy('created_at')
+    .executeTakeFirst();
+  if (seeded) return { componentId: seeded.id, created: false };
 
-  const topic: ComponentTypeDefinition = {
-    schemaVersion: DEFINITION_SCHEMA_VERSION,
-    id: TOPIC_TYPE_ID,
-    name: 'Topic',
-    assignments: [],
-  };
-  const type = await createArtifact(trx, {
-    author: grace,
-    substance: { kind: 'componentType', content: topic },
-  });
+  const typeId = await defaultComponentType(trx);
+  if (!typeId) throw new Error('This environment declares no default component type');
+  const definitions = await currentDefinitionsFor(trx, typeId);
+  if (!definitions) throw new Error('This environment holds no default component type');
+
   const component = await createArtifact(trx, {
     author: grace,
     spaceId: general.id,
@@ -163,7 +154,7 @@ export async function seedDevelopmentContent(
       },
       values: {},
       notCarried: [],
-      definitions: definitionsFor({ version: type.id, definition: topic }, [], []),
+      definitions: definitionsFor(definitions.type, definitions.schemas, definitions.fields),
     },
   });
   return { componentId: component.artifactId, created: true };

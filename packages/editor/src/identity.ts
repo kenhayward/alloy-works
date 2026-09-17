@@ -1,28 +1,13 @@
+import { blockIdentifierFrom } from '@alloy-works/domain';
 import { Plugin } from 'prosemirror-state';
 import { Mapping } from 'prosemirror-transform';
 
-const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
-
 /**
- * A new block identifier: 128 random bits, in lower-case base32 without padding (component-editor.md,
- * "Identity, by operation"). The random source is the platform's own `crypto`, which the browser and
- * Node both provide; this package is browser code, so it may use it where `packages/domain` may not.
+ * A new block identifier: 128 random bits from the platform's own `crypto`, spelled by the domain
+ * (`blockIdentifierFrom`), so the editor and the service spell one the same way.
  */
 export function newBlockIdentifier(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let bits = 0;
-  let value = 0;
-  let spelled = '';
-  for (const byte of bytes) {
-    value = (value << 8) | byte;
-    bits += 8;
-    while (bits >= 5) {
-      spelled += BASE32[(value >>> (bits - 5)) & 31];
-      bits -= 5;
-    }
-  }
-  if (bits > 0) spelled += BASE32[(value << (5 - bits)) & 31];
-  return spelled;
+  return blockIdentifierFrom(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /**

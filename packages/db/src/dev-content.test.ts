@@ -3,7 +3,7 @@ import { decide } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { seedDevelopmentContent, TOPIC_TYPE_ID } from './dev-content.js';
+import { seedDevelopmentContent, STARTER_COMPONENT_TYPE_ID } from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -75,7 +75,7 @@ describe('the development content', () => {
     });
   });
 
-  it('finds Ada by her waiting invitation, and cuts both versions as Grace', async () => {
+  it('finds Ada by her waiting invitation, and cuts the component as Grace', async () => {
     const invited = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },
       tenant: { id: db.newTenantId(), name: 'Invited' },
@@ -116,7 +116,7 @@ describe('the development content', () => {
         .where('issuer', '=', ISSUER)
         .where('subject', '=', 'grace')
         .executeTakeFirstOrThrow();
-      const type = await latestVersion(trx, TOPIC_TYPE_ID);
+      const type = await latestVersion(trx, STARTER_COMPONENT_TYPE_ID);
       const component = await latestVersion(trx, seeded.componentId);
       // 0015 (task 1) now gives every tenant this component type unauthored, at migration time -
       // nobody made it, the same as the roles and General. Only the component is still cut by Grace.

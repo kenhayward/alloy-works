@@ -10,6 +10,7 @@ describe('the domain package', () => {
         'CURRENT_SCHEMA_VERSION',
         'allowedLinkSchemes',
         'alternativeSchema',
+        'blockIdentifierFrom',
         'blockNodeSchema',
         'canonicalise',
         'contentDocumentSchema',

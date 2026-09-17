@@ -10,6 +10,8 @@ export type { BlockNode } from './blocks.js';
 export { contentDocumentSchema, parseContentDocument, CURRENT_SCHEMA_VERSION } from './document.js';
 export type { ContentDocument } from './document.js';
 
+export { blockIdentifierFrom } from './identifier.js';
+
 export { canonicalise } from './canonical.js';
 export { migrate, readContent } from './migrate.js';
 export type { ReadOutcome } from './migrate.js';
