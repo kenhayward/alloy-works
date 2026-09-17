@@ -104,9 +104,12 @@ would drift - one would forget the immutability grant or the schema-version colu
 would not be an error. It would be a baseline that resolves slightly differently in four years.
 
 **`artifact_version`** is the permanent chain. One row per version: the artifact, `revision_no` and `version_no`, author, timestamp, `schema_version`, an optional note, the content and its content hash, the metadata values, the values not carried forward, the component type's version where the artifact is a component, and the version digest. The application role holds `INSERT` and `SELECT` on it and nothing else, so VER-008 is a grant
-rather than a convention. **The author is null only for a definition the environment itself started with**
-(0015): nobody made it, the way nobody made the eight roles or the space _General_. A component's author
-is not nullable, and a check constraint says so rather than a habit.
+rather than a convention. **A component's version always names an author; any other kind's may leave it
+null** (0015, `artifact_version_component_author`). The rule is that narrow because a definition the
+environment itself started with has nobody to name, the way nobody made the eight roles or the space
+_General_ - and today the starter component type is the only version in the chain that takes it. The
+constraint permits a null author on any non-component version rather than on that one row alone, because
+a check constraint can name a kind and cannot name a row.
 
 **`revision_designation`** refers to a version row and adds who designated it, when, and against
 which gate. ADR-0006 said a revision is a marker on a version rather than a second history; this is

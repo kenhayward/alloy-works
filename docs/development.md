@@ -106,7 +106,7 @@ as Grace in a private window - the stand-in remembers who signed in last in a wi
 the same component.
 
 **It no longer makes a component type of its own.** Every environment is provisioned with one, called
-Topic and assigning no fields, and declares it the default, so creating always has a type to take; the
+Topic and assigning no schemas, and declares it the default, so creating always has a type to take; the
 seed takes that default like anything else. **A database prepared before 0.26.0** keeps the Topic it
 already has, with the author it was made by, and gains only the row declaring it the default - nothing you
 had changes, and there is no second type beside it.

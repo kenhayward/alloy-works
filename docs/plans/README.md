@@ -256,8 +256,9 @@ declaring its own default, which is what makes MET-012 claimable, the definition
 changing a component's type (MET-014); the metadata panel; a BCP 47 picker and a direction defaulting
 from the language's script, LOC's; confirming a change of base language, the marks plan's; an
 idempotency key on creating (API-008); deleting a component, LIF's; creating or renaming a space; and,
-found while building, a component's id in a path validated as any-case where a space's is lowercase-only,
-which is a refusal moving from 404 to 400 on six routes and wants a change of its own.
+found while building, a component's id in a path validated as any-case where a space's is lowercase-only
+and `saveIteration`'s own already is, which is a refusal moving from 404 to 400 on the four routes that
+take it and wants a change of its own.
 
 Plan 1's findings and what it left follow.
 

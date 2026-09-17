@@ -3335,9 +3335,12 @@ Found while building this plan, and left rather than widened into it:
 - **A component's id in a path is a bare `z.uuid()` while a space's is lowercase-only**
   (`ComponentParams` against `SpaceParams` in `packages/api-contract/src/components.ts`). An uppercase
   UUID is therefore a `400` on a space's route and a `404` on a component's, having passed validation and
-  matched nothing. The house rule is lowercase, so `ComponentParams` is the one that is wrong; changing
-  it moves a refusal from `404` to `400` on six routes and belongs in a change that can say so in its own
-  changelog entry. **Whichever plan next touches the component routes.**
+  matched nothing. The house rule is lowercase, so `ComponentParams` is the one that is wrong, and
+  `editing.ts` disagrees with itself about it: `saveIteration` takes its component id through
+  `IterationParams`, whose `id` is already a `LowercaseUuid`, while the three routes beside it take
+  `ComponentParams`. Changing it moves a refusal from `404` to `400` on the four routes that use it -
+  `getComponent`, `claimLock`, `releaseLock` and `cutVersion` - and belongs in a change that can say so
+  in its own changelog entry. **Whichever plan next touches the component routes.**
 - **The language rule is asked of the domain's schema in two renderers** - `NewComponent.tsx` and
   `ComponentHeader.tsx` each read `contentDocumentSchema.shape.language` - where the title rule is asked
   of `titleAccepted`, which `packages/editor` exports beside the command it gates. A `languageAccepted`

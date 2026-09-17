@@ -342,7 +342,7 @@ describe('New component', () => {
     );
     expect(screen.queryByLabelText('Where')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'There is nowhere left where you may create a component.',
+      'There is nowhere left for you to create a component.',
     );
     expect(screen.queryByText(/Choose another/)).not.toBeInTheDocument();
   });

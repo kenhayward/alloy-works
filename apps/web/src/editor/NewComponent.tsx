@@ -253,7 +253,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     return (
       <section aria-labelledby="new-component-heading">
         <h2 id="new-component-heading">New component</h2>
-        <p role="status">There is nowhere left where you may create a component.</p>
+        <p role="status">There is nowhere left for you to create a component.</p>
       </section>
     );
   }
