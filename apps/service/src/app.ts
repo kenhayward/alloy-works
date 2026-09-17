@@ -13,7 +13,7 @@ import {
   type SignInCallback,
 } from '@alloy-works/api-contract';
 import {
-  claimFirstAdministrator,
+  claimInvitation,
   enqueueJob,
   loadFacts,
   type SignInRoute,
@@ -341,33 +341,45 @@ export function buildApp(options: AppOptions): FastifyInstance {
         nonce: attempt.nonce,
         codeVerifier: attempt.code_verifier,
       });
-      // Found by issuer and subject, never by email address, which can be reassigned.
+      // Found by issuer and subject, never by email address, which can be reassigned. Only somebody
+      // this environment has never seen can become an invitation's principal, and only for an
+      // address the provider verifies; anybody else the provider authenticates is made a principal
+      // holding nothing, as before.
       const principal = await db.withTenant(tenant, async (trx) => {
-        const found = await trx
+        const known = await trx
+          .updateTable('principal')
+          .set({
+            email: identity.email,
+            email_verified: identity.emailVerified,
+            display_name: identity.name,
+          })
+          .where('issuer', '=', identity.issuer)
+          .where('subject', '=', identity.subject)
+          .returning('id')
+          .executeTakeFirst();
+        if (known) return known;
+        const invited = await claimInvitation(trx, identity, 'organisation');
+        if (invited) return { id: invited };
+        // An upsert still: the same identity's first sign-in in another window may land between the
+        // lookup above and this insert.
+        return trx
           .insertInto('principal')
           .values({
             issuer: identity.issuer,
             subject: identity.subject,
             email: identity.email,
+            email_verified: identity.emailVerified,
             display_name: identity.name,
           })
           .onConflict((conflict) =>
-            conflict
-              .columns(['issuer', 'subject'])
-              .doUpdateSet({ email: identity.email, display_name: identity.name }),
+            conflict.columns(['issuer', 'subject']).doUpdateSet({
+              email: identity.email,
+              email_verified: identity.emailVerified,
+              display_name: identity.name,
+            }),
           )
           .returning('id')
           .executeTakeFirstOrThrow();
-        // In the same transaction: the first administrator is granted exactly when they sign in.
-        // Named explicitly, not spread from identity: the only fields that may reach a call granting
-        // Administrator are the ones this route itself decided are the principal's id, issuer and
-        // subject - never whatever else a future Identity field might add.
-        await claimFirstAdministrator(trx, {
-          id: found.id,
-          issuer: identity.issuer,
-          subject: identity.subject,
-        });
-        return found;
       });
       return signInAs(reply, tenant, principal.id, 'organisation');
     },
@@ -420,12 +432,6 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const admitted = await db.withTenant(tenant, async (trx) => {
         const principalId = await admitGoogleAccount(trx, identity);
         if (principalId === undefined) return false;
-        // Named explicitly - see the organisation route's own claim, above, for why.
-        await claimFirstAdministrator(trx, {
-          id: principalId,
-          issuer: identity.issuer,
-          subject: identity.subject,
-        });
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
         await trx

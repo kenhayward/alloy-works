@@ -123,11 +123,9 @@ export {
   type AccessFactSource,
 } from './access-facts.js';
 export {
-  claimFirstAdministrator,
-  nameFirstAdministrator,
-  type ClaimAnswer,
-  type NamedIdentity,
-  type NamingAnswer,
+  inviteFirstAdministrator,
+  type FirstAdministratorAnswer,
+  type FirstAdministratorInvitation,
 } from './first-administrator.js';
 export {
   claimInvitation,

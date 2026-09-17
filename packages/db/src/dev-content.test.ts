@@ -3,9 +3,11 @@ import { decide } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { seedDevelopmentContent } from './dev-content.js';
+import { seedDevelopmentContent, TOPIC_TYPE_ID } from './dev-content.js';
+import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
+import { findRole } from './roles.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { latestVersion } from './versions.js';
@@ -70,6 +72,54 @@ describe('the development content', () => {
 
       const grants = await trx.selectFrom('access_grant').select('id').execute();
       expect(grants).toHaveLength(2);
+    });
+  });
+
+  it('finds Ada by her waiting invitation, and cuts both versions as Grace', async () => {
+    const invited = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Invited' },
+      hostnames: ['invited.acme.alloy.test'],
+    });
+    await expect(
+      inviteFirstAdministrator(db.adminUrl, invited, {
+        email: 'ada@example.com',
+        namedBy: 'provisioning',
+      }),
+    ).resolves.toEqual({ invited: true, renewed: false });
+    const waiting = await service.withTenant(invited, (trx) =>
+      trx
+        .selectFrom('invitation')
+        .select('principal_id')
+        .where('email', '=', 'ada@example.com')
+        .executeTakeFirstOrThrow(),
+    );
+
+    const seeded = await service.withTenant(invited, (trx) =>
+      seedDevelopmentContent(trx, { issuer: ISSUER }),
+    );
+    expect(seeded.created).toBe(true);
+
+    await service.withTenant(invited, async (trx) => {
+      const author = await findRole(trx, 'Author');
+      const grant = await trx
+        .selectFrom('access_grant')
+        .select('id')
+        .where('role_id', '=', author!.id)
+        .where('principal_id', '=', waiting.principal_id)
+        .executeTakeFirst();
+      expect(grant, "Ada's Author grant should name the invitation's principal").toBeDefined();
+
+      const grace = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('issuer', '=', ISSUER)
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow();
+      const type = await latestVersion(trx, TOPIC_TYPE_ID);
+      const component = await latestVersion(trx, seeded.componentId);
+      expect(type?.author).toBe(grace.id);
+      expect(component?.author).toBe(grace.id);
     });
   });
 });

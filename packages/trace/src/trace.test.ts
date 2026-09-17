@@ -30,6 +30,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1363);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 317, from 316: access.md claims IAM-059 once the first administrator arrives by an invitation to
+    // a named address (docs/plans/2026-09-17-access-03-invitations.md); IAM-060, its audit, stays LIF's.
     // 316, from 295: access.md claims 21 - spaces, roles, grants, deciding and explaining, and the
     // rules on external principals - and claims none it answers only in part.
     // 295, from 256: metadata.md claims 15 - the rules resolving, validating and carrying a
@@ -50,7 +52,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(316);
+    ).toBe(317);
   });
 });
 
@@ -112,8 +114,12 @@ describe('the citations in the committed model', () => {
   // and IAM-031, which access.md owns, in the Access page's tests: each answer names its level and
   // grants, and a refusal its denials or the levels that granted nothing. IAM-029 waits for an Access
   // page on every kind of artifact, and the plan names it and the rest.
+  // 145, from 144: invitations (docs/plans/2026-09-17-access-03-invitations.md) cite IAM-059, which
+  // access.md now owns, once, in the service's first administrator test: invited to a named address,
+  // and Administrator from the first sign-in through a permitted route that verifies it. IAM-060, the
+  // bootstrap's audit, waits for LIF's log.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(144);
+    expect(model.citations).toHaveLength(145);
   });
 
   it('cites no identifier the corpus does not hold', () => {

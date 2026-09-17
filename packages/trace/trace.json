@@ -14000,6 +14000,10 @@
           "howItIsMet": "For an external principal, a grant at the tenant is refused where it is made and not read where it is decided, so external access is only ever against a named space or artifact - a publication included, since a publication is an artifact"
         },
         {
+          "id": "IAM-059",
+          "howItIsMet": "Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses (\"Invitations\")"
+        },
+        {
           "id": "IAM-051",
           "howItIsMet": "`GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce"
         },
@@ -15268,6 +15272,12 @@
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
       "line": 293,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-059",
+      "file": "apps/service/src/first-administrator.test.ts",
+      "line": 147,
       "kind": "title"
     },
     {
