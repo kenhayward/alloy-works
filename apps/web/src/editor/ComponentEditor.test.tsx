@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { fromEditor, Selection, type EditorView } from '@alloy-works/editor';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentEditor } from './ComponentEditor.js';
@@ -69,10 +70,16 @@ function service(answers: Record<string, Answer>) {
 
 const quick = { ...designTiming, idleMs: 10, continuousMs: 50 };
 
-function open(answers: Record<string, Answer>, timing = quick) {
+/**
+ * Opens the editor. `strict` renders it inside `<StrictMode>`, which is how the application itself
+ * runs it (apps/web/src/main.tsx) and which double-invokes every render: anything that keeps its
+ * bearings by counting renders, rather than by comparing values, behaves differently there than it
+ * does in a test that leaves StrictMode off (fix round 2, findings A-C).
+ */
+function open(answers: Record<string, Answer>, timing = quick, strict = false) {
   const { client, asked } = service(answers);
   let view: EditorView | undefined;
-  render(
+  const editor = (
     <ComponentEditor
       componentId={COMPONENT}
       client={client}
@@ -80,8 +87,9 @@ function open(answers: Record<string, Answer>, timing = quick) {
       sessionId={SESSION}
       timing={timing}
       onView={(mounted) => (view = mounted)}
-    />,
+    />
   );
+  render(strict ? <StrictMode>{editor}</StrictMode> : editor);
   const surface = async () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
     return view!;
@@ -904,8 +912,11 @@ describe('the component editor', () => {
     });
 
     await userEvent.click(await screen.findByRole('button', { name: 'Save version' }));
+    // The last PUT, not the first (fix round 2, minor): an idle save landing part-way through the
+    // three edits would otherwise decide this assertion - passing or failing on which keystroke it
+    // happened to catch rather than on what the header finally sent.
     await waitFor(() =>
-      expect(asked.find((each) => each.route.startsWith('PUT'))?.body).toMatchObject({
+      expect(asked.filter((each) => each.route.startsWith('PUT')).at(-1)?.body).toMatchObject({
         content: { title: 'Replace the toner', language: 'fr-CA', direction: 'rtl' },
       }),
     );
@@ -1079,5 +1090,127 @@ describe('the component editor', () => {
     await surface();
 
     expect(screen.getByLabelText('Title')).toBeDisabled();
+  });
+
+  it('keeps a trailing space in the title as it is typed, under StrictMode', async () => {
+    // The application runs under `<StrictMode>` (apps/web/src/main.tsx), which renders every
+    // component twice. A field that decides whether to resync itself by what happened during a
+    // render loses that decision on the second pass and snaps back to the document (fix round 2,
+    // finding A): a title is stored trimmed, so every interior space is trimmed away the instant it
+    // is typed and is briefly trailing, and the field arrives at "Installtheprinter".
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Install the printer ' } });
+
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer ');
+  });
+
+  it('keeps a language tag still being typed, under StrictMode', async () => {
+    // The same defect, worse: only a complete tag ever reaches the document, so every keystroke of a
+    // new one leaves the document's own language untouched - and a field that resyncs on the second
+    // render pass puts "en-GB" straight back, making the language impossible to retype at all (fix
+    // round 2, finding A).
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'f' } });
+
+    expect(screen.getByLabelText('Language')).toHaveValue('f');
+  });
+
+  it('does not revert a field being typed when something else re-renders the page', async () => {
+    // Nothing about the header changed here: a paragraph was edited, which re-renders the page
+    // through `header`, `session` and the notice alike. Such renders are routine - the claim
+    // resolving, every save's saving/saved transition - and each one of them reverted an
+    // in-progress value (fix round 2, finding B).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
+    );
+    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+  });
+
+  it('leaves the language alone while the title is edited, and the title alone while the language is', async () => {
+    // Each field answers for its own value only (fix round 2, finding C): editing one changed
+    // `header`, and a field that resyncs on any change to it wiped the other's half-typed tag
+    // silently, leaving a refusal standing over a value that was by then perfectly good.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Replace the toner' } });
+
+    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-CA' } });
+
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
+    );
+  });
+
+  it('does not report a refused language tag when the field is disabled out from under it', async () => {
+    // Disabling a focused input blurs it in a real browser, and the header goes read-only exactly
+    // when the surface does - so the blur that arrives when the session is lost is the page changing
+    // under the author, not the author leaving an unfinished tag behind. Reporting a refusal there
+    // writes over the notice that just said what happened (fix round 2, finding H).
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+    );
+    const view = await surface();
+    const language = screen.getByLabelText('Language');
+    fireEvent.change(language, { target: { value: 'fr-' } });
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await waitFor(() => expect(language).toBeDisabled());
+    fireEvent.blur(language);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Newer text was saved from another window',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
   });
 });

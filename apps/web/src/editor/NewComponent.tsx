@@ -73,8 +73,9 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   // item 6): the first is a page that never rendered its own form at all and is worth saying
   // something about, the second is silent by design (nobody is offered a form that could only refuse
   // them) - conflating the two would hide a real outage behind the same nothing an empty environment
-  // shows on its best day.
-  const [spacesFailed, setSpacesFailed] = useState(false);
+  // shows on its best day. Signed out is distinct again (fix round 2): it is not something Try again
+  // fixes by itself, and this renderer says so wherever a call can answer 401.
+  const [spacesProblem, setSpacesProblem] = useState<'signedOut' | 'failed' | null>(null);
   const [where, setWhere] = useState<string>('');
   const [types, setTypes] = useState<readonly ComponentType[]>([]);
   const [componentType, setComponentType] = useState<string>('');
@@ -95,19 +96,24 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
 
   const loadSpaces = useCallback(async () => {
     const generation = ++spacesRequest.current;
-    setSpacesFailed(false);
+    setSpacesProblem(null);
     try {
-      const { data } = await client.GET('/v1/spaces');
+      const { data, response } = await client.GET('/v1/spaces');
       if (spacesRequest.current !== generation) return;
       const open = spacesIn(data);
       if (open === undefined) {
-        setSpacesFailed(true);
+        setSpacesProblem(response.status === 401 ? 'signedOut' : 'failed');
         return;
       }
       setSpaces(open);
-      setWhere(open[0]?.id ?? '');
+      // The author's own choice survives a read that did not take it away (fix round 2, finding G):
+      // a retry, or the re-read a 404 asks for, is not a reason to move them back to the first space
+      // in the list. Only a space that is no longer offered gives way, and then to whatever is first.
+      setWhere((chosen) =>
+        open.some((space) => space.id === chosen) ? chosen : (open[0]?.id ?? ''),
+      );
     } catch {
-      if (spacesRequest.current === generation) setSpacesFailed(true);
+      if (spacesRequest.current === generation) setSpacesProblem('failed');
     }
   }, [client]);
 
@@ -129,15 +135,26 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     [client],
   );
 
+  // Each effect leaves its generation behind on the way out (fix round 2, finding F): the guard the
+  // refactor above dropped, restored in the shape the imperative calls already use. Without it a read
+  // still in flight when the page goes finds its own generation current and sets state into a
+  // component that is no longer there - which is how a stray act() warning gets into a suite that is
+  // supposed to run silent.
   useEffect(() => {
     void loadSpaces();
+    return () => {
+      spacesRequest.current += 1;
+    };
   }, [loadSpaces]);
 
   useEffect(() => {
-    if (where === '') return;
+    if (where === '') return undefined;
     setTypes([]);
     setComponentType('');
     void loadTypes(where);
+    return () => {
+      typesRequest.current += 1;
+    };
   }, [loadTypes, where]);
 
   const create = useCallback(async () => {
@@ -205,18 +222,38 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     where,
   ]);
 
-  if (spacesFailed) {
+  // The one status region, rendered by every branch below (fix round 2, finding E). A 404 re-reads
+  // the spaces, and that read can fail outright or come back with nowhere left to create - and either
+  // used to replace the whole section, carrying off the very message that said what had happened.
+  const status = <p role="status">{notice}</p>;
+
+  if (spacesProblem !== null) {
     return (
       <section aria-labelledby="new-component-heading">
         <h2 id="new-component-heading">New component</h2>
-        <p>The spaces you may create in could not be loaded.</p>
+        <p>
+          {spacesProblem === 'signedOut'
+            ? 'You are signed out. Sign in again to create a component.'
+            : 'The spaces you may create in could not be loaded.'}
+        </p>
         <button type="button" onClick={() => void loadSpaces()}>
           Try again
         </button>
+        {status}
       </section>
     );
   }
-  if (spaces === null || spaces.length === 0) return null;
+  if (spaces === null || spaces.length === 0) {
+    // Nothing to create in says nothing at all - unless something has just been said about a space
+    // that was, which must not vanish along with the form it was said about.
+    if (notice === null) return null;
+    return (
+      <section aria-labelledby="new-component-heading">
+        <h2 id="new-component-heading">New component</h2>
+        {status}
+      </section>
+    );
+  }
   return (
     <section aria-labelledby="new-component-heading">
       <h2 id="new-component-heading">New component</h2>
@@ -255,7 +292,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
       <button type="button" disabled={sending} onClick={() => void create()}>
         Create
       </button>
-      <p role="status">{notice}</p>
+      {status}
     </section>
   );
 }

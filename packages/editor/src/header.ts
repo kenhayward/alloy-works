@@ -33,6 +33,15 @@ const setRoot =
   };
 
 /**
+ * Whether the model would take this as a title at all - the rule `setTitle` enforces below, asked
+ * without a document (fix round 2). A field that shows a title as it is typed has to tell a refusal
+ * from a value the document already holds, because the command answers `false` to both; asking the
+ * rule here keeps it in one place rather than restating it in the renderer, where it would rot
+ * silently the day this rule changes.
+ */
+export const titleAccepted = (title: string) => title.trim() !== '';
+
+/**
  * A title the content model would refuse is refused here instead, without dispatching: the document
  * must never reach a state `fromEditor` cannot serialise, because the session takes its snapshot
  * inside the save path where nothing is waiting to catch a throw. The same rule as the editor's other
@@ -46,10 +55,8 @@ const setRoot =
  */
 export const setTitle =
   (title: string): Command =>
-  (state, dispatch) => {
-    const trimmed = title.trim();
-    return trimmed === '' ? false : setRoot('title', trimmed)(state, dispatch);
-  };
+  (state, dispatch) =>
+    titleAccepted(title) ? setRoot('title', title.trim())(state, dispatch) : false;
 
 /**
  * As `setTitle`, for the base language (CNT-140). The rule comes from the domain, the same schema

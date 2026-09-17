@@ -3,7 +3,7 @@ import type { EditorState, Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 import { newBlockIdentifier } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
-import { headerOf, setDirection, setLanguage, setTitle } from './header.js';
+import { headerOf, setDirection, setLanguage, setTitle, titleAccepted } from './header.js';
 import { createEditorState } from './state.js';
 
 const stored = {
@@ -65,6 +65,18 @@ describe('the component header', () => {
       expect(answer.state).toBe(state);
     }
     expect(fromEditor(state.doc).title).toBe('Install the printer');
+  });
+
+  it('answers whether a title is accepted by the rule setTitle itself enforces, with no document', () => {
+    // A field showing a title as it is typed has to tell a refusal from a value the document already
+    // holds - `setTitle` answers `false` to both - and must not restate the rule to do it (fix round
+    // 2): the rule is asked for here rather than copied into the renderer.
+    for (const title of ['', '   ', '\n']) {
+      expect(titleAccepted(title)).toBe(false);
+      expect(run(opened(), setTitle(title)).ran).toBe(false);
+    }
+    expect(titleAccepted('  Replace the toner  ')).toBe(true);
+    expect(run(opened(), setTitle('  Replace the toner  ')).ran).toBe(true);
   });
 
   it('stores the title trimmed, the same agreement createComponent holds at creation', () => {

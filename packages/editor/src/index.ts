@@ -7,7 +7,14 @@ export {
   noAdjacentEmptyParagraphs,
   type EditorStateOptions,
 } from './state.js';
-export { headerOf, setDirection, setLanguage, setTitle, type ComponentHeader } from './header.js';
+export {
+  headerOf,
+  setDirection,
+  setLanguage,
+  setTitle,
+  titleAccepted,
+  type ComponentHeader,
+} from './header.js';
 export { mountEditor, type MountOptions } from './view.js';
 export { Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';

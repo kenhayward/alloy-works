@@ -308,17 +308,24 @@ export function ComponentEditor({
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
   }, [session, kept]);
 
-  /** Asks the view to make a header step, returning whether the editor made one. */
-  const changeHeader = <K extends keyof Header>(member: K, value: Header[K]) => {
+  /**
+   * Asks the view to make a header step, answering the header the document holds afterwards - the
+   * model's own answer to what was sent, which the fields compare against rather than assuming their
+   * value survived unchanged (fix round 2): a title comes back trimmed, and a step the editor refused
+   * or found redundant comes back as whatever was already there. `null` where there is no view left
+   * to ask, which leaves a field showing what was typed rather than reverting it to nothing.
+   */
+  const changeHeader = <K extends keyof Header>(member: K, value: Header[K]): Header | null => {
     const view = viewRef.current;
-    if (!view) return false;
+    if (!view) return null;
     const command =
       member === 'title'
         ? setTitle(value as string)
         : member === 'language'
           ? setLanguage(value as string)
           : setDirection(value as Header['direction']);
-    return command(view.state, view.dispatch.bind(view));
+    command(view.state, view.dispatch.bind(view));
+    return headerOf(view.state.doc);
   };
 
   if (loaded.state === 'loading') return <p>Opening...</p>;

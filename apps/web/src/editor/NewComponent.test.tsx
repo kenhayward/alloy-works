@@ -276,6 +276,97 @@ describe('New component', () => {
     );
   });
 
+  it('says the author is signed out when the spaces answer 401, not that it could be tried again', async () => {
+    // Signed out is distinct from a failure worth retrying, here as everywhere else in this renderer
+    // (fix round 2): the status the read already answered with says which this is.
+    const { fetch } = service({}, { '/v1/spaces': 401 });
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+
+    expect(
+      await screen.findByText('You are signed out. Sign in again to create a component.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('The spaces you may create in could not be loaded.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps saying why a space was refused when the re-read fails, and when it leaves nowhere to create', async () => {
+    // A 404 re-reads the spaces, and that read can fail outright or come back with nowhere left to
+    // create - and each used to take the whole section away, carrying off the one message that
+    // explained what had just happened (fix round 2, finding E).
+    let spacesCall = 0;
+    const answers = [SPACES.items, null, []];
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        const items = answers[spacesCall];
+        spacesCall += 1;
+        if (!items) return new Response('{}', { status: 500 });
+        return new Response(JSON.stringify({ items }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        return new Response(JSON.stringify(TYPES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ code: 'not_found', message: 'gone' }), {
+        status: 404,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    // The re-read fails: the failure is said, and so is what was refused in the first place.
+    await screen.findByText('The spaces you may create in could not be loaded.');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'This space is no longer open to you. Choose another.',
+    );
+
+    // Try again, and this time there is nowhere left to create at all.
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText('The spaces you may create in could not be loaded.'),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByLabelText('Where')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'This space is no longer open to you. Choose another.',
+    );
+  });
+
+  it('keeps the space the author chose when the list is read again unchanged', async () => {
+    // Re-reading the spaces is not a reason to move the author back to the first one (fix round 2,
+    // finding G): they chose where this component goes, and the list they chose from is still there.
+    const { fetch, sent } = service(
+      {
+        '/v1/spaces': SPACES,
+        [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: TYPES,
+        [`/v1/spaces/${SPACES.items[2]!.id}/component-types`]: TYPES,
+      },
+      { [`/v1/spaces/${SPACES.items[2]!.id}/components`]: 404 },
+    );
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.selectOptions(screen.getByLabelText('Where'), SPACES.items[2]!.id);
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    await waitFor(() =>
+      expect(sent.filter((request) => request.url === '/v1/spaces')).toHaveLength(2),
+    );
+    expect(screen.getByLabelText('Where')).toHaveValue(SPACES.items[2]!.id);
+  });
+
   it('says the spaces could not be loaded, distinctly from nowhere to create, and offers Try again', async () => {
     // A failed read and a legitimately empty list must not look the same (review round 1, item 6):
     // one is nothing to say anything about, the other is a page that never rendered its form at all.

@@ -1,17 +1,32 @@
 import { contentDocumentSchema } from '@alloy-works/domain';
-import type { ComponentHeader as Header } from '@alloy-works/editor';
-import { useRef, useState } from 'react';
+import { titleAccepted, type ComponentHeader as Header } from '@alloy-works/editor';
+import { useState } from 'react';
 
 import { DirectionSelect } from './DirectionSelect.js';
 
 /** The same tag rule the model applies (see `NewComponent.tsx`, which reuses it for the same reason). */
 const language = contentDocumentSchema.shape.language;
 
+/**
+ * What a field shows and what the document answered for it. `typed` is exactly what the author has in
+ * front of them, `inModel` the value the document held the last time this field heard about it - so
+ * the two can be compared against the document's own current value, which is the whole mechanism.
+ */
+interface Field {
+  readonly typed: string;
+  readonly inModel: string;
+}
+
 export interface ComponentHeaderProps {
   readonly header: Header;
   readonly editable: boolean;
-  /** Asked to make a step. What it answers is not used for anything - see the fields below. */
-  readonly onChange: <K extends keyof Header>(member: K, value: Header[K]) => boolean;
+  /**
+   * Asks the editor to make a step, answering the header the document holds afterwards - or `null`
+   * where there is no view to ask. The answer is what a field records as `inModel`, which is how a
+   * value the model normalised (a trimmed title) stays distinguishable from one that changed
+   * elsewhere.
+   */
+  readonly onChange: <K extends keyof Header>(member: K, value: Header[K]) => Header | null;
   readonly onRefused: (message: string) => void;
 }
 
@@ -23,50 +38,52 @@ export interface ComponentHeaderProps {
  * a second `<header>` there, or a second `id="component-title"`, would strand that paragraph and break
  * the article's `aria-labelledby`.
  *
- * The title input cannot be bound straight to `header.title`, because `setTitle` trims on every
- * single keystroke (packages/editor/src/header.ts). A trailing space is trimmed away the instant it
- * becomes trailing - so typing "Replace the toner" one character at a time, into a field that mirrors
- * the model back after every key, would arrive as "Replacethetoner": each space gone before the next
- * character can follow it. It therefore keeps its own buffer of exactly what was typed.
+ * Neither text field can be bound straight to the document. A title is stored trimmed
+ * (packages/editor/src/header.ts), so a field mirroring the model back after every key would lose each
+ * space the instant it became trailing: "Replace the toner" typed one character at a time arrives as
+ * "Replacethetoner". A language tag is validated on every call, so a tag under construction - "f",
+ * "fr-C" - would snap back to the old value on every keystroke and could never be finished at all.
+ * Each field therefore holds what was typed.
  *
- * That buffer is reconciled with the document - not left to seed once and go stale (review round 1,
- * item 1) - whenever the document's own title changes for a reason other than this very field's own
- * last edit: an undo (`Mod-z` makes a `DocAttrStep`, which reaches here through the ordinary
- * `dispatch` -> `header` state path) or `ComponentEditor`'s own `view.updateState` on a refusal
- * elsewhere in the session or a version cut (both now refresh `header` too, alongside the update).
- * `titleEditedHere` is set the instant the title field's own handler changes the buffer and consumed
- * on the very next render, so exactly the render that follows this field's own edit is left alone
- * (where the model's answer may legitimately differ from what was typed - trimmed) and every other
- * render resyncs from `header`.
+ * **What decides when a field resyncs is a value, never a render** (fix round 2, findings A-C). Each
+ * field remembers the document's own value as it last heard it, `inModel`, and gives way only when the
+ * document's value differs from that - which happens exactly when something other than this field
+ * changed it: an undo, a refusal putting the surface back, a version cut. Everything else leaves the
+ * field alone: the model normalising what this field just sent (which `onChange` answers with, so
+ * `inModel` moves with it), a keystroke the model never saw because the tag is not finished, another
+ * field's edit, or any of the page's routine re-renders - the claim resolving, each save's own
+ * saving/saved transition, a phase change.
  *
- * A refusal is distinguished from a harmless no-op by testing the value against the model's own rule
- * directly (review round 1, item 2), not by trusting `onChange`'s return value: `setTitle` also
- * answers `false` when the trimmed value already matches what the document holds - retyping the
- * current title with a trailing space, for instance - which is not a refusal and must not be reported
- * as one. Only a title that trims to nothing is refused; only that reverts the field, which is the
- * one case the field's own contract ("goes back to what the document says") is actually about.
+ * The earlier attempt at this counted renders instead, through a ref set in a handler and cleared
+ * during the next render. The application runs under `<StrictMode>` (apps/web/src/main.tsx), which
+ * renders twice: the first pass cleared the flag and the second, finding it clear, resynced anyway -
+ * so the fields ate keystrokes in the real application while the tests, which did not use StrictMode,
+ * passed. Comparing values has no such pass to be on the wrong side of, and nothing here writes to a
+ * ref during render.
  *
- * The language field keeps the same kind of buffer, for the same underlying reason: `setLanguage`
- * validates on every single keystroke, so a field bound straight to the model would snap back to the
- * old value on every one of a new tag's keystrokes that is not yet complete ("f", "fr-C"), making it
- * impossible to ever finish typing a new one. Unlike the title, though, it is not validated - or
- * reported - as it is typed at all, only once it is left (review round 1, item 3): reporting a
- * not-yet-complete tag on every keystroke both shouts about text nobody has finished typing and never
- * stops once they do, because nothing here ever un-reports it. `onChange` is asked to make a step only
- * for a value that already parses, so nothing intermediate ever reaches the document for the model to
- * answer back about; `onBlur` is what actually says whether what was left behind is refused.
+ * A refusal is not the same as a no-op: `setTitle` answers `false` both for a title it refuses and for
+ * one the document already holds (retyping the current title with a trailing space, say). The rule
+ * itself is asked for - `titleAccepted`, exported beside the command it gates - rather than restated
+ * here. Only a refused title reverts the field.
+ *
+ * The language field says nothing while a tag is being typed, only once the field is left: reporting a
+ * not-yet-complete tag on every keystroke both shouts about text nobody has finished and never stops
+ * once they do, because nothing here un-reports it. A blur caused by the field going read-only is not
+ * the author leaving, and reports nothing (fix round 2, finding H).
  */
 export function ComponentHeader({ header, editable, onChange, onRefused }: ComponentHeaderProps) {
-  const [title, setLocalTitle] = useState(header.title);
-  const [localLanguage, setLocalLanguage] = useState(header.language);
-  const titleEditedHere = useRef(false);
-  const languageEditedHere = useRef(false);
+  const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
+  const [tag, setTag] = useState<Field>({ typed: header.language, inModel: header.language });
 
-  if (titleEditedHere.current) titleEditedHere.current = false;
-  else if (title !== header.title) setLocalTitle(header.title);
-
-  if (languageEditedHere.current) languageEditedHere.current = false;
-  else if (localLanguage !== header.language) setLocalLanguage(header.language);
+  // Adjusting state during render, the way React documents it for state derived from a prop: ordinary
+  // state, so a second render pass under StrictMode reads what the first one set rather than undoing
+  // it, and the comparison is by value, so the extra pass it schedules settles at once.
+  if (header.title !== title.inModel) {
+    setTitle({ typed: header.title, inModel: header.title });
+  }
+  if (header.language !== tag.inModel) {
+    setTag({ typed: header.language, inModel: header.language });
+  }
 
   return (
     <>
@@ -74,44 +91,46 @@ export function ComponentHeader({ header, editable, onChange, onRefused }: Compo
       <label>
         Title
         <input
-          value={title}
+          value={title.typed}
           disabled={!editable}
           onChange={(event) => {
             const value = event.target.value;
-            // The only way `setTitle` ever refuses (packages/editor/src/header.ts): trimmed to
-            // nothing. Anything else either makes a step or is a no-op because it already matches -
-            // neither is a refusal, so neither reports one nor reverts the field.
-            if (value.trim() === '') {
+            if (!titleAccepted(value)) {
               onRefused('A component needs a title.');
-              setLocalTitle(header.title);
+              setTitle((previous) => ({ ...previous, typed: header.title }));
               return;
             }
-            titleEditedHere.current = true;
-            setLocalTitle(value);
-            onChange('title', value);
+            // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
+            const answered = onChange('title', value);
+            setTitle((previous) => ({
+              typed: value,
+              inModel: answered?.title ?? previous.inModel,
+            }));
           }}
         />
       </label>
       <label>
         Language
         <input
-          value={localLanguage}
+          value={tag.typed}
           disabled={!editable}
           onChange={(event) => {
             const value = event.target.value;
-            // Guards the render this produces regardless of validity, not only an accepted one: most
-            // of a new tag's own keystrokes are not yet valid on their own ("f", "fr-C"), and each one
-            // still changes the buffer without changing `header.language` - which the resync check
-            // above would otherwise read as an external change and revert, wiping out an in-progress
-            // tag one not-yet-valid keystroke at a time.
-            languageEditedHere.current = true;
-            // Shown as typed regardless of validity: reverting it on every keystroke would make it
-            // impossible to ever finish typing a new one.
-            setLocalLanguage(value);
-            if (language.safeParse(value).success) onChange('language', value);
+            // Only a complete tag is offered to the model; what is on the way there is shown as typed
+            // and leaves the document alone, so `inModel` stays what the document still holds.
+            const answered = language.safeParse(value).success ? onChange('language', value) : null;
+            setTag((previous) => ({
+              typed: value,
+              inModel: answered?.language ?? previous.inModel,
+            }));
           }}
           onBlur={() => {
-            if (!language.safeParse(localLanguage).success) {
+            // Disabling a focused field blurs it in a real browser, and the header goes read-only
+            // exactly when the surface does - the session lost, a version being cut. That blur is the
+            // page changing under the author, not the author leaving an unfinished tag behind, and
+            // reporting a refusal there writes over the notice that just said what happened.
+            if (!editable) return;
+            if (!language.safeParse(tag.typed).success) {
               onRefused('A language tag looks like en-GB.');
             }
           }}
