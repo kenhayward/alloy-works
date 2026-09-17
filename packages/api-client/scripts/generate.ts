@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import openapiTypeScript, { astToString } from 'openapi-typescript';
 
 const document = new URL('../../api-contract/openapi.json', import.meta.url);
-const out = new URL('../src/generated/schema.d.ts', import.meta.url);
+const out = new URL('../src/generated/schema.ts', import.meta.url);
 const ast = await openapiTypeScript(document);
 writeFileSync(out, astToString(ast));
 console.log(`Wrote ${fileURLToPath(out)}`);
