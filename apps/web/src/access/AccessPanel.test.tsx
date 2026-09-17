@@ -648,18 +648,21 @@ describe('access to a component', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
     await userEvent.click(screen.getByRole('button', { name: 'Give' }));
 
+    // The full status, not merely a prefix: nothing else is appended to the one true sentence.
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'That was granted, though what exactly could not be shown.',
+      /^That was granted, though what exactly could not be shown\.$/,
     );
     expect(
       screen.getByRole('heading', { name: 'Access to Install the printer' }),
     ).toBeInTheDocument();
   });
 
-  it("shows a fixed message, not a crash or nothing, when a refusal's message is not text", async () => {
+  it("says it was refused, not that it could not be told, when a 409 or 400 refusal's own message is not text", async () => {
+    let refusalStatus = 409;
     const { fetching } = service({
       override: {
-        'POST /v1/grants': () => json(409, { code: 'grant_duplicate', message: 42, traceId: 't' }),
+        'POST /v1/grants': () =>
+          json(refusalStatus, { code: 'grant_duplicate', message: 42, traceId: 't' }),
       },
     });
     panel(fetching);
@@ -668,8 +671,16 @@ describe('access to a component', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
     await userEvent.click(screen.getByRole('button', { name: 'Give' }));
 
+    // A 409 or a 400 always means nothing was done: the wording says so, rather than the more
+    // guarded "could not be told" that a lost or unrecognised response gets.
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Whether that was done could not be told.',
+      'That was refused, for a reason that could not be shown.',
+    );
+
+    refusalStatus = 400;
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'That was refused, for a reason that could not be shown.',
     );
   });
 
@@ -759,6 +770,40 @@ describe('access to a component', () => {
     await userEvent.click(
       within(section('The space General')).getByRole('button', { name: 'Try again' }),
     );
+    await within(section('The space General')).findByText('Nothing is granted here.');
+  });
+
+  it("shows a level's Try again as reading while its re-read is in flight, disabled rather than pressable again", async () => {
+    let attempt = 0;
+    const resolvers: (() => void)[] = [];
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level !== `space:${GENERAL}`) return json(200, { items: [], next: null });
+          attempt += 1;
+          if (attempt === 1) return refused(500, 'internal', 'broken');
+          return new Promise<Response>((resolve) => {
+            resolvers.push(() => resolve(json(200, { items: [], next: null })));
+          });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    const tryAgain = await within(section('The space General')).findByRole('button', {
+      name: 'Try again',
+    });
+
+    await userEvent.click(tryAgain);
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+    expect(
+      within(section('The space General')).getByRole('button', { name: 'Reading...' }),
+    ).toBeDisabled();
+    // Only the one re-read this click asked for: nothing further went out while it was in flight.
+    expect(attempt).toBe(2);
+
+    resolvers[0]!();
     await within(section('The space General')).findByText('Nothing is granted here.');
   });
 

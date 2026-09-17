@@ -70,6 +70,9 @@ async function everyPage<T>(
 
 const CHANGE_UNKNOWN =
   'Whether that was done could not be told. What is shown below is what the service now holds.';
+// Unlike a lost response, a 409 or a 400 is the service answering: nothing was done, whatever its
+// own message looked like.
+const REFUSED_UNREADABLE = 'That was refused, for a reason that could not be shown.';
 const SIGNED_OUT = 'You are signed out. Sign in again to manage access.';
 const EXPLAIN_SIGNED_OUT = 'You are signed out. Sign in again to see what they may do.';
 const EXPLAIN_REFUSED = 'You may no longer see what they may do.';
@@ -85,6 +88,9 @@ const EXPLAIN_UNREADABLE = 'What they may do could not be shown. Try again.';
 export function AccessPanel({ componentId, client }: AccessPanelProps) {
   const [opened, setOpened] = useState<Opened>({ state: 'loading' });
   const [listings, setListings] = useState<ReadonlyMap<string, Listing>>(new Map());
+  // Whether the lists are being read right now, whatever triggered it (the first load, a change, or
+  // pressing a level's own Try again): a level already showing failed offers only one read at a time.
+  const [readingGrants, setReadingGrants] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [person, setPerson] = useState('');
@@ -117,34 +123,39 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   const readGrants = useCallback(
     async (places: readonly Place[]) => {
       const mine = ++reading.current;
-      const read = await Promise.all(
-        places.map(async (place): Promise<Listing> => {
-          try {
-            const answer = await everyPage<ShownGrant>((cursor) =>
-              client.GET('/v1/grants', {
-                params: {
-                  query: { level: place.target, limit: '100', ...(cursor ? { cursor } : {}) },
-                },
-              }),
-            );
-            if ('items' in answer) {
-              // A page that cannot describe a grant it is holding shows the same failure a lost
-              // response would, rather than crash rendering it.
-              return answer.items.every(isShownGrant)
-                ? { state: 'loaded', grants: answer.items }
+      setReadingGrants(true);
+      try {
+        const read = await Promise.all(
+          places.map(async (place): Promise<Listing> => {
+            try {
+              const answer = await everyPage<ShownGrant>((cursor) =>
+                client.GET('/v1/grants', {
+                  params: {
+                    query: { level: place.target, limit: '100', ...(cursor ? { cursor } : {}) },
+                  },
+                }),
+              );
+              if ('items' in answer) {
+                // A page that cannot describe a grant it is holding shows the same failure a lost
+                // response would, rather than crash rendering it.
+                return answer.items.every(isShownGrant)
+                  ? { state: 'loaded', grants: answer.items }
+                  : { state: 'failed' };
+              }
+              if (answer.status === 401) return { state: 'unauthorized' };
+              return answer.status === 403 || answer.status === 404
+                ? { state: 'unmanaged' }
                 : { state: 'failed' };
+            } catch {
+              return { state: 'failed' };
             }
-            if (answer.status === 401) return { state: 'unauthorized' };
-            return answer.status === 403 || answer.status === 404
-              ? { state: 'unmanaged' }
-              : { state: 'failed' };
-          } catch {
-            return { state: 'failed' };
-          }
-        }),
-      );
-      if (!mounted.current || mine !== reading.current) return;
-      setListings(new Map(places.map((place, index) => [place.target, read[index]!])));
+          }),
+        );
+        if (!mounted.current || mine !== reading.current) return;
+        setListings(new Map(places.map((place, index) => [place.target, read[index]!])));
+      } finally {
+        if (mounted.current && mine === reading.current) setReadingGrants(false);
+      }
     },
     [client],
   );
@@ -249,7 +260,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   };
 
   const refusal = (status: number, error: unknown, missing: string) => {
-    if (status === 409) return refusalMessage(error) ?? CHANGE_UNKNOWN;
+    if (status === 409 || status === 400) return refusalMessage(error) ?? REFUSED_UNREADABLE;
     if (status === 401) return SIGNED_OUT;
     if (status === 404) return missing;
     if (status === 403) return 'You may not manage access there.';
@@ -269,7 +280,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
       if (data) {
         return isShownGrant(data.grant)
           ? `${describeGrant(data.grant)} on ${named(data.grant.level)}.`
-          : `That was granted, though what exactly could not be shown. ${CHANGE_UNKNOWN}`;
+          : 'That was granted, though what exactly could not be shown.';
       }
       return refusal(response.status, error, 'You may not manage access there.');
     });
@@ -339,8 +350,12 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             {listing.state === 'failed' && (
               <p>
                 What is granted here could not be loaded.{' '}
-                <button type="button" onClick={() => void readGrants(places)}>
-                  Try again
+                <button
+                  type="button"
+                  disabled={readingGrants}
+                  onClick={() => void readGrants(places)}
+                >
+                  {readingGrants ? 'Reading...' : 'Try again'}
                 </button>
               </p>
             )}
