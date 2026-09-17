@@ -80,8 +80,13 @@ where the service is, since it only returns people to addresses it knows:
 is granted Administrator there; nobody else holds a role until something grants one.
 `http://dev.acme.localhost:8088/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
 
-It also makes something to edit, since nothing in the product creates a component or grants a role
-yet: in each environment, a component type called Topic, a component called "Install the printer" in
+To give somebody else access, they sign in first - in a private window, as Alice, who sees nothing -
+because a grant names a person who has signed in. Then, as Ada, open "Install the printer", choose
+**Manage access**, pick Alice, a role and where, and **Give**; Alice's next request has it. **Remove**
+takes it away again, except the last grant that lets anyone administer the environment.
+
+It also makes something to edit, since nothing in the product creates a component yet: in each
+environment, a component type called Topic, a component called "Install the printer" in
 General, and Ada and Grace - made as principals before they first sign in - allowed Author on General.
 Alice is given nothing. Sign in as Ada, open "Install the printer", type, and **Save version**. To see
 the lock from the other side, sign in as Grace in a private window - the stand-in remembers who signed

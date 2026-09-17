@@ -56,12 +56,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   denial, on the whole environment, one space, or one item. Every environment starts with eight roles and
   a space called General. An environment's first administrator is named, by their sign-in identity, by
   whoever sets it up, and is granted the role once, at their first sign-in; in development, Ada
-  administers both environments from hers. Two read-only routes answer what a caller may do to something,
-  and, for an administrator, what someone else may do and why.
+  administers both environments from hers. On any component they may administer, **Manage access**
+  lists what is granted on it, on its space and across the whole environment, gives a person a role at
+  any of those as an allow or a denial, removes a grant, and shows what a chosen person may do there and
+  why. Removing the last grant that lets anyone administer the whole environment is refused.
 
-  **This is the model, not the management.** There are no screens and no routes yet to create a role,
-  make a grant, or manage a group or a principal - the first sign-in's grant is the only one anything
-  makes.
+  **This is grants to people, not the whole of managing access.** A person can be chosen only once they
+  have signed in: nothing invites an address yet. Nothing creates or changes a role, manages a group,
+  marks somebody as from outside the organisation, extends an expiring grant or gives one an expiry,
+  and only a component has an access page.
 
 - **Editing a component.** Signed in, you see the components you may read and open one. If you may
   edit it, your first change starts editing: nobody else can change it while you are, and anyone who
@@ -76,8 +79,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **This is paragraphs of text, not the editor.** A component holding a list, a table, an equation, a
   footnote or any formatting opens for reading only. Nothing yet creates a component: in development,
-  `pnpm dev:setup` makes one, "Install the printer", and lets Ada and Grace edit it; outside
-  development nobody can be given permission to edit, because no screen or route grants a role yet.
+  `pnpm dev:setup` makes one, "Install the printer", and lets Ada and Grace edit it; an administrator
+  lets anybody else edit it from **Manage access**.
   Changes saved but never made into a version are kept and cannot yet be got back, undo does not
   survive a reload, and there is no metadata to fill in.
 
