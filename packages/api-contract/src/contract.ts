@@ -13,13 +13,17 @@ export interface RouteResponse {
 
 /**
  * What a permission-checked route asks about. A space or an artifact names the path parameter holding
- * its id; a query names the member holding a target spelled `tenant`, `space:<id>` or `artifact:<id>`.
+ * its id; a query or a body names the member holding a target spelled `tenant`, `space:<id>` or
+ * `artifact:<id>`; a grant names the path parameter holding a grant's id, and the target is the level
+ * that grant was made at - which a caller who may not manage the grant is never told exists.
  */
 export type RouteTarget =
   | { readonly tenant: true }
   | { readonly space: string }
   | { readonly artifact: string }
-  | { readonly query: string };
+  | { readonly query: string }
+  | { readonly body: string }
+  | { readonly grant: string };
 
 /**
  * What a route checks before its handler runs (access.md, "Refusing"): nothing; a session; or a

@@ -1,6 +1,6 @@
 // apps/service/src/access.ts
 import type { RouteAccess, RouteTarget } from '@alloy-works/api-contract';
-import { loadFacts, type TenantTransaction } from '@alloy-works/db';
+import { grantLevel, loadFacts, type TenantTransaction } from '@alloy-works/db';
 import {
   decide,
   parseLevel,
@@ -26,11 +26,14 @@ export type PermissionCheck = Extract<RouteAccess, { check: 'permission' }>;
 /** access.md, "Refusing": the same words whether the target is missing or merely unreadable. */
 export const notFound = () => new AppError(404, 'not_found', 'There is nothing at this address.');
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 const forbidden = (permission: string) =>
   new AppError(403, 'forbidden', `This needs the ${permission} permission.`);
 
 /**
- * The level a route's declaration names, from the request's validated parameters or query. A path
+ * The level a route's declaration names, from the request's validated parameters, query or body, or -
+ * for a grant - from the grant itself, read in the transaction the decision is taken in. A path
  * parameter is run through `parseLevel` exactly as a query target is, rather than trusted as a uuid:
  * a query's `target` is already shaped by the contract's `Target` schema before a handler runs, but a
  * path parameter is declared with the route's own schema (`z.uuid()` today, and not necessarily
@@ -38,13 +41,23 @@ const forbidden = (permission: string) =>
  * a loader - an id that fails comes back undefined, which `authorise` refuses as not found, never as
  * the database error a malformed uuid would otherwise throw.
  */
-function targetOf(declared: RouteTarget, request: FastifyRequest): Level | undefined {
+async function targetOf(
+  trx: TenantTransaction,
+  declared: RouteTarget,
+  request: FastifyRequest,
+): Promise<Level | undefined> {
   if ('tenant' in declared) return { kind: 'tenant' };
-  if ('query' in declared) {
-    const value = (request.query as Record<string, unknown>)[declared.query];
+  if ('query' in declared || 'body' in declared) {
+    const [from, member] =
+      'query' in declared ? [request.query, declared.query] : [request.body, declared.body];
+    const value = (from as Record<string, unknown> | undefined)?.[member];
     return typeof value === 'string' ? parseLevel(value) : undefined;
   }
   const params = request.params as Record<string, unknown>;
+  if ('grant' in declared) {
+    const id = params[declared.grant];
+    return typeof id === 'string' && UUID.test(id) ? grantLevel(trx, id) : undefined;
+  }
   const [kind, name] =
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];
@@ -88,18 +101,21 @@ export async function authorise(
   check: PermissionCheck,
   request: FastifyRequest,
 ): Promise<Authorised> {
-  const target = targetOf(check.target, request);
+  const target = await targetOf(trx, check.target, request);
   if (!target) throw notFound();
   const facts = await loadFacts(trx, principalId, target);
   if (!facts) throw notFound();
+  // A grant is an administrator's to see (access.md, "Refusing"): one the caller may not manage is
+  // answered as absent, even where they may read the level it was made at, so an id cannot be probed.
+  const refused = (unreadable: boolean) =>
+    'grant' in check.target || unreadable ? notFound() : forbidden(check.permission);
   if (check.permission === 'administer') {
     const decision = administerOrAbove(facts);
     if (decision.allowed) return { trx, principalId, target, facts, decision };
-    if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
-    throw forbidden(check.permission);
+    throw refused(target.kind !== 'tenant' && !decide('read', facts).allowed);
   }
   if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
   const decision = decide(check.permission, facts);
-  if (!decision.allowed) throw forbidden(check.permission);
+  if (!decision.allowed) throw refused(false);
   return { trx, principalId, target, facts, decision };
 }
