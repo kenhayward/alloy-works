@@ -205,6 +205,63 @@ describe('the component editor', () => {
     expect(await screen.findByText('You are editing this component.')).toBeInTheDocument();
   });
 
+  it('says the author is signed out, keeps the unsaved text and stays editable when a save answers 401', async () => {
+    let signedIn = false;
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () =>
+        json(401, { code: 'unauthenticated', message: 'no', traceId: 't' }),
+      'PUT /v1/components/{id}/iterations/{session}/2': () =>
+        signedIn
+          ? json(200, { sequence: 2, lock })
+          : json(401, { code: 'unauthenticated', message: 'no', traceId: 't' }),
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    expect(
+      await screen.findByText(
+        'You are signed out. Sign in again; your unsaved text is kept below.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Text that was not saved' })).toHaveValue(
+      'Unbox the printer. Keep the box.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
+      'contenteditable',
+      'true',
+    );
+
+    signedIn = true;
+    view.dispatch(view.state.tr.insertText('!', view.state.doc.content.size - 1));
+    await waitFor(() => expect(screen.getByText('Saved at', { exact: false })).toBeInTheDocument());
+    expect(screen.queryByRole('textbox', { name: 'Text that was not saved' })).toBeNull();
+  });
+
+  it('says edit permission was withdrawn and stops editing when a save answers 403', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () =>
+        json(403, { code: 'forbidden', message: 'no', traceId: 't' }),
+    });
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    expect(
+      await screen.findByText(
+        'You may no longer edit this component. Your unsaved text is kept below to copy.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Text that was not saved' })).toHaveValue(
+      'Unbox the printer. Keep the box.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
+      'contenteditable',
+      'false',
+    );
+  });
+
   it('refuses a paste rather than putting unexamined content into the component', async () => {
     const { asked, surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
     const view = await surface();

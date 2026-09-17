@@ -172,15 +172,23 @@ export function ComponentEditor({
       version: { id: component.version.id, number: component.version.number },
       snapshot: () => fromEditor(view.state.doc),
       onChange: (next) => {
+        const previous = phase;
         phase = next.phase;
         setSession(next);
         if (next.notice) setNotice(next.notice);
         if (next.phase !== 'reading') staleLockKnown.current = true;
-        if (next.phase === 'lost') captureKept();
+        // Lost, or stopped while editing goes on - signed out, or content the service refused (final
+        // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
+        const stoppedEditing = next.phase === 'editing' && next.save === 'stopped';
+        if (next.phase === 'lost' || stoppedEditing) captureKept();
         // The kept text is only good until the next successful claim puts this session back in
-        // control (fix round 1, finding 2): from then on it is stale, not something still worth
+        // control (fix round 1, finding 2), or - kept while editing went on - until a save
+        // acknowledges everything on screen: from then on it is stale, not something still worth
         // offering back. A later refusal starts capturing fresh too (fix round 2, minor).
-        if (next.phase === 'editing') {
+        if (
+          next.phase === 'editing' &&
+          (previous === 'claiming' || (next.save === 'saved' && !next.dirty))
+        ) {
           setKept(null);
           keptIsCurrent.current = false;
         }

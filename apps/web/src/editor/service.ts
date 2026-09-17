@@ -1,7 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ContentDocument } from '@alloy-works/domain';
 
-import type { ClaimResult, CutResult, SaveResult, SessionService } from './session.js';
+import type { ClaimResult, CutResult, Refusal, SaveResult, SessionService } from './session.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -55,6 +55,26 @@ function codeOf(error: unknown): string {
     : 'failed';
 }
 
+/**
+ * A refusal no retry will change, told by the HTTP status (final review, finding 2): the generated
+ * client always exposes the response, while a 401 or a 400 from the service's own request handling
+ * carries a code no route declares. Anything else - a server error, or no answer at all - is not one.
+ */
+function refusalOf(response: Response | undefined): Refusal | undefined {
+  switch (response?.status) {
+    case 401:
+      return 'signed_out';
+    case 403:
+      return 'forbidden';
+    case 404:
+      return 'not_found';
+    case 400:
+      return 'invalid';
+    default:
+      return undefined;
+  }
+}
+
 /** Decision F: the wire uses an underscore in every code. */
 const savedCodes = [
   'lock_held',
@@ -98,7 +118,7 @@ export function sessionService(
         }
       }
       try {
-        const { data, error } = await client.POST('/v1/components/{id}/lock', {
+        const { data, error, response } = await client.POST('/v1/components/{id}/lock', {
           params: { path },
           body: { session: current, ...(move ? { move } : {}) },
           signal,
@@ -115,7 +135,7 @@ export function sessionService(
             },
           };
         }
-        return { ok: false, code: 'failed' };
+        return { ok: false, code: refusalOf(response) ?? 'failed' };
       } catch {
         return { ok: false, code: 'failed' };
       }
@@ -123,7 +143,7 @@ export function sessionService(
 
     async save(sequence, openedFrom, content: ContentDocument, signal): Promise<SaveResult> {
       try {
-        const { data, error } = await client.PUT(
+        const { data, error, response } = await client.PUT(
           '/v1/components/{id}/iterations/{session}/{sequence}',
           {
             params: { path: { ...path, session: current, sequence: String(sequence) } },
@@ -132,6 +152,8 @@ export function sessionService(
           },
         );
         if (data) return { ok: true };
+        const refusal = refusalOf(response);
+        if (refusal) return { ok: false, code: refusal };
         const code = codeOf(error);
         const known = savedCodes.find((each) => each === code);
         const latest = error && 'latest' in error ? error.latest : undefined;
@@ -147,12 +169,12 @@ export function sessionService(
 
     async cut(openedFrom): Promise<CutResult> {
       try {
-        const { data, error } = await client.POST('/v1/components/{id}/versions', {
+        const { data, error, response } = await client.POST('/v1/components/{id}/versions', {
           params: { path },
           body: { session: current, openedFrom },
         });
         if (data) return { ok: true, outcome: data.outcome, version: data.version };
-        return { ok: false, code: codeOf(error) };
+        return { ok: false, code: refusalOf(response) ?? codeOf(error) };
       } catch {
         return { ok: false, code: 'failed' };
       }
@@ -160,11 +182,11 @@ export function sessionService(
 
     async release(openedFrom): Promise<CutResult> {
       try {
-        const { data, error } = await client.DELETE('/v1/components/{id}/lock', {
+        const { data, error, response } = await client.DELETE('/v1/components/{id}/lock', {
           params: { path, query: { session: current, openedFrom } },
         });
         if (data) return { ok: true, outcome: data.outcome, version: data.version };
-        return { ok: false, code: codeOf(error) };
+        return { ok: false, code: refusalOf(response) ?? codeOf(error) };
       } catch {
         return { ok: false, code: 'failed' };
       }

@@ -640,6 +640,153 @@ describe('the editing session', () => {
     });
   });
 
+  it('stops, keeping the text and retrying nothing, when a save finds the author signed out', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'signed_out' });
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      dirty: true,
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+    await clock.advance(10 * 60_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    // Signed in again: the next change sends everything, and the reason goes.
+    service.saveAnswer = async () => undefined;
+    type('Unbox the printer.');
+    await clock.advance(2_000);
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 3, text: 'Unbox the printer.' });
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved', notice: null });
+  });
+
+  it('goes to lost with a plain reason when a save finds edit permission withdrawn', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'forbidden' });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      recoverable: false,
+      notice: 'You may no longer edit this component. Your unsaved text is kept below to copy.',
+    });
+  });
+
+  it('goes to lost with a plain reason when a save finds the component no longer readable', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'not_found' });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice:
+        'This component is no longer available to you. Your unsaved text is kept below to copy.',
+    });
+  });
+
+  it('stops, saying so rather than retrying silently, when the service refuses the content as invalid', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'invalid' });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1', 'save 2']);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      notice:
+        'The service did not accept this text, so it was not saved. Your unsaved text is kept below.',
+    });
+  });
+
+  it('makes no version and keeps the reason when Save version flushes into a signed-out answer', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    service.saveAnswer = async () => ({ ok: false, code: 'signed_out' });
+    await session.saveVersion();
+    expect(service.calls).toEqual(['claim', 'save 1']);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+  });
+
+  it('says signed out, not that the version could not be made, when Save version is refused for it', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.cutAnswer = async () => ({ ok: false, code: 'signed_out' });
+    await session.saveVersion();
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      notice: 'You are signed out. Sign in again.',
+    });
+  });
+
+  it('goes to lost when Done editing is refused because edit permission was withdrawn', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.cutAnswer = async () => ({ ok: false, code: 'forbidden' });
+    await session.doneEditing();
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice: 'You may no longer edit this component.',
+    });
+  });
+
+  it('goes to lost when Save version is refused because the component is no longer readable', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.cutAnswer = async () => ({ ok: false, code: 'not_found' });
+    await session.saveVersion();
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice: 'This component is no longer available to you.',
+    });
+  });
+
+  it('says signed out when the first claim is refused for it', async () => {
+    const { clock, service, session, type } = harness();
+    service.claimAnswer = async () => ({ ok: false, code: 'signed_out' });
+    type('Unbox');
+    await clock.advance(0);
+    expect(session.view()).toMatchObject({
+      phase: 'reading',
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+  });
+
+  it('uses the plain reason when the re-claim after a lapsed lock finds the author signed out', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_required' });
+    service.claimAnswer = async () => ({ ok: false, code: 'signed_out' });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'save 2', 'claim']);
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      save: 'stopped',
+      notice: 'You are signed out. Sign in again; your unsaved text is kept below.',
+    });
+  });
+
   it('queues the newer snapshot when disposed while Save version is waiting on an in-flight save, fix round 3', async () => {
     const { clock, service, session, type } = harness();
     let answer: (result: SaveResult) => void = () => {};

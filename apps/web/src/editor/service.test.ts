@@ -269,12 +269,26 @@ describe('sessionService', () => {
       expect(result).toMatchObject({ ok: false, code: 'lock_held', holder: { yours: true } });
     });
 
-    it('answers failed on a code other than lock_held', async () => {
+    it('answers failed on a server error', async () => {
       const { client } = harness(() =>
-        json(403, { code: 'forbidden', message: 'no', traceId: 't' }),
+        json(500, { code: 'internal', message: 'no', traceId: 't' }),
       );
       const service = sessionService(client, COMPONENT, SESSION, ADA);
       expect(await service.claim(false, false)).toEqual({ ok: false, code: 'failed' });
+    });
+
+    it('tells signed out, no longer allowed, no longer readable and refused requests apart from a failure', async () => {
+      const answers: [number, string, string][] = [
+        [401, 'unauthenticated', 'signed_out'],
+        [403, 'forbidden', 'forbidden'],
+        [404, 'not_found', 'not_found'],
+        [400, 'invalid_request', 'invalid'],
+      ];
+      for (const [status, code, expected] of answers) {
+        const { client } = harness(() => json(status, { code, message: 'no', traceId: 't' }));
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        expect(await service.claim(false, false)).toEqual({ ok: false, code: expected });
+      }
     });
 
     it('answers failed when the request itself fails, never throwing', async () => {
@@ -354,13 +368,35 @@ describe('sessionService', () => {
       expect(result).toEqual({ ok: false, code, latest: 3 });
     });
 
-    it('maps any other code to failed, without a latest', async () => {
+    it('maps a server error to failed, without a latest', async () => {
       const { client } = harness(() =>
-        json(400, { code: 'content_invalid', message: 'no', traceId: 't' }),
+        json(500, { code: 'internal', message: 'no', traceId: 't' }),
       );
       const service = sessionService(client, COMPONENT, SESSION, ADA);
       const result = await service.save(1, 'v1', doc('Unbox'));
       expect(result).toEqual({ ok: false, code: 'failed' });
+    });
+
+    it('answers failed when the request itself fails, never throwing', async () => {
+      const { client } = harness(() => {
+        throw new Error('network down');
+      });
+      const service = sessionService(client, COMPONENT, SESSION, ADA);
+      expect(await service.save(1, 'v1', doc('Unbox'))).toEqual({ ok: false, code: 'failed' });
+    });
+
+    it('answers signed_out to a 401, forbidden to a 403, not_found to a 404 and invalid to a 400 content_invalid', async () => {
+      const answers: [number, string, string][] = [
+        [401, 'unauthenticated', 'signed_out'],
+        [403, 'forbidden', 'forbidden'],
+        [404, 'not_found', 'not_found'],
+        [400, 'content_invalid', 'invalid'],
+      ];
+      for (const [status, code, expected] of answers) {
+        const { client } = harness(() => json(status, { code, message: 'no', traceId: 't' }));
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        expect(await service.save(1, 'v1', doc('Unbox'))).toEqual({ ok: false, code: expected });
+      }
     });
 
     it('forwards the given AbortSignal, so aborting it cancels the request (task 10, finding E)', async () => {
@@ -410,6 +446,22 @@ describe('sessionService', () => {
       expect(result).toEqual({ ok: false, code: 'lock_held' });
       expect(result).not.toHaveProperty('holder');
     });
+
+    it('answers signed_out, forbidden, not_found and invalid by status, whatever the code says', async () => {
+      const answers: [number, string][] = [
+        [401, 'signed_out'],
+        [403, 'forbidden'],
+        [404, 'not_found'],
+        [400, 'invalid'],
+      ];
+      for (const [status, expected] of answers) {
+        const { client } = harness(() =>
+          json(status, { code: 'anything', message: 'no', traceId: 't' }),
+        );
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        expect(await service.cut('v1')).toEqual({ ok: false, code: expected });
+      }
+    });
   });
 
   describe('release', () => {
@@ -443,6 +495,22 @@ describe('sessionService', () => {
       const service = sessionService(client, COMPONENT, SESSION, ADA);
       const result = await service.release('v1');
       expect(result).toEqual({ ok: false, code: 'lock_required' });
+    });
+
+    it('answers signed_out, forbidden, not_found and invalid by status, whatever the code says, for a release too', async () => {
+      const answers: [number, string][] = [
+        [401, 'signed_out'],
+        [403, 'forbidden'],
+        [404, 'not_found'],
+        [400, 'invalid'],
+      ];
+      for (const [status, expected] of answers) {
+        const { client } = harness(() =>
+          json(status, { code: 'anything', message: 'no', traceId: 't' }),
+        );
+        const service = sessionService(client, COMPONENT, SESSION, ADA);
+        expect(await service.release('v1')).toEqual({ ok: false, code: expected });
+      }
     });
   });
 });

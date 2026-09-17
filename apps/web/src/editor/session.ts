@@ -14,10 +14,22 @@ export interface VersionRef {
   readonly number: string;
 }
 
+/**
+ * A refusal no retry will change (final review, finding 2): the author is signed out (401), may no
+ * longer edit the component (403), may no longer read it (404), or the service refused the request
+ * itself (400, `content_invalid` for a save), which means a bug. Network errors and server errors are
+ * `failed`, and retried.
+ */
+export type Refusal = 'signed_out' | 'forbidden' | 'not_found' | 'invalid';
+
+const REFUSALS: readonly string[] = ['signed_out', 'forbidden', 'not_found', 'invalid'];
+
+const isRefusal = (code: string): code is Refusal => REFUSALS.includes(code);
+
 export type ClaimResult =
   | { readonly ok: true }
   | { readonly ok: false; readonly code: 'lock_held'; readonly holder: Holder }
-  | { readonly ok: false; readonly code: 'failed' };
+  | { readonly ok: false; readonly code: 'failed' | Refusal };
 
 export type SaveResult =
   | { readonly ok: true }
@@ -29,7 +41,8 @@ export type SaveResult =
         | 'version_precondition'
         | 'iteration_stale'
         | 'iteration_conflict'
-        | 'failed';
+        | 'failed'
+        | Refusal;
       /** For a stale or conflicting sequence: the latest the service has accepted from this session. */
       readonly latest?: number;
     };
@@ -251,6 +264,53 @@ export function createSession(options: SessionOptions): Session {
       ? 'This session no longer holds the component. Your unsaved text is kept below to copy.'
       : 'This session no longer holds the component.';
 
+  /** The notice a refusal set while editing goes on, so a later successful save can clear it. */
+  let refusalNotice: string | null = null;
+
+  /** What the author is told for a refusal no retry will change, with or without unsaved text. */
+  const refusalMessage = (code: Refusal, unsaved: boolean): string => {
+    switch (code) {
+      case 'signed_out':
+        return unsaved
+          ? 'You are signed out. Sign in again; your unsaved text is kept below.'
+          : 'You are signed out. Sign in again.';
+      case 'invalid':
+        return unsaved
+          ? 'The service did not accept this text, so it was not saved. Your unsaved text is kept below.'
+          : 'The service did not accept this request.';
+      case 'forbidden':
+        return unsaved
+          ? 'You may no longer edit this component. Your unsaved text is kept below to copy.'
+          : 'You may no longer edit this component.';
+      case 'not_found':
+        return unsaved
+          ? 'This component is no longer available to you. Your unsaved text is kept below to copy.'
+          : 'This component is no longer available to you.';
+    }
+  };
+
+  /**
+   * A refusal no retry will change (final review, finding 2), so nothing retries it. Withdrawn
+   * permission to edit or to read goes to `lost`: there is no way back from here. Signed out, or a
+   * request the service refused as invalid, stops saving and says why, with the text kept, while
+   * editing goes on: once the author has signed in again, their next change sends everything.
+   */
+  const refuse = (code: Refusal) => {
+    const message = refusalMessage(code, dirty);
+    if (code === 'forbidden' || code === 'not_found') {
+      lose(message);
+      return;
+    }
+    stopTimers();
+    failures = 0;
+    hasFailed = false;
+    if (dirty) save = 'stopped';
+    phase = 'editing';
+    notice = message;
+    refusalNotice = message;
+    publish();
+  };
+
   /** One claim, raced against `timing.claimMs`, its request aborted once the race is lost. */
   const claimWithin = async (move: boolean, fresh: boolean): Promise<ClaimResult> => {
     const controller = new AbortController();
@@ -304,9 +364,14 @@ export function createSession(options: SessionOptions): Session {
       cancel(failing);
       failing = null;
       savedAt = clock.now();
-      if (notice === 'Not saved. Retrying.' || notice === 'Not saved, so no version was made.') {
+      if (
+        notice === 'Not saved. Retrying.' ||
+        notice === 'Not saved, so no version was made.' ||
+        (notice !== null && notice === refusalNotice)
+      ) {
         notice = null;
       }
+      refusalNotice = null;
       save = dirty ? 'saving' : 'saved';
       publish();
       return !dirty;
@@ -321,7 +386,13 @@ export function createSession(options: SessionOptions): Session {
       const reclaimed = await claimWithin(false, false);
       if (disposed) return false;
       if (reclaimed.ok) return send(true);
-      lose(lockGoneMessage());
+      if (isRefusal(reclaimed.code)) refuse(reclaimed.code);
+      else lose(lockGoneMessage());
+      return false;
+    }
+    if (isRefusal(result.code)) {
+      dirty = true;
+      refuse(result.code);
       return false;
     }
     if (
@@ -462,7 +533,9 @@ export function createSession(options: SessionOptions): Session {
     // a `lock_held` refusal - names no one, but still needs to read as "refused" so a caller can offer
     // a retry control rather than typing being the only way back in.
     holder = { name: null, expectedRelease: '', yours: false };
-    notice = 'Could not start editing. Try again.';
+    notice = isRefusal(result.code)
+      ? refusalMessage(result.code, hadPending)
+      : 'Could not start editing. Try again.';
     publish();
     options.onRefused(holder, hadPending);
   };
@@ -484,7 +557,9 @@ export function createSession(options: SessionOptions): Session {
       const before = failures;
       flushed = await flush(true);
       if (disposed) return;
-      if ((phase as Phase) === 'lost') return;
+      // Lost, or a refusal that stopped saving and returned to editing with its reason (final review,
+      // finding 2): either way there is nothing to cut, and the reason stays shown.
+      if ((phase as Phase) !== during) return;
       if (flushed || failures > before || !dirty) break;
     }
     if (!flushed) {
@@ -501,13 +576,18 @@ export function createSession(options: SessionOptions): Session {
       const reclaimed = await claimWithin(false, false);
       if (disposed) return;
       if (!reclaimed.ok) {
-        lose(lockGoneMessage());
+        if (isRefusal(reclaimed.code)) refuse(reclaimed.code);
+        else lose(lockGoneMessage());
         return;
       }
       result = await request(version.id);
       if (disposed) return;
     }
     if (!result.ok) {
+      if (isRefusal(result.code)) {
+        refuse(result.code);
+        return;
+      }
       if (
         result.code === HELD ||
         result.code === 'lock_required' ||
