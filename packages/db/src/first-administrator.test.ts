@@ -335,6 +335,28 @@ describe('the first administrator, invited by address', () => {
     expect(invited).toEqual([{ email: 'grace@example.com' }]);
   });
 
+  it('is refused for an address whose waiting invitation is from outside the organisation, granting nothing', async () => {
+    const outside = await tenant('Outside');
+    const inviter = await service.withTenant(outside, (trx) => made(trx, 'inviter'));
+    const invited = await service.withTenant(outside, (trx) =>
+      invite(trx, { email: 'ivy@example.net', external: true, invitedBy: inviter }),
+    );
+    if (!('invited' in invited)) throw new Error(`invite refused: ${invited.refused}`);
+
+    await expect(inviting(outside, 'Ivy@example.net')).resolves.toEqual({
+      refused: 'first_administrator.external',
+    });
+    const grants = await service.withTenant(outside, (trx) =>
+      trx.selectFrom('access_grant').select('id').execute(),
+    );
+    expect(grants).toEqual([]);
+    // Nor does it stand in the way of inviting somebody else to administer.
+    await expect(inviting(outside, 'ada@example.com')).resolves.toEqual({
+      invited: true,
+      renewed: false,
+    });
+  });
+
   it('is refused for an address somebody who has signed in already shows, verified', async () => {
     const staging = await tenant('Staging');
     await service.withTenant(staging, (trx) => made(trx, 'ada', 'ADA@example.com'));

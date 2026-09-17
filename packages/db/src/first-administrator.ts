@@ -40,6 +40,7 @@ export type FirstAdministratorAnswer =
         | 'first_administrator.administrator_exists'
         | 'first_administrator.already_invited'
         | 'first_administrator.signed_in'
+        | 'first_administrator.external'
         | 'first_administrator.no_administrator_role';
     };
 
@@ -54,7 +55,8 @@ export type FirstAdministratorAnswer =
  *
  * Refused once somebody who has signed in administers the tenant; while another address's invitation
  * to administer waits unexpired; and where somebody who has signed in already shows this address,
- * since a sign-in that finds its principal never claims an invitation. Inviting the same address again
+ * since a sign-in that finds its principal never claims an invitation; and where the address's waiting
+ * invitation is from outside the organisation, which the external rules keep from administering. Inviting the same address again
  * renews the invitation for another `INVITATION_DAYS`; one that lapsed for another address is
  * withdrawn and replaced. It lapses like any other, so no invitation outlives the bootstrap unused.
  */
@@ -141,9 +143,11 @@ export async function inviteFirstAdministrator(
       await client.query(`delete from ${schema}.principal where id = $1`, [other.principal_id]);
     }
 
-    const open = await client.query<{ id: string; principal_id: string }>(
-      `select id, principal_id from ${schema}.invitation
-       where email = $1 and accepted_at is null for update`,
+    const open = await client.query<{ id: string; principal_id: string; kind: string }>(
+      `select i.id, i.principal_id, p.kind
+       from ${schema}.invitation i
+       join ${schema}.principal p on p.id = i.principal_id
+       where i.email = $1 and i.accepted_at is null for update of i`,
       [email],
     );
     // Re-checked again: this address's own row, specifically, is what a claim of it locks - the same
@@ -156,6 +160,13 @@ export async function inviteFirstAdministrator(
     }
     if (await checkSignedIn()) {
       answer = { refused: 'first_administrator.signed_in' };
+      return;
+    }
+    // Only a user is renewed into the first administrator. Somebody invited from outside the
+    // organisation is held to the external rules `grant` applies, which this raw insert below would
+    // step round - and a renewed invitation would then block every other address for its lifetime.
+    if (open.rows[0] && open.rows[0].kind !== 'user') {
+      answer = { refused: 'first_administrator.external' };
       return;
     }
     let principalId = open.rows[0]?.principal_id;
