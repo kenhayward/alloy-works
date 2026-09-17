@@ -106,6 +106,7 @@ arrives as a decision to skip a check - it arrives as one query out of four hund
 | **IAM-059** | The first administrator of a new tenant must arrive by an invitation to a named address, authenticated by a route IAM-043 permits, and must never be created by a local credential (IAM-042) or by a vendor account that outlives the bootstrap (**ADM-Q04**)                                                                                                                                                                                | Constraint | Specified |
 | **IAM-060** | Bootstrapping a tenant must be audited into that tenant's own log: who invited the first administrator, when, under what authority, and when the vendor's part in it ended                                                                                                                                                                                                                                                                   | T1         | Specified |
 | **IAM-061** | No standing vendor access may remain after bootstrap. Any later vendor action inside a tenant must go through the support-access path that the tenant grants, bounds and can revoke (**ADM-022** to **ADM-025**)                                                                                                                                                                                                                             | Constraint | Specified |
+| **IAM-072** | An administrator of an environment must be able to invite a person by address and grant them access before their first sign-in, and that access must take effect only when the person first signs in through a route the environment permits presenting that address verified by the provider.                                                                                                                                               | T1         | Specified |
 
 **IAM-055 makes two requirements buildable that were otherwise only sincere.** "Loses access
 without waiting for a token to expire" (IAM-010) and "revocable with immediate effect" (IAM-035) each
@@ -126,6 +127,12 @@ does not have. The route is an invitation to a named address, authenticated the 
 authenticates, audited into the tenant's own log, and over when it is over. **ADM-Q04** asks who
 performs that act; this area fixes what the act may consist of, which is the half that becomes a
 breach.
+
+**IAM-072 asks for everybody what IAM-059 asks for the first administrator.** Without it, giving
+somebody access starts with them signing in once and seeing nothing, so that there is somebody to
+grant to. An invitation to an address lets the grant come first; the address is trusted only where a
+route the environment permits presents it verified, and only at that first sign-in, after which the
+person is their identity, not their address.
 
 **IAM-064 and IAM-065 state a posture rather than leaving it to a library's default.** An identity
 provider that is down is a bad afternoon; an identity provider that is down and a product that
@@ -365,3 +372,19 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections                          | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2.6, 2.9, 2.11, 2.14, 2.17, 3.2.2, 3.2.5 | **IAM-066** generalises IAM-005's list into the rule behind it: every second copy, derived representation and outbound payload is tenant-scoped. **IAM-067** stops data flowing on an open connection after sign-out or revocation. **IAM-068** and **IAM-069** give an organisation administrators, audited acts and a metadata-only view. **IAM-070** names the high-risk administrative acts that `administer` had swallowed. **IAM-048 superseded by IAM-071**, which grants external access against named artifacts including a publication |
+
+### From a requirement filed as an issue
+
+Not a review. [Issue #113](https://github.com/kenhayward/alloy-works/issues/113), filed while planning
+invitations ([the plan](../../plans/2026-09-17-access-03-invitations.md)), found that the corpus asked for an
+invitation to a named address only for a tenant's first administrator.
+
+| What was found                                                                                                                                                                                                | Change                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| IAM-059 asks that the first administrator arrive by an invitation to a named address, and nothing asks it for anybody else, so an administrator could grant access only to somebody who had already signed in | **IAM-072**: an administrator of an environment invites a person by address and grants them access before their first sign-in, taking effect only at a first sign-in through a permitted route presenting the address verified |
+
+| Counts           | Before | After |
+| ---------------- | ------ | ----- |
+| Requirements     | 71     | 72    |
+| Non-requirements | 6      | 6     |
+| Open questions   | 9      | 9     |

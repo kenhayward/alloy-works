@@ -24,4 +24,10 @@ describe('wireCode', () => {
     expect(wireCode('grant.external_past_cap')).toBe('grant_external_past_cap');
     expect(wireCode('grant.last_administrator')).toBe('grant_last_administrator');
   });
+
+  it('spells every refusal where an invitation is made or withdrawn with an underscore too', () => {
+    expect(wireCode('invitation.signed_in')).toBe('invitation_signed_in');
+    expect(wireCode('invitation.kind_differs')).toBe('invitation_kind_differs');
+    expect(wireCode('invitation.accepted')).toBe('invitation_accepted');
+  });
 });

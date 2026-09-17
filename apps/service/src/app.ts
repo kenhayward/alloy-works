@@ -38,6 +38,7 @@ import { editingHandlers } from './editing.js';
 import { AppError } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
+import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
 import {
   SignInFailed,
@@ -298,6 +299,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...editingHandlers(),
     ...managingAccessHandlers(),
+    ...invitationHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

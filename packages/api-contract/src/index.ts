@@ -30,6 +30,15 @@ export {
   RoleList,
   RoleListQuery,
 } from './managing-access.js';
+export {
+  InvitationBody,
+  InvitationList,
+  InvitationListQuery,
+  InvitationMade,
+  InvitationParams,
+  InvitationView,
+  InvitationWithdrawn,
+} from './invitations.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {

@@ -175,13 +175,14 @@ const answers = (responses: LightMyRequestResponse[]) =>
 describe('a route that changes access', () => {
   const env = freshEnvironment();
 
-  it('is declared by exactly the routes that make and remove grants, each checking administer', () => {
+  it('is declared by exactly the routes that make and remove grants and withdraw an invitation, each checking administer', () => {
     const declaring = allRoutes.filter(
       (route) => route.access.check === 'permission' && route.access.changesAccess === true,
     );
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
       'makeGrant',
       'removeGrant',
+      'withdrawInvitation',
     ]);
     for (const route of declaring) {
       expect(route.access, route.operationId).toMatchObject({ permission: 'administer' });

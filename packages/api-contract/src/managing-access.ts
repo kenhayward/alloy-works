@@ -87,6 +87,7 @@ export const PrincipalList = z.object({
       kind: z
         .enum(['user', 'service', 'external'])
         .describe('external: from outside the organisation, and held to the external rules'),
+      invited: z.boolean().describe('Invited by address, and not yet signed in'),
     }),
   ),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
@@ -153,7 +154,7 @@ export const managingAccessRoutes = {
     operationId: 'listPrincipals',
     method: 'GET',
     path: '/v1/principals',
-    summary: 'The people a grant can name: everybody who has signed in to this environment',
+    summary: 'The people a grant can name: everybody who has signed in or been invited',
     tenantScoped: true,
     access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
     query: PrincipalListQuery,
