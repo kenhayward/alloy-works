@@ -61,7 +61,7 @@ export const Target = z
   })
   .describe('`tenant`, `space:<id>` or `artifact:<id>`');
 
-const PermissionName = z.enum(permissions);
+export const PermissionName = z.enum(permissions);
 
 export const AccessQuery = z.object({ target: Target });
 export type AccessQuery = z.infer<typeof AccessQuery>;

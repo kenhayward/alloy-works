@@ -346,6 +346,39 @@ describe('making, listing and removing grants through the service', () => {
     }
   });
 
+  it('lists the roles and the people to choose from, to anyone who administers the level asked about', async () => {
+    const roleList = await call('grace', 'GET', `/v1/roles?level=space:${clinical}&limit=100`);
+    expect(roleList.statusCode).toBe(200);
+    const listedRoles = roleList.json<{ items: { name: string; permissions: string[] }[] }>();
+    expect(listedRoles).toMatchObject({ next: null });
+    expect(listedRoles.items).toContainEqual({
+      id: roles.Editing,
+      name: 'Editing',
+      permissions: ['edit'],
+    });
+
+    const people = await call('grace', 'GET', `/v1/principals?level=space:${clinical}`);
+    expect(people.statusCode).toBe(200);
+    expect(people.json<{ items: unknown[] }>().items).toEqual(
+      expect.arrayContaining([
+        { id: ids.ada, name: 'Ada', email: expect.any(String), kind: 'user' },
+        { id: ids.alice, name: 'Alice', email: expect.any(String), kind: 'user' },
+      ]),
+    );
+    const firstPerson = await call('ada', 'GET', '/v1/principals?level=tenant&limit=1');
+    expect(firstPerson.json()).toMatchObject({ next: expect.any(String) });
+
+    // Grace administers nothing at the tenant or at Quality; Alice nothing anywhere.
+    expect((await call('grace', 'GET', '/v1/roles?level=tenant')).statusCode).toBe(403);
+    expect((await call('grace', 'GET', `/v1/principals?level=space:${quality}`)).statusCode).toBe(
+      403,
+    );
+    expect((await call('alice', 'GET', `/v1/principals?level=space:${clinical}`)).statusCode).toBe(
+      404,
+    );
+    expect((await call(undefined, 'GET', '/v1/roles?level=tenant')).statusCode).toBe(401);
+  });
+
   it('pages the grants at a level by an opaque cursor, and refuses one it did not give out', async () => {
     const artifact = await tenantDb.withTenant(tenant, (trx) =>
       trx

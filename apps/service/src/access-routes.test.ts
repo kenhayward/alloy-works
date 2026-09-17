@@ -534,6 +534,8 @@ describe('routes that check a permission', () => {
       },
     }),
     removeGrant: () => ({ url: `/v1/grants/${graceAuthors}`, status: 404 }),
+    listRoles: () => ({ url: '/v1/roles?level=tenant', status: 403 }),
+    listPrincipals: () => ({ url: `/v1/principals?level=space:${clinical}`, status: 404 }),
   };
 
   const checked = allRoutes.filter((route) => route.access.check === 'permission');

@@ -6,10 +6,16 @@ import type {
   GrantParams,
   GrantRemoved,
   GrantView,
+  PrincipalList,
+  PrincipalListQuery,
+  RoleList,
+  RoleListQuery,
 } from '@alloy-works/api-contract';
 import {
   grant,
   listGrants,
+  listPrincipals,
+  listRoles,
   readGrant,
   removeGrant,
   type GrantRefusal,
@@ -90,6 +96,32 @@ export function managingAccessHandlers() {
         limit: pageLimit(query.limit),
       });
       return { items: page.items.map(grantView), next: cursorAfter(page.after) };
+    },
+
+    listRoles: async (request: FastifyRequest, { trx }: Authorised): Promise<RoleList> => {
+      const query = request.query as RoleListQuery;
+      const after = afterCursor(query.cursor);
+      const page = await listRoles(trx, {
+        ...(after === undefined ? {} : { after }),
+        limit: pageLimit(query.limit),
+      });
+      return {
+        items: page.items.map((role) => ({ ...role, permissions: [...role.permissions] })),
+        next: cursorAfter(page.after),
+      };
+    },
+
+    listPrincipals: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<PrincipalList> => {
+      const query = request.query as PrincipalListQuery;
+      const after = afterCursor(query.cursor);
+      const page = await listPrincipals(trx, {
+        ...(after === undefined ? {} : { after }),
+        limit: pageLimit(query.limit),
+      });
+      return { items: [...page.items], next: cursorAfter(page.after) };
     },
 
     makeGrant: async (

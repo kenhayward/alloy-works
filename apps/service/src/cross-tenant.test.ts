@@ -205,6 +205,8 @@ const OTHER_TENANT_QUERIES: Readonly<
 > = {
   getAccess: async (tenant, db) => `target=${await componentIn(tenant, db)}`,
   listGrants: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
+  listRoles: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
+  listPrincipals: async (tenant, db) => `level=${await componentIn(tenant, db)}`,
   explainAccess: async (tenant, db) => {
     const principal = await db.withTenant(tenant, (trx) =>
       trx
@@ -460,12 +462,14 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       subject: { principal: ours.person },
       level: `space:${ours.space}`,
     });
+    expect(theirRole.statusCode).toBe(409);
     expect(theirRole.json()).toMatchObject({ code: 'grant_role_missing' });
     const theirPerson = await make({
       role: ours.role,
       subject: { principal: theirs.person },
       level: `space:${ours.space}`,
     });
+    expect(theirPerson.statusCode).toBe(409);
     expect(theirPerson.json()).toMatchObject({ code: 'grant_subject_missing' });
 
     expect((await reader(a)).grants).toBe(ours.grants);

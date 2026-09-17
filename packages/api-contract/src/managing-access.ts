@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ComponentListQuery } from './components.js';
 import type { RouteContract } from './contract.js';
 import { LowercaseUuid } from './editing.js';
-import { ErrorBody, Target } from './schemas.js';
+import { ErrorBody, PermissionName, Target } from './schemas.js';
 
 /** A listing's page, as every listing takes it (API-007). */
 const Paging = ComponentListQuery.shape;
@@ -56,6 +56,43 @@ export type GrantMade = z.infer<typeof GrantMade>;
 export const GrantRemoved = z.object({ removed: z.string().describe('The grant removed') });
 export type GrantRemoved = z.infer<typeof GrantRemoved>;
 
+/**
+ * Where the caller manages access. Roles and people are listed to anybody who may administer the level
+ * named, since choosing them is what making a grant there needs - not only to an administrator of the
+ * whole environment.
+ */
+const ChoosingFor = z.object({
+  level: Target.describe('A level the caller administers, at it or above: where they are granting'),
+  ...Paging,
+});
+
+export const RoleListQuery = ChoosingFor;
+export type RoleListQuery = z.infer<typeof RoleListQuery>;
+
+export const RoleList = z.object({
+  items: z.array(
+    z.object({ id: z.string(), name: z.string(), permissions: z.array(PermissionName) }),
+  ),
+  next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+});
+export type RoleList = z.infer<typeof RoleList>;
+
+export const PrincipalListQuery = ChoosingFor;
+export type PrincipalListQuery = z.infer<typeof PrincipalListQuery>;
+
+export const PrincipalList = z.object({
+  items: z.array(
+    Named.extend({
+      email: z.string().nullable(),
+      kind: z
+        .enum(['user', 'service', 'external'])
+        .describe('external: from outside the organisation, and held to the external rules'),
+    }),
+  ),
+  next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+});
+export type PrincipalList = z.infer<typeof PrincipalList>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -84,6 +121,44 @@ export const managingAccessRoutes = {
     query: GrantListQuery,
     responses: {
       200: { description: 'A page of grants', schema: GrantList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
+    },
+  },
+  listRoles: {
+    operationId: 'listRoles',
+    method: 'GET',
+    path: '/v1/roles',
+    summary: 'The roles a grant can name, with what each holds, a page at a time',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
+    query: RoleListQuery,
+    responses: {
+      200: { description: 'A page of roles', schema: RoleList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
+    },
+  },
+  listPrincipals: {
+    operationId: 'listPrincipals',
+    method: 'GET',
+    path: '/v1/principals',
+    summary: 'The people a grant can name: everybody who has signed in to this environment',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { query: 'level' } },
+    query: PrincipalListQuery,
+    responses: {
+      200: { description: 'A page of people', schema: PrincipalList },
       400: {
         description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
         schema: ErrorBody,
