@@ -63,6 +63,10 @@ export async function permitGoogleSignIn(
  * Invites an address, as whoever provisions the tenant, with no expiry: its first verified sign-in
  * through either route becomes the principal this makes, holding nothing. Inviting it again while the
  * invitation waits changes nothing, and so does an address somebody who has signed in already shows.
+ * Takes no advisory lock, unlike `invite` - a concurrent call for the same address can throw a unique
+ * violation on `invitation_open` instead of taking a turn on it, and a lapsed invitation here is left
+ * lapsed, never renewed; both are acceptable only because this runs as an operator's one-off command,
+ * not the service's own concurrent route.
  */
 export async function inviteToTenant(
   adminUrl: string,

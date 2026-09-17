@@ -44,14 +44,24 @@ function latch() {
   return { opened, open };
 }
 
+/** Like `latch`, but the opener carries a value out - here, a transaction's own backend pid. */
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 /**
- * Like `untilWaitingOnLocks`, but counts only a wait on another transaction's row - the wait a
- * `SELECT ... FOR UPDATE` or an insert's foreign key check shows behind an uncommitted writer of that
- * row - never a wait on the epoch, which shows as the same generic lock wait and would let a poll for
- * "waiting on something" return before the interleaving under test is actually reached. Local to this
- * file: telling the two waits apart is this test's own concern, not the shared harness's.
+ * Waits until at least `count` other connections are blocked specifically behind `blockerPid`, found
+ * through `pg_blocking_pids` rather than `wait_event` alone: the access epoch is FOR SHARE/FOR UPDATE
+ * over a row too, so a wait on it shows the identical `wait_event_type = 'Lock', wait_event =
+ * 'transactionid'` as a wait on an ordinary row - a poll on the wait event alone cannot tell a wait on
+ * the epoch from a wait on the claim's row, and would let the test proceed before the interleaving it
+ * names is actually reached. `pg_blocking_pids(pid)` names exactly who a backend is waiting behind, so
+ * asking for a wait behind this specific pid does. Local to this file: only this test needs to tell
+ * the two waits apart.
  */
-async function untilWaitingOnPrincipalRow(adminUrl: string, count: number): Promise<void> {
+async function untilBlockedBy(adminUrl: string, blockerPid: number, count: number): Promise<void> {
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
   try {
@@ -62,13 +72,13 @@ async function untilWaitingOnPrincipalRow(adminUrl: string, count: number): Prom
          where datname = current_database()
            and backend_type = 'client backend'
            and pid <> pg_backend_pid()
-           and wait_event_type = 'Lock'
-           and wait_event = 'transactionid'`,
+           and $1 = any (pg_blocking_pids(pid))`,
+        [blockerPid],
       );
       if ((rows[0]?.waiting ?? 0) >= count) return;
       if (Date.now() > deadline) {
         throw new Error(
-          `Fewer than ${count} connections were waiting on a row lock after five seconds`,
+          `Fewer than ${count} connections were blocked behind backend ${blockerPid} after five seconds`,
         );
       }
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -266,6 +276,28 @@ describe('inviting somebody by address, before they sign in', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('claims nothing where the invitation already points at a principal holding an identity', async () => {
+    const production = await tenant();
+    const ada = await withAda(production);
+    const grace = await inviting(production, ada, 'grace@example.com');
+    // No code path leaves an open invitation pointing at a principal who already has an identity;
+    // simulated directly, since only the check under test stands between this state and a claim
+    // silently taking over an account that is not theirs.
+    await service.withTenant(production, (trx) =>
+      trx
+        .updateTable('principal')
+        .set({ issuer: ISSUER, subject: 'grace-already', email_verified: true })
+        .where('id', '=', grace.principalId)
+        .execute(),
+    );
+
+    await expect(
+      claiming(production, identity('grace-1', 'grace@example.com')),
+    ).resolves.toBeUndefined();
+    const invitation = await service.withTenant(production, (trx) => readInvitation(trx, grace.id));
+    expect(invitation?.acceptedAt).toBeNull();
+  });
+
   it('claims nothing in another environment, and withdraws nothing there', async () => {
     const production = await tenant();
     const development = await tenant();
@@ -340,6 +372,64 @@ describe('inviting somebody by address, before they sign in', () => {
         invite(trx, { email: 'alice@example.com', external: false, invitedBy: ada }),
       ),
     ).resolves.toMatchObject({ renewed: false });
+  });
+
+  it('takes turns on one address, so a second invite renews what the first made rather than duplicating it', async () => {
+    const production = await tenant();
+    const ada = await withAda(production);
+
+    const holding = latch();
+    const proceed = latch();
+    const first = service.withTenant(production, async (trx) => {
+      const answer = await invite(trx, {
+        email: 'grace@example.com',
+        external: false,
+        invitedBy: ada,
+      });
+      holding.open();
+      await proceed.opened;
+      return answer;
+    });
+    await holding.opened;
+    // Blocked on the address's advisory lock, which the first transaction still holds.
+    const second = service.withTenant(production, (trx) =>
+      invite(trx, { email: 'grace@example.com', external: false, invitedBy: ada }),
+    );
+    await untilWaitingOnLocks(db.adminUrl, 1);
+    proceed.open();
+
+    await expect(first).resolves.toMatchObject({ renewed: false });
+    await expect(second).resolves.toMatchObject({ renewed: true });
+  });
+
+  it('refuses to invite an address a claim, committing while it waited, has just made somebody sign in with', async () => {
+    const production = await tenant();
+    const ada = await withAda(production);
+    const grace = await inviting(production, ada, 'grace@example.com');
+
+    const claimedLock = latch();
+    const commit = latch();
+    const claim = service.withTenant(production, async (trx) => {
+      const answer = await claimInvitation(
+        trx,
+        identity('grace-1', 'grace@example.com'),
+        'organisation',
+      );
+      claimedLock.open();
+      await commit.opened;
+      return answer;
+    });
+    await claimedLock.opened;
+    // Blocked on the invitation's row, which the claim still holds FOR UPDATE, uncommitted - so the
+    // signed-in check above already ran and found nobody, before the claim's identity existed.
+    const invitingAgain = service.withTenant(production, (trx) =>
+      invite(trx, { email: 'grace@example.com', external: false, invitedBy: ada }),
+    );
+    await untilWaitingOnLocks(db.adminUrl, 1);
+    commit.open();
+
+    await expect(claim).resolves.toBe(grace.principalId);
+    await expect(invitingAgain).resolves.toEqual({ refused: 'invitation.signed_in' });
   });
 
   it('withdraws a waiting invitation with its principal and grants, and refuses one accepted', async () => {
@@ -467,9 +557,12 @@ describe('inviting somebody by address, before they sign in', () => {
     const ada = await withAda(production);
     const grace = await inviting(production, ada, 'grace@example.com');
 
+    const claimedPid = deferred<number>();
     const claimed = latch();
     const commit = latch();
     const claim = service.withTenant(production, async (trx) => {
+      const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+      claimedPid.resolve(rows[0]!.pid);
       const answer = await claimInvitation(
         trx,
         identity('grace-1', 'grace@example.com'),
@@ -479,6 +572,7 @@ describe('inviting somebody by address, before they sign in', () => {
       await commit.opened;
       return answer;
     });
+    const pid = await claimedPid.promise;
     await claimed.opened;
     const { granted } = await whileAccessIsDecided(service, production, async () => {
       // The grant waits on the epoch behind the decision.
@@ -486,8 +580,9 @@ describe('inviting somebody by address, before they sign in', () => {
       await untilWaitingOnLocks(db.adminUrl, 1);
       return { granted: waiting };
     });
-    // Then, holding the epoch, on the claim's lock of Grace's row - which never waits on the epoch.
-    await untilWaitingOnPrincipalRow(db.adminUrl, 1);
+    // Then, holding the epoch, specifically behind the claim's lock of Grace's row - not the epoch,
+    // which the claim never takes.
+    await untilBlockedBy(db.adminUrl, pid, 1);
     commit.open();
 
     await expect(claim).resolves.toBe(grace.principalId);

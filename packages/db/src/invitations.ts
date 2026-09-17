@@ -47,6 +47,17 @@ export function invitedAddress(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/** Whether somebody has already signed in showing this address, verified by their provider. */
+function signedInWith(trx: TenantTransaction, email: string) {
+  return trx
+    .selectFrom('principal')
+    .select('id')
+    .where('issuer', 'is not', null)
+    .where('email_verified', '=', true)
+    .where(sql<string>`lower(email)`, '=', email)
+    .executeTakeFirst();
+}
+
 function invitations(trx: TenantTransaction) {
   return trx
     .selectFrom('invitation as i')
@@ -84,7 +95,10 @@ function stored(row: InvitationRow): StoredInvitation {
   };
 }
 
-/** One invitation, or undefined when the tenant holds no such invitation. */
+/**
+ * One invitation, or undefined when the tenant holds no such invitation. An `id` that is not a uuid
+ * throws Postgres error 22P02 here; the route above validates it as a `LowercaseUuid` first.
+ */
 export async function readInvitation(
   trx: TenantTransaction,
   id: string,
@@ -127,18 +141,13 @@ export async function invite(
 ): Promise<InvitationAnswer> {
   const email = invitedAddress(input.email);
   const kind = input.external ? 'external' : 'user';
-  await sql`select pg_advisory_xact_lock(hashtextextended(${`invitation ${email}`}, 0))`.execute(
-    trx,
-  );
+  // Qualified by the schema, not just the literal "invitation": two tenants inviting the same
+  // address at once must not contend on one lock they share no row over.
+  await sql`select pg_advisory_xact_lock(
+    hashtextextended(current_schema() || ' invitation ' || ${email}, 0)
+  )`.execute(trx);
 
-  const signedIn = await trx
-    .selectFrom('principal')
-    .select('id')
-    .where('issuer', 'is not', null)
-    .where('email_verified', '=', true)
-    .where(sql<string>`lower(email)`, '=', email)
-    .executeTakeFirst();
-  if (signedIn) return { refused: 'invitation.signed_in' };
+  if (await signedInWith(trx, email)) return { refused: 'invitation.signed_in' };
 
   const waiting = await trx
     .selectFrom('invitation as i')
@@ -160,6 +169,13 @@ export async function invite(
       .execute();
     return { invited: (await readInvitation(trx, waiting.id))!, renewed: true };
   }
+
+  // A claim never takes the epoch, so it can commit between the check above and here - turning
+  // nobody signed in into somebody who now is, if this transaction waited behind its FOR UPDATE of
+  // the same invitation above and only then found it already accepted. Asked again before a new
+  // principal is made for the address, so that window closes rather than making a second open
+  // invitation for somebody who already signed in.
+  if (await signedInWith(trx, email)) return { refused: 'invitation.signed_in' };
 
   const principal = await trx
     .insertInto('principal')
@@ -183,6 +199,8 @@ export async function invite(
  * Withdraws an invitation nobody has accepted: its principal goes, and every grant and membership that
  * named it. Refused once accepted, since the principal is then somebody who signs in, whose grants are
  * removed one by one. Who may withdraw - `administer` at the tenant - is the caller's to decide first.
+ * An `id` that is not a uuid throws Postgres error 22P02 here; the route above validates it as a
+ * `LowercaseUuid` first.
  *
  * Takes the epoch FOR UPDATE before it reads, because removing the grants changes access; then the
  * invitation's row, which is the order a claim cannot contradict - a claim never takes the epoch.
@@ -235,7 +253,7 @@ export async function claimInvitation(
     .forUpdate()
     .executeTakeFirst();
   if (!open) return undefined;
-  await trx
+  const identified = await trx
     .updateTable('principal')
     .set({
       issuer: identity.issuer,
@@ -246,7 +264,12 @@ export async function claimInvitation(
     })
     .where('id', '=', open.principal_id)
     .where('issuer', 'is', null)
-    .execute();
+    .executeTakeFirst();
+  // No code path leaves an invitation pointing at a principal who already has an identity, but this
+  // is the one place that would silently hand somebody else's signed-in account to a claim if it
+  // ever did - so the invitation is left waiting rather than accepted over an update that matched
+  // nothing.
+  if (identified?.numUpdatedRows !== 1n) return undefined;
   await trx
     .updateTable('invitation')
     .set({ accepted_at: sql<Date>`now()`, accepted_through: route })
