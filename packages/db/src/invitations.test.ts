@@ -395,6 +395,50 @@ describe('inviting somebody by address, before they sign in', () => {
     await expect(invitingAgain).resolves.toEqual({ refused: 'invitation.signed_in' });
   });
 
+  it('refuses to invite an address a new sign-in, still uncommitted, is making somebody sign in with', async () => {
+    const production = await tenant();
+    const ada = await withAda(production);
+
+    // A sign-in as the routes make one, for an address nothing invited: the claim finds nothing, and
+    // the same transaction then makes the new principal, verified - and holds it there, uncommitted.
+    const signInPid = deferred<number>();
+    const madeIt = latch();
+    const commit = latch();
+    const signingIn = service.withTenant(production, async (trx) => {
+      const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+      signInPid.resolve(rows[0]!.pid);
+      const claimed = await claimInvitation(
+        trx,
+        identity('grace-1', 'grace@example.com'),
+        'organisation',
+      );
+      const principal = await signedIn(trx, 'grace-1', 'grace@example.com');
+      madeIt.open();
+      await commit.opened;
+      return { claimed, principal };
+    });
+    const pid = await signInPid.promise;
+    await madeIt.opened;
+
+    const invitingMeanwhile = service.withTenant(production, (trx) =>
+      invite(trx, { email: 'Grace@example.com', external: false, invitedBy: ada }),
+    );
+    // Either the invite waits behind the sign-in, or - with nothing to wait on - it has already
+    // answered; both are let through, so the answer below is what tells them apart.
+    await Promise.race([
+      invitingMeanwhile,
+      untilBlockedBy(db.adminUrl, pid, 1).catch(() => undefined),
+    ]);
+    commit.open();
+
+    await expect(signingIn).resolves.toMatchObject({ claimed: undefined });
+    await expect(invitingMeanwhile).resolves.toEqual({ refused: 'invitation.signed_in' });
+    const waiting = await service.withTenant(production, (trx) =>
+      trx.selectFrom('invitation').select('id').execute(),
+    );
+    expect(waiting).toEqual([]);
+  });
+
   it('withdraws a waiting invitation with its principal and grants, and refuses one accepted', async () => {
     const production = await tenant();
     const ada = await withAda(production);

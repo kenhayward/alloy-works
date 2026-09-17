@@ -171,11 +171,11 @@ describe('the first administrator, invited by address', () => {
   /**
    * Starts a claim of `claiming`'s address, waits until `inviteFirstAdministrator` for `invitingEmail`
    * is genuinely blocked behind it, then lets the claim commit and returns what `inviteFirstAdministrator`
-   * answered. A claim takes no epoch (invitations.ts), so nothing here waits on that; it waits on an
-   * invitation row itself - the tenant's waiting administrator invitation when `invitingEmail` names
-   * another address (the `for update of i` at first-administrator.ts ~117), or `claiming`'s own row
-   * when the two are the same address and nothing else is waiting to block on first (the `for update`
-   * at ~146).
+   * answered. A claim takes no epoch (invitations.ts), so nothing here waits on that. When
+   * `invitingEmail` names another address it waits on an invitation row - the tenant's waiting
+   * administrator invitation, which `inviteFirstAdministrator` takes `for update of i`; when the two are
+   * the same address it waits earlier, on the address's advisory lock (`invitedAddressLockQuery`), which
+   * the claim took first.
    */
   const racingInviteFirstAdministrator = async (
     on: Tenant,
@@ -257,11 +257,10 @@ describe('the first administrator, invited by address', () => {
   it('answers signed_in, not administrator_exists, when a claim to a non-administrator invitation at the same address is in flight', async () => {
     const racing = await tenant('Racing Non Admin');
     // Nobody administers here, and nothing waits to administer - so the `for update of i` over the
-    // tenant's waiting administrator invitations (~117) matches no rows and never blocks: this address's
-    // own invitation, made through `invite` rather than `inviteFirstAdministrator`, holds no
-    // Administrator grant to join against. Only the `for update` over this address's own row (~146)
-    // can block on the claim below, which is what this test means to exercise - the earlier wait
-    // cannot catch a race it never waits through.
+    // tenant's waiting administrator invitations matches no rows and never blocks: this address's own
+    // invitation, made through `invite` rather than `inviteFirstAdministrator`, holds no Administrator
+    // grant to join against. What blocks on the claim below is the address's advisory lock, which
+    // `inviteFirstAdministrator` takes before its first check, so every check sees the claim committed.
     const inviter = await service.withTenant(racing, (trx) => made(trx, 'inviter'));
     const invited = await service.withTenant(racing, (trx) =>
       invite(trx, { email: 'grace@example.com', external: false, invitedBy: inviter }),
@@ -283,6 +282,52 @@ describe('the first administrator, invited by address', () => {
       trx.selectFrom('access_grant').select('id').execute(),
     );
     expect(grants).toEqual([]);
+  });
+
+  it('refuses to invite an address a new sign-in, still uncommitted, is making somebody sign in with', async () => {
+    const racing = await tenant('Racing Sign In');
+
+    // A sign-in that claims nothing - no invitation exists yet - and makes a verified principal in
+    // the same transaction, held open.
+    const signInPid = deferred<number>();
+    const madeIt = latch();
+    const commit = latch();
+    const signingIn = service.withTenant(racing, async (trx) => {
+      const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+      signInPid.resolve(rows[0]!.pid);
+      const claimed = await claimInvitation(
+        trx,
+        {
+          issuer: ISSUER,
+          subject: 'ada',
+          email: 'ada@example.com',
+          emailVerified: true,
+          name: 'ada',
+        },
+        'organisation',
+      );
+      await made(trx, 'ada', 'ada@example.com');
+      madeIt.open();
+      await commit.opened;
+      return claimed;
+    });
+    const pid = await signInPid.promise;
+    await madeIt.opened;
+
+    const invitingMeanwhile = inviting(racing, 'ada@example.com');
+    // Waits behind the sign-in, or has already answered with nothing to wait on: the answer tells.
+    await Promise.race([
+      invitingMeanwhile,
+      untilBlockedBy(db.adminUrl, pid, 1).catch(() => undefined),
+    ]);
+    commit.open();
+
+    await expect(signingIn).resolves.toBeUndefined();
+    await expect(invitingMeanwhile).resolves.toEqual({ refused: 'first_administrator.signed_in' });
+    const invitations = await service.withTenant(racing, (trx) =>
+      trx.selectFrom('invitation').select('id').execute(),
+    );
+    expect(invitations).toEqual([]);
   });
 
   it('cannot set who named an invitation, by the runtime role the service uses', async () => {

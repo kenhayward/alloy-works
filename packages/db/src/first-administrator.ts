@@ -3,6 +3,7 @@ import {
   INVITATION_DAYS,
   INVITED_PRINCIPAL_CLEANUP_TABLES,
   invitedAddress,
+  invitedAddressLockQuery,
 } from './invitations.js';
 import type { Tenant } from './provision.js';
 import { signedInAddressQuery } from './sign-in.js';
@@ -69,11 +70,15 @@ export async function inviteFirstAdministrator(
   let answer: FirstAdministratorAnswer = { invited: true, renewed: false };
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(`select 1 from ${schema}.access_epoch for update`);
+    // The address's lock, as `invite` and a first sign-in take it: a sign-in making a principal for
+    // this address, verified, commits before the checks below read, or waits until this commits.
+    // Keyed by the schema's name, unescaped, as `current_schema()` names it inside `withTenant`.
+    await client.query(invitedAddressLockQuery('$2::text'), [email, tenant.schema]);
 
-    // A claim (`claimInvitation`) takes no epoch, by design (invitations.ts), so it can commit
-    // between any two statements here. Each of these two checks is run again below, right after a
-    // `for update` that a concurrent claim of the tenant's waiting administrator invitation blocks
-    // behind - which is exactly what would let its commit slip past a check made only once, before
+    // A claim of another address (`claimInvitation`) takes no epoch, by design (invitations.ts), nor
+    // this address's lock, so it can commit between any two statements here. Each of these two
+    // checks is run again below, right after a `for update` that a concurrent claim of the tenant's
+    // waiting administrator invitation blocks behind - which is exactly what would let its commit slip past a check made only once, before
     // the wait, still holding this address's or another's answer as it stood before that commit.
     const checkAdministered = async (): Promise<boolean> => {
       const { rows } = await client.query<{ administered: boolean }>(
@@ -150,10 +155,10 @@ export async function inviteFirstAdministrator(
        where i.email = $1 and i.accepted_at is null for update of i`,
       [email],
     );
-    // Re-checked again: this address's own row, specifically, is what a claim of it locks - the same
-    // wait as above when it is the one already caught there, but this address can also reach this
-    // point with nothing to wait on above (no other administrator invitation exists yet) while a
-    // claim of its own, prior invitation is still in flight.
+    // Re-checked again, over this address's own row. A claim of this address can no longer be in
+    // flight here - it takes the address's lock above first, so it committed before the first checks
+    // or waits for this transaction - and no test fails without these two; kept so that nothing reads
+    // an answer from before a wait on a row lock, should the address's lock ever be moved.
     if (await checkAdministered()) {
       answer = { refused: 'first_administrator.administrator_exists' };
       return;

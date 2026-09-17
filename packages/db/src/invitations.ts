@@ -1,4 +1,4 @@
-import { sql } from 'kysely';
+import { CompiledQuery, sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { SignInRoute } from './sign-in.js';
@@ -45,6 +45,24 @@ export type WithdrawalAnswer =
 /** The address as an invitation holds it and as a claim compares it: trimmed and in lower case. */
 export function invitedAddress(email: string): string {
   return email.trim().toLowerCase();
+}
+
+/**
+ * The lock an address is invited, re-invited and first signed in with under, so that none of them
+ * reads the others' work half done: a transaction-scoped advisory lock keyed by the tenant's schema
+ * and the address as `invitedAddress` holds it. Qualified by the schema, not just the literal
+ * "invitation": two tenants handling the same address at once must not contend on one lock they share
+ * no row over. `schema` is an SQL expression naming the tenant's schema - `current_schema()` inside
+ * `withTenant`, a bound parameter over an administrator's own connection - and `$1` is the address;
+ * `lockInvitedAddress` and `inviteFirstAdministrator` (first-administrator.ts) both build it here, so
+ * the two can never lock different keys for one address.
+ */
+export const invitedAddressLockQuery = (schema: string) =>
+  `select pg_advisory_xact_lock(hashtextextended(${schema} || ' invitation ' || $1, 0))`;
+
+/** Takes `invitedAddressLockQuery`'s lock for `email`, already normalised, inside `withTenant`. */
+async function lockInvitedAddress(trx: TenantTransaction, email: string): Promise<void> {
+  await trx.executeQuery(CompiledQuery.raw(invitedAddressLockQuery('current_schema()'), [email]));
 }
 
 /** Whether somebody has already signed in showing this address, verified by their provider. */
@@ -141,11 +159,9 @@ export async function invite(
 ): Promise<InvitationAnswer> {
   const email = invitedAddress(input.email);
   const kind = input.external ? 'external' : 'user';
-  // Qualified by the schema, not just the literal "invitation": two tenants inviting the same
-  // address at once must not contend on one lock they share no row over.
-  await sql`select pg_advisory_xact_lock(
-    hashtextextended(current_schema() || ' invitation ' || ${email}, 0)
-  )`.execute(trx);
+  // Held until this transaction ends: another invitation of the address, and a first sign-in
+  // showing it, verified, each wait here rather than reading this one half done.
+  await lockInvitedAddress(trx, email);
 
   if (await signedInWith(trx, email)) return { refused: 'invitation.signed_in' };
 
@@ -240,15 +256,19 @@ export async function withdrawInvitation(
 }
 
 /**
- * Called in the transaction of a sign-in that found no principal by issuer and subject. Where the
- * provider asserts an address as verified and an invitation to it waits, unexpired, the invitation's
- * principal takes this issuer and subject and the invitation is accepted, through this route; its
- * principal's id is returned, holding whatever it was granted. Otherwise nothing changes and nothing
- * is returned. An invitation is accepted once: a second account presenting the address finds none.
+ * Called in the transaction of a sign-in that found no principal by issuer and subject, which makes
+ * one in that same transaction when this returns nothing. Where the provider asserts an address as
+ * verified and an invitation to it waits, unexpired, the invitation's principal takes this issuer and
+ * subject and the invitation is accepted, through this route; its principal's id is returned, holding
+ * whatever it was granted. Otherwise nothing changes and nothing is returned. An invitation is
+ * accepted once: a second account presenting the address finds none.
  *
- * Takes the invitation's row FOR UPDATE and then its principal's, and never the access epoch: giving a
- * principal its identity changes no fact a decision reads, so a claim cannot wait on a decision, and a
- * withdrawal - epoch, then this row - can only wait on a claim, never the other way round.
+ * For a verified address, takes the address's lock (`invitedAddressLockQuery`), then the invitation's
+ * row FOR UPDATE, then its principal's - and never the access epoch: giving a principal its identity
+ * changes no fact a decision reads, so a claim cannot wait on a decision, and a withdrawal - epoch,
+ * then this row, never the address's lock - can only wait on a claim, never the other way round. The
+ * address's lock is held to the end of the sign-in's transaction, so the principal a sign-in that
+ * claims nothing then makes is committed before an `invite` of the address reads, or made after it.
  */
 export async function claimInvitation(
   trx: TenantTransaction,
@@ -256,10 +276,15 @@ export async function claimInvitation(
   route: SignInRoute,
 ): Promise<string | undefined> {
   if (!identity.emailVerified || !identity.email) return undefined;
+  const address = invitedAddress(identity.email);
+  // Held until the sign-in's transaction ends - past the principal a sign-in that claims nothing
+  // makes next, in the same transaction - so an `invite` of this address cannot find nobody signed
+  // in with it, and make an invitation beside them, while that principal is still uncommitted.
+  await lockInvitedAddress(trx, address);
   const open = await trx
     .selectFrom('invitation')
     .select(['id', 'principal_id'])
-    .where('email', '=', invitedAddress(identity.email))
+    .where('email', '=', address)
     .where('accepted_at', 'is', null)
     .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql<Date>`now()`)]))
     .forUpdate()
