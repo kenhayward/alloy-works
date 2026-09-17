@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.23.1 - 2026-09-17 (PR #108)
+
+### Fixed
+
+- **`pnpm dev:setup` works on a checkout that has not been built yet.** It stopped after preparing the
+  database, unable to find the database package, until something had run `pnpm build`. It now builds
+  what the setup needs first.
+
 ## 0.23.0 - 2026-09-17 (PR #106)
 
 ### Added
