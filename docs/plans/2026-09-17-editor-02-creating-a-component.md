@@ -3359,7 +3359,8 @@ Found by the final review of this branch, and recorded rather than fixed in it:
   calls `focus()` on the view. **A later editor plan**, with the accessibility plan's `F6` region cycle.
 - **A title of spaces can still be stored through the iteration route** (issue #116). Creating and
   `setTitle` both trim, and agree with each other; `contentDocumentSchema.title` is `min(1)` with no
-  trim, so `PUT /v1/components/{id}/iteration` takes a title of spaces and a cut records it, and the
+  trim, so `PUT /v1/components/{id}/iterations/{session}/{sequence}` takes a title of spaces and a cut
+  records it, and the
   component then lists with a blank title. Not reachable from the application, which has no path that
   does not go through one of those two. **Whichever plan picks up #116.**
 - **The contract's `title: z.string().min(1).max(200)`** (`packages/api-contract/src/components.ts`) is a
@@ -3367,23 +3368,29 @@ Found by the final review of this branch, and recorded rather than fixed in it:
   and is taken without comment through the header and the iteration route. One of the three has to
   move - most likely the model, since the store is the thing that would have to mean it. **Whichever
   plan settles the title's rules, with #116.**
-- **The title rule is spelled four times** - `titleAccepted` in `packages/editor`, and `title.trim() ===
-''` again in `packages/db/src/creation.ts`, in `apps/web/src/editor/NewComponent.tsx` and in the
-  contract's `min(1)`. Two of those cannot import the editor's, which is why they were left; a rule the
-  domain owns, the way the language rule is owned, would collapse them. **The same plan as the
-  `languageAccepted` note above.**
-- **A fifth hand-rolled lowercase-UUID regex**, `UUID` at `packages/db/src/creation.ts` line 20, beside
-  the four `packages/db` already had. `LowercaseUuid` now lives in the contract's `schemas.ts`, which
-  `packages/db` does not depend on. **Whichever plan gives the database package its own id type.**
-- **Exports nothing imports**: `Command` (`packages/editor`), `SpaceList`, `ComponentTypeList` and
-  `CurrentDefinitions` (`packages/api-contract`), and `CreateComponentAnswer` (`packages/db`). Each is
-  the named type of something that is used, so each is defensible on its own; together they are a
+- **The title rule is spelled four times** - `titleAccepted` in `packages/editor`, `title.trim() === ''`
+  again in `packages/db/src/creation.ts` and in `apps/web/src/editor/NewComponent.tsx`, and the
+  contract's `min(1)`, which is the same rule minus the trim. `packages/db` and the contract cannot
+  import the editor's, which is why they were left; a rule the domain owns, the way the language rule is
+  owned, would collapse them. **The same plan as the `languageAccepted` note above.**
+- **A fourth hand-rolled lowercase-UUID regex in `packages/db`**, `UUID` at
+  `packages/db/src/creation.ts` line 20, beside the three the package already had - the identical
+  literal in `editing.ts`, `paging.ts` and `versions.ts`. `LowercaseUuid` lives in the contract's
+  `schemas.ts`, which `packages/db` does not depend on, so this one cannot simply import it.
+  **Whichever plan gives the database package its own id type.**
+- **Exports nothing imports**: `Command` (`packages/editor`), `SpaceList` and `ComponentTypeList`
+  (`packages/api-contract`), and `CurrentDefinitions` and `CreateComponentAnswer` (`packages/db`). Each
+  is the named type of something that is used, so each is defensible on its own; together they are a
   surface nobody is holding to. **Whichever plan next prunes a package's exports.**
-- **`listSpaces` decides outside `decideOnly`.** Every other listing asks its access questions inside the
-  transaction `decideOnly` has narrowed to deciding; `listSpaces` asks `mayCreate` per space in the
-  ordinary one. It reads nothing it may not read, so this is depth rather than a hole. **Whichever plan
-  next touches the spaces routes**, with the once-per-caller read noted above.
-- **The header's steps eat undo depth.** Each keystroke in the title is its own `DocAttrStep`, and
-  ProseMirror's history groups adjacent text steps but not attribute ones, so retyping a title spends one
-  history entry per character against the same budget the prose uses. `Ctrl+Z` behaves correctly; a long
-  title simply costs more history than it looks like it should. **Whichever plan tunes the history.**
+- **`listSpaces` decides outside `decideOnly`**, joining `listComponents`, which already did. Both take
+  their tenant transaction through `db.withTenant` rather than through a permission check, so neither
+  goes through `beforeDeciding`; `listComponentTypes`, beside them, takes an `Authorised` and does.
+  `listSpaces` asks `mayCreate` per space in the ordinary transaction. Neither reads anything it may not
+  read, so this is depth rather than a hole. **Whichever plan next touches the spaces routes**, with the
+  once-per-caller read noted above.
+- **The header's steps eat undo depth.** Each keystroke in the title is its own `DocAttrStep`, whose
+  `getMap()` is `StepMap.empty`; `prosemirror-history` groups by `isAdjacentTo`, which walks that map
+  and so finds nothing adjacent, so every keystroke starts a new event rather than joining the one
+  before it. Retyping a title spends one history entry per character, against the same `depth` the prose
+  uses. `Ctrl+Z` behaves correctly - a long title simply costs more history than it looks like it
+  should. **Whichever plan tunes the history.**

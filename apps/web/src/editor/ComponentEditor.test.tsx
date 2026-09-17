@@ -933,10 +933,37 @@ describe('the component editor', () => {
     await userEvent.clear(screen.getByLabelText('Title'));
     fireEvent.blur(screen.getByLabelText('Title'));
     expect(screen.getByRole('status')).toHaveTextContent('A component needs a title.');
-    // The message stands beside the empty field it is about, not beside a title (final review,
-    // finding 3), and the document still holds the title it had.
-    expect(screen.getByLabelText('Title')).toHaveValue('');
+    // Leaving the field puts the document's title back in it. Clearing never reaches the document, so
+    // `header.title` never changes and the value comparison that resyncs this field never fires -
+    // nothing else in the page could put an empty input right, and it would sit over a component that
+    // plainly has a title until the page was reloaded (re-review, finding 1).
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer');
     expect(fromEditor(view.state.doc).title).toBe('Install the printer');
+  });
+
+  it('leaves the field agreeing with the heading after a title is typed and then cleared', async () => {
+    // Reverting to what the document holds now, not to what it held when the page opened - and the
+    // heading is what a reader has in front of them, so the two must say the same thing. Left empty,
+    // this field would stay empty through a version cut and through the surface going read-only,
+    // because nothing changed the document and nothing else can resync it (re-review, finding 1).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+
+    fireEvent.change(field, { target: { value: 'Replace the toner' } });
+    await userEvent.clear(field);
+    fireEvent.blur(field);
+
+    expect(field).toHaveValue('Replace the toner');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Replace the toner');
+    expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
   });
 
   it('says nothing about a title being retyped, and never beside a title that is there, under StrictMode', async () => {

@@ -64,7 +64,7 @@ export interface ComponentHeaderProps {
  * A refusal is not the same as a no-op: `setTitle` answers `false` both for a title it refuses and for
  * one the document already holds (retyping the current title with a trailing space, say). So the rule
  * is asked for directly - `titleAccepted`, exported beside the command it gates - rather than restated
- * here or inferred from the command's answer. Nothing reverts either field.
+ * here or inferred from the command's answer.
  *
  * **Both text fields say nothing while a value is being typed, only once the field is left.** For the
  * language that is because reporting a not-yet-complete tag on every keystroke both shouts about text
@@ -73,6 +73,13 @@ export interface ComponentHeaderProps {
  * title used to report "A component needs a title." and put the document's own title back in the same
  * breath, so the message stood beside a perfectly good title and stayed there. A blur caused by the
  * field going read-only is not the author leaving, and reports nothing (fix round 2, finding H).
+ *
+ * **Leaving the title empty puts the document's title back; leaving a language tag half-typed does
+ * not** (re-review, finding 1). The asymmetry is in what the two refusals leave behind. A refused tag
+ * is text the author can see is wrong and can finish. An empty title is a field that never reached the
+ * document at all, so `header.title` never changed, so the resync above never fires - and the empty
+ * input would then survive a version cut and the surface going read-only, sitting beside a heading
+ * showing the real title with nothing in the page able to correct it.
  */
 export function ComponentHeader({ header, editable, onChange, onRefused }: ComponentHeaderProps) {
   const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
@@ -111,7 +118,14 @@ export function ComponentHeader({ header, editable, onChange, onRefused }: Compo
           onBlur={() => {
             // As the language field, and for the same reason it is read-only-safe (finding H).
             if (!editable) return;
-            if (!titleAccepted(title.typed)) onRefused('A component needs a title.');
+            if (titleAccepted(title.typed)) return;
+            onRefused('A component needs a title.');
+            // And put the document's title back, which the language field has no need to do
+            // (re-review, finding 1). Clearing never reaches the document, so `header.title` never
+            // changes and the comparison above never resyncs this field: left empty it would stay
+            // empty through a version cut and through the surface going read-only, an empty input
+            // beside a heading showing the real title, with nothing in the page able to put it right.
+            setTitle({ typed: header.title, inModel: header.title });
           }}
         />
       </label>

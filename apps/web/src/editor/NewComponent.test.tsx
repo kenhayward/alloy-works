@@ -359,7 +359,53 @@ describe('New component', () => {
     expect(screen.queryByText('The component types could not be loaded.')).not.toBeInTheDocument();
   });
 
-  it('says the author is signed out when the component types answer 401, not that it could be tried again', async () => {
+  it('does not say to choose another component type when the re-read left no chooser to choose from', async () => {
+    // "Choose another" beside no chooser asks for something that is not there - fix round 2's
+    // carve-out for spaces, one door over (re-review, finding 2). A 409 re-reads the types, and that
+    // read can fail, so which sentence is true depends on how it came back.
+    let attempts = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        return new Response(JSON.stringify(SPACES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        attempts += 1;
+        if (attempts === 1) {
+          return new Response(JSON.stringify(TYPES), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('{}', { status: 500 });
+      }
+      return new Response(JSON.stringify({ code: 'component_type_missing', message: 'gone' }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Component type')).toHaveValue(TYPES.items[1]!.id),
+    );
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByText('The component types could not be loaded.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'That component type is no longer available.',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent('Choose another');
+    expect([...screen.getByLabelText('Component type').querySelectorAll('option')]).toHaveLength(0);
+  });
+
+  it('says the author is signed out when the component types answer 401, not that the read failed', async () => {
     const { fetch } = service(
       { '/v1/spaces': SPACES },
       { [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: 401 },
@@ -372,9 +418,11 @@ describe('New component', () => {
     expect(screen.queryByText('The component types could not be loaded.')).not.toBeInTheDocument();
   });
 
-  it('says the author is signed out when the spaces answer 401, not that it could be tried again', async () => {
-    // Signed out is distinct from a failure worth retrying, here as everywhere else in this renderer
-    // (fix round 2): the status the read already answered with says which this is.
+  it('says the author is signed out when the spaces answer 401, not that the read failed', async () => {
+    // Signed out is distinct from a failure, here as everywhere else in this renderer (fix round 2):
+    // the status the read already answered with says which this is. Try again is offered either way -
+    // signing in happens in another tab, and this is then exactly the button to press (re-review,
+    // finding 3), so what these two tests pin is the sentence, not the button.
     const { fetch } = service({}, { '/v1/spaces': 401 });
     render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
 

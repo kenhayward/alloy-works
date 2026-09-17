@@ -122,29 +122,37 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     }
   }, [client]);
 
+  /**
+   * Answers whether there is a chooser to choose from afterwards, which is what the 409 below has to
+   * know before it can tell somebody to choose another (re-review, finding 2). A read this one no
+   * longer owns answers `false` too: the shorter sentence is true whatever the newer read finds, and
+   * the instruction is the only part that could be wrong.
+   */
   const loadTypes = useCallback(
-    async (space: string) => {
+    async (space: string): Promise<boolean> => {
       const generation = ++typesRequest.current;
       setTypesProblem(null);
       try {
         const { data, response } = await client.GET('/v1/spaces/{space}/component-types', {
           params: { path: { space } },
         });
-        if (typesRequest.current !== generation) return;
+        if (typesRequest.current !== generation) return false;
         const offered = typesIn(data);
         if (offered === undefined) {
           setTypes([]);
           setComponentType('');
           setTypesProblem(response.status === 401 ? 'signedOut' : 'failed');
-          return;
+          return false;
         }
         setTypes(offered);
         setComponentType((offered.find((each) => each.isDefault) ?? offered[0])?.id ?? '');
+        return offered.length > 0;
       } catch {
         if (typesRequest.current === generation) {
           setTypes([]);
           setTypesProblem('failed');
         }
+        return false;
       }
     },
     [client],
@@ -213,8 +221,15 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           setNotice('This space is no longer open to you. Choose another.');
           void loadSpaces();
         } else if (response.status === 409) {
-          setNotice('That component type is no longer available. Choose another.');
-          void loadTypes(where);
+          // The re-read decides which sentence is true: "Choose another" beside an empty chooser -
+          // the read having failed, been refused, or found nothing - asks for something that is not
+          // there, which is the trap fix round 2 carved out for the spaces one door over.
+          const chooser = await loadTypes(where);
+          setNotice(
+            chooser
+              ? 'That component type is no longer available. Choose another.'
+              : 'That component type is no longer available.',
+          );
         } else if (response.status === 400) {
           setNotice('The title, language or direction was not accepted. Check them and try again.');
         } else {
