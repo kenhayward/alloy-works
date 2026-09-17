@@ -29,6 +29,7 @@ the proposed system, with a TypeScript web service as the system of record, is d
 | Renderer / UI                  | React + TS + Vite - calls the service only through the API client                   | `apps/web`              |
 | Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials                   | `apps/desktop`          |
 | Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                                   | `packages/domain`       |
+| Editor                         | TypeScript + ProseMirror - schema, identity and the view; browser code, no React    | `packages/editor`       |
 | Database library               | TypeScript + `pg` + Kysely - roles, provisioning, migrations, `withTenant`          | `packages/db`           |
 | API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked | `packages/api-contract` |
 | Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer     | `apps/service`          |

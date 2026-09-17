@@ -69,7 +69,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the page says whether they are saved, saving, or not saved and being retried - and **Save version**
   or **Done editing** makes a version of them, numbered `0.2`, `0.3` and so on; nothing else does.
   Undo reaches back within what you have done since the last version. Pasting is refused rather than
-  put in unexamined.
+  put in unexamined. A pause longer than fifteen minutes lets somebody else start editing, but if
+  nobody has, your next change carries on where you left off. If you are signed out, the page says so
+  and keeps what was not saved, and your next change after signing in again saves it; if you may no
+  longer edit or read the component, the page says that instead, and keeps the text for you to copy.
 
   **This is paragraphs of text, not the editor.** A component holding a list, a table, an equation, a
   footnote or any formatting opens for reading only. Nothing yet creates a component: in development,

@@ -15,6 +15,13 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   window is offered to continue there.
 - **Changes are saved as you type**, a moment after you stop, and the page says plainly whether they are
   saved, saving, or not saved and being retried.
+- **A long pause does not lose your place.** After fifteen minutes without a change somebody else may
+  start editing, but if nobody has, your next change, Save version or Done editing carries on as before.
+- **Being signed out, or losing permission, is said plainly** rather than retried for ever: signed out,
+  the page keeps what was not saved and saves it with your next change once you sign in again; if you
+  may no longer edit or read the component, the page says so and keeps the text for you to copy.
+- A component that could not be opened, or a list that could not be loaded, says so and offers Try
+  again, rather than reading as missing or showing nothing.
 - **A version is made only when you ask**: Save version, or Done editing, which also lets somebody else
   edit. Nothing you type and no amount of waiting makes one, and asking when nothing has changed says so
   rather than making an empty version.

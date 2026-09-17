@@ -7994,7 +7994,9 @@ docker compose -f deploy/compose.yaml up -d --build --wait
    and what is on screen is offered under **Text that was not saved** too. Click **Continue**: a new
    session claims the lock from what is on screen, and typing saves normally again. Whatever was typed
    in the two seconds right before the reload is lost from the page either way; every iteration actually
-   saved is kept in the database for thirty days, but nothing in this slice shows it.
+   saved is kept in the database for thirty days, but nothing in this slice shows it. The same happens
+   after any reload that follows a save, including right after **Save version**: the notice is expected,
+   not a fault, and **Continue** recovers in one click.
 
 ### What a person can see, and what only a test proves
 
@@ -8054,3 +8056,13 @@ Named here so the next plan starts from a list rather than from a reading of the
 - **Error codes spelled one way** (finding 8). **Service foundations.**
 - **Retiring the scaffolding's `createComponent`** from `packages/domain`, which nothing renders any more.
   **Whichever plan next touches the domain package's surface.**
+- **A cut or a release that never answers** freezes the surface until a reload: neither is raced against a
+  timeout, since retrying either is unsafe without an idempotency key, and input is refused while cutting or
+  releasing. **Service foundations' idempotency work** (API-008), which makes a timeout and a retry safe.
+- **Saved iterations reachable after the tab closes.** Until Recovery ships, a session's saved iterations
+  can be reached only while its tab stays open: a reload opens at the last version, and what was saved since
+  is kept in the database but shown nowhere. **Editor 3, the session completed.**
+- **A lock heartbeat**, keeping an idle open tab's lock. Only an accepted iteration extends the lock, so a
+  pause longer than fifteen minutes lets it lapse; the next write claims it again once under the same
+  session, which succeeds unless somebody else took it meanwhile. Whether an open tab should hold the lock
+  with nobody typing is a product call. **COL-008's plan**, with the lock period as a tenant setting.
