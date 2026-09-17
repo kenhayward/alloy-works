@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { Selection, type EditorView } from '@alloy-works/editor';
+import { fromEditor, Selection, type EditorView } from '@alloy-works/editor';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -69,7 +69,7 @@ function service(answers: Record<string, Answer>) {
 
 const quick = { ...designTiming, idleMs: 10, continuousMs: 50 };
 
-function open(answers: Record<string, Answer>) {
+function open(answers: Record<string, Answer>, timing = quick) {
   const { client, asked } = service(answers);
   let view: EditorView | undefined;
   render(
@@ -78,7 +78,7 @@ function open(answers: Record<string, Answer>) {
       client={client}
       principalId={ADA}
       sessionId={SESSION}
-      timing={quick}
+      timing={timing}
       onView={(mounted) => (view = mounted)}
     />,
   );
@@ -840,5 +840,65 @@ describe('the component editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');
     expect(view.state.selection.from).toBe(at);
+  });
+
+  it('edits the title, the language and the direction above the surface, and sends them', async () => {
+    // The first edit claims the lock at once, from `reading` (session.ts, `changed()`), so a service
+    // that answers no lock route refuses the claim - and a refused claim puts the surface straight
+    // back to the version (the same behaviour 'puts the surface back...' already exercises), silently
+    // discarding every keystroke before the test ever reads the document. The default timing, not
+    // `quick`, then keeps a save from firing mid-test once claimed: `quick`'s much shorter idle window
+    // would need every intermediate iteration stubbed too, for no reason this test cares about.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () =>
+          json(200, {
+            lock: {
+              holder: { id: ADA, name: 'Ada' },
+              expectedRelease: '2026-09-16T09:15:00.000Z',
+              yours: true,
+              session: SESSION,
+            },
+          }),
+      },
+      designTiming,
+    );
+    const view = await surface();
+    const title = screen.getByLabelText('Title') as HTMLInputElement;
+
+    // Selecting the whole field before typing over it, not `{selectall}` (S23's suggestion): that is
+    // the legacy v13 pseudo-key and does nothing in the pinned user-event 14, which types are
+    // selected with `initialSelectionStart`/`initialSelectionEnd` instead. The title input is
+    // controlled by the document, and an empty value is refused, so a genuine clear() would put the
+    // old title straight back and the following keystrokes would append to it instead of replacing.
+    await userEvent.type(title, 'Replace the toner', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: title.value.length,
+    });
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Replace the toner');
+    // The document the session would send now carries it, which is the whole of the header's wiring.
+    expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
+  });
+
+  it('refuses to clear the title, saying why, and leaves the document alone', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+    );
+    const view = await surface();
+
+    await userEvent.clear(screen.getByLabelText('Title'));
+    expect(screen.getByRole('status')).toHaveTextContent('A component needs a title.');
+    expect(fromEditor(view.state.doc).title).toBe('Install the printer');
+  });
+
+  it('shows the header for reading only where the caller may not edit', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })),
+    });
+    await surface();
+
+    expect(screen.getByLabelText('Title')).toBeDisabled();
   });
 });

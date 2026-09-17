@@ -3,15 +3,21 @@ import { parseContentDocument } from '@alloy-works/domain';
 import {
   createEditorState,
   fromEditor,
+  headerOf,
   mountEditor,
   newBlockIdentifier,
+  setDirection,
+  setLanguage,
+  setTitle,
   toEditor,
+  type ComponentHeader as Header,
   type EditorView,
   type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import { useEffect, useRef, useState } from 'react';
 
+import { ComponentHeader } from './ComponentHeader.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -80,8 +86,10 @@ export function ComponentEditor({
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [header, setHeader] = useState<Header | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
+  const viewRef = useRef<EditorView | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
   // shown again for the life of this session.
@@ -237,12 +245,16 @@ export function ComponentEditor({
     setSession(editing.view());
     const view = mountEditor(place.current, {
       state: fresh(),
+      // Named once, from what the component opened with (task 5 brief): it does not follow a title
+      // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
+      // surface's naming.
       label: `Content of ${opened.doc.attrs.title as string}`,
       editable: () =>
         component.mayEdit && (phase === 'reading' || phase === 'claiming' || phase === 'editing'),
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
         if (transaction.docChanged) {
+          setHeader(headerOf(target.state.doc));
           // A real change invalidates whatever `kept` already captured (fix round 2, minor): the next
           // refusal, if there is one, has something new to capture again.
           keptIsCurrent.current = false;
@@ -251,10 +263,13 @@ export function ComponentEditor({
       },
       refused: () => setNotice('Pasting is not available yet. Type the text instead.'),
     });
+    viewRef.current = view;
+    setHeader(headerOf(view.state.doc));
     onViewRef.current?.(view);
     return () => {
       editing.dispose();
       controls.current = null;
+      viewRef.current = null;
       view.destroy();
     };
   }, [component, client, principalId]);
@@ -277,6 +292,19 @@ export function ComponentEditor({
     window.addEventListener('beforeunload', warnBeforeClose);
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
   }, [session, kept]);
+
+  /** Asks the view to make a header step, returning whether the editor made one. */
+  const changeHeader = <K extends keyof Header>(member: K, value: Header[K]) => {
+    const view = viewRef.current;
+    if (!view) return false;
+    const command =
+      member === 'title'
+        ? setTitle(value as string)
+        : member === 'language'
+          ? setLanguage(value as string)
+          : setDirection(value as Header['direction']);
+    return command(view.state, view.dispatch.bind(view));
+  };
 
   if (loaded.state === 'loading') return <p>Opening...</p>;
   if (loaded.state === 'missing') {
@@ -314,7 +342,16 @@ export function ComponentEditor({
   return (
     <article aria-labelledby="component-title">
       <header>
-        <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+        {header ? (
+          <ComponentHeader
+            header={header}
+            editable={shown.mayEdit && loaded.state === 'open'}
+            onChange={changeHeader}
+            onRefused={setNotice}
+          />
+        ) : (
+          <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+        )}
         <p>
           Version {session?.version.number ?? shown.version.number} in {shown.space.name}
         </p>

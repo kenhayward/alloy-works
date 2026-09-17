@@ -1,6 +1,8 @@
 import type { ComponentList as Page, createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { NewComponent } from './NewComponent.js';
+
 type Client = ReturnType<typeof createApiClient>;
 
 export interface ComponentListProps {
@@ -69,6 +71,15 @@ export function ComponentList({ client }: ComponentListProps) {
   return (
     <section aria-labelledby="components-heading">
       <h2 id="components-heading">Components</h2>
+      {/* Inside the loaded section, not above the whole list (S27): this component returns null
+          while the list itself is still loading or has failed, and a form above all of that would
+          only ever appear once the listing had already resolved anyway. */}
+      <NewComponent
+        client={client}
+        onCreated={(id) => {
+          window.location.hash = `#/components/${id}`;
+        }}
+      />
       {items.length === 0 ? (
         <p>There are no components you may read.</p>
       ) : (

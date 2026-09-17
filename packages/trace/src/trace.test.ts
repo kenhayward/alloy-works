@@ -135,8 +135,13 @@ describe('the citations in the committed model', () => {
   // 148, from 147: and CNT-143, which content-model.md owns, once, in the same file: a title and a
   // base language changed in an iteration and cut are what the new version carries, while the version
   // before still carries the old.
+  // 149, from 148: and CNT-149, which component-editor.md owns, once, in the renderer's create form
+  // (apps/web/src/editor/NewComponent.test.tsx): the spaces offered are only those the service says
+  // the caller may create in, a title, a language tag and a direction are given and sent exactly as
+  // typed, and the page opens what came back. MET-011 appears only in a comment there, a mention
+  // rather than a demonstration of its own statement, so it does not move this count.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(148);
+    expect(model.citations).toHaveLength(149);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -178,6 +183,7 @@ describe('scanning the repository for test files', () => {
     const files = testFilesIn(REPO_ROOT);
 
     expect(files).toContain('apps/web/src/App.test.tsx');
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(6);
+    // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(7);
   });
 });

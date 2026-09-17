@@ -15373,6 +15373,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-149",
+      "file": "apps/web/src/editor/NewComponent.test.tsx",
+      "line": 55,
+      "kind": "title"
+    },
+    {
       "id": "CNT-068",
       "file": "apps/web/src/editor/SaveIndicator.test.tsx",
       "line": 9,
