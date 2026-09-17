@@ -3394,3 +3394,10 @@ Found by the final review of this branch, and recorded rather than fixed in it:
   before it. Retyping a title spends one history entry per character, against the same `depth` the prose
   uses. `Ctrl+Z` behaves correctly - a long title simply costs more history than it looks like it
   should. **Whichever plan tunes the history.**
+- **A component-types read that never settles leaves an empty chooser with nothing said.** `loadTypes`
+  handles a read that fails, is refused, or is superseded by a newer one (findings above), but a request
+  that simply hangs answers none of those: `types` stays `[]` and `typesProblem` stays `null`, so the
+  page offers an empty "Component type" chooser and says nothing about why. Create itself is not blocked
+  - naming no type takes the environment's default - but the chooser looks broken with no way to tell.
+    The same class of gap as decision F's create that never answers, already recorded above: neither route
+    has a timeout. **Service foundations' idempotency and timeout work.**

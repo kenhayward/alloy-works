@@ -995,6 +995,46 @@ describe('the component editor', () => {
     expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
   });
 
+  it('reverts a cleared title on blur even when the field is disabled out from under it', async () => {
+    // The mirror image of 'does not report a refused language tag when the field is disabled out from
+    // under it': an empty title is worse than an unfinished tag, because clearing it never reaches the
+    // document (re-review, finding 1) - nothing but this field's own blur can put it right. The guard
+    // that skips reporting a refusal while read-only used to skip the revert too: clear the title, lose
+    // the session under it, and the field went disabled while still empty, sitting beside a heading
+    // that kept showing the real title, with nothing left in the page able to correct it.
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+    fireEvent.change(field, { target: { value: '' } });
+    expect(field).toHaveValue('');
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await waitFor(() => expect(field).toBeDisabled());
+    fireEvent.blur(field);
+
+    expect(field).toHaveValue('Install the printer');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Install the printer');
+    // The notice that explained the lock loss is still the one showing, not overwritten and not
+    // replaced by silence (finding H, re-applied here to the field it was not written for).
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Newer text was saved from another window',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent('A component needs a title.');
+  });
+
   it('does not report a refusal, or revert the field, for a no-op such as the same title with different surrounding space', async () => {
     // `setTitle` answers `false` not only when refused but also when the trimmed value already
     // matches the document (packages/editor/src/header.ts, `setRoot`) - a no-op, not a refusal, and

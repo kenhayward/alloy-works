@@ -116,15 +116,17 @@ export function ComponentHeader({ header, editable, onChange, onRefused }: Compo
             }));
           }}
           onBlur={() => {
-            // As the language field, and for the same reason it is read-only-safe (finding H).
-            if (!editable) return;
+            // Reverting while not editable is never wrong - a field that cannot be edited should show
+            // what the document holds, and for a reader it already does, so this never fires for one.
+            // Only the notice is read-only-safe, as the language field's is (finding H): reporting a
+            // refusal while the surface just went read-only under the author would write over the
+            // notice that explained why. Clearing never reaches the document, so `header.title` never
+            // changes and the comparison above never resyncs this field on its own: left un-reverted
+            // here, an empty input would stay empty through a version cut and through the surface going
+            // read-only, sitting beside a heading that still shows the real title with nothing left in
+            // the page able to correct it (final re-review).
             if (titleAccepted(title.typed)) return;
-            onRefused('A component needs a title.');
-            // And put the document's title back, which the language field has no need to do
-            // (re-review, finding 1). Clearing never reaches the document, so `header.title` never
-            // changes and the comparison above never resyncs this field: left empty it would stay
-            // empty through a version cut and through the surface going read-only, an empty input
-            // beside a heading showing the real title, with nothing in the page able to put it right.
+            if (editable) onRefused('A component needs a title.');
             setTitle({ typed: header.title, inModel: header.title });
           }}
         />
