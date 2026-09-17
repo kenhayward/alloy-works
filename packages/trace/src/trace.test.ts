@@ -21,6 +21,7 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1365, from 1364: CNT-149, creating a component in a space the author may create in (issue #115).
     // 1364, from 1363: IAM-072, inviting anybody by address and granting before their first sign-in,
     // filed as issue #113 while planning invitations, when IAM-059 asked it only of the first administrator.
     // 1363, from 1362: MET-037 refuses a field version that would make a schema's default invalid,
@@ -29,9 +30,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1364);
+    expect(model.requirements).toHaveLength(1365);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 319, from 318: component-editor.md claims CNT-149 once creating a component is an act somebody
+    // performs rather than a shape somebody is given.
     // 318, from 317: access.md claims IAM-072 once any administrator of the environment invites an
     // address and grants it before the first sign-in (docs/plans/2026-09-17-access-03-invitations.md).
     // 317, from 316: access.md claims IAM-059 once the first administrator arrives by an invitation to
@@ -56,7 +59,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(318);
+    ).toBe(319);
   });
 });
 
@@ -125,8 +128,15 @@ describe('the citations in the committed model', () => {
   // 146, from 145: and IAM-072, which access.md owns, once, in the service's invitation routes test: an
   // administrator invites an address and grants it before anybody signs in with it, an account presenting
   // it unverified gets nothing, and the first verified sign-in through a permitted route has the access.
+  // 147, from 146: and MET-011, which component-editor.md owns, once, in the service's component
+  // creation test: a create naming no type takes the environment's default, one naming one takes that
+  // one, one naming a type this environment does not hold is refused, and the version row records
+  // exactly one component type either way.
+  // 148, from 147: and CNT-143, which content-model.md owns, once, in the same file: a title and a
+  // base language changed in an iteration and cut are what the new version carries, while the version
+  // before still carries the old.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(146);
+    expect(model.citations).toHaveLength(148);
   });
 
   it('cites no identifier the corpus does not hold', () => {

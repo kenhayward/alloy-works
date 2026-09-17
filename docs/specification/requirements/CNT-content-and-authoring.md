@@ -404,6 +404,7 @@ would be storage spent on something nobody will read.
 | **CNT-089** | An iteration must not be a version: it must be immutable, timestamped, and visible only to the editor holding the lock. Iterations must be retained until the component's next version is cut, and for a declared window after that (**VER** owns the window) | T1         | Specified |
 | **CNT-090** | An author must be able to see the iterations retained for the component they are editing, and restore any of them within that window                                                                                                                          | T1         | Specified |
 | **CNT-103** | Undo must not cross a version boundary. Reaching further back than the version the session opened from is restoring an earlier version, which is a separate and audited act                                                                                   | T1         | Specified |
+| **CNT-149** | An author must be able to create a component in a space they may create in, choosing from the spaces open to them and giving its title, its base language and its base direction                                                                              | T1         | Specified |
 
 ### Spelling
 
@@ -688,5 +689,21 @@ it, and found two requirements that could not both hold.
 | Counts           | Before                      | After                       |
 | ---------------- | --------------------------- | --------------------------- |
 | Requirements     | 146, of which 11 superseded | 148, of which 13 superseded |
+| Non-requirements | 10                          | 10                          |
+| Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |
+
+### From planning the creation of a component
+
+Not a review. Planning the editor's second slice, creating a component, found that nothing in the
+corpus asked for the act itself: every component built so far had to be inserted by hand into the
+database, and an author who joins an environment has no way to start one.
+
+| What was found                                                                     | Change                                                                                                                                                                                            |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No requirement asked for creating a component, only for what one is once it exists | **CNT-149** added (issue #115): an author creates a component in a space they may create in, choosing from the spaces open to them and giving its title, its base language and its base direction |
+
+| Counts           | Before                      | After                       |
+| ---------------- | --------------------------- | --------------------------- |
+| Requirements     | 148, of which 13 superseded | 149, of which 13 superseded |
 | Non-requirements | 10                          | 10                          |
 | Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |

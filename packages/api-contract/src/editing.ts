@@ -1,19 +1,12 @@
 import { z } from 'zod';
-import { ComponentParams, Lock, VersionSummary } from './components.js';
+import { ComponentParams, Lock, LowercaseUuid, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
-const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
-/**
- * A uuid, lowercase only. Postgres' `uuid` type returns its canonical form lowercase regardless of the
- * case it was written in, and a session or an opened-from version is compared against that reading in
- * JavaScript - never through Postgres' own case-insensitive equality - so an uppercase one sent back
- * would compare unequal to the very record it names, for as long as the session or the version lasts.
- * Refusing it at the door, rather than downcasing it, keeps what a caller sent and what is stored the
- * same string everywhere this is echoed back (a lock's `session`, a refusal's `holder`).
- */
-export const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
+// Re-exported so every existing importer of `LowercaseUuid` from `./editing.js` (invitations.ts,
+// managing-access.ts) is unaffected by the schema now being defined in `./components.js` - see the
+// comment there for why the definition moved.
+export { LowercaseUuid };
 
 /** An iteration's address: the component, the editing session, and the session's sequence number. */
 export const IterationParams = z.object({

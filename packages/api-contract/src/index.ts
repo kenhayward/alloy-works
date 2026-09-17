@@ -5,7 +5,16 @@ export type {
   RouteResponse,
   RouteTarget,
 } from './contract.js';
-export { ComponentList, ComponentListQuery, ComponentParams, ComponentView } from './components.js';
+export {
+  ComponentList,
+  ComponentListQuery,
+  ComponentParams,
+  ComponentTypeList,
+  ComponentView,
+  CreateComponentBody,
+  SpaceList,
+  SpaceParams,
+} from './components.js';
 export {
   ClaimBody,
   CutAnswer,
