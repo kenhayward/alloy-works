@@ -3329,3 +3329,22 @@ Named here so the next plan starts from a list rather than from a reading of the
   linear in the number of spaces, which is a handful. **Whichever plan gives an environment many spaces.**
 - **Retiring the scaffolding's `createComponent`** from `packages/domain`, which now has a namesake in
   `packages/db` that does the real thing. **Whichever plan next touches the domain package's surface.**
+
+Found while building this plan, and left rather than widened into it:
+
+- **A component's id in a path is a bare `z.uuid()` while a space's is lowercase-only**
+  (`ComponentParams` against `SpaceParams` in `packages/api-contract/src/components.ts`). An uppercase
+  UUID is therefore a `400` on a space's route and a `404` on a component's, having passed validation and
+  matched nothing. The house rule is lowercase, so `ComponentParams` is the one that is wrong; changing
+  it moves a refusal from `404` to `400` on six routes and belongs in a change that can say so in its own
+  changelog entry. **Whichever plan next touches the component routes.**
+- **The language rule is asked of the domain's schema in two renderers** - `NewComponent.tsx` and
+  `ComponentHeader.tsx` each read `contentDocumentSchema.shape.language` - where the title rule is asked
+  of `titleAccepted`, which `packages/editor` exports beside the command it gates. A `languageAccepted`
+  beside it would make the pair symmetrical; it was left because the language rule is the domain's, not
+  the editor's, and routing it through `packages/editor` to reach a form that holds no editor buys
+  symmetry with a hop. **Whichever plan gives the domain a rule-asking surface of its own.**
+- **The unmount guard on `NewComponent`'s two reads has no test.** React 19 drops a `setState`
+  dispatched to an unmounted fiber before it reaches the scheduler, so a suite passes with the guard and
+  without it, and the `act(...)` warning it exists to prevent cannot be provoked. The guard is kept;
+  nothing pins it. **Whenever React makes the difference observable again.**

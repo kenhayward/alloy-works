@@ -245,12 +245,15 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   }
   if (spaces === null || spaces.length === 0) {
     // Nothing to create in says nothing at all - unless something has just been said about a space
-    // that was, which must not vanish along with the form it was said about.
+    // that was, which must not vanish along with the form it was said about. What it says here is
+    // this branch's own sentence rather than the standing notice: the only way in is a refusal whose
+    // re-read then left nothing, and that notice ends "Choose another" beside no chooser. This is
+    // the one fact the branch itself knows, so it needs to know nothing about what was refused.
     if (notice === null) return null;
     return (
       <section aria-labelledby="new-component-heading">
         <h2 id="new-component-heading">New component</h2>
-        {status}
+        <p role="status">There is nowhere left where you may create a component.</p>
       </section>
     );
   }

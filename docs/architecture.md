@@ -7,10 +7,11 @@
 > deciding its metadata - [metadata](#metadata) - the insert-only chain its versions are stored in -
 > [the version chain](#the-version-chain) - and who may do what to it - [access](#access) - and the
 > first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
-> opens a component's paragraphs, saves them as iterations under a lock and cuts versions from them.
-> Nothing yet creates a component, pastes, edits anything but paragraphs of text, or publishes; an
-> administrator invites people by address and grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the
-> scaffolding's, and nothing renders it any more.
+> creates a component in a space, opens its paragraphs, edits its title, base language and base direction
+> above the surface, saves them as iterations under a lock and cuts versions from them. Nothing yet
+> pastes, edits anything but paragraphs of text, makes a component type, or publishes; an administrator
+> invites people by address and grants and removes roles from a component's access page. The single
+> `Component` in `packages/domain` is still the scaffolding's, and nothing renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
@@ -75,16 +76,17 @@ generated types when the page is next touched.
 shape and none of the product on top: nothing authors content, stores it, admits it from another
 format or publishes it.
 
-| File           | Holds                                                                                        |
-| -------------- | -------------------------------------------------------------------------------------------- |
-| `marks.ts`     | Thirteen marks, and the set is closed. Each carries an identifier and no appearance          |
-| `inline.ts`    | Eight inline nodes, and the three-state alternative a figure or an image carries             |
-| `blocks.ts`    | Seven blocks, and the restricted sequence a footnote's content is                            |
-| `document.ts`  | The root a version holds, and `parseContentDocument` - the one way a document is constructed |
-| `canonical.ts` | `canonicalise`, whose output is what a caller hashes into `content_hash`                     |
-| `migrate.ts`   | The migration chain, applied on read, and the quarantine for content that will not parse     |
-| `mapping.ts`   | One row per node and per mark, naming what it becomes in Word and in tagged PDF              |
-| `fixtures/v1/` | Stored content at schema version 1, never deleted                                            |
+| File            | Holds                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| `marks.ts`      | Thirteen marks, and the set is closed. Each carries an identifier and no appearance                |
+| `inline.ts`     | Eight inline nodes, and the three-state alternative a figure or an image carries                   |
+| `blocks.ts`     | Seven blocks, and the restricted sequence a footnote's content is                                  |
+| `document.ts`   | The root a version holds, and `parseContentDocument` - the one way a document is constructed       |
+| `identifier.ts` | `blockIdentifierFrom`: 128 bits as 26 lower-case base32 characters, over bytes the caller supplies |
+| `canonical.ts`  | `canonicalise`, whose output is what a caller hashes into `content_hash`                           |
+| `migrate.ts`    | The migration chain, applied on read, and the quarantine for content that will not parse           |
+| `mapping.ts`    | One row per node and per mark, naming what it becomes in Word and in tagged PDF                    |
+| `fixtures/v1/`  | Stored content at schema version 1, never deleted                                                  |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -106,6 +108,11 @@ exist anyway, because the first schema change is when a chain nobody built is fo
 **No node exists without a way out.** `mapping.ts` carries a row for every block, inline node and mark,
 and a test fails when a type has no row or a row has a blank cell. A cell that cannot be filled is a
 finding about the node rather than a comment in the file.
+
+**Randomness is not here either, for the same reason hashing is not.** `blockIdentifierFrom` spells
+sixteen bytes it is given; where those bytes come from is the caller's platform, so `packages/editor`
+passes `crypto.getRandomValues` and `packages/db` passes `node:crypto`'s `randomBytes`. Both spell an
+identifier the same way because there is one function that spells one, and one test holds the spelling.
 
 Hashing is deliberately not here. `canonicalise` returns a string and the caller hashes it, because
 `node:crypto` is not platform-free and `crypto.subtle` would make parsing async for nothing. The
@@ -167,7 +174,10 @@ the form to drift from the first.
 `packages/domain/src/metadata/` holds the rules that decide which fields apply to a component, what
 makes a value valid, and what a version records about the definitions it was written against, designed
 in [`design/metadata.md`](design/metadata.md). They are pure functions over definition payloads a
-caller hands in. Nothing stores a definition or a value, no route calls them, and no panel shows them.
+caller hands in. One definition is stored - the component type migration 0015 gives every environment -
+and creating a component and cutting a version each resolve its fields and apply every default through
+`carryForward`; `GET /v1/spaces/{space}/component-types` lists the types an environment holds. Nothing
+else makes, changes or assigns a definition, no route carries a value, and no panel shows one.
 
 | File                  | Holds                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -217,14 +227,16 @@ and the field definition refuses one.
 
 `packages/db` holds the permanent record every versioned thing is kept in, designed in
 [`design/storage-and-versioning.md`](design/storage-and-versioning.md) under
-[ADR-0024](decisions/0024-a-version-digest-over-the-whole-version.md). Two tenant migrations and five
-functions, each taking the transaction `withTenant` opened. Nothing calls them yet: no route cuts a
-version, and there is no iteration, lock, revision or baseline.
+[ADR-0024](decisions/0024-a-version-digest-over-the-whole-version.md). Three tenant migrations and the
+functions that write the chain, each taking the transaction `withTenant` opened. Creating a component
+inserts its first version and the editing session cuts the rest (see
+[the editor and its session](#the-editor-and-its-session)); there is no revision and no baseline.
 
 | Where                                         | Holds                                                                                                                                                      |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `migrations/tenant/0007_spaces_and_artifacts` | `space`, name unique in the tenant; `artifact`, an id and a kind, in exactly one space for a component and in none for a field, schema or type             |
 | `migrations/tenant/0008_version_chain`        | `artifact_version` - numbers, author, time, note, schema version, content, values, what was not carried, the type, both digests - and `version_definition` |
+| `migrations/tenant/0015_component_types`      | The component type every environment starts with, _Topic_; `component_type_default`, one row, declaring it; and an author nullable for a definition alone  |
 | `src/version-digest.ts`                       | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                              |
 | `src/spaces.ts`                               | `createSpace`                                                                                                                                              |
 | `src/versions.ts`                             | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`                                                              |
@@ -346,23 +358,32 @@ Opening a component, editing its paragraphs and saving them, designed in
 [`design/component-editor.md`](design/component-editor.md) over
 [`design/storage-and-versioning.md`](design/storage-and-versioning.md)'s iterations and
 [ADR-0023](decisions/0023-prosemirror-as-the-editor-and-its-model.md)'s one view per component. A
-component holding anything but paragraphs of unmarked text opens for reading only; nothing creates a
-component, pastes, recovers an iteration or edits metadata.
+component is created, opened, edited above and on the surface, and cut; one holding anything but
+paragraphs of unmarked text opens for reading only, and nothing pastes, recovers an iteration or edits
+metadata.
 
-| Where                                       | Holds                                                                                                                                                            |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `editor: src/schema.ts`, `mapping.ts`       | The editor's schema - the root, paragraphs, text - and `toEditor`, which refuses by name what the schema lacks, and `fromEditor`, through `parseContentDocument` |
-| `editor: src/identity.ts`, `state.ts`       | 128-bit block identifiers, ADR-0023's descent rule as a plugin, no two adjacent empty paragraphs, `Enter` that makes none, and one history per component         |
-| `editor: src/view.ts`, `style.css`          | `mountEditor`: spellcheck, language and direction on the surface, and paste and drop refused                                                                     |
-| `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                      |
-| `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                            |
-| `db: src/components.ts`                     | `listReadableComponents`, filtered by the readable set inside its query, a page at a time                                                                        |
-| `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component type, a component, and Ada and Grace allowed Author on General, for development only                                       |
-| `api-contract: components.ts`, `editing.ts` | Six routes and their schemas; a route may now declare a request body                                                                                             |
-| `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                           |
-| `web: src/editor/`                          | The session as a state machine over a service and a clock, the adapter onto the generated client, the save indicator, the editor, the list and the workspace     |
+| Where                                       | Holds                                                                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor: src/schema.ts`, `mapping.ts`       | The editor's schema - the root, paragraphs, text - and `toEditor`, which refuses by name what the schema lacks, and `fromEditor`, through `parseContentDocument`                               |
+| `editor: src/identity.ts`, `state.ts`       | 128-bit block identifiers, ADR-0023's descent rule as a plugin, no two adjacent empty paragraphs, `Enter` that makes none, and one history per component                                       |
+| `editor: src/view.ts`, `style.css`          | `mountEditor`: spellcheck, language and direction on the surface, and paste and drop refused                                                                                                   |
+| `editor: src/header.ts`                     | `headerOf`, and `setTitle`, `setLanguage` and `setDirection` as steps on the root, with `titleAccepted` beside the command it gates                                                            |
+| `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                                                    |
+| `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                                                          |
+| `db: src/creation.ts`                       | `createComponent` at `0.1`, `listComponentTypes` and `defaultComponentType`, and `currentDefinitionsFor`, which creating and cutting share                                                     |
+| `db: src/components.ts`, `spaces.ts`        | `listReadableComponents`, filtered by the readable set inside its query, a page at a time; `listSpacesFor`, each space with whether the caller may create in it                                |
+| `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component over the component type the environment starts with, and Ada and Grace allowed Author on General, for development only                                   |
+| `api-contract: components.ts`, `editing.ts` | Nine routes and their schemas; a route may now declare a request body                                                                                                                          |
+| `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                                                         |
+| `web: src/editor/`                          | The session as a state machine over a service and a clock, the adapter onto the generated client, the save indicator, the editor and its header, **New component**, the list and the workspace |
 
-**Four properties, because each is a decision rather than an implementation detail.**
+**Five properties, because each is a decision rather than an implementation detail.**
+
+**The header is content, not a column on the component.** A component's title, base language and base
+direction are attributes of the editor's root, so changing one is a step in the same history as the text,
+undone with `Ctrl+Z`, carried inside the iteration the session already sends, and recorded by the next
+version cut. Creating needed no route for them and editing needs no request member, so a version records
+the title the component had when it was cut (CNT-143) without anything keeping two copies in step.
 
 **A version is cut from an iteration, and only when asked.** Saving writes iterations; only Save version
 and Done editing call `cutVersion`, which promotes the session's latest iteration through `recordVersion`.
@@ -381,8 +402,9 @@ which runs `parseContentDocument`, and the service parses it again. The identity
 empty-paragraph plugin keep that true after any sequence of edits, which a seeded test of two thousand
 operations holds them to.
 
-`pnpm dev:setup` makes "Install the printer" in both development environments and allows Ada and Grace
-Author on General; Alice is left with nothing.
+`pnpm dev:setup` makes "Install the printer" in both development environments, over the component type
+the environment starts with rather than one of its own, and allows Ada and Grace Author on General; Alice
+is left with nothing.
 
 ## One renderer, two deliveries
 

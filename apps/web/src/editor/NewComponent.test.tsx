@@ -290,10 +290,12 @@ describe('New component', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps saying why a space was refused when the re-read fails, and when it leaves nowhere to create', async () => {
+  it('keeps saying why a space was refused when the re-read fails, and says there is nowhere left when it leaves none', async () => {
     // A 404 re-reads the spaces, and that read can fail outright or come back with nowhere left to
     // create - and each used to take the whole section away, carrying off the one message that
-    // explained what had just happened (fix round 2, finding E).
+    // explained what had just happened (fix round 2, finding E). Where it leaves nowhere, the
+    // standing message cannot stand: "Choose another" beside no chooser asks for something that is
+    // not there, so that branch says what is true of it instead.
     let spacesCall = 0;
     const answers = [SPACES.items, null, []];
     const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -340,8 +342,9 @@ describe('New component', () => {
     );
     expect(screen.queryByLabelText('Where')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'This space is no longer open to you. Choose another.',
+      'There is nowhere left where you may create a component.',
     );
+    expect(screen.queryByText(/Choose another/)).not.toBeInTheDocument();
   });
 
   it('keeps the space the author chose when the list is read again unchanged', async () => {

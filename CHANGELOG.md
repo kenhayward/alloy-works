@@ -3,6 +3,27 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.26.0 - YYYY-MM-DD (PR #n)
+
+### Added
+
+- **New component.** On the list of components, choose a space you may create in, give a title, a base
+  language and a direction, and take the component type the environment offers. Creating makes version
+  0.1 with one empty paragraph and opens it for editing. A space you may read but not create in is not
+  offered, and where there is nowhere you may create, nothing is shown at all.
+- **A component header.** The title, the base language and the base direction are edited above the
+  surface. Each is part of the document, so each is undone with the rest of your changes and recorded
+  in the next version you cut. A title cannot be emptied and a language tag that is not one is not
+  taken; the page says which, and the document keeps what it had.
+- Every environment now starts with a component type, named Topic, and declares it the default, so
+  creating always has a type to take.
+
+### Changed
+
+- `pnpm dev:setup` no longer makes a component type of its own; it takes the environment's default. A
+  development database from before this release keeps the Topic it already had, and gains only the row
+  declaring it the default.
+
 ## 0.25.0 - 2026-09-17 (PR #114)
 
 ### Added
