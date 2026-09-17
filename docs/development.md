@@ -53,7 +53,7 @@ anything deployed. `pnpm test` fails with an instruction to start it when it is 
 `apps/service` needs the database prepared once, then runs with reload on save:
 
 ```bash
-pnpm dev:setup                                    # database alloy_dev and a store for each environment
+pnpm dev:setup                                    # builds what it imports, then database alloy_dev and a store for each environment
 cp deploy/service.env.example deploy/service.env  # development settings; the copy is ignored
 pnpm build                                        # the packages the service imports
 pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
