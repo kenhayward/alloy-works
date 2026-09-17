@@ -178,6 +178,16 @@ describe('inviting people through the service', () => {
     });
     expect(stranger.statusCode).toBe(404);
 
+    // Google - a route this environment does not permit - never claims the invitation either: it is
+    // refused closed before any identity is even asked for, and the invitation is still waiting.
+    const closedGoogle = await app.inject({ url: '/v1/sign-in/google', headers: { host: HOST } });
+    expect(closedGoogle.statusCode).toBe(404);
+    expect(closedGoogle.json()).toMatchObject({ code: 'sign_in_route_closed' });
+    const stillWaiting = await call('ada', 'GET', '/v1/invitations');
+    expect(
+      stillWaiting.json<{ items: { id: string; acceptedAt: string | null }[] }>().items,
+    ).toContainEqual(expect.objectContaining({ id: made.invitation.id, acceptedAt: null }));
+
     // Ivy, through the organisation's route - the one this environment permits - with it verified.
     cookies.ivy = await signIn(app, HOST, 'ivy', idp.issuer);
     const me = await call('ivy', 'GET', '/v1/me');
@@ -234,6 +244,9 @@ describe('inviting people through the service', () => {
       404,
     );
     expect((await call('ada', 'DELETE', `/v1/invitations/${MISSING}`)).statusCode).toBe(404);
+    const malformed = await call('ada', 'DELETE', `/v1/invitations/${MISSING.replace('0', 'A')}`);
+    expect(malformed.statusCode).toBe(400);
+    expect(malformed.json()).toMatchObject({ code: 'invalid_request' });
 
     // Eve signing in now is somebody new, holding nothing: her own id, not the withdrawn invitation's
     // principal, and refused the space the withdrawn invitation's person was once given.

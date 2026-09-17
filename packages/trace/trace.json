@@ -4809,7 +4809,7 @@
     {
       "id": "IAM-072",
       "area": "IAM",
-      "statement": "An administrator of an environment must be able to invite a person by address and grant them access before their first sign-in, and that access must take effect only when the person first signs in through a route the environment permits presenting that address verified by the provider.",
+      "statement": "An administrator of an environment must be able to invite a person by address and grant them access before their first sign-in, and that access must take effect only when the person first signs in through a route the environment permits presenting that address verified by the provider",
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
