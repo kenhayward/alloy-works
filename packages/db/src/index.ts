@@ -91,12 +91,16 @@ export {
 } from './groups.js';
 export {
   accessPolicy,
+  administeringGrants,
   grant,
+  grantLevel,
+  removeGrant,
   type AccessPolicy,
   type ExternalRefusal,
   type GrantAnswer,
   type GrantRefusal,
   type NewGrant,
+  type RemovalAnswer,
   type StoredGrant,
 } from './grants.js';
 export {

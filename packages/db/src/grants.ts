@@ -1,4 +1,5 @@
 import { allowable, externalCap, type Level, type Permission } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -176,4 +177,113 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
       grantedAt: row.granted_at,
     },
   };
+}
+
+type GrantRow = {
+  id: string;
+  role_id: string;
+  principal_id: string | null;
+  group_id: string | null;
+  level: Level['kind'];
+  space_id: string | null;
+  artifact_id: string | null;
+  effect: 'allow' | 'deny';
+  expires_at: Date | null;
+  granted_by: string;
+  granted_at: Date;
+};
+
+function levelOf(row: Pick<GrantRow, 'level' | 'space_id' | 'artifact_id'>): Level {
+  if (row.level === 'tenant') return { kind: 'tenant' };
+  if (row.level === 'space') return { kind: 'space', id: row.space_id! };
+  return { kind: 'artifact', id: row.artifact_id! };
+}
+
+function storedOf(row: GrantRow): StoredGrant {
+  return {
+    id: row.id,
+    roleId: row.role_id,
+    subject: row.principal_id !== null ? { principal: row.principal_id } : { group: row.group_id! },
+    level: levelOf(row),
+    effect: row.effect,
+    expiresAt: row.expires_at,
+    grantedBy: row.granted_by,
+    grantedAt: row.granted_at,
+  };
+}
+
+/**
+ * The level a grant was made at, which is what managing it is decided against; undefined when the
+ * tenant holds no such grant. A caller that is going to remove it takes `lockAccessForChange` first,
+ * so the grant it decided on is the grant it removes.
+ */
+export async function grantLevel(trx: TenantTransaction, id: string): Promise<Level | undefined> {
+  const row = await trx
+    .selectFrom('access_grant')
+    .select(['level', 'space_id', 'artifact_id'])
+    .where('id', '=', id)
+    .executeTakeFirst();
+  return row && levelOf(row);
+}
+
+/**
+ * The grants that keep the tenant administered, as the lock-out guard counts them (access.md, "Roles"):
+ * `administer` at the tenant, allowed directly to a principal who is not external, with no expiry. A
+ * group's grant, an expiring one and an external principal's never count, so removing a member, a group
+ * or an expiring grant can never be what leaves a tenant unadministered.
+ */
+export async function administeringGrants(trx: TenantTransaction): Promise<string[]> {
+  const rows = await trx
+    .selectFrom('access_grant as g')
+    .innerJoin('role as r', 'r.id', 'g.role_id')
+    .innerJoin('principal as p', 'p.id', 'g.principal_id')
+    .select('g.id')
+    .where('g.level', '=', 'tenant')
+    .where('g.effect', '=', 'allow')
+    .where('g.expires_at', 'is', null)
+    .where('p.kind', '<>', 'external')
+    .where(sql<boolean>`'administer' = any (r.permissions)`)
+    .orderBy('g.id')
+    .execute();
+  return rows.map((row) => row.id);
+}
+
+export type RemovalAnswer =
+  | { readonly removed: StoredGrant }
+  | { readonly refused: 'grant.missing' | 'grant.last_administrator' };
+
+/**
+ * Removes a grant, or says why not: it is not this tenant's, or it is the last grant keeping the tenant
+ * administered. A removal that leaves the count where it was is never refused, whatever the count.
+ * Who may remove it - `administer` at its level or above - is the caller's to decide first.
+ *
+ * Takes the epoch FOR UPDATE before it counts: two removals at once, of the last two administrators'
+ * grants, would otherwise each count the other's still standing, and both land.
+ */
+export async function removeGrant(trx: TenantTransaction, id: string): Promise<RemovalAnswer> {
+  await lockAccessForChange(trx);
+  const row = await trx
+    .selectFrom('access_grant')
+    .select([
+      'id',
+      'role_id',
+      'principal_id',
+      'group_id',
+      'level',
+      'space_id',
+      'artifact_id',
+      'effect',
+      'expires_at',
+      'granted_by',
+      'granted_at',
+    ])
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (!row) return { refused: 'grant.missing' };
+  const administering = await administeringGrants(trx);
+  if (administering.includes(id) && administering.length === 1) {
+    return { refused: 'grant.last_administrator' };
+  }
+  await trx.deleteFrom('access_grant').where('id', '=', id).execute();
+  return { removed: storedOf(row) };
 }
