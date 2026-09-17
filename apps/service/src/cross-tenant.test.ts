@@ -1,8 +1,10 @@
 // apps/service/src/cross-tenant.test.ts
+import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createArtifact,
   createTenant,
   createTenantDatabase,
   findRole,
@@ -12,6 +14,11 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  definitionsFor,
+  type ComponentTypeDefinition,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -24,6 +31,9 @@ const A = 'acme.alloy.test';
 const B = 'dev.acme.alloy.test';
 
 const authenticated = allRoutes.filter((route) => route.access.check !== 'none');
+
+/** An editing session and a version id, well formed: what the request's shape needs, and no more. */
+const SESSION = '11111111-1111-4111-8111-111111111111';
 
 /**
  * For each route with path parameters: how to name, in its path, something belonging to environment
@@ -53,23 +63,104 @@ const OTHER_TENANT_IDS: Readonly<
       return sample.id;
     }),
   }),
+  getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  saveIteration: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    session: SESSION,
+    sequence: '1',
+  }),
 };
 
-/** A component in environment B's General space, as a query's target names it. */
-const componentIn = (tenant: Tenant, db: TenantDatabase) =>
+/**
+ * For each route taking a body, or a query that is not its target: a valid one, so that what the harness
+ * sees is the environment's refusal and never the request's shape. A route with a body missing here
+ * fails the harness.
+ */
+const VALID_INPUT: Readonly<
+  Record<string, { readonly query?: string; readonly payload?: Record<string, unknown> }>
+> = {
+  claimLock: { payload: { session: SESSION } },
+  releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
+  cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  saveIteration: {
+    payload: {
+      openedFrom: SESSION,
+      content: {
+        schemaVersion: 1,
+        title: 'Elsewhere',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+      },
+    },
+  },
+};
+
+const CONTENT = {
+  schemaVersion: 1,
+  title: 'Audit the fleet',
+  language: 'en-GB',
+  direction: 'ltr',
+  content: [
+    {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Audit the fleet.', marks: [] }],
+    },
+  ],
+};
+
+/** A component in environment B's General space, complete with a version, so a route that opens
+ * one has something to actually find - never a bare artifact row a missing-version 404 would
+ * satisfy whether or not the tenant boundary held. */
+const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx
       .selectFrom('space')
       .select('id')
       .where('name', '=', 'General')
       .executeTakeFirstOrThrow();
-    const artifact = await trx
-      .insertInto('artifact')
-      .values({ kind: 'component', space_id: general.id })
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
-    return `artifact:${artifact.id}`;
+    const type: ComponentTypeDefinition = {
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      id: randomUUID(),
+      name: 'Topic',
+      assignments: [],
+    };
+    const madeType = await createArtifact(trx, {
+      author: author.id,
+      substance: { kind: 'componentType', content: type },
+    });
+    const made = await createArtifact(trx, {
+      author: author.id,
+      spaceId: general.id,
+      substance: {
+        kind: 'component',
+        content: CONTENT as never,
+        values: {},
+        notCarried: [],
+        definitions: definitionsFor({ version: madeType.id, definition: type }, [], []),
+      },
+    });
+    return made.artifactId;
   });
+
+/** The same, as a query's target names it. */
+const componentIn = async (tenant: Tenant, db: TenantDatabase) =>
+  `artifact:${await componentIdIn(tenant, db)}`;
 
 /**
  * For each route whose permission's target is a query member: the query naming something belonging to
@@ -102,6 +193,14 @@ const withQueryTargets = allRoutes.filter(
 );
 const fill = (path: string, ids: Record<string, string>) =>
   path.replace(/\{(\w+)\}/g, (_match, name: string) => ids[name] ?? '');
+/** The route's address with its valid query, and its valid body, as `inject` takes them. */
+const request = (name: string, url: string) => {
+  const input = VALID_INPUT[name] ?? {};
+  return {
+    url: input.query ? `${url}?${input.query}` : url,
+    ...(input.payload ? { payload: input.payload } : {}),
+  };
+};
 
 describe("no environment accepts another environment's session (IAM-004)", () => {
   let db: TestDatabase;
@@ -216,7 +315,7 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     async (name, route) => {
       const response = await app.inject({
         method: route.method,
-        url: fill(route.path, othersIds[name] ?? {}),
+        ...request(name, fill(route.path, othersIds[name] ?? {})),
         headers: { host: B, cookie: fromA },
       });
       expect(response.statusCode).toBe(401);
@@ -229,12 +328,31 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     async (name, route) => {
       const response = await app.inject({
         method: route.method,
-        url: fill(route.path, othersIds[name] ?? {}),
+        ...request(name, fill(route.path, othersIds[name] ?? {})),
         headers: { host: A, cookie: fromA },
       });
       expect(response.statusCode).toBe(404);
     },
   );
+
+  it('knows a valid body for every route that takes one', () => {
+    for (const route of authenticated.filter((each) => each.body)) {
+      expect(VALID_INPUT[route.operationId]?.payload, route.operationId).toBeDefined();
+    }
+  });
+
+  it('opens a component in another environment exactly as one that does not exist, never its content', async () => {
+    const route = withParameters.find((each) => each.operationId === 'getComponent')!;
+    const response = await app.inject({
+      method: route.method,
+      url: fill(route.path, othersIds.getComponent ?? {}),
+      headers: { host: A, cookie: fromA },
+    });
+    expect(response.statusCode).toBe(404);
+    const body = response.json<Record<string, unknown>>();
+    expect(body).toMatchObject({ code: 'not_found' });
+    expect(body).not.toHaveProperty('content');
+  });
 
   it('knows how to address the other environment for every route whose target is in its query', () => {
     expect(withQueryTargets.length).toBeGreaterThan(0);

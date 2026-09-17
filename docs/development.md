@@ -81,14 +81,23 @@ where the service is, since it only returns people to addresses it knows:
 is granted Administrator there; nobody else holds a role until something grants one.
 `http://dev.acme.localhost:8080/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
 
+It also makes something to edit, since nothing in the product creates a component or grants a role
+yet: in each environment, a component type called Topic, a component called "Install the printer" in
+General, and Ada and Grace - made as principals before they first sign in - allowed Author on General.
+Alice is given nothing. Sign in as Ada, open "Install the printer", type, and **Save version**. To see
+the lock from the other side, sign in as Grace in a private window - the stand-in remembers who signed
+in last in a window - and start typing in the same component.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
-`signin.localhost:8080` as the one address it returns to. Open
-`http://dev.acme.localhost:8080/v1/sign-in/google`: Grace is invited and gets in; Alice is not, and
-the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in `deploy/service.env` and
-`STAND_IN_GOOGLE_REDIRECT_URI` for the stand-in to match. The stand-in plays both providers with
-one issuer, so anyone who has signed in to the environment the organisation's way is already its
-principal, and comes straight in. Like Google, it remembers who signed in and does not ask again:
-restart it to choose someone else.
+`signin.localhost:8080` as the one address it returns to. `pnpm dev:setup` already makes Ada and Grace
+principals of this environment - to have somebody to edit "Install the printer" with - so opening
+`http://dev.acme.localhost:8080/v1/sign-in/google` and choosing either signs her straight in, as a
+principal admitted before, without an invitation being looked at at all. Grace's invitation
+(`pnpm dev:setup` still makes it, to `grace@example.com`) is never the reason she gets in, and never
+gets accepted, because an existing principal is admitted first. Alice is neither a principal nor
+invited, and the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in
+`deploy/service.env` and `STAND_IN_GOOGLE_REDIRECT_URI` for the stand-in to match. Like Google, the
+stand-in remembers who signed in and does not ask again: restart it to choose someone else.
 
 ## Two ways to see the whole thing
 

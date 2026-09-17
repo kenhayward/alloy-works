@@ -7,6 +7,17 @@ version and revision - and of [ADR-0024](../decisions/0024-a-version-digest-over
 [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md) requires, and everything below is
 per-tenant without saying so again.
 
+> **Part of this is built.** The version chain ([the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)),
+> and now the `iteration` store and promotion from it ([the editor plan](../plans/2026-09-16-editor-01-open-edit-and-save.md)):
+> iterations are insert-only, referenced by nothing, keyed by artifact, principal and session together so
+> a client-chosen session id reused by a second principal is never judged against the first's, and carry
+> `expires_at` from a retention of thirty days set at insert - a version is cut from the latest one. What
+> is still design here: the retention window as a tenant setting (VER-004) and the sweep that removes
+> expired rows, which this plan found may remove a row only once it is past `expires_at` **and** a later
+> version of its artifact exists, never on `expires_at` alone, which would delete unsaved work its session
+> still needs; iterations visible only to the lock holder through a reading route (VER-002), revisions,
+> baselines, restore, legal hold and derived data.
+
 ## The shape in one paragraph
 
 ADR-0006 named three levels, and they are not three levels of one table. They are **two stores and a

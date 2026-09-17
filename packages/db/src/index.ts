@@ -20,12 +20,14 @@ export type {
   AccessPolicyTable,
   ArtifactTable,
   ArtifactVersionTable,
+  ComponentLockTable,
   FirstAdministratorTable,
   GoogleDomainTable,
   GroupMemberTable,
   JobTable,
   IdentityProviderTable,
   InvitationTable,
+  IterationTable,
   ObjectStoreCredentialTable,
   PlatformTables,
   PrincipalTable,
@@ -110,3 +112,26 @@ export {
   type NamedIdentity,
   type NamingAnswer,
 } from './first-administrator.js';
+export {
+  claimLock,
+  ITERATION_RETENTION_DAYS,
+  iterationDigest,
+  LOCK_PERIOD_MINUTES,
+  readLock,
+  saveIteration,
+  type EditingSession,
+  type HolderRefusal,
+  type IterationAnswer,
+  type LockClaimAnswer,
+  type LockState,
+  type NewIteration,
+} from './editing.js';
+export {
+  cutVersion,
+  releaseLock,
+  type Cut,
+  type CutAnswer,
+  type ReleaseAnswer,
+} from './promotion.js';
+export { seedDevelopmentContent, TOPIC_TYPE_ID, type SeededContent } from './dev-content.js';
+export { listReadableComponents, type ComponentPage, type ComponentSummary } from './components.js';

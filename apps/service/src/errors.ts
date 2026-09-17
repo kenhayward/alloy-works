@@ -1,16 +1,28 @@
 import type { ErrorBody } from '@alloy-works/api-contract';
 
-/** A refusal the service means to make: its code, message and rule reach the caller as they are. */
+/**
+ * A refusal the service means to make: its code, message and rule reach the caller as they are, and so
+ * do its members - what a client needs to act on, such as who holds a lock - which the route's declared
+ * refusal schema names, and which never replace the code, message or trace id.
+ */
 export class AppError extends Error {
   readonly status: number;
   readonly code: string;
   readonly rule: string | undefined;
+  readonly members: Readonly<Record<string, unknown>>;
 
-  constructor(status: number, code: string, message: string, rule?: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    rule?: string,
+    members: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.status = status;
     this.code = code;
     this.rule = rule;
+    this.members = members;
   }
 }
 
@@ -30,6 +42,7 @@ export function toErrorBody(error: unknown, traceId: string): { status: number; 
     return {
       status: error.status,
       body: {
+        ...error.members,
         code: error.code,
         message: error.message,
         traceId,

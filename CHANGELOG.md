@@ -3,6 +3,39 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.23.0 - 2026-09-17 (PR #106)
+
+### Added
+
+- **Editing a component**, built from [the component editor design](docs/design/component-editor.md).
+  Signed in, the page lists the components you may read; open one, and if you may edit it, your first
+  change starts editing it.
+- **One person edits a component at a time.** Anyone else who tries is told who is editing it and when
+  they are expected to stop, and what they typed is kept for them to copy. The same person in a second
+  window is offered to continue there.
+- **Changes are saved as you type**, a moment after you stop, and the page says plainly whether they are
+  saved, saving, or not saved and being retried.
+- **A long pause does not lose your place.** After fifteen minutes without a change somebody else may
+  start editing, but if nobody has, your next change, Save version or Done editing carries on as before.
+- **Being signed out, or losing permission, is said plainly** rather than retried for ever: signed out,
+  the page keeps what was not saved and saves it with your next change once you sign in again; if you
+  may no longer edit or read the component, the page says so and keeps the text for you to copy.
+- A component that could not be opened, or a list that could not be loaded, says so and offers Try
+  again, rather than reading as missing or showing nothing.
+- **A version is made only when you ask**: Save version, or Done editing, which also lets somebody else
+  edit. Nothing you type and no amount of waiting makes one, and asking when nothing has changed says so
+  rather than making an empty version.
+- **Undo** reaches back through what you have done since the last version, and no further.
+- In development, `pnpm dev:setup` makes a component called "Install the printer" and lets Ada and Grace
+  edit it.
+- For now a component can hold only paragraphs of text to be edited here - anything else opens for
+  reading only - pasting is refused, and nothing creates a component or grants permission to edit one
+  outside development.
+
+### Changed
+
+- The page no longer shows the fixed sample component the scaffolding rendered.
+
 ## 0.22.0 - 2026-09-16 (PR #105)
 
 ### Added

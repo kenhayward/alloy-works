@@ -100,8 +100,16 @@ describe('the citations in the committed model', () => {
   // domain, four database and one service test file. Inheritance through templates and documents
   // (IAM-024, IAM-018), the Access view (IAM-029 to IAM-031) and provider groups (IAM-009) wait, and
   // the plan names each and what it waits for.
+  // 135, from 134: opening, editing and saving a component (docs/plans/2026-09-16-editor-01-open-edit-and-save.md)
+  // cites VER-001, which storage-and-versioning.md owns, in the database tests of the lock and iterations.
+  // 137, from 135: the same plan cites VER-006 and COL-010 in the database tests of cutting and releasing.
+  // 139, from 137: and API-039 and CNT-071, which component-editor.md owns, in the service's session tests.
+  // 141, from 139: and CNT-066 and CNT-070 in the renderer's session tests.
+  // 142, from 141: and CNT-068 in the save indicator's, eight citations in all, once each. The lock's
+  // tenant setting (COL-008), recovery (CNT-067, CNT-090), undo across a reload (CNT-069, CNT-103) and
+  // paste (CNT-063) wait, and the plan names each and what it waits for.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(134);
+    expect(model.citations).toHaveLength(142);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -143,6 +151,6 @@ describe('scanning the repository for test files', () => {
     const files = testFilesIn(REPO_ROOT);
 
     expect(files).toContain('apps/web/src/App.test.tsx');
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(2);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(5);
   });
 });

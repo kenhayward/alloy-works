@@ -1,8 +1,10 @@
 // apps/service/src/access-routes.test.ts
+import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createArtifact,
   createRole,
   createSpace,
   createTenant,
@@ -15,6 +17,11 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  definitionsFor,
+  type ComponentTypeDefinition,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -95,15 +102,47 @@ describe('routes that check a permission', () => {
     await tenantDb.withTenant(tenant, async (trx) => {
       clinical = (await createSpace(trx, 'Clinical')).id;
       quality = (await createSpace(trx, 'Quality')).id;
-      const artifact = (spaceId: string) =>
-        trx
-          .insertInto('artifact')
-          .values({ kind: 'component', space_id: spaceId })
-          .returning('id')
-          .executeTakeFirstOrThrow()
-          .then((row) => row.id);
-      dosing = await artifact(clinical);
-      audit = await artifact(quality);
+      // A real version each, not a bare artifact row: a route that opens one (getComponent) must
+      // have something to find, so its refusal proves the permission held rather than just that
+      // nothing was there to read.
+      const type: ComponentTypeDefinition = {
+        schemaVersion: DEFINITION_SCHEMA_VERSION,
+        id: randomUUID(),
+        name: 'Topic',
+        assignments: [],
+      };
+      const madeType = await createArtifact(trx, {
+        author: ids.ada!,
+        substance: { kind: 'componentType', content: type },
+      });
+      const content = (title: string) => ({
+        schemaVersion: 1,
+        title,
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'p1',
+            style: 'body',
+            content: [{ type: 'text', value: title, marks: [] }],
+          },
+        ],
+      });
+      const artifact = (spaceId: string, title: string) =>
+        createArtifact(trx, {
+          author: ids.ada!,
+          spaceId,
+          substance: {
+            kind: 'component',
+            content: content(title) as never,
+            values: {},
+            notCarried: [],
+            definitions: definitionsFor({ version: madeType.id, definition: type }, [], []),
+          },
+        }).then((made) => made.artifactId);
+      dosing = await artifact(clinical, 'Dosing');
+      audit = await artifact(quality, 'Audit');
     });
     await give({
       role: 'Administrator',
@@ -437,12 +476,48 @@ describe('routes that check a permission', () => {
    * cross-tenant.test.ts does for path parameters.
    */
   const HOLDING_NOTHING: Readonly<
-    Record<string, () => { readonly url: string; readonly status: 403 | 404 }>
+    Record<
+      string,
+      () => {
+        readonly url: string;
+        readonly status: 403 | 404;
+        readonly payload?: Record<string, unknown>;
+      }
+    >
   > = {
     getAccess: () => ({ url: `/v1/access?target=artifact:${dosing}`, status: 404 }),
     explainAccess: () => ({
       url: `/v1/access/explain?principal=${ids.ada}&target=tenant`,
       status: 403,
+    }),
+    getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
+    claimLock: () => ({
+      url: `/v1/components/${dosing}/lock`,
+      status: 404,
+      payload: { session: MISSING },
+    }),
+    releaseLock: () => ({
+      url: `/v1/components/${dosing}/lock?session=${MISSING}&openedFrom=${MISSING}`,
+      status: 404,
+    }),
+    cutVersion: () => ({
+      url: `/v1/components/${dosing}/versions`,
+      status: 404,
+      payload: { session: MISSING, openedFrom: MISSING },
+    }),
+    saveIteration: () => ({
+      url: `/v1/components/${dosing}/iterations/${MISSING}/1`,
+      status: 404,
+      payload: {
+        openedFrom: MISSING,
+        content: {
+          schemaVersion: 1,
+          title: 'Dosing',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [] }],
+        },
+      },
     }),
   };
 
@@ -453,11 +528,12 @@ describe('routes that check a permission', () => {
     for (const route of checked) {
       const address = HOLDING_NOTHING[route.operationId];
       expect(address, `${route.operationId} has no address in HOLDING_NOTHING`).toBeDefined();
-      const { url, status } = address!();
+      const { url, status, payload } = address!();
       const response = await app.inject({
         method: route.method,
         url,
         headers: { host: HOST, cookie: cookies.alice! },
+        ...(payload ? { payload } : {}),
       });
       expect(response.statusCode, route.operationId).toBe(status);
     }

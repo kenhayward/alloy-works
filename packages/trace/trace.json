@@ -15249,13 +15249,25 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 239,
+      "line": 278,
       "kind": "title"
     },
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 106,
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "API-039",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 237,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-071",
+      "file": "apps/service/src/editing-routes.test.ts",
+      "line": 293,
       "kind": "title"
     },
     {
@@ -15295,6 +15307,24 @@
       "kind": "rule"
     },
     {
+      "id": "CNT-068",
+      "file": "apps/web/src/editor/SaveIndicator.test.tsx",
+      "line": 9,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-066",
+      "file": "apps/web/src/editor/session.test.ts",
+      "line": 196,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-070",
+      "file": "apps/web/src/editor/session.test.ts",
+      "line": 233,
+      "kind": "title"
+    },
+    {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
       "line": 220,
@@ -15319,6 +15349,12 @@
       "kind": "title"
     },
     {
+      "id": "VER-001",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 277,
+      "kind": "title"
+    },
+    {
       "id": "IAM-022",
       "file": "packages/db/src/grants.test.ts",
       "line": 110,
@@ -15334,6 +15370,18 @@
       "id": "IAM-071",
       "file": "packages/db/src/grants.test.ts",
       "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "COL-010",
+      "file": "packages/db/src/promotion.test.ts",
+      "line": 312,
+      "kind": "title"
+    },
+    {
+      "id": "VER-006",
+      "file": "packages/db/src/promotion.test.ts",
+      "line": 158,
       "kind": "title"
     },
     {

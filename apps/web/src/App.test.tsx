@@ -8,22 +8,23 @@ const desktopBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
 };
 
-/** These tests are about the page around it, so the panel that calls the service stands aside. */
+/** These tests are about the page around them, so the parts that call the service stand aside. */
 const noPanel = <p>the environment</p>;
+const noWorkspace = <p>the workspace</p>;
 
 afterEach(() => vi.restoreAllMocks());
 
 describe('App', () => {
-  it('renders a component from the domain package', async () => {
-    render(<App bridge={desktopBridge} environment={noPanel} />);
+  it('shows the environment and the workspace under the product name', async () => {
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
     expect(await screen.findByRole('heading', { name: 'Alloy Works' })).toBeInTheDocument();
-    expect(screen.getByText('Install the printer')).toBeInTheDocument();
-    expect(screen.getByText(/version 1/i)).toBeInTheDocument();
+    expect(screen.getByText('the environment')).toBeInTheDocument();
+    expect(screen.getByText('the workspace')).toBeInTheDocument();
   });
 
   it('names the delivery it is running under', async () => {
-    render(<App bridge={desktopBridge} environment={noPanel} />);
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
     expect(await screen.findByText(/desktop/i)).toBeInTheDocument();
     expect(screen.getByText(/Electron 44\.3\.0/)).toBeInTheDocument();
@@ -40,7 +41,7 @@ describe('App', () => {
         }),
     );
     vi.stubGlobal('fetch', asked);
-    render(<App bridge={desktopBridge} />);
+    render(<App bridge={desktopBridge} workspace={noWorkspace} />);
 
     expect(await screen.findByRole('heading', { name: 'Environment' })).toBeInTheDocument();
     expect(asked).toHaveBeenCalled();
@@ -48,7 +49,7 @@ describe('App', () => {
 
   it('says so while the bridge has not answered yet', () => {
     const pending: PlatformBridge = { getPlatformInfo: () => new Promise(() => {}) };
-    render(<App bridge={pending} environment={noPanel} />);
+    render(<App bridge={pending} environment={noPanel} workspace={noWorkspace} />);
 
     expect(screen.getByText(/checking/i)).toBeInTheDocument();
   });
