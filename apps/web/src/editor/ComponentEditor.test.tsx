@@ -207,15 +207,14 @@ describe('the component editor', () => {
 
   it('says the author is signed out, keeps the unsaved text and stays editable when a save answers 401', async () => {
     let signedIn = false;
-    const { surface } = open({
+    const signedOut = () => json(401, { code: 'unauthenticated', message: 'no', traceId: 't' });
+    const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),
       'POST /v1/components/{id}/lock': () => json(200, { lock }),
-      'PUT /v1/components/{id}/iterations/{session}/1': () =>
-        json(401, { code: 'unauthenticated', message: 'no', traceId: 't' }),
-      'PUT /v1/components/{id}/iterations/{session}/2': () =>
-        signedIn
-          ? json(200, { sequence: 2, lock })
-          : json(401, { code: 'unauthenticated', message: 'no', traceId: 't' }),
+      'PUT /v1/components/{id}/iterations/{session}/1': signedOut,
+      'PUT /v1/components/{id}/iterations/{session}/2': signedOut,
+      'PUT /v1/components/{id}/iterations/{session}/3': () =>
+        signedIn ? json(200, { sequence: 3, lock }) : signedOut(),
     });
     const view = await surface();
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
@@ -231,6 +230,20 @@ describe('the component editor', () => {
     expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
       'contenteditable',
       'true',
+    );
+
+    // Typing again while still signed out: the surface holds everything, so the kept text is replaced
+    // by it rather than growing a second copy with every pause.
+    view.dispatch(view.state.tr.insertText('!', view.state.doc.content.size - 1));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/2',
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Text that was not saved' })).toHaveValue(
+        'Unbox the printer. Keep the box.!',
+      ),
     );
 
     signedIn = true;
@@ -644,14 +657,17 @@ describe('the component editor', () => {
     await screen.findByRole('textbox', { name: 'Text that was not saved' });
     // Nothing is dirty (the surface went back to the version) and nothing is saving or retrying -
     // only the kept text itself says there is something a close would still lose.
-    expect(screen.getByText('Not saved')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Not saved')).toBeInTheDocument());
     // A real event dispatch, not a captured handler reference (fix round 3): the guard must still be
     // registered with `window` now that the refusal has settled, not merely have been registered at
     // some earlier moment (during `claiming`, briefly dirty) and then torn down without a replacement
     // - which a check against the mock's call history alone would not have told apart from this.
-    const event = new Event('beforeunload', { cancelable: true });
-    window.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
+    // Inside waitFor: the guard registers in an effect after the render that shows the textarea.
+    await waitFor(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
   });
 
   it('keeps warning before an unmount while a retry is failing (fix round 2 minor)', async () => {

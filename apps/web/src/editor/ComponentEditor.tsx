@@ -158,11 +158,17 @@ export function ComponentEditor({
     let base = opened.doc;
     let phase: SessionView['phase'] = 'reading';
     keptIsCurrent.current = false;
-    /** Captures the surface into `kept`, once for whatever it currently holds (fix round 2, minor). */
-    const captureKept = () => {
+    /**
+     * Captures the surface into `kept`, once for whatever it currently holds (fix round 2, minor).
+     * Appends by default: a refused claim puts the surface back to the version, so each refusal's text
+     * exists only in `kept`. `replace` is for a stop while editing goes on (signed out, or content
+     * refused): the surface still holds everything typed, so the kept text becomes it rather than
+     * growing another whole copy with every pause.
+     */
+    const captureKept = (replace = false) => {
       if (keptIsCurrent.current) return;
       const now = textOf(view);
-      setKept((previous) => (previous ? `${previous}\n\n${now}` : now));
+      setKept((previous) => (previous && !replace ? `${previous}\n\n${now}` : now));
       keptIsCurrent.current = true;
     };
     // Which id this page starts with (task 10, finding C): kept only if this component's lock, as the
@@ -190,7 +196,8 @@ export function ComponentEditor({
         // Lost, or stopped while editing goes on - signed out, or content the service refused (final
         // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
         const stoppedEditing = next.phase === 'editing' && next.save === 'stopped';
-        if (next.phase === 'lost' || stoppedEditing) captureKept();
+        if (stoppedEditing) captureKept(true);
+        else if (next.phase === 'lost') captureKept();
         // The kept text is only good until the next successful claim puts this session back in
         // control (fix round 1, finding 2), or - kept while editing went on - until a save
         // acknowledges everything on screen: from then on it is stale, not something still worth
