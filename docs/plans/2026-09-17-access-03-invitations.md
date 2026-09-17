@@ -64,7 +64,13 @@ in full (235) with the eight typecheck errors task 1 names, and the Google and f
 suites passed; after task 2, `pnpm typecheck` and `pnpm format` were clean, the database (231), service
 (194) and trace (296) suites passed, and `pnpm trace check` found no problems. The red runs were not each
 replayed: each "Expected: FAIL" names the failure the missing code must cause, which the implementer
-confirms before writing it. Those in task 3 step 4 were seen while the proof was written.
+confirms before writing it. Those in task 3 step 5 were seen while the proof was written.
+
+**Written after that run, and not run: decision I.** IAM-072's row in the corpus, access.md's claim of it,
+the renamed and strengthened test in task 3 that cites it, and the counts that move with them (task 3
+steps 1 and 6, and the prose naming them) were added to this plan once Ken accepted it. The test's code is
+the proof run's own test with a new title and one more assertion; the counts are reasoned from those on
+`main` at 0.24.0, not measured.
 
 ## Where access.md, the requirement and the built code are wrong or missing, most serious first
 
@@ -73,8 +79,9 @@ confirms before writing it. Those in task 3 step 4 were seen while the proof was
    permits", with no local credential and no vendor account outliving the bootstrap. No requirement asks
    for inviting everyone else - IAM-054 is the Google route's admission, already covered by
    service-foundations.md. **Built for both**, because the first administrator's invitation is an
-   invitation, and the everyday one is what the grants plan's decision A deferred; only IAM-059 is
-   claimed and cited.
+   invitation, and the everyday one is what the grants plan's decision A deferred. **Filed** (decision
+   I): issue #113 asks for the everyday one as **IAM-072**, which task 3 adds to the corpus, claims and
+   cites; IAM-059 is claimed and cited in task 2.
 2. **access.md's unclaimed row for IAM-059 names the wrong gap.** It says IAM-059 asks "for the bootstrap
    to be audited into the tenant's log". That is IAM-060's statement; IAM-059 says nothing about audit.
    **Corrected** (task 2): IAM-059 is claimed once an invitation to a named address answers it, and
@@ -113,6 +120,7 @@ confirms before writing it. Those in task 3 step 4 were seen while the proof was
 ## Decisions for Ken
 
 Each is a product choice this plan makes provisionally so that it can be built, with a recommendation.
+**All accepted as recommended (Ken, 2026-09-17)**, A to H, and I added.
 
 - **A. The first administrator is invited to an address, and the naming by issuer and subject is
   retired.** This reverses the ruling recorded in access.md's "Changed while planning the build". Why
@@ -150,6 +158,9 @@ Each is a product choice this plan makes provisionally so that it can be built, 
 - **H. Nothing sends the invitation.** The administrator tells the person to sign in, at the environment's
   address. Mail is the notifications design's, and needs a sender, templates and bounce handling this plan
   does not need. Recommended: accept.
+- **I. Inviting anybody is a requirement of its own: IAM-072** (issue #113), T1, in IAM's section 4
+  beside IAM-054 and IAM-059. Accepted with A to H. Task 3 lands the row, access.md claims it, and
+  `invitation-routes.test.ts` cites it; so the plan now has two citations, not one.
 
 ## Global Constraints
 
@@ -184,11 +195,14 @@ Every task's requirements include these.
 - **One pull request, one version bump (0.25.0, a functional enhancement) and one changelog entry**, in the
   last task, headed `## 0.25.0 - YYYY-MM-DD (PR #n)`. Never commit to `main`.
 - **The corpus is queried, never read wholesale.** `pnpm trace show <ID>` for any requirement named.
-- **`trace.json` is drift-checked and the citation and claim counts are pinned.** Task 2, which adds the
-  only cited title and the only claim, runs `pnpm --filter @alloy-works/trace generate` and moves both pins
-  in `packages/trace/src/trace.test.ts` in the same commit: citations 144 to 145, claims 316 to 317.
-  Measured on `main` at 0.24.0; if `main` has moved, set each pin to what the regenerated file holds and
-  say so in the comment. Task 5 regenerates again, since changing access.md moves line numbers.
+- **`trace.json` is drift-checked and the citation and claim counts are pinned.** Each task that adds a
+  claim or a cited title runs `pnpm --filter @alloy-works/trace generate` and moves the pins in
+  `packages/trace/src/trace.test.ts` in the same commit, so every task ends green. Task 2 (IAM-059):
+  citations 144 to 145, claims 316 to 317. Task 3 (IAM-072): requirements 1363 to 1364 - here and in
+  `packages/trace/src/parse/requirements.test.ts` - and claims 317 to 318 in step 1, with the row;
+  citations 145 to 146 in step 6, once the title exists. 144, 316 and 1363 were measured on `main` at
+  0.24.0; if `main` has moved, set each pin to what the regenerated file holds and say so in the comment.
+  Task 5 regenerates again, since changing access.md moves line numbers.
 - **A migration is never edited once it has shipped.** 0014 is new; if `main` has gained a 0014 by the
   time this is executed, renumber this one before the first commit, never the one on `main`.
 - **No real data anywhere.** Invented names only - `Ada`, `Grace`, `Alice`, `Ivy`, `Eve` - and
@@ -287,7 +301,8 @@ and no longer invites Grace to the Google route; the seed finds Ada through her 
 principal as before, and authors as Grace (finding 9). The stand-in gains Ivy, `ivy@example.com`, whom
 nothing makes, to invite by hand.
 
-**10. One citation.** IAM-059, in the service's first administrator test. See the requirements section.
+**10. Two citations.** IAM-059, in the service's first administrator test (task 2), and IAM-072, filed
+as issue #113 (decision I), in the service's invitation routes test (task 3). See the requirements section.
 
 ---
 
@@ -318,26 +333,29 @@ database; `app.ts` and `google.ts`, by `first-administrator.test.ts`, `google.te
 
 ## How the design's commitments become tests
 
-| The design says                                                                                          | Where                                                                                   |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| A grant names an invited person before they sign in, and holds from their first verified sign-in         | Task 1 in the database; task 3 on the wire through the organisation's route             |
-| An unverified or lapsed address never claims, and a second account never does                            | Task 1; task 2 on the wire (IAM-059's test); `google.test.ts` for the Google route      |
-| A claim takes no epoch; a withdrawal takes it before the row; neither deadlocks the other or a grant     | Task 1: three concurrency tests                                                         |
-| The lock-out guard ignores an invited administrator                                                      | Task 1, and task 2's agreement test                                                     |
-| The first administrator arrives by an invitation to a named address, through a permitted route (IAM-059) | Task 2, through both routes, and not through a closed one                               |
-| Invitations need `administer` at the tenant; withdrawing declares `changesAccess`                        | Task 3: `invitation-routes.test.ts`, `access-routes.test.ts`, `changing-access.test.ts` |
-| Another environment's invitation is not there                                                            | Task 1 in the database; task 3 in `cross-tenant.test.ts`                                |
-| The external rules apply to an invited person's grants                                                   | Task 1 in the database; task 3 on the wire                                              |
-| The page invites, lists waiting invitations, withdraws, and offers invited people                        | Task 4                                                                                  |
-| Auditing the bootstrap (IAM-060)                                                                         | Not here: "What this plan deliberately leaves undone"                                   |
+| The design says                                                                                            | Where                                                                                        |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| A grant names an invited person before they sign in, and holds from their first verified sign-in (IAM-072) | Task 1 in the database; task 3 on the wire through the organisation's route (IAM-072's test) |
+| An unverified or lapsed address never claims, and a second account never does                              | Task 1; task 2 on the wire (IAM-059's test); `google.test.ts` for the Google route           |
+| A claim takes no epoch; a withdrawal takes it before the row; neither deadlocks the other or a grant       | Task 1: three concurrency tests                                                              |
+| The lock-out guard ignores an invited administrator                                                        | Task 1, and task 2's agreement test                                                          |
+| The first administrator arrives by an invitation to a named address, through a permitted route (IAM-059)   | Task 2, through both routes, and not through a closed one                                    |
+| Invitations need `administer` at the tenant; withdrawing declares `changesAccess`                          | Task 3: `invitation-routes.test.ts`, `access-routes.test.ts`, `changing-access.test.ts`      |
+| Another environment's invitation is not there                                                              | Task 1 in the database; task 3 in `cross-tenant.test.ts`                                     |
+| The external rules apply to an invited person's grants                                                     | Task 1 in the database; task 3 on the wire                                                   |
+| The page invites, lists waiting invitations, withdraws, and offers invited people                          | Task 4                                                                                       |
+| Auditing the bootstrap (IAM-060)                                                                           | Not here: "What this plan deliberately leaves undone"                                        |
 
 ## Requirements this plan cites, and those it does not
 
-**One citation**, taking the pin from 144 to 145, and one claim, from 316 to 317:
+**Two citations**, taking the pin from 144 to 146 (145 after task 2, 146 after task 3), and two claims,
+from 316 to 318 (317 after task 2, 318 after task 3). One requirement is added to the corpus, IAM-072,
+taking it from 1363 to 1364:
 
-| ID      | Statement, in short                                                                                                                             | Claimed by | Cited in                                  | Task |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------- | ---- |
-| IAM-059 | The first administrator arrives by an invitation to a named address, through a permitted route; no local credential or lingering vendor account | access.md  | `service/src/first-administrator.test.ts` | 2    |
+| ID      | Statement, in short                                                                                                                                                                  | Claimed by | Cited in                                  | Task |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ----------------------------------------- | ---- |
+| IAM-059 | The first administrator arrives by an invitation to a named address, through a permitted route; no local credential or lingering vendor account                                      | access.md  | `service/src/first-administrator.test.ts` | 2    |
+| IAM-072 | An environment's administrator invites an address and grants it before the first sign-in; the access takes effect only at a first sign-in through a permitted route that verifies it | access.md  | `service/src/invitation-routes.test.ts`   | 3    |
 
 The test shows an invitation to `ada@example.com` made before any route is permitted; somebody else, and
 an account presenting the address unverified, signing in and not administering; Ada administering from
@@ -348,6 +366,28 @@ service-foundations.md's); "a vendor account that outlives the bootstrap" is ans
 account - the invitation is a principal nobody can sign in as, used once and lapsing in fourteen days - which
 no test can show except by absence. **A reviewer should weigh that last clause first**: if it wants a
 demonstration, the claim should wait.
+
+**IAM-072** is new (issue #113, decision I): "An administrator of an environment must be able to invite a
+person by address and grant them access before their first sign-in, and that access must take effect only
+when the person first signs in through a route the environment permits presenting that address verified by
+the provider." T1. Task 3 step 1 places the row in IAM's section 4, Identity, directly after IAM-061. **Why
+there, and not section 6, Permissions:** what it adds is how an address becomes somebody's identity - which
+route, which verification, and when - which is what IAM-054 (addresses invited to the Google route) and
+IAM-059 (the first administrator's invitation) already state in section 4; the grant it carries is section
+6's ordinary grant, unchanged. After IAM-061 rather than after IAM-059, so the bootstrap's run IAM-059 to
+IAM-061, which the section's prose and traceability name as one, stays unbroken.
+
+The test that cites it, `IAM-072 invites an address, grants the person it makes before anybody signs in
+with it, and they have it only from their first verified sign-in through a permitted route`, shows each
+clause on the wire: Ada, administering the environment, invites `Ivy@Example.com` through
+`POST /v1/invitations`; grants its person Author on General through `POST /v1/grants` before any account
+has signed in with the address; an account presenting the address unverified is somebody else, and is
+refused the space; and Ivy, signing in through the organisation's route - the route this environment
+permits - with the address verified, is the invited principal and may edit there. **One clause is shown
+beside it rather than in it**: that a route the environment has closed claims nothing is task 2's
+`cannot be claimed through a route the environment has closed`, which exercises the same `claimInvitation`
+through a first administrator's invitation and cites nothing. A Google sign-in presenting the address
+unverified is `google.test.ts`'s. access.md claims IAM-072 in full, because the design answers every clause.
 
 **Near misses, not cited:**
 
@@ -988,7 +1028,7 @@ Modify `packages/db/src/sign-in.test.ts` and `packages/db/src/access-listings.te
 
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [ ] **Step 3: Run them and watch them fail**
 
 Run: `pnpm --filter @alloy-works/db test -- src/invitation-migration.test.ts src/invitations.test.ts src/sign-in.test.ts src/access-listings.test.ts`
 
@@ -2115,7 +2155,7 @@ describe('the first administrator, arriving by invitation', () => {
 });
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [ ] **Step 3: Run them and watch them fail**
 
 Run: `pnpm --filter @alloy-works/db test -- src/first-administrator.test.ts`
 Expected: FAIL - `inviteFirstAdministrator is not a function`, in all five tests.
@@ -2657,7 +2697,7 @@ git commit -m "Invite a tenant's first administrator by address, retiring the na
 
 ---
 
-## Task 3: Invitations through the service
+## Task 3: Invitations through the service (IAM-072)
 
 **Files:**
 
@@ -2665,7 +2705,12 @@ git commit -m "Invite a tenant's first administrator by address, retiring the na
 - Modify: `packages/api-contract/src/routes.ts`, `packages/api-contract/src/index.ts`,
   `packages/api-contract/src/managing-access.ts`, `apps/service/src/app.ts`,
   `apps/service/src/wire-codes.ts`, `packages/stand-in-idp/src/provider.ts`
-- Regenerate: `packages/api-contract/openapi.json`, `packages/api-client/src/generated/schema.ts`
+- Modify (decision I): `docs/specification/requirements/IAM-identity-tenancy-and-access-control.md`,
+  `docs/specification/requirements/README.md`, `docs/design/access.md`, `CLAUDE.md`,
+  `docs/guides/reading-the-trace.md`, `packages/trace/src/trace.test.ts`,
+  `packages/trace/src/parse/requirements.test.ts`
+- Regenerate: `packages/api-contract/openapi.json`, `packages/api-client/src/generated/schema.ts`,
+  `packages/trace/trace.json`
 - Test: `apps/service/src/invitation-routes.test.ts`; modify `packages/api-contract/src/access.test.ts`,
   `apps/service/src/access-routes.test.ts`, `apps/service/src/changing-access.test.ts`,
   `apps/service/src/cross-tenant.test.ts`, `apps/service/src/grant-routes.test.ts`,
@@ -2679,9 +2724,134 @@ git commit -m "Invite a tenant's first administrator by address, retiring the na
   `InvitationView`, `InvitationList`, `InvitationBody`, `InvitationParams`, `InvitationMade`,
   `InvitationWithdrawn`; `invitationView(stored, now)`, `invitationHandlers()`; wire codes
   `invitation_signed_in`, `invitation_kind_differs`, `invitation_accepted`; `PrincipalList` items'
-  `invited`; the stand-in's Ivy.
+  `invited`; the stand-in's Ivy; requirement IAM-072, claimed by access.md.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Land IAM-072 in the corpus, and claim it**
+
+Before any test names it, so `pnpm trace check` never sees a citation naming nothing. The row is `pnpm
+trace draft 113`'s, placed in section 4, Identity, after IAM-061 (see
+[the requirements section](#requirements-this-plan-cites-and-those-it-does-not) for why there).
+
+Modify `docs/specification/requirements/IAM-identity-tenancy-and-access-control.md` - the row, a paragraph
+after the one on IAM-059 to IAM-061, and a change history entry naming the issue (keep the table's padding
+with `pnpm exec prettier`):
+
+```diff
+--- a/docs/specification/requirements/IAM-identity-tenancy-and-access-control.md
++++ b/docs/specification/requirements/IAM-identity-tenancy-and-access-control.md
+@@
+ | **IAM-060** | Bootstrapping a tenant must be audited into that tenant's own log: who invited the first administrator, when, under what authority, and when the vendor's part in it ended | Constraint | Specified |
+ | **IAM-061** | No standing vendor access may remain after bootstrap. Any later vendor action inside a tenant must go through the support-access path that the tenant grants, bounds and can revoke (**ADM-022** to **ADM-025**) | Constraint | Specified |
++| **IAM-072** | An administrator of an environment must be able to invite a person by address and grant them access before their first sign-in, and that access must take effect only when the person first signs in through a route the environment permits presenting that address verified by the provider. | T1 | Specified |
+@@
+ authenticates, audited into the tenant's own log, and over when it is over. **ADM-Q04** asks who
+ performs that act; this area fixes what the act may consist of, which is the half that becomes a
+ breach.
++
++**IAM-072 asks for everybody what IAM-059 asks for the first administrator.** Without it, giving
++somebody access starts with them signing in once and seeing nothing, so that there is somebody to
++grant to. An invitation to an address lets the grant come first; the address is trusted only where a
++route the environment permits presents it verified, and only at that first sign-in, after which the
++person is their identity, not their address.
+@@
+ | 2.6, 2.9, 2.11, 2.14, 2.17, 3.2.2, 3.2.5 | **IAM-066** generalises ... (unchanged) |
++
++### From a requirement filed as an issue
++
++Not a review. [Issue #113](https://github.com/kenhayward/alloy-works/issues/113), filed while planning
++invitations ([the plan](../../plans/2026-09-17-access-03-invitations.md)), found that the corpus asked for an
++invitation to a named address only for a tenant's first administrator.
++
++| What was found | Change |
++| --- | --- |
++| IAM-059 asks that the first administrator arrive by an invitation to a named address, and nothing asks it for anybody else, so an administrator could grant access only to somebody who had already signed in | **IAM-072**: an administrator of an environment invites a person by address and grants them access before their first sign-in, taking effect only at a first sign-in through a permitted route presenting the address verified |
++
++| Counts           | Before | After |
++| ---------------- | ------ | ----- |
++| Requirements     | 71     | 72    |
++| Non-requirements | 6      | 6     |
++| Open questions   | 9      | 9     |
+```
+
+(The context rows are shortened: match them in the file. The issue's link was checked with `gh issue view
+113 --json url`.)
+
+Modify `docs/specification/requirements/README.md`, the index's count in its status note:
+
+```diff
+--- a/docs/specification/requirements/README.md
++++ b/docs/specification/requirements/README.md
+@@ -4 +4 @@
+-... when a component's metadata turned out to have been specified as a template's. 1363 requirements, 117 non-requirements and 135 numbered questions, ...
++... when a component's metadata turned out to have been specified as a template's. 1364 requirements, 117 non-requirements and 135 numbered questions, ...
+```
+
+and the same count where it is prose elsewhere: `CLAUDE.md` ("There are 1,363 requirements in 22
+documents") and `docs/guides/reading-the-trace.md` (three places: "holds 1,363 product requirements",
+"1,363 requirements, 22 areas", "Seven out of 1,363") each become 1,364.
+
+Modify `docs/design/access.md` - the claim joins "Requirements owned", after task 2's IAM-059:
+
+```diff
+--- a/docs/design/access.md
++++ b/docs/design/access.md
+@@
+ | **IAM-059** | Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses ("Invitations")             |
++| **IAM-072** | An administrator of the tenant invites an address, which makes a principal at once; every grant route names it before anybody has signed in, and what it is granted confers nothing until the first sign-in through a route the tenant permits whose provider asserts that address verified, which claims it ("Invitations") |
+ | **IAM-051** | `GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce                                                                                                        |
+```
+
+Modify the pins that count requirements and claims (the citations wait for step 6):
+
+```diff
+--- a/packages/trace/src/trace.test.ts
++++ b/packages/trace/src/trace.test.ts
+@@
+   it('holds the corpus this plan was written against', () => {
+     const model = TraceModel.parse(committed);
+
++    // 1364, from 1363: IAM-072, inviting anybody by address and granting before their first sign-in,
++    // filed as issue #113 while planning invitations, when IAM-059 asked it only of the first administrator.
+     // 1363, from 1362: MET-037 refuses a field version that would make a schema's default invalid,
+@@
+-    expect(model.requirements).toHaveLength(1363);
++    expect(model.requirements).toHaveLength(1364);
+     expect(model.nonRequirements).toHaveLength(117);
+     expect(model.questions).toHaveLength(135);
++    // 318, from 317: access.md claims IAM-072 once any administrator of the environment invites an
++    // address and grants it before the first sign-in (docs/plans/2026-09-17-access-03-invitations.md).
+     // 317, from 316: access.md claims IAM-059 once the first administrator arrives by an invitation to
+@@
+       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
+-    ).toBe(317);
++    ).toBe(318);
+```
+
+```diff
+--- a/packages/trace/src/parse/requirements.test.ts
++++ b/packages/trace/src/parse/requirements.test.ts
+@@ -128,9 +128,10 @@
+   it('finds exactly the corpus this plan was written against', () => {
++    // 1364, from 1363: IAM-072, inviting anybody by address before their first sign-in (issue #113).
+     // 1363, from 1362: MET-037, the field-side counterpart of MET-035's refusal.
+@@
+-    expect(total((document) => document.requirements)).toBe(1363);
++    expect(total((document) => document.requirements)).toBe(1364);
+```
+
+Run:
+
+```bash
+pnpm --filter @alloy-works/trace generate
+pnpm trace check
+pnpm trace show IAM-072
+pnpm --filter @alloy-works/trace test
+```
+
+Expected: `No problems in the corpus.`; `IAM-072  T1  Designed`, `design     access.md`, and no `tested`
+line yet; `Tests  296 passed (296)`, the citation pin still at 145.
+
+- [ ] **Step 2: Write the failing tests**
 
 Create `apps/service/src/invitation-routes.test.ts`:
 
@@ -2820,7 +2990,8 @@ describe('inviting people through the service', () => {
     await db.drop();
   });
 
-  it('invites an address, grants the person it makes, and they have it from their first sign-in', async () => {
+  it('IAM-072 invites an address, grants the person it makes before anybody signs in with it, and they have it only from their first verified sign-in through a permitted route', async () => {
+    // Nobody has signed in as ivy@example.com: only Ada and Grace have signed in to this environment.
     const invited = await inviting('ada', { email: 'Ivy@Example.com' });
     expect(invited.statusCode).toBe(200);
     const made = invited.json<Made>();
@@ -2854,12 +3025,18 @@ describe('inviting people through the service', () => {
 
     // An account whose provider does not verify the address is somebody new, holding nothing.
     const unverified = await signIn(app, HOST, 'ivy-unverified', idp.issuer);
+    const unverifiedMe = await app.inject({
+      url: '/v1/me',
+      headers: { host: HOST, cookie: unverified },
+    });
+    expect(unverifiedMe.json<{ id: string }>().id).not.toBe(made.invitation.person);
     const stranger = await app.inject({
       url: `/v1/access?target=space:${general}`,
       headers: { host: HOST, cookie: unverified },
     });
     expect(stranger.statusCode).toBe(404);
 
+    // Ivy, through the organisation's route - the one this environment permits - with it verified.
     cookies.ivy = await signIn(app, HOST, 'ivy', idp.issuer);
     const me = await call('ivy', 'GET', '/v1/me');
     expect(me.json()).toMatchObject({ id: made.invitation.person, email: 'ivy@example.com' });
@@ -3110,17 +3287,18 @@ Modify the harnesses that enumerate routes, the grants listing's people, and the
    it('says which Workspace domain manages an account, as Google does, and nothing for a personal one', async () => {
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [ ] **Step 3: Run them and watch them fail**
 
 Run: `pnpm --filter @alloy-works/stand-in-idp test; pnpm --filter @alloy-works/service test -- src/invitation-routes.test.ts src/grant-routes.test.ts`
 
 Expected: FAIL. The stand-in's page offers no Ivy; every invitation route answers 404, since none is
-registered, so all four tests in `invitation-routes.test.ts` fail; and `lists the roles and the people to
+registered, so all four tests in `invitation-routes.test.ts` fail - IAM-072's at its first assertion,
+`expected 404 to be 200`, before anything is granted or anybody signs in; and `lists the roles and the people to
 choose from...` fails on the missing `invited`, which the contract strips. The other harness changes -
 `access-routes.test.ts`, `changing-access.test.ts`, `cross-tenant.test.ts` and `access.test.ts` - pass
-before the routes exist, and step 4 shows each is needed once they do.
+before the routes exist, and step 5 shows each is needed once they do.
 
-- [ ] **Step 3: The contract, the handlers and Ivy**
+- [ ] **Step 4: The contract, the handlers and Ivy**
 
 Create `packages/api-contract/src/invitations.ts`:
 
@@ -3502,7 +3680,7 @@ export function invitationHandlers() {
  /**
 ```
 
-- [ ] **Step 4: Regenerate, and run everything the routes touch**
+- [ ] **Step 5: Regenerate, and run everything the routes touch**
 
 ```bash
 pnpm --filter @alloy-works/api-contract build
@@ -3523,12 +3701,46 @@ Expected: PASS - api-contract 25 tests, api-client 4, stand-in 6, service `Tests
 lacking `withdrawInvitation`, and `cross-tenant.test.ts` in its `beforeAll`, which has no way to name an
 invitation in the other environment.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Count IAM-072's citation**
+
+The IAM-072 title now exists, so the regenerated model holds one more citation. Modify
+`packages/trace/src/trace.test.ts`, after task 2's comment:
+
+```diff
+--- a/packages/trace/src/trace.test.ts
++++ b/packages/trace/src/trace.test.ts
+@@
+   // and Administrator from the first sign-in through a permitted route that verifies it. IAM-060, the
+   // bootstrap's audit, waits for LIF's log.
++  // 146, from 145: and IAM-072, which access.md owns, once, in the service's invitation routes test: an
++  // administrator invites an address and grants it before anybody signs in with it, an account presenting
++  // it unverified gets nothing, and the first verified sign-in through a permitted route has the access.
+   it('cites exactly as many times as the corpus currently does', () => {
+-    expect(model.citations).toHaveLength(145);
++    expect(model.citations).toHaveLength(146);
+   });
+```
+
+Run:
 
 ```bash
-pnpm exec prettier --write packages/api-contract apps/service/src packages/stand-in-idp/src packages/api-client/src
-git add packages/api-contract packages/api-client apps/service/src packages/stand-in-idp/src
-git commit -m "List, make and withdraw invitations through the service, and list invited people"
+pnpm --filter @alloy-works/trace generate
+pnpm trace check
+pnpm trace show IAM-072
+pnpm --filter @alloy-works/trace test
+```
+
+Expected: `No problems in the corpus.`; `IAM-072  T1  Covered`, `design     access.md`, `tested
+apps/service/src/invitation-routes.test.ts`; `Tests  296 passed (296)`. Before the pin moves, `cites
+exactly as many times as the corpus currently does` fails with `expected 146 to be 145` - which is the
+check that the title is a citation and not a mention.
+
+- [ ] **Step 7: Commit**
+
+```bash
+pnpm exec prettier --write packages/api-contract apps/service/src packages/stand-in-idp/src packages/api-client/src packages/trace/src docs/design/access.md docs/specification/requirements docs/guides/reading-the-trace.md CLAUDE.md
+git add packages/api-contract packages/api-client apps/service/src packages/stand-in-idp/src packages/trace docs/design/access.md docs/specification/requirements docs/guides/reading-the-trace.md CLAUDE.md
+git commit -m "List, make and withdraw invitations through the service, and require inviting anybody (IAM-072)"
 ```
 
 ---
@@ -3837,7 +4049,7 @@ git commit -m "List, make and withdraw invitations through the service, and list
    it('IAM-030 names, for each answer about a chosen person, the level that decided it and the grants that did', async () => {
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [ ] **Step 3: Run them and watch them fail**
 
 Run: `pnpm --filter @alloy-works/web test -- src/access`
 Expected: FAIL. In `describe.test.ts`, `describeInvitation` and `isShownInvitation` are not functions, and
@@ -4410,13 +4622,14 @@ under "Changed while planning the build". "Review" is unchanged: a review's reco
 +
 +[The invitations plan](../plans/2026-09-17-access-03-invitations.md) was written against this document in
 +turn, and found five more. IAM-059 joins "Requirements owned", because an invitation to a named address
-+now answers it; IAM-060, its audit, stays unclaimed with LIF.
++now answers it; IAM-060, its audit, stays unclaimed with LIF. IAM-072 joins it, filed as issue #113 when
++planning found that nothing asked for inviting anybody but the first administrator.
 +
 +| Found                                                                                                                                                             | Change                                                                                                                                     |
 +| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 +| **Nobody could be granted anything before signing in**, and access.md never said so                                                                               | Invitations make a principal at once, claimed at the first verified sign-in ("Invitations")                                                |
 +| **IAM-059's unclaimed row said it needed the bootstrap audited**, which is IAM-060's statement, not IAM-059's                                                     | IAM-059 is claimed; IAM-060 stays in the unclaimed row with IAM-013 and IAM-037                                                            |
-+| **A Google-only tenant could not get a first administrator**: nobody knows the subject Google assigns before the first sign-in                                    | **For Ken to rule (the plan's decision A).** The first administrator is invited to an address; the naming by issuer and subject is retired |
++| **A Google-only tenant could not get a first administrator**: nobody knows the subject Google assigns before the first sign-in                                    | **Ruled by Ken (the plan's decision A).** The first administrator is invited to an address; the naming by issuer and subject is retired     |
 +| **The lock-out guard counted a grant to anybody**, which would let an administrator remove their own grant while only an unaccepted invitation held Administrator | The guard, and the first administrator's own count, count only principals who have signed in ("Roles")                                     |
 +| **A sign-in that locked an invitation's row and then the epoch would deadlock against a withdrawal**, which locks them the other way round                        | Claiming changes no fact and takes no epoch; withdrawing takes the epoch and then the row ("Invitations")                                  |
 ```
@@ -4661,9 +4874,13 @@ pnpm trace verify
 pnpm trace gate
 ```
 
-Expected: `No problems in the corpus.`; every suite passes; `pnpm trace verify` counts T1's `Verified` as on
-`main` - IAM-059 is a Constraint, not T1, so the T1 count does not move; the gate passes, which proves only
-that the run it reads did not fail, since the baseline has not changed.
+Expected: `No problems in the corpus.`; every suite passes; `pnpm trace verify` counts one more T1
+requirement `Verified` than on `main` - IAM-072, which is T1, while IAM-059 is a Constraint and moves
+the Constraint row instead. In `pnpm trace stats`, T1's `Covered` goes from 73 to 74 and Constraint's from
+28 to 29, and T1's `Specified` stays at 157, since IAM-072 arrives already covered; the requirements total
+is 1364. The gate passes, which proves only that the run it reads did not fail: the one baseline,
+`docs/specification/baselines/0.13.0.md`, is frozen and declares neither IAM-059 nor IAM-072, and this plan
+adds no baseline, so neither requirement is anything a release has yet answered for.
 
 - [ ] **Step 3: Bump the version and write the changelog**
 
@@ -4739,8 +4956,18 @@ pnpm format && pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm tr
 git add -A
 git commit -m "Release 0.25.0: invitations"
 git push -u origin <branch>
-gh pr create --base main --title "Invite people by address, and the first administrator by invitation"
+gh pr create --base main --title "Invite people by address, and the first administrator by invitation" --body-file <body>
 ```
+
+The PR body says what changed for a person, names IAM-059 and IAM-072 as the requirements claimed and cited,
+and carries this line on its own, so merging closes the requirement's issue:
+
+```
+Fixes #113
+```
+
+Then fill the changelog heading's `PR #n` and the plans index's `Built (PR #n)` with the number `gh pr
+create` printed, commit, push, and after the merge check that issue #113 closed.
 
 ---
 
@@ -4783,7 +5010,7 @@ below has a private window of their own.
 
 | Claim                                                                                               | Seen by hand                          | Proven only by a test                                                           |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------- |
-| Invite, give, and the first sign-in has it                                                          | Steps 2 to 4                          |                                                                                 |
+| Invite, give, and the first sign-in has it (IAM-072)                                                | Steps 2 to 4                          | An unverified account gets nothing: `invitation-routes.test.ts`                 |
 | The invited person becomes themselves in every listing                                              | Step 5                                |                                                                                 |
 | An address shown by somebody signed in cannot be invited                                            | Step 6                                | An unverified one refuses nothing: `invitations.test.ts`                        |
 | Withdrawing takes the person and their grants                                                       | Step 7                                | Its grants gone, and refused once accepted: `invitation-routes.test.ts`         |
