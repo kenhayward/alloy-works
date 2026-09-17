@@ -23,6 +23,66 @@ function serviceThat(pages: Record<string, unknown>, signedIn = true) {
     if (url.pathname === '/v1/components') {
       return json(200, pages[url.searchParams.get('cursor') ?? 'first']);
     }
+    if (url.pathname === '/v1/access' && pages.access) return json(200, pages.access);
+    return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+  }) as unknown as typeof fetch;
+}
+
+const answers = (administer: boolean) => ({
+  target: `artifact:${COMPONENT}`,
+  permissions: [
+    { permission: 'read', allowed: true },
+    { permission: 'administer', allowed: administer },
+  ],
+});
+
+const COMPONENT_TWO = '7b1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
+
+const componentBody = (id: string, title: string, mayEdit = false) => ({
+  id,
+  space: { id: 's1', name: 'General' },
+  version: {
+    id: 'v1',
+    number: '0.1',
+    author: 'p1',
+    createdAt: '2026-09-17T09:00:00.000Z',
+    note: null,
+  },
+  content: {
+    schemaVersion: 1,
+    title,
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: 'Text.', marks: [] }],
+      },
+    ],
+  },
+  mayEdit,
+  lock: null,
+});
+
+/**
+ * Every route the access page needs, for one or more components by id: the component itself, the
+ * people and roles it offers to choose from (empty, which is enough to reach the open state), and an
+ * empty grants listing at whatever level is asked.
+ */
+function accessService(titles: Record<string, string>) {
+  return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    const url = new URL(request.url);
+    if (url.pathname === '/v1/me') return json(200, me);
+    for (const [id, title] of Object.entries(titles)) {
+      if (url.pathname === `/v1/components/${id}`) return json(200, componentBody(id, title));
+    }
+    if (url.pathname === '/v1/principals' || url.pathname === '/v1/roles') {
+      return json(200, { items: [], next: null });
+    }
+    if (url.pathname === '/v1/grants') return json(200, { items: [], next: null });
     return json(404, { code: 'not_found', message: 'none', traceId: 't' });
   }) as unknown as typeof fetch;
 }
@@ -81,6 +141,82 @@ describe('the workspace', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+  });
+
+  it('offers Manage access beside an open component only to someone who may administer it', async () => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    const { unmount } = render(<Workspace fetch={serviceThat({ access: answers(true) })} />);
+    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
+      'href',
+      `#/components/${COMPONENT}/access`,
+    );
+    unmount();
+
+    let asked = false;
+    const refusing = serviceThat({ access: answers(false) });
+    const watching = (async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      if (new URL(request.url).pathname === '/v1/access') asked = true;
+      return refusing(request);
+    }) as typeof fetch;
+    render(<Workspace fetch={watching} />);
+    await screen.findByRole('link', { name: 'Back to components' });
+    await vi.waitFor(() => expect(asked).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('link', { name: 'Manage access' })).toBeNull();
+  });
+
+  it('opens the access page the address names, with a way back to the component', async () => {
+    window.location.hash = `#/components/${COMPONENT}/access`;
+    render(<Workspace fetch={serviceThat({})} />);
+    expect(await screen.findByRole('link', { name: 'Back to the component' })).toHaveAttribute(
+      'href',
+      `#/components/${COMPONENT}`,
+    );
+    expect(
+      await screen.findByText('There is nothing here, or nothing you may read.'),
+    ).toBeInTheDocument();
+  });
+
+  it('mounts a fresh access page for each component, never showing what an earlier one left behind', async () => {
+    window.location.hash = `#/components/${COMPONENT}/access`;
+    const fetching = accessService({
+      [COMPONENT]: 'Install the printer',
+      [COMPONENT_TWO]: 'Replace the toner',
+    });
+    render(<Workspace fetch={fetching} />);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByText('Choose a person, a role and where.')).toBeInTheDocument();
+
+    window.location.hash = `#/components/${COMPONENT_TWO}/access`;
+    fireEvent(window, new HashChangeEvent('hashchange'));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Access to Replace the toner' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Choose a person, a role and where.')).toBeNull();
+  });
+
+  it('unmounts the editor the normal way when its access page is opened, with no second editor and no remount loop', async () => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    const fetching = accessService({ [COMPONENT]: 'Install the printer' });
+    render(<Workspace fetch={fetching} />);
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+
+    window.location.hash = `#/components/${COMPONENT}/access`;
+    fireEvent(window, new HashChangeEvent('hashchange'));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Access to Install the printer' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Content of Install the printer' })).toBeNull();
+    // Settled, not mid-loop: the surface stays gone and the heading stays single a tick later.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('textbox', { name: 'Content of Install the printer' })).toBeNull();
+    expect(screen.getAllByRole('heading', { name: 'Access to Install the printer' })).toHaveLength(
+      1,
+    );
   });
 
   it('shows nothing to somebody not signed in, whose way in is the environment panel', async () => {

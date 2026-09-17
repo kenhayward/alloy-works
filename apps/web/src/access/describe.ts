@@ -168,6 +168,22 @@ export function isExplainedPermission(value: unknown): value is ExplainedPermiss
   });
 }
 
+/** The caller's own answer for every permission on a target, as `GET /v1/access` sends it. */
+export interface AccessAnswers {
+  readonly target: string;
+  readonly permissions: readonly { readonly permission: string; readonly allowed: boolean }[];
+}
+
+/** `GET /v1/access`'s body exactly as the service sends it, checked rather than assumed. */
+export function isAccessAnswers(value: unknown): value is AccessAnswers {
+  if (!isRecord(value) || typeof value.target !== 'string') return false;
+  if (!Array.isArray(value.permissions)) return false;
+  return value.permissions.every(
+    (each) =>
+      isRecord(each) && typeof each.permission === 'string' && typeof each.allowed === 'boolean',
+  );
+}
+
 /** A refusal body's message, when the service sent readable text and not some other shape. */
 export function refusalMessage(error: unknown): string | null {
   return isRecord(error) && typeof error.message === 'string' ? error.message : null;
