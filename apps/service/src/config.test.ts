@@ -7,7 +7,7 @@ describe('configuration', () => {
   it('reads the database address and fills in the rest', () => {
     expect(loadConfig({ DATABASE_URL: url })).toEqual({
       databaseUrl: url,
-      port: 8080,
+      port: 8088,
       host: '127.0.0.1',
       logLevel: 'info',
       allowInsecureIssuers: false,

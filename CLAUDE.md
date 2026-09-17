@@ -265,10 +265,10 @@ Everything from the repo root. One pnpm workspace, one lock file.
 
 ```bash
 pnpm install       # --frozen-lockfile in CI; never npm or yarn, there is one lock file
-docker compose -f deploy/compose.yaml up -d --build --wait   # the whole system, on :8080
+docker compose -f deploy/compose.yaml up -d --build --wait   # the whole system, on :8088 (ports in deploy/.env)
 docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs   # just what the suites need
 pnpm dev:setup                                    # prepare the development database and object store
-pnpm --filter @alloy-works/service dev             # the service on :8080 (see docs/development.md)
+pnpm --filter @alloy-works/service dev             # the service on :8088 (see docs/development.md)
 pnpm --filter @alloy-works/stand-in-idp start     # the stand-in sign-in provider on :9090
 pnpm --filter @alloy-works/worker dev             # the worker, claiming jobs (see docs/development.md)
 pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per machine

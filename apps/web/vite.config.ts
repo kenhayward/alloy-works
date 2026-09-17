@@ -18,7 +18,7 @@ export default defineConfig({
     // the service resolves the environment from the address in the browser's bar. Open the renderer
     // at http://dev.acme.localhost:5173 and it is the development environment; at another
     // environment's hostname it is that one.
-    proxy: { '/v1': { target: 'http://127.0.0.1:8080' } },
+    proxy: { '/v1': { target: 'http://127.0.0.1:8088' } },
   },
   build: { outDir: 'dist', emptyOutDir: true },
   test: {

@@ -22,12 +22,11 @@ docker compose -f deploy/compose.yaml up -d --build
 ```
 
 The `setup` container migrates the database and makes two environments of an invented customer before
-the service and worker start. Then `http://dev.acme.localhost:8080/v1/tenant` answers, and
-`http://dev.acme.localhost:8080/v1/sign-in/organisation` signs you in. Add `down` in place of `up` to
-stop it, and `-v` to throw the data away too. If something else on your machine holds port 8080, put
-the service on another one with a `deploy/compose.override.yaml` of your own - beside the compose
-file, which is where Compose looks for it, and git-ignored (`ports: !override` replaces the list
-rather than adding to it) - and give the stand-in the matching `STAND_IN_REDIRECT_URIS`.
+the service and worker start. Then `http://dev.acme.localhost:8088/v1/tenant` answers, and
+`http://dev.acme.localhost:8088/v1/sign-in/organisation` signs you in. Add `down` in place of `up` to
+stop it, and `-v` to throw the data away too. If something else on your machine holds one of its
+ports, copy `deploy/.env.example` to `deploy/.env` and change it there: each port moves every address
+that names it, the stand-in provider's redirect addresses included.
 
 [`deploy/README.md`](../deploy/README.md) is the rest of it: what each container is for, every
 address and password, and how to stop typing `-f deploy/compose.yaml`.
@@ -56,13 +55,13 @@ anything deployed. `pnpm test` fails with an instruction to start it when it is 
 pnpm dev:setup                                    # database alloy_dev and a store for each environment
 cp deploy/service.env.example deploy/service.env  # development settings; the copy is ignored
 pnpm build                                        # the packages the service imports
-pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
+pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8088
 ```
 
 The tenant comes from the hostname, so address it as one. `curl` can say it outright:
 
 ```bash
-curl -H "Host: dev.acme.localhost" http://127.0.0.1:8080/v1/tenant
+curl -H "Host: dev.acme.localhost" http://127.0.0.1:8088/v1/tenant
 ```
 
 Signing in needs the stand-in provider running beside it, which offers invented people to sign in
@@ -72,14 +71,14 @@ as:
 pnpm --filter @alloy-works/stand-in-idp start     # http://127.0.0.1:9090
 ```
 
-Then open `http://dev.acme.localhost:8080/v1/sign-in/organisation` in a browser, choose someone,
-and `http://dev.acme.localhost:8080/v1/me` says who you are. On another port, tell the stand-in
+Then open `http://dev.acme.localhost:8088/v1/sign-in/organisation` in a browser, choose someone,
+and `http://dev.acme.localhost:8088/v1/me` says who you are. On another port, tell the stand-in
 where the service is, since it only returns people to addresses it knows:
 `STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
 
 `pnpm dev:setup` names Ada as each environment's first administrator, so the first time she signs in she
 is granted Administrator there; nobody else holds a role until something grants one.
-`http://dev.acme.localhost:8080/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
+`http://dev.acme.localhost:8088/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
 
 It also makes something to edit, since nothing in the product creates a component or grants a role
 yet: in each environment, a component type called Topic, a component called "Install the printer" in
@@ -89,9 +88,9 @@ the lock from the other side, sign in as Grace in a private window - the stand-i
 in last in a window - and start typing in the same component.
 
 The development environment also takes Google accounts, with the stand-in playing Google and
-`signin.localhost:8080` as the one address it returns to. `pnpm dev:setup` already makes Ada and Grace
+`signin.localhost:8088` as the one address it returns to. `pnpm dev:setup` already makes Ada and Grace
 principals of this environment - to have somebody to edit "Install the printer" with - so opening
-`http://dev.acme.localhost:8080/v1/sign-in/google` and choosing either signs her straight in, as a
+`http://dev.acme.localhost:8088/v1/sign-in/google` and choosing either signs her straight in, as a
 principal admitted before, without an invitation being looked at at all. Grace's invitation
 (`pnpm dev:setup` still makes it, to `grace@example.com`) is never the reason she gets in, and never
 gets accepted, because an existing principal is admitted first. Alice is neither a principal nor
@@ -107,15 +106,15 @@ stand-in remembers who signed in and does not ask again: restart it to choose so
 docker compose -f deploy/compose.yaml up -d --build --wait
 ```
 
-Open `http://dev.acme.localhost:8080`: the page says **Development**, offers **Sign in**, and after
+Open `http://dev.acme.localhost:8088`: the page says **Development**, offers **Sign in**, and after
 signing in as Ada says who you are. **Make a sample** adds one as `queued`, and it becomes `done` on
 its own a second or two later, because the stream said so rather than the page asking again. The
-same environment also answers at `http://127.0.0.1:8080`, which is what `tests/e2e` uses.
+same environment also answers at `http://127.0.0.1:8088`, which is what `tests/e2e` uses.
 
 **The renderer from source**, when you are changing it:
 
 ```bash
-pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8080
+pnpm --filter @alloy-works/service dev            # http://127.0.0.1:8088
 pnpm dev:web                                      # http://dev.acme.localhost:5173
 ```
 
@@ -139,8 +138,8 @@ With the service signed in to (above), ask for a sample and follow it. The worke
 within a second or two, and the answer then carries a link that fetches the PDF:
 
 ```bash
-curl -X POST -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<from the browser>"   http://127.0.0.1:8080/v1/samples
-curl -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<the same>"   http://127.0.0.1:8080/v1/samples/<the id>
+curl -X POST -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<from the browser>"   http://127.0.0.1:8088/v1/samples
+curl -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<the same>"   http://127.0.0.1:8088/v1/samples/<the id>
 ```
 
 Each environment reaches only its own corner of the store, with a credential `pnpm dev:setup` made
@@ -148,7 +147,7 @@ for it, so a link signed for one environment fetches nothing from another.
 
 Browsers resolve any `*.localhost` to this machine too, but to **both** `127.0.0.1` and `::1`, and
 the service listens on the IPv4 address only - the same trap the renderer's dev server met. If
-anything else on the machine listens on port 8080 over IPv6, a browser can reach that instead. Set
+anything else on the machine listens on port 8088 over IPv6, a browser can reach that instead. Set
 `PORT` in `deploy/service.env` to a free port when that happens.
 
 ## Commands
@@ -191,7 +190,7 @@ is how it signs in
 ([ADR-0022](decisions/0022-the-desktop-window-loads-the-service.md)):
 
 ```bash
-ALLOY_SERVICE_URL=http://dev.acme.localhost:8080 pnpm app
+ALLOY_SERVICE_URL=http://dev.acme.localhost:8088 pnpm app
 ```
 
 The shell waits for `127.0.0.1:5173`, then opens a window pointed at the dev server, so editing the

@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.23.2 - 2026-09-17 (PR #n)
+
+### Changed
+
+- **The service now answers on port 8088 by default**, in the compose stack and run from source, so
+  open `http://dev.acme.localhost:8088`. The renderer's development server and the stand-in sign-in
+  provider point there too.
+- **Every port the compose stack publishes can be changed in `deploy/.env`**: `SERVICE_PORT`,
+  `IDP_PORT`, `STORE_PORT` and `POSTGRES_PORT`. `deploy/.env.example` lists them with their
+  defaults. Each one also moves every address that names it, so signing in keeps working on a
+  moved port without editing anything else.
+
 ## 0.23.0 - 2026-09-17 (PR #106)
 
 ### Added
