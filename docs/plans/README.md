@@ -94,8 +94,6 @@ T4 capabilities even though CNT-116 puts their marks in the first schema version
 through editing, which ADR-0023 settled as a rule of descent rather than arrival and which belongs with
 the editor, because it is a plugin over transactions rather than a property of the schema.
 
-**Plan 3 leads with nine findings** - the most serious that IAM-059 asks only for the first administrator, and that a Google-only tenant cannot get one today - and eight decisions for Ken, the first of which reverses his ruling on naming the first administrator by issuer and subject.
-
 **Plan 2 is built.** The admission pipeline exists - sanitise, MathML, migrate, normalise, re-identify
 and validate in that order behind `admit`, the report every stage appends to, and the product
 clipboard's reader and writer - and `docs/architecture.md` describes it as built rather than planned.

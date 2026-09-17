@@ -64,7 +64,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   access to straight away, and has what they were given from the first time they sign in with that
   address, through either sign-in route, as long as their provider has verified it. An invitation
   waits fourteen days, is renewed by inviting the address again, and can be withdrawn, with everything
-  given to it, until it is accepted. Somebody who has already signed in is given access directly, and
+  given to it, until it is accepted. Whether the person is from outside the organisation is chosen when
+  inviting them, and cannot be changed afterwards yet. Somebody who has already signed in is given access directly, and
   inviting their address is refused.
 
   **This is grants to people, not the whole of managing access.** Nothing sends the invitation: the

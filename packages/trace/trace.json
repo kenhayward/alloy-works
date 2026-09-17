@@ -14010,7 +14010,7 @@
         },
         {
           "id": "IAM-059",
-          "howItIsMet": "Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses (\"Invitations\")"
+          "howItIsMet": "Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses, which is shown only by absence (\"Roles\", \"Invitations\")"
         },
         {
           "id": "IAM-072",

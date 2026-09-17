@@ -14,7 +14,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   verified the address. Nothing is sent to them: tell them where to sign in.
 - **Waiting invitations, renewed and withdrawn.** An invitation waits fourteen days and is listed with
   its date. Inviting the address again renews it and keeps what it was given; **Withdraw** takes it
-  back, with everything given to it, until it is accepted.
+  back, with everything given to it, until it is accepted. Whether the person is from outside the
+  organisation is chosen when inviting them, and cannot be changed afterwards yet.
 
 ### Changed
 

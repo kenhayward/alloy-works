@@ -40,31 +40,31 @@ enforcing it cannot disagree.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **IAM-014** | A `space` is a row in a tenant's schema, so it belongs to that tenant by construction; a content artifact's `space_id` is not nullable, and grants at a space are the level below the tenant                                                                                                                                 |
-| **IAM-018** | A grant's level is `tenant`, `space` or `artifact`, and an artifact is any kind - so a template, a document and a component are each a level of their own                                                                                                                                                                    |
-| **IAM-019** | `read`, `create`, `edit`, `comment`, `suggest`, `approve`, `publish` and `administer`, with `design` and `manage_definitions` beside them (below)                                                                                                                                                                            |
-| **IAM-021** | `role` is a tenant's row - a name and a set of permissions - created, changed and removed through the roles routes. The roles a tenant starts with are rows like any other                                                                                                                                                   |
-| **IAM-022** | A grant's subject is exactly one of a principal or a group                                                                                                                                                                                                                                                                   |
-| **IAM-009** | A group can stand for a value the organisation's provider asserts in a configured claim; membership of such a group is replaced from the claim at every sign-in, and granting the group a role maps it                                                                                                                       |
-| **IAM-062** | `access_grant` is the only table that confers a permission, and every row names a role, one subject and one level. There is no per-principal permission column anywhere                                                                                                                                                      |
-| **IAM-024** | The decision walks artifact, space, tenant, and a level with nothing to say passes the question up                                                                                                                                                                                                                           |
-| **IAM-025** | The nearest level that says anything about the permission decides, so an explicit grant or denial below overrides what that level would inherit                                                                                                                                                                              |
-| **IAM-026** | At the deciding level, any denial wins over any allow, whether each reached the principal directly or through a group                                                                                                                                                                                                        |
-| **IAM-027** | No effective permission is stored. Every decision reads the grants at the moment it is asked, so a change at the top applies below at once                                                                                                                                                                                   |
-| **IAM-063** | Every decision takes a shared lock on the tenant's `access_epoch` row inside the transaction of the act; every change a decision reads - grants, roles, memberships, spaces, a principal's kind - takes it exclusively, so no change can land between a check and its act                                                    |
-| **IAM-029** | An administrator opens **Access** on any artifact, chooses a person, and sees every permission with its answer                                                                                                                                                                                                               |
-| **IAM-030** | Each answer names the level that decided it and every grant at that level that did - role, subject, and whether it reached the person through a group                                                                                                                                                                        |
-| **IAM-031** | A refusal names the denying grants, or says that no level grants the permission and lists the levels it looked at                                                                                                                                                                                                            |
-| **TPL-006** | Creating a template needs `design` at its space and `create` does not reach templates; changing one needs `design` on it, not `edit`; and a document never inherits from the template it was made from                                                                                                                       |
-| **MET-024** | Changing or creating a field, a metadata schema or a component type needs `manage_definitions`, a permission of its own that a role can hold without `administer` or `design`                                                                                                                                                |
-| **IAM-049** | A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, so external access cannot be left unset whichever way it arrives                    |
-| **IAM-071** | For an external principal, a grant at the tenant is refused where it is made and not read where it is decided, so external access is only ever against a named space or artifact - a publication included, since a publication is an artifact                                                                                |
-| **IAM-059** | Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses ("Invitations")                                |
-| **IAM-072** | An administrator of the tenant invites an address, which makes a principal at once; every grant route names it before anybody has signed in, and what it is granted confers nothing until the first sign-in through a route the tenant permits whose provider asserts that address verified, which claims it ("Invitations") |
-| **IAM-051** | `GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce                                                                                                                           |
-| **API-053** | One refusal vocabulary for every route, below, and a contract test that fails when a route does not declare the permission it checks                                                                                                                                                                                         |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IAM-014** | A `space` is a row in a tenant's schema, so it belongs to that tenant by construction; a content artifact's `space_id` is not nullable, and grants at a space are the level below the tenant                                                                                                                                           |
+| **IAM-018** | A grant's level is `tenant`, `space` or `artifact`, and an artifact is any kind - so a template, a document and a component are each a level of their own                                                                                                                                                                              |
+| **IAM-019** | `read`, `create`, `edit`, `comment`, `suggest`, `approve`, `publish` and `administer`, with `design` and `manage_definitions` beside them (below)                                                                                                                                                                                      |
+| **IAM-021** | `role` is a tenant's row - a name and a set of permissions - created, changed and removed through the roles routes. The roles a tenant starts with are rows like any other                                                                                                                                                             |
+| **IAM-022** | A grant's subject is exactly one of a principal or a group                                                                                                                                                                                                                                                                             |
+| **IAM-009** | A group can stand for a value the organisation's provider asserts in a configured claim; membership of such a group is replaced from the claim at every sign-in, and granting the group a role maps it                                                                                                                                 |
+| **IAM-062** | `access_grant` is the only table that confers a permission, and every row names a role, one subject and one level. There is no per-principal permission column anywhere                                                                                                                                                                |
+| **IAM-024** | The decision walks artifact, space, tenant, and a level with nothing to say passes the question up                                                                                                                                                                                                                                     |
+| **IAM-025** | The nearest level that says anything about the permission decides, so an explicit grant or denial below overrides what that level would inherit                                                                                                                                                                                        |
+| **IAM-026** | At the deciding level, any denial wins over any allow, whether each reached the principal directly or through a group                                                                                                                                                                                                                  |
+| **IAM-027** | No effective permission is stored. Every decision reads the grants at the moment it is asked, so a change at the top applies below at once                                                                                                                                                                                             |
+| **IAM-063** | Every decision takes a shared lock on the tenant's `access_epoch` row inside the transaction of the act; every change a decision reads - grants, roles, memberships, spaces, a principal's kind - takes it exclusively, so no change can land between a check and its act                                                              |
+| **IAM-029** | An administrator opens **Access** on any artifact, chooses a person, and sees every permission with its answer                                                                                                                                                                                                                         |
+| **IAM-030** | Each answer names the level that decided it and every grant at that level that did - role, subject, and whether it reached the person through a group                                                                                                                                                                                  |
+| **IAM-031** | A refusal names the denying grants, or says that no level grants the permission and lists the levels it looked at                                                                                                                                                                                                                      |
+| **TPL-006** | Creating a template needs `design` at its space and `create` does not reach templates; changing one needs `design` on it, not `edit`; and a document never inherits from the template it was made from                                                                                                                                 |
+| **MET-024** | Changing or creating a field, a metadata schema or a component type needs `manage_definitions`, a permission of its own that a role can hold without `administer` or `design`                                                                                                                                                          |
+| **IAM-049** | A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, so external access cannot be left unset whichever way it arrives                              |
+| **IAM-071** | For an external principal, a grant at the tenant is refused where it is made and not read where it is decided, so external access is only ever against a named space or artifact - a publication included, since a publication is an artifact                                                                                          |
+| **IAM-059** | Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses, which is shown only by absence ("Roles", "Invitations") |
+| **IAM-072** | An administrator of the tenant invites an address, which makes a principal at once; every grant route names it before anybody has signed in, and what it is granted confers nothing until the first sign-in through a route the tenant permits whose provider asserts that address verified, which claims it ("Invitations")           |
+| **IAM-051** | `GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce                                                                                                                                     |
+| **API-053** | One refusal vocabulary for every route, below, and a contract test that fails when a route does not declare the permission it checks                                                                                                                                                                                                   |
 
 ## What this document does not own
 
@@ -244,13 +244,21 @@ row. An invitation is accepted once: a second account presenting the address, th
 a new principal holding nothing on the organisation's route, and refused on the Google route unless a
 named domain admits it.
 
-**Why an address is safe enough here, when access.md once ruled a naming by address out.** An address is
-a claim some providers let a user set, so it is trusted only where the provider asserts it verified, only
-until the first such sign-in binds it to an identity, and only for fourteen days; the administrator sees
+**Why an address is safe enough here, when "What was ruled out" once ruled a naming by address out.** An
+address is a claim some providers let a user set, so it is trusted only where the provider asserts it
+verified, only until the first such sign-in binds it to an identity, and, for every invitation made
+through the service or for a first administrator, only for fourteen days; the administrator sees
 who accepted it and through which route. The residual risk is a provider that asserts `email_verified`
 for an address its user does not control - which is the tenant's own provider on the organisation's
 route, and on the Google route an account whose mailbox was verified once and lost since. Both are
-bounded by the expiry and visible in the listing; neither is closed by this design.
+visible in the listing, and bounded only where the invitation has an expiry; neither is closed by this
+design.
+
+**Invitations with no expiry.** Two kinds never lapse: one an operator makes with `inviteToTenant`, as
+whoever provisions the tenant, and one migrated by 0014 from 0004's shape. Either is claimable through
+any route the tenant permits for as long as it waits, so the two risks above are not bounded for it;
+renewing one through the service keeps it with no expiry, and withdrawing it is the only end short of a
+claim.
 
 **Changing no fact.** Making an invitation inserts a principal, which no trigger watches, and claiming
 one gives a principal its issuer and subject, which no decision reads; so neither takes the access epoch,
@@ -260,14 +268,15 @@ principal with every grant and membership that named it, which changes access: t
 invitation's row and then the principal's, and never the epoch, so the two cannot wait on each other in
 a cycle.
 
-**Renewing and refusing.** Inviting an address that already waits renews it for fourteen days and keeps
-its grants; one that says the other thing about being external is refused, to be withdrawn and invited
-again. Inviting an address somebody who has signed in shows, verified at their last sign-in, is refused:
-they are granted directly. An address shown unverified refuses nothing, so an account cannot squat an
-address to keep its owner from being invited. Two invitations of one address at once take turns on a
-transaction's advisory lock keyed by the tenant's schema and the address, so the second renews what the
-first made; and because a claim takes no epoch and can commit while an invitation waits on its row,
-whether somebody has signed in with the address is asked again before a new principal is made.
+**Renewing and refusing.** Inviting an address that already waits renews it for fourteen days - or
+leaves it with none, where it had none - and keeps its grants; one that says the other thing about being
+external is refused, to be withdrawn and invited again. Inviting an address somebody who has signed in
+shows, verified at their last sign-in, is refused: they are granted directly. An address shown
+unverified refuses nothing, so an account cannot squat an address to keep its owner from being invited.
+Two invitations of one address at once take turns on a transaction's advisory lock keyed by the tenant's
+schema and the address, so the second renews what the first made; and because a claim takes no epoch and
+can commit while an invitation waits on its row, whether somebody has signed in with the address is
+asked again before a new principal is made.
 
 **Internal or external** is the administrator's to say when inviting, and the principal's `kind` from
 the first; a sign-in never changes it.
