@@ -156,4 +156,160 @@ describe('New component', () => {
     );
     expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
   });
+
+  it('says the title, language or direction was not accepted on a 400, distinctly from Try again', async () => {
+    // 400, 404 and 409 are permanent refusals of what was sent, not a transient failure Try again
+    // would fix by itself (review round 1, item 5).
+    const { fetch } = service(
+      {
+        '/v1/spaces': SPACES,
+        [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: TYPES,
+      },
+      { [`/v1/spaces/${SPACES.items[0]!.id}/components`]: 400 },
+    );
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'The title, language or direction was not accepted. Check them and try again.',
+    );
+  });
+
+  it('says a space is no longer open on a 404, and re-reads the spaces it offers', async () => {
+    // The chosen space vanishing from under the caller (review round 1, item 5): the message names
+    // what to do, and the stale space is not left standing in the list that just refused it.
+    const asked: { url: string; body: unknown }[] = [];
+    let spacesCall = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      const body = request.method === 'GET' ? undefined : await request.clone().json();
+      asked.push({ url, body });
+      if (url === '/v1/spaces') {
+        spacesCall += 1;
+        const items = spacesCall === 1 ? SPACES.items : [SPACES.items[2]];
+        return new Response(JSON.stringify({ items }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        return new Response(JSON.stringify(TYPES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url === `/v1/spaces/${SPACES.items[0]!.id}/components`) {
+        return new Response(JSON.stringify({ code: 'not_found', message: 'gone' }), {
+          status: 404,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 500 });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'This space is no longer open to you. Choose another.',
+    );
+    await waitFor(() =>
+      expect(
+        [...screen.getByLabelText('Where').querySelectorAll('option')].map(
+          (option) => option.textContent,
+        ),
+      ).toEqual(['Regulatory']),
+    );
+  });
+
+  it('says a component type is no longer available on a 409, and re-reads the types it offers', async () => {
+    let typesCall = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        return new Response(JSON.stringify(SPACES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url === `/v1/spaces/${SPACES.items[0]!.id}/component-types`) {
+        typesCall += 1;
+        const items = typesCall === 1 ? TYPES.items : [TYPES.items[1]];
+        return new Response(JSON.stringify({ items }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url === `/v1/spaces/${SPACES.items[0]!.id}/components`) {
+        return new Response(JSON.stringify({ code: 'component_type_missing', message: 'gone' }), {
+          status: 409,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 500 });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Component type')).toHaveValue(TYPES.items[1]!.id),
+    );
+    await userEvent.selectOptions(screen.getByLabelText('Component type'), TYPES.items[0]!.id);
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'That component type is no longer available. Choose another.',
+    );
+    await waitFor(() =>
+      expect(
+        [...screen.getByLabelText('Component type').querySelectorAll('option')].map(
+          (option) => option.textContent,
+        ),
+      ).toEqual(['Topic']),
+    );
+  });
+
+  it('says the spaces could not be loaded, distinctly from nowhere to create, and offers Try again', async () => {
+    // A failed read and a legitimately empty list must not look the same (review round 1, item 6):
+    // one is nothing to say anything about, the other is a page that never rendered its form at all.
+    let attempts = 0;
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        attempts += 1;
+        if (attempts === 1) {
+          return new Response(JSON.stringify({ code: 'internal', message: 'x' }), {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify(SPACES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/component-types')) {
+        return new Response(JSON.stringify(TYPES), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { status: 500 });
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    expect(
+      await screen.findByText('The spaces you may create in could not be loaded.'),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await screen.findByLabelText('Where');
+  });
 });

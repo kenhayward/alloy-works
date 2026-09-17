@@ -2,6 +2,8 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { DirectionSelect } from './DirectionSelect.js';
+
 type Client = ReturnType<typeof createApiClient>;
 
 /**
@@ -21,7 +23,13 @@ interface ComponentType {
   readonly isDefault: boolean;
 }
 
-/** The client's bodies are `any`, so every one is checked rather than trusted before it is read. */
+/**
+ * The client's bodies are `any`, so every one is checked rather than trusted before it is read.
+ * `spacesIn` and `typesIn` stay two small functions rather than one shared `itemsIn(data, read)`
+ * (review round 1, item 7): the shapes only look alike - a space is kept by a boolean permission
+ * (`mayCreate`), a type by which one is the default - and a generic version would have to smuggle
+ * that distinction back in through its caller anyway, for two call sites total.
+ */
 function spacesIn(data: unknown): Space[] | undefined {
   if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
   const items = (data as { items: unknown }).items;
@@ -61,6 +69,12 @@ export interface NewComponentProps {
  */
 export function NewComponent({ client, onCreated }: NewComponentProps) {
   const [spaces, setSpaces] = useState<readonly Space[] | null>(null);
+  // A read that failed is not the same as a read that came back legitimately empty (review round 1,
+  // item 6): the first is a page that never rendered its own form at all and is worth saying
+  // something about, the second is silent by design (nobody is offered a form that could only refuse
+  // them) - conflating the two would hide a real outage behind the same nothing an empty environment
+  // shows on its best day.
+  const [spacesFailed, setSpacesFailed] = useState(false);
   const [where, setWhere] = useState<string>('');
   const [types, setTypes] = useState<readonly ComponentType[]>([]);
   const [componentType, setComponentType] = useState<string>('');
@@ -72,44 +86,59 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   // Checked before any await, so a second click that lands before React re-renders sends nothing.
   const pending = useRef(false);
 
-  useEffect(() => {
-    let current = true;
-    client
-      .GET('/v1/spaces')
-      .then(({ data }) => {
-        if (!current) return;
-        const open = spacesIn(data) ?? [];
-        setSpaces(open);
-        setWhere(open[0]?.id ?? '');
-      })
-      .catch(() => {
-        if (current) setSpaces([]);
-      });
-    return () => {
-      current = false;
-    };
+  // A generation counter each, not a mount-scoped `current` flag (the shape the brief's other effects
+  // use): both are now called imperatively too - on demand, after a 404 or a 409 - not only once from
+  // an effect at mount, so a request that is no longer the latest one still has to be told apart from
+  // one that is, whichever call started it.
+  const spacesRequest = useRef(0);
+  const typesRequest = useRef(0);
+
+  const loadSpaces = useCallback(async () => {
+    const generation = ++spacesRequest.current;
+    setSpacesFailed(false);
+    try {
+      const { data } = await client.GET('/v1/spaces');
+      if (spacesRequest.current !== generation) return;
+      const open = spacesIn(data);
+      if (open === undefined) {
+        setSpacesFailed(true);
+        return;
+      }
+      setSpaces(open);
+      setWhere(open[0]?.id ?? '');
+    } catch {
+      if (spacesRequest.current === generation) setSpacesFailed(true);
+    }
   }, [client]);
 
-  useEffect(() => {
-    if (where === '') return undefined;
-    let current = true;
-    setTypes([]);
-    setComponentType('');
-    client
-      .GET('/v1/spaces/{space}/component-types', { params: { path: { space: where } } })
-      .then(({ data }) => {
-        if (!current) return;
+  const loadTypes = useCallback(
+    async (space: string) => {
+      const generation = ++typesRequest.current;
+      try {
+        const { data } = await client.GET('/v1/spaces/{space}/component-types', {
+          params: { path: { space } },
+        });
+        if (typesRequest.current !== generation) return;
         const offered = typesIn(data) ?? [];
         setTypes(offered);
         setComponentType((offered.find((each) => each.isDefault) ?? offered[0])?.id ?? '');
-      })
-      .catch(() => {
-        if (current) setTypes([]);
-      });
-    return () => {
-      current = false;
-    };
-  }, [client, where]);
+      } catch {
+        if (typesRequest.current === generation) setTypes([]);
+      }
+    },
+    [client],
+  );
+
+  useEffect(() => {
+    void loadSpaces();
+  }, [loadSpaces]);
+
+  useEffect(() => {
+    if (where === '') return;
+    setTypes([]);
+    setComponentType('');
+    void loadTypes(where);
+  }, [loadTypes, where]);
 
   const create = useCallback(async () => {
     if (pending.current) return;
@@ -137,14 +166,24 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
       const id = typeof data === 'object' && data !== null && 'id' in data ? data.id : undefined;
       if (typeof id !== 'string') {
         // Signed out and refused are different from a failure somebody should try again (final
-        // review's rule for every renderer call).
-        setNotice(
-          response.status === 401
-            ? 'You are signed out. Sign in again to create a component.'
-            : response.status === 403
-              ? 'You may not create a component here.'
-              : 'The component could not be created. Try again.',
-        );
+        // review's rule for every renderer call); 404, 409 and 400 are further refusals of what was
+        // sent, each with something the author can actually act on rather than a bare "Try again"
+        // that only resends the same now-refused request (review round 1, item 5).
+        if (response.status === 401) {
+          setNotice('You are signed out. Sign in again to create a component.');
+        } else if (response.status === 403) {
+          setNotice('You may not create a component here.');
+        } else if (response.status === 404) {
+          setNotice('This space is no longer open to you. Choose another.');
+          void loadSpaces();
+        } else if (response.status === 409) {
+          setNotice('That component type is no longer available. Choose another.');
+          void loadTypes(where);
+        } else if (response.status === 400) {
+          setNotice('The title, language or direction was not accepted. Check them and try again.');
+        } else {
+          setNotice('The component could not be created. Try again.');
+        }
         return;
       }
       onCreated(id);
@@ -154,8 +193,29 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
       pending.current = false;
       setSending(false);
     }
-  }, [client, componentType, direction, languageTag, onCreated, title, where]);
+  }, [
+    client,
+    componentType,
+    direction,
+    languageTag,
+    loadSpaces,
+    loadTypes,
+    onCreated,
+    title,
+    where,
+  ]);
 
+  if (spacesFailed) {
+    return (
+      <section aria-labelledby="new-component-heading">
+        <h2 id="new-component-heading">New component</h2>
+        <p>The spaces you may create in could not be loaded.</p>
+        <button type="button" onClick={() => void loadSpaces()}>
+          Try again
+        </button>
+      </section>
+    );
+  }
   if (spaces === null || spaces.length === 0) return null;
   return (
     <section aria-labelledby="new-component-heading">
@@ -180,13 +240,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
       </label>
       <label>
         Direction
-        <select
-          value={direction}
-          onChange={(event) => setDirection(event.target.value === 'rtl' ? 'rtl' : 'ltr')}
-        >
-          <option value="ltr">Left to right</option>
-          <option value="rtl">Right to left</option>
-        </select>
+        <DirectionSelect value={direction} onChange={setDirection} />
       </label>
       <label>
         Component type

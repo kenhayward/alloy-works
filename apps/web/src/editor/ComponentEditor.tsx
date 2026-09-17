@@ -66,6 +66,14 @@ const textOf = (view: EditorView) => {
 };
 
 /**
+ * Whether the surface takes changes in this phase - the one predicate, shared by the view's own
+ * `editable` and the header's (review round 1, item 9): the header must go read-only exactly when the
+ * surface does, `lost` among them, rather than staying editable by a narrower rule of its own.
+ */
+const isEditablePhase = (phase: SessionView['phase']) =>
+  phase === 'reading' || phase === 'claiming' || phase === 'editing';
+
+/**
  * One component, open for editing (component-editor.md): its title, the surface, the save indicator,
  * Save version and Done editing, and one status region that says what happened. The surface is one
  * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on its
@@ -231,6 +239,11 @@ export function ComponentEditor({
         // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
         captureKept();
         view.updateState(fresh(base));
+        // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
+        // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
+        // the refusal, and the next keystroke into that stale field would resend it - resurrecting
+        // text the surface itself just discarded.
+        setHeader(headerOf(view.state.doc));
       },
       onVersion: () => {
         // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
@@ -239,6 +252,9 @@ export function ComponentEditor({
         const { selection } = view.state;
         base = view.state.doc;
         view.updateState(fresh(base, selection));
+        // As above: cutting changes nothing about the header, but this keeps that an invariant the
+        // surface enforces rather than one a future change could silently break.
+        setHeader(headerOf(view.state.doc));
       },
     });
     controls.current = editing;
@@ -249,8 +265,7 @@ export function ComponentEditor({
       // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
       // surface's naming.
       label: `Content of ${opened.doc.attrs.title as string}`,
-      editable: () =>
-        component.mayEdit && (phase === 'reading' || phase === 'claiming' || phase === 'editing'),
+      editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
         if (transaction.docChanged) {
@@ -345,7 +360,7 @@ export function ComponentEditor({
         {header ? (
           <ComponentHeader
             header={header}
-            editable={shown.mayEdit && loaded.state === 'open'}
+            editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
             onChange={changeHeader}
             onRefused={setNotice}
           />
