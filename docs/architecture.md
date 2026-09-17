@@ -60,12 +60,11 @@ depend on it for the permission set a route declares and the decision it is chec
 depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
 along.
 
-**The client's generated types do not reach the renderer.** `packages/api-client/dist/index.d.ts`
-imports `./generated/schema.js`, which `tsc` never emits - `src/generated/schema.d.ts` is a declaration
-file, and declaration files are not copied to `dist` - so every `client.GET(...)` answer in `apps/web` is
-`any` today, whatever the route's contract says. The access page written against it checks a response's
-shape by hand rather than trusting the type (`apps/web/src/access/describe.ts`). This is a bug with its
-own issue, to be fixed before the next renderer plan (Ken's decision E, 2026-09-17-access-02-managing-grants.md).
+**The access page checks what arrives, as well as its type.** It was written while the client's answers
+reached the renderer as `any` (issue #110, fixed by PR #111), so `apps/web/src/access/describe.ts` checks
+each response's shape by hand before reading it. The generated types now reach the renderer too; the
+hand-written shapes stay as a check on the body a service actually sent, and can become aliases of the
+generated types when the page is next touched.
 
 ## The content model
 

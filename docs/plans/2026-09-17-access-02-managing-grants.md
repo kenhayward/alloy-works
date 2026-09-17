@@ -5846,8 +5846,8 @@ Named here so the next plan starts from a list rather than from a reading of the
 - **Access on anything but a component** - a space's, the environment's and a definition's page, choosing a
   person by searching rather than from every page, and IAM-029 in full. **The Access panel plan, with the
   spaces routes** (`GET /v1/spaces` is editor 2's).
-- **The client's types in the renderer** (finding 2). **A fix, with its own issue**, before the next renderer
-  plan (decision E); the page's written-out shapes become aliases then.
+- **The client's types in the renderer** (finding 2). Fixed while this plan was built (issue #110, PR #111);
+  the page's written-out shapes can become aliases of the generated types when the page is next touched.
 - **Auditing** every change to access and every refusal (IAM-013, IAM-037, IAM-060). **LIF's plan.**
 - **A stream that ends when access changes** (API-016, realtime.md): a grant removed while its holder has a
   component open ends their access at their next request, not on the open page. **The realtime plan.**

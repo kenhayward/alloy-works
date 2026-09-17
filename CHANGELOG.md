@@ -22,6 +22,15 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Somebody new is given access after they first sign in.** A person signs in once, sees nothing,
   and can then be chosen; inviting an address before that is not built yet.
 
+## 0.23.3 - 2026-09-17 (PR #111)
+
+### Fixed
+
+- **The web application's calls to the service are type-checked again.** Every answer the API client
+  gave the renderer was untyped, so a renamed route or a missing field typechecked cleanly and only
+  failed when the application ran. `pnpm typecheck` now refuses a route or a field the API document
+  does not declare, in the renderer and in the end-to-end check.
+
 ## 0.23.2 - 2026-09-17 (PR #109)
 
 ### Changed
