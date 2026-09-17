@@ -636,6 +636,63 @@ describe('access to a component', () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a listing failed, not stuck reading for ever, when a page's next is missing rather than null", async () => {
+    let requests = 0;
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level !== `space:${GENERAL}`) return json(200, { items: [], next: null });
+          requests += 1;
+          // No `next` at all: neither the null that ends paging nor a cursor that continues it.
+          return json(200, { items: [] });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(
+      await within(section('The space General')).findByText(
+        'What is granted here could not be loaded.',
+      ),
+    ).toBeInTheDocument();
+    // One request, not an unbounded loop of them.
+    expect(requests).toBe(1);
+  });
+
+  it("shows every page of a listing, gathered across more than one of the service's responses", async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level !== `space:${GENERAL}`) return json(200, { items: [], next: null });
+          const cursor = url.searchParams.get('cursor');
+          if (cursor === null) {
+            return json(200, {
+              items: [grantOf('g1', `space:${GENERAL}`, roles[0]!, people[1]!)],
+              next: 'page2',
+            });
+          }
+          return json(200, {
+            items: [grantOf('g2', `space:${GENERAL}`, roles[2]!, people[0]!)],
+            next: null,
+          });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await waitFor(() =>
+      expect(within(section('The space General')).getAllByRole('listitem')).toHaveLength(2),
+    );
+    expect(
+      within(section('The space General')).getByText(/Allowed Author to Grace/),
+    ).toBeInTheDocument();
+    expect(
+      within(section('The space General')).getByText(/Allowed Administrator to Ada/),
+    ).toBeInTheDocument();
+  });
+
   it('says what was granted could not be told, not a crash, when giving access answers a grant in a shape this page does not expect', async () => {
     const { fetching } = service({
       override: {

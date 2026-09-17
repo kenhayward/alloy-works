@@ -51,7 +51,12 @@ type Opened =
 
 type Page<T> = { readonly items: readonly T[]; readonly next: string | null };
 
-/** Every page of a listing, or the status the first page that failed was refused with. */
+/**
+ * Every page of a listing, or the status the first page that failed was refused with. A `next` that
+ * is neither `null` (paging is over) nor a string this page has not already used (paging continues)
+ * is treated the same as a refused page, rather than read for ever: the service holding one bad cursor
+ * must not turn into a page that never stops asking for the next one.
+ */
 async function everyPage<T>(
   fetchPage: (
     cursor: string | undefined,
@@ -59,11 +64,14 @@ async function everyPage<T>(
 ): Promise<{ readonly items: T[] } | { readonly status: number }> {
   const items: T[] = [];
   let cursor: string | undefined;
+  const asked = new Set<string>();
   for (;;) {
     const { data, response } = await fetchPage(cursor);
     if (!data) return { status: response.status };
     items.push(...data.items);
     if (data.next === null) return { items };
+    if (typeof data.next !== 'string' || asked.has(data.next)) return { status: response.status };
+    asked.add(data.next);
     cursor = data.next;
   }
 }
