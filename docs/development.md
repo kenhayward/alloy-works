@@ -76,30 +76,42 @@ and `http://dev.acme.localhost:8088/v1/me` says who you are. On another port, te
 where the service is, since it only returns people to addresses it knows:
 `STAND_IN_REDIRECT_URIS=http://dev.acme.localhost:8181/v1/sign-in/organisation/callback`.
 
-`pnpm dev:setup` names Ada as each environment's first administrator, so the first time she signs in she
-is granted Administrator there; nobody else holds a role until something grants one.
+`pnpm dev:setup` invites Ada, at `ada@example.com`, to administer each environment, so the first time she
+signs in she is Administrator there; nobody else holds a role until something grants one.
 `http://dev.acme.localhost:8088/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
 
-To give somebody else access, they sign in first - in a private window, as Alice, who sees nothing -
-because a grant names a person who has signed in. Then, as Ada, open "Install the printer", choose
-**Manage access**, pick Alice, a role and where, and **Give**; Alice's next request has it. **Remove**
-takes it away again, except the last grant that lets anyone administer the environment.
+**A database `pnpm dev:setup` prepared before 0.25.0** already holds Ada as a principal, and a sign-in finds
+her by that identity, never by an invitation. If she signed in there before, she administers already and
+the invitation is refused harmlessly. If she never did, she never becomes Administrator: the invitation
+waits for a sign-in that never claims it. Start from a fresh database instead - drop the `alloy_dev`
+database, with nothing connected to it, and run `pnpm dev:setup` again, which creates it. An old database also still lists the invitation to
+`grace@example.com` that `pnpm dev:setup` used to make, waiting with no expiry and never accepted, since
+Grace is a principal already; **Withdraw** it.
+
+To give somebody access before they have ever signed in, invite them. As Ada, open "Install the printer",
+choose **Manage access**, and under **Invite someone** enter `ivy@example.com` in **Address** and press
+**Invite**. Ivy - whom the stand-in knows and `pnpm dev:setup` does not make - is now offered under **Give
+access** as "ivy@example.com, invited and not signed in yet": pick her, a role and where, and **Give**.
+Signing in as Ivy, she has it from her first request. **Withdraw** takes back an invitation nobody has
+accepted, with everything given to it. Somebody who has signed in already, like Alice, is chosen
+directly, and inviting their address is refused. **Remove** takes a grant away again, except the last
+grant that lets anyone administer the environment.
 
 It also makes something to edit, since nothing in the product creates a component yet: in each
-environment, a component type called Topic, a component called "Install the printer" in
-General, and Ada and Grace - made as principals before they first sign in - allowed Author on General.
-Alice is given nothing. Sign in as Ada, open "Install the printer", type, and **Save version**. To see
+environment, a component type called Topic, a component called "Install the printer" in General, and Ada,
+through her invitation, and Grace, made as a principal before she first signs in, allowed Author on
+General; Grace makes the grants and the component's versions, since a principal still waiting on an
+invitation could be withdrawn. Alice and Ivy are given nothing. Sign in as Ada, open "Install the
+printer", type, and **Save version**. To see
 the lock from the other side, sign in as Grace in a private window - the stand-in remembers who signed
 in last in a window - and start typing in the same component.
 
 The development environment also takes Google accounts, with the stand-in playing Google and
-`signin.localhost:8088` as the one address it returns to. `pnpm dev:setup` already makes Ada and Grace
-principals of this environment - to have somebody to edit "Install the printer" with - so opening
-`http://dev.acme.localhost:8088/v1/sign-in/google` and choosing either signs her straight in, as a
-principal admitted before, without an invitation being looked at at all. Grace's invitation
-(`pnpm dev:setup` still makes it, to `grace@example.com`) is never the reason she gets in, and never
-gets accepted, because an existing principal is admitted first. Alice is neither a principal nor
-invited, and the sign-in address refuses her. On another port, set `SIGN_IN_HOST` in
+`signin.localhost:8088` as the one address it returns to. Opening
+`http://dev.acme.localhost:8088/v1/sign-in/google` and choosing Ada accepts her invitation through that
+route instead, if she has not signed in yet; Grace, a principal already, is signed straight in; Ivy is
+admitted once Ada has invited her; and Alice is neither a principal nor invited, so the sign-in address
+refuses her. On another port, set `SIGN_IN_HOST` in
 `deploy/service.env` and `STAND_IN_GOOGLE_REDIRECT_URI` for the stand-in to match. Like Google, the
 stand-in remembers who signed in and does not ask again: restart it to choose someone else.
 

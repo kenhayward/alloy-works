@@ -326,6 +326,7 @@ several.
 | IAM-002            | [ADR-0008](../../decisions/0008-schema-per-tenant-isolation.md), [ADR-0020](../../decisions/0020-service-foundations-tenant-roles-zod-first-apis-kysely.md) - a schema per tenant, and a role assumed per transaction |
 | IAM-058            | ADM-030 and ADM-Q06 - the same clock, seen from the administrative end                                                                                                                                                |
 | IAM-059 to IAM-061 | ADM-Q04 asks who bootstraps a tenant; ADM-022 to ADM-025 own support access                                                                                                                                           |
+| IAM-072            | [Issue #113](https://github.com/kenhayward/alloy-works/issues/113) - IAM-059's invitation, asked for everybody; section 15                                                                                            |
 | IAM-055 to IAM-065 | [The v1 review](<../../reviews/IAM - Identity, tenancy and access control.md>); section 15                                                                                                                            |
 
 ## 15. Change history

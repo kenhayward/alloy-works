@@ -54,17 +54,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
   denial, on the whole environment, one space, or one item. Every environment starts with eight roles and
-  a space called General. An environment's first administrator is named, by their sign-in identity, by
-  whoever sets it up, and is granted the role once, at their first sign-in; in development, Ada
+  a space called General. An environment's first administrator is invited, by address, by whoever sets
+  it up, and is Administrator from the first sign-in that proves that address; in development, Ada
   administers both environments from hers. On any component they may administer, **Manage access**
   lists what is granted on it, on its space and across the whole environment, gives a person a role at
   any of those as an allow or a denial, removes a grant, and shows what a chosen person may do there and
-  why. Removing the last grant that lets anyone administer the whole environment is refused.
+  why. Removing the last grant that lets anyone administer the whole environment is refused. An
+  administrator of the whole environment also invites an address there: the person is offered to give
+  access to straight away, and has what they were given from the first time they sign in with that
+  address, through either sign-in route, as long as their provider has verified it. An invitation
+  waits fourteen days, is renewed by inviting the address again, and can be withdrawn, with everything
+  given to it, until it is accepted. Somebody who has already signed in is given access directly, and
+  inviting their address is refused.
 
-  **This is grants to people, not the whole of managing access.** A person can be chosen only once they
-  have signed in: nothing invites an address yet. Nothing creates or changes a role, manages a group,
-  marks somebody as from outside the organisation, extends an expiring grant or gives one an expiry,
-  and only a component has an access page.
+  **This is grants to people, not the whole of managing access.** Nothing sends the invitation: the
+  administrator tells the person to sign in. Nothing creates or changes a role, manages a group,
+  marks somebody who has already signed in as from outside the organisation, extends an expiring grant
+  or gives one an expiry, and only a component has an access page.
 
 - **Editing a component.** Signed in, you see the components you may read and open one. If you may
   edit it, your first change starts editing: nobody else can change it while you are, and anyone who
