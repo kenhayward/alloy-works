@@ -4,9 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   describeGrant,
   explainAnswer,
+  isExplainedPermission,
+  isShownGrant,
+  isShownPerson,
+  isShownRole,
   permissionName,
   personName,
   placesFor,
+  refusalMessage,
   type ExplainedPermission,
   type Place,
   type ShownGrant,
@@ -26,12 +31,14 @@ type Listing =
   | { readonly state: 'loading' }
   /** The caller may not administer this level, or anything above it. */
   | { readonly state: 'unmanaged' }
+  | { readonly state: 'unauthorized' }
   | { readonly state: 'failed' }
   | { readonly state: 'loaded'; readonly grants: readonly ShownGrant[] };
 
 type Opened =
   | { readonly state: 'loading' }
   | { readonly state: 'missing' }
+  | { readonly state: 'unauthorized' }
   | { readonly state: 'failed' }
   | { readonly state: 'unmanaged' }
   | {
@@ -61,7 +68,12 @@ async function everyPage<T>(
   }
 }
 
-const CHANGE_FAILED = 'That could not be done. Try again.';
+const CHANGE_UNKNOWN =
+  'Whether that was done could not be told. What is shown below is what the service now holds.';
+const SIGNED_OUT = 'You are signed out. Sign in again to manage access.';
+const EXPLAIN_SIGNED_OUT = 'You are signed out. Sign in again to see what they may do.';
+const EXPLAIN_REFUSED = 'You may no longer see what they may do.';
+const EXPLAIN_UNREADABLE = 'What they may do could not be shown. Try again.';
 
 /**
  * Access to one component (access.md, "Routes"): the grants made at the component, its space and the
@@ -80,15 +92,17 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   const [where, setWhere] = useState('');
   const [effect, setEffect] = useState<'allow' | 'deny'>('allow');
   const [explainFor, setExplainFor] = useState('');
+  const [explainMessage, setExplainMessage] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<{
     readonly principal: string;
     readonly answers: readonly ExplainedPermission[];
   } | null>(null);
-  // One change at a time from this page, checked before any await so a second click that lands before
-  // React has re-rendered the button disabled sends nothing.
+  // One change at a time from this page, checked before any await so a second submit that lands
+  // before React has re-rendered the button disabled sends nothing.
   const pending = useRef(false);
-  // Only the latest reading of the lists, and of an explanation, is ever shown: an older answer that
-  // arrives late is dropped rather than put over a newer one.
+  // Only the latest opening of the page, reading of the lists, and of an explanation, is ever shown:
+  // an older answer that arrives late is dropped rather than put over a newer one.
+  const opening = useRef(0);
   const reading = useRef(0);
   const explaining = useRef(0);
   const mounted = useRef(true);
@@ -113,7 +127,14 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
                 },
               }),
             );
-            if ('items' in answer) return { state: 'loaded', grants: answer.items };
+            if ('items' in answer) {
+              // A page that cannot describe a grant it is holding shows the same failure a lost
+              // response would, rather than crash rendering it.
+              return answer.items.every(isShownGrant)
+                ? { state: 'loaded', grants: answer.items }
+                : { state: 'failed' };
+            }
+            if (answer.status === 401) return { state: 'unauthorized' };
             return answer.status === 403 || answer.status === 404
               ? { state: 'unmanaged' }
               : { state: 'failed' };
@@ -128,62 +149,81 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     [client],
   );
 
-  useEffect(() => {
-    let current = true;
+  const loadComponent = useCallback(async () => {
+    const mine = ++opening.current;
+    setOpened({ state: 'loading' });
     const target = `artifact:${componentId}`;
-    void (async () => {
-      try {
-        const { data, response } = await client.GET('/v1/components/{id}', {
-          params: { path: { id: componentId } },
-        });
-        if (!data) {
-          if (current) setOpened({ state: response.status === 404 ? 'missing' : 'failed' });
-          return;
-        }
-        // Choosing people and roles needs administer here or above: the most any level on this
-        // component's chain can ask, so a refusal here means nothing on the page could be managed.
-        const [people, roles] = await Promise.all([
-          everyPage<ShownPerson>((cursor) =>
-            client.GET('/v1/principals', {
-              params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
-            }),
-          ),
-          everyPage<ShownRole>((cursor) =>
-            client.GET('/v1/roles', {
-              params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
-            }),
-          ),
-        ]);
-        if (!current) return;
-        if (!('items' in people) || !('items' in roles)) {
-          const refused = [people, roles].some(
-            (answer) => 'status' in answer && (answer.status === 403 || answer.status === 404),
-          );
-          setOpened({ state: refused ? 'unmanaged' : 'failed' });
-          return;
-        }
-        const title = typeof data.content.title === 'string' ? data.content.title : 'Untitled';
-        const places = placesFor(data);
-        setOpened({ state: 'open', title, places, people: people.items, roles: roles.items });
-        setWhere(places[0]!.target);
-        await readGrants(places);
-      } catch {
-        if (current) setOpened({ state: 'failed' });
+    try {
+      const { data, response } = await client.GET('/v1/components/{id}', {
+        params: { path: { id: componentId } },
+      });
+      if (!mounted.current || mine !== opening.current) return;
+      if (!data) {
+        if (response.status === 404) setOpened({ state: 'missing' });
+        else if (response.status === 401) setOpened({ state: 'unauthorized' });
+        else setOpened({ state: 'failed' });
+        return;
       }
-    })();
-    return () => {
-      current = false;
-    };
+      // Choosing people and roles needs administer here or above: the most any level on this
+      // component's chain can ask, so a refusal here means nothing on the page could be managed.
+      const [people, roles] = await Promise.all([
+        everyPage<ShownPerson>((cursor) =>
+          client.GET('/v1/principals', {
+            params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
+          }),
+        ),
+        everyPage<ShownRole>((cursor) =>
+          client.GET('/v1/roles', {
+            params: { query: { level: target, limit: '100', ...(cursor ? { cursor } : {}) } },
+          }),
+        ),
+      ]);
+      if (!mounted.current || mine !== opening.current) return;
+      const peopleOk = 'items' in people && people.items.every(isShownPerson);
+      const rolesOk = 'items' in roles && roles.items.every(isShownRole);
+      if (!peopleOk || !rolesOk) {
+        const statuses = [people, roles].map((answer) =>
+          'status' in answer ? answer.status : null,
+        );
+        if (statuses.includes(401)) setOpened({ state: 'unauthorized' });
+        else if (statuses.some((status) => status === 403 || status === 404)) {
+          setOpened({ state: 'unmanaged' });
+        } else setOpened({ state: 'failed' });
+        return;
+      }
+      const title = typeof data.content.title === 'string' ? data.content.title : 'Untitled';
+      const places = placesFor(data);
+      setOpened({ state: 'open', title, places, people: people.items, roles: roles.items });
+      setWhere(places[0]!.target);
+      await readGrants(places);
+    } catch {
+      if (mounted.current && mine === opening.current) setOpened({ state: 'failed' });
+    }
   }, [client, componentId, readGrants]);
+
+  useEffect(() => {
+    void loadComponent();
+  }, [loadComponent]);
 
   if (opened.state === 'loading') return <p>Opening...</p>;
   if (opened.state === 'missing') return <p>There is nothing here, or nothing you may read.</p>;
-  if (opened.state === 'failed') return <p>Access to this component could not be loaded.</p>;
+  if (opened.state === 'unauthorized') return <p>{SIGNED_OUT}</p>;
   if (opened.state === 'unmanaged') return <p>You may not manage access to this component.</p>;
+  if (opened.state === 'failed') {
+    return (
+      <p>
+        Access to this component could not be loaded.{' '}
+        <button type="button" onClick={() => void loadComponent()}>
+          Try again
+        </button>
+      </p>
+    );
+  }
 
   const { places, people, roles } = opened;
   const byId = new Map(people.map((each) => [each.id, each]));
   const manageable = places.filter((place) => listings.get(place.target)?.state === 'loaded');
+  const effectiveWhere = manageable.some((place) => place.target === where) ? where : '';
   const named = (target: string) =>
     places.find((place) => place.target === target)?.named ?? target;
 
@@ -195,11 +235,12 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     // What someone may do is about to change, so an explanation already shown would no longer be true.
     explaining.current += 1;
     setExplanation(null);
+    setExplainMessage(null);
     try {
       const said = await run();
       if (mounted.current) setMessage(said);
     } catch {
-      if (mounted.current) setMessage(CHANGE_FAILED);
+      if (mounted.current) setMessage(CHANGE_UNKNOWN);
     } finally {
       pending.current = false;
       if (mounted.current) setBusy(false);
@@ -208,24 +249,28 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   };
 
   const refusal = (status: number, error: unknown, missing: string) => {
-    if (status === 409) return (error as { message?: string }).message ?? CHANGE_FAILED;
-    if (status === 401) return 'You are signed out. Sign in again to manage access.';
+    if (status === 409) return refusalMessage(error) ?? CHANGE_UNKNOWN;
+    if (status === 401) return SIGNED_OUT;
     if (status === 404) return missing;
     if (status === 403) return 'You may not manage access there.';
-    return CHANGE_FAILED;
+    return CHANGE_UNKNOWN;
   };
 
   const give = (event: React.FormEvent) => {
     event.preventDefault();
-    if (person === '' || role === '' || where === '') {
+    if (person === '' || role === '' || effectiveWhere === '') {
       setMessage('Choose a person, a role and where.');
       return;
     }
     void change(async () => {
       const { data, error, response } = await client.POST('/v1/grants', {
-        body: { role, subject: { principal: person }, level: where, effect },
+        body: { role, subject: { principal: person }, level: effectiveWhere, effect },
       });
-      if (data) return `${describeGrant(data.grant)} on ${named(data.grant.level)}.`;
+      if (data) {
+        return isShownGrant(data.grant)
+          ? `${describeGrant(data.grant)} on ${named(data.grant.level)}.`
+          : `That was granted, though what exactly could not be shown. ${CHANGE_UNKNOWN}`;
+      }
       return refusal(response.status, error, 'You may not manage access there.');
     });
   };
@@ -236,7 +281,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
         params: { path: { id: grant.id } },
       });
       if (data) return `Removed: ${describeGrant(grant)} on ${named(grant.level)}.`;
-      return refusal(response.status, error, 'That grant had already been removed.');
+      return refusal(response.status, error, 'That grant is gone, or you may no longer manage it.');
     });
 
   const explain = async () => {
@@ -244,17 +289,30 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     if (principal === '') return;
     const mine = ++explaining.current;
     setExplanation(null);
+    setExplainMessage(null);
     try {
-      const { data } = await client.GET('/v1/access/explain', {
+      const { data, response } = await client.GET('/v1/access/explain', {
         params: { query: { principal, target: `artifact:${componentId}` } },
       });
       if (!mounted.current || mine !== explaining.current) return;
-      if (data) setExplanation({ principal, answers: data.permissions });
-      else setMessage('What they may do could not be shown. Try again.');
-    } catch {
-      if (mounted.current && mine === explaining.current) {
-        setMessage('What they may do could not be shown. Try again.');
+      if (
+        data &&
+        Array.isArray(data.permissions) &&
+        data.permissions.every(isExplainedPermission)
+      ) {
+        setExplanation({ principal, answers: data.permissions });
+        return;
       }
+      if (data) {
+        setExplainMessage(EXPLAIN_UNREADABLE);
+        return;
+      }
+      if (response.status === 401) setExplainMessage(EXPLAIN_SIGNED_OUT);
+      else if (response.status === 403 || response.status === 404)
+        setExplainMessage(EXPLAIN_REFUSED);
+      else setExplainMessage(EXPLAIN_UNREADABLE);
+    } catch {
+      if (mounted.current && mine === explaining.current) setExplainMessage(EXPLAIN_UNREADABLE);
     }
   };
 
@@ -277,7 +335,15 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             <h3 id={heading}>{place.label}</h3>
             {listing.state === 'loading' && <p>Loading...</p>}
             {listing.state === 'unmanaged' && <p>You may not manage access here.</p>}
-            {listing.state === 'failed' && <p>What is granted here could not be loaded.</p>}
+            {listing.state === 'unauthorized' && <p>{SIGNED_OUT}</p>}
+            {listing.state === 'failed' && (
+              <p>
+                What is granted here could not be loaded.{' '}
+                <button type="button" onClick={() => void readGrants(places)}>
+                  Try again
+                </button>
+              </p>
+            )}
             {listing.state === 'loaded' &&
               (listing.grants.length === 0 ? (
                 <p>Nothing is granted here.</p>
@@ -324,7 +390,8 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
         </label>{' '}
         <label>
           Where{' '}
-          <select value={where} onChange={(event) => setWhere(event.target.value)}>
+          <select value={effectiveWhere} onChange={(event) => setWhere(event.target.value)}>
+            {effectiveWhere === '' && <option value="">Choose where</option>}
             {manageable.map((place) => (
               <option key={place.target} value={place.target}>
                 {place.label}
@@ -353,11 +420,11 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             Deny
           </label>
         </fieldset>
-        <button type="submit" disabled={busy}>
+        <button type="submit" disabled={busy || manageable.length === 0}>
           Give
         </button>
       </form>
-      <p role="status">{message}</p>
+      {message !== null && <p role="status">{message}</p>}
 
       <section aria-labelledby="explain-heading">
         <h3 id="explain-heading">What someone may do here</h3>
@@ -368,6 +435,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             onChange={(event) => {
               explaining.current += 1;
               setExplanation(null);
+              setExplainMessage(null);
               setExplainFor(event.target.value);
             }}
           >
@@ -378,6 +446,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
         <button type="button" disabled={explainFor === ''} onClick={() => void explain()}>
           Show
         </button>
+        {explainMessage !== null && <p role="status">{explainMessage}</p>}
         {explanation && (
           <table>
             <caption>

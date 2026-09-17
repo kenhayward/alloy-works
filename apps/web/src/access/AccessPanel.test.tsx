@@ -306,7 +306,7 @@ describe('access to a component', () => {
       screen.getByRole('button', { name: 'Remove: Allowed Administrator to Ada' }),
     );
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'That grant had already been removed.',
+      'That grant is gone, or you may no longer manage it.',
     );
 
     await userEvent.click(screen.getByRole('button', { name: 'Remove: Allowed Author to Grace' }));
@@ -334,9 +334,11 @@ describe('access to a component', () => {
     await screen.findByRole('heading', { name: 'Access to Install the printer' });
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
-    const give = screen.getByRole('button', { name: 'Give' });
-    fireEvent.click(give);
-    fireEvent.click(give);
+    // Submitting the form directly, twice, bypasses the button's own disabled attribute: what stops
+    // the second send is the pending ref checked inside `change`, and this is what pins that down.
+    const form = screen.getByRole('form', { name: 'Give access' });
+    fireEvent.submit(form);
+    fireEvent.submit(form);
     await waitFor(() => expect(release.current).not.toBeNull());
     release.current!();
     expect(await screen.findByRole('status')).toHaveTextContent('Already granted.');
@@ -402,7 +404,7 @@ describe('access to a component', () => {
         .map((cell) => cell.textContent),
     ).toEqual([
       'Allowed',
-      'Allowed at the space General, by Author allowed to Grace; Author allowed to a group through a group.',
+      'Allowed at the space General, by Author allowed to Grace; Author allowed to a group.',
     ]);
   });
 
@@ -515,10 +517,336 @@ describe('access to a component', () => {
     await userEvent.selectOptions(chooser, GRACE);
     await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
     await waitFor(() => expect(answers[GRACE]).toBeDefined());
+
+    // A positive signal, not merely the table's absence, before Grace's late answer is released: this
+    // rules out the assertion below passing only because nothing had re-rendered yet.
     await userEvent.selectOptions(chooser, ALICE);
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    await within(explaining).findByRole('table', { name: 'What Alice may do with this component' });
+
     answers[GRACE]!();
     await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(
+      within(explaining).getByRole('table', { name: 'What Alice may do with this component' }),
+    ).toBeInTheDocument();
+  });
+
+  it('drops a level that stops being listed, and only ever sends a level still shown', async () => {
+    let tenantReads = 0;
+    const { fetching, asked } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level === 'tenant') {
+            tenantReads += 1;
+            if (tenantReads > 1) return refused(403, 'forbidden');
+          }
+          return json(200, { items: [], next: null });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await within(section('The whole environment')).findByText('Nothing is granted here.');
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), ALICE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Where' }), 'tenant');
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    await screen.findByText('Allowed Author to Alice on the whole environment.');
+
+    // Tenant's listing is refused on the re-read: it is no longer offered, and the choice already
+    // made for it is dropped rather than sent again without being shown.
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('combobox', { name: 'Where' }))
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['Choose where', 'This component', 'The space General']),
+    );
+    expect(screen.getByRole('combobox', { name: 'Where' })).toHaveValue('');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Choose a person, a role and where.',
+    );
+    expect(asked.filter((each) => each.route === 'POST /v1/grants')).toHaveLength(1);
+
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Where' }),
+      `artifact:${COMPONENT}`,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Allowed Author to Alice on this component.',
+    );
+    const posts = asked.filter((each) => each.route === 'POST /v1/grants');
+    expect(posts).toHaveLength(2);
+    expect(posts[1]!.body).toEqual({
+      role: AUTHOR,
+      subject: { principal: ALICE },
+      level: `artifact:${COMPONENT}`,
+      effect: 'allow',
+    });
+  });
+
+  it('disables Give until at least one level has loaded, and enables it once one has', async () => {
+    const resolvers: (() => void)[] = [];
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': () =>
+          new Promise<Response>((resolve) => {
+            resolvers.push(() => resolve(json(200, { items: [], next: null })));
+          }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(screen.getByRole('button', { name: 'Give' })).toBeDisabled();
+
+    await waitFor(() => expect(resolvers).toHaveLength(3));
+    resolvers.forEach((release) => release());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Give' })).toBeEnabled());
+  });
+
+  it("shows a level's listing failed, not a crash, when its grants come back in a shape this page does not expect", async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level === `space:${GENERAL}`)
+            return json(200, { items: [{ id: 'bad' }], next: null });
+          return json(200, { items: [], next: null });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(
+      await within(section('The space General')).findByText(
+        'What is granted here could not be loaded.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(section('The space General')).getByRole('button', { name: 'Try again' }),
+    ).toBeInTheDocument();
+    // The rest of the page is unaffected: a bad shape at one level did not take the page down.
+    expect(
+      within(section('This component')).getByText('Nothing is granted here.'),
+    ).toBeInTheDocument();
+  });
+
+  it('says what was granted could not be told, not a crash, when giving access answers a grant in a shape this page does not expect', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/grants': () => json(200, { grant: { id: 'g9', level: `artifact:${COMPONENT}` } }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'That was granted, though what exactly could not be shown.',
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Access to Install the printer' }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a fixed message, not a crash or nothing, when a refusal's message is not text", async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/grants': () => json(409, { code: 'grant_duplicate', message: 42, traceId: 't' }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Whether that was done could not be told.',
+    );
+  });
+
+  it('says whether the change happened could not be told, not that it failed, when the request itself is lost', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/grants': () => Promise.reject(new Error('network down')),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Whether that was done could not be told. What is shown below is what the service now holds.',
+    );
+  });
+
+  it('says the caller is signed out when opening the component answers unauthorized', async () => {
+    const { fetching } = service({
+      override: {
+        [`GET /v1/components/${COMPONENT}`]: () => refused(401, 'unauthorized', 'Sign in.'),
+      },
+    });
+    panel(fetching);
+    expect(
+      await screen.findByText('You are signed out. Sign in again to manage access.'),
+    ).toBeInTheDocument();
+  });
+
+  it('offers Try again when the page fails to load, and trying again can succeed', async () => {
+    let failing = true;
+    const componentBody = {
+      id: COMPONENT,
+      space: { id: GENERAL, name: 'General' },
+      version: {
+        id: 'v1',
+        number: '0.1',
+        author: ADA,
+        createdAt: '2026-09-17T09:00:00.000Z',
+        note: null,
+      },
+      content: { schemaVersion: 1, title: 'Install the printer', content: [] },
+      mayEdit: false,
+      lock: null,
+    };
+    const { fetching } = service({
+      override: {
+        [`GET /v1/components/${COMPONENT}`]: () =>
+          failing ? refused(500, 'internal', 'Something broke.') : json(200, componentBody),
+      },
+    });
+    panel(fetching);
+    expect(
+      await screen.findByText('Access to this component could not be loaded.'),
+    ).toBeInTheDocument();
+
+    failing = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Access to Install the printer' }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers Try again when a level's listing fails to load, and trying again can succeed", async () => {
+    let failing = true;
+    const { fetching } = service({
+      override: {
+        'GET /v1/grants': (_request, url) => {
+          const level = url.searchParams.get('level')!;
+          if (level === `space:${GENERAL}` && failing) return refused(500, 'internal', 'broken');
+          return json(200, { items: [], next: null });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(
+      await within(section('The space General')).findByText(
+        'What is granted here could not be loaded.',
+      ),
+    ).toBeInTheDocument();
+
+    failing = false;
+    await userEvent.click(
+      within(section('The space General')).getByRole('button', { name: 'Try again' }),
+    );
+    await within(section('The space General')).findByText('Nothing is granted here.');
+  });
+
+  it('shows a message, not a crash, when explaining answers a body this page does not expect', async () => {
+    let bad: 'missing-permissions' | 'malformed-permission' = 'missing-permissions';
+    const { fetching } = service({
+      override: {
+        'GET /v1/access/explain': () =>
+          bad === 'missing-permissions'
+            ? json(200, { principal: ALICE, target: `artifact:${COMPONENT}` })
+            : json(200, {
+                principal: ALICE,
+                target: `artifact:${COMPONENT}`,
+                permissions: [{ permission: 'edit' }],
+              }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    const explaining = section('What someone may do here');
+    await userEvent.selectOptions(
+      within(explaining).getByRole('combobox', { name: 'Whose access' }),
+      ALICE,
+    );
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    expect(await within(explaining).findByRole('status')).toHaveTextContent(
+      'What they may do could not be shown. Try again.',
+    );
     expect(within(explaining).queryByRole('table')).toBeNull();
+
+    bad = 'malformed-permission';
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    expect(await within(explaining).findByRole('status')).toHaveTextContent(
+      'What they may do could not be shown. Try again.',
+    );
+    expect(within(explaining).queryByRole('table')).toBeNull();
+  });
+
+  it('says the caller is signed out, or may no longer see, when asking what someone may do is refused', async () => {
+    let status = 401;
+    const { fetching } = service({
+      override: {
+        'GET /v1/access/explain': () =>
+          refused(status, status === 401 ? 'unauthorized' : 'not_found'),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    const explaining = section('What someone may do here');
+    await userEvent.selectOptions(
+      within(explaining).getByRole('combobox', { name: 'Whose access' }),
+      ALICE,
+    );
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    expect(await within(explaining).findByRole('status')).toHaveTextContent(
+      'You are signed out. Sign in again to see what they may do.',
+    );
+
+    status = 404;
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    expect(await within(explaining).findByRole('status')).toHaveTextContent(
+      'You may no longer see what they may do.',
+    );
+  });
+
+  it("keeps a change's status separate from an explanation's, so failing to explain does not erase a give's own result", async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/access/explain': () => refused(404, 'not_found'),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Person' }), GRACE);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    await screen.findByText('Allowed Author to Grace on this component.');
+
+    const explaining = section('What someone may do here');
+    await userEvent.selectOptions(
+      within(explaining).getByRole('combobox', { name: 'Whose access' }),
+      ALICE,
+    );
+    await userEvent.click(within(explaining).getByRole('button', { name: 'Show' }));
+    await within(explaining).findByRole('status');
+
+    // The give's own result is still there, in its own status, not replaced by the explain refusal.
+    expect(screen.getByText('Allowed Author to Grace on this component.')).toBeInTheDocument();
   });
 
   it('says there is nothing here for a component that is missing or unreadable', async () => {
