@@ -5,7 +5,7 @@ import { grant, type NewGrant } from './grants.js';
 import { createGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { findRole } from './roles.js';
+import { createRole, findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
@@ -238,6 +238,15 @@ describe('listing grants, roles and people, for managing access', () => {
       'Reviewer',
     ]);
     expect(all.find((role) => role.name === 'Editing')).toMatchObject({ permissions: ['edit'] });
+  });
+
+  it('lists no role from another tenant, as every other listing does', async () => {
+    const created = await service.withTenant(production, (trx) =>
+      createRole(trx, 'Provisional', ['read']),
+    );
+    if (!('role' in created)) throw new Error('the role was not made');
+    const theirs = await service.withTenant(development, (trx) => listRoles(trx, { limit: 50 }));
+    expect(theirs.items.map((role) => role.name)).not.toContain('Provisional');
   });
 
   it('lists the people in this environment, and nobody from another', async () => {

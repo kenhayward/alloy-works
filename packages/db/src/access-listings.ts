@@ -1,18 +1,8 @@
 import type { Level, Permission } from '@alloy-works/domain';
+import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
-/** Where a page starts and how long it is, as every listing takes it (API-007). */
-export interface PageRequest {
-  /** The id the previous page ended at; absent for the first. */
-  readonly after?: string;
-  readonly limit: number;
-}
-
-export interface Page<T> {
-  readonly items: readonly T[];
-  /** The id the next page starts after, or null when this page is the last. */
-  readonly after: string | null;
-}
+export type { Page, PageRequest };
 
 /** A principal as somebody managing access chooses one: by name and address, and whether external. */
 export interface PersonSummary {
@@ -46,21 +36,6 @@ export interface ListedRole {
   readonly id: string;
   readonly name: string;
   readonly permissions: readonly Permission[];
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
-function checked(page: PageRequest): PageRequest {
-  if (!Number.isInteger(page.limit) || page.limit < 1 || page.limit > 100) {
-    throw new Error(`A page's limit is 1 to 100, not ${page.limit}`);
-  }
-  return page;
-}
-
-/** The first `limit` rows, and the id the next page starts after when there were more. */
-function paged<T extends { readonly id: string }>(rows: readonly T[], limit: number): Page<T> {
-  const items = rows.slice(0, limit);
-  return { items, after: rows.length > limit ? (items[items.length - 1]?.id ?? null) : null };
 }
 
 /** Grants with their role, subject and grantor by name, for a listing or for one grant. */
@@ -133,8 +108,8 @@ export async function listGrants(
   level: Level,
   request: PageRequest,
 ): Promise<Page<ListedGrant>> {
-  const page = checked(request);
-  if (page.after !== undefined && !UUID.test(page.after)) return { items: [], after: null };
+  const page = checkedPage(request);
+  if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
   const spaceId = level.kind === 'space' ? level.id : null;
   const artifactId = level.kind === 'artifact' ? level.id : null;
   const rows = await grantsWithNames(trx)
@@ -166,8 +141,8 @@ export async function listRoles(
   trx: TenantTransaction,
   request: PageRequest,
 ): Promise<Page<ListedRole>> {
-  const page = checked(request);
-  if (page.after !== undefined && !UUID.test(page.after)) return { items: [], after: null };
+  const page = checkedPage(request);
+  if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
   const rows = await trx
     .selectFrom('role')
     .select(['id', 'name', 'permissions'])
@@ -187,8 +162,8 @@ export async function listPrincipals(
   trx: TenantTransaction,
   request: PageRequest,
 ): Promise<Page<PersonSummary>> {
-  const page = checked(request);
-  if (page.after !== undefined && !UUID.test(page.after)) return { items: [], after: null };
+  const page = checkedPage(request);
+  if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
   const rows = await trx
     .selectFrom('principal')
     .select(['id', 'display_name as name', 'email', 'kind'])
