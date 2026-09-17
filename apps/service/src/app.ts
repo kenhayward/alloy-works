@@ -25,7 +25,13 @@ import { decide, formatLevel, permissions, type Decision } from '@alloy-works/do
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
-import { administerOrAbove, authorise, notFound, type Authorised } from './access.js';
+import {
+  administerOrAbove,
+  authorise,
+  beforeDeciding,
+  notFound,
+  type Authorised,
+} from './access.js';
 import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { editingHandlers } from './editing.js';
@@ -604,9 +610,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
     }
     const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
     return (request) =>
-      db.withTenant(tenantOf(request), async (trx) =>
-        run(request, await authorise(trx, principalOf(request).principalId, access, request)),
-      );
+      db.withTenant(tenantOf(request), async (trx) => {
+        await beforeDeciding(trx, access);
+        return run(
+          request,
+          await authorise(trx, principalOf(request).principalId, access, request),
+        );
+      });
   }
 
   const http = app.withTypeProvider<ZodTypeProvider>();

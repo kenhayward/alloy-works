@@ -99,7 +99,12 @@ export const managingAccessRoutes = {
     path: '/v1/grants',
     summary: 'Grant a role to a person at one level, as an allow or a denial',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { body: 'level' } },
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { body: 'level' },
+      changesAccess: true,
+    },
     body: GrantBody,
     responses: {
       200: { description: 'Granted', schema: GrantMade },
@@ -119,7 +124,12 @@ export const managingAccessRoutes = {
     path: '/v1/grants/{id}',
     summary: 'Remove a grant, unless it is the last that keeps this environment administered',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { grant: 'id' } },
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { grant: 'id' },
+      changesAccess: true,
+    },
     params: GrantParams,
     responses: {
       200: { description: 'Removed', schema: GrantRemoved },

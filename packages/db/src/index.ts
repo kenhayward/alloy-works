@@ -116,8 +116,10 @@ export {
 } from './access-listings.js';
 export {
   accessFactSources,
+  decideOnly,
   loadFacts,
   loadReadableSet,
+  lockAccessForChange,
   type AccessFactSource,
 } from './access-facts.js';
 export {

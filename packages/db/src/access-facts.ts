@@ -32,7 +32,27 @@ export type AccessFactSource = (typeof accessFactSources)[number];
  * decides whether to write a grant or a group membership.
  */
 export async function lockAccessForChange(trx: TenantTransaction): Promise<void> {
+  // Refused before the lock is asked for, not after: in a transaction already holding the epoch FOR
+  // SHARE, asking is itself the upgrade that deadlocks (0013_deciding_only.sql).
+  const { rows } = await sql<{ deciding: string | null }>`
+    select current_setting('alloy.deciding_only', true) as deciding
+  `.execute(trx);
+  if (rows[0]?.deciding === 'on') {
+    throw new Error(
+      'access changed in a transaction that declared that it only decides: a route that changes access declares changesAccess',
+    );
+  }
   await sql`select singleton from access_epoch for update`.execute(trx);
+}
+
+/**
+ * Declares that this transaction decides and changes nothing a decision reads. From here to its end, a
+ * write to any such fact - refused by 0013's trigger - and `lockAccessForChange` both fail, so a route
+ * that changes access without declaring it fails the first time it is exercised, rather than
+ * deadlocking against another such route only when two run at once.
+ */
+export async function decideOnly(trx: TenantTransaction): Promise<void> {
+  await sql`select set_config('alloy.deciding_only', 'on', true)`.execute(trx);
 }
 
 /**

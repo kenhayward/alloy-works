@@ -28,11 +28,22 @@ export type RouteTarget =
 /**
  * What a route checks before its handler runs (access.md, "Refusing"): nothing; a session; or a
  * session and a permission on a target, decided in the transaction the handler then runs in.
+ *
+ * `changesAccess` declares that the handler changes a fact a decision reads - a grant, a membership, a
+ * role's permissions, a principal's kind. Such a route takes the access epoch FOR UPDATE before it
+ * decides, where any other takes it FOR SHARE to decide and may then change none of those facts: a
+ * change that decided first would upgrade its lock, and two at once would deadlock (access.md,
+ * "Grants").
  */
 export type RouteAccess =
   | { readonly check: 'none' }
   | { readonly check: 'session' }
-  | { readonly check: 'permission'; readonly permission: Permission; readonly target: RouteTarget };
+  | {
+      readonly check: 'permission';
+      readonly permission: Permission;
+      readonly target: RouteTarget;
+      readonly changesAccess?: true;
+    };
 
 /**
  * One route, declared once. The service registers it, validates and serialises with its schemas,

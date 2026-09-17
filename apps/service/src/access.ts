@@ -1,6 +1,12 @@
 // apps/service/src/access.ts
 import type { RouteAccess, RouteTarget } from '@alloy-works/api-contract';
-import { grantLevel, loadFacts, type TenantTransaction } from '@alloy-works/db';
+import {
+  decideOnly,
+  grantLevel,
+  loadFacts,
+  lockAccessForChange,
+  type TenantTransaction,
+} from '@alloy-works/db';
 import {
   decide,
   parseLevel,
@@ -62,6 +68,21 @@ async function targetOf(
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];
   return typeof id === 'string' ? parseLevel(`${kind}:${id}`) : undefined;
+}
+
+/**
+ * What a permission-checked route's transaction takes before `authorise` decides anything. A route that
+ * changes access takes the epoch FOR UPDATE first, so the shared lock its decision then takes is one it
+ * already holds more of, never an upgrade (access.md, "Grants"). Every other route declares that it only
+ * decides, so a change it makes after all - a handler calling `grant`, say - is refused on the spot
+ * rather than deadlocking against another change only when two arrive together.
+ */
+export async function beforeDeciding(
+  trx: TenantTransaction,
+  check: PermissionCheck,
+): Promise<void> {
+  if (check.changesAccess) await lockAccessForChange(trx);
+  else await decideOnly(trx);
 }
 
 /**
