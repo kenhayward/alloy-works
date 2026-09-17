@@ -10,7 +10,7 @@ import {
 } from './first-administrator.js';
 import { administeringGrants, grant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
-import { claimInvitation } from './invitations.js';
+import { claimInvitation, invite } from './invitations.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -169,14 +169,18 @@ describe('the first administrator, invited by address', () => {
   });
 
   /**
-   * Starts Ada's claim, waits until `inviteFirstAdministrator` is genuinely blocked behind it - on the
-   * `for update of i` that locks her still-open invitation, the same row `claimInvitation` locks - then
-   * lets the claim commit and returns what `inviteFirstAdministrator` answered. A claim takes no epoch
-   * (invitations.ts), so nothing here waits on that; it waits on the invitation row itself.
+   * Starts a claim of `claiming`'s address, waits until `inviteFirstAdministrator` for `invitingEmail`
+   * is genuinely blocked behind it, then lets the claim commit and returns what `inviteFirstAdministrator`
+   * answered. A claim takes no epoch (invitations.ts), so nothing here waits on that; it waits on an
+   * invitation row itself - the tenant's waiting administrator invitation when `invitingEmail` names
+   * another address (the `for update of i` at first-administrator.ts ~117), or `claiming`'s own row
+   * when the two are the same address and nothing else is waiting to block on first (the `for update`
+   * at ~146).
    */
   const racingInviteFirstAdministrator = async (
     on: Tenant,
-    email: string,
+    claiming: { subject: string; email: string },
+    invitingEmail: string,
   ): Promise<FirstAdministratorAnswer> => {
     const claimedPid = deferred<number>();
     const claimed = latch();
@@ -188,10 +192,10 @@ describe('the first administrator, invited by address', () => {
         trx,
         {
           issuer: ISSUER,
-          subject: 'ada',
-          email: 'ada@example.com',
+          subject: claiming.subject,
+          email: claiming.email,
           emailVerified: true,
-          name: 'ada',
+          name: claiming.subject,
         },
         'organisation',
       );
@@ -202,7 +206,7 @@ describe('the first administrator, invited by address', () => {
     const pid = await claimedPid.promise;
     await claimed.opened;
 
-    const invitingWhileClaiming = inviting(on, email);
+    const invitingWhileClaiming = inviting(on, invitingEmail);
     await untilBlockedBy(db.adminUrl, pid, 1);
     commit.open();
 
@@ -214,7 +218,13 @@ describe('the first administrator, invited by address', () => {
     const racing = await tenant('Racing');
     await inviting(racing, 'ada@example.com');
 
-    await expect(racingInviteFirstAdministrator(racing, 'grace@example.com')).resolves.toEqual({
+    await expect(
+      racingInviteFirstAdministrator(
+        racing,
+        { subject: 'ada', email: 'ada@example.com' },
+        'grace@example.com',
+      ),
+    ).resolves.toEqual({
       refused: 'first_administrator.administrator_exists',
     });
     // Nothing left for the checks made before the wait to have missed: still one invitation, Ada's,
@@ -229,13 +239,50 @@ describe('the first administrator, invited by address', () => {
     const racing = await tenant('Racing Again');
     await inviting(racing, 'ada@example.com');
 
-    await expect(racingInviteFirstAdministrator(racing, 'ada@example.com')).resolves.toEqual({
+    await expect(
+      racingInviteFirstAdministrator(
+        racing,
+        { subject: 'ada', email: 'ada@example.com' },
+        'ada@example.com',
+      ),
+    ).resolves.toEqual({
       refused: 'first_administrator.administrator_exists',
     });
     const invitations = await service.withTenant(racing, (trx) =>
       trx.selectFrom('invitation').select(['email', 'principal_id']).execute(),
     );
     expect(invitations).toHaveLength(1);
+  });
+
+  it('answers signed_in, not administrator_exists, when a claim to a non-administrator invitation at the same address is in flight', async () => {
+    const racing = await tenant('Racing Non Admin');
+    // Nobody administers here, and nothing waits to administer - so the `for update of i` over the
+    // tenant's waiting administrator invitations (~117) matches no rows and never blocks: this address's
+    // own invitation, made through `invite` rather than `inviteFirstAdministrator`, holds no
+    // Administrator grant to join against. Only the `for update` over this address's own row (~146)
+    // can block on the claim below, which is what this test means to exercise - the earlier wait
+    // cannot catch a race it never waits through.
+    const inviter = await service.withTenant(racing, (trx) => made(trx, 'inviter'));
+    const invited = await service.withTenant(racing, (trx) =>
+      invite(trx, { email: 'grace@example.com', external: false, invitedBy: inviter }),
+    );
+    if (!('invited' in invited)) throw new Error(`invite refused: ${invited.refused}`);
+
+    await expect(
+      racingInviteFirstAdministrator(
+        racing,
+        { subject: 'grace-1', email: 'grace@example.com' },
+        'grace@example.com',
+      ),
+    ).resolves.toEqual({
+      refused: 'first_administrator.signed_in',
+    });
+    // Nothing granted: the race never reached the insert that would have made a second principal,
+    // invitation and Administrator grant for an address somebody already signed in with.
+    const grants = await service.withTenant(racing, (trx) =>
+      trx.selectFrom('access_grant').select('id').execute(),
+    );
+    expect(grants).toEqual([]);
   });
 
   it('cannot set who named an invitation, by the runtime role the service uses', async () => {
