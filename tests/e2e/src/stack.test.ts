@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
  * object store and the sign-in provider, all in containers. Addressed as 127.0.0.1 rather than
  * `dev.acme.localhost`, because how a machine resolves `*.localhost` is not this test's business.
  */
-const SERVICE = process.env.ALLOY_E2E_SERVICE ?? 'http://127.0.0.1:8080';
+const SERVICE = process.env.ALLOY_E2E_SERVICE ?? 'http://127.0.0.1:8088';
 /** What the provider calls itself, which is what the service sends the browser to. */
 const IDP_ISSUER = process.env.ALLOY_E2E_IDP_ISSUER ?? 'http://idp.localhost:9090';
 /** Where it actually answers, so this suite needs no opinion about resolving `*.localhost`. */

@@ -40,7 +40,7 @@ const Environment = z
       .int({ error: 'must be a port number' })
       .min(1, { error: 'must be a port number' })
       .max(65535, { error: 'must be a port number' })
-      .default(8080),
+      .default(8088),
     HOST: z.string().min(1).default('127.0.0.1'),
     LOG_LEVEL: z
       .enum(LOG_LEVELS, { error: `must be one of ${LOG_LEVELS.join(', ')}` })

@@ -480,7 +480,7 @@ what keeps `node_modules` and the tests out of that context:
 | --------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `build`   | The workspaces the containers need, installed and built                                    | Nothing; the other targets copy from it              |
 | `tools`   | The whole workspace, `tsx` included                                                        | The compose stack's setup, and the stand-in provider |
-| `service` | `apps/service` and its production dependencies, plus the built renderer at `/app/renderer` | `node dist/server.js` on 8080                        |
+| `service` | `apps/service` and its production dependencies, plus the built renderer at `/app/renderer` | `node dist/server.js` on 8088                        |
 | `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash         | `node dist/main.js`                                  |
 
 Neither image carries development tooling, test files or Electron: the install is filtered to the

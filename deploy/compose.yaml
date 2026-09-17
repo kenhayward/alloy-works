@@ -2,7 +2,8 @@
 # default for containers bound to 127.0.0.1; none is a credential for anything deployed.
 #
 # Run it from anywhere with `docker compose -f deploy/compose.yaml ...`; deploy/README.md has the
-# rest, including how to stop typing that.
+# rest, including how to stop typing that. Every port it publishes is read from deploy/.env, which
+# Compose loads from this directory; deploy/.env.example names them all with their defaults.
 name: alloy-works
 
 services:
@@ -11,7 +12,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - '127.0.0.1:5432:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -29,19 +30,20 @@ services:
   # port is the same number as the one inside.
   seaweedfs:
     image: chrislusf/seaweedfs:4.46
-    command: ['server', '-dir=/data', '-s3', '-s3.port=8333', '-s3.iam.readOnly=false']
+    command:
+      ['server', '-dir=/data', '-s3', '-s3.port=${STORE_PORT:-8333}', '-s3.iam.readOnly=false']
     environment:
       AWS_ACCESS_KEY_ID: alloy-store-admin
       AWS_SECRET_ACCESS_KEY: alloy-store-admin-dev-secret
     ports:
-      - '127.0.0.1:8333:8333'
+      - '127.0.0.1:${STORE_PORT:-8333}:${STORE_PORT:-8333}'
     volumes:
       - seaweedfs-data:/data
     networks:
       default:
         aliases: [store.localhost]
     healthcheck:
-      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/healthz']
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:${STORE_PORT:-8333}/healthz']
       interval: 2s
       timeout: 5s
       retries: 30
@@ -58,11 +60,12 @@ services:
     command: ['pnpm', '--filter', '@alloy-works/stand-in-idp', 'start']
     environment:
       STAND_IN_HOST: 0.0.0.0
-      STAND_IN_ISSUER: http://idp.localhost:9090
-      STAND_IN_REDIRECT_URIS: http://acme.localhost:8080/v1/sign-in/organisation/callback,http://dev.acme.localhost:8080/v1/sign-in/organisation/callback,http://127.0.0.1:8080/v1/sign-in/organisation/callback
-      STAND_IN_GOOGLE_REDIRECT_URI: http://signin.localhost:8080/v1/sign-in/google/callback
+      STAND_IN_PORT: '${IDP_PORT:-9090}'
+      STAND_IN_ISSUER: http://idp.localhost:${IDP_PORT:-9090}
+      STAND_IN_REDIRECT_URIS: http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://127.0.0.1:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback
+      STAND_IN_GOOGLE_REDIRECT_URI: http://signin.localhost:${SERVICE_PORT:-8088}/v1/sign-in/google/callback
     ports:
-      - '127.0.0.1:9090:9090'
+      - '127.0.0.1:${IDP_PORT:-9090}:${IDP_PORT:-9090}'
     networks:
       default:
         aliases: [idp.localhost]
@@ -80,8 +83,8 @@ services:
     environment:
       DATABASE_ADMIN_URL: postgres://postgres:postgres@postgres:5432/postgres
       DEV_DATABASE_URL: postgres://postgres:postgres@postgres:5432/alloy_dev
-      STAND_IN_ISSUER: http://idp.localhost:9090
-      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      STAND_IN_ISSUER: http://idp.localhost:${IDP_PORT:-9090}
+      OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
       # An address anything can reach, whatever it makes of *.localhost: the end-to-end
@@ -104,20 +107,20 @@ services:
     environment:
       DATABASE_URL: postgres://aw_service:aw_service_dev@postgres:5432/alloy_dev
       HOST: 0.0.0.0
-      PORT: '8080'
+      PORT: '${SERVICE_PORT:-8088}'
       LOG_LEVEL: info
-      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
       SECRET_STAND_IN: stand-in-dev-secret
       SECRET_GOOGLE: stand-in-google-secret
       SECRET_SIGN_IN_STATE: development-only-state-key-not-a-secret
-      GOOGLE_ISSUER: http://idp.localhost:9090
+      GOOGLE_ISSUER: http://idp.localhost:${IDP_PORT:-9090}
       GOOGLE_CLIENT_ID: alloy-google-dev
-      SIGN_IN_HOST: signin.localhost:8080
+      SIGN_IN_HOST: signin.localhost:${SERVICE_PORT:-8088}
       ALLOW_INSECURE_ISSUERS: 'true'
     ports:
-      - '127.0.0.1:8080:8080'
+      - '127.0.0.1:${SERVICE_PORT:-8088}:${SERVICE_PORT:-8088}'
     depends_on:
       setup:
         condition: service_completed_successfully
@@ -134,7 +137,7 @@ services:
     environment:
       DATABASE_URL: postgres://aw_worker:aw_worker_dev@postgres:5432/alloy_dev
       LOG_LEVEL: info
-      OBJECT_STORE_ENDPOINT: http://store.localhost:8333
+      OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
     depends_on:

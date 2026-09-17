@@ -57,7 +57,7 @@ COPY --from=build --chown=node:node /prod/service ./
 COPY --from=build --chown=node:node /repo/apps/web/dist /app/renderer
 ENV RENDERER_ROOT=/app/renderer
 USER node
-EXPOSE 8080
+EXPOSE 8088
 CMD ["node", "dist/server.js"]
 
 FROM base AS worker

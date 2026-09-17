@@ -104,7 +104,7 @@ pnpm app
 ```
 
 Run the whole system in containers - database, object store, sign-in provider, service and worker -
-and open `http://dev.acme.localhost:8080`:
+and open `http://dev.acme.localhost:8088`:
 
 ```bash
 docker compose -f deploy/compose.yaml up -d --build --wait

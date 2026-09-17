@@ -16,6 +16,7 @@ together, and what the ignore list keeps out of a build.
 | `Dockerfile`              | Every image the system runs as, as four targets sharing one install and one build |
 | `Dockerfile.dockerignore` | What never enters a build context: `node_modules`, `dist`, the docs, this folder  |
 | `compose.yaml`            | The whole system for development, and the shape a small installation takes        |
+| `.env.example`            | The ports the stack publishes, with their defaults; copy to `.env` to change them |
 | `service.env.example`     | Settings for running the service **from source**; copy to `service.env`           |
 | `worker.env.example`      | The same for the worker; copy to `worker.env`                                     |
 
@@ -52,15 +53,15 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `seaweedfs`    | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment      |
 | `stand-in-idp` | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google        |
 | `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each |
-| `service`      | `service`                  | `127.0.0.1:8080`      | The API, and the renderer beside it                            |
+| `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                            |
 | `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying the pinned Typst           |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
 
-Open **`http://dev.acme.localhost:8080`** once it is up. The page names the environment, offers a
+Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers
-at `http://127.0.0.1:8080`, which is what the end-to-end suite uses and what to reach for when
+at `http://127.0.0.1:8088`, which is what the end-to-end suite uses and what to reach for when
 `*.localhost` does not resolve on your machine.
 
 ## Two names that have to work from both sides
@@ -71,8 +72,8 @@ redirect both carry the address that made them, so the browser has to be able to
 address the service used. Any `*.localhost` name resolves to the local machine in a browser and to
 the container inside the compose network, which is what makes one address work on both sides.
 
-**A published port must therefore be the same number as the port inside the container.** Change one
-and the links the service signs stop resolving.
+**A published port must therefore be the same number as the port inside the container.** Each port
+in `.env` sets both, and every address that names it, so they move together.
 
 ## Building the images by hand
 
@@ -101,21 +102,23 @@ because where they would be pushed comes with hosting.
 
 ## When a port is already taken
 
-Put a `compose.override.yaml` beside `compose.yaml` in this directory, which is where Compose looks
-for one. It is git-ignored, so it stays yours:
+Every port the stack publishes comes from `deploy/.env`, which Compose reads from this directory.
+Copy the example and change what you need; the copy is git-ignored:
 
-```yaml
-services:
-  service:
-    ports: !override
-      - '127.0.0.1:18080:8080'
-  stand-in-idp:
-    environment:
-      STAND_IN_REDIRECT_URIS: http://127.0.0.1:18080/v1/sign-in/organisation/callback
+```bash
+cp deploy/.env.example deploy/.env
 ```
 
-`!override` replaces the list rather than adding to it. The stand-in only returns people to
-addresses it has been told about, so a moved service needs its redirect address moved too.
+| Variable        | Default | What it moves                                                                           |
+| --------------- | ------- | --------------------------------------------------------------------------------------- |
+| `SERVICE_PORT`  | `8088`  | The service, and the addresses the stand-in provider returns people to after signing in |
+| `IDP_PORT`      | `9090`  | The stand-in provider, and the issuer address the setup and the service are given       |
+| `STORE_PORT`    | `8333`  | The object store's S3 API, and the endpoint the setup, the service and the worker use   |
+| `POSTGRES_PORT` | `5432`  | Postgres on `127.0.0.1` only; the containers still reach it at `postgres:5432`          |
+
+Each variable sets the port inside the container and the one published, and every setting that
+names it, so nothing has to be moved by hand. The end-to-end suite reads its own addresses:
+`ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP` and `ALLOY_E2E_IDP_ISSUER` tell it where a moved stack is.
 
 ## Settings for running from source
 
