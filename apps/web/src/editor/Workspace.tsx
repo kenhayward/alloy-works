@@ -35,17 +35,45 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   );
   const hash = useHash();
   const [me, setMe] = useState<string | null>(null);
+  // Asking who is signed in failed for a reason other than nobody being signed in (final review,
+  // finding 5): a server error or no answer, which Try again asks about once more.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let current = true;
-    void client.GET('/v1/me').then(({ data }) => {
-      if (current && data) setMe(data.id);
-    });
+    client
+      .GET('/v1/me')
+      .then(({ data, response }) => {
+        if (!current) return;
+        if (data) setMe(data.id);
+        // Signed out shows nothing here: the environment panel beside it offers the way in.
+        else if (response.status !== 401) setFailed(true);
+      })
+      .catch(() => {
+        if (current) setFailed(true);
+      });
     return () => {
       current = false;
     };
-  }, [client]);
+  }, [client, attempt]);
 
+  if (failed) {
+    return (
+      <section>
+        <p>The workspace could not be loaded.</p>
+        <button
+          type="button"
+          onClick={() => {
+            setFailed(false);
+            setAttempt((count) => count + 1);
+          }}
+        >
+          Try again
+        </button>
+      </section>
+    );
+  }
   if (me === null) return null;
   const opened = OPEN.exec(hash)?.[1];
   if (opened) {

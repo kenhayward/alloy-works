@@ -321,6 +321,45 @@ describe('the component editor', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('says the component could not be opened, not that it is missing, when the service fails, and opens it on Try again', async () => {
+    let attempts = 0;
+    const { surface } = open({
+      'GET /v1/components/{id}': () => {
+        attempts += 1;
+        return attempts === 1
+          ? json(500, { code: 'internal', message: 'no', traceId: 't' })
+          : json(200, opened());
+      },
+    });
+    expect(await screen.findByText('The component could not be opened.')).toBeInTheDocument();
+    expect(screen.queryByText('There is nothing here, or nothing you may read.')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await surface();
+    expect(attempts).toBe(2);
+  });
+
+  it('says the component could not be opened when the request itself fails', async () => {
+    open({
+      'GET /v1/components/{id}': () => {
+        throw new Error('network down');
+      },
+    });
+    expect(await screen.findByText('The component could not be opened.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('says the author is signed out when opening answers 401', async () => {
+    open({
+      'GET /v1/components/{id}': () =>
+        json(401, { code: 'unauthenticated', message: 'no', traceId: 't' }),
+    });
+    expect(
+      await screen.findByText('You are signed out. Sign in again to open this component.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('refuses input while Done editing is releasing the lock (task 10, finding D)', async () => {

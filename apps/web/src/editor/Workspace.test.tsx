@@ -90,6 +90,30 @@ describe('the workspace', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('says the workspace could not be loaded, rather than showing nothing, when asking who is signed in fails, and loads on Try again', async () => {
+    let attempts = 0;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') {
+        attempts += 1;
+        if (attempts === 1) return json(500, { code: 'internal', message: 'x', traceId: 't' });
+        if (attempts === 2) throw new Error('network down');
+        return json(200, me);
+      }
+      if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    render(<Workspace fetch={fetching} />);
+    expect(await screen.findByText('The workspace could not be loaded.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await vi.waitFor(() => expect(attempts).toBe(2));
+    expect(await screen.findByText('The workspace could not be loaded.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('There are no components you may read.')).toBeInTheDocument();
+  });
+
   it('offers to try again when the first page fails to load, and succeeds on retry', async () => {
     let attempt = 0;
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {

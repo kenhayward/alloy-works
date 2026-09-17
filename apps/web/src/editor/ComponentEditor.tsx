@@ -42,6 +42,8 @@ export interface ComponentEditorProps {
 type Loaded =
   | { readonly state: 'loading' }
   | { readonly state: 'missing' }
+  /** Opening failed for a reason a retry may change (final review, finding 4). */
+  | { readonly state: 'failed'; readonly signedOut: boolean }
   | { readonly state: 'unreadable'; readonly component: ComponentView }
   | {
       readonly state: 'readOnly';
@@ -73,6 +75,8 @@ export function ComponentEditor({
   onView,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
+  // Bumped by Try again after opening failed, to ask for the component once more.
+  const [attempt, setAttempt] = useState(0);
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -105,10 +109,16 @@ export function ComponentEditor({
     let current = true;
     void client
       .GET('/v1/components/{id}', { params: { path: { id: componentId } } })
-      .then(({ data }) => {
+      .then(({ data, response }) => {
         if (!current) return;
         if (!data) {
-          setLoaded({ state: 'missing' });
+          // Only a 404 means missing or unreadable, which the service answers alike (final review,
+          // finding 4): signed out, a server error or no answer is not the component's absence.
+          setLoaded(
+            response.status === 404
+              ? { state: 'missing' }
+              : { state: 'failed', signedOut: response.status === 401 },
+          );
           return;
         }
         let opened;
@@ -125,12 +135,12 @@ export function ComponentEditor({
         );
       })
       .catch(() => {
-        if (current) setLoaded({ state: 'missing' });
+        if (current) setLoaded({ state: 'failed', signedOut: false });
       });
     return () => {
       current = false;
     };
-  }, [client, componentId]);
+  }, [client, componentId, attempt]);
 
   const component = loaded.state === 'open' ? loaded.component : null;
 
@@ -264,6 +274,26 @@ export function ComponentEditor({
   if (loaded.state === 'loading') return <p>Opening...</p>;
   if (loaded.state === 'missing') {
     return <p>There is nothing here, or nothing you may read.</p>;
+  }
+  if (loaded.state === 'failed') {
+    return (
+      <>
+        <p>
+          {loaded.signedOut
+            ? 'You are signed out. Sign in again to open this component.'
+            : 'The component could not be opened.'}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoaded({ state: 'loading' });
+            setAttempt((count) => count + 1);
+          }}
+        >
+          Try again
+        </button>
+      </>
+    );
   }
   const { component: shown } = loaded;
   const title = (shown.content as { title?: unknown }).title;
