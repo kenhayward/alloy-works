@@ -196,6 +196,61 @@ describe('cutting a version from an editing session, and releasing its lock', ()
       expect(kept).toHaveLength(2);
     });
 
+    it('lets a session whose lock lapsed claim again under the same id, continue its sequence, and cut what it saved before and after', async () => {
+      const component = await newComponent();
+      const as = { artifactId: component.id, principal: ada, session: randomUUID() };
+      await service.withTenant(production, (trx) => claimLock(trx, as));
+      await service.withTenant(production, (trx) =>
+        saveIteration(trx, {
+          ...as,
+          sequence: 1,
+          openedFrom: component.openedFrom,
+          content: content('Unbox'),
+        }),
+      );
+      // A pause longer than the lock period: the next write answers lock.required.
+      await expireLock(component.id);
+      const refused = await service.withTenant(production, (trx) =>
+        saveIteration(trx, {
+          ...as,
+          sequence: 2,
+          openedFrom: component.openedFrom,
+          content: content('Unbox the printer.'),
+        }),
+      );
+      expect(refused).toMatchObject({ answer: 'lock.required' });
+
+      const claimed = await service.withTenant(production, (trx) => claimLock(trx, as));
+      expect(claimed).toMatchObject({
+        answer: 'claimed',
+        lock: { holder: ada, session: as.session },
+      });
+      const saved = await service.withTenant(production, (trx) =>
+        saveIteration(trx, {
+          ...as,
+          sequence: 3,
+          openedFrom: component.openedFrom,
+          content: content('Unbox the printer.', 'Keep the box.'),
+        }),
+      );
+      expect(saved).toMatchObject({ answer: 'accepted', sequence: 3, repeated: false });
+
+      const cut = await service.withTenant(production, (trx) =>
+        cutVersion(trx, { ...as, openedFrom: component.openedFrom }),
+      );
+      if (cut.answer !== 'recorded') throw new Error(cut.answer);
+      expect(cut.version.content).toEqual(content('Unbox the printer.', 'Keep the box.'));
+      const iterations = await service.withTenant(production, (trx) =>
+        trx
+          .selectFrom('iteration')
+          .select('sequence')
+          .where('artifact_id', '=', component.id)
+          .orderBy('sequence')
+          .execute(),
+      );
+      expect(iterations.map((row) => row.sequence)).toEqual([1, 3]);
+    });
+
     it('answers version.unchanged when nothing was saved since the session opened, or nothing differs', async () => {
       const component = await newComponent();
       const session = randomUUID();

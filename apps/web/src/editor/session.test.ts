@@ -509,12 +509,131 @@ describe('the editing session', () => {
     });
   });
 
-  it('stops when Done editing is refused because the lock is gone', async () => {
+  it('re-claims once when Done editing finds the lock lapsed, and stops if the retried release is refused again', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');
     await clock.advance(0);
     service.cutAnswer = async () => ({ ok: false, code: 'lock_required' });
     await session.doneEditing();
+    await clock.advance(60_000);
+    // One re-claim under the same session, one retry of the release, and nothing more: never a loop.
+    expect(service.calls).toEqual([
+      'claim',
+      'save 1',
+      'release from v1',
+      'claim',
+      'release from v1',
+    ]);
+    expect(service.sessionId).toBe('session-0');
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      notice: 'This session no longer holds the component.',
+    });
+  });
+
+  it('re-claims under the same session when a save finds the lock lapsed after a long pause, and saves again, continuing the sequence', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    let lapsed = true;
+    service.saveAnswer = async () => {
+      if (!lapsed) return undefined;
+      lapsed = false;
+      return { ok: false, code: 'lock_required' };
+    };
+    // Longer than the lock period: nothing extends the lock while nobody types.
+    await clock.advance(20 * 60_000);
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'save 2', 'claim', 'save 3']);
+    expect(service.sessionId).toBe('session-0');
+    expect(service.saved.at(-1)).toMatchObject({ sequence: 3, text: 'Unbox the printer' });
+    expect(session.view()).toMatchObject({ phase: 'editing', save: 'saved' });
+  });
+
+  it('goes to lost, keeping the text, when the re-claim after a lapsed lock finds somebody else holding it', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_required' });
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'save 2', 'claim']);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      notice:
+        'This session no longer holds the component. Your unsaved text is kept below to copy.',
+    });
+  });
+
+  it('re-claims at most once for a refused save, going to lost when the retried save finds the lock gone again', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_required' });
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'save 2', 'claim', 'save 3']);
+    expect(session.view()).toMatchObject({ phase: 'lost', save: 'stopped' });
+  });
+
+  it('goes to lost when the save retried after a re-claim finds the version moved on', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    const answers: SaveResult[] = [
+      { ok: false, code: 'lock_required' },
+      { ok: false, code: 'version_precondition' },
+    ];
+    service.saveAnswer = async () => answers.shift();
+    type('Unbox the printer');
+    await clock.advance(60_000);
+    expect(service.calls).toEqual(['claim', 'save 1', 'save 2', 'claim', 'save 3']);
+    expect(session.view().phase).toBe('lost');
+  });
+
+  it('re-claims once when Save version finds the lock lapsed, and cuts the version', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    const answers: CutResult[] = [{ ok: false, code: 'lock_required' }];
+    service.cutAnswer = async () =>
+      answers.shift() ?? { ok: true, outcome: 'cut', version: { id: 'v2', number: '0.2' } };
+    await session.saveVersion();
+    expect(service.calls).toEqual(['claim', 'save 1', 'cut from v1', 'claim', 'cut from v1']);
+    expect(session.view()).toMatchObject({ phase: 'editing', notice: 'Version 0.2 saved.' });
+  });
+
+  it('re-claims once when Done editing finds the lock lapsed, and releases', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    const answers: CutResult[] = [{ ok: false, code: 'lock_required' }];
+    service.cutAnswer = async () =>
+      answers.shift() ?? { ok: true, outcome: 'cut', version: { id: 'v2', number: '0.2' } };
+    await session.doneEditing();
+    expect(service.calls).toEqual([
+      'claim',
+      'save 1',
+      'release from v1',
+      'claim',
+      'release from v1',
+    ]);
+    expect(session.view()).toMatchObject({ phase: 'reading', version: { id: 'v2' } });
+  });
+
+  it('goes to lost without cutting when the re-claim before a retried Save version is refused', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    service.cutAnswer = async () => ({ ok: false, code: 'lock_required' });
+    const holder = { name: 'Grace', expectedRelease: '2026-09-16T12:15:00.000Z', yours: false };
+    service.claimAnswer = async () => ({ ok: false, code: 'lock_held', holder });
+    await session.saveVersion();
+    expect(service.calls).toEqual(['claim', 'save 1', 'cut from v1', 'claim']);
     expect(session.view()).toMatchObject({
       phase: 'lost',
       notice: 'This session no longer holds the component.',

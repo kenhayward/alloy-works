@@ -251,8 +251,29 @@ export function createSession(options: SessionOptions): Session {
       ? 'This session no longer holds the component. Your unsaved text is kept below to copy.'
       : 'This session no longer holds the component.';
 
-  /** Sends what the editor holds now, once; answers whether everything changed so far is acknowledged. */
-  const send = async (): Promise<boolean> => {
+  /** One claim, raced against `timing.claimMs`, its request aborted once the race is lost. */
+  const claimWithin = async (move: boolean, fresh: boolean): Promise<ClaimResult> => {
+    const controller = new AbortController();
+    let timer: unknown = null;
+    const timedOut = new Promise<ClaimResult>((resolve) => {
+      timer = clock.setTimeout(() => {
+        controller.abort();
+        resolve({ ok: false, code: 'failed' });
+      }, timing.claimMs);
+    });
+    const result = await Promise.race([service.claim(move, fresh, controller.signal), timedOut]);
+    cancel(timer);
+    return result;
+  };
+
+  /**
+   * Sends what the editor holds now, once; answers whether everything changed so far is acknowledged.
+   *
+   * `afterReclaim` (final review, the critical finding): true for the one retry made after this very
+   * write found the lock lapsed and the session claimed it again, so a second `lock_required` goes to
+   * `lost` instead of claiming again - at most one re-claim per refused write, never a loop.
+   */
+  const send = async (afterReclaim = false): Promise<boolean> => {
     if (disposed) return false;
     // Whenever an attempt starts, any backoff wait it grew out of is spent - never let a stale handle
     // linger to fire a redundant retry later (finding 3).
@@ -289,6 +310,19 @@ export function createSession(options: SessionOptions): Session {
       save = dirty ? 'saving' : 'saved';
       publish();
       return !dirty;
+    }
+    if (result.code === 'lock_required' && !afterReclaim) {
+      // Nobody holds the lock: most often a pause longer than the lock period, since only an accepted
+      // write extends it (final review, the critical finding). Claim it again under this same session
+      // id - not fresh, so the sequence continues and the service still finds this session's earlier
+      // iterations - and send again. If somebody else took it meanwhile, the claim says so and this
+      // stops exactly as before.
+      dirty = true;
+      const reclaimed = await claimWithin(false, false);
+      if (disposed) return false;
+      if (reclaimed.ok) return send(true);
+      lose(lockGoneMessage());
+      return false;
     }
     if (
       result.code === HELD ||
@@ -389,16 +423,7 @@ export function createSession(options: SessionOptions): Session {
     failures = 0;
     hasFailed = false;
     publish();
-    const controller = new AbortController();
-    let timer: unknown = null;
-    const timedOut = new Promise<ClaimResult>((resolve) => {
-      timer = clock.setTimeout(() => {
-        controller.abort();
-        resolve({ ok: false, code: 'failed' });
-      }, timing.claimMs);
-    });
-    const result = await Promise.race([service.claim(move, fresh, controller.signal), timedOut]);
-    cancel(timer);
+    const result = await claimWithin(move, fresh);
     if (disposed) return;
     if (result.ok) {
       phase = 'editing';
@@ -468,8 +493,20 @@ export function createSession(options: SessionOptions): Session {
       publish();
       return;
     }
-    const result = await request(version.id);
+    let result = await request(version.id);
     if (disposed) return;
+    if (!result.ok && result.code === 'lock_required') {
+      // As a save's (final review, the critical finding): the lock lapsed, so claim it again under the
+      // same session and ask once more - once only. A refused claim stops as a refused cut always has.
+      const reclaimed = await claimWithin(false, false);
+      if (disposed) return;
+      if (!reclaimed.ok) {
+        lose(lockGoneMessage());
+        return;
+      }
+      result = await request(version.id);
+      if (disposed) return;
+    }
     if (!result.ok) {
       if (
         result.code === HELD ||
@@ -510,19 +547,7 @@ export function createSession(options: SessionOptions): Session {
     phase = 'claiming';
     notice = 'Starting to edit.';
     publish();
-    const reclaimController = new AbortController();
-    let reclaimTimer: unknown = null;
-    const reclaimTimedOut = new Promise<ClaimResult>((resolve) => {
-      reclaimTimer = clock.setTimeout(() => {
-        reclaimController.abort();
-        resolve({ ok: false, code: 'failed' });
-      }, timing.claimMs);
-    });
-    const reclaimed = await Promise.race([
-      service.claim(false, false, reclaimController.signal),
-      reclaimTimedOut,
-    ]);
-    cancel(reclaimTimer);
+    const reclaimed = await claimWithin(false, false);
     if (disposed) return;
     if (!reclaimed.ok) {
       lose(lockGoneMessage());
