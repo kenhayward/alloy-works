@@ -9,7 +9,7 @@
 > first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
 > opens a component's paragraphs, saves them as iterations under a lock and cuts versions from them.
 > Nothing yet creates a component, pastes, edits anything but paragraphs of text, or publishes; an
-> administrator grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the
+> administrator invites people by address and grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the
 > scaffolding's, and nothing renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
@@ -31,7 +31,7 @@ One pnpm workspace, one lock file, twelve packages.
 | `packages/editor`       | `@alloy-works/editor`       | The editor's ProseMirror schema, the mapping to and from the stored model, the identity plugin, the invariants every transaction keeps, and the view one component is edited in. Browser code, no React; all but the view is tested in Node                                                                                                                                                                                                                                                                              |
 | `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests; and access - roles, groups, grants, the access epoch, the facts a decision reads and the first administrator. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                                   |
+| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests; and access - roles, groups, grants, the access epoch, the facts a decision reads, invitations and the first administrator. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                      |
 | `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas with what each checks, and the OpenAPI document generated from them                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes each checked as it declares, and the built renderer beside them                                                                                                                                                                                                                                                                                                                                                                                      |
 | `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -266,29 +266,33 @@ Content is stored as parsed and never rewritten; migration stays a projection on
 Who may do what to which artifact, designed in [`design/access.md`](design/access.md): a pure decision in
 `packages/domain/src/access/`, the stores and the facts it reads in `packages/db`, and a route helper in
 `apps/service` that checks what each route declares. Grants are listed, made and removed through routes,
-and a component's access page in `apps/web` calls them; roles and people are listed to choose from.
-Nothing manages a role, a group or a principal's kind.
+and a component's access page in `apps/web` calls them; roles and people are listed to choose from, and
+an administrator of the environment invites an address there, so somebody can be granted access before
+they first sign in. Nothing manages a role, a group or a principal's kind.
 
-| Where                                            | Holds                                                                                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `domain: access/permissions.ts`                  | The ten permissions, closed; what an external principal is capped at; a principal's kinds                                            |
-| `domain: access/role.ts`                         | `checkRole`, `allowable` - only a role holding `read` may be allowed - and the eight roles a tenant starts with, Editing for denials |
-| `domain: access/level.ts`                        | The tenant, a space or an artifact, and how a route's `target` spells one                                                            |
-| `domain: access/decide.ts`                       | `decide(permission, facts)`: the answer, the deciding level, the grants that decided and every level looked at                       |
-| `domain: access/readable.ts`                     | `readableSet`: the tenant flag, spaces, exclusions and inclusions a listing's query holds, computed by `decide`                      |
-| `db: migrations/tenant/0009_access`              | `principal.kind`, `access_policy`, `role`, `access_group`, `group_member`, the insert-only `access_grant`, and starting rows         |
-| `db: migrations/tenant/0010_access_epoch`        | `access_epoch`, and the triggers that lock it on every write to a fact a decision reads                                              |
-| `db: migrations/tenant/0011_first_administrator` | `first_administrator`: a naming by issuer and subject, which the runtime role may only record a claim on                             |
-| `db: src/roles.ts`, `groups.ts`, `grants.ts`     | `createRole`, `findRole`, `createGroup`, `addToGroup` and `grant`, with the external rules where a grant is made                     |
-| `db: src/access-facts.ts`                        | `loadFacts` and `loadReadableSet`, each under the epoch's shared lock, and the list of facts the triggers are held to                |
-| `db: migrations/tenant/0013_deciding_only`       | `access_changed()` again, refusing a change in a transaction that declared it only decides                                           |
-| `db: src/grants.ts` (removing)                   | `removeGrant` under the lock-out guard, `administeringGrants` - what the guard counts - and `grantLevel`                             |
-| `db: src/access-listings.ts`                     | `listGrants` at one level, `readGrant`, `listRoles` and `listPrincipals`, each paged by id                                           |
-| `db: src/first-administrator.ts`                 | `nameFirstAdministrator`, run as a database administrator, and `claimFirstAdministrator`, called in every sign-in's transaction      |
-| `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from                              |
-| `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                      |
-| `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, and an explanation per person                            |
-| `service: src/access.ts`                         | `authorise`: 404 for a target missing or unreadable, 403 naming the permission, in the transaction the handler runs in               |
+| Where                                            | Holds                                                                                                                                                                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: access/permissions.ts`                  | The ten permissions, closed; what an external principal is capped at; a principal's kinds                                                                                                                                                         |
+| `domain: access/role.ts`                         | `checkRole`, `allowable` - only a role holding `read` may be allowed - and the eight roles a tenant starts with, Editing for denials                                                                                                              |
+| `domain: access/level.ts`                        | The tenant, a space or an artifact, and how a route's `target` spells one                                                                                                                                                                         |
+| `domain: access/decide.ts`                       | `decide(permission, facts)`: the answer, the deciding level, the grants that decided and every level looked at                                                                                                                                    |
+| `domain: access/readable.ts`                     | `readableSet`: the tenant flag, spaces, exclusions and inclusions a listing's query holds, computed by `decide`                                                                                                                                   |
+| `db: migrations/tenant/0009_access`              | `principal.kind`, `access_policy`, `role`, `access_group`, `group_member`, the insert-only `access_grant`, and starting rows                                                                                                                      |
+| `db: migrations/tenant/0010_access_epoch`        | `access_epoch`, and the triggers that lock it on every write to a fact a decision reads                                                                                                                                                           |
+| `db: migrations/tenant/0011_first_administrator` | `first_administrator`: namings by issuer and subject, kept as the record; nothing names or claims one any more                                                                                                                                    |
+| `db: migrations/tenant/0014_invitations`         | An invitation per row, each with the principal it made; a principal's issuer and subject optional; `principal.email_verified`; the runtime role writing only the invitation columns the service needs, never `named_by`                           |
+| `db: src/invitations.ts`                         | `invite`, `withdrawInvitation`, `listInvitations` and `readInvitation`, and `claimInvitation`, called in a sign-in through either route that found no principal. `inviteToTenant` (`src/sign-in.ts`) is the operator's invitation, with no expiry |
+| `db: src/roles.ts`, `groups.ts`, `grants.ts`     | `createRole`, `findRole`, `createGroup`, `addToGroup` and `grant`, with the external rules where a grant is made                                                                                                                                  |
+| `db: src/access-facts.ts`                        | `loadFacts` and `loadReadableSet`, each under the epoch's shared lock, and the list of facts the triggers are held to                                                                                                                             |
+| `db: migrations/tenant/0013_deciding_only`       | `access_changed()` again, refusing a change in a transaction that declared it only decides                                                                                                                                                        |
+| `db: src/grants.ts` (removing)                   | `removeGrant` under the lock-out guard, `administeringGrants` - what the guard counts - and `grantLevel`                                                                                                                                          |
+| `db: src/access-listings.ts`                     | `listGrants` at one level, `readGrant`, `listRoles` and `listPrincipals`, each paged by id                                                                                                                                                        |
+| `db: src/first-administrator.ts`                 | `inviteFirstAdministrator`, run as a database administrator: an invitation whose principal holds Administrator at the tenant                                                                                                                      |
+| `api-contract: contract.ts`                      | `RouteAccess`: every route declares nothing, a session, or a permission and where its target comes from                                                                                                                                           |
+| `service: src/managing-access.ts`                | The grants, roles and people routes; each refusal a 409 with an underscore code                                                                                                                                                                   |
+| `service: src/invitations.ts`                    | The invitations routes: listing, inviting or renewing, and withdrawing with the principal's grants                                                                                                                                                |
+| `web: src/access/`                               | The access page: grants at a component's three levels, giving and removing, an explanation per person, and, to an administrator of the environment, inviting an address and withdrawing a waiting invitation                                      |
+| `service: src/access.ts`                         | `authorise`: 404 for a target missing or unreadable, 403 naming the permission, in the transaction the handler runs in                                                                                                                            |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -316,8 +320,25 @@ asked "at the target's level or above", a target the caller may administer from 
 refused as unreadable on that account, `GET /v1/access/explain` included, because the walk that answers
 it is not the ordinary nearest-level one that decided whether the target is readable in the first place.
 
-`pnpm dev:setup` names the stand-in's Ada as the first administrator of both development environments, so
-she administers each from her first sign-in there.
+**An invitation is a principal before it is a person.** Inviting an address makes a principal with no issuer
+and no subject, which grants name like any other, so every rule is applied where a grant is made. The first
+sign-in through a permitted route whose provider verifies the address gives it an identity. Making or
+claiming one changes no fact a decision reads and takes no epoch - neither sign-in route takes it -
+while two invitations of one address take turns on an advisory lock keyed by the schema and the address,
+which a first sign-in for a verified address takes too, before claiming and held through the principal it
+makes when it claims nothing, and inviting the first administrator takes right after the epoch;
+withdrawing one removes its grants, so it takes the epoch before the invitation's row, and a claim, which
+takes the address's lock, the row and then the principal's and never the epoch, cannot deadlock against
+it. The order throughout is: claim - address lock, invitation row, principal; invite - epoch `FOR SHARE`,
+address lock, invitation row; first administrator - epoch `FOR UPDATE`, address lock, invitation rows,
+principal; withdraw - epoch `FOR UPDATE`, invitation row, principal, never the address lock; grant -
+epoch `FOR UPDATE`, then the principal it names. Because a claim
+can commit while an invitation waits on its row, inviting asks again, after that lock, whether somebody has
+signed in with the address; inviting the first administrator asks again, after each such lock, both that
+and whether anybody administers the tenant.
+
+`pnpm dev:setup` invites the stand-in's Ada, at `ada@example.com`, to administer both development
+environments before either permits a sign-in, so she administers each from her first sign-in there.
 
 ## The editor and its session
 

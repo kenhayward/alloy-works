@@ -3,11 +3,11 @@
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
 import { seedDevelopmentContent } from './dev-content.js';
-import { nameFirstAdministrator } from './first-administrator.js';
+import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
-import { configureOrganisationSignIn, inviteToTenant, permitGoogleSignIn } from './sign-in.js';
+import { configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
 import { createTenantDatabase } from './tenant-database.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
@@ -68,19 +68,21 @@ await check.end();
 for (const environment of environments) {
   const tenant = tenantNames(environment.tenant.id);
   const named = { id: environment.tenant.id, schema: tenant.schema, role: tenant.role };
+  // Ada is invited to administer each environment before any route lets anybody sign in, as a real
+  // environment's first administrator is. Running this again renews a waiting invitation, or is
+  // refused harmlessly once Ada administers.
+  const answer = await inviteFirstAdministrator(adminUrl, named, {
+    email: 'ada@example.com',
+    namedBy: 'pnpm dev:setup',
+  });
+  if ('invited' in answer && !answer.renewed) {
+    console.log(`Ada is invited to administer ${environment.hostnames[0]}`);
+  }
   await configureOrganisationSignIn(adminUrl, named, {
     issuer: standInIssuer,
     clientId: 'alloy-dev',
     secretName: 'stand_in',
   });
-  // Ada administers each environment from her first sign-in through the stand-in. Running this again
-  // is refused harmlessly: a naming already waits, or Ada already administers.
-  const answer = await nameFirstAdministrator(adminUrl, named, {
-    issuer: standInIssuer,
-    subject: 'ada',
-    namedBy: 'pnpm dev:setup',
-  });
-  if ('named' in answer) console.log(`Ada will administer ${environment.hostnames[0]}`);
 }
 // Something to edit, and Ada and Grace allowed to edit it: nothing in the product grants a content
 // role or creates a component yet. As the service's own login, so it is written the way the service
@@ -99,10 +101,10 @@ for (const environment of environments) {
   }
 }
 await serviceDb.close();
-// The development environment also takes Google accounts, the stand-in playing Google: Grace is
-// invited, as a demonstration's first administrator would be; Alice is not, so she is refused.
+// The development environment also takes Google accounts, the stand-in playing Google. Nobody is
+// invited only for it: Ada's invitation, Grace as a principal already, and anybody Ada invites from
+// Manage access come in by it; Alice, whom nobody invited, is refused.
 const development = tenantNames('acmedev');
 const developmentTenant = { id: 'acmedev', schema: development.schema, role: development.role };
 await permitGoogleSignIn(adminUrl, developmentTenant);
-await inviteToTenant(adminUrl, developmentTenant, 'grace@example.com');
 console.log(`Ready: database ${database}, service login aw_service / ${TEST_PASSWORDS.service}`);

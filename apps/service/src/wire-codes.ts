@@ -23,6 +23,9 @@ const WIRE_CODES = {
   'grant.external_capped': 'grant_external_capped',
   'grant.external_past_cap': 'grant_external_past_cap',
   'grant.last_administrator': 'grant_last_administrator',
+  'invitation.signed_in': 'invitation_signed_in',
+  'invitation.kind_differs': 'invitation_kind_differs',
+  'invitation.accepted': 'invitation_accepted',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

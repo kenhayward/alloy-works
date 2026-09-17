@@ -361,8 +361,8 @@ describe('making, listing and removing grants through the service', () => {
     expect(people.statusCode).toBe(200);
     expect(people.json<{ items: unknown[] }>().items).toEqual(
       expect.arrayContaining([
-        { id: ids.ada, name: 'Ada', email: expect.any(String), kind: 'user' },
-        { id: ids.alice, name: 'Alice', email: expect.any(String), kind: 'user' },
+        { id: ids.ada, name: 'Ada', email: expect.any(String), kind: 'user', invited: false },
+        { id: ids.alice, name: 'Alice', email: expect.any(String), kind: 'user', invited: false },
       ]),
     );
     const firstPerson = await call('ada', 'GET', '/v1/principals?level=tenant&limit=1');

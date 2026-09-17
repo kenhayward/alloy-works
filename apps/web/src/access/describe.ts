@@ -28,6 +28,19 @@ export interface ShownPerson {
   readonly name: string | null;
   readonly email: string | null;
   readonly kind: 'user' | 'service' | 'external';
+  /** Invited by address, and not yet signed in. */
+  readonly invited: boolean;
+}
+
+/** An invitation as `GET /v1/invitations` lists it, with the members this page reads. */
+export interface ShownInvitation {
+  readonly id: string;
+  readonly email: string;
+  readonly person: string;
+  readonly external: boolean;
+  readonly expiresAt: string | null;
+  readonly lapsed: boolean;
+  readonly acceptedAt: string | null;
 }
 
 /** A role as `GET /v1/roles` lists one. */
@@ -122,8 +135,37 @@ export function isShownPerson(value: unknown): value is ShownPerson {
     typeof value.id === 'string' &&
     (value.name === null || typeof value.name === 'string') &&
     (value.email === null || typeof value.email === 'string') &&
-    (value.kind === 'user' || value.kind === 'service' || value.kind === 'external')
+    (value.kind === 'user' || value.kind === 'service' || value.kind === 'external') &&
+    typeof value.invited === 'boolean'
   );
+}
+
+/** An invitation exactly as `GET /v1/invitations` lists one, checked rather than assumed. */
+export function isShownInvitation(value: unknown): value is ShownInvitation {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.email === 'string' &&
+    typeof value.person === 'string' &&
+    typeof value.external === 'boolean' &&
+    (value.expiresAt === null || typeof value.expiresAt === 'string') &&
+    typeof value.lapsed === 'boolean' &&
+    (value.acceptedAt === null || typeof value.acceptedAt === 'string')
+  );
+}
+
+/**
+ * A waiting invitation as a line: "ivy@example.com, until 2026-10-01", saying when it is from outside
+ * the organisation, and "lapsed" rather than a date nobody can still accept it by.
+ */
+export function describeInvitation(invitation: ShownInvitation): string {
+  const outside = invitation.external ? ', from outside the organisation' : '';
+  const until = invitation.lapsed
+    ? ', lapsed: invite them again to renew it'
+    : invitation.expiresAt === null
+      ? ''
+      : `, until ${invitation.expiresAt.slice(0, 10)}`;
+  return `${invitation.email}${outside}${until}`;
 }
 
 /** A role exactly as `GET /v1/roles` lists one, checked rather than assumed. */

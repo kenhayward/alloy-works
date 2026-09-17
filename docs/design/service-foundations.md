@@ -136,7 +136,9 @@ authenticate, so a tenant that accepts the route says who may come through it:
 - **Invited addresses.** An invitation names an email address. The first sign-in whose ID token
   carries that address as verified binds the invitation to that Google account's subject; from then
   on the principal is found by issuer and subject alone, so a later change of address, or somebody
-  else acquiring it, changes nothing.
+  else acquiring it, changes nothing. An invitation also makes the principal it binds to, so it can
+  be granted access first, and the organisation's route claims one the same way
+  ([access.md](access.md), "Invitations").
 - **Named Workspace domains**, optionally. A tenant may admit any account whose token carries one of
   its domains in the hosted-domain claim, which Google sets only for Workspace accounts that domain
   manages. A personal account never matches one.

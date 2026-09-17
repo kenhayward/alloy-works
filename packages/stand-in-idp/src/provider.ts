@@ -42,11 +42,15 @@ export interface StandInProvider {
   close(): Promise<void>;
 }
 
-/** Invented people, the only ones the stand-in knows. Alice's account is managed by a Workspace domain. */
+/**
+ * Invented people, the only ones the stand-in knows. Alice's account is managed by a Workspace domain.
+ * Ivy is nobody's principal in `pnpm dev:setup`'s environments, so she is the one to invite.
+ */
 export const STAND_IN_USERS: readonly StandInUser[] = [
   { id: 'ada', name: 'Ada', email: 'ada@example.com' },
   { id: 'grace', name: 'Grace', email: 'grace@example.com' },
   { id: 'alice', name: 'Alice', email: 'alice@example.org', hostedDomain: 'example.org' },
+  { id: 'ivy', name: 'Ivy', email: 'ivy@example.com' },
 ];
 
 /**

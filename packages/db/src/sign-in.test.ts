@@ -83,13 +83,49 @@ describe('sign-in settings', () => {
     expect(domains).toEqual([{ domain: 'example.org' }]);
   });
 
-  it('records an invitation by address, in lower case, once', async () => {
+  it('records an invitation by address, in lower case, once, with the principal it will become', async () => {
     await inviteToTenant(db.adminUrl, tenant, 'Ada@Example.com');
     await inviteToTenant(db.adminUrl, tenant, 'ada@example.com');
     const invitations = await service.withTenant(tenant, (trx) =>
-      trx.selectFrom('invitation').select(['email', 'principal_id']).execute(),
+      trx
+        .selectFrom('invitation as i')
+        .innerJoin('principal as p', 'p.id', 'i.principal_id')
+        .select(['i.email', 'i.expires_at', 'i.accepted_at', 'p.issuer', 'p.subject'])
+        .execute(),
     );
-    expect(invitations).toEqual([{ email: 'ada@example.com', principal_id: null }]);
+    expect(invitations).toEqual([
+      {
+        email: 'ada@example.com',
+        expires_at: null,
+        accepted_at: null,
+        issuer: null,
+        subject: null,
+      },
+    ]);
+  });
+
+  it('makes no invitation for an address a signed-in principal already shows, verified', async () => {
+    await service.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: 'alice',
+          email: 'alice@example.com',
+          email_verified: true,
+          display_name: 'Alice',
+        })
+        .execute(),
+    );
+    await inviteToTenant(db.adminUrl, tenant, 'Alice@Example.com');
+    const invitations = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('invitation')
+        .select('email')
+        .where('email', '=', 'alice@example.com')
+        .execute(),
+    );
+    expect(invitations).toEqual([]);
   });
 
   it('ends the sessions a route issued when it is closed, and no others', async () => {

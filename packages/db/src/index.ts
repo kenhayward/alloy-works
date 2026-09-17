@@ -123,12 +123,24 @@ export {
   type AccessFactSource,
 } from './access-facts.js';
 export {
-  claimFirstAdministrator,
-  nameFirstAdministrator,
-  type ClaimAnswer,
-  type NamedIdentity,
-  type NamingAnswer,
+  inviteFirstAdministrator,
+  type FirstAdministratorAnswer,
+  type FirstAdministratorInvitation,
 } from './first-administrator.js';
+export {
+  claimInvitation,
+  INVITATION_DAYS,
+  invite,
+  invitedAddress,
+  listInvitations,
+  readInvitation,
+  withdrawInvitation,
+  type ClaimingIdentity,
+  type InvitationAnswer,
+  type InvitationRefusal,
+  type StoredInvitation,
+  type WithdrawalAnswer,
+} from './invitations.js';
 export {
   claimLock,
   ITERATION_RETENTION_DAYS,

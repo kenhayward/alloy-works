@@ -25,27 +25,45 @@ export interface SeededContent {
   readonly created: boolean;
 }
 
-/** A principal by the identity the stand-in gives them, made now if they have not signed in yet. */
+/**
+ * A principal by the identity the stand-in gives them: found by it once they have signed in; found by
+ * a waiting invitation to their address - Ada's, which `pnpm dev:setup` makes, and only ever checked
+ * for Ada - until they do; and otherwise made now, by that identity, so a grant can name them before
+ * they sign in. Restricted to Ada's own address: anybody else's `person()` call never reads the
+ * invitation table at all, so a waiting invitation that happens to name their address - one somebody
+ * made a different way, through the service's own invitation route in a development database that has
+ * seen one - is never mistaken for identifying them.
+ */
 async function person(
   trx: TenantTransaction,
   issuer: string,
   subject: string,
   name: string,
+  checkInvitation = false,
 ): Promise<string> {
-  const row = await trx
-    .insertInto('principal')
-    .values({ issuer, subject, email: `${subject}@example.com`, display_name: name })
-    .onConflict((conflict) => conflict.columns(['issuer', 'subject']).doNothing())
-    .returning('id')
-    .executeTakeFirst();
-  if (row) return row.id;
-  const found = await trx
+  const email = `${subject}@example.com`;
+  const known = await trx
     .selectFrom('principal')
     .select('id')
     .where('issuer', '=', issuer)
     .where('subject', '=', subject)
+    .executeTakeFirst();
+  if (known) return known.id;
+  if (checkInvitation) {
+    const invited = await trx
+      .selectFrom('invitation')
+      .select('principal_id')
+      .where('email', '=', email)
+      .where('accepted_at', 'is', null)
+      .executeTakeFirst();
+    if (invited) return invited.principal_id;
+  }
+  const made = await trx
+    .insertInto('principal')
+    .values({ issuer, subject, email, display_name: name })
+    .returning('id')
     .executeTakeFirstOrThrow();
-  return found.id;
+  return made.id;
 }
 
 /**
@@ -55,9 +73,10 @@ async function person(
  *
  * - the component type Topic, assigning no schemas;
  * - the component "Install the printer", at 0.1;
- * - Ada and Grace as principals, by the identities the stand-in gives them - so a grant can name them
- *   before either has signed in, and their first sign-in finds them rather than making them - each
- *   allowed Author on General, so either can edit and each can see the other's lock.
+ * - Ada, through her invitation where one waits, and Grace, as a principal by the identity the stand-in
+ *   gives her, each allowed Author on General, so either can edit and each can see the other's lock.
+ *   Grace authors the component: a principal still waiting on an invitation must be able to go when
+ *   the invitation is withdrawn, which one that authored a version cannot.
  *
  * Alice is left alone: she signs in and may read nothing. Safe to run again.
  */
@@ -65,7 +84,7 @@ export async function seedDevelopmentContent(
   trx: TenantTransaction,
   input: DevelopmentContent,
 ): Promise<SeededContent> {
-  const ada = await person(trx, input.issuer, 'ada', 'Ada');
+  const ada = await person(trx, input.issuer, 'ada', 'Ada', true);
   const grace = await person(trx, input.issuer, 'grace', 'Grace');
   const general = await trx
     .selectFrom('space')
@@ -80,7 +99,7 @@ export async function seedDevelopmentContent(
       subject: { principal },
       level: { kind: 'space', id: general.id },
       effect: 'allow',
-      grantedBy: ada,
+      grantedBy: grace,
     });
     if ('refused' in answer && answer.refused !== 'grant.duplicate') {
       throw new Error(`Author on General was refused: ${answer.refused}`);
@@ -106,11 +125,11 @@ export async function seedDevelopmentContent(
     assignments: [],
   };
   const type = await createArtifact(trx, {
-    author: ada,
+    author: grace,
     substance: { kind: 'componentType', content: topic },
   });
   const component = await createArtifact(trx, {
-    author: ada,
+    author: grace,
     spaceId: general.id,
     substance: {
       kind: 'component',

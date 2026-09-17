@@ -28,11 +28,27 @@ const json = (status: number, body: unknown) =>
 const refused = (status: number, code: string, message = 'refused') =>
   json(status, { code, message, traceId: 't' });
 
+const IVY = '6a718293-a4b5-4c6d-9e0f-5b6c7d8e9f0a';
+
 const people = [
-  { id: ADA, name: 'Ada', email: 'ada@example.test', kind: 'user' },
-  { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user' },
-  { id: ALICE, name: 'Alice', email: 'alice@example.test', kind: 'user' },
+  { id: ADA, name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
+  { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user', invited: false },
+  { id: ALICE, name: 'Alice', email: 'alice@example.test', kind: 'user', invited: false },
 ];
+
+/** An invitation exactly as the service lists one. */
+const invitationOf = (id: string, email: string, person: string) => ({
+  id,
+  email,
+  person,
+  external: false,
+  invitedBy: { id: ADA, name: 'Ada' },
+  createdAt: '2026-09-17T09:00:00.000Z',
+  expiresAt: '2026-10-01T09:00:00.000Z',
+  lapsed: false,
+  acceptedAt: null,
+  acceptedThrough: null,
+});
 
 const roles = [
   { id: AUTHOR, name: 'Author', permissions: ['read', 'create', 'edit', 'comment', 'suggest'] },
@@ -73,6 +89,14 @@ function service(
   } = {},
 ) {
   const grants = [...(options.grants ?? [])];
+  const everybody: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    kind: string;
+    invited: boolean;
+  }[] = [...people];
+  const invitations: ReturnType<typeof invitationOf>[] = [];
   const levels = options.levels ?? [`artifact:${COMPONENT}`, `space:${GENERAL}`, 'tenant'];
   const asked: { route: string; body: unknown }[] = [];
   let made = 0;
@@ -101,7 +125,17 @@ function service(
           lock: null,
         });
       case 'GET /v1/principals':
-        return json(200, { items: people, next: null });
+        return json(200, { items: everybody, next: null });
+      case 'GET /v1/invitations':
+        if (!levels.includes('tenant')) return refused(403, 'forbidden');
+        return json(200, { items: invitations, next: null });
+      case 'POST /v1/invitations': {
+        const body = JSON.parse(text) as { email: string; external: boolean };
+        const invitation = invitationOf(`i${invitations.length + 1}`, body.email, IVY);
+        invitations.push(invitation);
+        everybody.push({ id: IVY, name: null, email: body.email, kind: 'user', invited: true });
+        return json(200, { invitation, renewed: false });
+      }
       case 'GET /v1/roles':
         return json(200, { items: roles, next: null });
       case 'GET /v1/grants': {
@@ -121,13 +155,28 @@ function service(
           `90000000-0000-4000-8000-00000000000${made}`,
           body.level,
           roles.find((each) => each.id === body.role)!,
-          people.find((each) => each.id === body.subject.principal)!,
+          everybody.find((each) => each.id === body.subject.principal)! as (typeof people)[number],
           body.effect,
         );
         grants.push(grant);
         return json(200, { grant });
       }
       default: {
+        const withdrawing = /^DELETE \/v1\/invitations\/(.+)$/.exec(route);
+        if (withdrawing) {
+          const index = invitations.findIndex((each) => each.id === withdrawing[1]);
+          if (index < 0) return refused(404, 'not_found');
+          const [gone] = invitations.splice(index, 1);
+          const personIndex = everybody.findIndex((each) => each.id === gone!.person);
+          if (personIndex >= 0) everybody.splice(personIndex, 1);
+          for (let i = grants.length - 1; i >= 0; i -= 1) {
+            const subject = grants[i]!.subject;
+            if ('principal' in subject && subject.principal.id === gone!.person) {
+              grants.splice(i, 1);
+            }
+          }
+          return json(200, { withdrawn: withdrawing[1] });
+        }
         const removing = /^DELETE \/v1\/grants\/(.+)$/.exec(route);
         if (removing) {
           const index = grants.findIndex((each) => each.id === removing[1]);
@@ -343,6 +392,297 @@ describe('access to a component', () => {
     release.current!();
     expect(await screen.findByRole('status')).toHaveTextContent('Already granted.');
     expect(asked.filter((each) => each.route === 'POST /v1/grants')).toHaveLength(1);
+  });
+
+  it('invites an address, then offers the person it made to give access to, marked as not signed in yet', async () => {
+    const { fetching, asked } = service();
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    expect(within(inviting).getByText('Nobody is waiting to accept an invitation.')).toBeTruthy();
+
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Invited ivy@example.test. Choose them under Give access: what they are given is theirs from their first sign-in.',
+    );
+    expect(asked.filter((each) => each.route === 'POST /v1/invitations')).toEqual([
+      { route: 'POST /v1/invitations', body: { email: 'ivy@example.test', external: false } },
+    ]);
+    const person = screen.getByRole('combobox', { name: 'Person' });
+    await waitFor(() =>
+      expect(within(person).getByRole('option', { name: /ivy@example\.test/ })).toHaveTextContent(
+        'ivy@example.test, invited and not signed in yet',
+      ),
+    );
+    expect(
+      within(screen.getByRole('list', { name: 'Waiting invitations' })).getByRole('listitem'),
+    ).toHaveTextContent('ivy@example.test, until 2026-10-01');
+
+    await userEvent.selectOptions(person, IVY);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Allowed Author to ivy@example.test on this component.',
+    );
+  });
+
+  it('withdraws a waiting invitation, and no longer offers the person it made', async () => {
+    const { fetching } = service();
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    await screen.findByRole('button', { name: 'Withdraw the invitation to ivy@example.test' });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Withdraw the invitation to ivy@example.test' }),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Withdrew the invitation to ivy@example.test, and everything granted to them.',
+    );
+    await waitFor(() =>
+      expect(within(inviting).getByText('Nobody is waiting to accept an invitation.')).toBeTruthy(),
+    );
+    expect(
+      within(screen.getByRole('combobox', { name: 'Person' })).queryByRole('option', {
+        name: /ivy@example\.test/,
+      }),
+    ).toBeNull();
+  });
+
+  it('drops whoever was chosen to give access to or to explain, once withdrawing the invitation that made them removes them from who can be chosen', async () => {
+    const { fetching, asked } = service();
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    const person = screen.getByRole('combobox', { name: 'Person' });
+    await waitFor(() =>
+      expect(within(person).queryByRole('option', { name: /ivy@example\.test/ })).not.toBeNull(),
+    );
+
+    await userEvent.selectOptions(person, IVY);
+    const explaining = section('What someone may do here');
+    const whose = within(explaining).getByRole('combobox', { name: 'Whose access' });
+    await userEvent.selectOptions(whose, IVY);
+    expect(within(explaining).getByRole('button', { name: 'Show' })).toBeEnabled();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Withdraw the invitation to ivy@example.test' }),
+    );
+    await screen.findByRole('status');
+
+    // Explaining somebody gone is refused rather than asked for, and Give no longer silently names
+    // them: each asks to choose again instead of sending or showing a stale choice.
+    await waitFor(() =>
+      expect(within(explaining).getByRole('button', { name: 'Show' })).toBeDisabled(),
+    );
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role' }), AUTHOR);
+    await userEvent.click(screen.getByRole('button', { name: 'Give' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Choose a person, a role and where.',
+    );
+    expect(asked.filter((each) => each.route === 'POST /v1/grants')).toHaveLength(0);
+  });
+
+  it('shows the service refusal of an invitation in its own words', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/invitations': () =>
+          refused(
+            409,
+            'invitation_signed_in',
+            'Somebody with that address has already signed in. Choose them and give them access directly.',
+          ),
+      },
+    });
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'grace@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Somebody with that address has already signed in. Choose them and give them access directly.',
+    );
+  });
+
+  it('offers no inviting to someone who does not administer the whole environment', async () => {
+    const { fetching, asked } = service({ levels: [`artifact:${COMPONENT}`, `space:${GENERAL}`] });
+    panel(fetching);
+    await within(await screen.findByRole('region', { name: 'The whole environment' })).findByText(
+      'You may not manage access here.',
+    );
+    await waitFor(() =>
+      expect(asked.filter((each) => each.route === 'GET /v1/invitations')).toHaveLength(1),
+    );
+    // The invitations answer settled as unmanaged, not merely not-yet-loaded: no failure this page
+    // could show by mistake, and no more than the one read.
+    await waitFor(() => expect(screen.queryByText('Invitations could not be loaded.')).toBeNull());
+    expect(screen.queryByRole('region', { name: 'Invite someone' })).toBeNull();
+    expect(asked.filter((each) => each.route === 'GET /v1/invitations')).toHaveLength(1);
+  });
+
+  it('shows signed out, not a useless Try again, when the invitations cannot be read because the session is gone', async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/invitations': () => refused(401, 'unauthorized', 'Sign in.'),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(
+      await screen.findByText('You are signed out. Sign in again to manage access.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Invite someone' })).toBeNull();
+    expect(screen.queryByText('Invitations could not be loaded.')).toBeNull();
+  });
+
+  it('shows invitations failed, not a crash, when they come back in a shape this page does not expect', async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/invitations': () => json(200, { items: [{ id: 'bad' }], next: null }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(await screen.findByText('Invitations could not be loaded.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    // The rest of the page is unaffected: a bad shape in the invitations did not take the page down.
+    expect(screen.queryByRole('region', { name: 'Invite someone' })).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: 'Access to Install the printer' }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows invitations failed, not stuck reading for ever, when a page's next is missing rather than null", async () => {
+    let requests = 0;
+    const { fetching } = service({
+      override: {
+        'GET /v1/invitations': () => {
+          requests += 1;
+          // No `next` at all: neither the null that ends paging nor a cursor that continues it.
+          return json(200, { items: [] });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(await screen.findByText('Invitations could not be loaded.')).toBeInTheDocument();
+    // One request, not an unbounded loop of them.
+    expect(requests).toBe(1);
+  });
+
+  it('offers Try again when invitations fail to load, and trying again can succeed', async () => {
+    let failing = true;
+    const { fetching } = service({
+      override: {
+        'GET /v1/invitations': () =>
+          failing ? refused(500, 'internal', 'broken') : json(200, { items: [], next: null }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    expect(await screen.findByText('Invitations could not be loaded.')).toBeInTheDocument();
+
+    failing = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await within(await screen.findByRole('region', { name: 'Invite someone' })).findByText(
+      'Nobody is waiting to accept an invitation.',
+    );
+  });
+
+  it("shows invitations' Try again as reading while its re-read is in flight, disabled rather than pressable again", async () => {
+    let attempt = 0;
+    const resolvers: (() => void)[] = [];
+    const { fetching } = service({
+      override: {
+        'GET /v1/invitations': () => {
+          attempt += 1;
+          if (attempt === 1) return refused(500, 'internal', 'broken');
+          return new Promise<Response>((resolve) => {
+            resolvers.push(() => resolve(json(200, { items: [], next: null })));
+          });
+        },
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    const tryAgain = await screen.findByRole('button', { name: 'Try again' });
+
+    await userEvent.click(tryAgain);
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+    expect(screen.getByRole('button', { name: 'Reading...' })).toBeDisabled();
+    // Only the one re-read this click asked for: nothing further went out while it was in flight.
+    expect(attempt).toBe(2);
+
+    resolvers[0]!();
+    await within(await screen.findByRole('region', { name: 'Invite someone' })).findByText(
+      'Nobody is waiting to accept an invitation.',
+    );
+  });
+
+  it('says an invitation was renewed, in the same words the waiting list would use for it', async () => {
+    const { fetching } = service({
+      override: {
+        'POST /v1/invitations': () =>
+          json(200, {
+            invitation: invitationOf('i9', 'ivy@example.test', IVY),
+            renewed: true,
+          }),
+      },
+    });
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'ivy@example.test',
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Renewed the invitation to ivy@example.test, now until 2026-10-01.',
+    );
+  });
+
+  it('says an address was invited though what exactly could not be shown, and clears the address anyway, whether the invitation or the renewed flag is unreadable', async () => {
+    let bad: 'invitation' | 'renewed' = 'invitation';
+    const { fetching } = service({
+      override: {
+        'POST /v1/invitations': () =>
+          bad === 'invitation'
+            ? json(200, { invitation: { id: 'i9' }, renewed: false })
+            : json(200, { invitation: invitationOf('i9', 'ivy@example.test', IVY), renewed: 'no' }),
+      },
+    });
+    panel(fetching);
+    const inviting = await screen.findByRole('region', { name: 'Invite someone' });
+    const address = within(inviting).getByRole('textbox', { name: 'Address' });
+
+    await userEvent.type(address, 'ivy@example.test');
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'That address was invited, though what exactly could not be shown.',
+    );
+    expect(address).toHaveValue('');
+
+    bad = 'renewed';
+    await userEvent.type(address, 'ivy@example.test');
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'That address was invited, though what exactly could not be shown.',
+    );
+    expect(address).toHaveValue('');
   });
 
   it('IAM-030 names, for each answer about a chosen person, the level that decided it and the grants that did', async () => {

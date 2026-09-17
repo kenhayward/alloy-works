@@ -50,9 +50,12 @@ export interface PlatformTables {
 
 export interface PrincipalTable {
   id: Generated<string>;
-  issuer: string;
-  subject: string;
+  /** Null, with the subject, for somebody invited by address who has not yet signed in. */
+  issuer: string | null;
+  subject: string | null;
   email: string | null;
+  /** Whether the provider asserted `email` as verified, at the last sign-in. */
+  email_verified: Generated<boolean>;
   display_name: string | null;
   created_at: Generated<Date>;
   kind: Generated<PrincipalKind>;
@@ -96,10 +99,16 @@ export interface SessionTable {
 }
 
 export interface InvitationTable {
+  id: Generated<string>;
   email: string;
-  principal_id: string | null;
+  /** The principal the invitation made, which its first sign-in becomes. */
+  principal_id: string;
+  invited_by: string | null;
+  named_by: string | null;
   created_at: Generated<Date>;
+  expires_at: Date | null;
   accepted_at: Date | null;
+  accepted_through: 'organisation' | 'google' | null;
 }
 
 export interface GoogleDomainTable {

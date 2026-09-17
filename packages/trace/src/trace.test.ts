@@ -21,15 +21,21 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1364, from 1363: IAM-072, inviting anybody by address and granting before their first sign-in,
+    // filed as issue #113 while planning invitations, when IAM-059 asked it only of the first administrator.
     // 1363, from 1362: MET-037 refuses a field version that would make a schema's default invalid,
     // found while planning the metadata rules. 1362, from 1360: CNT-147 and CNT-148 replaced CNT-099 and CNT-101, because native spellcheck
     // ignores an element's language. 1360, not 1306: specifying metadata and component types added the MET area's 36 rows and 18
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1363);
+    expect(model.requirements).toHaveLength(1364);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 318, from 317: access.md claims IAM-072 once any administrator of the environment invites an
+    // address and grants it before the first sign-in (docs/plans/2026-09-17-access-03-invitations.md).
+    // 317, from 316: access.md claims IAM-059 once the first administrator arrives by an invitation to
+    // a named address (docs/plans/2026-09-17-access-03-invitations.md); IAM-060, its audit, stays LIF's.
     // 316, from 295: access.md claims 21 - spaces, roles, grants, deciding and explaining, and the
     // rules on external principals - and claims none it answers only in part.
     // 295, from 256: metadata.md claims 15 - the rules resolving, validating and carrying a
@@ -50,7 +56,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(316);
+    ).toBe(318);
   });
 });
 
@@ -112,8 +118,15 @@ describe('the citations in the committed model', () => {
   // and IAM-031, which access.md owns, in the Access page's tests: each answer names its level and
   // grants, and a refusal its denials or the levels that granted nothing. IAM-029 waits for an Access
   // page on every kind of artifact, and the plan names it and the rest.
+  // 145, from 144: invitations (docs/plans/2026-09-17-access-03-invitations.md) cite IAM-059, which
+  // access.md now owns, once, in the service's first administrator test: invited to a named address,
+  // and Administrator from the first sign-in through a permitted route that verifies it. IAM-060, the
+  // bootstrap's audit, waits for LIF's log.
+  // 146, from 145: and IAM-072, which access.md owns, once, in the service's invitation routes test: an
+  // administrator invites an address and grants it before anybody signs in with it, an account presenting
+  // it unverified gets nothing, and the first verified sign-in through a permitted route has the access.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(144);
+    expect(model.citations).toHaveLength(146);
   });
 
   it('cites no identifier the corpus does not hold', () => {

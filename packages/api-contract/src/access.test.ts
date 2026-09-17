@@ -40,13 +40,19 @@ describe('what each route checks', () => {
     // every permission-checked route can 404 an unreadable target and 403 a readable one refused
     // (final review, item 7) - except a route whose target is a grant, which a caller who may not
     // manage it is always told is simply not there (access.md, "Refusing"), never 403.
+    // A route whose target is the tenant itself is the other exception: the tenant always exists, so
+    // asking of it is never 404 (access.md, "Refusing"), and such a route declares a 404 only where its
+    // own handler answers one.
     const checked = allRoutes.filter((route) => route.access.check === 'permission');
     expect(checked.length).toBeGreaterThan(0);
     for (const route of checked) {
-      if (route.access.check === 'permission' && !('grant' in route.access.target)) {
+      if (route.access.check !== 'permission') continue;
+      if (!('grant' in route.access.target)) {
         expect(route.responses[403], route.operationId).toBeDefined();
       }
-      expect(route.responses[404], route.operationId).toBeDefined();
+      if (!('tenant' in route.access.target)) {
+        expect(route.responses[404], route.operationId).toBeDefined();
+      }
     }
   });
 

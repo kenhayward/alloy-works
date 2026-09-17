@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  describeInvitation,
   explainAnswer,
   isExplainedPermission,
   isShownGrant,
+  isShownInvitation,
   isShownPerson,
   isShownRole,
   placesFor,
@@ -22,7 +24,7 @@ const places: readonly Place[] = placesFor({
   space: { id: GENERAL, name: 'General' },
 });
 const people = new Map<string, ShownPerson>([
-  [GRACE, { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user' }],
+  [GRACE, { id: GRACE, name: 'Grace', email: 'grace@example.test', kind: 'user', invited: false }],
 ]);
 
 const validGrant = {
@@ -67,14 +69,23 @@ describe('isShownGrant', () => {
 });
 
 describe('isShownPerson and isShownRole', () => {
-  it('accepts a person with no name, addressed by email', () => {
+  it('accepts a person with no name, addressed by email, invited and not yet signed in', () => {
     expect(
-      isShownPerson({ id: GRACE, name: null, email: 'grace@example.test', kind: 'user' }),
+      isShownPerson({
+        id: GRACE,
+        name: null,
+        email: 'grace@example.test',
+        kind: 'user',
+        invited: true,
+      }),
     ).toBe(true);
   });
 
-  it('refuses a person of a kind the service never documented', () => {
-    expect(isShownPerson({ id: GRACE, name: 'Grace', email: null, kind: 'robot' })).toBe(false);
+  it('refuses a person of a kind the service never documented, or not saying whether invited', () => {
+    expect(
+      isShownPerson({ id: GRACE, name: 'Grace', email: null, kind: 'robot', invited: false }),
+    ).toBe(false);
+    expect(isShownPerson({ id: GRACE, name: 'Grace', email: null, kind: 'user' })).toBe(false);
   });
 
   it('accepts a role with its permissions', () => {
@@ -83,6 +94,32 @@ describe('isShownPerson and isShownRole', () => {
 
   it('refuses a role whose permissions are not all text', () => {
     expect(isShownRole({ id: 'r1', name: 'Author', permissions: ['read', 3] })).toBe(false);
+  });
+});
+
+describe('an invitation', () => {
+  const waiting = {
+    id: 'i1',
+    email: 'ivy@example.test',
+    person: GRACE,
+    external: false,
+    expiresAt: '2026-10-01T09:00:00.000Z',
+    lapsed: false,
+    acceptedAt: null,
+  };
+
+  it('is accepted only in the shape the service lists one', () => {
+    expect(isShownInvitation(waiting)).toBe(true);
+    expect(isShownInvitation({ ...waiting, lapsed: 'no' })).toBe(false);
+    expect(isShownInvitation({ ...waiting, person: null })).toBe(false);
+  });
+
+  it('reads as its address, whether from outside the organisation, and until when', () => {
+    expect(describeInvitation(waiting)).toBe('ivy@example.test, until 2026-10-01');
+    expect(describeInvitation({ ...waiting, external: true, lapsed: true })).toBe(
+      'ivy@example.test, from outside the organisation, lapsed: invite them again to renew it',
+    );
+    expect(describeInvitation({ ...waiting, expiresAt: null })).toBe('ivy@example.test');
   });
 });
 

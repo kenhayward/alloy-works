@@ -9,6 +9,7 @@ import {
   createTenantDatabase,
   findRole,
   grant,
+  invite,
   migrate,
   type Tenant,
   type TenantDatabase,
@@ -73,6 +74,7 @@ const OTHER_TENANT_IDS: Readonly<
     sequence: '1',
   }),
   removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
+  withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
 };
 
 /**
@@ -86,6 +88,7 @@ const VALID_INPUT: Readonly<
   claimLock: { payload: { session: SESSION } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  invite: { payload: { email: 'ivy@example.com' } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
   },
@@ -190,6 +193,28 @@ const grantIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (!('granted' in made)) throw new Error(`refused: ${made.refused}`);
     return made.granted.id;
+  });
+
+/** An invitation waiting in environment B, made by a principal of its own. */
+const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const inviter = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await invite(trx, {
+      email: `${randomUUID()}@example.com`,
+      external: false,
+      invitedBy: inviter.id,
+    });
+    if (!('invited' in made)) throw new Error(`refused: ${made.refused}`);
+    return made.invited.id;
   });
 
 /** The same, as a query's target names it. */

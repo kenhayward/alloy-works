@@ -78,11 +78,12 @@ describe('the stand-in provider', () => {
     });
   });
 
-  it('offers its users to pick from when no one is named', async () => {
+  it('offers its users to pick from when no one is named, Ivy among them to invite', async () => {
     const { url } = await authorise({});
     const { page } = await follow(url);
     expect(page).toContain('Ada (ada@example.com)');
     expect(page).toContain('Grace (grace@example.com)');
+    expect(page).toContain('Ivy (ivy@example.com)');
   });
 
   it('says which Workspace domain manages an account, as Google does, and nothing for a personal one', async () => {

@@ -3,6 +3,31 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.25.0 - 2026-09-17 (PR #114)
+
+### Added
+
+- **Invite somebody before they have signed in.** On a component's **Manage access**, an administrator
+  of the whole environment enters an address under **Invite someone**. The person is offered straight
+  away, marked as invited and not signed in yet, so they can be given access; the first time they sign
+  in with that address, through either sign-in route, they have it. Their sign-in provider must have
+  verified the address. Nothing is sent to them: tell them where to sign in.
+- **Waiting invitations, renewed and withdrawn.** An invitation waits fourteen days and is listed with
+  its date. Inviting the address again renews it and keeps what it was given; **Withdraw** takes it
+  back, with everything given to it, until it is accepted. Whether the person is from outside the
+  organisation is chosen when inviting them, and cannot be changed afterwards yet.
+
+### Changed
+
+- **A new environment's first administrator is invited by address.** Whoever sets the environment up
+  invites them before anyone can sign in, and they are administrator from their first sign-in, whether
+  the environment signs in through its own provider or only with Google. In development,
+  `pnpm dev:setup` invites Ada this way, and the stand-in sign-in provider offers Ivy, whom nothing has
+  invited yet. In a development database set up before this version where Ada never signed in, she
+  does not become administrator: start from a fresh one, as docs/development.md describes.
+- **Somebody who has already signed in is given access directly, not invited.** Inviting their address
+  is refused, and says so.
+
 ## 0.24.0 - 2026-09-17 (PR #112)
 
 ### Added
