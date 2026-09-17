@@ -187,6 +187,59 @@ describe('removing a grant, and the lock-out guard', () => {
     });
   });
 
+  it('never counts a tenant-level allow whose role does not hold administer', async () => {
+    const production = await tenant();
+    const { ada, grace } = await service.withTenant(production, async (trx) => ({
+      ada: await principal(trx, 'ada'),
+      grace: await principal(trx, 'grace'),
+    }));
+    const adas = await administrator(production, ada);
+    // Grace holds Reader at the tenant - a permanent, direct, non-external allow, exactly the shape
+    // an administering grant has, except for what the role permits.
+    await give(production, {
+      role: 'Reader',
+      subject: { principal: grace },
+      level: { kind: 'tenant' },
+      effect: 'allow',
+      by: ada,
+    });
+
+    await expect(remove(production, adas.id)).resolves.toEqual({
+      refused: 'grant.last_administrator',
+    });
+  });
+
+  it('never counts a tenant-level deny of an administer role, inserted directly', async () => {
+    const production = await tenant();
+    const { ada, grace } = await service.withTenant(production, async (trx) => ({
+      ada: await principal(trx, 'ada'),
+      grace: await principal(trx, 'grace'),
+    }));
+    const adas = await administrator(production, ada);
+    // Made directly, not through `grant()`, which refuses a deny of administer at the tenant outright
+    // (grant.administer_denied_at_tenant) - so this shape can only arise from something other than the
+    // guarded path, and the count must still not mistake it for an administering allow.
+    const administratorRole = await service.withTenant(production, (trx) =>
+      findRole(trx, 'Administrator'),
+    );
+    await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('access_grant')
+        .values({
+          role_id: administratorRole!.id,
+          principal_id: grace,
+          level: 'tenant',
+          effect: 'deny',
+          granted_by: ada,
+        })
+        .execute(),
+    );
+
+    await expect(remove(production, adas.id)).resolves.toEqual({
+      refused: 'grant.last_administrator',
+    });
+  });
+
   it('keeps the tenant administered only through a direct grant with no expiry to somebody not external', async () => {
     const production = await tenant();
     const { ada, grace, alice, admins } = await service.withTenant(production, async (trx) => {
@@ -276,10 +329,16 @@ describe('removing a grant, and the lock-out guard', () => {
     });
     await removed.opened;
     const second = remove(production, graces.id);
-    // The second has reached a lock the first holds - whichever it is - before the first commits, so
-    // it cannot have counted after the first's removal unless the guard waited for it.
-    await untilWaitingOnLocks(db.adminUrl, 1);
-    commit.open();
+    try {
+      // The second has reached a lock the first holds - whichever it is - before the first commits, so
+      // it cannot have counted after the first's removal unless the guard waited for it.
+      await untilWaitingOnLocks(db.adminUrl, 1);
+    } finally {
+      // Even if the wait above throws - the second never reached a lock - the first is still holding
+      // the epoch waiting on this latch, so it is opened regardless or the first hangs until its own
+      // test timeout instead of failing where the real problem is.
+      commit.open();
+    }
 
     await expect(first).resolves.toEqual({ removed: adas });
     await expect(second).resolves.toEqual({ refused: 'grant.last_administrator' });

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { asAdministrator } from './admin.js';
+import { administeringGrants } from './grants.js';
 import type { Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -8,8 +9,16 @@ import type { TenantTransaction } from './tables.js';
  * Whether anybody administers the tenant, counted as the lock-out guard counts (access.md, "Roles"):
  * a principal who is not external, holding `administer` at the tenant through a direct allow with no
  * expiry. `prefix` qualifies each table for a connection outside `withTenant`.
+ *
+ * The same rule `administeringGrants` (grants.ts) counts under a `TenantTransaction`. Kept here, in
+ * raw SQL, only for `nameFirstAdministrator`, which runs as an administrator of the database over its
+ * own connection - never inside a `TenantTransaction` - so it has no `search_path` to rely on and
+ * nothing to call `administeringGrants` with. `claimFirstAdministrator` runs inside one and calls that
+ * instead, rather than keep the rule written twice where both could call the one written once.
+ * `first-administrator.test.ts` holds both against the same grants, so the two can never quietly
+ * diverge.
  */
-const administered = (prefix: string) => `
+export const administeredQuery = (prefix: string) => `
   select exists (
     select 1
     from ${prefix}access_grant g
@@ -52,7 +61,7 @@ export async function nameFirstAdministrator(
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(`select 1 from ${schema}.access_epoch for update`);
     const { rows: held } = await client.query<{ administered: boolean }>(
-      administered(`${schema}.`),
+      administeredQuery(`${schema}.`),
     );
     if (held[0]?.administered) {
       answer = { refused: 'first_administrator.administrator_exists' };
@@ -114,10 +123,10 @@ export async function claimFirstAdministrator(
     .executeTakeFirst();
   if (!claimable) return undefined;
 
-  const { rows } = await sql<{ administered: boolean }>`${sql.raw(administered(''))}`.execute(trx);
-  const outcome = rows[0]?.administered ? 'refused_administrator_exists' : 'granted';
+  const administering = await administeringGrants(trx);
+  const outcome = administering.length > 0 ? 'refused_administrator_exists' : 'granted';
   if (outcome === 'granted') {
-    // An identical grant may already exist - held by a principal `administered()` does not count: an
+    // An identical grant may already exist - held by a principal `administeringGrants` does not count: an
     // external one, or one whose grant expires (both excluded by its `expires_at is null` and
     // `kind <> 'external'`). Only a permanent one (no expiry) administers the tenant the way this claim
     // would, so only that is treated as already satisfying it - inserting again would otherwise throw a

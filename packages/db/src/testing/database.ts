@@ -34,7 +34,10 @@ export async function untilWaitingOnLocks(adminUrl: string, count: number): Prom
     for (;;) {
       const { rows } = await client.query<{ waiting: number }>(
         `select count(*)::int as waiting from pg_stat_activity
-         where datname = current_database() and wait_event_type = 'Lock'`,
+         where datname = current_database()
+           and backend_type = 'client backend'
+           and pid <> pg_backend_pid()
+           and wait_event_type = 'Lock'`,
       );
       if ((rows[0]?.waiting ?? 0) >= count) return;
       if (Date.now() > deadline) {

@@ -3,16 +3,23 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { claimFirstAdministrator, nameFirstAdministrator } from './first-administrator.js';
-import { grant } from './grants.js';
+import {
+  administeredQuery,
+  claimFirstAdministrator,
+  nameFirstAdministrator,
+} from './first-administrator.js';
+import { administeringGrants, grant } from './grants.js';
+import { addToGroup, createGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
+import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
+const DAY = 24 * 60 * 60 * 1000;
 
 describe('the first administrator', () => {
   let db: TestDatabase;
@@ -378,5 +385,121 @@ describe('the first administrator', () => {
     await expect(namings(alpha)).resolves.toEqual([
       { issuer: ISSUER, subject: 'ada', named_by: 'provisioning', claimed_by: null, outcome: null },
     ]);
+  });
+
+  it('agrees with administeringGrants on whether the tenant is administered, over the same grants', async () => {
+    // Two independent readings of the same rule (access.md, "Roles"): `administeredQuery`, the raw SQL
+    // `nameFirstAdministrator` still runs outside any TenantTransaction, and `administeringGrants`,
+    // which `claimFirstAdministrator` now calls instead of keeping its own copy. Nothing but this test
+    // holds them to agreeing, so each grant added below is a shape the lock-out guard must not count,
+    // and the boolean from each side is compared after every one.
+    const agreement = await tenant('Agreement');
+    const { administrator, reader } = await service.withTenant(agreement, async (trx) => ({
+      administrator: (await findRole(trx, 'Administrator'))!,
+      reader: (await findRole(trx, 'Reader'))!,
+    }));
+    const { ada, grace, alice, ivy, clinical, admins } = await service.withTenant(
+      agreement,
+      async (trx) => {
+        const group = await createGroup(trx, 'Admins');
+        if (!('group' in group)) throw new Error('the group was not made');
+        return {
+          ada: (await signingIn(trx, 'ada')).id,
+          grace: (await signingIn(trx, 'grace')).id,
+          alice: (await signingIn(trx, 'alice')).id,
+          ivy: (await signingIn(trx, 'ivy')).id,
+          clinical: (await createSpace(trx, 'Clinical')).id,
+          admins: group.group.id,
+        };
+      },
+    );
+
+    const agree = () =>
+      service.withTenant(agreement, async (trx) => {
+        const raw = await sql<{
+          administered: boolean;
+        }>`${sql.raw(administeredQuery(''))}`.execute(trx);
+        const counted = await administeringGrants(trx);
+        return { administered: raw.rows[0]?.administered ?? false, counted: counted.length > 0 };
+      });
+
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // A Reader at the tenant: permanent, direct, non-external - but the role holds no administer.
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: reader.id,
+        subject: { principal: ada },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // An expiring administer allow.
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { principal: grace },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() + DAY),
+        grantedBy: grace,
+      }),
+    );
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // An administer allow, granted while a user, then made external.
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { principal: alice },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: alice,
+      }),
+    );
+    await service.withTenant(agreement, (trx) =>
+      trx.updateTable('principal').set({ kind: 'external' }).where('id', '=', alice).execute(),
+    );
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // A space-level administer: not the tenant.
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { principal: ivy },
+        level: { kind: 'space', id: clinical },
+        effect: 'allow',
+        grantedBy: ivy,
+      }),
+    );
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // A group-held administer: the group holds it, not a principal.
+    await service.withTenant(agreement, (trx) => addToGroup(trx, admins, ada));
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { group: admins },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    await expect(agree()).resolves.toEqual({ administered: false, counted: false });
+
+    // A real one: direct, permanent, administer, at the tenant, to somebody not external.
+    await service.withTenant(agreement, (trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { principal: ada },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    await expect(agree()).resolves.toEqual({ administered: true, counted: true });
   });
 });
