@@ -1,12 +1,7 @@
 import { z } from 'zod';
-import { ComponentParams, Lock, LowercaseUuid, VersionSummary } from './components.js';
+import { ComponentParams, Lock, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
-import { ErrorBody } from './schemas.js';
-
-// Re-exported so every existing importer of `LowercaseUuid` from `./editing.js` (invitations.ts,
-// managing-access.ts) is unaffected by the schema now being defined in `./components.js` - see the
-// comment there for why the definition moved.
-export { LowercaseUuid };
+import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** An iteration's address: the component, the editing session, and the session's sequence number. */
 export const IterationParams = z.object({

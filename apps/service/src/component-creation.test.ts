@@ -301,4 +301,14 @@ describe('creating a component through the service', () => {
         .statusCode,
     ).toBe(400);
   });
+
+  it("refuses a title that trims to nothing with the store's own content_invalid, not the schema's", async () => {
+    // A whitespace-only title passes the contract's own `min(1)` (three characters), so this is the
+    // one case in the test above that reaches `createComponent` rather than being turned back by
+    // Fastify's schema validation before the handler ever runs - which answers `invalid_request`, a
+    // different wire code from `content_invalid` (apps/service/src/errors.ts).
+    const whitespace = await create('ada', general, { title: '   ' });
+    expect(whitespace.statusCode).toBe(400);
+    expect(whitespace.json()).toMatchObject({ code: 'content_invalid' });
+  });
 });

@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { ComponentListQuery } from './components.js';
 import type { RouteContract } from './contract.js';
-import { LowercaseUuid } from './editing.js';
-import { ErrorBody, PermissionName, Target } from './schemas.js';
+import { ErrorBody, LowercaseUuid, PermissionName, Target } from './schemas.js';
 
 /** A listing's page, as every listing takes it (API-007). */
 const Paging = ComponentListQuery.shape;

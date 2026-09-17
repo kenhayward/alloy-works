@@ -1,25 +1,6 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
-import { ErrorBody } from './schemas.js';
-
-const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
-/**
- * A uuid, lowercase only. Postgres' `uuid` type returns its canonical form lowercase regardless of the
- * case it was written in, and a session or an opened-from version is compared against that reading in
- * JavaScript - never through Postgres' own case-insensitive equality - so an uppercase one sent back
- * would compare unequal to the very record it names, for as long as the session or the version lasts.
- * Refusing it at the door, rather than downcasing it, keeps what a caller sent and what is stored the
- * same string everywhere this is echoed back (a lock's `session`, a refusal's `holder`).
- *
- * Defined here, not in `editing.ts` (which defined it first): `editing.ts` already imports
- * `ComponentParams`, `Lock` and `VersionSummary` from this file, so the other direction would be a
- * circular import - and, unlike a type-only cycle, this one is live values referenced at module-body
- * evaluation time, which throws `ReferenceError: Cannot access 'Lock' before initialization` at
- * runtime the moment anything imports this module tree. `editing.ts` re-exports this one so every
- * existing importer of `LowercaseUuid` from `./editing.js` is unaffected.
- */
-export const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
+import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** A component, by the id its artifact carries. */
 export const ComponentParams = z.object({ id: z.uuid() });
@@ -53,10 +34,10 @@ export type ComponentTypeList = z.infer<typeof ComponentTypeList>;
 
 /**
  * What creating takes. The language is checked here against the same rule the content model applies
- * (`contentDocumentSchema`, packages/domain/src/document.ts) - repeated rather than imported, because
- * the contract cannot import a piece of the domain's schema - so a tag that would be refused deep
- * inside `parseContentDocument` is refused at the door with a message about the tag rather than about
- * the document.
+ * (`contentDocumentSchema`, packages/domain/src/content/model/document.ts) - repeated rather than
+ * imported, because the contract cannot import a piece of the domain's schema - so a tag that would
+ * be refused deep inside `parseContentDocument` is refused at the door with a message about the tag
+ * rather than about the document.
  */
 export const CreateComponentBody = z.strictObject({
   title: z.string().min(1).max(200),
