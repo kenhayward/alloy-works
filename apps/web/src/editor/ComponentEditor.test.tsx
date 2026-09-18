@@ -92,6 +92,13 @@ function open(answers: Record<string, Answer>, timing = quick, strict = false) {
   render(strict ? <StrictMode>{editor}</StrictMode> : editor);
   const surface = async () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    // ProseMirror puts the surface into the page itself, outside React, so the surface is there
+    // before the render it asks for in the same breath - the header, which is state - has been
+    // committed. Waiting only for the surface therefore lands inside that window often enough to
+    // fail a slow machine: the article shows its fallback heading and no header fields at all, and
+    // every `getByLabelText` a test runs next finds nothing. Waiting for a field the header renders
+    // waits for that commit, and it is a field every component opened here has, editable or not.
+    await screen.findByLabelText('Title');
     return view!;
   };
   return { asked, surface };
