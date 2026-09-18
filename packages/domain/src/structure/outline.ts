@@ -148,10 +148,13 @@ export const outlineDocumentSchema = z.strictObject({
 
 export type OutlineDocument = z.infer<typeof outlineDocumentSchema>;
 
-/** Depth-first, in document order, with the depth a node sits at. One walk, used by everything. */
-export function walkOutline(
-  nodes: readonly OutlineNode[],
-  visit: (node: OutlineNode, depth: number) => void,
+/**
+ * Depth-first, in document order, with the depth a node sits at. One walk, used by everything - over a
+ * stored outline's nodes and over a view's alike.
+ */
+export function walkOutline<Node extends { readonly children: readonly Node[] }>(
+  nodes: readonly Node[],
+  visit: (node: Node, depth: number) => void,
   depth = 1,
 ): void {
   for (const node of nodes) {
@@ -205,8 +208,20 @@ function refuseTooDeep(value: unknown): void {
 export function parseOutlineDocument(value: unknown): OutlineDocument {
   refuseTooDeep(value);
   const outline = outlineDocumentSchema.parse(value);
+  refuseAcrossTheTree(outline.nodes);
+  return outline;
+}
+
+/** The two rules about the whole tree, for a stored outline and a view alike. */
+function refuseAcrossTheTree(
+  nodes: readonly {
+    readonly id: string;
+    readonly matter: string;
+    readonly children: readonly unknown[];
+  }[],
+): void {
   const seen = new Set<string>();
-  walkOutline(outline.nodes, (node, depth) => {
+  walkOutline(nodes as readonly OutlineViewNode[], (node, depth) => {
     if (seen.has(node.id)) {
       throw new Error(`Outline node identifier ${node.id} is used more than once in this document`);
     }
@@ -215,7 +230,107 @@ export function parseOutlineDocument(value: unknown): OutlineDocument {
       throw new Error(`Outline node ${node.id} sets its matter below the top level`);
     }
   });
-  return outline;
+}
+
+/**
+ * **An outline as a reader is shown it** (structure.md, "Who is shown what"). access.md makes a thing
+ * a reader may not read indistinguishable from one that does not exist, and a document's grants do not
+ * reach its components - so a reference to a component the reader may not read is shown with its
+ * `component` and a pinned `mode.version` withheld as `null`. The node itself stays, with its
+ * identifier, its type, its mode's kind and its switches, so it can still be moved, removed and given a
+ * page break; nothing about what it points at is shown.
+ *
+ * **A view is never stored, and nothing is computed from one.** The digests, the versions and every
+ * operation's result are the stored outline's (`parseOutlineDocument`); a view reads back through
+ * `readOutlineView` alone, and a stored-outline parse refuses it.
+ */
+export type ReferenceViewNode = Omit<ReferenceNode, 'component' | 'mode' | 'children'> & {
+  readonly component: string | null;
+  readonly mode:
+    | { readonly kind: 'pinned'; readonly version: string | null }
+    | { readonly kind: 'latest' }
+    | { readonly kind: 'approved' };
+  readonly children: readonly OutlineViewNode[];
+};
+
+export type SectionViewNode = Omit<SectionNode, 'children'> & {
+  readonly children: readonly OutlineViewNode[];
+};
+
+export type OutlineViewNode = SectionViewNode | ReferenceViewNode;
+
+export type OutlineView = Omit<OutlineDocument, 'nodes'> & {
+  readonly nodes: readonly OutlineViewNode[];
+};
+
+const outlineViewNodeSchema: z.ZodType<OutlineViewNode> = z.lazy(() =>
+  z.discriminatedUnion('type', [sectionViewNodeSchema, referenceViewNodeSchema]),
+);
+
+// Extended from the stored schemas, never restated, so every rule a stored node is held to - the title
+// rule above among them - holds for a view too, and only the two withheld members are widened.
+const sectionViewNodeSchema = sectionNodeSchema.extend({
+  children: z.array(outlineViewNodeSchema),
+});
+
+const referenceViewNodeSchema = referenceNodeSchema.extend({
+  component: artifactIdentifier.nullable(),
+  mode: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('pinned'), version: artifactIdentifier.nullable() }),
+    referenceModeSchema.options[1],
+    referenceModeSchema.options[2],
+  ]),
+  children: z.array(outlineViewNodeSchema),
+});
+
+const outlineViewSchema = outlineDocumentSchema.extend({
+  nodes: z.array(outlineViewNodeSchema),
+});
+
+/**
+ * The view a reader is shown of a stored outline: a copy, with the component and any pinned version
+ * withheld from every reference whose component `mayRead` refuses. The outline given is not changed.
+ */
+export function withholdComponents(
+  outline: OutlineDocument,
+  mayRead: (component: string) => boolean,
+): OutlineView {
+  const withhold = (node: OutlineNode): OutlineViewNode => {
+    const children = node.children.map(withhold);
+    if (node.type === 'section' || mayRead(node.component)) return { ...node, children };
+    const mode =
+      node.mode.kind === 'pinned' ? { kind: 'pinned' as const, version: null } : node.mode;
+    return { ...node, component: null, mode, children };
+  };
+  return { ...outline, nodes: outline.nodes.map(withhold) };
+}
+
+export type OutlineViewReadOutcome =
+  | { ok: true; outline: OutlineView }
+  | { ok: false; artifact: string; version: string; failure: string };
+
+/**
+ * A view as the renderer receives one, held to every rule a stored outline is, except that a
+ * reference's component and pinned version may be withheld. A view is made from an outline already
+ * at the current schema version, so it has no migration chain to go through.
+ */
+export function readOutlineView(
+  value: unknown,
+  context: { artifact: string; version: string },
+): OutlineViewReadOutcome {
+  try {
+    refuseTooDeep(value);
+    const view = outlineViewSchema.parse(value);
+    refuseAcrossTheTree(view.nodes);
+    return { ok: true, outline: view };
+  } catch (error) {
+    return {
+      ok: false,
+      artifact: context.artifact,
+      version: context.version,
+      failure: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 // Created now rather than at the first schema change, because a chain nobody built is discovered to

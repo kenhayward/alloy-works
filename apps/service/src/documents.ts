@@ -9,6 +9,7 @@ import {
   createDocument,
   editOutline,
   listReadableDocuments,
+  readableComponents,
   readDocument,
   type StoredDocument,
   type StoredVersion,
@@ -16,7 +17,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { decide } from '@alloy-works/domain';
+import { decide, readOutline, walkOutline, withholdComponents } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
@@ -24,18 +25,54 @@ import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { wireCode } from './wire-codes.js';
 
-/** A document as the API shows it: at one version, with whether the caller may restructure it. */
-function documentView(
+/** Who a document is being shown to, in the transaction their permission was decided in. */
+interface Viewer {
+  readonly trx: TenantTransaction;
+  readonly principalId: string;
+  readonly mayEdit: boolean;
+}
+
+/**
+ * The outline as this viewer is shown it (structure.md, "Who is shown what"): a reference to a
+ * component they may not read has its component and pinned version withheld, because access.md makes
+ * a thing they may not read indistinguishable from one that does not exist. **Only the view**: the
+ * stored outline, its digests and its versions are never computed from what this returns.
+ *
+ * An outline that does not read is shown as nothing at all - an empty member, which no renderer reads
+ * as an outline - rather than as stored, because what cannot be parsed cannot have its references
+ * withheld either. The page says it could not be read, as it did when the stored value came back.
+ */
+async function outlineView(
+  viewer: Viewer,
+  document: string,
+  version: StoredVersion,
+): Promise<Record<string, unknown>> {
+  const read = readOutline(version.content, { artifact: document, version: version.id });
+  if (!read.ok) return {};
+  const components: string[] = [];
+  walkOutline(read.outline.nodes, (node) => {
+    if (node.type === 'reference') components.push(node.component);
+  });
+  const readable = await readableComponents(viewer.trx, viewer.principalId, components);
+  return withholdComponents(read.outline, (component) => readable.has(component));
+}
+
+/**
+ * A document as the API shows it: at one version, with whether the caller may restructure it. Every
+ * answer that carries an outline is built here - the page, an act's answer, and a refusal's
+ * `current` - so none can carry an outline that has not been through `outlineView`.
+ */
+async function documentView(
+  viewer: Viewer,
   document: Pick<StoredDocument, 'id' | 'space'>,
   version: StoredVersion,
-  mayEdit: boolean,
-): DocumentView {
+): Promise<DocumentView> {
   return {
     id: document.id,
     space: document.space,
     version: versionView(version),
-    outline: version.content as Record<string, unknown>,
-    mayEdit,
+    outline: await outlineView(viewer, document.id, version),
+    mayEdit: viewer.mayEdit,
   };
 }
 
@@ -54,10 +91,10 @@ function stale(current: DocumentView): AppError {
  * The document as it now stands, for a refusal to carry. Read in the handler's transaction; a
  * document is never removed, so one that authorised a moment ago is still there.
  */
-async function latestView(trx: TenantTransaction, id: string, mayEdit: boolean) {
-  const latest = await readDocument(trx, id);
+async function latestView(viewer: Viewer, id: string) {
+  const latest = await readDocument(viewer.trx, id);
   if (!latest) throw notFound();
-  return documentView(latest, latest.version, mayEdit);
+  return documentView(viewer, latest, latest.version);
 }
 
 /**
@@ -114,19 +151,20 @@ export function documentHandlers(
       // Decided against the space, as `createComponent` decides it: the document did not exist when
       // the facts were loaded, so no denial on it can exist yet.
       return documentView(
+        { trx, principalId, mayEdit: decide('edit', facts).allowed },
         { id: answer.version.artifactId, space: held },
         answer.version,
-        decide('edit', facts).allowed,
       );
     },
 
-    getDocument: async (request: FastifyRequest, { trx, facts }: Authorised) => {
+    getDocument: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { id } = request.params as DocumentParams;
       // `authorise` never looks at an artifact's kind, so a component's id authorises cleanly here;
       // `readDocument` answers nothing for it, and neither does this.
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
-      return documentView(document, document.version, decide('edit', facts).allowed);
+      const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
+      return documentView(viewer, document, document.version);
     },
 
     /**
@@ -145,7 +183,7 @@ export function documentHandlers(
     ): Promise<DocumentView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as OutlineOperationBody;
-      const mayEdit = decide('edit', facts).allowed;
+      const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
       const answer = await editOutline(trx, {
@@ -156,20 +194,20 @@ export function documentHandlers(
       });
       switch (answer.answer) {
         case 'recorded':
-          return documentView(document, answer.version, mayEdit);
+          return documentView(viewer, document, answer.version);
         case 'version.unchanged':
           // Decision K: putting something back where it was is not an error, and the chain keeps no
           // row for it - the same answer `cutVersion` gives for a cut with nothing in it.
-          return documentView(document, answer.current, mayEdit);
+          return documentView(viewer, document, answer.current);
         case 'version.precondition':
-          throw stale(documentView(document, answer.current, mayEdit));
+          throw stale(await documentView(viewer, document, answer.current));
         case 'artifact.missing':
           // The document is there - it was read above - so it is the opened-from version that is not.
-          throw stale(await latestView(trx, id, mayEdit));
+          throw stale(await latestView(viewer, id));
         case 'outline.invalid': {
           // Versions are only ever appended, so a latest that is not the opened-from version now
           // never will be again: no lock is needed to know the caller is stale.
-          const current = await latestView(trx, id, mayEdit);
+          const current = await latestView(viewer, id);
           if (current.version.id !== body.openedFrom) throw stale(current);
           // A fixed message; the reason is one of the domain's own constants, never an exception's
           // text (operations.ts), so it is safe to carry as a member.

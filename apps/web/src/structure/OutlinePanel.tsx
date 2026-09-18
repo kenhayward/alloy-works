@@ -1,9 +1,9 @@
 import {
   hasText,
-  type OutlineDocument,
-  type OutlineNode,
+  type OutlineView,
+  type OutlineViewNode,
   type OutlineOperation,
-  type SectionNode,
+  type SectionViewNode,
 } from '@alloy-works/domain';
 import {
   useEffect,
@@ -50,7 +50,7 @@ export type ComponentChoices =
  * notice asks for; or `'signedOut'`, the same except that no retry can succeed until the author signs
  * in again.
  */
-export type Answered = OutlineDocument | 'refused' | 'unsent' | 'signedOut';
+export type Answered = OutlineView | 'refused' | 'unsent' | 'signedOut';
 
 type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
 
@@ -58,7 +58,7 @@ type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
 type RetitleAnswer = Answered | 'superseded';
 
 export interface OutlinePanelProps {
-  readonly outline: OutlineDocument;
+  readonly outline: OutlineView;
   /** Whether the caller may restructure the outline at all; a reader is offered nothing to change. */
   readonly editable: boolean;
   /** An operation is in flight: everything that would send another waits for it. */
@@ -109,7 +109,7 @@ const KEYS =
   '(Option on a Mac), add a section after it with Enter, remove it with Delete, and undo with ' +
   'Ctrl+Z (Cmd+Z on a Mac). On a Mac keyboard, remove it with the Remove button.';
 
-function isPageBreak(value: string): value is OutlineNode['pageBreak'] {
+function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
 }
 
@@ -424,7 +424,7 @@ export function OutlinePanel({
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
   };
 
-  const renderNodes = (list: readonly OutlineNode[], level: number) =>
+  const renderNodes = (list: readonly OutlineViewNode[], level: number) =>
     list.map((node, index) => {
       const labelId = `${prefix}-${node.id}`;
       return (
@@ -668,7 +668,7 @@ function ConfirmRemoval({
   onRemove,
   onKeep,
 }: {
-  node: OutlineNode | undefined;
+  node: OutlineViewNode | undefined;
   names: Names;
   onRemove: () => void;
   onKeep: () => void;
@@ -720,7 +720,7 @@ function NodeDetails({
   onNotice,
   onRemove,
 }: {
-  node: OutlineNode;
+  node: OutlineViewNode;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -765,7 +765,7 @@ function TitleField({
   openField,
   onNotice,
 }: {
-  node: SectionNode;
+  node: SectionViewNode;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
   openField: MutableRefObject<string | null>;
   onNotice: (message: string | null) => void;

@@ -50,7 +50,11 @@ export const DocumentView = z.object({
   version: VersionSummary,
   outline: z
     .record(z.string(), z.unknown())
-    .describe("The latest version's outline document (structure.md), exactly as stored"),
+    .describe(
+      "The latest version's outline document (structure.md), as the caller is shown it: a reference " +
+        'to a component the caller may not read carries `component: null`, and a pinned one ' +
+        '`mode.version: null`; everything else is as stored. Empty when the stored outline does not read',
+    ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
 });
 export type DocumentView = z.infer<typeof DocumentView>;

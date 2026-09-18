@@ -15,8 +15,10 @@ import {
   outlineNodeSchema,
   parseOutlineDocument,
   readOutline,
+  readOutlineView,
   referenceModeSchema,
   walkOutline,
+  withholdComponents,
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
@@ -452,5 +454,57 @@ describe('what the parse bounds', () => {
     expect(() =>
       parseOutlineDocument(nested(3, (level) => ({ matter: level === 3 ? 'appendix' : 'body' }))),
     ).toThrow(/top level/);
+  });
+});
+
+describe('an outline as a reader is shown it', () => {
+  const HIDDEN = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+  const VERSION = '11111111-1111-4111-8111-111111111111';
+  const reference = (id: string, component: string, mode: unknown, over = {}) => ({
+    type: 'reference',
+    id,
+    component,
+    mode,
+    numbered: true,
+    matter: 'body',
+    pageBreak: 'page',
+    values: {},
+    children: [],
+    ...over,
+  });
+  const stored = parseOutlineDocument({
+    ...empty,
+    nodes: [
+      section(NODE, {
+        children: [reference(OTHER, HIDDEN, { kind: 'pinned', version: VERSION })],
+      }),
+      reference('c'.repeat(26), COMPONENT, { kind: 'pinned', version: VERSION }),
+      reference('d'.repeat(26), HIDDEN, { kind: 'latest' }),
+    ],
+  });
+
+  it('withholds the component and pinned version of a reference the reader may not read, and keeps the node', () => {
+    const view = withholdComponents(stored, (component) => component === COMPONENT);
+    expect(JSON.stringify(view)).not.toContain(HIDDEN);
+    expect(view.nodes[0]!.children[0]).toEqual({
+      ...reference(OTHER, HIDDEN, { kind: 'pinned', version: VERSION }),
+      component: null,
+      mode: { kind: 'pinned', version: null },
+    });
+    // What the reader may read is shown as it is stored.
+    expect(view.nodes[1]).toEqual(stored.nodes[1]);
+    expect(view.nodes[2]).toMatchObject({ component: null, mode: { kind: 'latest' } });
+    // The stored outline is not touched: the view is a copy.
+    expect(JSON.stringify(stored)).toContain(HIDDEN);
+    // And the view reads back as a view, but never as a stored outline.
+    const read = readOutlineView(JSON.parse(JSON.stringify(view)), { artifact: 'a', version: 'v' });
+    expect(read).toEqual({ ok: true, outline: view });
+    expect(readOutline(JSON.parse(JSON.stringify(view)), { artifact: 'a', version: 'v' }).ok).toBe(
+      false,
+    );
+    // Everything a stored outline refuses, a view refuses too.
+    expect(readOutlineView({ ...view, title: ' ' }, { artifact: 'a', version: 'v' }).ok).toBe(
+      false,
+    );
   });
 });

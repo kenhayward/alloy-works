@@ -3,6 +3,7 @@ import {
   applyOutlineOperation,
   canonicaliseOutline,
   outlineOperationSchema,
+  withholdComponents,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
@@ -101,7 +102,12 @@ const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
  */
 function service(
   start: OutlineDocument,
-  options: { mayEdit?: boolean; components?: unknown } = {},
+  options: {
+    mayEdit?: boolean;
+    components?: unknown;
+    /** Whether the caller may read a component: one they may not is withheld, as the service does. */
+    mayRead?: (component: string) => boolean;
+  } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
   const refusals = new Map<
@@ -130,7 +136,8 @@ function service(
       createdAt: '2026-09-18T09:00:00.000Z',
       note: null,
     },
-    outline: version.outline,
+    // As the service shows it: the stored outline, with what the caller may not read withheld.
+    outline: withholdComponents(version.outline, options.mayRead ?? (() => true)),
     mayEdit: options.mayEdit ?? true,
   });
   const record = (next: OutlineDocument) => {
@@ -1229,6 +1236,40 @@ describe('the outline panel, answered', () => {
 
     expect(await screen.findByText('This document could not be read.')).toBeInTheDocument();
     expect(screen.queryByText(/Reload/)).toBeNull();
+  });
+
+  it('names a reference to a component the caller may not read "A component", and still acts on it', async () => {
+    const pinned: OutlineNode = {
+      type: 'reference',
+      id: RESULTS,
+      component: PRINTER,
+      mode: { kind: 'pinned', version: 'dddddddd-0000-4000-8000-00000000abcd' },
+      numbered: true,
+      matter: 'body',
+      pageBreak: 'none',
+      values: {},
+      children: [],
+    };
+    const fake = service(outline([section(INTRODUCTION, 'Introduction'), pinned]), {
+      mayRead: () => false,
+    });
+    open(fake.fetch);
+
+    const withheld = await screen.findByRole('treeitem', { name: 'A component, pinned' });
+    expect(screen.queryByText(/may not read/)).toBeNull();
+    // Moved, and given a page break, like any other node: its identifier is all an act needs.
+    await userEvent.click(withheld);
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await settled();
+    expect(screen.getByRole('tree')).toHaveTextContent(/A component.*Introduction/);
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'A new page');
+    expect(
+      await screen.findByRole('treeitem', { name: 'A component, pinned, starts on a new page' }),
+    ).toBeInTheDocument();
+    expect(fake.edits().map((edit) => (edit.body as { operation: unknown }).operation)).toEqual([
+      { operation: 'move', node: RESULTS, parent: null, position: 0 },
+      { operation: 'set', node: RESULTS, pageBreak: 'page' },
+    ]);
   });
 
   it('names a reference "A component" when the listing was cut short, never one the caller may not read', async () => {

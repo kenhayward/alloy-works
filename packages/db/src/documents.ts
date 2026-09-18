@@ -188,6 +188,33 @@ export async function listReadableDocuments(
 }
 
 /**
+ * Which of these components the principal may read, for the view a reader is shown of an outline
+ * (structure.md, "Who is shown what"): a reference to any other has its component withheld. Filtered
+ * by the one readable-set predicate every listing uses (`readableArtifacts`), inside the query, so it
+ * cannot disagree with what `GET /v1/components` lists. An id that is not a component in this
+ * environment - another environment's, a document's, none at all - is never in the answer. Empty when
+ * the tenant holds no such principal.
+ */
+export async function readableComponents(
+  trx: TenantTransaction,
+  principalId: string,
+  components: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const asked = [...new Set(components)].filter((id) => UUID.test(id));
+  if (asked.length === 0) return new Set();
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return new Set();
+  const rows = await trx
+    .selectFrom('artifact as a')
+    .select('a.id')
+    .where('a.id', 'in', asked)
+    .where('a.kind', '=', 'component')
+    .where((eb) => readableArtifacts(eb, readable))
+    .execute();
+  return new Set(rows.map((row) => row.id));
+}
+
+/**
  * The one answer every refused reference target gets, whatever was wrong with it: no such artifact,
  * another environment's, a definition, a document - this one included - a component the author may
  * not read, or a pinned version of some other artifact. One sentence, so the refusal cannot be used to

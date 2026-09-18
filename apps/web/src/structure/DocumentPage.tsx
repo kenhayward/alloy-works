@@ -1,5 +1,5 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { readOutline, type OutlineDocument, type OutlineOperation } from '@alloy-works/domain';
+import { readOutlineView, type OutlineView, type OutlineOperation } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
@@ -27,7 +27,7 @@ interface Opened {
   readonly id: string;
   readonly space: { readonly id: string; readonly name: string };
   readonly version: { readonly id: string; readonly number: string };
-  readonly outline: OutlineDocument;
+  readonly outline: OutlineView;
   readonly mayEdit: boolean;
 }
 
@@ -52,7 +52,7 @@ function documentIn(data: unknown): Read {
   if (!isRecord(version) || typeof version.id !== 'string' || typeof version.number !== 'string') {
     return undefined;
   }
-  const read = readOutline(outline, { artifact: id, version: version.id });
+  const read = readOutlineView(outline, { artifact: id, version: version.id });
   if (!read.ok) return 'unreadable';
   return {
     id,
@@ -109,8 +109,8 @@ const STARTS = {
  */
 function announce(
   operation: OutlineOperation,
-  before: OutlineDocument,
-  after: OutlineDocument,
+  before: OutlineView,
+  after: OutlineView,
   names: Names,
 ): string {
   switch (operation.operation) {

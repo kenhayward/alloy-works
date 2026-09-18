@@ -85,6 +85,8 @@ describe('the domain package', () => {
         'migrateOutline',
         'outlineMigrationChain',
         'readOutline',
+        'readOutlineView',
+        'withholdComponents',
         'canonicaliseOutline',
         'walkOutline',
         'applyOutlineOperation',

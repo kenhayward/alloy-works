@@ -1,6 +1,7 @@
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
+  createComponent,
   createSpace,
   createTenant,
   createTenantDatabase,
@@ -589,6 +590,100 @@ describe('documents through the service', () => {
     expect(await chainOf(doc.id)).toHaveLength(3);
   });
 
+  describe('a reference to a component the caller may not read', () => {
+    /**
+     * A component in Quality, which Ada may read (Administrator at the tenant) and Grace may not. Made
+     * through the store, because nobody here may create in Quality - which is the point of it.
+     */
+    const hiddenComponent = () =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const made = await createComponent(trx, {
+          spaceId: quality,
+          title: 'Calibrate the balance',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ids.ada!,
+        });
+        if (made.answer !== 'created') throw new Error('Expected a component');
+        return { id: made.version.artifactId, version: { id: made.version.id } };
+      });
+    const reference = (component: string, mode: Json = { kind: 'latest' }) => ({
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'reference', component, mode },
+    });
+    type Node = { type: string; component?: string | null; mode?: Json };
+    const referenceIn = (body: DocumentBody) =>
+      (body.outline.nodes as unknown as Node[]).find((node) => node.type === 'reference');
+
+    it('shows no component id and no pinned version on any answer carrying the outline', async () => {
+      const hidden = await hiddenComponent();
+      const doc = (await create('ada', general, 'Withheld')).json<DocumentBody>();
+      const pinned = await act('ada', doc.id, doc.version.id, {
+        ...reference(hidden.id, { kind: 'pinned', version: hidden.version.id }),
+      });
+      expect(pinned.statusCode).toBe(200);
+      const referenced = pinned.json<DocumentBody>();
+      // Ada may read it, and is shown it.
+      expect(referenceIn(referenced)).toMatchObject({
+        component: hidden.id,
+        mode: { kind: 'pinned', version: hidden.version.id },
+      });
+
+      const withheld = (body: DocumentBody) => {
+        expect(referenceIn(body)).toMatchObject({
+          type: 'reference',
+          component: null,
+          mode: { kind: 'pinned', version: null },
+        });
+        expect(JSON.stringify(body)).not.toContain(hidden.id);
+        expect(JSON.stringify(body)).not.toContain(hidden.version.id);
+      };
+      // Opened.
+      const opened = await call('grace', 'GET', `/v1/documents/${doc.id}`);
+      expect(opened.statusCode).toBe(200);
+      withheld(opened.json<DocumentBody>());
+      // Restructured: the success answer.
+      const edited = await addSection(referenced, 'Method', 'grace');
+      expect(edited.statusCode).toBe(200);
+      withheld(edited.json<DocumentBody>());
+      // Refused as stale: the 409 carries the document as it now stands.
+      const stale = await addSection(referenced, 'Results', 'grace');
+      expect(stale.statusCode).toBe(409);
+      withheld(stale.json<{ current: DocumentBody }>().current);
+
+      // Only the view: the stored outline still names the component, and Ada is still shown it.
+      const stored = await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('artifact_version')
+          .select('content')
+          .where('artifact_id', '=', doc.id)
+          .orderBy('version_no', 'desc')
+          .executeTakeFirstOrThrow(),
+      );
+      expect(JSON.stringify(stored.content)).toContain(hidden.id);
+      expect(JSON.stringify(stored.content)).toContain(hidden.version.id);
+      const again = await call('ada', 'GET', `/v1/documents/${doc.id}`);
+      expect(referenceIn(again.json<DocumentBody>())).toMatchObject({ component: hidden.id });
+    });
+
+    it('refuses referencing one exactly as it refuses an id that names nothing', async () => {
+      const hidden = await hiddenComponent();
+      const doc = (await create('grace', general, 'Unreachable')).json<DocumentBody>();
+      const unreadable = await act('grace', doc.id, doc.version.id, reference(hidden.id));
+      const nothing = await act('grace', doc.id, doc.version.id, reference(UNKNOWN));
+      expect(unreadable.statusCode).toBe(400);
+      expect(unreadable.json()).toMatchObject({
+        code: 'outline_invalid',
+        reason: 'The component is not one this outline can reference',
+      });
+      const untraced = (body: Json) => ({ ...body, traceId: undefined });
+      expect(untraced(unreadable.json())).toEqual(untraced(nothing.json()));
+      expect(await chainOf(doc.id)).toHaveLength(1);
+    });
+  });
+
   it('answers a stored outline that no longer reads as a failure on our side, saying nothing of it', async () => {
     const doc = (await create('ada', general, 'Broken')).json<DocumentBody>();
     // A version the store would never write, put there by hand: a title the schema refuses.
@@ -628,6 +723,11 @@ describe('documents through the service', () => {
     expect(answer.body).not.toContain(doc.id);
     expect(answer.body).not.toContain('does not read');
     expect(await chainOf(doc.id)).toHaveLength(2);
+    // Opened, it is shown as nothing at all rather than as stored: what cannot be read cannot have a
+    // reference withheld from it either, and the page says it could not be read.
+    const opened = await call('ada', 'GET', `/v1/documents/${doc.id}`);
+    expect(opened.statusCode).toBe(200);
+    expect(opened.json<{ outline: unknown }>().outline).toEqual({});
   });
 });
 

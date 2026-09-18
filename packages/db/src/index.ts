@@ -168,6 +168,7 @@ export {
   createDocument,
   editOutline,
   listReadableDocuments,
+  readableComponents,
   readDocument,
   type CreateDocumentAnswer,
   type DocumentSummary,

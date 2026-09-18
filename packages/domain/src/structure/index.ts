@@ -9,6 +9,8 @@ export {
   migrateOutline,
   outlineMigrationChain,
   readOutline,
+  readOutlineView,
+  withholdComponents,
   canonicaliseOutline,
   walkOutline,
 } from './outline.js';
@@ -18,6 +20,11 @@ export type {
   SectionNode,
   ReferenceNode,
   OutlineReadOutcome,
+  OutlineView,
+  OutlineViewNode,
+  OutlineViewReadOutcome,
+  ReferenceViewNode,
+  SectionViewNode,
 } from './outline.js';
 
 export { applyOutlineOperation, outlineOperationSchema } from './operations.js';

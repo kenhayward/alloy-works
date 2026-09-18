@@ -1,8 +1,8 @@
 import type {
-  OutlineDocument,
-  OutlineNode,
+  OutlineView,
+  OutlineViewNode,
   OutlineOperation,
-  SectionNode,
+  SectionViewNode,
 } from '@alloy-works/domain';
 
 /**
@@ -21,20 +21,20 @@ export type MoveOperation = Extract<OutlineOperation, { operation: 'move' }>;
 type SetOperation = Extract<OutlineOperation, { operation: 'set' }>;
 /** A title as an operation carries it, and as a node holds it. */
 type Title = Extract<OutlineOperation, { operation: 'retitle' }>['title'];
-type InlineTitle = SectionNode['title'];
+type InlineTitle = SectionViewNode['title'];
 
 /** Where a node sits: its parent (`null` for the document itself), its siblings and its index. */
 export interface Place {
-  readonly node: OutlineNode;
-  readonly parent: OutlineNode | null;
-  readonly siblings: readonly OutlineNode[];
+  readonly node: OutlineViewNode;
+  readonly parent: OutlineViewNode | null;
+  readonly siblings: readonly OutlineViewNode[];
   readonly index: number;
 }
 
 export function placeOf(
-  nodes: readonly OutlineNode[],
+  nodes: readonly OutlineViewNode[],
   id: string,
-  parent: OutlineNode | null = null,
+  parent: OutlineViewNode | null = null,
 ): Place | undefined {
   for (const [index, node] of nodes.entries()) {
     if (node.id === id) return { node, parent, siblings: nodes, index };
@@ -45,11 +45,11 @@ export function placeOf(
 }
 
 /** Every node, depth first, in document order: the order the arrow keys walk. */
-export function visibleOrder(nodes: readonly OutlineNode[]): string[] {
+export function visibleOrder(nodes: readonly OutlineViewNode[]): string[] {
   return nodes.flatMap((node) => [node.id, ...visibleOrder(node.children)]);
 }
 
-function contains(node: OutlineNode, id: string): boolean {
+function contains(node: OutlineViewNode, id: string): boolean {
   return node.id === id || node.children.some((child) => contains(child, id));
 }
 
@@ -69,7 +69,7 @@ function moveOrNothing(from: Place, parent: string | null, position: number): Mo
  * promoted - so nothing is sent that could only be refused.
  */
 export function keyMove(
-  nodes: readonly OutlineNode[],
+  nodes: readonly OutlineViewNode[],
   id: string,
   direction: 'up' | 'down' | 'promote' | 'demote',
 ): MoveOperation | null {
@@ -109,7 +109,7 @@ export type DropTarget =
   | { readonly kind: 'end'; readonly parent: string | null };
 
 export function dropMove(
-  nodes: readonly OutlineNode[],
+  nodes: readonly OutlineViewNode[],
   dragged: string,
   target: DropTarget,
 ): MoveOperation | null {
@@ -117,7 +117,7 @@ export function dropMove(
   if (!from) return null;
   const fromParent = from.parent?.id ?? null;
   // How many of `parent`'s children the move counts among, once the dragged node has left them.
-  const remaining = (parent: string | null, children: readonly OutlineNode[]) =>
+  const remaining = (parent: string | null, children: readonly OutlineViewNode[]) =>
     children.length - (fromParent === parent ? 1 : 0);
 
   switch (target.kind) {
@@ -143,7 +143,7 @@ export function dropMove(
   }
 }
 
-function ids(nodes: readonly OutlineNode[]): Set<string> {
+function ids(nodes: readonly OutlineViewNode[]): Set<string> {
   return new Set(visibleOrder(nodes));
 }
 
@@ -160,8 +160,8 @@ const SWITCHES = ['numbered', 'matter', 'pageBreak', 'mode', 'values'] as const;
  * and says it cannot be undone.
  */
 export function inverseOf(
-  before: OutlineDocument,
-  after: OutlineDocument,
+  before: OutlineView,
+  after: OutlineView,
   operation: OutlineOperation,
 ): OutlineOperation | null {
   switch (operation.operation) {
@@ -243,12 +243,13 @@ export function titleText(title: InlineTitle): string {
 export type Names = ReadonlyMap<string, string> | null;
 
 /** What a node is called in a sentence: a section's title, or the component a reference points at. */
-export function nodeName(node: OutlineNode, names: Names): string {
+export function nodeName(node: OutlineViewNode, names: Names): string {
   if (node.type === 'section') return titleText(node.title).trim() || 'Untitled section';
-  // A readable component is in the listing, so one that is not, once it has been read, is one the
-  // caller may not read; until then it is only "a component".
-  if (names === null) return 'A component';
-  return names.get(node.component) ?? 'A component you may not read';
+  // Neutral whenever the title is not known: the service withholds a component the caller may not
+  // read (`component: null`), and access.md makes that indistinguishable from one that does not
+  // exist, so nothing here says which it is. The same words while the listing is still being read.
+  if (names === null || node.component === null) return 'A component';
+  return names.get(node.component) ?? 'A component';
 }
 
 const MODES = {
@@ -265,7 +266,7 @@ const STARTS = {
 };
 
 /** A tree item's own label: its name, how a reference resolves, and where it starts. */
-export function nodeLabel(node: OutlineNode, names: Names): string {
+export function nodeLabel(node: OutlineViewNode, names: Names): string {
   const mode = node.type === 'reference' ? `, ${MODES[node.mode.kind]}` : '';
   return `${nodeName(node, names)}${mode}${STARTS[node.pageBreak]}`;
 }

@@ -8,6 +8,7 @@ import {
   createDocument,
   editOutline,
   listReadableDocuments,
+  readableComponents,
   readDocument,
   type OutlineAnswer,
 } from './documents.js';
@@ -521,6 +522,38 @@ describe('a document in the version chain, and its outline edited a version at a
     await expect(
       recorded(first, reference(readable.artifactId, { kind: 'pinned', version: readable.id })),
     ).rejects.toThrow(/version.precondition/);
+  });
+
+  it('names which of the components given a principal may read, and nothing else', async () => {
+    const component = (spaceId: string, author: string, tenant = production) =>
+      service.withTenant(tenant, async (trx) => {
+        const made = await createComponent(trx, {
+          spaceId,
+          title: 'Install the printer',
+          language: 'en-GB',
+          direction: 'ltr',
+          author,
+        });
+        if (made.answer !== 'created') throw new Error('Expected a component');
+        return made.version.artifactId;
+      });
+    const inGeneral = await component(general, ada);
+    const inQuality = await component(quality, grace);
+    const ivy = await service.withTenant(development, (trx) =>
+      person(trx, `ivy-${randomUUID()}`, 'Ivy'),
+    );
+    const otherEnvironment = await component(elsewhere, ivy, development);
+    const document = (await created()).artifactId;
+    const asked = [inGeneral, inQuality, otherEnvironment, document, randomUUID()];
+
+    const readableBy = (principal: string) =>
+      service.withTenant(production, (trx) => readableComponents(trx, principal, asked));
+    expect([...(await readableBy(ada))]).toEqual([inGeneral]);
+    expect([...(await readableBy(grace))]).toEqual([inQuality]);
+    expect([...(await readableBy(randomUUID()))]).toEqual([]);
+    await expect(
+      service.withTenant(production, (trx) => readableComponents(trx, ada, [])),
+    ).resolves.toEqual(new Set());
   });
 
   it("throws on a stored outline that no longer reads: a broken store, not the caller's mistake", async () => {
