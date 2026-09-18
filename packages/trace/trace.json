@@ -16010,7 +16010,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 93,
+      "line": 95,
       "kind": "title"
     },
     {
@@ -16266,33 +16266,51 @@
       "kind": "title"
     },
     {
+      "id": "STR-003",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "STR-007",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 77,
+      "kind": "title"
+    },
+    {
+      "id": "STR-010",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 96,
+      "kind": "title"
+    },
+    {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 50,
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 65,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 99,
+      "line": 105,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 112,
+      "line": 118,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 141,
+      "line": 147,
       "kind": "title"
     },
     {

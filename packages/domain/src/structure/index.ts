@@ -19,3 +19,6 @@ export type {
   ReferenceNode,
   OutlineReadOutcome,
 } from './outline.js';
+
+export { applyOutlineOperation, outlineOperationSchema } from './operations.js';
+export type { OutlineApplied, OutlineOperation } from './operations.js';

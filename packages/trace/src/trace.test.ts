@@ -148,8 +148,12 @@ describe('the citations in the committed model', () => {
   // rather than a demonstration of its own statement, so it does not move this count.
   // 154, from 149: the document and its outline (docs/plans/2026-09-18-structure-01-the-document-and-its-outline.md)
   // cites STR-001, STR-002, STR-048, STR-049 and STR-058 in the outline's schema.
+  // 157, from 154: the same plan cites STR-003, STR-007 and STR-010 in the operations
+  // (packages/domain/src/structure/operations.test.ts): every node gets a stable identifier that a
+  // remove never hands back out, the tree nests to nine levels with no maximum the schema declares,
+  // and one component referenced twice is two nodes with their own identity and their own switches.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(154);
+    expect(model.citations).toHaveLength(157);
   });
 
   it('cites no identifier the corpus does not hold', () => {

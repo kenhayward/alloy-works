@@ -86,6 +86,8 @@ describe('the domain package', () => {
         'readOutline',
         'canonicaliseOutline',
         'walkOutline',
+        'applyOutlineOperation',
+        'outlineOperationSchema',
       ].sort(),
     );
   });
