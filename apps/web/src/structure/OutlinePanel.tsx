@@ -233,8 +233,11 @@ export function OutlinePanel({
   const items = useRef(new Map<string, HTMLElement>());
   // The drag's own state waits a tick (see `onDragStart`); this is that tick, so a drag that ends first
   // can take it back.
+  // Never cleared on unmount (issue #131). Under `<StrictMode>` React runs every effect's cleanup once
+  // as a simulated unmount when the panel mounts, indistinguishable from a real one, and under load
+  // it runs after a drag has already started - so a cleanup clearing this timer cancelled a live
+  // drag. After a real unmount the timer's one act is a state update React ignores.
   const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(dragTimer.current), []);
   // Every retitle committed - Enter, or leaving the field, which may take the field away with it - is
   // held here, **one per section**, in the order of its latest commit (a Map keeps insertion order),
   // and sent once nothing else is in flight: so none is dropped because another act was in flight, and

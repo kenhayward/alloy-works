@@ -10,12 +10,13 @@ import {
 } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { StrictMode } from 'react';
+import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
 import { NewDocument } from './NewDocument.js';
+import { OutlinePanel } from './OutlinePanel.js';
 
 const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const SPACE = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -1907,5 +1908,46 @@ describe('an appendix in the outline panel', () => {
     await userEvent.click(item('Results'));
     expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
     expect(screen.queryByText(/Not numbered while/)).toBeNull();
+  });
+});
+
+describe('a drag started before the panel has settled', () => {
+  /**
+   * Starts a drag on the first tree item from a layout effect: after the panel's DOM is in the page,
+   * and before its passive effects have run - which under `<StrictMode>` include the simulated
+   * unmount React runs once on mount. Under load the scheduler defers those effects past a real
+   * `dragstart` the same way (issue #131); this puts the drag there every time rather than by luck.
+   * Once only, so StrictMode's replayed layout effect does not start a second drag that would hide it.
+   */
+  function DragOnMount({ children }: { children: ReactNode }) {
+    const box = useRef<HTMLDivElement>(null);
+    const started = useRef(false);
+    useLayoutEffect(() => {
+      if (started.current) return;
+      started.current = true;
+      box.current
+        ?.querySelector('[role="treeitem"]')
+        ?.dispatchEvent(new Event('dragstart', { bubbles: true }));
+    }, []);
+    return <div ref={box}>{children}</div>;
+  }
+
+  it('records a drag that starts before the panel mounts its effects', async () => {
+    render(
+      <StrictMode>
+        <DragOnMount>
+          <OutlinePanel
+            outline={withholdComponents(
+              outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+              () => true,
+            )}
+            editable
+            onOperation={vi.fn()}
+            notice={null}
+          />
+        </DragOnMount>
+      </StrictMode>,
+    );
+    expect(await screen.findByText('Move to the end of the document')).toBeInTheDocument();
   });
 });
