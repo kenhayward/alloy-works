@@ -151,23 +151,22 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
     if (rule === undefined || sectionRule === undefined || !contribution.numbered) return;
     const state = states[matter];
     const counter = counterOf(state, contribution.sequence);
-    counter.value += 1;
+    const prefix =
+      rule.prefix === null
+        ? []
+        : Array.from({ length: rule.prefix }, (_, index) => state.sections[index] ?? 0);
+    const hasChapter = prefix.some((part) => part > 0);
+    // A chapter-hungry appendix rule with no chapter yet withholds this caption without spending
+    // a counter value on it - otherwise a rule that never restarts (a layout's, not the default
+    // scheme's) would carry the withheld captions' count into the first real chapter's numbers.
+    const withheld = counter.known && rule.prefix !== null && !hasChapter && matter === 'appendix';
+    if (!withheld) counter.value += 1;
     let written: string | null = null;
-    if (counter.known) {
-      const prefix =
-        rule.prefix === null
-          ? []
-          : Array.from({ length: rule.prefix }, (_, index) => state.sections[index] ?? 0);
-      const hasChapter = prefix.some((part) => part > 0);
+    if (counter.known && !withheld) {
       const own = formatCounter(counter.value, rule.format[rule.format.length - 1] ?? 'decimal');
-      if (rule.prefix !== null && hasChapter) {
-        written = `${formatParts(prefix, sectionRule).join(sectionRule.separator)}${rule.separator}${own}`;
-      } else if (rule.prefix === null || matter !== 'appendix') {
-        written = own;
-      }
-      // else: this rule wants a chapter prefix, but no numbered appendix has begun one yet
-      // (`matter === 'appendix'` and `!hasChapter`) - there is no count to continue, and a bare
-      // number here would repeat a body caption's own label, so it takes none.
+      written = hasChapter
+        ? `${formatParts(prefix, sectionRule).join(sectionRule.separator)}${rule.separator}${own}`
+        : own;
     }
     entries.push({
       node,

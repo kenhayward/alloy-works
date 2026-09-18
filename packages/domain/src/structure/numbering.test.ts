@@ -347,6 +347,38 @@ describe('numbering an outline', () => {
     },
   );
 
+  it(
+    'does not consume a counter value for a caption an appendix rule withholds, so a continuous ' +
+      "counter is not inflated by the time a numbered appendix's first caption prints",
+    () => {
+      // A layout's rule, not the default scheme: figure never restarts in appendix matter, but
+      // still wants a chapter prefix - exactly the combination that exposed the bug, since the
+      // default scheme's figure restarts at the same depth that gives it a chapter, hiding it.
+      const figure = defaultNumberingScheme.sequences['figure']!;
+      const scheme = numberingSchemeSchema.parse({
+        ...defaultNumberingScheme,
+        sequences: {
+          ...defaultNumberingScheme.sequences,
+          figure: { ...figure, appendix: { ...figure.appendix, restartAt: null, prefix: 1 } },
+        },
+      });
+      const outline = [
+        // Two withheld captions before any numbered appendix has begun a chapter.
+        section('early', [reference('p')], { matter: 'appendix', numbered: false }),
+        section('glossary', [reference('q')], { matter: 'appendix' }),
+      ];
+      const known = { p: figures('p1', 'p2'), q: figures('q1') };
+      const numbered = table(outline, known, scheme);
+      expect(numbered.entries.filter((entry) => entry.sequence === 'figure')).toMatchObject([
+        { block: 'p1', value: null, number: null, label: null },
+        { block: 'p2', value: null, number: null, label: null },
+        // Neither withheld caption used up a counter value: the first real one is still A.1, not
+        // A.3, even though figure's appendix rule never restarts.
+        { block: 'q1', value: 1, label: 'Figure A.1' },
+      ]);
+    },
+  );
+
   it('STR-017 excludes a node from numbering without it consuming a number', () => {
     const numbered = table([
       section('preface', [section('thanks')], { numbered: false }),
