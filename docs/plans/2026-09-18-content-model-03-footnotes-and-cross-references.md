@@ -75,7 +75,7 @@ version` failed on `v1/every-node.json` with `Footnote f1 holds a node a footnot
   list, and none in a schema holding only an outline.
 - **The trace, simulated.** With STR-062's row in the STR document and structure.md claiming STR-056
   and STR-062, `pnpm trace check` reported no problems and the regenerated model held 1367
-  requirements, 361 claims and 163 citations.
+  requirements, 361 claims and 163 citations - 360 claims once the final fix wave dropped STR-026.
 
 Then the scratch container and both worktrees were removed.
 
@@ -232,7 +232,10 @@ Reject one and the plan changes where the decision says.
 - **H. No `entry` arm yet.** STR-026 lists a bibliography entry among the targets; LIB has not
   designed what an entry's identity is, and a citation's `entry` is already a bare string nothing
   checks. Adding an arm is a widening. Recommended: accept; structure.md says so beside STR-026's
-  claim, which stays.
+  claim, which stays. **Amended in the final fix wave**: the claim does not stay. With no entry arm,
+  and with a `node` target refused outside a section title (decision E), so that body text cannot
+  reference a section, the union answers STR-026 only in part; structure.md drops the claim and names
+  both gaps in "What this document does not own".
 - **I. The release is 0.27.1, a Build bump.** It is a fix (#122 and task 2's) and a correction to a
   stored shape nothing authors; nobody can do anything after it that they could not before.
   Recommended: accept. **Otherwise**: 0.28.0, if a changed stored shape counts as a functional change
@@ -262,7 +265,7 @@ Every task's requirements include these.
   touches a test file runs `pnpm --filter @alloy-works/trace generate` and commits the result, so
   every task ends green. The pins in `packages/trace/src/trace.test.ts` and
   `packages/trace/src/parse/requirements.test.ts` move in task 5 alone: requirements 1366 to 1367,
-  claims 359 to 361, citations 163 unchanged. They were read on `origin/main` at `47b5167`; if main has
+  claims 359 to 361 (360 after the final fix wave dropped STR-026), citations 163 unchanged. They were read on `origin/main` at `47b5167`; if main has
   moved, set each to what the regenerated file holds and say so in the comment.
 - **A filtered run does not build what it imports.** After changing `packages/domain`, run
   `pnpm --filter @alloy-works/domain build` before `pnpm --filter @alloy-works/api-contract generate`
@@ -348,7 +351,7 @@ passed unchanged in the proof run.
 
 **No new citation is counted**, and the pin stays at 163. One requirement is added to the corpus,
 STR-062, taking it from 1366 to 1367; two claims are added, STR-056 and STR-062, taking them from 359
-to 361.
+to 361; and the final fix wave drops one, STR-026, which the built union answers only in part, leaving 360.
 
 | ID          | Statement, in short                                                                     | Claimed by       | Cited in                                                  | Task | Pin                                       |
 | ----------- | --------------------------------------------------------------------------------------- | ---------------- | --------------------------------------------------------- | ---- | ----------------------------------------- |
@@ -366,7 +369,7 @@ clean component accepted.
 | ID               | Why not                                                                                                                                                                                                   |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CNT-132          | Re-identify already reaches a footnote's paragraphs, shown by its existing test; the fix is the parse's. A cross-reference is not a block, so task 4's test demonstrates something CNT-132 does not state |
-| STR-026          | The target union is built without its `entry` arm (decision H), so a test cannot show "or a bibliography entry"                                                                                           |
+| STR-026          | The target union is built without its `entry` arm (decision H), so a test cannot show "or a bibliography entry"; and no longer claimed either, since the final fix wave (decision H)                      |
 | STR-032, STR-056 | "Able to target" is shown by resolving, not by parsing: the stored shape makes both representable, and structure 2's resolver test (structure.md, "Verification") cites them                              |
 | STR-062          | New here, and about resolution. Cited by structure 2                                                                                                                                                      |
 | STR-029, STR-055 | Unclaimed: the named failure is produced by STR's resolver and the publish that fails on it is PUB's. `id` and `withoutPages` are what make them answerable; nothing answers them yet                     |

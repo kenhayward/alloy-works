@@ -15081,10 +15081,6 @@
           "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind"
         },
         {
-          "id": "STR-026",
-          "howItIsMet": "The target is a closed union - an outline node, a block, a footnote, or a bibliography entry - each naming an identity, never a position"
-        },
-        {
           "id": "STR-028",
           "howItIsMet": "Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer"
         },

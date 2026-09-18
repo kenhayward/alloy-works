@@ -37,6 +37,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1367);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-026, which the built target union answers only
+    // in part - it has no bibliography entry arm, and a component cannot reference a section - so the
+    // claim was dropped and the gap named in prose (the third content-model plan's final fix wave).
     // 361, from 359: structure.md claims STR-062, and STR-056, which it had always answered ("A `block`
     // target has no occurrence") and neither claimed nor listed as unclaimed.
     // 359, from 358: structure.md claims STR-061, the document as an artifact of its own kind, which
@@ -73,7 +76,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(361);
+    ).toBe(360);
   });
 });
 
