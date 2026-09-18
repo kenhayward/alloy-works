@@ -33,6 +33,12 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1365);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 358, from 319: structure.md claims 39 - the document artifact, its outline, numbering, captions,
+    // cross-references, the contents panel, deep links and page breaks, plus CNT-041 and CNT-047, the
+    // two numbering clauses content-model.md left for STR. Sixteen more of STR's are deliberately
+    // unclaimed, most of them because PUB's layout declares what this design applies, or because the
+    // named failure is produced here and the publish that fails on it is PUB's; that document names
+    // each one.
     // 319, from 318: component-editor.md claims CNT-149 once creating a component is an act somebody
     // performs rather than a shape somebody is given.
     // 318, from 317: access.md claims IAM-072 once any administrator of the environment invites an
@@ -59,7 +65,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(319);
+    ).toBe(358);
   });
 });
 

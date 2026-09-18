@@ -14988,6 +14988,167 @@
       ]
     },
     {
+      "document": "structure.md",
+      "owns": [
+        {
+          "id": "STR-001",
+          "howItIsMet": "A document artifact's content is one `outline` document; its root holds one ordered array of nodes and there is nowhere to put a second"
+        },
+        {
+          "id": "STR-002",
+          "howItIsMet": "`node` is a closed discriminated union of `section` and `reference`. A third arm is a schema version with a migration"
+        },
+        {
+          "id": "STR-003",
+          "howItIsMet": "`id` is required on every node, allocated from 128 random bits at insertion, spelled by the domain, and never reused - nothing reissues, because nothing recycles"
+        },
+        {
+          "id": "STR-004",
+          "howItIsMet": "A section is a node inside one outline document. It has no artifact row, so there is no identity to share it by and no route that could return one"
+        },
+        {
+          "id": "STR-006",
+          "howItIsMet": "The outline panel reorders by pointer and by an enumerated keymap, and the same five operations are the routes below. All three go through one set of operations"
+        },
+        {
+          "id": "STR-007",
+          "howItIsMet": "Nesting is the tree's own; the schema declares no maximum depth, and the numbering scheme's counters are a stack rather than nine named members"
+        },
+        {
+          "id": "STR-008",
+          "howItIsMet": "A move names a node, a new parent and a position among its siblings; the subtree travels because it _is_ the subtree, and the whole move is one version and one undo entry"
+        },
+        {
+          "id": "STR-010",
+          "howItIsMet": "Two nodes may name one component. Each is a node with its own `id`, and every occurrence-bearing thing below - numbering, captions, references - is keyed by the node, not the component"
+        },
+        {
+          "id": "STR-012",
+          "howItIsMet": "The outline is the document version's content, so it is versioned by the act of versioning the document; `baseline_pin` pins a document version like any other (VER-018)"
+        },
+        {
+          "id": "STR-014",
+          "howItIsMet": "`sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change"
+        },
+        {
+          "id": "STR-015",
+          "howItIsMet": "A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it"
+        },
+        {
+          "id": "STR-016",
+          "howItIsMet": "A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`"
+        },
+        {
+          "id": "STR-017",
+          "howItIsMet": "A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter"
+        },
+        {
+          "id": "STR-018",
+          "howItIsMet": "`number(outline, contributions, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree"
+        },
+        {
+          "id": "STR-019",
+          "howItIsMet": "No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written"
+        },
+        {
+          "id": "STR-021",
+          "howItIsMet": "The engine walks occurrences, not components. A component referenced twice is two walks over one content document, and its captions take two numbers"
+        },
+        {
+          "id": "STR-022",
+          "howItIsMet": "Every entry in the numbering table names the node that produced it, the occurrence and block where it is a caption, the sequence, the counter stack at that point, and the rule applied"
+        },
+        {
+          "id": "STR-023",
+          "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind"
+        },
+        {
+          "id": "STR-026",
+          "howItIsMet": "The target is a closed union - an outline node, a block, a footnote, or a bibliography entry - each naming an identity, never a position"
+        },
+        {
+          "id": "STR-028",
+          "howItIsMet": "Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer"
+        },
+        {
+          "id": "STR-031",
+          "howItIsMet": "Nothing caches a number past the inputs that produced it. The table is keyed by the document's version digest, the scheme and the profile, and a change to any of the three discards it"
+        },
+        {
+          "id": "STR-032",
+          "howItIsMet": "A target with no occurrence means the occurrence the reference is in; a target naming an occurrence reaches another component of the same document"
+        },
+        {
+          "id": "STR-034",
+          "howItIsMet": "The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind"
+        },
+        {
+          "id": "STR-036",
+          "howItIsMet": "The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function"
+        },
+        {
+          "id": "STR-037",
+          "howItIsMet": "Reordering in the panel is the move operation, from the panel's own drag and from its keymap"
+        },
+        {
+          "id": "STR-040",
+          "howItIsMet": "`contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it"
+        },
+        {
+          "id": "STR-041",
+          "howItIsMet": "`listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one"
+        },
+        {
+          "id": "STR-044",
+          "howItIsMet": "A node's URL is the document's path and the node's identifier, both identifiers"
+        },
+        {
+          "id": "STR-046",
+          "howItIsMet": "The URL holds no depth, no number and no position, so there is nothing in it for a reorder to invalidate"
+        },
+        {
+          "id": "STR-048",
+          "howItIsMet": "A node carries `pageBreak`: none, a new page, or a new recto page"
+        },
+        {
+          "id": "STR-049",
+          "howItIsMet": "`pageBreak` is a member of the node. The content model has no member for one, so the declaration cannot travel with the component"
+        },
+        {
+          "id": "STR-051",
+          "howItIsMet": "The four stages are one function each, and each takes the previous stage's return type. Calling them out of order does not typecheck"
+        },
+        {
+          "id": "STR-053",
+          "howItIsMet": "An identifier is 128 random bits in the spelling `blockIdentifierFrom` already fixes, validated unique within its outline at every write. Across documents the argument is the one the product already makes for a UUID"
+        },
+        {
+          "id": "STR-057",
+          "howItIsMet": "Before a version is recorded, a reachability walk from the document over the reference index refuses a cycle with `outline_cycle`, naming the path"
+        },
+        {
+          "id": "STR-058",
+          "howItIsMet": "A reference node carries `mode`: `pinned` with a version, `latest`, or `approved`. The three are closed, and absent is not a fourth"
+        },
+        {
+          "id": "STR-059",
+          "howItIsMet": "Every operation carries the version it was read at and is answered `version_precondition` with the current outline when it is not the latest; `component_lock` refuses a document by a check constraint, so no document lock can be introduced by accident"
+        },
+        {
+          "id": "STR-054",
+          "howItIsMet": "The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one"
+        },
+        {
+          "id": "CNT-041",
+          "howItIsMet": "`footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component"
+        },
+        {
+          "id": "CNT-047",
+          "howItIsMet": "The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it"
+        }
+      ]
+    },
+    {
       "document": "system.md",
       "owns": [
         {

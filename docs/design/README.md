@@ -27,6 +27,7 @@ understand the storage layer, rather than something to be thrown away.
 | [metadata.md](metadata.md)                             | Which fields apply to a component, what makes a value valid, and what a version records about its definitions |
 | [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata          |
 | [access.md](access.md)                                 | Spaces, roles and grants, and deciding what a principal may do to an artifact and why                         |
+| [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it            |
 
 ## Why these are not one per requirement area
 
