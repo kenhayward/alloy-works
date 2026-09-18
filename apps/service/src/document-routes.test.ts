@@ -378,19 +378,31 @@ describe('documents through the service', () => {
     expect(await chainOf(theirs.id)).toHaveLength(1);
   });
 
-  it('refuses the second of two acts from one version with the outline as it now stands', async () => {
+  it('STR-059 refuses the second of two acts from one version against the current outline, never overwriting the first', async () => {
     const doc = (await create('ada', general, 'Raced')).json<DocumentBody>();
     const [first, second] = await Promise.all([
       addSection(doc, 'First'),
       addSection(doc, 'Second'),
     ]);
+    // The version precondition governs the two: both name 0.1, and only one can still be at it.
     expect([first.statusCode, second.statusCode].sort()).toEqual([200, 409]);
     const refused = first.statusCode === 409 ? first : second;
-    const recorded = first.statusCode === 409 ? second : first;
+    const recorded = (first.statusCode === 409 ? second : first).json<DocumentBody>();
     expect(refused.json()).toMatchObject({ code: 'version_precondition' });
-    // The refusal carries the outline as it now stands, so nothing is overwritten silently.
-    expect(refused.json<{ current: DocumentBody }>().current).toEqual(recorded.json());
-    expect(await chainOf(doc.id)).toHaveLength(2);
+    // Refused against the current outline: the refusal carries the winner's outline as it now stands.
+    expect(refused.json<{ current: DocumentBody }>().current).toEqual(recorded);
+    // And nothing was overwritten: the chain holds 0.1 and the winner's version only, and the
+    // document reads the winner's one section, the loser's title nowhere in it.
+    expect((await chainOf(doc.id)).map((each) => each.id)).toEqual([
+      doc.version.id,
+      recorded.version.id,
+    ]);
+    const opened = (await call('ada', 'GET', `/v1/documents/${doc.id}`)).json<DocumentBody>();
+    expect(opened).toEqual(recorded);
+    const winner = recorded.outline.nodes[0]!.title![0]!.value;
+    const loser = winner === 'First' ? 'Second' : 'First';
+    expect(opened.outline.nodes).toHaveLength(1);
+    expect(JSON.stringify(opened.outline)).not.toContain(loser);
     // No document-level lock stands in the way of either: `component_lock` refuses a document by its
     // check constraint, which packages/db's documents.test.ts shows at the database.
   });
