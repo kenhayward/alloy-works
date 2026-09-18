@@ -158,10 +158,16 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
         rule.prefix === null
           ? []
           : Array.from({ length: rule.prefix }, (_, index) => state.sections[index] ?? 0);
+      const hasChapter = prefix.some((part) => part > 0);
       const own = formatCounter(counter.value, rule.format[rule.format.length - 1] ?? 'decimal');
-      written = prefix.some((part) => part > 0)
-        ? `${formatParts(prefix, sectionRule).join(sectionRule.separator)}${rule.separator}${own}`
-        : own;
+      if (rule.prefix !== null && hasChapter) {
+        written = `${formatParts(prefix, sectionRule).join(sectionRule.separator)}${rule.separator}${own}`;
+      } else if (rule.prefix === null || matter !== 'appendix') {
+        written = own;
+      }
+      // else: this rule wants a chapter prefix, but no numbered appendix has begun one yet
+      // (`matter === 'appendix'` and `!hasChapter`) - there is no count to continue, and a bare
+      // number here would repeat a body caption's own label, so it takes none.
     }
     entries.push({
       node,
@@ -169,7 +175,9 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
       sequence: contribution.sequence,
       matter,
       sections: [...state.sections],
-      value: counter.known ? counter.value : null,
+      // Tied to `written`, not just `counter.known`: a chapter-hungry appendix rule with no
+      // chapter yet is known but still unprintable, and its value is withheld along with it.
+      value: written === null ? null : counter.value,
       restartedAt: counter.restartedAt,
       number: written,
       label: written === null ? null : labelled(rule, written),

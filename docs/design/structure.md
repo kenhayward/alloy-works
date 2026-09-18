@@ -489,7 +489,9 @@ before PUB is designed.
 sequence. Entering a node at a sequence's `restartAt` depth drops every counter below it. A node
 with `numbered: false` is walked for its children and increments nothing (STR-017). A top-level node
 whose `matter` is `appendix` - and only a top-level node may carry one - switches every sequence to
-its appendix rule for its whole subtree and restarts it.
+its appendix rule for its whole subtree and restarts it. A caption whose rule wants a chapter prefix,
+met in appendix matter before any numbered appendix has begun one, has no count to continue and takes
+no number rather than a bare one that would repeat a body caption's own label.
 
 **The numbering table is the answer to STR-022.** One entry per numbered thing:
 

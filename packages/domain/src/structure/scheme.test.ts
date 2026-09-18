@@ -66,6 +66,31 @@ describe('a numbering scheme', () => {
     expect(numberingSchemeSchema.safeParse(deepEnough).success).toBe(true);
   });
 
+  it(
+    'restarts a footnote sequence per chapter with no prefix, since its labels are meant to ' +
+      'repeat by house style, while a figure doing the same is still refused',
+    () => {
+      const footnote = defaultNumberingScheme.sequences['footnote']!;
+      const perChapterFootnotes = {
+        ...defaultNumberingScheme,
+        sequences: {
+          ...defaultNumberingScheme.sequences,
+          footnote: { ...footnote, body: { ...footnote.body, restartAt: 1, prefix: null } },
+        },
+      };
+      expect(numberingSchemeSchema.safeParse(perChapterFootnotes).success).toBe(true);
+      const figure = defaultNumberingScheme.sequences['figure']!;
+      const perChapterFigures = {
+        ...defaultNumberingScheme,
+        sequences: {
+          ...defaultNumberingScheme.sequences,
+          figure: { ...figure, body: { ...figure.body, restartAt: 1, prefix: null } },
+        },
+      };
+      expect(numberingSchemeSchema.safeParse(perChapterFigures).success).toBe(false);
+    },
+  );
+
   it('writes every counter in every format, past z and past 3999', () => {
     expect([26, 27, 28, 52, 53, 702, 703].map((n) => formatCounter(n, 'lowerAlpha'))).toEqual([
       'z',

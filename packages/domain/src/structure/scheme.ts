@@ -34,19 +34,13 @@ const outlineDepth = z.number().int().min(1).max(MAXIMUM_OUTLINE_DEPTH);
  *   figure - and `null` writes none.
  * - `separator` joins the parts of a section number, and a prefix to its counter.
  */
-export const numberingRuleSchema = z
-  .strictObject({
-    label: z.string(),
-    format: z.array(numberFormatSchema).min(1),
-    restartAt: outlineDepth.nullable(),
-    prefix: outlineDepth.nullable(),
-    separator: z.string(),
-  })
-  .refine(
-    (rule) => rule.restartAt === null || (rule.prefix !== null && rule.prefix >= rule.restartAt),
-    'A rule that restarts must prefix with the section number down to at least the depth it ' +
-      'restarts at, or two restarts of its counter could print the same label',
-  );
+export const numberingRuleSchema = z.strictObject({
+  label: z.string(),
+  format: z.array(numberFormatSchema).min(1),
+  restartAt: outlineDepth.nullable(),
+  prefix: outlineDepth.nullable(),
+  separator: z.string(),
+});
 export type NumberingRule = z.infer<typeof numberingRuleSchema>;
 
 /** Every sequence has a rule in each matter: an appendix numbers in its own scheme (STR-016). */
@@ -84,7 +78,21 @@ export const numberingSchemeSchema = z
         (rule) => rule.restartAt === null && rule.prefix === null,
       )
     );
-  }, 'A section number is its counter stack, so the section sequence neither restarts nor takes a prefix');
+  }, 'A section number is its counter stack, so the section sequence neither restarts nor takes a prefix')
+  .refine(
+    (scheme) =>
+      Object.entries(scheme.sequences).every(([name, rules]) => {
+        // Every sequence but section (checked above) and footnote: a house style routinely
+        // restarts footnotes per chapter with no prefix, and its labels are meant to repeat.
+        if (name === 'section' || name === 'footnote') return true;
+        return [rules.body, rules.appendix].every(
+          (rule) =>
+            rule.restartAt === null || (rule.prefix !== null && rule.prefix >= rule.restartAt),
+        );
+      }),
+    'A rule that restarts must prefix with the section number down to at least the depth it ' +
+      'restarts at, or two restarts of its counter could print the same label',
+  );
 export type NumberingScheme = z.infer<typeof numberingSchemeSchema>;
 
 const caption = (label: string) => ({
