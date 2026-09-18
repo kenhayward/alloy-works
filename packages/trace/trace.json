@@ -16268,49 +16268,49 @@
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 53,
+      "line": 108,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 77,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 96,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 56,
+      "line": 70,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 71,
+      "line": 85,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 105,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 118,
+      "line": 132,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 147,
+      "line": 161,
       "kind": "title"
     },
     {

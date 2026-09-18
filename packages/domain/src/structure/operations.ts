@@ -33,39 +33,56 @@ const newReferenceSchema = z.strictObject({
 /**
  * One structural act over one outline, as a strict object of the wire body's shape - the route's body
  * is exactly this closed union (C7), never a second definition of it.
+ *
+ * This is the one gate between an untrusted body and the tree: `applyOutlineOperation` does not
+ * re-parse its `operation` argument, so whatever this schema lets through is what the tree sees.
  */
-export const outlineOperationSchema = z.discriminatedUnion('operation', [
-  z.strictObject({
-    operation: z.literal('insert'),
-    parent: parentIdentifier,
-    position,
-    node: z.discriminatedUnion('type', [newSectionSchema, newReferenceSchema]),
-  }),
-  z.strictObject({
-    operation: z.literal('move'),
-    node: nodeIdentifier,
-    parent: parentIdentifier,
-    position,
-  }),
-  z.strictObject({
-    operation: z.literal('remove'),
-    node: nodeIdentifier,
-  }),
-  z.strictObject({
-    operation: z.literal('retitle'),
-    node: nodeIdentifier,
-    title: z.array(inlineNodeSchema),
-  }),
-  z.strictObject({
-    operation: z.literal('set'),
-    node: nodeIdentifier,
-    numbered: z.boolean().optional(),
-    matter: sectionNodeSchema.shape.matter.optional(),
-    pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
-    mode: referenceModeSchema.optional(),
-    values: sectionNodeSchema.shape.values.optional(),
-  }),
-]);
+export const outlineOperationSchema = z
+  .discriminatedUnion('operation', [
+    z.strictObject({
+      operation: z.literal('insert'),
+      parent: parentIdentifier,
+      position,
+      node: z.discriminatedUnion('type', [newSectionSchema, newReferenceSchema]),
+    }),
+    z.strictObject({
+      operation: z.literal('move'),
+      node: nodeIdentifier,
+      parent: parentIdentifier,
+      position,
+    }),
+    z.strictObject({
+      operation: z.literal('remove'),
+      node: nodeIdentifier,
+    }),
+    z.strictObject({
+      operation: z.literal('retitle'),
+      node: nodeIdentifier,
+      title: z.array(inlineNodeSchema),
+    }),
+    z.strictObject({
+      operation: z.literal('set'),
+      node: nodeIdentifier,
+      numbered: z.boolean().optional(),
+      matter: sectionNodeSchema.shape.matter.optional(),
+      pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
+      mode: referenceModeSchema.optional(),
+      values: sectionNodeSchema.shape.values.optional(),
+    }),
+  ])
+  .refine(
+    // A `set` naming no switch would still apply, changing nothing - and downstream that records a
+    // new version whose digest equals its parent's, for a caller who asked for a change. Refused at
+    // the wire body itself, rather than left for `applyOutlineOperation` to notice at the tree.
+    (operation) =>
+      operation.operation !== 'set' ||
+      operation.numbered !== undefined ||
+      operation.matter !== undefined ||
+      operation.pageBreak !== undefined ||
+      operation.mode !== undefined ||
+      operation.values !== undefined,
+    'A set operation must name at least one switch',
+  );
 
 export type OutlineOperation = z.infer<typeof outlineOperationSchema>;
 
@@ -77,8 +94,19 @@ function refuse(reason: string): OutlineApplied {
   return { applied: false, reason };
 }
 
+/**
+ * Every return goes back through `parseOutlineDocument`, so an operation cannot hand back an outline
+ * the store would refuse - which is what lets the service apply one and record it without a second
+ * validation nobody would keep in step. Total, not merely pure: nothing in this file should ever make
+ * `parseOutlineDocument` throw, but a caller branching on `applied` must never be able to meet an
+ * exception instead of a `false` - so a throw here becomes a refusal, not a 500 two layers up.
+ */
 function applyNodes(outline: OutlineDocument, nodes: readonly OutlineNode[]): OutlineApplied {
-  return { applied: true, outline: parseOutlineDocument({ ...outline, nodes }) };
+  try {
+    return { applied: true, outline: parseOutlineDocument({ ...outline, nodes }) };
+  } catch (error) {
+    return refuse(error instanceof Error ? error.message : String(error));
+  }
 }
 
 /** Depth-first; the first match wins, and STR-003's uniqueness is what makes that unambiguous. */
@@ -89,6 +117,15 @@ function findNode(nodes: readonly OutlineNode[], id: string): OutlineNode | unde
     if (found) return found;
   }
   return undefined;
+}
+
+/** The children `parent` would receive a spliced-in node into - the root's own, when `parent` is `null`. */
+function childrenOf(
+  nodes: readonly OutlineNode[],
+  parent: string | null,
+): readonly OutlineNode[] | undefined {
+  if (parent === null) return nodes;
+  return findNode(nodes, parent)?.children;
 }
 
 /** Takes one node out of the tree, subtree and all, and hands both back. */
@@ -114,32 +151,31 @@ function extractNode(
   return { nodes: next, node: extracted };
 }
 
-/** Splices one whole node in among `parent`'s children (or the root, when `parent` is `null`). */
+/**
+ * Splices one whole node in among `parent`'s children (or the root, when `parent` is `null`), at
+ * `at`. The caller has already checked `parent` exists and `at` is within bounds (`childrenOf`); this
+ * only performs the splice, recursing into every branch rather than stopping at the first match,
+ * because node identifiers are unique (STR-003) so at most one branch ever actually changes.
+ */
 function spliceIn(
   nodes: readonly OutlineNode[],
   parent: string | null,
   at: number,
   node: OutlineNode,
-): { readonly nodes: readonly OutlineNode[]; readonly ok: boolean } {
+): readonly OutlineNode[] {
   if (parent === null) {
     const next = [...nodes];
     next.splice(at, 0, node);
-    return { nodes: next, ok: true };
+    return next;
   }
-  let ok = false;
-  const next = nodes.map((candidate): OutlineNode => {
+  return nodes.map((candidate): OutlineNode => {
     if (candidate.id === parent) {
-      ok = true;
       const children = [...candidate.children];
       children.splice(at, 0, node);
       return { ...candidate, children };
     }
-    const child = spliceIn(candidate.children, parent, at, node);
-    if (!child.ok) return candidate;
-    ok = true;
-    return { ...candidate, children: child.nodes };
+    return { ...candidate, children: spliceIn(candidate.children, parent, at, node) };
   });
-  return { nodes: next, ok };
 }
 
 /** Replaces one node, by identifier, wherever it sits - its own subtree travels with it unchanged. */
@@ -174,6 +210,12 @@ function insert(
   operation: Extract<OutlineOperation, { operation: 'insert' }>,
   newIdentifier: () => string,
 ): OutlineApplied {
+  const children = childrenOf(outline.nodes, operation.parent);
+  if (children === undefined) return refuse('The parent is not in this outline');
+  if (operation.position > children.length) {
+    return refuse('The position is past the end of these children');
+  }
+  // Allocated only once the operation is known to apply, so a refused insert burns no identifier.
   const base = {
     id: newIdentifier(),
     numbered: true,
@@ -182,18 +224,18 @@ function insert(
     values: {},
     children: [],
   };
+  // `base` spread first: a member added to it later overrides nothing an arm below sets on purpose,
+  // rather than silently shadowing it (task 2 review, finding 12).
   const node: OutlineNode =
     operation.node.type === 'section'
-      ? { type: 'section', title: operation.node.title, ...base }
+      ? { ...base, type: 'section', title: operation.node.title }
       : {
+          ...base,
           type: 'reference',
           component: operation.node.component,
           mode: operation.node.mode,
-          ...base,
         };
-  const result = spliceIn(outline.nodes, operation.parent, operation.position, node);
-  if (!result.ok) return refuse('The parent is not in this outline');
-  return applyNodes(outline, result.nodes);
+  return applyNodes(outline, spliceIn(outline.nodes, operation.parent, operation.position, node));
 }
 
 function move(
@@ -207,9 +249,21 @@ function move(
   if (operation.parent !== null && subtreeIds(extracted.node).has(operation.parent)) {
     return refuse('A node cannot be moved inside its own subtree');
   }
-  const result = spliceIn(extracted.nodes, operation.parent, operation.position, extracted.node);
-  if (!result.ok) return refuse('The parent is not in this outline');
-  return applyNodes(outline, result.nodes);
+  const children = childrenOf(extracted.nodes, operation.parent);
+  if (children === undefined) return refuse('The parent is not in this outline');
+  if (operation.position > children.length) {
+    return refuse('The position is past the end of these children');
+  }
+  // `position` counts `parent`'s children once `node` has already left them (`extracted.nodes`, the
+  // outline with `node` already taken out) - a post-removal index, not a pre-removal one. Moving the
+  // first of three siblings to position 2 therefore lands it last, not second: the two it is counted
+  // among are the two that are left, not the three that were there before it moved. Pinned by
+  // `operations.test.ts`'s reorder test, because task 5's drag-and-drop could read the other
+  // convention with no test here failing otherwise.
+  return applyNodes(
+    outline,
+    spliceIn(extracted.nodes, operation.parent, operation.position, extracted.node),
+  );
 }
 
 function remove(
@@ -243,6 +297,7 @@ function set(
   }
   // Only the switches this operation actually names, so one call can set one field without
   // disturbing the rest - built from entries, never a member assigned by a key spelled out by hand.
+  // `outlineOperationSchema`'s own refine already refuses a `set` naming none of them.
   const patch = Object.fromEntries(
     (['numbered', 'matter', 'pageBreak', 'mode', 'values'] as const)
       .filter((key) => operation[key] !== undefined)
@@ -262,10 +317,6 @@ function set(
  * `newIdentifier` is the caller's, because where randomness comes from is the caller's platform and
  * this package has none: `packages/db` passes `node:crypto`'s `randomBytes` through
  * `blockIdentifierFrom`, and a test passes a counter.
- *
- * Every return goes back through `parseOutlineDocument`, so an operation cannot produce an outline
- * the store would refuse - which is what lets the service apply one and record it without a second
- * validation nobody would keep in step.
  */
 export function applyOutlineOperation(
   outline: OutlineDocument,

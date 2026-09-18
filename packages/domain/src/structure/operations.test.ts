@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyOutlineOperation, type OutlineOperation } from './operations.js';
+import {
+  applyOutlineOperation,
+  outlineOperationSchema,
+  type OutlineOperation,
+} from './operations.js';
 import { parseOutlineDocument, walkOutline, type OutlineDocument } from './outline.js';
 
+const NODE = 'a'.repeat(26);
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 const OTHER_COMPONENT = '11111111-1111-4111-8111-111111111111';
 
@@ -14,7 +19,11 @@ const empty: OutlineDocument = parseOutlineDocument({
   nodes: [],
 });
 
-/** Deterministic identifiers, so a generated sequence of operations reproduces exactly. */
+/**
+ * Deterministic identifiers, so a generated sequence of operations reproduces exactly. Four digits,
+ * not three: three overflows past 999 allocations into a 27-character id, which is exactly the kind
+ * of mistake a schema this file trusts implicitly would not catch on its own.
+ */
 function identifiers() {
   let next = 0;
   const made: string[] = [];
@@ -22,7 +31,7 @@ function identifiers() {
     made,
     allocate: () => {
       next += 1;
-      const unique = `${String(next).padStart(3, '0')}${'a'.repeat(23)}`.replace(
+      const unique = `${String(next).padStart(4, '0')}${'a'.repeat(22)}`.replace(
         /\d/g,
         (d) => 'abcdefghij'[Number(d)]!,
       );
@@ -49,6 +58,52 @@ const addSection = (
   node: { type: 'section', title: [{ type: 'text', value: title, marks: [] }] },
 });
 
+describe('outlineOperationSchema', () => {
+  it('is the one gate between the wire body and the tree, and refuses what does not belong', () => {
+    const validInsert = {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'section', title: [] },
+    };
+    expect(outlineOperationSchema.safeParse(validInsert).success).toBe(true);
+    // A mode belongs to a reference's own insert body, never to a section's.
+    expect(
+      outlineOperationSchema.safeParse({
+        ...validInsert,
+        node: { type: 'section', title: [], mode: { kind: 'latest' } },
+      }).success,
+    ).toBe(false);
+    // A position is a non-negative integer: never negative, never fractional.
+    expect(outlineOperationSchema.safeParse({ ...validInsert, position: -1 }).success).toBe(false);
+    expect(outlineOperationSchema.safeParse({ ...validInsert, position: 1.5 }).success).toBe(false);
+    // The union is closed: an operation outside the five is refused, not passed through unknown.
+    expect(outlineOperationSchema.safeParse({ operation: 'archive', node: NODE }).success).toBe(
+      false,
+    );
+    // set's own switches are closed too - a wire body cannot smuggle an arbitrary field through it.
+    expect(
+      outlineOperationSchema.safeParse({ operation: 'set', node: NODE, colour: 'red' }).success,
+    ).toBe(false);
+    // A set naming none of its five switches would apply and change nothing - refused at the wire
+    // body itself, rather than left for a downstream version whose digest equals its parent's.
+    expect(outlineOperationSchema.safeParse({ operation: 'set', node: NODE }).success).toBe(false);
+    // The component identifier is a lowercase uuid, the same rule the outline schema itself carries.
+    expect(
+      outlineOperationSchema.safeParse({
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: COMPONENT.toUpperCase(), mode: { kind: 'latest' } },
+      }).success,
+    ).toBe(false);
+    // values is a record, never an array - the same shape the node schema itself requires.
+    expect(
+      outlineOperationSchema.safeParse({ operation: 'set', node: NODE, values: [] }).success,
+    ).toBe(false);
+  });
+});
+
 describe('the five operations over an outline', () => {
   it('STR-003 gives every node an identifier at insertion, and never reissues one', () => {
     const { allocate, made } = identifiers();
@@ -72,6 +127,13 @@ describe('the five operations over an outline', () => {
     walkOutline(outline.nodes, (node) => after.push(node.id));
     expect(after).not.toContain(first);
     expect(new Set(made).size).toBe(made.length);
+  });
+
+  it('refuses an insert before allocating, so a refused insert burns no identifier', () => {
+    const { allocate, made } = identifiers();
+    const refused = applyOutlineOperation(empty, addSection('z'.repeat(26)), allocate);
+    expect(refused.applied).toBe(false);
+    expect(made).toHaveLength(0);
   });
 
   it('STR-007 nests to nine levels, with no maximum the schema declares', () => {
@@ -141,6 +203,77 @@ describe('the five operations over an outline', () => {
     ).toEqual({ applied: false, reason: 'A node cannot be moved inside its own subtree' });
   });
 
+  it('reorders within one parent by the position its children hold once the node has already left', () => {
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null, 0, 'A'), allocate);
+    outline = run(outline, addSection(null, 1, 'B'), allocate);
+    outline = run(outline, addSection(null, 2, 'C'), allocate);
+    const [a, b, c] = outline.nodes.map((node) => node.id);
+    // Moving the first of three siblings to position 2: the two it is counted among are the two left
+    // once it is gone, not the three that were there before it moved - so it lands last, not second.
+    // Defensible, but nothing pinned it before this test - task 5's drag-and-drop could read the
+    // other convention (positions counted before the removal) with nothing here to catch it.
+    outline = run(outline, { operation: 'move', node: a!, parent: null, position: 2 }, allocate);
+    expect(outline.nodes.map((node) => node.id)).toEqual([b, c, a]);
+  });
+
+  it('refuses a position past the end of the children it would join, but not the append point itself', () => {
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null, 0, 'A'), allocate);
+    outline = run(outline, addSection(null, 1, 'B'), allocate);
+    const first = outline.nodes[0]!.id;
+    const insertAt = (candidatePosition: number) =>
+      applyOutlineOperation(
+        outline,
+        {
+          operation: 'insert',
+          parent: null,
+          position: candidatePosition,
+          node: { type: 'section', title: [] },
+        },
+        allocate,
+      ).applied;
+    // Two children at the root: 0, 1 and 2 (the append point) all fit; 3 is past the end.
+    expect(insertAt(2)).toBe(true);
+    expect(insertAt(3)).toBe(false);
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'move', node: first, parent: null, position: 3 },
+        allocate,
+      ).applied,
+    ).toBe(false);
+  });
+
+  it('refuses to retitle a reference, and refuses a move whose parent is not in the outline', () => {
+    const { allocate } = identifiers();
+    let outline = run(
+      empty,
+      {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: COMPONENT, mode: { kind: 'latest' } },
+      },
+      allocate,
+    );
+    const reference = outline.nodes[0]!.id;
+    expect(
+      applyOutlineOperation(outline, { operation: 'retitle', node: reference, title: [] }, allocate)
+        .applied,
+    ).toBe(false);
+
+    outline = run(outline, addSection(null, 1, 'A'), allocate);
+    const section = outline.nodes[1]!.id;
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'move', node: section, parent: 'z'.repeat(26), position: 0 },
+        allocate,
+      ).applied,
+    ).toBe(false);
+  });
+
   it('retitles, sets a switch, removes a subtree, and refuses what does not apply', () => {
     const { allocate } = identifiers();
     let outline = run(empty, addSection(null), allocate);
@@ -178,32 +311,48 @@ describe('the five operations over an outline', () => {
     expect(outline.nodes).toEqual([]);
   });
 
-  it('keeps every invariant after any sequence of operations', () => {
+  it('keeps every invariant after any sequence of operations, applying most of them', () => {
     const { allocate } = identifiers();
     let outline = empty;
-    for (let step = 0; step < 200; step += 1) {
+    let appliedCount = 0;
+    const STEPS = 300;
+    for (let step = 0; step < STEPS; step += 1) {
       const ids: string[] = [];
       walkOutline(outline.nodes, (node) => ids.push(node.id));
-      const target = ids[step % Math.max(ids.length, 1)];
+      const target = ids.length > 0 ? ids[step % ids.length] : undefined;
+      // The parent (for insert and move) and the position both come from the full id list and the
+      // full id count, not fixed to the root or to index 0 - so this exercises every depth the tree
+      // currently has, and both sides of the new position-bounds refusal.
+      const parentCandidate = ids.length > 0 ? (ids[(step * 7) % ids.length] ?? null) : null;
+      const candidatePosition = ids.length > 0 ? step % (ids.length + 1) : 0;
       const operation: OutlineOperation =
-        step % 4 === 0 || target === undefined
-          ? addSection(step % 8 === 0 ? null : (ids[0] ?? null), 0, `Section ${step}`)
-          : step % 4 === 1
+        step % 5 === 0 || target === undefined
+          ? addSection(
+              step % 3 === 0 ? parentCandidate : null,
+              candidatePosition,
+              `Section ${step}`,
+            )
+          : step % 5 === 1
             ? {
                 operation: 'move',
                 node: target,
-                parent: ids[0] === target ? null : (ids[0] ?? null),
-                position: 0,
+                parent: parentCandidate === target ? null : parentCandidate,
+                position: candidatePosition,
               }
-            : step % 4 === 2
+            : step % 5 === 2
               ? { operation: 'set', node: target, numbered: step % 8 === 2 }
-              : {
-                  operation: 'retitle',
-                  node: target,
-                  title: [{ type: 'text', value: `T${step}`, marks: [] }],
-                };
+              : step % 5 === 3
+                ? {
+                    operation: 'retitle',
+                    node: target,
+                    title: [{ type: 'text', value: `T${step}`, marks: [] }],
+                  }
+                : { operation: 'remove', node: target };
       const answer = applyOutlineOperation(outline, operation, allocate);
-      if (answer.applied) outline = answer.outline;
+      if (answer.applied) {
+        outline = answer.outline;
+        appliedCount += 1;
+      }
 
       const seen = new Set<string>();
       walkOutline(outline.nodes, (node) => {
@@ -215,5 +364,10 @@ describe('the five operations over an outline', () => {
       // that records them able to record anything the panel can produce.
       expect(parseOutlineDocument(outline)).toEqual(outline);
     }
+    // Every step above holds vacuously if nothing ever applied - a broken guard that refuses
+    // everything would still pass every invariant, having left nothing to check. This sequence is
+    // deterministic (the allocator is a counter, not randomness), so the true count never moves; the
+    // floor is set well under it, to catch a regression rather than to track the exact figure.
+    expect(appliedCount).toBeGreaterThan(STEPS / 4);
   });
 });

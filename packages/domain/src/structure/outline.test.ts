@@ -15,8 +15,6 @@ import {
   parseOutlineDocument,
   readOutline,
   referenceModeSchema,
-  referenceNodeSchema,
-  sectionNodeSchema,
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
@@ -27,10 +25,26 @@ const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 
 const fixtures = join(import.meta.dirname, 'fixtures');
 
-/** What the every-node fixture check reads off each arm of `outlineNodeSchema`, and no more. */
+/** What this file reads off each arm of `outlineNodeSchema` - the shape, never which schemas fill it. */
 type OutlineNodeArm = {
-  shape: { type: { value: string }; pageBreak: { options: readonly string[] } };
+  shape: { type: { value: string }; pageBreak: { options: readonly string[] } } & Record<
+    string,
+    unknown
+  >;
 };
+
+/**
+ * `outlineNodeSchema` is exported as the widened `z.ZodType<OutlineNode>` (a recursive schema cannot
+ * infer its own type), so its arms are not visible through the export's declared type - but it is a
+ * `z.lazy` underneath, same as at runtime, so `unwrap()` reaches the discriminated union it wraps.
+ * Read this way, rather than by naming `sectionNodeSchema` and `referenceNodeSchema`, so a third arm
+ * added to the union later needs no edit in this file to be picked up by either check that uses it.
+ */
+function outlineNodeArms(): readonly OutlineNodeArm[] {
+  return (
+    outlineNodeSchema as unknown as { unwrap(): { options: readonly OutlineNodeArm[] } }
+  ).unwrap().options;
+}
 
 const empty: OutlineDocument = {
   schemaVersion: OUTLINE_SCHEMA_VERSION,
@@ -264,15 +278,8 @@ describe('the outline a document version holds', () => {
     };
     walk(parseOutlineDocument(every).nodes);
     // Derived from the schema, not hard-coded, so a fourth arm added and forgotten here fails - the
-    // way `content/model/migrate.test.ts`'s own every-node check does. `outlineNodeSchema` is exported
-    // as the widened `z.ZodType<OutlineNode>` (a recursive schema cannot infer its own type), so its
-    // arms are not visible through the export's declared type - but it is a `z.lazy` underneath, same
-    // as at runtime, so `unwrap()` reaches the discriminated union it wraps. Described below only by
-    // the shape this file reads off each arm, never by naming `sectionNodeSchema` and
-    // `referenceNodeSchema`, so a third arm needs no edit here to be picked up.
-    const arms = (
-      outlineNodeSchema as unknown as { unwrap(): { options: readonly OutlineNodeArm[] } }
-    ).unwrap().options;
+    // way `content/model/migrate.test.ts`'s own every-node check does.
+    const arms = outlineNodeArms();
     const expectedTypes = arms.map((arm) => arm.shape.type.value);
     const expectedModes = referenceModeSchema.options.map((option) => option.shape.kind.value);
     const expectedBreaks = arms[0]!.shape.pageBreak.options;
@@ -286,8 +293,13 @@ describe('the outline a document version holds', () => {
     // added to `positional`, or to one arm's own fields, and `canonicaliseOutlineNode` is not taught
     // to compose it too, two outlines differing only in that member would digest identically with no
     // test failing. Guarded here rather than trusted: the composed member names, read back out of the
-    // canonical string itself, must be exactly the schema's own member names - added, removed or
-    // renamed either side and this fails.
+    // canonical string itself, must be exactly the arm's own member names - added, removed or renamed
+    // either side and this fails. Expected members come from `outlineNodeArms()`, keyed by each arm's
+    // own `type`, rather than naming `sectionNodeSchema` and `referenceNodeSchema` by hand, so a third
+    // arm gets this guard too, the moment a node of that type appears in the outline being checked.
+    const expectedMembers = new Map(
+      outlineNodeArms().map((arm) => [arm.shape.type.value, Object.keys(arm.shape).sort()]),
+    );
     const outline = parseOutlineDocument({
       ...empty,
       nodes: [
@@ -309,11 +321,12 @@ describe('the outline a document version holds', () => {
       ],
     });
     const composed = JSON.parse(canonicaliseOutline(outline));
-    expect(Object.keys(composed.nodes[0]).sort()).toEqual(
-      Object.keys(sectionNodeSchema.shape).sort(),
-    );
-    expect(Object.keys(composed.nodes[0].children[0]).sort()).toEqual(
-      Object.keys(referenceNodeSchema.shape).sort(),
-    );
+    const checkComposedMembers = (node: { type: string; children: unknown[] }): void => {
+      expect(Object.keys(node).sort()).toEqual(expectedMembers.get(node.type));
+      for (const child of node.children) checkComposedMembers(child as typeof node);
+    };
+    for (const node of composed.nodes as { type: string; children: unknown[] }[]) {
+      checkComposedMembers(node);
+    }
   });
 });
