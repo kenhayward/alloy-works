@@ -268,7 +268,7 @@ component.
 The document, its outline, and everything positional computed over it, designed in
 [structure.md](../design/structure.md). It comes after the editor's first two slices, because a
 document's outline points at components and a component nobody can make is an outline nobody can
-fill. The design claims forty-two requirements and is built in slices: the document and its outline
+fill. The design claims forty-one requirements and is built in slices: the document and its outline
 first, because numbering, captions, cross-references and the contents panel are each a pure function
 over a tree that has to exist before any of them can be written.
 
