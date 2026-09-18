@@ -4,6 +4,7 @@ import {
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
   parseContentDocument,
+  parseOutlineDocument,
   type DefinitionRef,
   type MetadataValues,
   type NotCarried,
@@ -47,10 +48,10 @@ export interface Authorship {
 export type NewArtifact = Authorship &
   (
     | {
-        readonly substance: Extract<VersionSubstance, { kind: 'component' }>;
+        readonly substance: Extract<VersionSubstance, { kind: 'component' | 'document' }>;
         readonly spaceId: string;
       }
-    | { readonly substance: Exclude<VersionSubstance, { kind: 'component' }> }
+    | { readonly substance: Exclude<VersionSubstance, { kind: 'component' | 'document' }> }
   );
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -84,6 +85,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     }
     componentTypeOf(substance.definitions);
     return { ...substance, content: parseContentDocument(substance.content) };
+  }
+  if (substance.kind === 'document') {
+    // An outline carries no `id`: a document's identity is its artifact row's, as a component's is.
+    return { kind: 'document', content: parseOutlineDocument(substance.content) };
   }
   const content = definitionSchemas[substance.kind].parse(substance.content);
   if (!UUID.test(content.id)) {
@@ -152,8 +157,8 @@ async function insertVersion(
 /**
  * Creates an artifact and its first version, `0.1`, in the caller's transaction: every artifact has a
  * version from the moment it exists, so a baseline can pin it (component-editor.md, Creating a
- * component). A component is created in a space; a definition in none, and identified by the id its
- * payload carries.
+ * component). A component or a document is created in a space, and identified by a generated id; a
+ * definition in none, and identified by the id its payload carries.
  */
 export async function createArtifact(
   trx: TenantTransaction,
@@ -164,8 +169,8 @@ export async function createArtifact(
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      substance.kind === 'component'
-        ? { kind: 'component', space_id: 'spaceId' in input ? input.spaceId : null }
+      substance.kind === 'component' || substance.kind === 'document'
+        ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
         : { id: substance.content.id, kind: substance.kind, space_id: null },
     )
     .returning('id')
@@ -306,7 +311,13 @@ export async function recordVersion(
   }
 
   const substance = prepare(input.substance);
-  if (substance.kind !== 'component' && substance.content.id !== input.artifactId) {
+  // A definition's rule, not content's: a definition's payload repeats its identity, and a
+  // component's content and a document's outline carry none.
+  if (
+    substance.kind !== 'component' &&
+    substance.kind !== 'document' &&
+    substance.content.id !== input.artifactId
+  ) {
     throw new Error(
       `A version of ${input.artifactId} cannot carry the identity ${substance.content.id}`,
     );

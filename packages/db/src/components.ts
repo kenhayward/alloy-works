@@ -52,9 +52,10 @@ export async function listReadableComponents(
     .select(['latest.revision_no', 'latest.version_no'])
     .where('a.kind', '=', 'component')
     // access.md's readable-set predicate has a third disjunct, "space_id is null and tenant", for an
-    // artifact that lives in no space. A component always has one - `artifact_space_by_kind` in
-    // 0007_spaces_and_artifacts.sql requires `kind = 'component'` to carry a non-null `space_id` - so
-    // that branch never applies here and is left out rather than written dead.
+    // artifact that lives in no space. A component always has one - `artifact_space_by_kind`
+    // (0007_spaces_and_artifacts.sql, widened by 0016_documents.sql) requires both content kinds,
+    // `component` and `document`, to carry a non-null `space_id` - so that branch never applies here
+    // and is left out rather than written dead.
     .where((eb) =>
       eb.or([
         eb.and([
