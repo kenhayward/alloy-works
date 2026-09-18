@@ -16268,31 +16268,31 @@
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 46,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 55,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 89,
+      "line": 99,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 102,
+      "line": 112,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 131,
+      "line": 141,
       "kind": "title"
     },
     {

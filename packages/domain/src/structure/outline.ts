@@ -14,6 +14,9 @@ const bcp47 = z
 /** 128 bits as 26 lower-case base32 characters: the spelling `blockIdentifierFrom` already fixes. */
 const nodeIdentifier = z.string().regex(/^[a-z2-7]{26}$/, 'not an outline node identifier');
 
+// Duplicates the wire contract's `LowercaseUuid` deliberately: `packages/domain` stays platform-free
+// and does not depend on `packages/api-contract`, which is a service-side concern (routes, wire
+// codes). One regex, defined twice on purpose, rather than a cross-package dependency for a pattern.
 const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const artifactIdentifier = z.string().regex(LOWERCASE_UUID, 'not a lowercase uuid');
 
@@ -171,7 +174,59 @@ export function readOutline(
  *
  * `marksAsASet` is the content model's own rule (`content/model/canonical.ts`), reused rather than
  * copied - a second copy is the one way this could drift from what the content model actually does.
+ *
+ * **It cannot simply be handed to `canonicalJson` as the outline's one array-order rule**, the way
+ * `canonicalise` hands it to a component's whole content document. `canonicalJson`'s order rule is
+ * keyed on the member name alone, at every level of the value it walks - and a node's `values` is an
+ * arbitrary metadata record (STR-060) sitting in that same tree. A metadata field whose identifier
+ * happens to be `marks` would then be sorted as though it were a section title's formatting, silently
+ * reordering - or, worse, collapsing two different values to one digest - a value that is not content
+ * at all. `canonicaliseVersion`'s own comment names exactly this trap for a component's values
+ * (MET-030), and `structure/outline.test.ts` pins a section reaching it the same way. So the tree is
+ * composed member by member instead, the way `canonicaliseVersion` composes a version: `marksAsASet`
+ * reaches only a node's `title`, and every other member - `values` among them - takes the plain rule,
+ * where no array is a set.
  */
 export function canonicaliseOutline(outline: OutlineDocument): string {
-  return canonicalJson(outline, marksAsASet);
+  const members: readonly (readonly [string, string])[] = [
+    ['direction', canonicalJson(outline.direction)],
+    ['language', canonicalJson(outline.language)],
+    ['nodes', canonicaliseOutlineNodes(outline.nodes)],
+    ['schemaVersion', canonicalJson(outline.schemaVersion)],
+    ['title', canonicalJson(outline.title)],
+  ];
+  return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;
+}
+
+function canonicaliseOutlineNodes(nodes: readonly OutlineNode[]): string {
+  return `[${nodes.map(canonicaliseOutlineNode).join(',')}]`;
+}
+
+function canonicaliseOutlineNode(node: OutlineNode): string {
+  // `values` is deliberately last and deliberately plain: it never reaches `marksAsASet`, however
+  // deep a caller nests an array inside it, because it is a section's own metadata, not content.
+  const members: readonly (readonly [string, string])[] =
+    node.type === 'section'
+      ? [
+          ['children', canonicaliseOutlineNodes(node.children)],
+          ['id', canonicalJson(node.id)],
+          ['matter', canonicalJson(node.matter)],
+          ['numbered', canonicalJson(node.numbered)],
+          ['pageBreak', canonicalJson(node.pageBreak)],
+          ['title', canonicalJson(node.title, marksAsASet)],
+          ['type', canonicalJson(node.type)],
+          ['values', canonicalJson(node.values)],
+        ]
+      : [
+          ['children', canonicaliseOutlineNodes(node.children)],
+          ['component', canonicalJson(node.component)],
+          ['id', canonicalJson(node.id)],
+          ['matter', canonicalJson(node.matter)],
+          ['mode', canonicalJson(node.mode)],
+          ['numbered', canonicalJson(node.numbered)],
+          ['pageBreak', canonicalJson(node.pageBreak)],
+          ['type', canonicalJson(node.type)],
+          ['values', canonicalJson(node.values)],
+        ];
+  return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;
 }

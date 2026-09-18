@@ -5,13 +5,17 @@ import { describe, expect, it } from 'vitest';
 
 import { contentDocumentSchema } from '../content/model/document.js';
 import { canonicalJson } from '../stored/canonical.js';
-import { canonicaliseVersionContent } from '../version/substance.js';
+import { canonicaliseVersion, canonicaliseVersionContent } from '../version/substance.js';
 
 import {
   canonicaliseOutline,
+  migrateOutline,
   OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
   readOutline,
+  referenceModeSchema,
+  referenceNodeSchema,
+  sectionNodeSchema,
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
@@ -47,6 +51,12 @@ describe('the outline a document version holds', () => {
     expect(parseOutlineDocument(empty).nodes).toEqual([]);
     const ordered = parseOutlineDocument({ ...empty, nodes: [section(NODE), section(OTHER)] });
     expect(ordered.nodes.map((node) => node.id)).toEqual([NODE, OTHER]);
+    // A tree, not a list: a node nests under another, at whatever depth the outline was given.
+    const nested = parseOutlineDocument({
+      ...empty,
+      nodes: [section(NODE, { children: [section(OTHER)] })],
+    });
+    expect(nested.nodes[0]?.children[0]?.id).toBe(OTHER);
     // The root is closed: there is no second array to put an outline in.
     expect(() => parseOutlineDocument({ ...empty, outline: [] })).toThrow();
     expect(() => parseOutlineDocument({ ...empty, nodes: {} })).toThrow();
@@ -180,8 +190,35 @@ describe('the outline a document version holds', () => {
     expect(canonicaliseVersionContent({ kind: 'document', content: one })).toBe(
       canonicaliseVersionContent({ kind: 'document', content: other }),
     );
+    // The whole version's digest too, not only its content: componentType, definitions, notCarried
+    // and values are the same null/[]/[]/{} for both, so the two version digests collapse to one iff
+    // the content digest already did.
+    expect(canonicaliseVersion({ kind: 'document', content: one })).toBe(
+      canonicaliseVersion({ kind: 'document', content: other }),
+    );
     // The shared rule, which the version chain's `else` branch would have reached, gives two.
     expect(canonicalJson(one)).not.toBe(canonicalJson(other));
+  });
+
+  it('keeps a value in its order, even for a field whose identifier is marks, reached through a section', () => {
+    // MET-030's trap, reached from a different direction: `values` is an arbitrary metadata record
+    // (STR-060), not content, so a field named `marks` must never be treated as a set the way a
+    // title's marks are - `canonicaliseVersion`'s comment names the same trap for a component's
+    // values. Shaped like an actual mark (`{type, id}`) so a broken fix that only dodges plain
+    // strings still gets caught: these sort if the marks rule reaches them, and only then.
+    const forward = [
+      { type: 'north', id: '2' },
+      { type: 'south', id: '1' },
+    ] as const;
+    const withValues = (order: readonly { type: string; id: string }[]) =>
+      parseOutlineDocument({ ...empty, nodes: [section(NODE, { values: { marks: order } })] });
+    const one = withValues(forward);
+    const other = withValues([...forward].reverse());
+    expect(canonicaliseOutline(one)).toContain(`"values":${canonicalJson({ marks: forward })}`);
+    expect(canonicaliseOutline(one)).not.toBe(canonicaliseOutline(other));
+    expect(canonicaliseVersionContent({ kind: 'document', content: one })).not.toBe(
+      canonicaliseVersionContent({ kind: 'document', content: other }),
+    );
   });
 
   it('reads a stored outline through its own migration chain, and says why one will not read', () => {
@@ -193,10 +230,16 @@ describe('the outline a document version holds', () => {
   });
 
   it('parses every fixture stored at every schema version, and the fixture holds every node', () => {
-    for (const version of readdirSync(fixtures)) {
+    const versions = readdirSync(fixtures);
+    expect(versions.length).toBeGreaterThan(0);
+    for (const version of versions) {
       for (const file of readdirSync(join(fixtures, version))) {
         const stored: unknown = JSON.parse(readFileSync(join(fixtures, version, file), 'utf8'));
         expect(readOutline(stored, { artifact: 'a', version: 'v' }).ok).toBe(true);
+        // Not only that reading succeeded: that the value actually went through the chain and landed
+        // at the current schema version, the way `readOutline` would hand it to `parseOutlineDocument`.
+        const migrated = migrateOutline(stored) as { schemaVersion: number };
+        expect(migrated.schemaVersion).toBe(OUTLINE_SCHEMA_VERSION);
       }
     }
     const every: OutlineDocument = JSON.parse(
@@ -214,8 +257,16 @@ describe('the outline a document version holds', () => {
       }
     };
     walk(parseOutlineDocument(every).nodes);
-    expect([...types].sort()).toEqual(['reference', 'section']);
-    expect([...modes].sort()).toEqual(['approved', 'latest', 'pinned']);
-    expect([...breaks].sort()).toEqual(['none', 'page', 'recto']);
+    // Derived from the schema, not hard-coded, so a fourth arm added and forgotten here fails - the
+    // way `content/model/migrate.test.ts`'s own every-node check does.
+    const expectedTypes = [
+      sectionNodeSchema.shape.type.value,
+      referenceNodeSchema.shape.type.value,
+    ];
+    const expectedModes = referenceModeSchema.options.map((option) => option.shape.kind.value);
+    const expectedBreaks = sectionNodeSchema.shape.pageBreak.options;
+    expect([...types].sort()).toEqual([...expectedTypes].sort());
+    expect([...modes].sort()).toEqual([...expectedModes].sort());
+    expect([...breaks].sort()).toEqual([...expectedBreaks].sort());
   });
 });
