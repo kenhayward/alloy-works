@@ -181,8 +181,11 @@ describe('the citations in the committed model', () => {
   // to the node inserted after it was removed.
   // 163 still: the third content-model plan's CNT-002 test sits in a file that already cites CNT-002,
   // and a file cites an identifier once.
+  // 173, from 163: the numbering plan (docs/plans/2026-09-18-structure-02-numbering.md) cites ten
+  // requirements structure.md claims, all in packages/domain/src/structure/numbering.test.ts: STR-014,
+  // STR-015, STR-016, STR-017, STR-018, STR-021, STR-022, STR-023, CNT-041 and CNT-047.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(163);
+    expect(model.citations).toHaveLength(173);
   });
 
   it('cites no identifier the corpus does not hold', () => {

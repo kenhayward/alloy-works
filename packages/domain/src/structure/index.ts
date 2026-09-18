@@ -29,3 +29,22 @@ export type {
 
 export { applyOutlineOperation, outlineOperationSchema } from './operations.js';
 export type { OutlineApplied, OutlineOperation } from './operations.js';
+
+export { contributionsOf, inlineContributions } from './contributions.js';
+export type { Contribution } from './contributions.js';
+export { conditions, number, resolve, sectionNumbers } from './numbering.js';
+export type {
+  Conditioned,
+  NumberableNode,
+  NumberableOutline,
+  NumberingEntry,
+  NumberingTable,
+  Resolved,
+} from './numbering.js';
+export {
+  defaultNumberingScheme,
+  formatCounter,
+  numberingSchemeSchema,
+  REQUIRED_SEQUENCES,
+} from './scheme.js';
+export type { NumberFormat, NumberingRule, NumberingScheme } from './scheme.js';

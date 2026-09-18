@@ -34,13 +34,19 @@ const outlineDepth = z.number().int().min(1).max(MAXIMUM_OUTLINE_DEPTH);
  *   figure - and `null` writes none.
  * - `separator` joins the parts of a section number, and a prefix to its counter.
  */
-export const numberingRuleSchema = z.strictObject({
-  label: z.string(),
-  format: z.array(numberFormatSchema).min(1),
-  restartAt: outlineDepth.nullable(),
-  prefix: outlineDepth.nullable(),
-  separator: z.string(),
-});
+export const numberingRuleSchema = z
+  .strictObject({
+    label: z.string(),
+    format: z.array(numberFormatSchema).min(1),
+    restartAt: outlineDepth.nullable(),
+    prefix: outlineDepth.nullable(),
+    separator: z.string(),
+  })
+  .refine(
+    (rule) => rule.restartAt === null || (rule.prefix !== null && rule.prefix >= rule.restartAt),
+    'A rule that restarts must prefix with the section number down to at least the depth it ' +
+      'restarts at, or two restarts of its counter could print the same label',
+  );
 export type NumberingRule = z.infer<typeof numberingRuleSchema>;
 
 /** Every sequence has a rule in each matter: an appendix numbers in its own scheme (STR-016). */

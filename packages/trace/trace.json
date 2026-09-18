@@ -16072,7 +16072,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 98,
+      "line": 110,
       "kind": "title"
     },
     {
@@ -16325,6 +16325,66 @@
       "id": "CNT-012",
       "file": "packages/domain/src/stored/migrate.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-041",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 316,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-047",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "STR-014",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 161,
+      "kind": "title"
+    },
+    {
+      "id": "STR-015",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 180,
+      "kind": "title"
+    },
+    {
+      "id": "STR-016",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "STR-017",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 272,
+      "kind": "title"
+    },
+    {
+      "id": "STR-018",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 371,
+      "kind": "title"
+    },
+    {
+      "id": "STR-021",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 303,
+      "kind": "title"
+    },
+    {
+      "id": "STR-022",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 342,
+      "kind": "title"
+    },
+    {
+      "id": "STR-023",
+      "file": "packages/domain/src/structure/numbering.test.ts",
+      "line": 96,
       "kind": "title"
     },
     {

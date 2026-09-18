@@ -28,6 +28,42 @@ describe('a numbering scheme', () => {
       },
     };
     expect(numberingSchemeSchema.safeParse(restarting).success).toBe(false);
+    const prefixed = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...defaultNumberingScheme.sequences,
+        section: { ...section, body: { ...section.body, prefix: 1 } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(prefixed).success).toBe(false);
+  });
+
+  it('refuses a rule that restarts without a prefix deep enough to keep two restarts of its counter apart', () => {
+    const figure = defaultNumberingScheme.sequences['figure']!;
+    const noPrefix = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...defaultNumberingScheme.sequences,
+        figure: { ...figure, body: { ...figure.body, restartAt: 2, prefix: null } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(noPrefix).success).toBe(false);
+    const shallowPrefix = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...defaultNumberingScheme.sequences,
+        figure: { ...figure, body: { ...figure.body, restartAt: 2, prefix: 1 } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(shallowPrefix).success).toBe(false);
+    const deepEnough = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...defaultNumberingScheme.sequences,
+        figure: { ...figure, body: { ...figure.body, restartAt: 2, prefix: 2 } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(deepEnough).success).toBe(true);
   });
 
   it('writes every counter in every format, past z and past 3999', () => {
