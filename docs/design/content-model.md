@@ -298,7 +298,7 @@ A block's, a footnote's, a footnote paragraph's and a cross-reference's are uniq
 the component, because a cross-reference names a block or a footnote by identity (STR-026) and one
 shared would name two things, and because STR-029's failure names the reference by its own. The
 parse first checked blocks alone, which left a footnote's out (issue #122). A mark's identifier is
-outside it: fragments of one annotation repeat theirs on purpose (CNT-005).
+outside it: fragments of one annotation repeat theirs on purpose (CNT-004).
 
 **Marks.** `id` on every mark (CNT-004). An annotation fragmented by an overlap repeats one identifier
 across its fragments, which is what makes accept, reject and exclude one operation on one identity

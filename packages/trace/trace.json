@@ -15094,7 +15094,7 @@
         },
         {
           "id": "STR-032",
-          "howItIsMet": "A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches one of another component of the same document"
+          "howItIsMet": "A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches a block or footnote of another component of the same document"
         },
         {
           "id": "STR-056",
