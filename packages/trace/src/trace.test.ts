@@ -146,8 +146,10 @@ describe('the citations in the committed model', () => {
   // the caller may create in, a title, a language tag and a direction are given and sent exactly as
   // typed, and the page opens what came back. MET-011 appears only in a comment there, a mention
   // rather than a demonstration of its own statement, so it does not move this count.
+  // 154, from 149: the document and its outline (docs/plans/2026-09-18-structure-01-the-document-and-its-outline.md)
+  // cites STR-001, STR-002, STR-048, STR-049 and STR-058 in the outline's schema.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(149);
+    expect(model.citations).toHaveLength(154);
   });
 
   it('cites no identifier the corpus does not hold', () => {

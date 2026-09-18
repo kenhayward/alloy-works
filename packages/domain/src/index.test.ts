@@ -72,6 +72,20 @@ describe('the domain package', () => {
         'createComponent',
         'nextVersion',
         'parseComponent',
+        // The document's outline, promoted in the plan that builds it
+        // (docs/plans/2026-09-18-structure-01-the-document-and-its-outline.md).
+        'OUTLINE_SCHEMA_VERSION',
+        'outlineDocumentSchema',
+        'outlineNodeSchema',
+        'sectionNodeSchema',
+        'referenceNodeSchema',
+        'referenceModeSchema',
+        'parseOutlineDocument',
+        'migrateOutline',
+        'outlineMigrationChain',
+        'readOutline',
+        'canonicaliseOutline',
+        'walkOutline',
       ].sort(),
     );
   });

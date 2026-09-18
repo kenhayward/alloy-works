@@ -9,6 +9,7 @@ import {
 } from '../metadata/record.js';
 import type { MetadataValues } from '../metadata/values.js';
 import { canonicalJson } from '../stored/canonical.js';
+import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -29,7 +30,13 @@ export type DefinitionSubstance = {
   [K in DefinitionKind]: { readonly kind: K; readonly content: DefinitionOf[K] };
 }[DefinitionKind];
 
-export type VersionSubstance = ComponentSubstance | DefinitionSubstance;
+/** A document version says its outline, and nothing else. */
+export type DocumentSubstance = {
+  readonly kind: 'document';
+  readonly content: OutlineDocument;
+};
+
+export type VersionSubstance = ComponentSubstance | DefinitionSubstance | DocumentSubstance;
 
 /**
  * The version of the one component type a component version was written against. `definitionsFor`
@@ -47,16 +54,19 @@ export function componentTypeOf(definitions: readonly DefinitionRef[]): string {
 
 /**
  * The canonical content alone: the input to `content_hash`, which keys derived data. A component's
- * content takes the content model's rules, where marks are a set; a definition's payload takes the
- * shared rules, where no array is.
+ * content takes the content model's rules, where marks are a set; a document's outline takes the same
+ * rule, because a section title is inline content too; a definition's payload takes the shared rules,
+ * where no array is.
  *
  * The content is serialised as it is handed in and never migrated, because a digest is over what was
  * written. Recomputing one from a stored row passes the row's content exactly as stored.
  */
 export function canonicaliseVersionContent(substance: VersionSubstance): string {
-  return substance.kind === 'component'
-    ? canonicalise(substance.content)
-    : canonicalJson(substance.content);
+  if (substance.kind === 'component') return canonicalise(substance.content);
+  // A section title is inline content and marks are a set, so an outline takes the content model's
+  // rule too. The shared rule below is for a definition's payload, where no array is a set.
+  if (substance.kind === 'document') return canonicaliseOutline(substance.content);
+  return canonicalJson(substance.content);
 }
 
 /**

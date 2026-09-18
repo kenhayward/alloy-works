@@ -16010,7 +16010,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 79,
+      "line": 93,
       "kind": "title"
     },
     {
@@ -16263,6 +16263,36 @@
       "id": "CNT-012",
       "file": "packages/domain/src/stored/migrate.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "STR-001",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "STR-002",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "STR-048",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "STR-049",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 102,
+      "kind": "title"
+    },
+    {
+      "id": "STR-058",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 131,
       "kind": "title"
     },
     {
