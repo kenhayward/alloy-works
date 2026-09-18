@@ -189,8 +189,12 @@ describe('the citations in the committed model', () => {
   // 173, from 163: the numbering plan (docs/plans/2026-09-18-structure-02-numbering.md) cites ten
   // requirements structure.md claims, all in packages/domain/src/structure/numbering.test.ts: STR-014,
   // STR-015, STR-016, STR-017, STR-018, STR-021, STR-022, STR-023, CNT-041 and CNT-047.
+  // 174, from 173: the same plan cites IAM-073, landed by it, in the numbering route's tests
+  // (apps/service/src/numbering-routes.test.ts): a reader who may not read a component is shown no
+  // number it could have moved, across a restart, and their answer does not move by a byte when the
+  // component's content changes.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(173);
+    expect(model.citations).toHaveLength(174);
   });
 
   it('cites no identifier the corpus does not hold', () => {

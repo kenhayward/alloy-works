@@ -519,6 +519,7 @@ describe('routes that check a permission', () => {
       payload: { title: 'Not mine', language: 'en-GB', direction: 'ltr' },
     }),
     getDocument: () => ({ url: `/v1/documents/${report}`, status: 404 }),
+    getNumbering: () => ({ url: `/v1/documents/${report}/numbering`, status: 404 }),
     editOutline: () => ({
       url: `/v1/documents/${report}/outline`,
       status: 404,

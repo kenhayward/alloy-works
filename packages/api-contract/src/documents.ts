@@ -69,6 +69,40 @@ export const OutlineRefusal = ErrorBody.extend({
 });
 export type OutlineRefusal = z.infer<typeof OutlineRefusal>;
 
+/**
+ * A document's numbering (structure.md, "Numbering"), as the caller is shown it: the version it
+ * numbers, the scheme, which component version each occurrence resolved to, and the numbering table.
+ */
+export const NumberingView = z.object({
+  document: z.string(),
+  version: z.object({ id: z.string(), number: z.string() }),
+  scheme: z
+    .string()
+    .describe('The scheme numbered against, by its id: `default/1` until layouts exist'),
+  occurrences: z
+    .array(z.object({ node: z.string(), version: z.string().nullable() }))
+    .describe(
+      'Each component reference, in outline order, and the component version it resolved to: null ' +
+        'where the caller may not read the component, where it waits on revisions, or where its ' +
+        'content does not read. Its contributions are then not counted, and every number it could ' +
+        'have moved is null',
+    ),
+  entries: z.array(
+    z.object({
+      node: z.string().describe('The outline node that produced it'),
+      block: z.string().nullable().describe('The block or footnote, for a caption or a footnote'),
+      sequence: z.string(),
+      matter: z.enum(['body', 'appendix']),
+      sections: z.array(z.number().int()).describe('The section counter stack at this point'),
+      value: z.number().int().nullable().describe("This sequence's counter; null when not known"),
+      restartedAt: z.string().nullable().describe('The node that last restarted the counter'),
+      number: z.string().nullable(),
+      label: z.string().nullable(),
+    }),
+  ),
+});
+export type NumberingView = z.infer<typeof NumberingView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -133,6 +167,24 @@ export const documentRoutes = {
       401: unauthenticated,
       403: {
         description: 'Never answered: a document the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  getNumbering: {
+    operationId: 'getNumbering',
+    method: 'GET',
+    path: '/v1/documents/{id}/numbering',
+    summary: "The latest version's numbering, as the caller is shown it",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    responses: {
+      200: { description: 'The numbering table', schema: NumberingView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a document the caller may read is one they may number',
         schema: ErrorBody,
       },
       404: notFound,
