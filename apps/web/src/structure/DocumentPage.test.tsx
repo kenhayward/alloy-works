@@ -813,6 +813,97 @@ describe('the outline panel, answered', () => {
     expect(fake.edits()).toHaveLength(1);
   });
 
+  it('keeps a retitle that was not saved, so the next Enter is the retry the page asks for', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.refuse(OUTLINE_URL, 500);
+    await userEvent.type(screen.getByLabelText('Title'), ' and materials{Enter}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not saved. Try it again.',
+      ),
+    );
+    // Nothing else is shown in its place, so the text is still there to try again with.
+    expect(screen.getByLabelText('Title')).toHaveValue('Method and materials');
+
+    fake.restore(OUTLINE_URL);
+    await settled();
+    await userEvent.type(screen.getByLabelText('Title'), '{Enter}');
+    expect(
+      await screen.findByRole('treeitem', { name: 'Method and materials' }),
+    ).toBeInTheDocument();
+    expect(fake.edits().map((request) => request.body)).toEqual([
+      {
+        openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+        operation: {
+          operation: 'retitle',
+          node: METHOD,
+          title: [{ type: 'text', value: 'Method and materials', marks: [] }],
+        },
+      },
+      {
+        openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+        operation: {
+          operation: 'retitle',
+          node: METHOD,
+          title: [{ type: 'text', value: 'Method and materials', marks: [] }],
+        },
+      },
+    ]);
+  });
+
+  it('sends a retitle committed with Enter while another act is in flight, once that act is answered', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    expect(fake.edits()).toHaveLength(1);
+
+    release();
+    expect(await screen.findByRole('treeitem', { name: /^Methods/ })).toBeInTheDocument();
+    // Sent from the version the first act made, so it is not refused as a conflict with itself.
+    expect(fake.edits()[1]?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000002',
+      operation: {
+        operation: 'retitle',
+        node: METHOD,
+        title: [{ type: 'text', value: 'Methods', marks: [] }],
+      },
+    });
+    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+  });
+
+  it('sends a retitle left behind while another act is in flight, even once its field has gone', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's');
+    // Leaving for another node blurs the field, and the field goes with the selection.
+    await userEvent.click(item('Introduction'));
+    expect(screen.getByLabelText('Title')).toHaveValue('Introduction');
+    expect(fake.edits()).toHaveLength(1);
+
+    release();
+    expect(await screen.findByRole('treeitem', { name: /^Methods/ })).toBeInTheDocument();
+    expect(fake.edits()).toHaveLength(2);
+    expect(screen.getByText('Version 0.3 in General')).toBeInTheDocument();
+  });
+
   it('says why an act does not apply, in the words the service gave', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),

@@ -3,7 +3,12 @@ import { readOutline, type OutlineDocument, type OutlineOperation } from '@alloy
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
-import { OutlinePanel, type ComponentChoice, type ComponentChoices } from './OutlinePanel.js';
+import {
+  OutlinePanel,
+  type Answered,
+  type ComponentChoice,
+  type ComponentChoices,
+} from './OutlinePanel.js';
 import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -260,23 +265,30 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
   }, []);
 
   const apply = useCallback(
-    async (operation: OutlineOperation, undoing: boolean): Promise<OutlineDocument | null> => {
-      if (pending.current || opened === null) return null;
-      // An act from a render older than the answer the page now holds: a key that landed between the
-      // last answer and the re-render showing it. Computed against the outline before that answer,
-      // it would be refused as a conflict with the author's own act, so it is not sent at all.
-      if (opened.version.id !== latest.current?.version.id) return null;
+    async (operation: OutlineOperation, undoing: boolean): Promise<Answered> => {
+      if (pending.current || opened === null) return 'unsent';
+      // A belt over what the `busy` checks already close: every handler in the panel reads `busy`
+      // from the same render as the outline it acts on, so no act from an older render should reach
+      // here. Were one to - computed against an outline before the answer the page now holds - it
+      // would be refused as a conflict with the author's own act, so it is not sent at all.
+      if (opened.version.id !== latest.current?.version.id) return 'unsent';
       const before = opened;
       pending.current = true;
       setBusy(true);
       // An undo's entry, taken off the stack once it has been answered for good.
       const spend = () => setUndo((stack) => stack.slice(0, -1));
-      const refuse = (message: string) => {
+      // Refused: the page now shows an outline other than the one the act was made against.
+      const refuse = (message: string): Answered => {
         setNotice(message);
-        return null;
+        return 'refused';
+      };
+      // Not sent, or not recorded: nothing changed, so what the author made is kept to try again.
+      const unsent = (message: string): Answered => {
+        setNotice(message);
+        return 'unsent';
       };
       const failed = () =>
-        refuse(
+        unsent(
           undoing
             ? 'The change was not undone. Try it again.'
             : 'The change was not saved. Try it again.',
@@ -313,7 +325,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
           // The act may well have been recorded, but what came back cannot be shown or acted on, so the
           // page says so in place of the outline rather than going on offering a stale one.
           setLoaded({ state: 'unreadable' });
-          return null;
+          return 'refused';
         }
         switch (response.status) {
           case 409: {
@@ -329,7 +341,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
             return refuse(SOMEBODY_ELSE);
           }
           case 401:
-            return refuse('You are signed out. Sign in again to change this document.');
+            return unsent('You are signed out. Sign in again to change this document.');
           case 403:
             // Nothing more is offered that could only be refused again.
             show({ ...before, mayEdit: false });
@@ -404,7 +416,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         canUndo={undo.length > 0}
         onUndo={async () => {
           const top = undo[undo.length - 1];
-          return top === undefined ? null : apply(top, true);
+          return top === undefined ? 'unsent' : apply(top, true);
         }}
         names={names}
         components={components}

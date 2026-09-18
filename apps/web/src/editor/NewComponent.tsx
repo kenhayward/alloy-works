@@ -118,10 +118,9 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   );
 
   // The effect leaves its generation behind on the way out (fix round 2, finding F), as the spaces'
-  // loader does in `useCreatableSpaces`. Without it a read
-  // still in flight when the page goes finds its own generation current and sets state into a
-  // component that is no longer there - which is how a stray act() warning gets into a suite that is
-  // supposed to run silent.
+  // loader does in `useCreatableSpaces`. Without it a read still in flight when the page goes finds
+  // its own generation current and sets state into a component that is no longer there - which is how
+  // a stray act() warning gets into a suite that is supposed to run silent.
   useEffect(() => {
     if (where === '') return undefined;
     setTypes([]);

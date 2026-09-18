@@ -40,6 +40,17 @@ export type ComponentChoices =
   | { readonly state: 'failed'; readonly signedOut: boolean }
   | { readonly state: 'loaded'; readonly items: readonly ComponentChoice[] };
 
+/**
+ * What one act came to: the outline the service returned; `'refused'`, where the page now shows an
+ * outline other than the one the act was made against (a conflict, a refusal, a document gone read-only
+ * or unreadable), so whatever was being edited gives way to it; or `'unsent'`, where nothing changed
+ * and nothing was recorded (signed out, a server error, no answer), so what was typed is kept for the
+ * retry the page's notice asks for.
+ */
+export type Answered = OutlineDocument | 'refused' | 'unsent';
+
+type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
+
 export interface OutlinePanelProps {
   readonly outline: OutlineDocument;
   /** Whether the caller may restructure the outline at all; a reader is offered nothing to change. */
@@ -47,16 +58,16 @@ export interface OutlinePanelProps {
   /** An operation is in flight: everything that would send another waits for it. */
   readonly busy?: boolean;
   /**
-   * Sends one structural act, answering the outline the service returned, or `null` when nothing was
-   * applied. The page owns what happens next - the version, the undo stack, what is announced.
+   * Sends one structural act, answering what it came to (`Answered`). The page owns what happens
+   * next - the version, the undo stack, what is announced.
    */
-  readonly onOperation: (operation: OutlineOperation) => Promise<OutlineDocument | null>;
+  readonly onOperation: (operation: OutlineOperation) => Promise<Answered>;
   /** The one status sentence, announced through the panel's `role="status"` region. */
   readonly notice: string | null;
   /** Says something through that same region: a field refused before anything was sent. */
   readonly onNotice?: (message: string | null) => void;
   readonly canUndo?: boolean;
-  readonly onUndo?: () => Promise<OutlineDocument | null>;
+  readonly onUndo?: () => Promise<Answered>;
   /** Names a reference by its component's title; `null` until the components have been read. */
   readonly names?: Names;
   readonly components?: ComponentChoices;
@@ -134,6 +145,12 @@ export function OutlinePanel({
   // can take it back.
   const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(dragTimer.current), []);
+  // A retitle committed while another act was in flight - Enter, or leaving the field, which may take
+  // the field away with it - held here rather than dropped, and sent once that act is answered.
+  const held = useRef<{
+    readonly operation: RetitleOperation;
+    readonly resolve: (answer: Answered) => void;
+  } | null>(null);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
   // first node otherwise - so a node removed, or an outline somebody else changed, never leaves the
@@ -157,6 +174,35 @@ export function OutlinePanel({
     const after = await onOperation(operation);
     if (focus !== null) setFocusTarget(focus);
     return after;
+  };
+
+  // After every render, so the one where `busy` clears sends what was held - from that render's
+  // outline and `onOperation`, which is to say from the version the act in flight made.
+  useEffect(() => {
+    const waiting = held.current;
+    if (busy || waiting === null) return;
+    held.current = null;
+    const node = placeOf(nodes, waiting.operation.node)?.node;
+    if (!editable || node?.type !== 'section') {
+      waiting.resolve('refused');
+      return;
+    }
+    if (plainTitle(node.title) === titleText(waiting.operation.title)) {
+      waiting.resolve(outline);
+      return;
+    }
+    void onOperation(waiting.operation).then(waiting.resolve);
+  });
+
+  /** A retitle now, or once the act in flight is answered. */
+  const retitle = (operation: RetitleOperation): Promise<Answered> => {
+    if (!busy) return send(operation, null);
+    return new Promise((resolve) => {
+      // A newer commit from the same author supersedes one still waiting; the older one is kept by
+      // its field, not refused.
+      held.current?.resolve('unsent');
+      held.current = { operation, resolve };
+    });
   };
 
   const choose = (id: string, focus: boolean) => {
@@ -184,7 +230,7 @@ export function OutlinePanel({
     if (!adding || !may) return;
     const before = new Set(visibleOrder(nodes));
     const after = await onOperation({ operation: 'insert', ...insertAt(adding.after), node });
-    if (after === null) return;
+    if (typeof after === 'string') return;
     // The node the service allocated is the one the answer has and the outline before did not.
     const added = visibleOrder(after.nodes).find((id) => !before.has(id));
     setAdding(undefined);
@@ -211,7 +257,7 @@ export function OutlinePanel({
       place.siblings[place.index + 1]?.id ??
       null;
     const after = await onOperation({ operation: 'remove', node: id });
-    const focus = after === null ? id : neighbour;
+    const focus = typeof after === 'string' ? id : neighbour;
     if (focus !== null) {
       setActive(focus);
       setFocusTarget(focus);
@@ -481,6 +527,7 @@ export function OutlinePanel({
           node={selected}
           busy={busy}
           onOperation={(operation) => send(operation, null)}
+          onRetitle={retitle}
           onNotice={onNotice}
           onRemove={() => setConfirming(selected.id)}
         />
@@ -619,19 +666,21 @@ function NodeDetails({
   node,
   busy,
   onOperation,
+  onRetitle,
   onNotice,
   onRemove,
 }: {
   node: OutlineNode;
   busy: boolean;
-  onOperation: (operation: OutlineOperation) => Promise<OutlineDocument | null>;
+  onOperation: (operation: OutlineOperation) => Promise<Answered>;
+  onRetitle: (operation: RetitleOperation) => Promise<Answered>;
   onNotice: (message: string | null) => void;
   onRemove: () => void;
 }) {
   return (
     <div>
       {node.type === 'section' && (
-        <TitleField node={node} busy={busy} onOperation={onOperation} onNotice={onNotice} />
+        <TitleField node={node} onRetitle={onRetitle} onNotice={onNotice} />
       )}
       <label>
         Starts on
@@ -661,13 +710,11 @@ function NodeDetails({
 
 function TitleField({
   node,
-  busy,
-  onOperation,
+  onRetitle,
   onNotice,
 }: {
   node: SectionNode;
-  busy: boolean;
-  onOperation: (operation: OutlineOperation) => Promise<OutlineDocument | null>;
+  onRetitle: (operation: RetitleOperation) => Promise<Answered>;
   onNotice: (message: string | null) => void;
 }) {
   const plain = plainTitle(node.title);
@@ -700,8 +747,9 @@ function TitleField({
     );
   }
 
+  // Committed whether or not another act is in flight: `onRetitle` holds it until that act is
+  // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon.
   const commit = () => {
-    if (busy) return;
     const text = field.typed.trim();
     if (text === '') {
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
@@ -712,17 +760,21 @@ function TitleField({
     }
     if (text === inModel) return;
     setField((previous) => ({ ...previous, sent: text }));
-    void onOperation({ operation: 'retitle', node: node.id, title: sectionTitle(text) }).then(
-      (after) => {
-        // Refused - somebody else moved first, or it was not saved - and the page has said so. The
-        // field gives way to the outline as it now stands, rather than holding the refused title for
-        // the next blur to send again as an act nobody chose a second time.
-        if (after === null) {
+    void onRetitle({ operation: 'retitle', node: node.id, title: sectionTitle(text) }).then(
+      (answer) => {
+        if (answer === 'refused') {
+          // The page now shows an outline other than the one this title was typed against, and has
+          // said so. The field gives way to it, rather than holding the refused title for the next
+          // blur to send again as an act nobody chose a second time.
           setField((previous) => ({
             typed: previous.inModel,
             inModel: previous.inModel,
             sent: null,
           }));
+        } else if (answer === 'unsent') {
+          // Nothing changed and nothing was recorded, and the page says to try again: the text stays,
+          // and the author's next Enter or blur is that retry.
+          setField((previous) => ({ ...previous, sent: null }));
         }
       },
     );
