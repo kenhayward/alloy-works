@@ -16268,19 +16268,19 @@
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 108,
+      "line": 132,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 139,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 158,
+      "line": 200,
       "kind": "title"
     },
     {

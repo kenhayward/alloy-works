@@ -5,7 +5,12 @@ import {
   outlineOperationSchema,
   type OutlineOperation,
 } from './operations.js';
-import { parseOutlineDocument, walkOutline, type OutlineDocument } from './outline.js';
+import {
+  parseOutlineDocument,
+  walkOutline,
+  type OutlineDocument,
+  type OutlineNode,
+} from './outline.js';
 
 const NODE = 'a'.repeat(26);
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
@@ -39,6 +44,17 @@ function identifiers() {
       return unique;
     },
   };
+}
+
+/** How many children `parent` (or the root, when `null`) holds right now, or -1 when not found. */
+function childrenCountOf(nodes: readonly OutlineNode[], parent: string | null): number {
+  if (parent === null) return nodes.length;
+  for (const node of nodes) {
+    if (node.id === parent) return node.children.length;
+    const count = childrenCountOf(node.children, parent);
+    if (count >= 0) return count;
+  }
+  return -1;
 }
 
 const run = (outline: OutlineDocument, operation: OutlineOperation, allocate: () => string) => {
@@ -82,8 +98,16 @@ describe('outlineOperationSchema', () => {
       false,
     );
     // set's own switches are closed too - a wire body cannot smuggle an arbitrary field through it.
+    // Paired with a real switch, so this fails only on the unrecognised key: without `numbered`
+    // here, it would also fail the "at least one switch" refine below, and relaxing `strictObject`
+    // alone would not turn it back to true.
     expect(
-      outlineOperationSchema.safeParse({ operation: 'set', node: NODE, colour: 'red' }).success,
+      outlineOperationSchema.safeParse({
+        operation: 'set',
+        node: NODE,
+        numbered: true,
+        colour: 'red',
+      }).success,
     ).toBe(false);
     // A set naming none of its five switches would apply and change nothing - refused at the wire
     // body itself, rather than left for a downstream version whose digest equals its parent's.
@@ -134,6 +158,24 @@ describe('the five operations over an outline', () => {
     const refused = applyOutlineOperation(empty, addSection('z'.repeat(26)), allocate);
     expect(refused.applied).toBe(false);
     expect(made).toHaveLength(0);
+  });
+
+  it('answers a constant refusal, never the exception text, when a result cannot be stored', () => {
+    const { allocate } = identifiers();
+    const outline = run(empty, addSection(null), allocate);
+    // A caller can supply any allocator; one that hands back an id already in the outline drives
+    // `parseOutlineDocument`'s own uniqueness check to throw inside `applyNodes` - the one way this
+    // file can be made to hit that catch without reaching into it directly.
+    const collidingId = outline.nodes[0]!.id;
+    const answer = applyOutlineOperation(
+      outline,
+      addSection(null, 1, 'Another'),
+      () => collidingId,
+    );
+    expect(answer).toEqual({
+      applied: false,
+      reason: 'This operation would produce an outline that cannot be stored',
+    });
   });
 
   it('STR-007 nests to nine levels, with no maximum the schema declares', () => {
@@ -311,47 +353,87 @@ describe('the five operations over an outline', () => {
     expect(outline.nodes).toEqual([]);
   });
 
-  it('keeps every invariant after any sequence of operations, applying most of them', () => {
+  it('keeps every invariant after any sequence of operations, on a tree that actually grows', () => {
     const { allocate } = identifiers();
     let outline = empty;
     let appliedCount = 0;
+    let maxDepth = 0;
+    let maxNodes = 0;
+    let moveAttempts = 0;
+    let subtreeContainmentRefusals = 0;
+    let multiChildReorders = 0;
     const STEPS = 300;
     for (let step = 0; step < STEPS; step += 1) {
       const ids: string[] = [];
       walkOutline(outline.nodes, (node) => ids.push(node.id));
+      maxNodes = Math.max(maxNodes, ids.length);
+      let depthHere = 0;
+      walkOutline(outline.nodes, (_node, depth) => {
+        depthHere = Math.max(depthHere, depth);
+      });
+      maxDepth = Math.max(maxDepth, depthHere);
+
       const target = ids.length > 0 ? ids[step % ids.length] : undefined;
       // The parent (for insert and move) and the position both come from the full id list and the
-      // full id count, not fixed to the root or to index 0 - so this exercises every depth the tree
-      // currently has, and both sides of the new position-bounds refusal.
+      // full id count, not fixed to the root or to index 0.
       const parentCandidate = ids.length > 0 ? (ids[(step * 7) % ids.length] ?? null) : null;
-      const candidatePosition = ids.length > 0 ? step % (ids.length + 1) : 0;
-      const operation: OutlineOperation =
-        step % 5 === 0 || target === undefined
-          ? addSection(
-              step % 3 === 0 ? parentCandidate : null,
-              candidatePosition,
-              `Section ${step}`,
-            )
-          : step % 5 === 1
-            ? {
-                operation: 'move',
-                node: target,
-                parent: parentCandidate === target ? null : parentCandidate,
-                position: candidatePosition,
-              }
-            : step % 5 === 2
-              ? { operation: 'set', node: target, numbered: step % 8 === 2 }
-              : step % 5 === 3
-                ? {
-                    operation: 'retitle',
-                    node: target,
-                    title: [{ type: 'text', value: `T${step}`, marks: [] }],
-                  }
-                : { operation: 'remove', node: target };
+
+      // Three of every five steps insert, one removes, one is shared by move/set/retitle - biased
+      // towards growth (round 2 review: the previous even split of five arms let insert and remove
+      // cancel out, so the tree oscillated between empty and one node for the whole run, and every
+      // move was refused as past the end because there was never more than one node to move among).
+      // Nesting under a random existing node three times out of four, rather than mostly at the
+      // root, is what actually builds the depth: growth alone does not, a flat tree of 70 root
+      // siblings would grow just as fast and prove nothing about nesting.
+      const bucket = step % 5;
+      let operation: OutlineOperation;
+      if (bucket <= 2 || target === undefined) {
+        const nestUnder = ids.length > 0 && step % 4 !== 0 ? parentCandidate : null;
+        operation = addSection(nestUnder, 0, `Section ${step}`);
+      } else if (bucket === 3) {
+        operation = { operation: 'remove', node: target };
+      } else {
+        const sub = step % 3;
+        if (sub === 0) {
+          moveAttempts += 1;
+          operation = {
+            operation: 'move',
+            node: target,
+            // A third of move attempts deliberately move a node into itself, guaranteed to be inside
+            // its own subtree - the pseudo-random parent above almost never lands inside the node
+            // being moved on its own (a bare 300-step run of this exact generator hit it zero times
+            // before this was added), so the containment refusal is forced on purpose here rather
+            // than left to chance.
+            parent:
+              moveAttempts % 3 === 0 ? target : parentCandidate === target ? null : parentCandidate,
+            position: step % 3,
+          };
+        } else if (sub === 1) {
+          operation = { operation: 'set', node: target, numbered: step % 8 === 2 };
+        } else {
+          operation = {
+            operation: 'retitle',
+            node: target,
+            title: [{ type: 'text', value: `T${step}`, marks: [] }],
+          };
+        }
+      }
+
+      // A genuine reorder, not just an append to an empty or single-child array: the move's target
+      // parent already holds at least one child other than the one being moved.
+      const preExistingSiblings =
+        operation.operation === 'move' ? childrenCountOf(outline.nodes, operation.parent) : -1;
+
       const answer = applyOutlineOperation(outline, operation, allocate);
       if (answer.applied) {
-        outline = answer.outline;
         appliedCount += 1;
+        if (operation.operation === 'move' && preExistingSiblings > 0) multiChildReorders += 1;
+        outline = answer.outline;
+      } else if (
+        operation.operation === 'move' &&
+        answer.reason === 'A node cannot be moved inside its own subtree'
+      ) {
+        subtreeContainmentRefusals += 1;
       }
 
       const seen = new Set<string>();
@@ -364,10 +446,18 @@ describe('the five operations over an outline', () => {
       // that records them able to record anything the panel can produce.
       expect(parseOutlineDocument(outline)).toEqual(outline);
     }
-    // Every step above holds vacuously if nothing ever applied - a broken guard that refuses
-    // everything would still pass every invariant, having left nothing to check. This sequence is
-    // deterministic (the allocator is a counter, not randomness), so the true count never moves; the
-    // floor is set well under it, to catch a regression rather than to track the exact figure.
-    expect(appliedCount).toBeGreaterThan(STEPS / 4);
+    // Measured against this exact deterministic sequence (the allocator is a counter, not
+    // randomness, so these numbers never move between runs): 294 of 300 steps applied, maxDepth 11,
+    // maxNodes 76, 6 subtree-containment refusals, 6 genuine multi-child reorders. Every floor below
+    // is set well under its measured figure, to catch a regression - a tree stuck at depth 1 or a
+    // single node, or a guard that silently refuses everything - rather than to track the figure.
+    expect(appliedCount).toBeGreaterThan(STEPS / 2);
+    expect(maxDepth).toBeGreaterThanOrEqual(4);
+    expect(maxNodes).toBeGreaterThanOrEqual(10);
+    // A count alone cannot tell a deep, many-node tree from a single node reached over and over -
+    // these two are what actually distinguish them, and what a floor on appliedCount alone let
+    // through uncaught before (round 2 review).
+    expect(subtreeContainmentRefusals).toBeGreaterThan(0);
+    expect(multiChildReorders).toBeGreaterThan(0);
   });
 });

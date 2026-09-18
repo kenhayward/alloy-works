@@ -100,12 +100,18 @@ function refuse(reason: string): OutlineApplied {
  * validation nobody would keep in step. Total, not merely pure: nothing in this file should ever make
  * `parseOutlineDocument` throw, but a caller branching on `applied` must never be able to meet an
  * exception instead of a `false` - so a throw here becomes a refusal, not a 500 two layers up.
+ *
+ * The refusal is a constant, never the caught error's own message: `parseOutlineDocument` throws a
+ * raw `ZodError` message, which can run to several lines and names internal shapes - preflight C6
+ * routes a refusal's `reason` straight to the wire, so the exception text must never reach it.
  */
+const UNSTORABLE_RESULT = 'This operation would produce an outline that cannot be stored';
+
 function applyNodes(outline: OutlineDocument, nodes: readonly OutlineNode[]): OutlineApplied {
   try {
     return { applied: true, outline: parseOutlineDocument({ ...outline, nodes }) };
-  } catch (error) {
-    return refuse(error instanceof Error ? error.message : String(error));
+  } catch {
+    return refuse(UNSTORABLE_RESULT);
   }
 }
 
