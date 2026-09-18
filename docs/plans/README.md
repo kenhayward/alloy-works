@@ -229,6 +229,25 @@ IAM-059's design owns; managing roles, groups and a principal's kind, with the l
 cases; extending a grant and the external listing (IAM-050, IAM-051); and Access on anything but a
 component.
 
+## Structure
+
+The document, its outline, and everything positional computed over it, designed in
+[structure.md](../design/structure.md). It comes after the editor's first two slices, because a
+document's outline points at components and a component nobody can make is an outline nobody can
+fill. The design claims thirty-nine requirements and is built in slices: the document and its outline
+first, because numbering, captions, cross-references and the contents panel are each a pure function
+over a tree that has to exist before any of them can be written.
+
+| #   | Plan                                                                                    | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status  |
+| --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [The document and its outline](2026-09-18-structure-01-the-document-and-its-outline.md) | In `packages/domain`, `src/structure/`: the outline document's schema - one tree of sections and component references, each identified, each carrying its positional switches, a section title being inline content - its parse, its migration chain, its own canonical form where marks are a set, and the five operations as pure functions over a tree; a third arm in `VersionSubstance`. In `packages/db`, migration 0016 widening `artifact.kind`, `artifact_space_by_kind` and the author check, `document` as a content kind, the version chain branching three ways, and `createDocument`, `readDocument`, `listReadableDocuments` and `editOutline`. Four routes; in `apps/web`, the documents page and the outline panel with its keymap and undo stack. And STR-061, what a document is. No numbering, captions, cross-references, generated lists, deep links or cycle check | Planned |
+
+Plan 1 leads with ten findings - the most serious that the version chain assumes every artifact that
+is not a component is a definition, and that migration 0016 cannot alter `artifact_version` on a
+fresh environment without flushing pending trigger events first - and eleven decisions for Ken, the
+first of which is that numbering is not in this slice. It files one requirement, STR-061, since
+nothing in the corpus declared what a document is.
+
 ## The editor
 
 Opening, editing and saving components, designed in [component-editor.md](../design/component-editor.md)
