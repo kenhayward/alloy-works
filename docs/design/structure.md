@@ -96,6 +96,7 @@ current outline rather than silently overwriting it.
 | **STR-061** | A document is an artifact of its own kind: its identity is the `artifact` row, `artifact_space_by_kind` puts it in exactly one space, its title lives inside its versioned content as a component's does, and it versions through the one mechanism                                                                                                                      |
 | **CNT-041** | `footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component                                                                                                                                                                                                                                                 |
 | **CNT-047** | The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it                                                                                                                                                                                                                            |
+| **IAM-073** | Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone                   |
 
 STR-062 is answered here as
 resolution returning the named failure; failing the publish on it is STR-029's, left unclaimed with
@@ -103,7 +104,7 @@ PUB (below).
 
 ## What this document does not own
 
-Forty-one claims above. The requirements deliberately left out are where this design's edges are, and
+Forty-two claims above. The requirements deliberately left out are where this design's edges are, and
 each one is a design that does not exist yet rather than a detail.
 
 **The named failure is produced here; failing the publish is PUB's.** This is the split
@@ -635,6 +636,18 @@ still move it, remove it and give it a page break; the panel names it **A compon
 before the components are read, and never says the reader may not read it. Which components they may
 read is the readable set, filtered by the one predicate every listing uses (`readableComponents`,
 `readableArtifacts`).
+
+**A reader is numbered only from what they may read (IAM-073).** A gap in the numbers says as much
+as a number: Figure 1.2 followed by Figure 1.4 tells a reader the component between them holds a
+figure. So `GET /v1/documents/{id}/numbering` never reads a component the caller may not read -
+`numberingInputs` selects no row of one - and answers its occurrence `version: null`, as it answers
+an `approved` reference or content that does not read. `number` treats an occurrence it was given
+nothing for as unknown, not empty: every counter in its matter is unknown from there until that
+counter next restarts, whatever the component holds, and each number it would have printed is
+`null`. A counter that restarts with a chapter is known again in the next one; one that never
+restarts - the default scheme's equations and footnotes - stays unknown to the end of the matter.
+Section numbers depend on the outline alone and are always shown. So everybody shown a number is
+shown the same one, and a missing number says nothing about what the component contains.
 
 **Only the view is withheld.** The stored outline is unchanged, and its digests, its versions and
 every operation's result are computed on it, never on a view; the domain's `readOutlineView` reads a

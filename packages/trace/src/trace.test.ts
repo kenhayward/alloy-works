@@ -21,6 +21,9 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1368, from 1367: IAM-073, a number an outline produces revealing nothing about a component the
+    // reader may not read (issue #130), landed by the numbering plan and narrowed from the issue's "a
+    // number, count or order", which asked more than structure.md answers.
     // 1367, from 1366: STR-062, a cross-reference to a block resolving against exactly one occurrence
     // (issue #73), landed by the third content-model plan.
     // 1366, from 1365: STR-061, what a document is - a named, versioned artifact in exactly one space
@@ -34,9 +37,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1367);
+    expect(model.requirements).toHaveLength(1368);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 361, from 360: structure.md claims IAM-073 ("Who is shown what"): a reader is numbered only from
+    // what they may read, and every number an unreadable component could have moved is null.
     // 360, from 361: structure.md stopped claiming STR-026, which the built target union answers only
     // in part - it has no bibliography entry arm, and a component cannot reference a section - so the
     // claim was dropped and the gap named in prose (the third content-model plan's final fix wave).
@@ -76,7 +81,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(360);
+    ).toBe(361);
   });
 });
 

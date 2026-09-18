@@ -4924,13 +4924,22 @@
       "line": 172
     },
     {
+      "id": "IAM-073",
+      "area": "IAM",
+      "statement": "A number a document's outline produces - for a section, or for a figure, table, equation or footnote its components contribute - must reveal nothing about content the reader may not read: where a reader may not read a component, no number it could have changed is shown to that reader",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 173
+    },
+    {
       "id": "IAM-024",
       "area": "IAM",
       "statement": "Permissions must inherit down the hierarchy in section 6",
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 197
+      "line": 206
     },
     {
       "id": "IAM-025",
@@ -4939,7 +4948,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 198
+      "line": 207
     },
     {
       "id": "IAM-026",
@@ -4948,7 +4957,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 199
+      "line": 208
     },
     {
       "id": "IAM-027",
@@ -4957,7 +4966,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 200
+      "line": 209
     },
     {
       "id": "IAM-028",
@@ -4966,7 +4975,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 201
+      "line": 210
     },
     {
       "id": "IAM-063",
@@ -4975,7 +4984,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 202
+      "line": 211
     },
     {
       "id": "IAM-029",
@@ -4984,7 +4993,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 219
+      "line": 228
     },
     {
       "id": "IAM-030",
@@ -4993,7 +5002,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 220
+      "line": 229
     },
     {
       "id": "IAM-031",
@@ -5002,7 +5011,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 221
+      "line": 230
     },
     {
       "id": "IAM-032",
@@ -5011,7 +5020,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 222
+      "line": 231
     },
     {
       "id": "IAM-033",
@@ -5020,7 +5029,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 233
+      "line": 242
     },
     {
       "id": "IAM-034",
@@ -5029,7 +5038,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 234
+      "line": 243
     },
     {
       "id": "IAM-035",
@@ -5038,7 +5047,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 235
+      "line": 244
     },
     {
       "id": "IAM-036",
@@ -5047,7 +5056,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 236
+      "line": 245
     },
     {
       "id": "IAM-037",
@@ -5056,7 +5065,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 237
+      "line": 246
     },
     {
       "id": "IAM-038",
@@ -5065,7 +5074,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 248
+      "line": 257
     },
     {
       "id": "IAM-039",
@@ -5074,7 +5083,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 249
+      "line": 258
     },
     {
       "id": "IAM-040",
@@ -5083,7 +5092,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 250
+      "line": 259
     },
     {
       "id": "IAM-045",
@@ -5092,7 +5101,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 256
+      "line": 265
     },
     {
       "id": "IAM-046",
@@ -5101,7 +5110,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 257
+      "line": 266
     },
     {
       "id": "IAM-047",
@@ -5110,7 +5119,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 258
+      "line": 267
     },
     {
       "id": "IAM-048",
@@ -5119,7 +5128,7 @@
       "tranche": "Constraint",
       "status": "Superseded by IAM-071",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 259
+      "line": 268
     },
     {
       "id": "IAM-049",
@@ -5128,7 +5137,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 260
+      "line": 269
     },
     {
       "id": "IAM-050",
@@ -5137,7 +5146,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 261
+      "line": 270
     },
     {
       "id": "IAM-051",
@@ -5146,7 +5155,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 262
+      "line": 271
     },
     {
       "id": "IAM-071",
@@ -5155,7 +5164,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 263
+      "line": 272
     },
     {
       "id": "IAM-057",
@@ -5164,7 +5173,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 264
+      "line": 273
     },
     {
       "id": "IMP-001",
@@ -12567,37 +12576,37 @@
       "id": "IAM-N01",
       "statement": "**Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 287
+      "line": 296
     },
     {
       "id": "IAM-N02",
       "statement": "**No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 288
+      "line": 297
     },
     {
       "id": "IAM-N03",
       "statement": "**No sharing between tenants.** An outsider participates as a guest principal inside the host tenant (section 11), never as a bridge between two. Cross-tenant sharing is deferred rather than refused - see [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 289
+      "line": 298
     },
     {
       "id": "IAM-N04",
       "statement": "**No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 290
+      "line": 299
     },
     {
       "id": "IAM-N05",
       "statement": "**No permission outside a role** (IAM-062). A grant binds a role to a principal or a group at a level; there is no per-user permission set beside it, because section 8 could not explain one",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 291
+      "line": 300
     },
     {
       "id": "IAM-N06",
       "statement": "**No vendor account inside a tenant** once it is bootstrapped (IAM-061). Support reaches a tenant through access that tenant granted, bounded and can revoke (**ADM-023**), and by no other route",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 292
+      "line": 301
     },
     {
       "id": "IMP-N01",
@@ -13385,63 +13394,63 @@
       "question": "**Pure federation, or a first-party identity provider with federation as an option?**",
       "settledBy": "**Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 298
+      "line": 307
     },
     {
       "id": "IAM-Q02",
       "question": "**Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report",
       "settledBy": "A customer requirement that cannot be met by putting the annex in its own space",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 299
+      "line": 308
     },
     {
       "id": "IAM-Q03",
       "question": "**Is there anonymous or link-based read for a published artifact?**",
       "settledBy": "**Settled.** Link-based, never anonymous: a publication is shared to a named recipient who proves who they are once (PUB-057 to PUB-060). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 300
+      "line": 309
     },
     {
       "id": "IAM-Q04",
       "question": "**How does cross-tenant collaboration work, if at all?**",
       "settledBy": "**Settled for now.** Guest principals inside the host tenant, and true cross-tenant sharing deferred until customers' clients become customers themselves. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 301
+      "line": 310
     },
     {
       "id": "IAM-Q05",
       "question": "**What happens to a guest's attribution when their access is revoked?** Their comments and accepted suggestions are part of the audited record of how the document reached its wording, and a name that vanishes from a five-year-old baseline is the failure this specification keeps finding. An erasure request points the other way",
       "settledBy": "Legal advice on where attribution in an audited record sits against a right to erasure, which is a question about the regime rather than about the product",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 302
+      "line": 311
     },
     {
       "id": "IAM-Q06",
       "question": "**Is the same human guesting for three tenants three unrelated principals?** ADR-0008 implies yes, and a shared directory across tenants would be a convenience that quietly crosses the isolation boundary",
       "settledBy": "Whether a guest ever needs to see their work across tenants in one place, which nobody has yet asked for",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 303
+      "line": 312
     },
     {
       "id": "IAM-Q07",
       "question": "**What makes IAM-010 and IAM-035 immediate, and what does the check cost?** Short-lived tokens with refresh, an introspection call per request, or a revocation list each buy immediacy at a different price, and the answer constrains every service the product ever has",
       "settledBy": "An architecture decision, which this one owes and does not yet have. IAM-055 states the property the answer must have",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 304
+      "line": 313
     },
     {
       "id": "IAM-Q08",
       "question": "**How many days is the timetable in IAM-006 and IAM-058?**",
       "settledBy": "**ADM-Q06**, which asks the same question from the administrative end. One clock, one number, one answer",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 305
+      "line": 314
     },
     {
       "id": "IAM-Q09",
       "question": "**May a tenant buy a grace window for an identity provider outage (IAM-064)?** Failing closed is correct and means an outage at the provider is an outage of the product",
       "settledBy": "A customer with an availability expectation that collides with failing closed, and a view on whether that risk is theirs to accept",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 306
+      "line": 315
     },
     {
       "id": "IMP-Q01",
@@ -15171,6 +15180,10 @@
         {
           "id": "CNT-047",
           "howItIsMet": "The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it"
+        },
+        {
+          "id": "IAM-073",
+          "howItIsMet": "Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone"
         }
       ]
     },
