@@ -52,7 +52,9 @@ export const reportMessages = {
     language: 'The text was marked with the language of the component it came from.',
     schemaVersion: 'The content was brought up to date from an earlier version of the format.',
     blockIdentifier:
-      'Blocks and footnotes were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
+      'Blocks, footnotes and cross-references were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
+    crossReferenceTarget:
+      'Cross-references copied with what they refer to were pointed at the copy.',
     markIdentifier: 'Marks were given new identifiers.',
   },
   refused: {

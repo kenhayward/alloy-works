@@ -123,6 +123,59 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it('gives a cross-reference a new identifier, and points one at the copy of what it refers to', () => {
+    const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+    const reference = (id: string, target: unknown) => ({
+      type: 'crossReference',
+      id,
+      target,
+      display: 'number',
+    });
+    const figure = {
+      type: 'figure',
+      id: 'old-figure',
+      asset: 'asset-1',
+      imageStyle: 'column-width',
+      caption: 'Dose',
+      alternative: { kind: 'decorative' },
+    };
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        // The references come before the figure they point at, so pointing them is a second pass.
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'old-figure' }),
+          reference('old-x2', { kind: 'block', block: 'not-copied' }),
+          reference('old-x3', { kind: 'component', component, block: 'old-figure' }),
+        ]),
+        figure,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            // Its block travelled with it, so it points at the copy.
+            reference('n4', { kind: 'block', block: 'n7' }),
+            // Its block did not travel: left as it stands, for resolution to name as missing.
+            reference('n5', { kind: 'block', block: 'not-copied' }),
+            // Another component's block: nothing here renames another component's identifiers.
+            reference('n6', { kind: 'component', component, block: 'old-figure' }),
+          ]),
+          { ...figure, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+    ]);
+  });
+
   it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {
     const { outcome, entries } = run({
       schemaVersion: 1,
