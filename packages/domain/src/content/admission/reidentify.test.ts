@@ -180,6 +180,9 @@ describe('the re-identify stage', () => {
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
       { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+      // The component target isn't counted (nothing here renames another component's
+      // identifiers), so only old-x2 - the untravelled block target - is left standing.
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -251,6 +254,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 4 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -283,6 +287,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -312,6 +317,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 

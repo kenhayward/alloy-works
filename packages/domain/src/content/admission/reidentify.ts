@@ -61,12 +61,15 @@ export function reidentify(
   };
   try {
     const content = mapArray(candidate.content, (block) => reidentifyBlock(block, state));
-    const repointed = repoint(state);
+    const { repointed, leftStanding } = repoint(state);
     if (state.reidentified > 0) {
       report.add('reidentify', 'rewritten', 'blockIdentifier', { count: state.reidentified });
     }
     if (repointed > 0) {
       report.add('reidentify', 'rewritten', 'crossReferenceTarget', { count: repointed });
+    }
+    if (leftStanding > 0) {
+      report.add('reidentify', 'rewritten', 'crossReferenceUnresolved', { count: leftStanding });
     }
     if (state.marks.size > 0) {
       report.add('reidentify', 'rewritten', 'markIdentifier', { count: state.marks.size });
@@ -121,20 +124,25 @@ function recordRenamed(state: State, from: string, to: string): void {
  * so a figure pasted with the sentence citing it is cited by the copy of that sentence. The second
  * pass, because a reference can come before the block it names. A reference whose block did not
  * travel, or whose old identifier is ambiguous, is left as it stands - resolution names it as missing
- * (STR-029) - and so is one naming another component's block, whose identifiers nothing here renames.
- * Returns how many were pointed.
+ * (STR-029) - and so is one naming another component's block, whose identifiers nothing here renames
+ * and which this count leaves out. Returns how many were pointed at a copy, and how many `block`
+ * targets were left standing instead, so the author is told here rather than only at resolution.
  */
-function repoint(state: State): number {
-  let count = 0;
+function repoint(state: State): { repointed: number; leftStanding: number } {
+  let repointed = 0;
+  let leftStanding = 0;
   for (const reference of state.references) {
     const target = asRecord(reference.target);
     if (target?.kind !== 'block' || typeof target.block !== 'string') continue;
     const block = state.renamed.get(target.block);
-    if (block === undefined) continue;
+    if (block === undefined) {
+      leftStanding += 1;
+      continue;
+    }
     reference.target = { ...target, block };
-    count += 1;
+    repointed += 1;
   }
-  return count;
+  return { repointed, leftStanding };
 }
 
 /**

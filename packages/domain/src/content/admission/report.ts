@@ -55,6 +55,8 @@ export const reportMessages = {
       'Blocks, footnotes and cross-references were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
     crossReferenceTarget:
       'Cross-references copied with what they refer to were pointed at the copy.',
+    crossReferenceUnresolved:
+      'Cross-references whose target did not arrive, or arrived more than once, were left as they stand.',
     markIdentifier: 'Marks were given new identifiers.',
   },
   refused: {
