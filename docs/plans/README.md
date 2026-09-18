@@ -75,10 +75,11 @@ This is the first tranche T1 work. The tranche is designed and built one subsyst
 than designed whole: a plan written two subsystems early is rewritten when its turn comes, and so is a
 design.
 
-| #   | Plan                                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                      | Status          |
-| --- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md)  | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface                                                                    | Built (PR #79)  |
-| 2   | [The admission pipeline](2026-09-15-content-model-02-the-admission-pipeline.md) | `packages/domain/src/content/admission/`: the report every stage appends to, the limits one admission is held to, a strict MathML reader keeping MathML Core that validation also asks of every stored equation, then sanitise, migrate, normalise, re-identify and validate in that order behind `admit`, and the product clipboard's reader and writer. No Word, Markdown or HTML reader, no editor, no route, no storage | Built (PR #104) |
+| #   | Plan                                                                                            | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Status          |
+| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1   | [The schema and its canonical form](2026-09-13-content-model-01-the-schema.md)                  | `packages/domain/src/content/model/`: thirteen closed marks, eight inline nodes, seven blocks, the root a version holds, the canonical serialisation `content_hash` rests on, migration as a read-time projection with a fixture per schema version, the output mapping every node must have a row in, and the promotion to the package's public surface                                                                                                                                                                                                                                     | Built (PR #79)  |
+| 2   | [The admission pipeline](2026-09-15-content-model-02-the-admission-pipeline.md)                 | `packages/domain/src/content/admission/`: the report every stage appends to, the limits one admission is held to, a strict MathML reader keeping MathML Core that validation also asks of every stored equation, then sanitise, migrate, normalise, re-identify and validate in that order behind `admit`, and the product clipboard's reader and writer. No Word, Markdown or HTML reader, no editor, no route, no storage                                                                                                                                                                  | Built (PR #104) |
+| 3   | [Footnotes and cross-references](2026-09-18-content-model-03-footnotes-and-cross-references.md) | In `packages/domain`, at content schema version 1 and in place: every identifier in a component unique, footnotes included (issue #122); a footnote holding no image and no footnote; a cross-reference with an identifier of its own, a closed target union of `block`, `component` and `node`, each held to where it may stand, and STR-055's `withoutPages`; re-identify giving a copied reference a new identifier and pointing it at the copy of what travelled with it; the contract regenerated. And STR-062, issue #73 reworded. No resolution, no numbering, nothing authors either | Built (PR #128) |
 
 **Plan 1 is built.** The stored shape exists, 39 requirements are cited by its tests and
 `docs/architecture.md` describes it as built rather than planned. What that is not: a schema that
@@ -112,6 +113,39 @@ axes and decides the question; when the pipeline needs streaming (CMD-Q03) and w
 limits hold, for IMP's first real import; import as a product feature - IMP-047's report, an import
 route and a component split from a document - for IMP's design; and retiring the spike schema and its
 gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
+
+**Plan 3 is built.** Every identifier in a component - a block's, a footnote's, a footnote
+paragraph's and a cross-reference's - is unique within it (issue #122), and a section title holds
+its own to the same rule; a footnote holds no image and no footnote (issue #123), and is stored as
+the parse reads it, so two spellings of one are one digest (issue #124); a cross-reference carries
+an identifier of its own, a closed target union of `block`, `component` and `node`, each held to
+where it may stand, and STR-055's `withoutPages`; and re-identify gives a copied reference a new
+identifier and points it at the copy of what travelled with it, leaving one whose block did not
+travel, or arrived twice, as it stands - counted in the report where the receiving component does
+not hold its target - and allocates nothing a reference in the receiving component or the paste
+still names. Every identifier, and the block a target names, is in NFC; two adjacent empty
+paragraphs are refused in a footnote and a table cell as everywhere else; and a section title's
+reference shows a number or a page, never a title that could loop. All of it is at content schema
+version 1 and in place, on the evidence of a read-only query that nothing stored held either
+construct. STR-062 landed from issue #73, reworded from identifying a target by the pair of
+occurrence and block to resolving against exactly one occurrence, because a component does not know
+where it is placed; it and STR-056 are claimed by structure.md and cited by nothing until numbering
+resolves a target. What that is not: nothing authors a footnote or a cross-reference, and nothing
+resolves one.
+
+What plan 3 deliberately leaves, named so the next plan starts from a list rather than from a
+reading of the diff: resolving a target and the named failure, for the numbering plan; checking a
+`component` target at write, and pasting a cross-reference between components - where a `block`
+target whose block did not travel resolves in the receiver - for the plan that first authors a
+cross-reference; a component's reference to a section, which with the missing entry arm is why
+STR-026 is not claimed; saying which of several occurrences a `component` target means, for a later
+structure plan; a bibliography entry as a target, for LIB; bounding a block tree's depth on every
+write path (issue #125), a small content-model fix; refusing a NUL or a lone surrogate in a
+component's content rather than answering `500` (issue #127); and cleaning up after an interrupted
+database test run (issue #126). A footnote admits the `condition`, `language`, `comment` and
+`suggestion` marks, which CNT-129's closed list does not name, because they annotate text rather
+than add content - a ruling made while building, and a walk rule to add before footnotes are
+writable if it is wrong.
 
 ## Metadata
 
@@ -234,7 +268,7 @@ component.
 The document, its outline, and everything positional computed over it, designed in
 [structure.md](../design/structure.md). It comes after the editor's first two slices, because a
 document's outline points at components and a component nobody can make is an outline nobody can
-fill. The design claims forty requirements and is built in slices: the document and its outline
+fill. The design claims forty-one requirements and is built in slices: the document and its outline
 first, because numbering, captions, cross-references and the contents panel are each a pure function
 over a tree that has to exist before any of them can be written.
 

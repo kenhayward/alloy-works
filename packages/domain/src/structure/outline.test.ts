@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { contentDocumentSchema } from '../content/model/document.js';
+import { crossReferenceTargetSchema } from '../content/model/inline.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseVersion, canonicaliseVersionContent } from '../version/substance.js';
 
@@ -28,6 +29,7 @@ const OTHER = 'b'.repeat(26);
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 
 const fixtures = join(import.meta.dirname, 'fixtures');
+const contentFixtures = join(import.meta.dirname, '..', 'content', 'model', 'fixtures');
 
 /** What this file reads off each arm of `outlineNodeSchema` - the shape, never which schemas fill it. */
 type OutlineNodeArm = {
@@ -272,11 +274,13 @@ describe('the outline a document version holds', () => {
     const types = new Set<string>();
     const modes = new Set<string>();
     const breaks = new Set<string>();
+    const inTitles = new Set<string>();
     const walk = (nodes: readonly OutlineNode[]) => {
       for (const node of nodes) {
         types.add(node.type);
         breaks.add(node.pageBreak);
         if (node.type === 'reference') modes.add(node.mode.kind);
+        if (node.type === 'section') for (const inline of node.title) inTitles.add(inline.type);
         walk(node.children);
       }
     };
@@ -290,6 +294,28 @@ describe('the outline a document version holds', () => {
     expect([...types].sort()).toEqual([...expectedTypes].sort());
     expect([...modes].sort()).toEqual([...expectedModes].sort());
     expect([...breaks].sort()).toEqual([...expectedBreaks].sort());
+    // A title's footnote and cross-reference, so a migration of either is tested against one stored
+    // where a title holds it.
+    expect([...inTitles].sort()).toEqual(['crossReference', 'footnote', 'text']);
+    // Every kind of target stored somewhere: a title holds the `node` kind and a component the rest,
+    // so the two every-node fixtures between them hold the union, read from the schema rather than
+    // listed here - a fourth kind added and forgotten fails this.
+    const targetKinds = new Set<string>();
+    const collect = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(collect);
+      if (typeof value !== 'object' || value === null) return;
+      const record = value as Record<string, unknown>;
+      if (record.type === 'crossReference') {
+        targetKinds.add((record.target as { kind: string }).kind);
+      }
+      Object.values(record).forEach(collect);
+    };
+    collect(every);
+    collect(JSON.parse(readFileSync(join(contentFixtures, 'v1', 'every-node.json'), 'utf8')));
+    const expectedKinds = crossReferenceTargetSchema.options.map(
+      (option) => option.shape.kind.value,
+    );
+    expect([...targetKinds].sort()).toEqual([...expectedKinds].sort());
   });
 
   it('composes a node member by member, and closes over every member the schema declares', () => {
@@ -356,7 +382,7 @@ describe('a section title, under the content model rules', () => {
       parseOutlineDocument(titled([words, footnote([{ script: '<x>' }, 42])])),
     ).toThrow();
     expect(() => parseOutlineDocument(titled([words, footnote([])]))).toThrow();
-    // Nested: a footnote inside a footnote's paragraph is held to the same rule.
+    // Nested: a footnote inside a footnote is refused outright.
     expect(() =>
       parseOutlineDocument(
         titled([words, footnote([{ ...paragraph, content: [footnote([{ table: true }])] }])]),
@@ -365,6 +391,107 @@ describe('a section title, under the content model rules', () => {
     // What the content model admits in a heading, the outline admits too.
     const parsed = parseOutlineDocument(titled([words, footnote([paragraph])]));
     expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
+  });
+
+  it('lets a cross-reference in a title target an outline node, and nothing a title cannot show', () => {
+    const reference = (id: string, target: unknown) => ({
+      type: 'crossReference',
+      id,
+      target,
+      display: 'number',
+    });
+    const toNode = { kind: 'node', node: OTHER };
+    expect(() => parseOutlineDocument(titled([words, reference('x1', toNode)]))).not.toThrow();
+    // A block of "its own" component: a title is in no component.
+    expect(() =>
+      parseOutlineDocument(titled([words, reference('x1', { kind: 'block', block: 'b2' })])),
+    ).toThrow(/content model refuses/);
+    // Another component's block: an outline is answered with a component the reader may not read
+    // withheld, and a title's reference would carry its identity past that (decision E).
+    expect(() =>
+      parseOutlineDocument(
+        titled([words, reference('x1', { kind: 'component', component: COMPONENT, block: 'b2' })]),
+      ),
+    ).toThrow(/content model refuses/);
+    // And its identifier is unique within the title.
+    expect(() =>
+      parseOutlineDocument(titled([words, reference('x1', toNode), reference('x1', toNode)])),
+    ).toThrow(/content model refuses/);
+  });
+
+  it('lets a reference in a title show a number or a page, and never a title, so no title can loop', () => {
+    const shown = (display: string, withoutPages?: string) => ({
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'node', node: OTHER },
+      display,
+      ...(withoutPages === undefined ? {} : { withoutPages }),
+    });
+    for (const reference of [shown('number'), shown('page'), shown('page', 'number')]) {
+      expect(() => parseOutlineDocument(titled([words, reference]))).not.toThrow();
+    }
+    // Resolving a title that shows a title resolves that title: a node naming itself, or two titles
+    // naming each other, would never finish. And a page reference falls back, where there are no
+    // pages, to the form it declares - so that form is held to the same rule.
+    for (const reference of [
+      shown('title'),
+      shown('numberAndTitle'),
+      shown('relative'),
+      shown('page', 'title'),
+      shown('page', 'numberAndTitle'),
+    ]) {
+      expect(() => parseOutlineDocument(titled([words, reference]))).toThrow(
+        /content model refuses/,
+      );
+    }
+  });
+
+  it('holds a footnote in a title as parsed, so its defaults spelled out or omitted give one string', () => {
+    const spelled = parseOutlineDocument(titled([words, footnote([paragraph])]));
+    const omitted = parseOutlineDocument(
+      titled([
+        words,
+        footnote([
+          {
+            type: 'paragraph',
+            id: 'p1',
+            content: [{ type: 'text', value: 'Measured at the bench.' }],
+          },
+        ]),
+      ]),
+    );
+    expect(omitted).toEqual(spelled);
+    expect(canonicaliseOutline(omitted)).toBe(canonicaliseOutline(spelled));
+  });
+
+  it('keeps every identifier inside a title unique within that title, as a component keeps its own', () => {
+    const second = { ...footnote([{ ...paragraph, id: 'p2' }]), id: 'f2' };
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([paragraph]), second])),
+    ).not.toThrow();
+    // Two footnotes sharing an identifier, and a footnote's paragraph sharing its footnote's.
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([paragraph]), { ...second, id: 'f1' }])),
+    ).toThrow(/content model refuses/);
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([{ ...paragraph, id: 'f1' }])])),
+    ).toThrow(/content model refuses/);
+    // An identifier not in NFC, which the canonical form would fold into its composed spelling.
+    expect(() =>
+      parseOutlineDocument(titled([words, { ...footnote([paragraph]), id: 'café' }])),
+    ).toThrow(/content model refuses/);
+    // Two sections are two titles: the same footnote identifier in each is not a collision, because
+    // anything in a title is reached through its node, as anything in a component is through its
+    // occurrence.
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [
+          section(NODE, { title: [words, footnote([paragraph])] }),
+          section(OTHER, { title: [words, footnote([paragraph])] }),
+        ],
+      }),
+    ).not.toThrow();
   });
 });
 

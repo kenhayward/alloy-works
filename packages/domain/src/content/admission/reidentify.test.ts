@@ -40,6 +40,26 @@ const paragraph = (id: string | undefined, content: unknown[]) => ({
   style: 'body',
   content,
 });
+const reference = (id: string, target: unknown) => ({
+  type: 'crossReference',
+  id,
+  target,
+  display: 'number',
+});
+const figure = (id: string, asset: string, caption: string) => ({
+  type: 'figure',
+  id,
+  asset,
+  imageStyle: 'column-width',
+  caption,
+  alternative: { kind: 'decorative' },
+});
+const footnote = (id: string, content: unknown[]) => ({
+  type: 'footnote',
+  id,
+  anchor: { kind: 'span' },
+  content,
+});
 
 const run = (candidate: Record<string, unknown>, to: Receiver = receiver()) => {
   const report = createReport();
@@ -120,6 +140,249 @@ describe('the re-identify stage', () => {
     // fixture carries a mark, so no markIdentifier entry is reported.
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 8 },
+    ]);
+  });
+
+  it('gives a cross-reference a new identifier, and points one at the copy of what it refers to', () => {
+    const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        // The references come before the figure they point at, so pointing them is a second pass.
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'old-figure' }),
+          reference('old-x2', { kind: 'block', block: 'not-copied' }),
+          reference('old-x3', { kind: 'component', component, block: 'old-figure' }),
+        ]),
+        dose,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            // Its block travelled with it, so it points at the copy.
+            reference('n4', { kind: 'block', block: 'n7' }),
+            // Its block did not travel: left as it stands, for resolution to name as missing.
+            reference('n5', { kind: 'block', block: 'not-copied' }),
+            // Another component's block: nothing here renames another component's identifiers.
+            reference('n6', { kind: 'component', component, block: 'old-figure' }),
+          ]),
+          { ...dose, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+      // The component target isn't counted (nothing here renames another component's
+      // identifiers), so only old-x2 - the untravelled block target - is left standing.
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+    ]);
+  });
+
+  it('points a reference inside a footnote at a copy travelling in the body, and the reverse', () => {
+    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          footnote('old-note', [
+            // A reference inside a footnote, naming a block that travels in the body.
+            paragraph('old-note-paragraph', [
+              reference('old-x1', { kind: 'block', block: 'old-figure' }),
+            ]),
+          ]),
+        ]),
+        dose,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            footnote('n4', [paragraph('n5', [reference('n6', { kind: 'block', block: 'n7' })])]),
+          ]),
+          { ...dose, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+    ]);
+  });
+
+  it('does not repoint a reference to an identifier that arrived on two blocks, leaving it to resolve as missing', () => {
+    const one = figure('fig', 'asset-1', 'One');
+    const two = figure('fig', 'asset-2', 'Two');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'fig' }),
+        ]),
+        one,
+        two,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            // Ambiguous - two blocks arrived with the same old identifier - so it is left standing
+            // rather than guessed, exactly as an untravelled target is (decision F).
+            reference('n4', { kind: 'block', block: 'fig' }),
+          ]),
+          { ...one, id: 'n5' },
+          { ...two, id: 'n6' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 4 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+    ]);
+  });
+
+  it('does not repoint a reference to an identifier a footnote and a block both arrived with', () => {
+    const dose = figure('fig', 'asset-1', 'Dose');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'fig' }),
+          footnote('fig', [paragraph('old-note-paragraph', [text('Note')])]),
+        ]),
+        dose,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            reference('n4', { kind: 'block', block: 'fig' }),
+            footnote('n5', [paragraph('n6', [text('Note')])]),
+          ]),
+          { ...dose, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+    ]);
+  });
+
+  it('never allocates an identifier equal to a target a reference still names, so a coincidence cannot silently repoint it', () => {
+    const offered = ['not-copied', 'n9', 'n10'];
+    let next = 0;
+    const { outcome, entries } = run(
+      {
+        schemaVersion: 1,
+        content: [
+          paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block: 'not-copied' })]),
+        ],
+      },
+      receiver({ newIdentifier: () => offered[next++] ?? `spare${next}` }),
+    );
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          // Without the reservation, the paragraph would have been allocated 'not-copied' itself -
+          // the very string its own reference still names - silently making the reference point at
+          // an unrelated block that happens to share that new identifier.
+          paragraph('n9', [reference('n10', { kind: 'block', block: 'not-copied' })]),
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+    ]);
+  });
+
+  it('never allocates an identifier the receiving component still names in a reference, though its block is gone', () => {
+    // The receiver's own sentence cites a figure since deleted: n3, as the counter would draw next.
+    const citing: ContentDocument = {
+      ...document,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'n1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'See ', marks: [{ type: 'strong', id: 'n2' }] },
+            {
+              type: 'crossReference',
+              id: 'r1',
+              target: { kind: 'block', block: 'n3' },
+              display: 'number',
+            },
+          ],
+        },
+      ],
+    };
+    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const { outcome } = run({ schemaVersion: 1, content: [dose] }, receiver({ document: citing }));
+    // Given n3, the pasted figure would silently become what the receiver's reference resolves to.
+    expect(outcome).toEqual({
+      ok: true,
+      value: { schemaVersion: 1, content: [{ ...dose, id: 'n4' }] },
+    });
+  });
+
+  it('says nothing of a reference left standing whose target the receiving component holds', () => {
+    // A sentence copied within one component: the figure it cites stayed where it was, so the copy
+    // resolves exactly as the original does, and telling the author it did not arrive would be false.
+    const holding: ContentDocument = {
+      ...document,
+      content: [
+        ...document.content,
+        {
+          type: 'figure',
+          id: 'fig',
+          asset: 'asset-1',
+          imageStyle: 'column-width',
+          caption: 'Dose',
+          alternative: { kind: 'decorative' },
+        },
+      ],
+    };
+    const copied = (block: string) =>
+      run(
+        {
+          schemaVersion: 1,
+          content: [paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block })])],
+        },
+        receiver({ document: holding }),
+      ).entries;
+    expect(copied('fig')).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+    ]);
+    // Held by the receiver as something else - a mark's identifier - is not held as a target.
+    expect(copied('n2')).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 

@@ -1962,9 +1962,25 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 type: "crossReference";
-                                target: string;
+                                id: string;
+                                target: {
+                                    /** @constant */
+                                    kind: "block";
+                                    block: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "component";
+                                    component: string;
+                                    block: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "node";
+                                    node: string;
+                                };
                                 /** @enum {string} */
                                 display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                                /** @enum {string} */
+                                withoutPages?: "number" | "title" | "numberAndTitle";
                             } | {
                                 /** @constant */
                                 type: "citation";
@@ -2122,9 +2138,25 @@ export interface operations {
                         } | {
                             /** @constant */
                             type: "crossReference";
-                            target: string;
+                            id: string;
+                            target: {
+                                /** @constant */
+                                kind: "block";
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "component";
+                                component: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "node";
+                                node: string;
+                            };
                             /** @enum {string} */
                             display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                            /** @enum {string} */
+                            withoutPages?: "number" | "title" | "numberAndTitle";
                         } | {
                             /** @constant */
                             type: "citation";

@@ -72,10 +72,74 @@ describe('the content document', () => {
     expect(() => parseContentDocument(doc([paragraph('b1'), paragraph('b1')]))).toThrow(/b1/);
   });
 
+  it('CNT-002 keeps a block identifier unique across the whole component, footnotes included', () => {
+    const noted = (id: string, footnoteId: string, inner: string) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Measured at noon.', marks: [] },
+        {
+          type: 'footnote',
+          id: footnoteId,
+          anchor: { kind: 'span' },
+          content: [paragraph(inner, 'Local time.')],
+        },
+      ],
+    });
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f2', 'fb2')])),
+    ).not.toThrow();
+    // A footnote's paragraph with a body paragraph's identifier - issue #122's own case.
+    expect(() => parseContentDocument(doc([noted('b1', 'f1', 'b1')]))).toThrow(/b1/);
+    // Two footnotes' paragraphs sharing one.
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f2', 'fb1')])),
+    ).toThrow(/fb1/);
+    // A footnote with a block's, which a reference to either would then name twice (STR-026).
+    expect(() => parseContentDocument(doc([noted('b1', 'b2', 'fb1'), paragraph('b2')]))).toThrow(
+      /b2/,
+    );
+    // Two footnotes sharing one.
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f1', 'fb2')])),
+    ).toThrow(/f1/);
+  });
+
   it('CNT-023 refuses two adjacent empty paragraphs, and admits one', () => {
     const empty = { type: 'paragraph', id: 'b1', style: 'body', content: [] };
     expect(parseContentDocument(doc([empty])).content).toHaveLength(1);
     expect(() => parseContentDocument(doc([empty, { ...empty, id: 'b2' }]))).toThrow(/adjacent/);
+  });
+
+  it('refuses two adjacent empty paragraphs in a footnote and in a table cell, as admission removes them', () => {
+    const empty = (id: string) => ({ type: 'paragraph', id, style: 'body', content: [] });
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Dose', marks: [] },
+        { type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content },
+      ],
+    });
+    const tabling = (content: unknown[]) => ({
+      type: 'table',
+      id: 't1',
+      caption: 'Doses',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
+    });
+    // One empty paragraph is where a cursor stands, in either place; two are spacing.
+    expect(() => parseContentDocument(doc([noting([empty('fb1')])]))).not.toThrow();
+    expect(() => parseContentDocument(doc([tabling([empty('c1')])]))).not.toThrow();
+    expect(() => parseContentDocument(doc([noting([empty('fb1'), empty('fb2')])]))).toThrow(
+      /adjacent/,
+    );
+    expect(() => parseContentDocument(doc([tabling([empty('c1'), empty('c2')])]))).toThrow(
+      /adjacent/,
+    );
   });
 
   it('CNT-117 supports three list kinds, and CNT-119 puts start and format on an ordered one', () => {
@@ -157,19 +221,146 @@ describe('the content document', () => {
     });
   });
 
-  it('CNT-129 admits no table and no image inside a footnote', () => {
-    const withTable = paragraph('b9');
-    withTable.content = [
+  it('CNT-129 admits no table and no image inside a footnote, and nothing outside its closed list', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b9',
+      style: 'body',
+      content: [{ type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content }],
+    });
+    const note = (inline: unknown) => ({
+      type: 'paragraph',
+      id: 'fb1',
+      style: 'footnote',
+      content: [{ type: 'text', value: 'See the appendix.', marks: [] }, inline],
+    });
+    const table = {
+      type: 'table',
+      id: 'b10',
+      caption: 'x',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [],
+    };
+    const image = {
+      type: 'image',
+      asset: 'asset-1',
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' },
+    };
+    const nested = {
+      type: 'footnote',
+      id: 'f2',
+      anchor: { kind: 'span' },
+      content: [paragraph('fb2')],
+    };
+    // A table in place of a paragraph; an image, and a footnote, inside a footnote's paragraph.
+    expect(() => parseContentDocument(doc([noting([table])]))).toThrow();
+    expect(() => parseContentDocument(doc([noting([note(image)])]))).toThrow(/may not: image/);
+    expect(() => parseContentDocument(doc([noting([note(nested)])]))).toThrow(/may not: footnote/);
+    // What the list does admit: a citation, an equation, a variable and a binding.
+    for (const inline of [
+      { type: 'citation', entry: 'bib-1' },
+      { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
+      { type: 'variable', name: 'productName' },
+      { type: 'binding', query: 'query-1' },
+    ]) {
+      expect(() => parseContentDocument(doc([noting([note(inline)])]))).not.toThrow();
+    }
+  });
+});
+
+describe('a cross-reference, where a component holds one', () => {
+  const COMPONENT = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+  const reference = (id: string, target: unknown) => ({
+    type: 'crossReference',
+    id,
+    target,
+    display: 'number',
+  });
+  const citing = (id: string, inlines: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content: [{ type: 'text', value: 'See ', marks: [] }, ...inlines],
+  });
+
+  it('keeps its identifier unique in the component, beside every block and footnote', () => {
+    const own = { kind: 'block', block: 'b2' };
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference('x1', own), reference('x2', own)]), paragraph('b2')]),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(doc([citing('b1', [reference('x1', own), reference('x1', own)])])),
+    ).toThrow(/x1/);
+    expect(() =>
+      parseContentDocument(doc([citing('b1', [reference('b2', own)]), paragraph('b2')])),
+    ).toThrow(/b2/);
+    // Inside a footnote, too: the walk that claims a footnote's paragraphs claims what they hold.
+    const noted = citing('b1', [
       {
         type: 'footnote',
         id: 'f1',
         anchor: { kind: 'span' },
-        content: [
-          { type: 'table', id: 'b10', caption: 'x', headerRows: 0, headerColumns: 0, rows: [] },
-        ],
+        content: [{ ...citing('fb1', [reference('x1', own)]), style: 'footnote' }],
       },
-    ] as never;
-    expect(() => parseContentDocument(doc([withTable]))).toThrow();
+      reference('x1', own),
+    ]);
+    expect(() => parseContentDocument(doc([noted, paragraph('b2')]))).toThrow(/x1/);
+  });
+
+  it('refuses an identifier or a target not already in NFC, which the digest would fold into another', () => {
+    // One identifier, spelled composed and decomposed. The canonical form writes every string in NFC,
+    // so both would be stored as one, while the parse compared them as two.
+    const composed = 'café';
+    const decomposed = 'café';
+    const noted = (id: string) => ({
+      type: 'footnote',
+      id,
+      anchor: { kind: 'span' },
+      content: [paragraph('fb1')],
+    });
+    expect(() =>
+      parseContentDocument(
+        doc([citing(composed, [reference('x1', { kind: 'block', block: composed }), noted('f1')])]),
+      ),
+    ).not.toThrow();
+    // A block's, a footnote's and a cross-reference's identifier.
+    expect(() => parseContentDocument(doc([paragraph(decomposed)]))).toThrow(/NFC/);
+    expect(() => parseContentDocument(doc([citing('b1', [noted(decomposed)])]))).toThrow(/NFC/);
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference(decomposed, { kind: 'block', block: 'b1' })])]),
+      ),
+    ).toThrow(/NFC/);
+    // And the block a target names, of this component or of another.
+    for (const target of [
+      { kind: 'block', block: decomposed },
+      { kind: 'component', component: COMPONENT, block: decomposed },
+    ]) {
+      expect(() => parseContentDocument(doc([citing('b1', [reference('x1', target)])]))).toThrow(
+        /NFC/,
+      );
+    }
+  });
+
+  it('reaches a block of its own component or of another, and never an outline node', () => {
+    for (const target of [
+      { kind: 'block', block: 'b2' },
+      { kind: 'component', component: COMPONENT, block: 'b2' },
+    ]) {
+      expect(() =>
+        parseContentDocument(doc([citing('b1', [reference('x1', target)]), paragraph('b2')])),
+      ).not.toThrow();
+    }
+    // A node belongs to one document's outline, and a component is used in many.
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference('x1', { kind: 'node', node: 'a'.repeat(26) })])]),
+      ),
+    ).toThrow(/outline node/);
   });
 });
 

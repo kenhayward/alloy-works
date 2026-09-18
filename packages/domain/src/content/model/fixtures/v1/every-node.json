@@ -92,20 +92,30 @@
               "content": [
                 {
                   "type": "text",
-                  "value": "A note on the span, with a decorative image ",
+                  "value": "A note on the span.",
                   "marks": []
-                },
-                {
-                  "type": "image",
-                  "asset": "asset-2",
-                  "imageStyle": "inline",
-                  "alternative": { "kind": "decorative" }
                 }
               ]
             }
           ]
         },
-        { "type": "crossReference", "target": "b4", "display": "numberAndTitle" },
+        {
+          "type": "crossReference",
+          "id": "x1",
+          "target": { "kind": "block", "block": "b4" },
+          "display": "page",
+          "withoutPages": "numberAndTitle"
+        },
+        {
+          "type": "crossReference",
+          "id": "x2",
+          "target": {
+            "kind": "component",
+            "component": "7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27",
+            "block": "b1"
+          },
+          "display": "number"
+        },
         { "type": "citation", "entry": "bib-1", "locator": "p. 12" },
         { "type": "variable", "name": "productName" },
         { "type": "binding", "query": "query-1" },

@@ -80,17 +80,17 @@ generated types when the page is next touched.
 shape and none of the product on top: nothing authors content, stores it, admits it from another
 format or publishes it.
 
-| File            | Holds                                                                                              |
-| --------------- | -------------------------------------------------------------------------------------------------- |
-| `marks.ts`      | Thirteen marks, and the set is closed. Each carries an identifier and no appearance                |
-| `inline.ts`     | Eight inline nodes, and the three-state alternative a figure or an image carries                   |
-| `blocks.ts`     | Seven blocks, and the restricted sequence a footnote's content is                                  |
-| `document.ts`   | The root a version holds, and `parseContentDocument` - the one way a document is constructed       |
-| `identifier.ts` | `blockIdentifierFrom`: 128 bits as 26 lower-case base32 characters, over bytes the caller supplies |
-| `canonical.ts`  | `canonicalise`, whose output is what a caller hashes into `content_hash`                           |
-| `migrate.ts`    | The migration chain, applied on read, and the quarantine for content that will not parse           |
-| `mapping.ts`    | One row per node and per mark, naming what it becomes in Word and in tagged PDF                    |
-| `fixtures/v1/`  | Stored content at schema version 1, never deleted                                                  |
+| File            | Holds                                                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `marks.ts`      | Thirteen marks, and the set is closed. Each carries an identifier and no appearance                                                                   |
+| `inline.ts`     | Eight inline nodes, a cross-reference's closed target union, and the three-state alternative a figure or an image carries                             |
+| `blocks.ts`     | Seven blocks, and the restricted sequence a footnote's content is                                                                                     |
+| `document.ts`   | The root a version holds, and `parseContentDocument` - the one way a document is constructed                                                          |
+| `identifier.ts` | `blockIdentifierFrom`, over bytes the caller supplies, and the two identifier spellings a cross-reference names - an outline node's and an artifact's |
+| `canonical.ts`  | `canonicalise`, whose output is what a caller hashes into `content_hash`                                                                              |
+| `migrate.ts`    | The migration chain, applied on read, and the quarantine for content that will not parse                                                              |
+| `mapping.ts`    | One row per node and per mark, naming what it becomes in Word and in tagged PDF                                                                       |
+| `fixtures/v1/`  | Stored content at schema version 1, never deleted                                                                                                     |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -98,10 +98,22 @@ format or publishes it.
 against, its own title, its base language, its base direction, and its blocks. Adding a member is a
 schema version with a migration and a fixture, not a configuration option.
 
-**Every document goes through `parseContentDocument`.** Three rules live there rather than in the
-schema, because each is a property of a document rather than of a node: block identifiers are unique
-within the component, two adjacent empty paragraphs are refused while one is admitted, and a
-footnote's content is paragraphs only.
+**Every document goes through `parseContentDocument`.** Four rules live there rather than in the
+schema, because each is a property of a document rather than of a node: every block's, footnote's
+and cross-reference's identifier, a footnote's paragraphs included, is unique within the component;
+two adjacent empty paragraphs are refused while one is admitted; a footnote's content is paragraphs
+holding no image and no footnote; and a cross-reference in a component never targets an outline node.
+The identifiers, the footnote's list and where a cross-reference may point are checked in one walk
+over inline content, `checkInlineContent`, sharing one set of claimed identifiers with the walk over
+the blocks; adjacency is checked in every sequence of blocks either reaches - the top level, a list
+item, a blockquote, a table cell and a footnote - as admission's normalise collapses it in each. A
+section title runs the same walk, where a cross-reference targets an outline node and nothing else,
+and shows a number or a page, never a title, so resolving a title cannot loop. A footnote's
+paragraphs hold no footnote, so the walk descends one footnote deep and stops. The walk returns what
+it parsed - a footnote's paragraphs with the defaults the parse fills in everywhere else - and that
+is what is stored and digested, in a component and in a section title alike, so two spellings of one
+footnote are one version. Every identifier the walk claims, and the block a target names, is refused
+unless it is already in NFC, the form the digest is taken over.
 
 **Migration is a read-time projection and never a rewrite.** Version rows take inserts only and
 `content_hash` is the hash of what was written, so migrating stored content would either invalidate
@@ -144,17 +156,17 @@ paste, a copy from another component, and later an import - designed in
 editor that pastes through it, and the readers of Word, Markdown and HTML that will feed it, are later
 plans.
 
-| File            | Holds                                                                                                                                               |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `report.ts`     | The entries every stage appends, with fixed messages; what arrived travels in `detail`, never in a message                                          |
-| `limits.ts`     | The provisional limits one admission is held to, measured without recursion before any stage walks the content                                      |
-| `mathml.ts`     | A strict reader of an equation's MathML, an allowlist of MathML Core, the one form it is written back in, and the check validation makes against it |
-| `sanitise.ts`   | Scripts, embedded objects, event handlers, links whose scheme is not allowlisted, executable formatting, MathML                                     |
-| `migrate.ts`    | Content at an earlier schema version brought to current through content's own chain, or refused                                                     |
-| `normalise.ts`  | Formatting dropped, NFC, empty runs and adjacent empty paragraphs removed, the source's language kept as a mark                                     |
-| `reidentify.ts` | A new identifier for every block, footnote and mark; comments, suggestions and conditions without an axis dropped                                   |
-| `admit.ts`      | The stages in order, validation last, and the outcome: blocks and the report, or a named refusal and the report                                     |
-| `clipboard.ts`  | The product's own clipboard format, written on copy and read on paste                                                                               |
+| File            | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `report.ts`     | The entries every stage appends, with fixed messages; what arrived travels in `detail`, never in a message                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `limits.ts`     | The provisional limits one admission is held to, measured without recursion before any stage walks the content                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `mathml.ts`     | A strict reader of an equation's MathML, an allowlist of MathML Core, the one form it is written back in, and the check validation makes against it                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `sanitise.ts`   | Scripts, embedded objects, event handlers, links whose scheme is not allowlisted, executable formatting, MathML                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `migrate.ts`    | Content at an earlier schema version brought to current through content's own chain, or refused                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `normalise.ts`  | Formatting dropped, NFC, empty runs and adjacent empty paragraphs removed, the source's language kept as a mark                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `reidentify.ts` | A new identifier for every block, footnote, cross-reference and mark, a copied cross-reference pointed at the copy of a block that travelled with it - and left as it stands where its block did not travel or where the block's old identifier arrived on two blocks in one paste, which makes it ambiguous, counted in the report as kept where the receiving component does not hold its target; nothing allocated that the receiver or the paste already names, as an identifier or a `block` target; comments, suggestions and conditions without an axis dropped |
+| `admit.ts`      | The stages in order, validation last, and the outcome: blocks and the report, or a named refusal and the report                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `clipboard.ts`  | The product's own clipboard format, written on copy and read on paste                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -435,7 +447,7 @@ document view; a component is still opened on its own to be edited.
 | `db: migrations/tenant/0016_documents`                    | The three widened checks, above, and the one deferred constraint set immediate and back so they apply on a fresh environment                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `db: src/documents.ts`                                    | `createDocument` at `0.1` with an empty outline, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies one operation to the version the caller opened from and records it through `recordVersion`                                                                                                                                                                                                                                                                                                  |
 | `db: src/readable-artifacts.ts`                           | The readable-set predicate every listing of content filters through inside its query - components and documents alike                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `api-contract: documents.ts`                              | `GET /v1/documents`, `POST /v1/spaces/{space}/documents`, `GET /v1/documents/{id}` and `POST /v1/documents/{id}/outline`, and their schemas; the operation's schema is the domain's                                                                                                                                                                                                                                                                                                                                                                                       |
+| `api-contract: documents.ts`                              | `GET /v1/documents`, `POST /v1/spaces/{space}/documents`, `GET /v1/documents/{id}` and `POST /v1/documents/{id}/outline`, and their schemas; the operation's schema is the domain's, and the service validates a body with it, so what `openapi.json` cannot express - that only a page reference carries `withoutPages`, and that a title's cross-reference targets an outline node alone - is refused at runtime as `invalid_request`                                                                                                                                   |
 | `service: src/documents.ts`                               | The handlers: a document's kind checked by each, a stale act answered with the current outline, `outline.invalid` mapped to `outline_invalid`, and every answer carrying an outline built through one view that withholds what the caller may not read                                                                                                                                                                                                                                                                                                                    |
 | `web: src/structure/`                                     | The documents list, **New document**, the document page holding the outline the last act returned and an undo stack, the outline panel with its keymap and drag and drop, and `tree.ts`, the panel's arithmetic, pure and tested against the domain's operations                                                                                                                                                                                                                                                                                                          |
 | `web: src/spaces.ts`, `paging.ts`, `editor/Workspace.tsx` | The creatable spaces loader **New component** and **New document** share, the every-page reader the access page and the document page share, and the hash routes `#/documents` and `#/documents/{id}` beside the components', with a **Components** and **Documents** link above either list                                                                                                                                                                                                                                                                              |
@@ -453,11 +465,12 @@ before that.
 
 **The stored outline refuses what a later rule would.** A version is immutable, so anything it
 accepts is accepted for ever. The parse holds a section title to the walk `parseContentDocument` runs
-over inline content, to `hasText` - which the editor's `titleAccepted` is - and to characters a `jsonb`
-column can store; it keeps `matter` to the top level and bounds the depth at 64, before it recurses. An
-operation writes nothing into `values` but `{}`, and the store checks a reference's target in the
-write transaction: a component the author may read, and a pinned version of that component, or one
-fixed `outline_invalid` reason whatever was wrong.
+over inline content, and every identifier inside a title is unique within it; to `hasText`, which the
+editor's `titleAccepted` is; and to characters a `jsonb` column can store. It keeps `matter` to the
+top level and bounds the depth at 64, before it recurses. An operation writes nothing into `values`
+but `{}`, and the store checks a reference's target in the write transaction: a component the author
+may read, and a pinned version of that component, or one fixed `outline_invalid` reason whatever was
+wrong.
 
 **A reader is shown a view, and nothing is computed from one.** Every answer carrying an outline -
 the page, an act's answer, a `409`'s `current` - withholds the component and pinned version of a

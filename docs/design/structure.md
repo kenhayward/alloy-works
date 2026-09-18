@@ -25,9 +25,12 @@ is edited with), [relationships.md](relationships.md) (the reference index the c
 > stand, and [the plan that built them](../plans/2026-09-18-structure-01-the-document-and-its-outline.md)
 > changed this document where planning and building found it wrong or silent - see
 > [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
-> numbering, captions, cross-references, the contents panel, generated lists, deep links, the cycle
-> check, a component version resolved for each occurrence, and a title edited as inline content
-> rather than as plain text. The content model spike's flat `OutlineSection`, in
+> numbering, captions, resolving a cross-reference, the contents panel, generated lists, deep links,
+> the cycle check, a component version resolved for each occurrence, and a title edited as inline
+> content rather than as plain text. A cross-reference's stored shape - its identifier, its target
+> and `withoutPages` - is built, by
+> [the third content-model plan](../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md).
+> The content model spike's flat `OutlineSection`, in
 > `packages/domain/src/content/outline.ts`, still stands beside the tree for the OOXML reader and
 > writer, and goes with the rest of the spike.
 
@@ -70,10 +73,11 @@ current outline rather than silently overwriting it.
 | **STR-021** | The engine walks occurrences, not components. A component referenced twice is two walks over one content document, and its captions take two numbers                                                                                                                                                                                                                     |
 | **STR-022** | Every entry in the numbering table names the node that produced it, the occurrence and block where it is a caption, the sequence, the counter stack at that point, and the rule applied                                                                                                                                                                                  |
 | **STR-023** | Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind                                                                                                                                                                                                                                      |
-| **STR-026** | The target is a closed union - an outline node, a block, a footnote, or a bibliography entry - each naming an identity, never a position                                                                                                                                                                                                                                 |
 | **STR-028** | Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer                                                                                                                                                                                                                  |
 | **STR-031** | Nothing caches a number past the inputs that produced it. The table is keyed by the document's version digest, the scheme and the profile, and a change to any of the three discards it                                                                                                                                                                                  |
-| **STR-032** | A target with no occurrence means the occurrence the reference is in; a target naming an occurrence reaches another component of the same document                                                                                                                                                                                                                       |
+| **STR-032** | A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches a block or footnote of another component of the same document                                                                                                                                                                                                |
+| **STR-056** | A `block` target carries no occurrence, and resolution binds it to the occurrence being read, so one stored reference resolves once per occurrence                                                                                                                                                                                                                       |
+| **STR-062** | Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first                                                                                                                                  |
 | **STR-034** | The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind                                                                                                                                                                                                                                 |
 | **STR-036** | The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function                                                                                                                                                                                                                    |
 | **STR-037** | Reordering in the panel is the move operation, from the panel's own drag and from its keymap                                                                                                                                                                                                                                                                             |
@@ -93,9 +97,13 @@ current outline rather than silently overwriting it.
 | **CNT-041** | `footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component                                                                                                                                                                                                                                                 |
 | **CNT-047** | The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it                                                                                                                                                                                                                            |
 
+STR-062 is answered here as
+resolution returning the named failure; failing the publish on it is STR-029's, left unclaimed with
+PUB (below).
+
 ## What this document does not own
 
-Forty claims above. The requirements deliberately left out are where this design's edges are, and
+Forty-one claims above. The requirements deliberately left out are where this design's edges are, and
 each one is a design that does not exist yet rather than a detail.
 
 **The named failure is produced here; failing the publish is PUB's.** This is the split
@@ -104,55 +112,41 @@ STR's sharpest requirements. Reference resolution returns a list of failures, ea
 reference and its target; PUB-072 already requires publishing to fail on an unresolved
 cross-reference. Neither design answers STR-029, STR-030 or STR-055 alone, so neither claims one.
 
-| Left unclaimed            | Why                                                                                                                                                                                                                                                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| STR-013                   | The scheme's vocabulary and its application are here; **PUB-011** puts the declaration on the layout artifact, which is not designed. Answered jointly, claimed by neither                                                                                                                                  |
-| STR-024                   | A caption's label - the word "Figure" - is a member of the scheme, and PUB-011 says the layout declares it. The computation is here, the text is the component's, the label is PUB's: three clauses, two elsewhere                                                                                          |
-| STR-025                   | Caption placement is a style property, and **STY-003's six catalogues contain no caption style**. Nothing this design can do makes the requirement true - see the recommendation below                                                                                                                      |
-| STR-027                   | Number, title and number-and-title resolve here. A **page** needs the paginator, and a **relative** form needs to know what is above the reader on a page that has not been composed - STR-Q04 says so                                                                                                      |
-| STR-029, STR-030, STR-055 | The named failures, above. STR-030 also needs REU's condition evaluation; STR-055 needs a member the content model has no room for yet                                                                                                                                                                      |
-| STR-020, STR-042          | Condition evaluation is **REU**'s, and T4. The pipeline's second stage is shaped for it and is the identity function until then                                                                                                                                                                             |
-| STR-033                   | What references a node is the reference index read backwards, which [relationships.md](relationships.md) designs and nothing builds. T3                                                                                                                                                                     |
-| STR-035                   | Jumping to a node is here; tracking the reader's position as they scroll is the **document view**'s, which is the next slice of the editor and is not designed                                                                                                                                              |
-| STR-039                   | **Scope §11 names the quantity and gives no number**, and every neighbouring budget has one. A design that invented one would be writing a requirement - see the recommendation below                                                                                                                       |
-| STR-043                   | An index needs marked entries in content, which is a CNT change. T6, and STR-Q03 asks whether it is in scope at all                                                                                                                                                                                         |
-| STR-045                   | The permission is access.md's and is applied by the route below. Navigating to the node and highlighting it is the document view's                                                                                                                                                                          |
-| STR-047, STR-052          | Both need baselines, which [storage-and-versioning.md](storage-and-versioning.md) designs and nothing builds; STR-052 also needs a publication record, which is PUB's                                                                                                                                       |
-| STR-050                   | The declaration is here (STR-048, STR-049); an output writer ignoring it without error is that writer's - PUB's and [word-output.md](word-output.md)'s                                                                                                                                                      |
-| STR-060                   | The node carries a title and a `values` member, and nothing may write into it yet; once something does, a value in it is validated exactly as a component's is ([metadata.md](metadata.md)). **Which** schemas apply comes from the template's section-level assignments (TPL-054), and TPL is not designed |
-| CNT-046                   | An equation in a heading is answered - a title is inline content. **An equation in a caption is not representable**, because captions are strings in the model; that half is content-model.md's, raised as issue #88                                                                                        |
-| CNT-079, CNT-072          | Exposing structure to assistive technology, and one continuous scroll, are the document view's                                                                                                                                                                                                              |
-| TPL-027, TPL-015, TPL-030 | A document owning its outline after instantiation, what a template lets an author change, and a missing required section are all about instantiation, which is **TPL**'s                                                                                                                                    |
-| API-037, MET-034, VER-018 | Preconditions on every route, where a schema may apply, and what a baseline pins are rules for the whole product, honoured here and owned elsewhere                                                                                                                                                         |
+| Left unclaimed            | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STR-013                   | The scheme's vocabulary and its application are here; **PUB-011** puts the declaration on the layout artifact, which is not designed. Answered jointly, claimed by neither                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| STR-024                   | A caption's label - the word "Figure" - is a member of the scheme, and PUB-011 says the layout declares it. The computation is here, the text is the component's, the label is PUB's: three clauses, two elsewhere                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| STR-025                   | Caption placement is a style property, and **STY-003's six catalogues contain no caption style**. Nothing this design can do makes the requirement true - see the recommendation below                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| STR-026                   | The target union is built without two of the targets it needs, so it is not claimed. **A bibliography entry**: no `entry` arm until **LIB** says what an entry's identity is. **A component's reference to a section**: a `node` target stands in a section title alone, because a node belongs to one document's outline and a component is used in many - so body text cannot say "see Section 4.2", the most common cross-reference there is. The likely answer is an arm meaning the heading of the node that places the component, resolved per occurrence as a `block` target is. Both are additions to the union and change nothing stored |
+| STR-027                   | Number, title and number-and-title resolve here. A **page** needs the paginator, and a **relative** form needs to know what is above the reader on a page that has not been composed - STR-Q04 says so                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| STR-029, STR-030, STR-055 | The named failures, above. STR-030 also needs REU's condition evaluation; STR-055's member exists (`withoutPages`), and rendering it is the publisher's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| STR-020, STR-042          | Condition evaluation is **REU**'s, and T4. The pipeline's second stage is shaped for it and is the identity function until then                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| STR-033                   | What references a node is the reference index read backwards, which [relationships.md](relationships.md) designs and nothing builds. T3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| STR-035                   | Jumping to a node is here; tracking the reader's position as they scroll is the **document view**'s, which is the next slice of the editor and is not designed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| STR-039                   | **Scope §11 names the quantity and gives no number**, and every neighbouring budget has one. A design that invented one would be writing a requirement - see the recommendation below                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| STR-043                   | An index needs marked entries in content, which is a CNT change. T6, and STR-Q03 asks whether it is in scope at all                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| STR-045                   | The permission is access.md's and is applied by the route below. Navigating to the node and highlighting it is the document view's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| STR-047, STR-052          | Both need baselines, which [storage-and-versioning.md](storage-and-versioning.md) designs and nothing builds; STR-052 also needs a publication record, which is PUB's                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| STR-050                   | The declaration is here (STR-048, STR-049); an output writer ignoring it without error is that writer's - PUB's and [word-output.md](word-output.md)'s                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| STR-060                   | The node carries a title and a `values` member, and nothing may write into it yet; once something does, a value in it is validated exactly as a component's is ([metadata.md](metadata.md)). **Which** schemas apply comes from the template's section-level assignments (TPL-054), and TPL is not designed                                                                                                                                                                                                                                                                                                                                       |
+| CNT-046                   | An equation in a heading is answered - a title is inline content. **An equation in a caption is not representable**, because captions are strings in the model; that half is content-model.md's, raised as issue #88                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| CNT-079, CNT-072          | Exposing structure to assistive technology, and one continuous scroll, are the document view's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| TPL-027, TPL-015, TPL-030 | A document owning its outline after instantiation, what a template lets an author change, and a missing required section are all about instantiation, which is **TPL**'s                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| API-037, MET-034, VER-018 | Preconditions on every route, where a schema may apply, and what a baseline pins are rules for the whole product, honoured here and owned elsewhere                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## What this design needs from the content model, and from the corpus
 
-Four things, each a consequence of a decision here and each silent if it is missed.
+What this design needed from the content model is built; what it needs from the corpus is listed
+after it.
 
-**A cross-reference's target cannot be a string.** `crossReferenceNodeSchema` carries
-`target: z.string().min(1)` today. A bare identifier does not name a target: STR-032 requires a
-reference to reach another component of the same document, and STR-056 requires a reference inside a
-component to resolve against the occurrence the reader is in. Both hold only if the target is a
-structured value with an optional occurrence. Modelled as a string, a cross-component reference
-resolves against the first occurrence and nothing errors - the exact failure content-model.md
-already predicted and the schema does not yet prevent.
-
-**A cross-reference needs an identifier of its own.** STR-029 requires a failure that names "both the
-reference and its target", and an inline node has none. The design's fallback is the weaker form
-CNT-107 already uses for a table anchor, the occurrence, the containing block and an index within
-it, and it degrades the moment the block is edited. An `id` on the node is the sound answer, and it is
-a content-model change.
-
-**A cross-reference needs a member for STR-055's alternative.** A page reference in a format with no
-pages must render a declared alternative form. There is nowhere to declare one: the node holds
-`target` and `display` and nothing else. Until there is, STR-055 can only fail the publish, which is
-half of what it asks.
-
-**A footnote's identifier is not required to be unique within its component.**
-`parseContentDocument`'s uniqueness walk descends into list items, blockquote content and table cells
-and **not into footnote content**, and it collects block identifiers only. STR-026 targets a footnote
-by identity, so the identity has to be unique in the component that holds it. This is a hole in an
-existing invariant rather than a new requirement.
+**Built by [the third content-model plan](../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md).**
+A cross-reference carries an identifier of its own, unique in its component, so a failure can name
+the reference and its target (STR-029); a target that is a closed union of `block`, `component` and
+`node`; and `withoutPages`, STR-055's declared alternative on a page reference. Every identifier in a
+component - a block's, a footnote's, a footnote paragraph's and a cross-reference's - is unique within
+it, and a footnote holds no image and no footnote. The plan changed the target this design first
+drew, `{ block, occurrence? }`: an occurrence exists in one outline, so a component that named one
+would reach another component's block in one document only, and the product is for reuse.
 
 **Three things the corpus is missing, recommended for the issue form and not filed here.**
 
@@ -540,25 +534,40 @@ inventing a style kind for another area.
 
 ## Cross-references
 
-**The target is a closed union, and an occurrence is part of it.**
+**The target is a closed union of three kinds.**
 
-| Form                     | Reaches                                                             |
-| ------------------------ | ------------------------------------------------------------------- |
-| `{ node }`               | An outline node - a section, or a component reference's own heading |
-| `{ block, occurrence? }` | A caption-bearing block or a footnote inside a component            |
-| `{ entry }`              | A bibliography entry (**LIB**)                                      |
+| Kind                                      | Reaches                                                                                                | May stand in    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------- |
+| `{ kind: 'block', block }`                | A block or footnote of the component the reference is in, in the occurrence being read                 | A component     |
+| `{ kind: 'component', component, block }` | A block or footnote of another component, in that component's one occurrence in the resolving document | A component     |
+| `{ kind: 'node', node }`                  | An outline node - a section, or a component reference's own heading                                    | A section title |
 
-**`occurrence` absent means "the occurrence I am in".** That single rule answers STR-056 and STR-028
-together: a component saying "see Figure 2" carries a target with no occurrence, and resolution binds
-it to whichever occurrence is being resolved - so the same stored sentence resolves to Figure 2 in one
-place and Figure 7 in another, which is what STR-021 makes true of the numbers and STR-056 makes true
-of the references to them. `occurrence` present names an outline node and reaches another component of
-the same document (STR-032).
+**A `block` target has no occurrence, and means the one being read.** That single rule answers STR-056
+and STR-028 together: a component saying "see Figure 2" resolves to Figure 2 in one place and Figure 7
+in another, which is what STR-021 makes true of the numbers. **A `component` target names the
+component, not an occurrence of it**, so it survives the component being used in a second document;
+where the resolving document holds that component in no occurrence or in several, resolution fails by
+name rather than taking the first (STR-062). A way to say which of several - a key held in the
+outline, as DITA's keys are - is a widening for later. **A title's reference names a node and nothing
+else**: a title is in no component, and a `component` target in a title would carry a component's
+identity past the withholding "Who is shown what" requires. A bibliography entry (**LIB**) joins the
+union when LIB says what an entry's identity is.
+
+**A title's reference shows a number or a page, and nothing that could be a title.** Resolving a
+title that shows a title resolves that title, so a section whose heading shows its own title, or two
+headings showing each other's, would recurse without end. Until resolution can refuse a cycle by name,
+the parse refuses a reference in a section title whose `display` is `title`, `numberAndTitle` or
+`relative`, and a `page` reference whose `withoutPages` is anything but `number` - the form it falls
+back to where there are no pages would otherwise loop the same way. A number and a page are drawn from
+the numbering table and the paginator, never from a title, so neither can. Widening this later, once
+a cycle fails by name, changes nothing stored.
 
 **Resolution reads the numbering table and never the component.** For each cross-reference in the
-resolved document, the key is `(occurrence, block)` or `(node)`; the entry gives the number, and the
-node gives the title. A target with no entry is a failure naming the reference and the target it
-wanted, and that list is what PUB-072 fails a publish on.
+resolved document, the key is `(occurrence being read, block)` for a `block` target,
+`(that component's one occurrence, block)` for a `component` target, and `(node)` for a `node` target;
+the entry gives the number, and the node gives the title. A target with no entry, or a `component`
+target whose component the document holds in no occurrence or in several, is a failure naming the
+reference and the target it wanted, and that list is what PUB-072 fails a publish on.
 
 **`display` decides the form, and two of its five are not answerable here.** `number`, `title` and
 `numberAndTitle` come from the table. `page` needs the paginator, and `relative` - "above", "below" -
@@ -734,9 +743,10 @@ cycle once there is an index to walk, and record - never rebasing one person's a
   answered `version_precondition` with the first's outline, and the chain holds exactly two versions.
 - **The cycle check** (STR-057): refused where a cycle would close, with the path named, written now
   against a hand-built reference index even though T1 cannot reach one.
-- **Cross-references** (STR-028, STR-032, STR-056): one component containing "see Figure 2",
+- **Cross-references** (STR-028, STR-032, STR-056, STR-062): one component containing "see Figure 2",
   referenced twice, resolves to two different numbers in one document - the case that fails silently
-  if the target is a bare identifier.
+  if a block identifier alone is resolved - and a `component` target whose component the document
+  holds twice fails by name rather than resolving against the first.
 - **An empty outline** (STR-054): a document created, read, numbered and listed with no nodes, with
   no error anywhere.
 - **Accessibility**, which needs a browser: the panel's keymap, its announcements and its focus

@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1367, from 1366: STR-062, a cross-reference to a block resolving against exactly one occurrence
+    // (issue #73), landed by the third content-model plan.
     // 1366, from 1365: STR-061, what a document is - a named, versioned artifact in exactly one space
     // with its own title and identity (issue #120), filed while planning the first structure plan.
     // 1365, from 1364: CNT-149, creating a component in a space the author may create in (issue #115).
@@ -32,9 +34,14 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1366);
+    expect(model.requirements).toHaveLength(1367);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-026, which the built target union answers only
+    // in part - it has no bibliography entry arm, and a component cannot reference a section - so the
+    // claim was dropped and the gap named in prose (the third content-model plan's final fix wave).
+    // 361, from 359: structure.md claims STR-062, and STR-056, which it had always answered ("A `block`
+    // target has no occurrence") and neither claimed nor listed as unclaimed.
     // 359, from 358: structure.md claims STR-061, the document as an artifact of its own kind, which
     // it answers by construction.
     // 358, from 319: structure.md claims 39 - the document artifact, its outline, numbering, captions,
@@ -69,7 +76,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(359);
+    ).toBe(360);
   });
 });
 
@@ -172,6 +179,8 @@ describe('the citations in the committed model', () => {
   // (packages/db/src/documents.test.ts), where the identifier comes from node:crypto rather than a
   // test's counter: allocated at the insert, carried unchanged into the next version, and never handed
   // to the node inserted after it was removed.
+  // 163 still: the third content-model plan's CNT-002 test sits in a file that already cites CNT-002,
+  // and a file cites an identifier once.
   it('cites exactly as many times as the corpus currently does', () => {
     expect(model.citations).toHaveLength(163);
   });

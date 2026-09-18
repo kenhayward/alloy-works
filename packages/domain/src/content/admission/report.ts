@@ -52,8 +52,18 @@ export const reportMessages = {
     language: 'The text was marked with the language of the component it came from.',
     schemaVersion: 'The content was brought up to date from an earlier version of the format.',
     blockIdentifier:
-      'Blocks and footnotes were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
+      'Blocks, footnotes and cross-references were given new identifiers, so they cannot be mistaken for the ones they were copied from.',
+    crossReferenceTarget:
+      'Cross-references copied with what they refer to were pointed at the copy.',
     markIdentifier: 'Marks were given new identifiers.',
+  },
+  /**
+   * Kept exactly as it arrived, and worth the author knowing: nothing was removed or changed, so it
+   * is neither `discarded` nor `rewritten`, and it was added, so it is not `refused`.
+   */
+  kept: {
+    crossReferenceUnresolved:
+      'Cross-references to something this component does not hold were kept as they stood, and point at nothing until it does.',
   },
   refused: {
     oversized: 'Nothing was added, because the content is larger than one addition can hold.',

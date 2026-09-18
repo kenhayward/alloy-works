@@ -3,6 +3,9 @@ import {
   canonicaliseVersion,
   DEFINITION_SCHEMA_VERSION,
   fieldDefinitionSchema,
+  OUTLINE_SCHEMA_VERSION,
+  parseContentDocument,
+  parseOutlineDocument,
   type ComponentSubstance,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
@@ -82,6 +85,59 @@ describe('the two digests a version records', () => {
       sha256Hex(canonicaliseVersion({ kind: 'field', content: field })),
     );
     expect(digests.contentHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('gives two spellings of one footnote one pair of digests, in a component and in a section title', () => {
+    // The parse fills in a footnote paragraph's `style` and a run's `marks` as it does everywhere
+    // else, so leaving them to their defaults is the same version, not a second one.
+    const spelled = {
+      type: 'paragraph',
+      id: 'fb1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Ibid.', marks: [] }],
+    };
+    const omitted = { type: 'paragraph', id: 'fb1', content: [{ type: 'text', value: 'Ibid.' }] };
+    const note = (inside: unknown) => ({
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [inside],
+    });
+    const words = { type: 'text', value: 'Method', marks: [] };
+
+    const holding = (inside: unknown) =>
+      versionDigests({
+        ...component,
+        content: parseContentDocument({
+          ...component.content,
+          content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [words, note(inside)] }],
+        }),
+      });
+    expect(holding(omitted)).toEqual(holding(spelled));
+
+    const titled = (inside: unknown) =>
+      versionDigests({
+        kind: 'document',
+        content: parseOutlineDocument({
+          schemaVersion: OUTLINE_SCHEMA_VERSION,
+          title: 'The dosing report',
+          language: 'en-GB',
+          direction: 'ltr',
+          nodes: [
+            {
+              type: 'section',
+              id: 'a'.repeat(26),
+              title: [words, note(inside)],
+              numbered: true,
+              matter: 'body',
+              pageBreak: 'none',
+              values: {},
+              children: [],
+            },
+          ],
+        }),
+      });
+    expect(titled(omitted)).toEqual(titled(spelled));
   });
 
   // Pinned, and never edited: a stored digest is recomputed by anybody holding the row, so this

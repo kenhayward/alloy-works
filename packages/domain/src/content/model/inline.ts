@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { isKeptMathml } from '../admission/mathml.js';
 
+import { artifactIdentifierSchema, nodeIdentifierSchema } from './identifier.js';
 import { markSchema } from './marks.js';
 
 /**
@@ -41,12 +42,55 @@ export const inlineEquationNodeSchema = z.strictObject({
   ...equationContentSchema,
 });
 
-/** CNT-027: a target and what to display, never a resolved number or title. */
-export const crossReferenceNodeSchema = z.strictObject({
-  type: z.literal('crossReference'),
-  target: z.string().min(1),
-  display: z.enum(['number', 'title', 'numberAndTitle', 'page', 'relative']),
-});
+/**
+ * What a cross-reference points at (STR-026): a closed union, each kind naming an identity and never
+ * a position, and none naming an answer (STR-028).
+ *
+ * - `block`: a block or a footnote of the component the reference is stored in. It carries no
+ *   occurrence, because a component does not know where it is placed: resolution binds it to the
+ *   occurrence being read, so one stored "see Figure 2" is Figure 2 in one place and Figure 7 in
+ *   another (STR-056).
+ * - `component`: a block or a footnote of another component, resolved against that component's one
+ *   occurrence in the resolving document - and failed by name, never guessed, where it has none or
+ *   several (STR-062). Named by the component rather than by an occurrence so that the reference
+ *   survives the component being used in a second document.
+ * - `node`: an outline node, which only a section title may hold.
+ *
+ * Which kind may stand where is `checkInlineContent`'s rule, not this schema's, because the schema
+ * does not know whether it is parsing a component or a title. A bibliography entry (STR-026) is not
+ * here until LIB says what an entry's identity is; adding a kind changes nothing stored.
+ */
+export const crossReferenceTargetSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('block'), block: z.string().min(1) }),
+  z.strictObject({
+    kind: z.literal('component'),
+    component: artifactIdentifierSchema,
+    block: z.string().min(1),
+  }),
+  z.strictObject({ kind: z.literal('node'), node: nodeIdentifierSchema }),
+]);
+
+/** The forms a reference to a page may fall back to where the output has no pages (STR-055). */
+const withoutPagesForms = ['number', 'title', 'numberAndTitle'] as const;
+
+/**
+ * CNT-027: a target and what to display, never a resolved number or title. `id` is the reference's
+ * own, unique in what holds it, so the failure STR-029 requires can name the reference as well as its
+ * target. `withoutPages` is STR-055's declared alternative, and only a page reference carries one:
+ * absent there means none was declared, and the publish fails in an output with no pages.
+ */
+export const crossReferenceNodeSchema = z
+  .strictObject({
+    type: z.literal('crossReference'),
+    id: z.string().min(1),
+    target: crossReferenceTargetSchema,
+    display: z.enum(['number', 'title', 'numberAndTitle', 'page', 'relative']),
+    withoutPages: z.enum(withoutPagesForms).optional(),
+  })
+  .refine((node) => node.withoutPages === undefined || node.display === 'page', {
+    message: 'Only a reference to a page declares a form for an output with no pages',
+    path: ['withoutPages'],
+  });
 
 export const citationNodeSchema = z.strictObject({
   type: z.literal('citation'),
