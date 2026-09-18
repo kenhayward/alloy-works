@@ -9,14 +9,25 @@ const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[
 export const storableText = (text: string): boolean =>
   !text.includes('\u0000') && !LONE_SURROGATE.test(text);
 
-/** Whether every string in a JSON value - every member name as well as every value - is storable. */
+/**
+ * Whether every string in a JSON value - every member name as well as every value - is storable.
+ * Iterative, with a stack of its own, because it runs over a title before anything has bounded how
+ * deep its footnotes nest: a recursive walk would throw on a deep enough value rather than answer.
+ */
 export function storableEverywhere(value: unknown): boolean {
-  if (typeof value === 'string') return storableText(value);
-  if (Array.isArray(value)) return value.every(storableEverywhere);
-  if (typeof value === 'object' && value !== null) {
-    return Object.entries(value).every(
-      ([name, member]) => storableText(name) && storableEverywhere(member),
-    );
+  const pending: unknown[] = [value];
+  while (pending.length > 0) {
+    const next = pending.pop();
+    if (typeof next === 'string') {
+      if (!storableText(next)) return false;
+    } else if (Array.isArray(next)) {
+      pending.push(...(next as unknown[]));
+    } else if (typeof next === 'object' && next !== null) {
+      for (const [name, member] of Object.entries(next)) {
+        if (!storableText(name)) return false;
+        pending.push(member);
+      }
+    }
   }
   return true;
 }

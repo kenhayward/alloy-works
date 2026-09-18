@@ -184,6 +184,22 @@ describe('a title an operation carries', () => {
     }
   });
 
+  it('is refused at the wire body, never thrown, when footnotes in it nest deeper than a stack', () => {
+    // Each footnote holds a paragraph holding the next: deep enough that any walk of it that recurses
+    // overflows the stack, which would reach the route as a 500 rather than as the caller's 400.
+    let inner: unknown = words;
+    for (let level = 0; level < 50_000; level += 1) {
+      inner = footnote([{ ...paragraph, content: [words, inner] }]);
+    }
+    for (const make of [retitle, insert]) {
+      let parsed: { success: boolean } | undefined;
+      expect(() => {
+        parsed = outlineOperationSchema.safeParse(make([words, inner]));
+      }).not.toThrow();
+      expect(parsed?.success).toBe(false);
+    }
+  });
+
   it('is refused at the wire body when a footnote in it holds anything but paragraphs', () => {
     for (const make of [retitle, insert]) {
       expect(
