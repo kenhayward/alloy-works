@@ -40,6 +40,26 @@ const paragraph = (id: string | undefined, content: unknown[]) => ({
   style: 'body',
   content,
 });
+const reference = (id: string, target: unknown) => ({
+  type: 'crossReference',
+  id,
+  target,
+  display: 'number',
+});
+const figure = (id: string, asset: string, caption: string) => ({
+  type: 'figure',
+  id,
+  asset,
+  imageStyle: 'column-width',
+  caption,
+  alternative: { kind: 'decorative' },
+});
+const footnote = (id: string, content: unknown[]) => ({
+  type: 'footnote',
+  id,
+  anchor: { kind: 'span' },
+  content,
+});
 
 const run = (candidate: Record<string, unknown>, to: Receiver = receiver()) => {
   const report = createReport();
@@ -125,20 +145,7 @@ describe('the re-identify stage', () => {
 
   it('gives a cross-reference a new identifier, and points one at the copy of what it refers to', () => {
     const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
-    const reference = (id: string, target: unknown) => ({
-      type: 'crossReference',
-      id,
-      target,
-      display: 'number',
-    });
-    const figure = {
-      type: 'figure',
-      id: 'old-figure',
-      asset: 'asset-1',
-      imageStyle: 'column-width',
-      caption: 'Dose',
-      alternative: { kind: 'decorative' },
-    };
+    const dose = figure('old-figure', 'asset-1', 'Dose');
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -149,7 +156,7 @@ describe('the re-identify stage', () => {
           reference('old-x2', { kind: 'block', block: 'not-copied' }),
           reference('old-x3', { kind: 'component', component, block: 'old-figure' }),
         ]),
-        figure,
+        dose,
       ],
     });
     expect(outcome).toEqual({
@@ -166,13 +173,145 @@ describe('the re-identify stage', () => {
             // Another component's block: nothing here renames another component's identifiers.
             reference('n6', { kind: 'component', component, block: 'old-figure' }),
           ]),
-          { ...figure, id: 'n7' },
+          { ...dose, id: 'n7' },
         ],
       },
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
       { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+    ]);
+  });
+
+  it('points a reference inside a footnote at a copy travelling in the body, and the reverse', () => {
+    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          footnote('old-note', [
+            // A reference inside a footnote, naming a block that travels in the body.
+            paragraph('old-note-paragraph', [
+              reference('old-x1', { kind: 'block', block: 'old-figure' }),
+            ]),
+          ]),
+        ]),
+        dose,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            footnote('n4', [paragraph('n5', [reference('n6', { kind: 'block', block: 'n7' })])]),
+          ]),
+          { ...dose, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
+    ]);
+  });
+
+  it('does not repoint a reference to an identifier that arrived on two blocks, leaving it to resolve as missing', () => {
+    const one = figure('fig', 'asset-1', 'One');
+    const two = figure('fig', 'asset-2', 'Two');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'fig' }),
+        ]),
+        one,
+        two,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            // Ambiguous - two blocks arrived with the same old identifier - so it is left standing
+            // rather than guessed, exactly as an untravelled target is (decision F).
+            reference('n4', { kind: 'block', block: 'fig' }),
+          ]),
+          { ...one, id: 'n5' },
+          { ...two, id: 'n6' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 4 },
+    ]);
+  });
+
+  it('does not repoint a reference to an identifier a footnote and a block both arrived with', () => {
+    const dose = figure('fig', 'asset-1', 'Dose');
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          text('See '),
+          reference('old-x1', { kind: 'block', block: 'fig' }),
+          footnote('fig', [paragraph('old-note-paragraph', [text('Note')])]),
+        ]),
+        dose,
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            text('See '),
+            reference('n4', { kind: 'block', block: 'fig' }),
+            footnote('n5', [paragraph('n6', [text('Note')])]),
+          ]),
+          { ...dose, id: 'n7' },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
+    ]);
+  });
+
+  it('never allocates an identifier equal to a target a reference still names, so a coincidence cannot silently repoint it', () => {
+    const offered = ['not-copied', 'n9', 'n10'];
+    let next = 0;
+    const { outcome, entries } = run(
+      {
+        schemaVersion: 1,
+        content: [
+          paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block: 'not-copied' })]),
+        ],
+      },
+      receiver({ newIdentifier: () => offered[next++] ?? `spare${next}` }),
+    );
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          // Without the reservation, the paragraph would have been allocated 'not-copied' itself -
+          // the very string its own reference still names - silently making the reference point at
+          // an unrelated block that happens to share that new identifier.
+          paragraph('n9', [reference('n10', { kind: 'block', block: 'not-copied' })]),
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
     ]);
   });
 

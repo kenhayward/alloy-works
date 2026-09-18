@@ -30,7 +30,9 @@ class AllocationFailed extends Error {}
  * - **Every block, every footnote and every cross-reference gets a new identifier** (CNT-132), unique
  *   within the receiving component. A copied identifier is never kept, even where the receiving
  *   component lacks it: a duplicate is not a visible defect, and comparison would report a copy as a
- *   move for ever. A cross-reference whose block travelled with it is pointed at the copy.
+ *   move for ever. A cross-reference whose block travelled with it is pointed at the copy - unless the
+ *   old identifier arrived on more than one block, in which case which one it meant cannot be known, so
+ *   it is left as it stands rather than guessed: failed by name, never guessed.
  * - **Every mark gets a new identifier**, and fragments of one annotation - the same type and the
  *   same identifier on several runs - get the same new one, so it stays one annotation (CNT-004).
  * - **Comments and suggestions are dropped**, one report entry for each annotation rather than each
@@ -43,21 +45,25 @@ export function reidentify(
   report: ReportCollector,
 ): StageResult<Record<string, unknown>> {
   const state: State = {
-    taken: identifiersIn(receiver.document),
+    taken: new Set([
+      ...identifiersIn(receiver.document),
+      ...referencedBlockTargets(candidate.content),
+    ]),
     axes: new Set(receiver.conditionAxes),
     newIdentifier: receiver.newIdentifier,
     report,
     marks: new Map(),
     dropped: new Set(),
-    blocks: 0,
+    reidentified: 0,
     renamed: new Map(),
+    ambiguous: new Set(),
     references: [],
   };
   try {
     const content = mapArray(candidate.content, (block) => reidentifyBlock(block, state));
     const repointed = repoint(state);
-    if (state.blocks > 0) {
-      report.add('reidentify', 'rewritten', 'blockIdentifier', { count: state.blocks });
+    if (state.reidentified > 0) {
+      report.add('reidentify', 'rewritten', 'blockIdentifier', { count: state.reidentified });
     }
     if (repointed > 0) {
       report.add('reidentify', 'rewritten', 'crossReferenceTarget', { count: repointed });
@@ -82,19 +88,41 @@ type State = {
   readonly marks: Map<string, string>;
   /** Annotations already reported as dropped, by type and identifier. */
   readonly dropped: Set<string>;
-  blocks: number;
-  /** Each block's and footnote's new identifier, by the one it arrived with. */
+  /** How many blocks, footnotes and cross-references have been given a new identifier so far. */
+  reidentified: number;
+  /** Each block's and footnote's new identifier, by the one it arrived with - unless ambiguous. */
   readonly renamed: Map<string, string>;
+  /** Old identifiers that arrived on more than one block or footnote, so no single new one answers. */
+  readonly ambiguous: Set<string>;
   /** Every cross-reference written, to be pointed once every block has its new identifier. */
   readonly references: Record<string, unknown>[];
 };
 
 /**
+ * Records a block's or footnote's old identifier against its new one - unless that old identifier
+ * has been seen before, in which case which block a reference naming it meant cannot be known, so it
+ * is marked ambiguous instead and any earlier mapping is withdrawn. A range copied across two
+ * occurrences of one component can bring two blocks sharing one identifier; guessing which one a
+ * reference meant would be exactly the silent misdirection this stage exists to avoid - failed by
+ * name (STR-029, at resolution), never guessed.
+ */
+function recordRenamed(state: State, from: string, to: string): void {
+  if (state.ambiguous.has(from)) return;
+  if (state.renamed.has(from)) {
+    state.renamed.delete(from);
+    state.ambiguous.add(from);
+    return;
+  }
+  state.renamed.set(from, to);
+}
+
+/**
  * A cross-reference to a block of its own component that travelled with it is pointed at the copy,
  * so a figure pasted with the sentence citing it is cited by the copy of that sentence. The second
  * pass, because a reference can come before the block it names. A reference whose block did not
- * travel is left as it stands - resolution names it as missing (STR-029) - and so is one naming
- * another component's block, whose identifiers nothing here renames. Returns how many were pointed.
+ * travel, or whose old identifier is ambiguous, is left as it stands - resolution names it as missing
+ * (STR-029) - and so is one naming another component's block, whose identifiers nothing here renames.
+ * Returns how many were pointed.
  */
 function repoint(state: State): number {
   let count = 0;
@@ -107,6 +135,32 @@ function repoint(state: State): number {
     count += 1;
   }
   return count;
+}
+
+/**
+ * Every `block` target a candidate's cross-references still name, wherever they sit - reserved in
+ * `taken` before anything is allocated, so a freshly allocated identifier can never coincide with one
+ * of these. Without this, a reference whose block does not travel (or is ambiguous, and so is left
+ * unrepointed) keeps naming its old identifier literally, and a counter or an unlucky draw could hand
+ * that exact string to an unrelated block - silently making the reference point at it.
+ */
+function referencedBlockTargets(value: unknown): Set<string> {
+  const found = new Set<string>();
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const member of node) walk(member);
+      return;
+    }
+    if (typeof node !== 'object' || node === null) return;
+    const record = node as Record<string, unknown>;
+    if (record.type === 'crossReference') {
+      const target = asRecord(record.target);
+      if (target?.kind === 'block' && typeof target.block === 'string') found.add(target.block);
+    }
+    for (const member of Object.values(record)) walk(member);
+  };
+  walk(value);
+  return found;
 }
 
 /** Every identifier a document holds: its blocks', its footnotes' and its marks'. */
@@ -164,8 +218,8 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
   const block = asRecord(value);
   if (!block) return [value];
   const out: Record<string, unknown> = { ...block, id: allocate(state) };
-  state.blocks += 1;
-  if (typeof block.id === 'string') state.renamed.set(block.id, out.id as string);
+  state.reidentified += 1;
+  if (typeof block.id === 'string') recordRenamed(state, block.id, out.id as string);
   const blocks = (member: unknown) => mapArray(member, (child) => reidentifyBlock(child, state));
   const inlines = (member: unknown) => mapArray(member, (child) => reidentifyInline(child, state));
 
@@ -203,14 +257,14 @@ function reidentifyInline(value: unknown, state: State): unknown[] {
   }
   if (inline.type === 'crossReference') {
     const out: Record<string, unknown> = { ...inline, id: allocate(state) };
-    state.blocks += 1;
+    state.reidentified += 1;
     state.references.push(out);
     return [out];
   }
   if (inline.type === 'footnote') {
     const id = allocate(state);
-    state.blocks += 1;
-    if (typeof inline.id === 'string') state.renamed.set(inline.id, id);
+    state.reidentified += 1;
+    if (typeof inline.id === 'string') recordRenamed(state, inline.id, id);
     return [
       {
         ...inline,
