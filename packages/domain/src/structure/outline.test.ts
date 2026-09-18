@@ -423,6 +423,10 @@ describe('a section title, under the content model rules', () => {
     expect(() =>
       parseOutlineDocument(titled([words, footnote([{ ...paragraph, id: 'f1' }])])),
     ).toThrow(/content model refuses/);
+    // An identifier not in NFC, which the canonical form would fold into its composed spelling.
+    expect(() =>
+      parseOutlineDocument(titled([words, { ...footnote([paragraph]), id: 'café' }])),
+    ).toThrow(/content model refuses/);
     // Two sections are two titles: the same footnote identifier in each is not a collision, because
     // anything in a title is reached through its node, as anything in a component is through its
     // occurrence.

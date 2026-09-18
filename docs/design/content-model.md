@@ -309,6 +309,14 @@ shared would name two things, and because STR-029's failure names the reference 
 parse first checked blocks alone, which left a footnote's out (issue #122). A mark's identifier is
 outside it: fragments of one annotation repeat theirs on purpose (CNT-004).
 
+**Every one of them is in NFC, and so is the block a target names.** The canonical form writes every
+string in NFC (CNT-056), so two spellings of one identifier, composed and decomposed, would pass a
+comparison of raw strings as two and be stored and digested as one - and a reference spelled one way
+would resolve where the other would not. The parse refuses an identifier, or a target's `block`, that
+is not already in NFC, rather than normalising it: what a caller stores is exactly what the digest
+covers. Admission puts pasted text in NFC before it allocates, and the identifiers the editor
+allocates are ASCII.
+
 **Marks.** `id` on every mark (CNT-004). An annotation fragmented by an overlap repeats one identifier
 across its fragments, which is what makes accept, reject and exclude one operation on one identity
 (CNT-005) rather than several operations on several ranges. Resolution preserves block identifiers

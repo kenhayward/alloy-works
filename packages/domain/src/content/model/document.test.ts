@@ -311,6 +311,41 @@ describe('a cross-reference, where a component holds one', () => {
     expect(() => parseContentDocument(doc([noted, paragraph('b2')]))).toThrow(/x1/);
   });
 
+  it('refuses an identifier or a target not already in NFC, which the digest would fold into another', () => {
+    // One identifier, spelled composed and decomposed. The canonical form writes every string in NFC,
+    // so both would be stored as one, while the parse compared them as two.
+    const composed = 'café';
+    const decomposed = 'café';
+    const noted = (id: string) => ({
+      type: 'footnote',
+      id,
+      anchor: { kind: 'span' },
+      content: [paragraph('fb1')],
+    });
+    expect(() =>
+      parseContentDocument(
+        doc([citing(composed, [reference('x1', { kind: 'block', block: composed }), noted('f1')])]),
+      ),
+    ).not.toThrow();
+    // A block's, a footnote's and a cross-reference's identifier.
+    expect(() => parseContentDocument(doc([paragraph(decomposed)]))).toThrow(/NFC/);
+    expect(() => parseContentDocument(doc([citing('b1', [noted(decomposed)])]))).toThrow(/NFC/);
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference(decomposed, { kind: 'block', block: 'b1' })])]),
+      ),
+    ).toThrow(/NFC/);
+    // And the block a target names, of this component or of another.
+    for (const target of [
+      { kind: 'block', block: decomposed },
+      { kind: 'component', component: COMPONENT, block: decomposed },
+    ]) {
+      expect(() => parseContentDocument(doc([citing('b1', [reference('x1', target)])]))).toThrow(
+        /NFC/,
+      );
+    }
+  });
+
   it('reaches a block of its own component or of another, and never an outline node', () => {
     for (const target of [
       { kind: 'block', block: 'b2' },

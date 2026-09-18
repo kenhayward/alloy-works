@@ -106,12 +106,13 @@ holding no image and no footnote; and a cross-reference in a component never tar
 The identifiers, the footnote's list and where a cross-reference may point are checked in one walk
 over inline content, `checkInlineContent`, sharing one set of claimed identifiers with the walk over
 the blocks; adjacency is checked in every sequence of blocks either reaches - the top level, a list
-item, a blockquote, a table cell and a footnote - as admission's normalise collapses it in each. A section title runs the same walk, where a
-cross-reference targets an outline node and nothing else. A footnote's paragraphs hold no footnote,
-so the walk descends one footnote deep and stops. The walk returns what it parsed - a footnote's
-paragraphs with the defaults the parse fills in everywhere else - and that is what is stored and
-digested, in a component and in a section title alike, so two spellings of one footnote are one
-version.
+item, a blockquote, a table cell and a footnote - as admission's normalise collapses it in each. A
+section title runs the same walk, where a cross-reference targets an outline node and nothing else. A
+footnote's paragraphs hold no footnote, so the walk descends one footnote deep and stops. The walk
+returns what it parsed - a footnote's paragraphs with the defaults the parse fills in everywhere
+else - and that is what is stored and digested, in a component and in a section title alike, so two
+spellings of one footnote are one version. Every identifier the walk claims, and the block a target
+names, is refused unless it is already in NFC, the form the digest is taken over.
 
 **Migration is a read-time projection and never a rewrite.** Version rows take inserts only and
 `content_hash` is the hash of what was written, so migrating stored content would either invalidate

@@ -23,8 +23,24 @@ export const contentDocumentSchema = z.strictObject({
 
 export type ContentDocument = z.infer<typeof contentDocumentSchema>;
 
-/** Adds an identifier to those already held, refusing one already there (CNT-002). */
+/**
+ * Refuses an identifier not already in NFC. The canonical form writes every string in NFC, so two
+ * spellings of one identifier - composed and decomposed - would pass a comparison of raw strings as
+ * two and be stored and digested as one; and a reference spelled one way would resolve where the
+ * other would not. Refused rather than normalised: the caller stores exactly what the digest covers.
+ */
+function refuseUnnormalised(identifier: string, what: string): void {
+  if (identifier !== identifier.normalize('NFC')) {
+    throw new Error(`${what} ${identifier} is not in NFC`);
+  }
+}
+
+/**
+ * Adds an identifier to those already held, refusing one already there (CNT-002), or one not in NFC,
+ * which the stored form would fold into another.
+ */
 function claim(id: string, seen: Set<string>): void {
+  refuseUnnormalised(id, 'Identifier');
   if (seen.has(id)) throw new Error(`Identifier ${id} is used more than once in this component`);
   seen.add(id);
 }
@@ -58,7 +74,8 @@ function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
  * - **Every identifier inside is claimed in `seen`** - a footnote's own, each of its paragraphs', and
  *   a cross-reference's - so none can share one with a block or with anything else in what holds it
  *   (CNT-002, issue #122). A cross-reference targets a footnote by identity (STR-026), so one it
- *   shared would name two things.
+ *   shared would name two things. Each is in NFC, and so is the block a target names, because the
+ *   stored form is.
  * - **A cross-reference targets only what its home can reach.** In a component, never an outline
  *   node: a node belongs to one document's outline, and a component is used in many. In a section
  *   title, an outline node alone: a title is in no component, and an outline is answered with a
@@ -83,6 +100,7 @@ export function checkInlineContent(
   return inlines.map((inline) => {
     if (inline.type === 'crossReference') {
       claim(inline.id, seen);
+      if (inline.target.kind !== 'node') refuseUnnormalised(inline.target.block, 'Target');
       if (home === 'component' && inline.target.kind === 'node') {
         throw new Error(`Cross-reference ${inline.id} in a component targets an outline node`);
       }
