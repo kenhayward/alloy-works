@@ -2472,3 +2472,15 @@ not:
   editor's `titleAccepted`, now the domain's `hasText`). CNT-046 asks for an equation in a heading,
   which is kept; one that is nothing but an equation would need a rule for what names the node in the
   contents and to a screen reader. **Whichever plan edits a title as inline content.**
+- **A title of only a zero-width space has text**, by `hasText`, which trims whitespace and nothing
+  else - the same rule the editor's `titleAccepted` gives a component's title, so the two agree. A
+  rule for what counts as visible text belongs to the title's rule once, for both. **Whichever plan
+  edits a title as inline content.**
+- **Queued retitles are not named when an answer the page cannot read removes the panel.** The page
+  says the document could not be read in place of the outline, and a retitle still held behind that
+  answer resolves nowhere, so its title is not named. **Whichever plan next touches the document
+  page's unreadable state.**
+- **How deep footnotes may nest inside a title is not bounded.** A nest deeper than a stack is now
+  refused rather than thrown, but one just shallower is stored, and every later recursive walk of it -
+  the canonical form, a browser's parse - has less stack than the one that accepted it. A component's
+  content has the same gap. **The small content-model change before structure 2.**
