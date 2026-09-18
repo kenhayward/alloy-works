@@ -133,6 +133,72 @@ component** at all. Give her **Reader** on General from **Manage access** and re
 components and still has no **New component**, because a Reader may read and not create. Give her
 **Author** instead and it appears, offering General.
 
+**A database prepared before 0.27.0** gains migration 0016 the next time `pnpm dev:setup` runs - in
+containers, the `setup` container runs it. It widens three checks, so that a document is a kind of
+artifact, lives in exactly one space and has an author for every version, and it changes nothing you
+had. `pnpm dev:setup` makes no document of its own.
+
+To make a document and build its outline by hand, sign in as Ada and choose **Documents**, beside
+**Components** above the list:
+
+1. **New document** offers **General** alone under **Where**, and beneath it the page says **There are
+   no documents you may read.**
+2. Type `The dosing report` in **Title**, leave **Language** at `en-GB` and **Direction** at **Left to
+   right**, and press **Create**. The page opens it: **The dosing report**, **Version 0.1 in General**,
+   **Add section**, **Add component** and **Undo**, and **This document has no sections yet.**
+3. Press **Add section**, type `Introduction` in **New section title** and press `Enter`: the tree
+   shows **Introduction**, selected, and the page says **Added Introduction.** and **Version 0.2 in
+   General**. Add `Method` and `Results` the same way, at 0.3 and 0.4. A new section goes after the one
+   selected, and the one just added is selected, so they land in that order; with the tree focused,
+   `Enter` opens the same field.
+4. Click **Method** and press `Alt+Right`: it goes under **Introduction**, and the page says **Moved
+   Method under Introduction.** Click **Introduction** and press `Alt+Down`: it moves after **Results**,
+   taking **Method** with it - **Moved Introduction after Results.** Press `Ctrl+Z` once: **Introduction**
+   goes back to the top with **Method** still beneath it, and the page says **Undone. Moved Introduction
+   to the start of the document.** at version 0.7, because an undo is an act, and a version, too.
+5. Select **Method** and press **Add component**. **Component** offers the components you may read;
+   choose **Install the printer** and press **Add**. It goes after **Method**, under **Introduction**:
+   the tree shows **Install the printer, latest**, and the page says **Added Install the printer.**
+   Press `Alt+Right` and it goes under **Method**. Select **Results** and add the same component again:
+   the same component, twice, each its own row.
+6. The second one is selected. Press **Remove component**: the page asks **Remove Install the printer?
+   This cannot be undone, and nothing before it can be undone afterwards.** Press **Remove**: **Removed
+   Install the printer.**, and **Undo** and `Ctrl+Z` now do nothing, because nothing before a removal
+   can be undone.
+7. Select **Results** and choose **A new page** under **Starts on**: the page says **Results now starts
+   on a new page.**, and its row reads **Results, starts on a new page**. Nothing else changes, because
+   nothing publishes yet: the declaration is on the node, not in any content. **Undo** has something to
+   undo again.
+8. In a private window - the stand-in remembers who signed in last in a window - sign in as **Grace**
+   and open **The dosing report** from **Documents**. Select **Method**, change its **Title** to
+   `Method and materials` and press `Enter`: **Renamed Method to Method and materials.** Back in Ada's
+   window, without reloading, select **Results** and press `Alt+Up`. The page says **Somebody else changed this
+   document. This is how it stands now.**, the tree shows **Method and materials**, **Results** has not
+   moved, and **Undo** does nothing: undoing Ada's page break now would change an outline she had not
+   seen. Her next act is made from the outline Grace left, and is recorded.
+9. Close Grace's private window, and in a new one sign in as **Alice**, who holds nothing:
+   **Documents** says **There are no documents you may read.** and offers no **New document**. As
+   Ada, open "Install the printer", choose **Manage access**, and give Alice **Reader** at **The space
+   General**. Reload Alice's page: she sees
+   **The dosing report**, and opening it says **You may read this document but not change it.** Her
+   outline has no **Add section**, **Add component**, **Undo**, **Title**, **Starts on** or **Remove**;
+   the arrow keys move between rows, and `Alt` with the arrows, `Enter` and `Delete` do nothing. **You
+   may not change this document.** is what somebody who could edit sees instead, if that is taken away
+   while the document is open.
+10. Two things only a browser can show, so check them by hand whenever the panel changes. As Ada, click
+    **Introduction**, a top-level row, and press `Alt+Left`: nothing happens, because it has nowhere to
+    be promoted to - and the browser must not go Back, which is what `Alt+Left` does on Windows and
+    Linux; if it does, the page returns to the list of documents. Then select **Method and materials**
+    and press `Alt+Left`: **Moved Method and materials to the top level, after Introduction.** And drag
+    and drop: drag **Results** onto the **Introduction** row and it becomes Introduction's last child
+    (**Moved Results under Introduction.**); drag it again, and **Move to the end of the document**
+    appears below the tree - drop it there and it goes back to the end. A thin gap above each row takes
+    a drop too, putting the row dragged before it. Each drop is one act, and **Undo** takes it back.
+
+These steps are written from the code and its tests. Step 10's two are the ones no test here can stand
+in for: the tests drive the keymap and drag and drop with synthetic events, which a browser's own Back
+and its own dragging never see.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8088` as the one address it returns to. Opening
 `http://dev.acme.localhost:8088/v1/sign-in/google` and choosing Ada accepts her invitation through that

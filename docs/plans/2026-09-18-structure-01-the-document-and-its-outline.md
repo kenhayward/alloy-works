@@ -2318,6 +2318,15 @@ Steps 1 to 8 were **not** done in a browser before this plan was committed; the 
 built. Everything below the renderer was run on the wire, and the table above says which test stands
 in for each.
 
+**As built, four of these steps read differently**, and [`docs/development.md`](../development.md)
+carries them as they now are. **Add section** and **Add component** insert after the selected node,
+not under it, and `Alt+Right` then nests one (steps 3 and 5). One `Ctrl+Z` takes back one act, so
+step 4's two moves take two. A page break is **Starts on**, a three-way select, and it shows in the
+node's row (step 6). A reader is offered no controls at all and is told she may read and not change
+the document; **You may not change this document.** is what an editor sees when a grant is withdrawn
+under them (step 8). Step 7 needs the person whose act is refused to have acted first, or there is no
+undo to lose. None of them has been done in a browser either.
+
 ---
 
 ## What this plan deliberately leaves undone
@@ -2382,6 +2391,54 @@ Found while writing this plan, and left rather than widened into it:
   UUID is a `400` on a document's route and a `404` on a component's. **Whichever plan next touches
   the component routes.**
 - **`apps/service` has three hand-rolled copies of the lowercase-UUID regex** and `packages/db` four,
-  because neither can import the contract's `LowercaseUuid`. This plan adds none, by taking the
-  spelling from `@alloy-works/domain`'s schema in the domain and from the contract at the door.
-  **Whichever plan gives the database package its own id type.**
+  because neither can import the contract's `LowercaseUuid`. This plan set out to add none, by taking
+  the spelling from `@alloy-works/domain`'s schema in the domain and from the contract at the door.
+  **As built it adds two**: `LOWERCASE_UUID` in `packages/domain/src/structure/outline.ts`,
+  deliberately, because the domain may not depend on the contract, and `UUID` in
+  `packages/db/src/documents.ts`, which `createDocument` uses to refuse a malformed space id as
+  `space.missing` rather than a raised `22P02` - so `packages/db` now holds five. **Whichever plan
+  gives the database package its own id type**, which could take the domain's.
+
+Found while building this plan, and by reviewing each task, and left rather than widened into it:
+
+- **A removal cannot be undone.** Decision 6 says the inverse of an operation is another operation,
+  and for a removal it is not: the inverse would insert the whole subtree under the identifiers it
+  had, and an insert takes one node and allocates a fresh identifier, which STR-003 forbids reusing.
+  The panel asks first, says it cannot be undone, and empties the undo stack when one is recorded
+  (structure.md, "Editing the outline"). The subtree is still in every earlier version. Getting it
+  back from there is a restore, which storage-and-versioning.md designs and nothing builds.
+  **Whichever plan builds restore.**
+- **A page-break change, an add or a remove made while another act is in flight is ignored**, with the
+  tree's `aria-busy` the only sign; only a retitle is held and sent after. Whether an author ever meets
+  it, and whether a sentence should say so, is for a browser to show. **The accessibility plan**, with
+  the browser suite.
+- **Two things only a browser can show**: that `Alt+Left`, which is Back in Chromium on Windows and
+  Linux, is taken by the tree rather than leaving the page, and that dragging and dropping a row works.
+  Both are exercised with synthetic events in jsdom and neither has been done in a browser; the gaps a
+  row is dropped before are unstyled. `docs/development.md` asks for both by hand. **The accessibility
+  plan**, with the browser suite.
+- **The page's stale-act guard has no test.** `DocumentPage` refuses to send an act computed against
+  an outline older than the one it last received; the window it closes lies between an answer's
+  `finally` and the next render, which jsdom cannot reach, and removing the guard leaves every test
+  green. It is kept as a belt over the `busy` checks and rests on reading the code. **The accessibility
+  plan's browser suite**, or never, if nothing can reach it.
+- **A section title holding a mark or anything but text** shows in a disabled field with a sentence
+  saying why, so the plain-text retitle of decision B never drops formatting. Nothing authors such a
+  title yet. **The plan that mounts the title editor.**
+- **Nothing changes a document's own title, base language or base direction** once it is made: the
+  five operations are over nodes, and the root's three members are written only by creating. **The
+  plan that gives a document a header**, as editor 2 gave a component one.
+- **`GET /v1/documents/{id}` resolves no component version for a reference**: it answers each node as
+  stored, naming its component and its mode, and the panel names a reference by the component's title
+  from `GET /v1/components`. structure.md's route table says it answers each occurrence's resolved
+  version. **Structure 2**, whose `resolve` stage is where that answer comes from.
+- **Nothing observes 0016's restored deferral.** 0016 sets `artifact_version_component_type_recorded`
+  immediate and back to deferred; nothing runs after it in the same transaction yet, so no test sees
+  the second half, and the SQL is its only evidence. **Whichever plan writes 0017**, whose fresh-path
+  test is the first place it can show.
+- **`set`'s patch is cast** (`{ ...node, ...patch } as OutlineNode` in `operations.ts`), relying on the
+  check above it that only a reference takes a `mode`, and on the parse every result goes through,
+  rather than on the type system. **Whichever plan next adds a switch.**
+- **Signed out, the documents list, the document page and New document offer no Try again**, since
+  trying again cannot work until the person signs in; **New component** still offers one. A deliberate
+  divergence, and the two should agree. **Whichever plan next touches New component.**

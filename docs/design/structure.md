@@ -18,11 +18,18 @@ versions through), [access.md](access.md) (who may read and edit one),
 is edited with), [relationships.md](relationships.md) (the reference index the cycle check walks) and
 [service-foundations.md](service-foundations.md) (how every route is written).
 
-> **None of this is built.** `packages/domain/src/content/outline.ts` holds the content model spike's
-> `OutlineSection` - a flat list of sections carrying a `level` and a list of component ids - which
-> the OOXML reader and writer use as a type and which the package has never exported. This design
-> replaces it with a tree, for the reasons under [The outline](#the-outline-and-why-it-is-one-tree).
-> [`../architecture.md`](../architecture.md) stays the account of what exists.
+> **Part of this is built.** The document artifact, the outline as one tree with every positional
+> switch at schema version 1, its canonical form, the five operations, four of the routes, and an
+> outline panel with its keymap and an undo stack are in `packages/domain`, `packages/db`,
+> `apps/service` and `apps/web`; [`../architecture.md`](../architecture.md) describes them as they
+> stand, and [the plan that built them](../plans/2026-09-18-structure-01-the-document-and-its-outline.md)
+> changed this document where planning and building found it wrong or silent - see
+> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
+> numbering, captions, cross-references, the contents panel, generated lists, deep links, the cycle
+> check, a component version resolved for each occurrence, and a title edited as inline content
+> rather than as plain text. The content model spike's flat `OutlineSection`, in
+> `packages/domain/src/content/outline.ts`, still stands beside the tree for the OOXML reader and
+> writer, and goes with the rest of the spike.
 
 ## The shape in one paragraph
 
@@ -132,10 +139,9 @@ already predicted and the schema does not yet prevent.
 
 **A cross-reference needs an identifier of its own.** STR-029 requires a failure that names "both the
 reference and its target", and an inline node has none. The design's fallback is the weaker form
-CNT-107 already uses for a table anchor - the occurrence, the containing block and an index within it
-
-- and it degrades the moment the block is edited. An `id` on the node is the sound answer, and it is
-  a content-model change.
+CNT-107 already uses for a table anchor, the occurrence, the containing block and an index within
+it, and it degrades the moment the block is edited. An `id` on the node is the sound answer, and it is
+a content-model change.
 
 **A cross-reference needs a member for STR-055's alternative.** A page reference in a format with no
 pages must render a declared alternative form. There is nowhere to declare one: the node holds
@@ -191,6 +197,15 @@ identical outlines whose marks were built in different orders produce different 
 records a version that says nothing new, and comparison's short-circuit stops working - all without
 an error.
 
+**And the correction must stop at the title.** The content model's rule treats any member named
+`marks` as a set, at any depth. A section's `values` sit in the same tree, and a metadata field whose
+identifier happens to be `marks` holds its values in the order given (MET-030); sorted as though it were
+formatting, two different orders would digest as one and an edit to the order would be refused as
+changing nothing. So `canonicaliseOutline` composes a node member by member: its `title` through the
+marks-as-a-set rule, and every other member - `values` included - through the plain one, at every
+depth. A test holds the composition to the schema, so a member added to a node and left out of the
+canonical form fails that test rather than going undigested.
+
 **`artifact_version_values_by_kind` is left alone.** It permits metadata values on a component alone,
 and this design puts no values on a document version: a **section's** field values live on its node,
 inside the outline, inside the content, where the content hash and the version digest already cover
@@ -201,11 +216,10 @@ constraint is its change to make.
 [access.md](access.md) each list "a document, an outline" among the artifact kinds, following
 VER-011's own wording. This design makes them one, and the reason is STR-012: the outline must be
 "versioned with the document, and pinned by a baseline like anything else". Two artifacts are two
-chains, two version numbers for one thing, and a document version that has to pin an outline version
-
-- which is a baseline in miniature, built for a pair that never diverges. VER-011 is satisfied either
-  way, because it is a statement about the mechanism rather than a mandate on the inventory. The two
-  documents' prose is corrected in the pull request that builds this, not in the one that writes it.
+chains, two version numbers for one thing, and a document version that has to pin an outline version,
+which is a baseline in miniature built for a pair that never diverges. VER-011 is satisfied either
+way, because it is a statement about the mechanism rather than a mandate on the inventory. The two
+documents' prose was corrected by the pull request that built this.
 
 ## The outline, and why it is one tree
 
@@ -306,25 +320,36 @@ points at a component, and editing that component's content still claims its loc
 
 **Five operations, and each one is a version.**
 
-| Operation | Carries                                                              | Refuses                                  |
-| --------- | -------------------------------------------------------------------- | ---------------------------------------- |
-| Insert    | Parent, position, and the node                                       | A parent that is not in the outline      |
-| Move      | Node, new parent, position                                           | A parent inside the node's own subtree   |
-| Remove    | Node                                                                 | Nothing; the subtree goes with it        |
-| Retitle   | Node, the new title as inline content                                | A title the content model will not parse |
-| Set       | Node, and one of `numbered`, `matter`, `pageBreak`, `mode`, `values` | A `mode` of `pinned` with no version     |
+| Operation | Carries                                                                       | Refuses                                                                                                          |
+| --------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Insert    | Parent, position, and the node                                                | A parent that is not in the outline; a position past the end of its children                                     |
+| Move      | Node, new parent, position                                                    | A node that is not there; a parent inside the node's own subtree, or not in the outline; a position past the end |
+| Remove    | Node                                                                          | A node that is not there. The subtree goes with it                                                               |
+| Retitle   | Node, the new title as inline content                                         | A node that is not a section; a title the content model will not parse                                           |
+| Set       | Node, and at least one of `numbered`, `matter`, `pageBreak`, `mode`, `values` | A `set` naming no switch; a `mode` on a section; a `mode` of `pinned` with no version                            |
+
+A body the union does not accept - a title that will not parse, `pinned` with no version, a `set`
+naming nothing - is refused at the door as `invalid_request`; the rest are the domain's, answered
+`outline_invalid` with the domain's own fixed reason. **A move's position counts the new parent's
+children once the node has left them**, so moving the first of three siblings to position 2 puts it
+last; the keymap and the pointer both compute positions in one module, which a test holds to the
+domain's own operation, so the two cannot read the convention two ways.
 
 Every one carries `openedFrom`, the version the renderer read the outline at, and every one goes
 through `recordVersion`, which answers `version.precondition` with the current outline when somebody
-else moved first, and `version.unchanged` when the act put things back where they were. The renderer
-surfaces the conflict against the outline that came back rather than retrying. That is API-037 and
-STR-059 with nothing added.
+else moved first, and `version.unchanged` when the act put things back where they were - answered
+`200` with the outline as it stands, not as a refusal, because putting something back is not a
+mistake. The renderer surfaces the conflict against the outline that came back rather than retrying.
+That is API-037 and STR-059 with nothing added.
 
 **A stale caller is told it is stale before anything else.** An operation is applied to the version it
 was opened from, so one that does not apply there - removing a node somebody else has since added -
-would otherwise be answered `outline_invalid`, which gives the caller nothing to recover from; the
-route answers `version_precondition` with the current outline whenever `openedFrom` is not the latest,
-and `outline_invalid` only for an operation refused against the latest version.
+would otherwise be answered `outline_invalid`, which gives the caller nothing to recover from. Once the
+body is well formed and the caller may edit, the route answers `version_precondition` with the current
+outline whenever `openedFrom` is not the latest - including an `openedFrom` that is not one of this
+document's versions at all, as `cutVersion` answers one that is not a component's latest - and
+`outline_invalid` only for an operation refused against the latest version. Versions are only ever
+appended, so a latest that differs from `openedFrom` stays different, and no lock is needed to say so.
 
 **A version per structural act, and no editing session.** This differs from the component editor
 deliberately: an outline is not prose. A drag is one drop, a retitle is one commit, and each is a
@@ -333,21 +358,46 @@ as keystrokes. The load test's 11.92 ms cut is what makes it affordable, and `ve
 keeps a move that ends where it started out of the chain. The alternative, an iteration store as a
 component has, is weighed in [What was ruled out](#what-was-ruled-out).
 
-**Undo is one entry per operation** (STR-008), held in the renderer over the outlines the operations
-returned, and cleared when a precondition refuses - because undoing onto an outline somebody else has
-changed is the silent overwrite STR-059 forbids.
+**Undo is one entry per operation** (STR-008), held in the renderer as the one operation that takes
+each act back, computed from the outline before the act and the outline the service returned after it.
+An undo is itself an act, and a version. The stack is cleared when a precondition refuses - because
+undoing onto an outline somebody else has changed is the silent overwrite STR-059 forbids - and when an
+undo is refused as no longer applying, because every entry beneath it was computed for an outline that
+will now never exist.
+
+**A removal is the exception: it cannot be undone.** Its inverse would be an insert of the whole
+subtree under the identifiers it had, and an insert takes one node and allocates a fresh identifier,
+which STR-003 forbids ever reusing - so no operation, and no sequence of them, restores what a removal
+took. The panel therefore asks before it removes, saying that the removal cannot be undone and that
+nothing before it can be undone afterwards, and a recorded removal empties the undo stack, because
+every entry beneath it was computed against an outline that still held what it took. The subtree is
+still in every earlier version, which the chain keeps; nothing yet offers it back from there.
+
+**One act at a time, and what is done while one is in flight.** The page sends one operation and waits
+for its answer before it sends another; the tree says it is busy through `aria-busy`, and nothing is
+disabled under the focus, because a control disabled under the focus drops it to the page in a real
+browser. A retitle committed while an act is in flight is held and sent once that act is answered,
+from the version it made - unless the act is refused as a conflict, when the held title gives way to
+the outline now shown rather than overwriting it, or the author has been signed out, when it is not
+sent and the page says so. **A page-break change, an add or a remove made while an act is in flight is ignored**,
+with `aria-busy` the only sign; the select goes on showing what the node holds. That is a known limit,
+not a rule, and it is left for the browser suite to show whether anybody meets it.
 
 **The cycle check runs before the version is recorded** (STR-057). A reachability walk from this
 document over the reference index, in the write transaction, refusing with `outline_cycle` and naming
 the path. In T1 no cycle is reachable - a document references components and a component references
-no document - and the check is written now anyway, because REU-044 states the same rule from the
-reuse side and a check added when transclusion arrives is a check nobody writes.
+no document. **It is not built yet**: there is no reference index to walk, because relationships.md's
+is designed and not built, so STR-057 stays claimed here and is cited by nothing until the plan that
+builds the index writes the check beside it - see [Changed while planning the build](#changed-while-planning-the-build).
 
 **Accessibility.** Every operation is in the panel's keymap as well as its pointer surface (STR-006):
 `Alt+Up` and `Alt+Down` to move among siblings, `Alt+Left` and `Alt+Right` to promote and demote,
-`Enter` to insert a sibling, `Delete` for a node and its subtree. The panel is one tab stop with
-arrow-key movement, as component-editor.md's toolbar is, and a move announces what moved and where it
-landed.
+`Enter` to insert a sibling, `Delete` for a node and its subtree, asking first, and `Ctrl+Z` to undo.
+The panel is one tab stop with arrow-key movement, `Home` and `End`, as component-editor.md's toolbar
+is, and every act announces what it did - a move, what moved and where it landed. The pointer drags a
+node onto another to make it the last child, onto the gap before one to put it there, or onto **Move
+to the end of the document**. `Alt+Left` is the browser's Back on Windows and Linux, so the tree takes
+every `Alt` and arrow key it is given, and only a browser can show that this is enough.
 
 ## Numbering
 
@@ -525,8 +575,10 @@ One migration, in each tenant's schema, and no new table:
 | `artifact_space_by_kind` widened   | A document is content, so it lives in exactly one space (access.md)                                                                                                        |
 | `reference` gains outline rows     | [relationships.md](relationships.md)'s index, written from a document version at insert, one row per component reference, so the cycle check and where-used read one place |
 
-`artifact_version` is untouched. `component_lock` is untouched, and its check constraint is what
-enforces COL-N02.
+`artifact_version` gains nothing but a wider author check: 0016 requires an author of a document
+version as 0015 required one of a component's. `component_lock` is untouched, and its check
+constraint is what enforces COL-N02. **The `reference` row is not built**: there is no `reference`
+table in any tenant migration, so migration 0016 widens three checks and adds nothing.
 
 ## Routes
 
@@ -542,6 +594,13 @@ target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 | `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version              |
 | `GET /v1/documents/{id}/contributions` | Read, artifact | `occurrences`                   | What each named occurrence's component contributes to the sequences                            |
 
+**Four of the six are built, and two of those short of this table.** `GET /v1/documents` carries
+neither `cursor` nor `limit` and answers everything the caller may read at once, which is correct and
+linear in the number of documents; `GET /v1/documents/{id}` answers each reference node as it is
+stored, naming its component and its mode, with no resolved component version. The numbering and
+contributions routes wait for numbering. Creating answers `200` rather than `201`, for the reason
+component-editor.md gives: a permission-checked handler cannot set a status.
+
 **One route for five operations, not five routes.** Each is one act against one outline at one
 version, they share every refusal, and a sixth operation should be a member of a closed union rather
 than a new path with the same preconditions copied into it.
@@ -555,27 +614,28 @@ them nothing they could not already read; the component routes order it the same
 **The refusals**, in the one error shape, with underscored wire codes as
 `apps/service/src/wire-codes.ts` maps them:
 
-| Code                   | Means                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------ |
-| `version_precondition` | Somebody else changed the outline; the current one comes back with it                      |
-| `outline_cycle`        | The reference would close a cycle, naming the path (STR-057)                               |
-| `outline_invalid`      | The operation does not apply - a parent inside the moved subtree, a node that is not there |
-| `content_invalid`      | A title the content model will not parse                                                   |
+| Code                   | Means                                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version_precondition` | The outline is not the one the caller opened - somebody else changed it, or `openedFrom` is not this document's; the current one comes back with it |
+| `outline_cycle`        | The reference would close a cycle, naming the path (STR-057). Not built                                                                             |
+| `outline_invalid`      | The operation does not apply to the latest outline - a parent inside the moved subtree, a node that is not there - with the domain's fixed `reason` |
+| `content_invalid`      | Creating: a title that is blank once trimmed, or a language tag that is not one. A title in an operation that will not parse is `invalid_request`   |
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                       |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree, `number`, `contents`, `listOf`, reference resolution, and the contribution projection |
-| `packages/db`           | The migration, `createDocument`, `readOutline`, and the operation applied inside `recordVersion`'s transaction with the cycle check                                        |
-| `packages/api-contract` | The routes above                                                                                                                                                           |
-| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                            |
-| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema                                                                                          |
-| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines                                                                                                  |
+| Where                   | What                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree, `number`, `contents`, `listOf`, reference resolution, and the contribution projection             |
+| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, and `editOutline`, which applies an operation and records it through `recordVersion`; later, the cycle check |
+| `packages/api-contract` | The routes above                                                                                                                                                                       |
+| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                        |
+| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                            |
+| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, with no numbers                                            |
 
 **The operations are pure functions over a tree, and the service applies them.** `packages/domain` is
 where a tree operation can be property-tested without a database, and where determinism is provable.
-The service's part is the transaction: read the latest, apply, check the cycle, record.
+The service's part is the transaction: read the version the caller opened from, apply, check the
+cycle once there is an index to walk, and record - never rebasing one person's act onto another's.
 
 ## Verification
 
@@ -642,3 +702,36 @@ The service's part is the transaction: read the latest, apply, check the cycle, 
 | New         | **A version per structural act, at what size does it stop being right?** A 500-node outline restructured over an afternoon is several hundred versions in a permanent chain. Settled by watching a real document being built                        |
 | New         | **Where the tree stops fitting in one document.** The measurement covers a component's content at 200,000 components; an outline of several thousand nodes is not measured, and an import of a large book is where it would first appear (**IMP**)  |
 | New         | **Whether a section's `values` belong on the node or beside the outline.** On the node they are covered by the version digest for nothing; beside it they are queryable without parsing the tree. Settled by SCH-053's search over section metadata |
+
+## Changed while planning the build
+
+[The first structure plan](../plans/2026-09-18-structure-01-the-document-and-its-outline.md) was
+written against this document and proved in code before it was built, and found ten things; building
+it, and reviewing each task, found ten more, marked as such. One requirement claim is new, STR-061
+(issue #120): nothing in the corpus declared what a document is. No other claim changed. STR-057,
+STR-034, STR-036 and STR-037 stay claimed and are cited by nothing, for the reasons in the rows below,
+and so does STR-004: its statement is a negative, and what a test can show is the construction that
+makes it hold, not the statement itself.
+
+| Found                                                                                                                                                                                                                    | Change                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **The version chain assumes every artifact that is not a component is a definition**, parsing its content by kind and demanding its payload repeat the artifact's id; adding a third kind would not have compiled        | `prepare`, `createArtifact` and `recordVersion` branch on three kinds; a document's identity is its artifact row's, and an outline carries no id of its own                                                                                                                                                                                                                       |
+| **Migration 0016 cannot ALTER `artifact_version` on a fresh environment**: every migration of a tenant runs in one transaction, and 0015's insert leaves a pending trigger event on the table (55006)                    | 0016 sets `artifact_version_component_type_recorded` immediate before the ALTER and deferred again straight after, with the reason in the migration - named rather than `set constraints all immediate`, which would stay in force for every later migration in the same transaction. It fails only on a fresh environment, which is the path everybody uses, so a test runs both |
+| **STR-057's cycle check has no index to walk**: "Stores" says `reference` gains outline rows, and there is no `reference` table                                                                                          | Not built. In T1 no cycle is reachable at all; STR-057 stays claimed and is cited by nothing until relationships.md's index exists ("Editing the outline", "Stores")                                                                                                                                                                                                              |
+| **`artifact_version_component_author` let a document version have no author**                                                                                                                                            | 0016 widens it to `kind not in ('component', 'document')`                                                                                                                                                                                                                                                                                                                         |
+| **The canonical-form correction is right, and reachable only by a hand-built value**                                                                                                                                     | Built and held by a test, with the shared rule run against the same pair to show it gives two strings                                                                                                                                                                                                                                                                             |
+| **An administrator may read a space they may not create in**, so a page offering every readable space would offer refusals                                                                                               | **New document** offers only what `GET /v1/spaces` says `mayCreate` for, as **New component** does, through one shared loader                                                                                                                                                                                                                                                     |
+| **A section's `values` have nowhere to come from**: TPL-054's section-level assignments do not exist                                                                                                                     | The member is stored and validated by nothing, said here. STR-060 stays unclaimed                                                                                                                                                                                                                                                                                                 |
+| **`version.unchanged` is not a refusal**                                                                                                                                                                                 | An act that leaves the outline as it was answers `200` with the outline as it stands, the shape `cutVersion` already answers ("Editing the outline")                                                                                                                                                                                                                              |
+| **The two content-model holes are free to close today and a migration later**                                                                                                                                            | Named and not closed here: a cross-reference's bare target, and the uniqueness walk that does not descend into footnote content                                                                                                                                                                                                                                                   |
+| **The panel is not yet a table of contents**                                                                                                                                                                             | It shows no numbers and jumps nowhere, so STR-034, STR-036 and STR-037 stay claimed and cited by nothing until the navigation plan                                                                                                                                                                                                                                                |
+| **Built: the content model's marks rule reached a section's `values`**: applied to the whole tree, it would sort a metadata field whose identifier is `marks`, so two orders of its values (MET-030) would digest as one | The canonical form is composed member by member - the title through the marks rule, everything else through the plain one - and a test fails if a member is added to a node and left out ("The document artifact")                                                                                                                                                                |
+| **Built: an operation that does not apply to a stale version would have been answered `outline_invalid`**, which leaves the caller nothing to recover from                                                               | A stale caller is told it is stale first, with the current outline ("Editing the outline")                                                                                                                                                                                                                                                                                        |
+| **Built: a stored outline that does not read** had no answer                                                                                                                                                             | It is a broken store rather than the caller's mistake: thrown, logged, and answered `500` with a fixed message that names neither the document nor why                                                                                                                                                                                                                            |
+| **Built: a removal cannot be undone**, so "the inverse of an operation is another operation" is false for one of the five                                                                                                | The panel asks first and says so, and a recorded removal empties the undo stack ("Editing the outline")                                                                                                                                                                                                                                                                           |
+| **Built: an act made while another is in flight** had no rule                                                                                                                                                            | A retitle is held and sent after, or given way to behind a conflict; a page-break change, an add or a remove is ignored with only `aria-busy` to say so, a known limit ("Editing the outline")                                                                                                                                                                                    |
+| **Built: an operation's edges were unsaid** - a `set` naming no switch, a position past the end, and whether a same-parent move reads its position before or after the node leaves                                       | A `set` must name a switch and a position past the end is refused; a move's position counts the children once the node has left them, pinned by a test in the domain and one in the panel ("Editing the outline")                                                                                                                                                                 |
+| **Built: two routes fall short of "Routes"**                                                                                                                                                                             | `GET /v1/documents` is not paged, and `GET /v1/documents/{id}` resolves no component version for a reference: both said under "Routes", and left for later plans                                                                                                                                                                                                                  |
+| **Built: `content_invalid` meant a title that will not parse**, and a title in an operation is refused by the body's schema before any handler runs                                                                      | `content_invalid` is creating's alone - a blank title or a tag that is not one; an operation's title that will not parse is `invalid_request` ("Routes")                                                                                                                                                                                                                          |
+| **Built: a reader naming a component's id on the outline route** would be told something by the order of the checks                                                                                                      | `403` rather than `404`, because `edit` is decided before the kind, which tells them nothing they could not already read ("Routes")                                                                                                                                                                                                                                               |
+| **Built: nothing changes a document's own title, language or direction** once it is made: the five operations are over nodes                                                                                             | Not changed here: named in the plan as left undone                                                                                                                                                                                                                                                                                                                                |

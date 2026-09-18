@@ -8,10 +8,13 @@
 > [the version chain](#the-version-chain) - and who may do what to it - [access](#access) - and the
 > first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
 > creates a component in a space, opens its paragraphs, edits its title, base language and base direction
-> above the surface, saves them as iterations under a lock and cuts versions from them. Nothing yet
-> pastes, edits anything but paragraphs of text, makes a component type, or publishes; an administrator
-> invites people by address and grants and removes roles from a component's access page. The single
-> `Component` in `packages/domain` is still the scaffolding's, and nothing renders it any more.
+> above the surface, saves them as iterations under a lock and cuts versions from them - and
+> [the document and its outline](#the-document-and-its-outline), which makes a document in a space and
+> restructures its outline of sections and component references a version at a time. Nothing yet
+> pastes, edits anything but paragraphs of text, makes a component type, numbers a document, or
+> publishes; an administrator invites people by address and grants and removes roles from a component's
+> access page. The single `Component` in `packages/domain` is still the scaffolding's, and nothing
+> renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
@@ -26,21 +29,21 @@ describing something planned and starts describing something here.
 
 One pnpm workspace, one lock file, twelve packages.
 
-| Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the admission pipeline everything entering a component passes through - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - the canonical serialisation of a whole version, access - the closed permission set, roles, `decide` and the readable set - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
-| `packages/editor`       | `@alloy-works/editor`       | The editor's ProseMirror schema, the mapping to and from the stored model, the identity plugin, the invariants every transaction keeps, and the view one component is edited in. Browser code, no React; all but the view is tested in Node                                                                                                                                                                                                                                                                              |
-| `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests; and access - roles, groups, grants, the access epoch, the facts a decision reads, invitations and the first administrator. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                      |
-| `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas with what each checks, and the OpenAPI document generated from them                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes each checked as it declares, and the built renderer beside them                                                                                                                                                                                                                                                                                                                                                                                      |
-| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only                                                                                                                                                                                                                                                                                                                                                                                         |
-| `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `packages/trace`        | `@alloy-works/trace`        | The requirement corpus compiled: the parsers, the citation scanner, the state ladder, `check` and `verify`, the committed `trace.json`, the query command, a hand-written baseline declaring what a release is answerable for, `pnpm trace gate` deciding pass or fail over it, `pnpm trace pack` writing the evidence pack a baseline's release commits alongside it, and intake - the issue form and `pnpm trace draft`, which drafts a row from a filed issue or from flags but never inserts it                      |
-| `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Workspace               | Package                     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/domain`       | `@alloy-works/domain`       | The content model - the stored shape of a component's content, its canonical form and its migration chain - the admission pipeline everything entering a component passes through - the metadata rules - field, schema and component type definitions, resolution, validation and carrying forward - a document's outline and the five operations over it, the canonical serialisation of a whole version, access - the closed permission set, roles, `decide` and the readable set - the theme model, and their rules. Pure TypeScript + zod - no React, no Electron, no `fs` |
+| `packages/editor`       | `@alloy-works/editor`       | The editor's ProseMirror schema, the mapping to and from the stored model, the identity plugin, the invariants every transaction keeps, and the view one component is edited in. Browser code, no React; all but the view is tested in Node                                                                                                                                                                                                                                                                                                                                    |
+| `apps/web`              | `@alloy-works/web`          | The renderer: React + TypeScript + Vite. The entire UI, in both deliveries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `apps/desktop`          | `@alloy-works/desktop`      | The Electron shell: main process and preload. No UI of its own                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `packages/db`           | `@alloy-works/db`           | Login roles, tenant provisioning, the migration runner and `withTenant`, the only way to reach tenant data; and the version chain - spaces, artifacts, insert-only versions and the definitions each was written against, with both digests, for components, documents and definitions alike; and access - roles, groups, grants, the access epoch, the facts a decision reads, invitations and the first administrator. Node, `pg` and `@alloy-works/domain`; no UI                                                                                                           |
+| `packages/api-contract` | `@alloy-works/api-contract` | The API's routes, declared once as zod schemas with what each checks, and the OpenAPI document generated from them                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `apps/service`          | `@alloy-works/service`      | The web service: Fastify, hostname to tenant, the contract's routes each checked as it declares, and the built renderer beside them                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `packages/stand-in-idp` | `@alloy-works/stand-in-idp` | A real OpenID Connect provider with invented users, playing an organisation's provider or Google, for development and tests only                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `packages/objects`      | `@alloy-works/objects`      | Object storage: a credential per tenant scoped to its own prefix, objects by content hash, and signed links                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `apps/worker`           | `@alloy-works/worker`       | Claims jobs from the platform queue and runs each inside its own tenant; carries the pinned Typst                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `packages/api-client`   | `@alloy-works/api-client`   | The one way in for a client: types generated from `openapi.json`, a typed client, and the stream reader                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `packages/trace`        | `@alloy-works/trace`        | The requirement corpus compiled: the parsers, the citation scanner, the state ladder, `check` and `verify`, the committed `trace.json`, the query command, a hand-written baseline declaring what a release is answerable for, `pnpm trace gate` deciding pass or fail over it, `pnpm trace pack` writing the evidence pack a baseline's release commits alongside it, and intake - the issue form and `pnpm trace draft`, which drafts a row from a filed issue or from flags but never inserts it                                                                            |
+| `tests/e2e`             | `@alloy-works/e2e`          | The whole system in containers, driven over HTTP: sign in, ask for a sample, wait on the stream, fetch the PDF                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 CI now has one real gate: `pnpm trace gate`, run as its own step after Test, is not
 `continue-on-error` like the checks around it - see [`docs/testing.md`](testing.md) and
@@ -57,7 +60,8 @@ it calls the service (API-001); `apps/desktop`
 depends on `@alloy-works/web` **for types only** (see the platform bridge below). `packages/db`
 depends on `@alloy-works/domain`, for the version's canonical serialisation and the schemas a
 version's content is checked against, and for `decide`. `packages/api-contract` and `apps/service`
-depend on it for the permission set a route declares and the decision it is checked by. The domain package
+depend on it for the permission set a route declares and the decision it is checked by, and the
+contract takes an outline operation's schema from it rather than restating it. The domain package
 depends on neither and can be used from anywhere - a server, a CLI, a test - without dragging a UI
 along.
 
@@ -120,6 +124,11 @@ canonical rules and the migration chain themselves live in `packages/domain/src/
 with the metadata definitions; `canonicalise` names `marks` as the one member whose array is a set.
 The whole version's serialisation is `packages/domain/src/version/`, and the hashing of it and of
 content is `packages/db/src/version-digest.ts`.
+
+**A document's outline is not content, and has a module of its own**: `packages/domain/src/structure/`,
+beside `content/model/` and built on it - a section title is the content model's inline content, and
+the outline's canonical form reuses the content model's marks-as-a-set rule for that title and for
+nothing else. It is described under [the document and its outline](#the-document-and-its-outline).
 
 **The content model spike's schema still stands beside this one**, in `packages/domain/src/content/`,
 with `compare.ts`, `resolve.ts`, `binding.ts`, the OOXML reader and writer, and the four gate-case
@@ -227,20 +236,23 @@ and the field definition refuses one.
 
 `packages/db` holds the permanent record every versioned thing is kept in, designed in
 [`design/storage-and-versioning.md`](design/storage-and-versioning.md) under
-[ADR-0024](decisions/0024-a-version-digest-over-the-whole-version.md). Three tenant migrations and the
+[ADR-0024](decisions/0024-a-version-digest-over-the-whole-version.md). Four tenant migrations and the
 functions that write the chain, each taking the transaction `withTenant` opened. Creating a component
 inserts its first version and the editing session cuts the rest (see
-[the editor and its session](#the-editor-and-its-session)); there is no revision and no baseline.
+[the editor and its session](#the-editor-and-its-session)); creating a document inserts its first
+version and each structural act records the next (see
+[the document and its outline](#the-document-and-its-outline)); there is no revision and no baseline.
 
-| Where                                         | Holds                                                                                                                                                      |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `migrations/tenant/0007_spaces_and_artifacts` | `space`, name unique in the tenant; `artifact`, an id and a kind, in exactly one space for a component and in none for a field, schema or type             |
-| `migrations/tenant/0008_version_chain`        | `artifact_version` - numbers, author, time, note, schema version, content, values, what was not carried, the type, both digests - and `version_definition` |
-| `migrations/tenant/0015_component_types`      | The component type every environment starts with, _Topic_; `component_type_default`, one row, declaring it; and an author nullable for a definition alone  |
-| `src/version-digest.ts`                       | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                              |
-| `src/spaces.ts`                               | `createSpace`                                                                                                                                              |
-| `src/versions.ts`                             | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`                                                              |
-| `src/load/`                                   | The load test, outside `pnpm test`: `pnpm --filter @alloy-works/db test:load`                                                                              |
+| Where                                         | Holds                                                                                                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `migrations/tenant/0007_spaces_and_artifacts` | `space`, name unique in the tenant; `artifact`, an id and a kind, in exactly one space for a component and in none for a field, schema or type                                       |
+| `migrations/tenant/0008_version_chain`        | `artifact_version` - numbers, author, time, note, schema version, content, values, what was not carried, the type, both digests - and `version_definition`                           |
+| `migrations/tenant/0015_component_types`      | The component type every environment starts with, _Topic_; `component_type_default`, one row, declaring it; and an author nullable for a definition alone                            |
+| `migrations/tenant/0016_documents`            | `document` as a kind in `artifact_kind_check`, in exactly one space by `artifact_space_by_kind`, and required to have an author by `artifact_version_component_author`; no new table |
+| `src/version-digest.ts`                       | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                        |
+| `src/spaces.ts`                               | `createSpace`                                                                                                                                                                        |
+| `src/versions.ts`                             | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document or a definition                                   |
+| `src/load/`                                   | The load test, outside `pnpm test`: `pnpm --filter @alloy-works/db test:load`                                                                                                        |
 
 **Four properties, because each is a decision rather than an implementation detail.**
 
@@ -371,7 +383,7 @@ metadata.
 | `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                                                             |
 | `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                                                                   |
 | `db: src/creation.ts`                       | `createComponent` at `0.1`, `listComponentTypes` and `defaultComponentType`, and `currentDefinitionsFor`, which creating and cutting share                                                              |
-| `db: src/components.ts`, `spaces.ts`        | `listReadableComponents`, filtered by the readable set inside its query, a page at a time; `listSpacesFor`, each space with whether the caller may create in it                                         |
+| `db: src/components.ts`, `spaces.ts`        | `listReadableComponents`, filtered by the shared readable-set predicate inside its query, a page at a time; `listSpacesFor`, each space with whether the caller may create in it                        |
 | `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component over the component type the environment starts with, and Ada and Grace allowed Author on General, for development only                                            |
 | `api-contract: components.ts`, `editing.ts` | Nine routes and their schemas - `GET /v1/spaces`, `GET /v1/spaces/{space}/component-types` and `POST /v1/spaces/{space}/components` beside the six the session uses; a route may declare a request body |
 | `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                                                                  |
@@ -405,6 +417,60 @@ operations holds them to.
 `pnpm dev:setup` makes "Install the printer" in both development environments, over the component type
 the environment starts with rather than one of its own, and allows Ada and Grace Author on General; Alice
 is left with nothing.
+
+## The document and its outline
+
+Making a document and restructuring its outline, designed in [`design/structure.md`](design/structure.md)
+and built by [the first structure plan](plans/2026-09-18-structure-01-the-document-and-its-outline.md).
+A document is an artifact of its own kind, in exactly one space, and **its content is its outline**: one
+JSON tree of sections and component references, versioned through the same chain as a component, with
+the same two digests. Nothing numbers it, resolves a reference's component version, or shows it as a
+document view; a component is still opened on its own to be edited.
+
+| Where                                                     | Holds                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `domain: structure/outline.ts`                            | The outline at schema version 1 - a title, a base language and direction, and `nodes` - each node a section or a reference carrying an identifier, `numbered`, `matter`, `pageBreak` and children, a section a title and `values`, a reference a component and a `mode`; the parse, the migration chain and the canonical form |
+| `domain: structure/operations.ts`                         | `outlineOperationSchema`, the closed union of insert, move, remove, retitle and set, and `applyOutlineOperation`, which applies one to a tree and answers the new outline or a fixed reason, never an exception                                                                                                                |
+| `domain: version/substance.ts`                            | `DocumentSubstance`, the third arm of a version's substance, and `canonicaliseVersionContent` choosing among three                                                                                                                                                                                                             |
+| `db: migrations/tenant/0016_documents`                    | The three widened checks, above, and the one deferred constraint set immediate and back so they apply on a fresh environment                                                                                                                                                                                                   |
+| `db: src/documents.ts`                                    | `createDocument` at `0.1` with an empty outline, `readDocument`, `listReadableDocuments`, and `editOutline`, which applies one operation to the version the caller opened from and records it through `recordVersion`                                                                                                          |
+| `db: src/readable-artifacts.ts`                           | The readable-set predicate every listing of content filters through inside its query - components and documents alike                                                                                                                                                                                                          |
+| `api-contract: documents.ts`                              | `GET /v1/documents`, `POST /v1/spaces/{space}/documents`, `GET /v1/documents/{id}` and `POST /v1/documents/{id}/outline`, and their schemas; the operation's schema is the domain's                                                                                                                                            |
+| `service: src/documents.ts`                               | The handlers: a document's kind checked by each, a stale act answered with the current outline, and `outline.invalid` mapped to `outline_invalid`                                                                                                                                                                              |
+| `web: src/structure/`                                     | The documents list, **New document**, the document page holding the outline the last act returned and an undo stack, the outline panel with its keymap and drag and drop, and `tree.ts`, the panel's arithmetic, pure and tested against the domain's operations                                                               |
+| `web: src/spaces.ts`, `paging.ts`, `editor/Workspace.tsx` | The creatable spaces loader **New component** and **New document** share, the every-page reader the access page and the document page share, and the hash routes `#/documents` and `#/documents/{id}` beside the components', with a **Components** and **Documents** link above either list                                   |
+
+**Five properties, because each is a decision rather than an implementation detail.**
+
+**One act, one version, and no lock.** Each of the five operations is sent alone, carrying the version
+it was made against, and is recorded as a version of its own through `recordVersion`, under the
+advisory lock the chain already takes. The store applies it to the version the caller opened from,
+never the latest, so one person's act is never rebased onto another's: a second act from the same
+version is refused with the outline as it now stands, and an act that puts things back where they were
+is answered with that outline and records nothing. A document cannot be locked at all:
+`component_lock`'s check constraint refuses the kind, and the lock route turns a document's id away
+before that.
+
+**A stale caller is told so first.** Whatever else an act from an older version gets wrong, it is
+answered `409 version_precondition` with the current outline; `outline_invalid` is kept for an act
+refused against the latest, so it always means the author asked for something the outline cannot do.
+
+**The canonical form is composed, not blanket.** A section title is inline content, whose marks are a
+set; a section's `values` are metadata, where a field's values keep their order. So the outline is
+serialised member by member, the title through the content model's rule and everything else through the
+plain one, and a test fails when a member is added to a node and not composed.
+
+**Undo is operations, computed in the renderer.** The page keeps, for each act, the one operation that
+takes it back, computed from the outline before and the outline the service returned. A conflict
+empties the stack, because undoing onto somebody else's outline would overwrite it unseen; a removal
+empties it too, because it has no inverse - the subtree's identifiers can never be allocated again.
+
+**One act in flight at a time.** The page sends nothing while an act is unanswered. A retitle committed
+meanwhile is held and sent after, unless the act before it is refused as a conflict; a page-break
+change, an add or a remove made meanwhile is ignored, with the tree's `aria-busy` the only sign.
+
+`pnpm dev:setup` makes no document: **New document** makes one in General, which Ada and Grace may
+create in.
 
 ## One renderer, two deliveries
 
@@ -504,7 +570,9 @@ Rules that hold for every channel added later:
 The renderer asks the bridge which delivery it is running under, and, once somebody is signed in,
 lists the components they may read. Opening one fetches it at its latest version; its first change
 claims the lock, changes go back as iterations after a pause, and Save version and Done editing cut
-versions from them - every call through the generated client.
+versions from them. Beside the components, it lists the documents they may read; opening one fetches
+its outline at its latest version, and each structural act goes back alone, carrying the version it was
+made against, and answers with the outline as it now stands - every call through the generated client.
 
 Beside it, the web service answers HTTP on its own: a request's hostname names a tenant, found in the
 platform table; the service reads that tenant's data only through `withTenant` in `packages/db`,
