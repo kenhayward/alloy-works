@@ -1951,3 +1951,53 @@ describe('a drag started before the panel has settled', () => {
     expect(await screen.findByText('Move to the end of the document')).toBeInTheDocument();
   });
 });
+
+describe('undo from the node details', () => {
+  it('undoes from a checkbox or a select, which have no undo of their own, and leaves a title field its own', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    await userEvent.click(box);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.'),
+    );
+    await settled();
+    expect(fake.edits()).toHaveLength(1);
+
+    // A title field keeps Ctrl+Z for what is being typed in it: nothing is sent.
+    screen.getByRole('textbox', { name: 'Title' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    expect(fake.edits()).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
+
+    // The box has no undo of its own, so the panel's takes the act back, with the focus still on it.
+    screen.getByRole('checkbox', { name: 'Numbered' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Undone. Method is now numbered.'),
+    );
+    expect(fake.edits()).toHaveLength(2);
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, numbered: true },
+    });
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+    expect(item('Method')).toHaveAccessibleDescription('2');
+    await settled();
+
+    // And the same from the select beside it.
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Starts on' }), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(3));
+    await settled();
+    screen.getByRole('combobox', { name: 'Starts on' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(4));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, pageBreak: 'none' },
+    });
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Undone\./));
+  });
+});

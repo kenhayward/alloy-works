@@ -181,13 +181,29 @@ function unnumberedAncestor(
   return undefined;
 }
 
-/** Whether a key event came from somewhere text is typed, where the key is the field's own. */
-function inField(event: KeyboardEvent): boolean {
+/** Inputs that take no typing, and so have no undo of their own for Ctrl+Z to reach. */
+const UNTYPED_INPUTS = new Set([
+  'checkbox',
+  'radio',
+  'button',
+  'submit',
+  'reset',
+  'range',
+  'color',
+  'file',
+  'image',
+]);
+
+/**
+ * Whether a key event came from somewhere text is typed, whose own undo Ctrl+Z is. A checkbox or a
+ * select has none: there the key is the panel's, or the act just made from it could not be undone
+ * from where the focus still is.
+ */
+function inTextField(event: KeyboardEvent): boolean {
   const target = event.target;
   return (
-    target instanceof HTMLInputElement ||
     target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement
+    (target instanceof HTMLInputElement && !UNTYPED_INPUTS.has(target.type))
   );
 }
 
@@ -507,7 +523,7 @@ export function OutlinePanel({
       !event.altKey &&
       event.key.toLowerCase() === 'z';
     // In a text field Ctrl+Z is the field's own undo, of what is being typed, and it is left alone.
-    if (!undoKey || inField(event)) return;
+    if (!undoKey || inTextField(event)) return;
     event.preventDefault();
     if (!may || !canUndo || !onUndo) return;
     const focus = event.target instanceof HTMLElement ? event.target.dataset.node : undefined;
