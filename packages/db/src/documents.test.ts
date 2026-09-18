@@ -268,21 +268,31 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(documents).toEqual([]);
   });
 
-  it('records each structural act as the next version, with a node identifier from real randomness', async () => {
+  it('STR-003 records each structural act as the next version, with a node identifier from real randomness', async () => {
     const first = await created();
     const second = await recorded(first, section('Introduction'));
     expect(second).toMatchObject({ artifactId: first.artifactId, revision: 0, version: 2 });
     const outline = second.content as OutlineDocument;
     expect(outline.nodes).toHaveLength(1);
     expect(outline.nodes[0]).toMatchObject({ type: 'section', title: text('Introduction') });
+    // Allocated on creation: 128 bits from node:crypto, in the spelling a block identifier has.
     expect(outline.nodes[0]!.id).toMatch(/^[a-z2-7]{26}$/);
 
+    // Stable: the next version carries it unchanged, and the new node has one of its own.
     const third = await recorded(second, section('Method', null, 1));
     const ids = (third.content as OutlineDocument).nodes.map((node) => node.id);
     expect(ids).toHaveLength(2);
     expect(ids[0]).toBe(outline.nodes[0]!.id);
     expect(ids[1]).not.toBe(ids[0]);
-    expect((await chainOf(first.artifactId)).map((row) => row.version_no)).toEqual([1, 2, 3]);
+
+    // Never reused: a node inserted after one is removed is given a new identifier, not the old one.
+    const fourth = await recorded(third, { operation: 'remove', node: ids[0]! });
+    const fifth = await recorded(fourth, section('Results'));
+    const after = (fifth.content as OutlineDocument).nodes.map((node) => node.id);
+    expect(after).toHaveLength(2);
+    expect(after).not.toContain(ids[0]);
+    expect(new Set([...ids, ...after]).size).toBe(3);
+    expect((await chainOf(first.artifactId)).map((row) => row.version_no)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('writes digests anybody can recompute from the stored row', async () => {

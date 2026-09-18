@@ -15021,7 +15021,7 @@
         },
         {
           "id": "STR-007",
-          "howItIsMet": "Nesting is the tree's own; the schema declares no maximum depth, and the numbering scheme's counters are a stack rather than nine named members"
+          "howItIsMet": "Nesting is the tree's own, bounded by the parse at 64 levels - far above nine - so no stored outline is too deep to read; the numbering scheme's counters are a stack rather than nine named members"
         },
         {
           "id": "STR-008",
@@ -15145,7 +15145,7 @@
         },
         {
           "id": "STR-054",
-          "howItIsMet": "The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one"
+          "howItIsMet": "The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one. The deep link itself (STR-044) is not built, so the cited test shows the empty outline and the root's identity and no link: that clause is answered by the design and demonstrated by nothing yet"
         },
         {
           "id": "STR-061",
@@ -15477,19 +15477,19 @@
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 215,
+      "line": 216,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 381,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 187,
+      "line": 188,
       "kind": "title"
     },
     {
@@ -15591,13 +15591,13 @@
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 255,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 572,
+      "line": 591,
       "kind": "title"
     },
     {
@@ -15622,6 +15622,12 @@
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
       "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "STR-003",
+      "file": "packages/db/src/documents.test.ts",
+      "line": 271,
       "kind": "title"
     },
     {
@@ -16053,7 +16059,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 95,
+      "line": 98,
       "kind": "title"
     },
     {
@@ -16311,49 +16317,49 @@
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 132,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 181,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 200,
+      "line": 269,
       "kind": "title"
     },
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 70,
+      "line": 74,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 85,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 119,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 132,
+      "line": 136,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 161,
+      "line": 165,
       "kind": "title"
     },
     {

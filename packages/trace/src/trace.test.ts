@@ -168,8 +168,12 @@ describe('the citations in the committed model', () => {
   // naming the node and not its subtree, the subtree travels, and one Ctrl+Z sends the one inverse
   // that puts it all back; and a conflicting act answered 409 renders the outline the refusal carried,
   // says somebody else changed the document, and leaves nothing on the undo stack to overwrite it.
+  // 163, from 162: the structure plan's final fix wave cites STR-003 a second time, in the store
+  // (packages/db/src/documents.test.ts), where the identifier comes from node:crypto rather than a
+  // test's counter: allocated at the insert, carried unchanged into the next version, and never handed
+  // to the node inserted after it was removed.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(162);
+    expect(model.citations).toHaveLength(163);
   });
 
   it('cites no identifier the corpus does not hold', () => {
