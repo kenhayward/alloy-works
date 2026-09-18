@@ -72,6 +72,40 @@ describe('the content document', () => {
     expect(() => parseContentDocument(doc([paragraph('b1'), paragraph('b1')]))).toThrow(/b1/);
   });
 
+  it('CNT-002 keeps a block identifier unique across the whole component, footnotes included', () => {
+    const noted = (id: string, footnoteId: string, inner: string) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Measured at noon.', marks: [] },
+        {
+          type: 'footnote',
+          id: footnoteId,
+          anchor: { kind: 'span' },
+          content: [paragraph(inner, 'Local time.')],
+        },
+      ],
+    });
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f2', 'fb2')])),
+    ).not.toThrow();
+    // A footnote's paragraph with a body paragraph's identifier - issue #122's own case.
+    expect(() => parseContentDocument(doc([noted('b1', 'f1', 'b1')]))).toThrow(/b1/);
+    // Two footnotes' paragraphs sharing one.
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f2', 'fb1')])),
+    ).toThrow(/fb1/);
+    // A footnote with a block's, which a reference to either would then name twice (STR-026).
+    expect(() => parseContentDocument(doc([noted('b1', 'b2', 'fb1'), paragraph('b2')]))).toThrow(
+      /b2/,
+    );
+    // Two footnotes sharing one.
+    expect(() =>
+      parseContentDocument(doc([noted('b1', 'f1', 'fb1'), noted('b2', 'f1', 'fb2')])),
+    ).toThrow(/f1/);
+  });
+
   it('CNT-023 refuses two adjacent empty paragraphs, and admits one', () => {
     const empty = { type: 'paragraph', id: 'b1', style: 'body', content: [] };
     expect(parseContentDocument(doc([empty])).content).toHaveLength(1);

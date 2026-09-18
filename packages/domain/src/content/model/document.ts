@@ -34,21 +34,34 @@ function walk(blocks: readonly BlockNode[], visit: (block: BlockNode) => void): 
   }
 }
 
+/** Adds an identifier to those already held, refusing one already there (CNT-002). */
+function claim(id: string, seen: Set<string>): void {
+  if (seen.has(id)) throw new Error(`Identifier ${id} is used more than once in this component`);
+  seen.add(id);
+}
+
 /**
- * CNT-129. The restriction cannot live in `inline.ts`, because a footnote holds blocks and a block
- * holds inlines - so one of the two files has to learn about the other after the fact, and this is
- * that place. Recursive, because a footnote's own paragraphs can carry footnotes and a restriction
- * that stops at the first level is not a restriction.
+ * The rules inline content is held to wherever it is stored, in one walk. The walk cannot live in
+ * `inline.ts`, because a footnote holds blocks and a block holds inlines - so one of the two files
+ * has to learn about the other after the fact, and this is that place.
+ *
+ * - **A footnote holds paragraphs** (CNT-129), and its content is parsed as such here.
+ * - **Every identifier inside is claimed in `seen`** - a footnote's own and each of its paragraphs' -
+ *   so none can share one with a block or with anything else in what holds it (CNT-002, issue #122).
+ *   A cross-reference targets a footnote by identity (STR-026), so one it shared would name two
+ *   things.
  *
  * Exported because inline content is stored in more than one place: a section title in an outline
  * is inline content too (structure.md), and runs this same walk rather than a copy of it, so one rule
- * governs inline content wherever it is stored. Throws on the first footnote that breaks it.
+ * governs inline content wherever it is stored. Throws on the first breach.
  */
-export function refuseForbiddenFootnoteContent(inlines: readonly InlineNode[]): void {
+export function checkInlineContent(inlines: readonly InlineNode[], seen: Set<string>): void {
   for (const inline of inlines) {
     if (inline.type !== 'footnote') continue;
+    claim(inline.id, seen);
     for (const paragraph of footnoteContentSchema.parse(inline.content)) {
-      refuseForbiddenFootnoteContent(paragraph.content);
+      claim(paragraph.id, seen);
+      checkInlineContent(paragraph.content, seen);
     }
   }
 }
@@ -67,15 +80,12 @@ export function parseContentDocument(value: unknown): ContentDocument {
 
   const seen = new Set<string>();
   walk(document.content, (block) => {
-    if (seen.has(block.id)) {
-      throw new Error(`Block identifier ${block.id} is used more than once in this component`);
-    }
-    seen.add(block.id);
-    if (block.type === 'paragraph') refuseForbiddenFootnoteContent(block.content);
+    claim(block.id, seen);
+    if (block.type === 'paragraph') checkInlineContent(block.content, seen);
     if (block.type === 'blockquote' && block.attribution) {
-      refuseForbiddenFootnoteContent(block.attribution);
+      checkInlineContent(block.attribution, seen);
     }
-    if (block.type === 'table' && block.note) refuseForbiddenFootnoteContent(block.note);
+    if (block.type === 'table' && block.note) checkInlineContent(block.note, seen);
   });
 
   const isEmptyParagraph = (block: BlockNode) =>

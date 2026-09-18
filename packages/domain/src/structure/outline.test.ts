@@ -366,6 +366,32 @@ describe('a section title, under the content model rules', () => {
     const parsed = parseOutlineDocument(titled([words, footnote([paragraph])]));
     expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
   });
+
+  it('keeps every identifier inside a title unique within that title, as a component keeps its own', () => {
+    const second = { ...footnote([{ ...paragraph, id: 'p2' }]), id: 'f2' };
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([paragraph]), second])),
+    ).not.toThrow();
+    // Two footnotes sharing an identifier, and a footnote's paragraph sharing its footnote's.
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([paragraph]), { ...second, id: 'f1' }])),
+    ).toThrow(/content model refuses/);
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([{ ...paragraph, id: 'f1' }])])),
+    ).toThrow(/content model refuses/);
+    // Two sections are two titles: the same footnote identifier in each is not a collision, because
+    // anything in a title is reached through its node, as anything in a component is through its
+    // occurrence.
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [
+          section(NODE, { title: [words, footnote([paragraph])] }),
+          section(OTHER, { title: [words, footnote([paragraph])] }),
+        ],
+      }),
+    ).not.toThrow();
+  });
 });
 
 describe('what a stored outline refuses, because nothing later could take it back', () => {
