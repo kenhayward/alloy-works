@@ -254,6 +254,9 @@ describe('a route that changes access', () => {
       'getComponent',
       'listComponentTypes',
       'createComponent',
+      'createDocument',
+      'getDocument',
+      'editOutline',
     ] as const) {
       expect(routes[name].access, name).not.toHaveProperty('changesAccess');
     }

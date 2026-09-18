@@ -320,6 +320,12 @@ else moved first, and `version.unchanged` when the act put things back where the
 surfaces the conflict against the outline that came back rather than retrying. That is API-037 and
 STR-059 with nothing added.
 
+**A stale caller is told it is stale before anything else.** An operation is applied to the version it
+was opened from, so one that does not apply there - removing a node somebody else has since added -
+would otherwise be answered `outline_invalid`, which gives the caller nothing to recover from; the
+route answers `version_precondition` with the current outline whenever `openedFrom` is not the latest,
+and `outline_invalid` only for an operation refused against the latest version.
+
 **A version per structural act, and no editing session.** This differs from the component editor
 deliberately: an outline is not prose. A drag is one drop, a retitle is one commit, and each is a
 decision worth a row in a permanent chain - the chain reads as "Ada moved 4.2 under 4.1" rather than

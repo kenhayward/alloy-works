@@ -15453,7 +15453,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 281,
+      "line": 294,
       "kind": "title"
     },
     {
@@ -15471,7 +15471,19 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 283,
+      "line": 324,
+      "kind": "title"
+    },
+    {
+      "id": "STR-054",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 215,
+      "kind": "title"
+    },
+    {
+      "id": "STR-061",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 187,
       "kind": "title"
     },
     {

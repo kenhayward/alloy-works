@@ -1,0 +1,549 @@
+import {
+  bootstrapCluster,
+  configureOrganisationSignIn,
+  createSpace,
+  createTenant,
+  createTenantDatabase,
+  findRole,
+  grant,
+  migrate,
+  seedDevelopmentContent,
+  type Tenant,
+  type TenantDatabase,
+} from '@alloy-works/db';
+import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
+import type { FastifyInstance } from 'fastify';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildApp } from './app.js';
+import { createOidcClient } from './oidc.js';
+import { environmentSecrets } from './secrets.js';
+import { signIn } from './test/sign-in.js';
+
+const HOST = 'acme.alloy.test';
+const OTHER = 'dev.acme.alloy.test';
+const UNKNOWN = '11111111-1111-4111-8111-111111111111';
+const NODE = /^[a-z2-7]{26}$/;
+
+type Json = Record<string, unknown>;
+
+/** What the routes answer for a document, as far as these tests read it. */
+interface DocumentBody {
+  id: string;
+  space: { id: string; name: string };
+  version: { id: string; number: string; author: string };
+  outline: {
+    title: string;
+    nodes: { id: string; type: string; title?: { value: string }[]; children: unknown[] }[];
+  };
+  mayEdit: boolean;
+}
+
+const text = (value: string) => [{ type: 'text', value, marks: [] }];
+
+describe('documents through the service', () => {
+  let db: TestDatabase;
+  let idp: StandInProvider;
+  let tenantDb: TenantDatabase;
+  let app: FastifyInstance;
+  let tenant: Tenant;
+  let elsewhere: Tenant;
+  let general: string;
+  let quality: string;
+  let elsewhereSpace: string;
+  const cookies: Record<string, string> = {};
+  const ids: Record<string, string> = {};
+
+  const call = (as: string | undefined, method: 'GET' | 'POST', url: string, payload?: Json) =>
+    app.inject({
+      method,
+      url,
+      headers: { host: HOST, ...(as ? { cookie: cookies[as]! } : {}) },
+      ...(payload ? { payload } : {}),
+    });
+
+  /** Creates a document titled so, in English, left to right - the preflight's own helper (S18). */
+  const create = (as: string, space: string, title: string) =>
+    call(as, 'POST', `/v1/spaces/${space}/documents`, {
+      title,
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+
+  /** One structural act on a document, from the version the caller opened. */
+  const act = (as: string, document: string, openedFrom: string, operation: Json) =>
+    call(as, 'POST', `/v1/documents/${document}/outline`, { openedFrom, operation });
+
+  /** A section, inserted at the top of the outline, from the version the caller holds. */
+  const addSection = (
+    document: { id: string; version: { id: string } },
+    title: string,
+    as = 'ada',
+  ) =>
+    act(as, document.id, document.version.id, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'section', title: text(title) },
+    });
+
+  const chainOf = (document: string) =>
+    tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', document)
+        .orderBy('version_no')
+        .execute(),
+    );
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await migrate(db.migratorUrl);
+    idp = await startStandInProvider({
+      clients: [
+        {
+          clientId: 'alloy',
+          clientSecret: 'stand-in-secret',
+          redirectUris: [`http://${HOST}/v1/sign-in/organisation/callback`],
+        },
+      ],
+    });
+    const organisation = { id: 'acme', name: 'Acme' };
+    tenant = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation,
+      tenant: { id: db.newTenantId(), name: 'Production' },
+      hostnames: [HOST],
+    });
+    elsewhere = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation,
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: [OTHER],
+    });
+    await configureOrganisationSignIn(db.adminUrl, tenant, {
+      issuer: idp.issuer,
+      clientId: 'alloy',
+      secretName: 'stand_in',
+    });
+    tenantDb = createTenantDatabase(db.serviceUrl);
+    await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
+    app = buildApp({
+      db: tenantDb,
+      logLevel: 'silent',
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+    });
+    for (const user of ['ada', 'grace', 'alice']) {
+      cookies[user] = await signIn(app, HOST, user, idp.issuer);
+      ids[user] = (await call(user, 'GET', '/v1/me')).json<{ id: string }>().id;
+    }
+    await tenantDb.withTenant(tenant, async (trx) => {
+      general = (
+        await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow()
+      ).id;
+      quality = (await createSpace(trx, 'Quality')).id;
+      const reader = await findRole(trx, 'Reader');
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: ids.alice! },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+      // The seed gives Ada Author on General and nothing else, so she could not read Quality at all.
+      // Administrator at the tenant lets her read it, and carries no `create` - which is the
+      // read-but-not-create case the refusals below need.
+      const administrator = await findRole(trx, 'Administrator');
+      await grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+    });
+    elsewhereSpace = await tenantDb.withTenant(elsewhere, async (trx) => {
+      const space = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      return space.id;
+    });
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    await tenantDb?.close();
+    await idp?.close();
+    await db?.drop();
+  });
+
+  it('STR-061 makes a document a named, versioned artifact in exactly one space, with its own title', async () => {
+    const made = await create('ada', general, 'The dosing report');
+    expect(made.statusCode).toBe(200);
+    const body = made.json<DocumentBody>();
+    // Versioned: it exists at 0.1, cut by whoever created it.
+    expect(body.version.number).toBe('0.1');
+    expect(body.version.author).toBe(ids.ada);
+    expect(body.space).toEqual({ id: general, name: 'General' });
+    // Named: the title is inside the versioned content, so the listing and the page read one title.
+    expect(body.outline.title).toBe('The dosing report');
+    const listed = await call('ada', 'GET', '/v1/documents');
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json<{ items: unknown[] }>().items).toContainEqual(
+      expect.objectContaining({ id: body.id, title: 'The dosing report' }),
+    );
+    const opened = await call('ada', 'GET', `/v1/documents/${body.id}`);
+    expect(opened.json<DocumentBody>().outline.title).toBe('The dosing report');
+    // An artifact of its own kind, in exactly the one space it was created in.
+    const row = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('artifact')
+        .select(['kind', 'space_id'])
+        .where('id', '=', body.id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ kind: 'document', space_id: general });
+  });
+
+  it('STR-054 gives an outline an implicit root and lets it hold no nodes at all', async () => {
+    const made = await create('ada', general, 'Front matter only');
+    const body = made.json<DocumentBody>();
+    expect(body.outline.nodes).toEqual([]);
+    // Created, read and listed with no nodes, and no error anywhere. The root the deep link would
+    // address is the document itself, which is the id the route is named by.
+    const opened = await call('ada', 'GET', `/v1/documents/${body.id}`);
+    expect(opened.statusCode).toBe(200);
+    expect(opened.json<DocumentBody>()).toMatchObject({
+      id: body.id,
+      outline: { nodes: [] },
+    });
+    expect(
+      (await call('ada', 'GET', '/v1/documents'))
+        .json<{ items: { id: string }[] }>()
+        .items.map((i) => i.id),
+    ).toContain(body.id);
+  });
+
+  it('keeps a section inside the document that declares it, with no identity to reach it by alone', async () => {
+    const made = await create('ada', general, 'Owning its sections');
+    const doc = made.json<DocumentBody>();
+    const inserted = await addSection(doc, 'Introduction');
+    const node = inserted.json<DocumentBody>().outline.nodes[0]!;
+    // A node identifier is 26 base32 characters, so it cannot name an artifact row at all.
+    expect(node.id).toMatch(NODE);
+    const artifacts = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('artifact').select('id').where('space_id', '=', general).execute(),
+    );
+    expect(artifacts.map((each) => each.id)).not.toContain(node.id);
+    expect((await call('ada', 'GET', `/v1/documents/${node.id}`)).statusCode).toBe(400);
+  });
+
+  it('restructures an outline one act and one version at a time', async () => {
+    let doc = (await create('ada', general, 'The dosing report')).json<DocumentBody>();
+    const step = async (operation: Json) => {
+      const answer = await act('ada', doc.id, doc.version.id, operation);
+      expect(answer.statusCode, answer.body).toBe(200);
+      doc = answer.json<DocumentBody>();
+      return doc;
+    };
+
+    await step({ operation: 'insert', parent: null, position: 0, node: section('Results') });
+    expect(doc.version.number).toBe('0.2');
+    const results = doc.outline.nodes[0]!.id;
+    expect(results).toMatch(NODE);
+    await step({ operation: 'insert', parent: null, position: 0, node: section('Method') });
+    expect(doc.version.number).toBe('0.3');
+    const method = doc.outline.nodes[0]!.id;
+    expect(method).toMatch(NODE);
+    expect(method).not.toBe(results);
+
+    await step({ operation: 'move', node: results, parent: method, position: 0 });
+    expect(doc.version.number).toBe('0.4');
+    expect(doc.outline.nodes.map((node) => node.id)).toEqual([method]);
+    expect(doc.outline.nodes[0]!.children).toMatchObject([{ id: results }]);
+
+    await step({ operation: 'retitle', node: method, title: text('Introduction') });
+    expect(doc.version.number).toBe('0.5');
+    expect(doc.outline.nodes[0]!.title).toMatchObject([{ value: 'Introduction' }]);
+
+    await step({ operation: 'set', node: method, pageBreak: 'page' });
+    expect(doc.version.number).toBe('0.6');
+    expect(doc.outline.nodes[0]).toMatchObject({ pageBreak: 'page' });
+
+    await step({ operation: 'remove', node: results });
+    expect(doc.version.number).toBe('0.7');
+    expect(doc.outline.nodes[0]!.children).toEqual([]);
+
+    expect(await chainOf(doc.id)).toHaveLength(7);
+    const opened = await call('ada', 'GET', `/v1/documents/${doc.id}`);
+    expect(opened.json<DocumentBody>()).toEqual(doc);
+  });
+
+  it('answers an act that changes nothing as the version it already was, keeping no row for it', async () => {
+    const made = (await create('ada', general, 'Put back')).json<DocumentBody>();
+    const one = (await addSection(made, 'Introduction')).json<DocumentBody>();
+    const node = one.outline.nodes[0]!.id;
+    const answer = await act('ada', one.id, one.version.id, {
+      operation: 'move',
+      node,
+      parent: null,
+      position: 0,
+    });
+    // Decision K: putting something back where it was is not an error.
+    expect(answer.statusCode).toBe(200);
+    expect(answer.json<DocumentBody>().version).toEqual(one.version);
+    expect(await chainOf(one.id)).toHaveLength(2);
+  });
+
+  it('refuses an operation that does not apply to the outline it was opened from', async () => {
+    const made = (await create('ada', general, 'Inside itself')).json<DocumentBody>();
+    const parent = (await addSection(made, 'Method')).json<DocumentBody>();
+    const method = parent.outline.nodes[0]!.id;
+    const child = (
+      await act('ada', parent.id, parent.version.id, {
+        operation: 'insert',
+        parent: method,
+        position: 0,
+        node: section('Results'),
+      })
+    ).json<DocumentBody>();
+    const results = child.outline.nodes[0]!.children as { id: string }[];
+
+    const refused = await act('ada', child.id, child.version.id, {
+      operation: 'move',
+      node: method,
+      parent: results[0]!.id,
+      position: 0,
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({
+      code: 'outline_invalid',
+      message: 'This change does not apply to the outline as it stands.',
+      reason: 'A node cannot be moved inside its own subtree',
+    });
+    expect(await chainOf(child.id)).toHaveLength(3);
+  });
+
+  it('tells a caller opened from an older version that it is stale, even when its act would not apply there', async () => {
+    // The act removes a node the caller's version never held: invalid against what they opened, and
+    // valid against what now stands. Told only "invalid", they would have nothing to recover from;
+    // told "stale" with the outline as it stands, they can look again and act on that.
+    const first = (await create('ada', general, 'Two people')).json<DocumentBody>();
+    const second = (await addSection(first, 'Introduction')).json<DocumentBody>();
+    const introduction = second.outline.nodes[0]!.id;
+
+    const stale = await act('ada', first.id, first.version.id, {
+      operation: 'remove',
+      node: introduction,
+    });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json()).toMatchObject({
+      code: 'version_precondition',
+      current: { version: second.version, outline: { nodes: [{ id: introduction }] } },
+    });
+    // And from the outline that came back, the same act lands.
+    const current = stale.json<{ current: DocumentBody }>().current;
+    const again = await act('ada', first.id, current.version.id, {
+      operation: 'remove',
+      node: introduction,
+    });
+    expect(again.statusCode).toBe(200);
+    expect(await chainOf(first.id)).toHaveLength(3);
+  });
+
+  it('answers an opened-from version that is not one of this document as stale, with the outline as it stands', async () => {
+    const mine = (await create('ada', general, 'Mine')).json<DocumentBody>();
+    const theirs = (await create('ada', general, 'Theirs')).json<DocumentBody>();
+    for (const openedFrom of [theirs.version.id, UNKNOWN]) {
+      const answer = await act('ada', mine.id, openedFrom, {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: section('Introduction'),
+      });
+      expect(answer.statusCode).toBe(409);
+      expect(answer.json()).toMatchObject({
+        code: 'version_precondition',
+        current: { id: mine.id, version: mine.version },
+      });
+    }
+    expect(await chainOf(mine.id)).toHaveLength(1);
+    expect(await chainOf(theirs.id)).toHaveLength(1);
+  });
+
+  it('refuses the second of two acts from one version with the outline as it now stands', async () => {
+    const doc = (await create('ada', general, 'Raced')).json<DocumentBody>();
+    const [first, second] = await Promise.all([
+      addSection(doc, 'First'),
+      addSection(doc, 'Second'),
+    ]);
+    expect([first.statusCode, second.statusCode].sort()).toEqual([200, 409]);
+    const refused = first.statusCode === 409 ? first : second;
+    const recorded = first.statusCode === 409 ? second : first;
+    expect(refused.json()).toMatchObject({ code: 'version_precondition' });
+    // The refusal carries the outline as it now stands, so nothing is overwritten silently.
+    expect(refused.json<{ current: DocumentBody }>().current).toEqual(recorded.json());
+    expect(await chainOf(doc.id)).toHaveLength(2);
+    // No document-level lock stands in the way of either: `component_lock` refuses a document by its
+    // check constraint, which packages/db's documents.test.ts shows at the database.
+  });
+
+  it('refuses creating where the caller may read but not create, and answers nothing for the rest', async () => {
+    const readOnly = await create('alice', general, 'Not mine');
+    expect(readOnly.statusCode).toBe(403);
+    expect(readOnly.json()).toMatchObject({
+      code: 'forbidden',
+      message: 'This needs the create permission.',
+    });
+    expect((await create('alice', quality, 'Not mine')).statusCode).toBe(404);
+    // Ada administers the tenant, so she may read Quality - and `administer` carries no `create`.
+    expect((await create('ada', quality, 'Not mine')).statusCode).toBe(403);
+    expect((await create('ada', elsewhereSpace, 'Not mine')).statusCode).toBe(404);
+    expect((await create('ada', UNKNOWN, 'Not mine')).statusCode).toBe(404);
+    expect((await call(undefined, 'GET', '/v1/documents')).statusCode).toBe(401);
+  });
+
+  it('opens a document to a reader who may not edit it, and refuses their edit', async () => {
+    const doc = (await create('ada', general, 'Read only')).json<DocumentBody>();
+    const opened = await call('alice', 'GET', `/v1/documents/${doc.id}`);
+    expect(opened.statusCode).toBe(200);
+    expect(opened.json<DocumentBody>().mayEdit).toBe(false);
+    expect((await call('ada', 'GET', `/v1/documents/${doc.id}`)).json<DocumentBody>().mayEdit).toBe(
+      true,
+    );
+    expect(
+      (await call('alice', 'GET', '/v1/documents')).json<{ items: { id: string }[] }>().items,
+    ).toContainEqual(expect.objectContaining({ id: doc.id }));
+
+    const edited = await addSection(doc, 'Introduction', 'alice');
+    expect(edited.statusCode).toBe(403);
+    expect(edited.json()).toMatchObject({ code: 'forbidden' });
+    expect(await chainOf(doc.id)).toHaveLength(1);
+  });
+
+  it("answers a component's id on a document's routes as nothing there", async () => {
+    const component = await call('ada', 'POST', `/v1/spaces/${general}/components`, {
+      title: 'Replace the toner',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    const { id, version } = component.json<{ id: string; version: { id: string } }>();
+    expect((await call('ada', 'GET', `/v1/documents/${id}`)).statusCode).toBe(404);
+    const edited = await act('ada', id, version.id, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: section('Introduction'),
+    });
+    expect(edited.statusCode).toBe(404);
+    expect(
+      (await call('ada', 'GET', '/v1/documents'))
+        .json<{ items: { id: string }[] }>()
+        .items.map((i) => i.id),
+    ).not.toContain(id);
+  });
+
+  it('refuses a body carrying a member it does not declare, and an uppercase id anywhere', async () => {
+    const doc = (await create('ada', general, 'Strict')).json<DocumentBody>();
+    expect(
+      (
+        await call('ada', 'POST', `/v1/spaces/${general}/documents`, {
+          title: 'Strict',
+          language: 'en-GB',
+          direction: 'ltr',
+          nodes: [],
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect((await create('ada', general, '')).statusCode).toBe(400);
+    expect(
+      (
+        await call('ada', 'POST', `/v1/documents/${doc.id}/outline`, {
+          openedFrom: doc.version.id,
+          operation: { operation: 'remove', node: 'a'.repeat(26) },
+          note: 'extra',
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await act('ada', doc.id, doc.version.id, {
+          operation: 'remove',
+          node: 'a'.repeat(26),
+          x: 1,
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect((await call('ada', 'GET', `/v1/documents/${doc.id.toUpperCase()}`)).statusCode).toBe(
+      400,
+    );
+    expect(
+      (
+        await act('ada', doc.id, doc.version.id.toUpperCase(), {
+          operation: 'remove',
+          node: 'a'.repeat(26),
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect((await create('ada', general.toUpperCase(), 'Uppercase space')).statusCode).toBe(400);
+    expect(await chainOf(doc.id)).toHaveLength(1);
+  });
+
+  it("refuses a title that trims to nothing with the store's own content_invalid", async () => {
+    const whitespace = await create('ada', general, '   ');
+    expect(whitespace.statusCode).toBe(400);
+    expect(whitespace.json()).toMatchObject({ code: 'content_invalid' });
+  });
+
+  it('answers a stored outline that no longer reads as a failure on our side, saying nothing of it', async () => {
+    const doc = (await create('ada', general, 'Broken')).json<DocumentBody>();
+    // A version the store would never write, put there by hand: a title the schema refuses.
+    const broken = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('artifact_version')
+        .values({
+          artifact_id: doc.id,
+          kind: 'document',
+          revision_no: 0,
+          version_no: 2,
+          author_id: ids.ada!,
+          note: null,
+          schema_version: 1,
+          content: JSON.stringify({ ...doc.outline, title: '' }),
+          content_hash: 'a'.repeat(64),
+          metadata_values: '{}',
+          not_carried: '[]',
+          component_type_version_id: null,
+          version_digest: 'b'.repeat(64),
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow(),
+    );
+    const answer = await act('ada', doc.id, broken.id, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: section('Method'),
+    });
+    expect(answer.statusCode).toBe(500);
+    expect(answer.json()).toEqual({
+      code: 'internal',
+      message: 'Something went wrong on our side. Quote the trace id if you report it.',
+      traceId: expect.any(String),
+    });
+    expect(answer.body).not.toContain(doc.id);
+    expect(answer.body).not.toContain('does not read');
+    expect(await chainOf(doc.id)).toHaveLength(2);
+  });
+});
+
+function section(title: string) {
+  return { type: 'section', title: text(title) };
+}

@@ -5,6 +5,7 @@ import {
   bootstrapCluster,
   configureOrganisationSignIn,
   createArtifact,
+  createDocument,
   createRole,
   createSpace,
   createTenant,
@@ -46,6 +47,7 @@ describe('routes that check a permission', () => {
   let quality: string;
   let dosing: string;
   let audit: string;
+  let report: string;
   let graceAuthors: string;
 
   const give = async (input: Omit<NewGrant, 'grantedBy' | 'roleId'> & { role: string }) => {
@@ -144,6 +146,17 @@ describe('routes that check a permission', () => {
         }).then((made) => made.artifactId);
       dosing = await artifact(clinical, 'Dosing');
       audit = await artifact(quality, 'Audit');
+      // A document beside `dosing`, at a real version, so a document route's refusal proves the
+      // permission held rather than that nothing was there.
+      const made = await createDocument(trx, {
+        spaceId: clinical,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ids.ada!,
+      });
+      if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+      report = made.version.artifactId;
     });
     await give({
       role: 'Administrator',
@@ -500,6 +513,17 @@ describe('routes that check a permission', () => {
       payload: { title: 'Not mine', language: 'en-GB', direction: 'ltr' },
     }),
     getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
+    createDocument: () => ({
+      url: `/v1/spaces/${clinical}/documents`,
+      status: 404,
+      payload: { title: 'Not mine', language: 'en-GB', direction: 'ltr' },
+    }),
+    getDocument: () => ({ url: `/v1/documents/${report}`, status: 404 }),
+    editOutline: () => ({
+      url: `/v1/documents/${report}/outline`,
+      status: 404,
+      payload: { openedFrom: MISSING, operation: { operation: 'remove', node: 'a'.repeat(26) } },
+    }),
     claimLock: () => ({
       url: `/v1/components/${dosing}/lock`,
       status: 404,

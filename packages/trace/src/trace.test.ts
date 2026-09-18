@@ -156,8 +156,14 @@ describe('the citations in the committed model', () => {
   // (packages/domain/src/structure/operations.test.ts): every node gets a stable identifier that a
   // remove never hands back out, the tree nests to nine levels with no maximum the schema declares,
   // and one component referenced twice is two nodes with their own identity and their own switches.
+  // 159, from 157: the same plan cites STR-054 and STR-061 in the service's document routes
+  // (apps/service/src/document-routes.test.ts): a document created, opened and listed with no nodes,
+  // and a document made a named, versioned artifact in exactly one space, its title inside its
+  // versioned content. The plan's 161 also counted STR-004 and STR-059 here; STR-004 is cited nowhere,
+  // because the test shows a construction rather than its statement, and STR-059 moves to the
+  // renderer's precondition test, where its conflict detection in the interface is built.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(157);
+    expect(model.citations).toHaveLength(159);
   });
 
   it('cites no identifier the corpus does not hold', () => {
