@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1366, from 1365: STR-061, what a document is - a named, versioned artifact in exactly one space
+    // with its own title and identity (issue #120), filed while planning the first structure plan.
     // 1365, from 1364: CNT-149, creating a component in a space the author may create in (issue #115).
     // 1364, from 1363: IAM-072, inviting anybody by address and granting before their first sign-in,
     // filed as issue #113 while planning invitations, when IAM-059 asked it only of the first administrator.
@@ -30,9 +32,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1365);
+    expect(model.requirements).toHaveLength(1366);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 359, from 358: structure.md claims STR-061, the document as an artifact of its own kind, which
+    // it answers by construction.
     // 358, from 319: structure.md claims 39 - the document artifact, its outline, numbering, captions,
     // cross-references, the contents panel, deep links and page breaks, plus CNT-041 and CNT-047, the
     // two numbering clauses content-model.md left for STR. Sixteen more of STR's are deliberately
@@ -65,7 +69,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(358);
+    ).toBe(359);
   });
 });
 

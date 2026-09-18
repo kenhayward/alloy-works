@@ -9802,13 +9802,22 @@
       "line": 62
     },
     {
+      "id": "STR-061",
+      "area": "STR",
+      "statement": "A document must be a named, versioned artifact belonging to exactly one space, carrying its own title and identity.",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 63
+    },
+    {
       "id": "STR-013",
       "area": "STR",
       "statement": "Numbering schemes must be declared by the publishing layout, and applied here (**PUB** owns the declaration)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 100
+      "line": 106
     },
     {
       "id": "STR-014",
@@ -9817,7 +9826,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 101
+      "line": 107
     },
     {
       "id": "STR-015",
@@ -9826,7 +9835,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 102
+      "line": 108
     },
     {
       "id": "STR-016",
@@ -9835,7 +9844,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 103
+      "line": 109
     },
     {
       "id": "STR-017",
@@ -9844,7 +9853,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 104
+      "line": 110
     },
     {
       "id": "STR-018",
@@ -9853,7 +9862,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 105
+      "line": 111
     },
     {
       "id": "STR-019",
@@ -9862,7 +9871,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 106
+      "line": 112
     },
     {
       "id": "STR-020",
@@ -9871,7 +9880,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 107
+      "line": 113
     },
     {
       "id": "STR-021",
@@ -9880,7 +9889,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 108
+      "line": 114
     },
     {
       "id": "STR-022",
@@ -9889,7 +9898,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 109
+      "line": 115
     },
     {
       "id": "STR-051",
@@ -9898,7 +9907,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 110
+      "line": 116
     },
     {
       "id": "STR-052",
@@ -9907,7 +9916,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 111
+      "line": 117
     },
     {
       "id": "STR-023",
@@ -9916,7 +9925,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 133
+      "line": 139
     },
     {
       "id": "STR-024",
@@ -9925,7 +9934,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 134
+      "line": 140
     },
     {
       "id": "STR-025",
@@ -9934,7 +9943,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 135
+      "line": 141
     },
     {
       "id": "STR-026",
@@ -9943,7 +9952,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 141
+      "line": 147
     },
     {
       "id": "STR-027",
@@ -9952,7 +9961,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 142
+      "line": 148
     },
     {
       "id": "STR-028",
@@ -9961,7 +9970,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 143
+      "line": 149
     },
     {
       "id": "STR-029",
@@ -9970,7 +9979,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 144
+      "line": 150
     },
     {
       "id": "STR-030",
@@ -9979,7 +9988,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 145
+      "line": 151
     },
     {
       "id": "STR-031",
@@ -9988,7 +9997,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 146
+      "line": 152
     },
     {
       "id": "STR-032",
@@ -9997,7 +10006,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 147
+      "line": 153
     },
     {
       "id": "STR-033",
@@ -10006,7 +10015,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 148
+      "line": 154
     },
     {
       "id": "STR-056",
@@ -10015,7 +10024,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 149
+      "line": 155
     },
     {
       "id": "STR-055",
@@ -10024,7 +10033,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 150
+      "line": 156
     },
     {
       "id": "STR-034",
@@ -10033,7 +10042,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 171
+      "line": 177
     },
     {
       "id": "STR-035",
@@ -10042,7 +10051,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 172
+      "line": 178
     },
     {
       "id": "STR-036",
@@ -10051,7 +10060,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 173
+      "line": 179
     },
     {
       "id": "STR-037",
@@ -10060,7 +10069,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 174
+      "line": 180
     },
     {
       "id": "STR-038",
@@ -10069,7 +10078,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 175
+      "line": 181
     },
     {
       "id": "STR-039",
@@ -10078,7 +10087,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 176
+      "line": 182
     },
     {
       "id": "STR-040",
@@ -10087,7 +10096,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 182
+      "line": 188
     },
     {
       "id": "STR-041",
@@ -10096,7 +10105,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 183
+      "line": 189
     },
     {
       "id": "STR-042",
@@ -10105,7 +10114,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 184
+      "line": 190
     },
     {
       "id": "STR-043",
@@ -10114,7 +10123,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 185
+      "line": 191
     },
     {
       "id": "STR-044",
@@ -10123,7 +10132,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 191
+      "line": 197
     },
     {
       "id": "STR-045",
@@ -10132,7 +10141,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 192
+      "line": 198
     },
     {
       "id": "STR-046",
@@ -10141,7 +10150,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 193
+      "line": 199
     },
     {
       "id": "STR-047",
@@ -10150,7 +10159,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 194
+      "line": 200
     },
     {
       "id": "STR-048",
@@ -10159,7 +10168,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 214
     },
     {
       "id": "STR-049",
@@ -10168,7 +10177,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 209
+      "line": 215
     },
     {
       "id": "STR-050",
@@ -10177,7 +10186,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 210
+      "line": 216
     },
     {
       "id": "STY-001",
@@ -12861,31 +12870,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 216
+      "line": 222
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 217
+      "line": 223
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 218
+      "line": 224
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 219
+      "line": 225
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 220
+      "line": 226
     },
     {
       "id": "STY-N01",
@@ -13787,28 +13796,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 226
+      "line": 232
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 227
+      "line": 233
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 228
+      "line": 234
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 229
+      "line": 235
     },
     {
       "id": "STY-Q01",
@@ -15137,6 +15146,10 @@
         {
           "id": "STR-054",
           "howItIsMet": "The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one"
+        },
+        {
+          "id": "STR-061",
+          "howItIsMet": "A document is an artifact of its own kind: its identity is the `artifact` row, `artifact_space_by_kind` puts it in exactly one space, its title lives inside its versioned content as a component's does, and it versions through the one mechanism"
         },
         {
           "id": "CNT-041",
