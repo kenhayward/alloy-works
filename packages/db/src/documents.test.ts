@@ -443,6 +443,86 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(await chainOf(first.artifactId)).toHaveLength(1);
   });
 
+  it('references only a component the author may read, pinned only to a version of that component', async () => {
+    const component = (spaceId: string, author: string, tenant = production) =>
+      service.withTenant(tenant, async (trx) => {
+        const made = await createComponent(trx, {
+          spaceId,
+          title: 'Install the printer',
+          language: 'en-GB',
+          direction: 'ltr',
+          author,
+        });
+        if (made.answer !== 'created') throw new Error('Expected a component');
+        return made.version;
+      });
+    const readable = await component(general, ada);
+    const unreadable = await component(quality, grace);
+    const ivy = await service.withTenant(development, (trx) =>
+      person(trx, `ivy-${randomUUID()}`, 'Ivy'),
+    );
+    const otherEnvironment = await component(elsewhere, ivy, development);
+    const definition = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'componentType')
+        .executeTakeFirstOrThrow(),
+    );
+    const first = await created();
+    const second = await created(general, 'Another report');
+
+    const reference = (component: string, mode: Record<string, unknown> = { kind: 'latest' }) =>
+      ({
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component, mode },
+      }) as OutlineOperation;
+    const refused = {
+      answer: 'outline.invalid',
+      reason: 'The component is not one this outline can reference',
+    };
+    for (const target of [
+      '00000000-0000-0000-0000-000000000000',
+      otherEnvironment.artifactId,
+      definition.id,
+      first.artifactId,
+      second.artifactId,
+      unreadable.artifactId,
+    ]) {
+      await expect(edit(first, reference(target))).resolves.toEqual(refused);
+    }
+    // Pinned to a version of some other artifact - another component's, a document's - or to none.
+    for (const version of [unreadable.id, second.id, first.id, randomUUID()]) {
+      await expect(
+        edit(first, reference(readable.artifactId, { kind: 'pinned', version })),
+      ).resolves.toEqual(refused);
+    }
+    expect(await chainOf(first.artifactId)).toHaveLength(1);
+
+    // A component the author may read is referenced, and pinned to one of its own versions.
+    const added = await recorded(first, reference(readable.artifactId));
+    const node = (added.content as OutlineDocument).nodes[0]!.id;
+    for (const version of [unreadable.id, second.id]) {
+      await expect(
+        edit(added, { operation: 'set', node, mode: { kind: 'pinned', version } }),
+      ).resolves.toEqual(refused);
+    }
+    const pinned = await recorded(added, {
+      operation: 'set',
+      node,
+      mode: { kind: 'pinned', version: readable.id },
+    });
+    expect((pinned.content as OutlineDocument).nodes[0]).toMatchObject({
+      component: readable.artifactId,
+      mode: { kind: 'pinned', version: readable.id },
+    });
+    await expect(
+      recorded(first, reference(readable.artifactId, { kind: 'pinned', version: readable.id })),
+    ).rejects.toThrow(/version.precondition/);
+  });
+
   it("throws on a stored outline that no longer reads: a broken store, not the caller's mistake", async () => {
     const first = await created();
     // A version the store would never write, put there by hand: a title the schema refuses.

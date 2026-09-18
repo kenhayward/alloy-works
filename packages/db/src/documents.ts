@@ -2,14 +2,17 @@ import { randomBytes } from 'node:crypto';
 import {
   applyOutlineOperation,
   blockIdentifierFrom,
+  decide,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
   readOutline,
+  walkOutline,
   type OutlineDocument,
+  type OutlineNode,
   type OutlineOperation,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
-import { loadReadableSet } from './access-facts.js';
+import { loadFacts, loadReadableSet } from './access-facts.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import {
@@ -185,6 +188,64 @@ export async function listReadableDocuments(
 }
 
 /**
+ * The one answer every refused reference target gets, whatever was wrong with it: no such artifact,
+ * another environment's, a definition, a document - this one included - a component the author may
+ * not read, or a pinned version of some other artifact. One sentence, so the refusal cannot be used to
+ * learn whether an identifier exists (access.md: a thing you may not read is indistinguishable from
+ * one that does not exist).
+ */
+const REFERENCE_REFUSED = 'The component is not one this outline can reference';
+
+/**
+ * What an operation would have the outline point at: an inserted reference's component and pinned
+ * version, or the component of the reference a `set` pins. Undefined when it points at nothing new -
+ * and for a `set` whose node is missing or is a section, which the operation refuses on its own.
+ */
+function targetOf(
+  outline: OutlineDocument,
+  operation: OutlineOperation,
+): { readonly component: string; readonly version: string | null } | undefined {
+  if (operation.operation === 'insert' && operation.node.type === 'reference') {
+    const { component, mode } = operation.node;
+    return { component, version: mode.kind === 'pinned' ? mode.version : null };
+  }
+  if (operation.operation === 'set' && operation.mode?.kind === 'pinned') {
+    let node: OutlineNode | undefined;
+    walkOutline(outline.nodes, (each) => {
+      if (each.id === operation.node) node = each;
+    });
+    if (node?.type !== 'reference') return undefined;
+    return { component: node.component, version: operation.mode.version };
+  }
+  return undefined;
+}
+
+/**
+ * Whether the author may point an outline at this target: a **component**, in this environment, that
+ * the author may **read**, decided by the same facts and the same `decide` every route uses; and a
+ * pinned version that **belongs to that component**. A document references components alone in T1,
+ * so its own id - the only way a cycle could close (structure.md) - is refused with the rest.
+ */
+async function mayReference(
+  trx: TenantTransaction,
+  author: string,
+  target: { readonly component: string; readonly version: string | null },
+): Promise<boolean> {
+  if (!UUID.test(target.component)) return false;
+  const artifact = await trx
+    .selectFrom('artifact')
+    .select('kind')
+    .where('id', '=', target.component)
+    .executeTakeFirst();
+  if (artifact?.kind !== 'component') return false;
+  const facts = await loadFacts(trx, author, { kind: 'artifact', id: target.component });
+  if (!facts || !decide('read', facts).allowed) return false;
+  if (target.version === null) return true;
+  const version = await readVersion(trx, target.version);
+  return version?.artifactId === target.component;
+}
+
+/**
  * One structural act, and one version (structure.md, "Editing the outline"). There is no document
  * lock and there cannot be one: `component_lock`'s check constraint refuses a document at the
  * database (COL-N02).
@@ -216,6 +277,12 @@ export async function editOutline(
     throw new Error(
       `The document ${input.artifactId} at ${opened.id} does not read: ${read.failure}`,
     );
+  }
+  // Checked before the operation is applied, in this transaction, so what is recorded points only
+  // at what the author may read: nothing is stored that a later rule would have to refuse.
+  const target = targetOf(read.outline, input.operation);
+  if (target && !(await mayReference(trx, input.author, target))) {
+    return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
   }
   const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier);
   if (!applied.applied) return { answer: 'outline.invalid', reason: applied.reason };
