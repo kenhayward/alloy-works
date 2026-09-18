@@ -15,6 +15,33 @@
             { "type": "strong", "id": "m1" },
             { "type": "emphasis", "id": "m2" }
           ]
+        },
+        {
+          "type": "footnote",
+          "id": "f1",
+          "anchor": { "kind": "span" },
+          "content": [
+            {
+              "type": "paragraph",
+              "id": "p1",
+              "style": "footnote",
+              "content": [
+                {
+                  "type": "text",
+                  "value": "Measured at the bench, as the appendix sets out.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        { "type": "text", "value": ", with its appendix at ", "marks": [] },
+        {
+          "type": "crossReference",
+          "id": "x1",
+          "target": { "kind": "node", "node": "cccccccccccccccccccccccccc" },
+          "display": "page",
+          "withoutPages": "number"
         }
       ],
       "numbered": true,
