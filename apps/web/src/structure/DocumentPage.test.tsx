@@ -1727,3 +1727,108 @@ describe('the documents', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });
+
+describe('section numbers in the outline panel', () => {
+  it('shows each numbered node its section number, and renumbers a move without asking for one', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    // The number describes the item, and the title stays its name.
+    expect(item('Introduction')).toHaveAccessibleDescription('1');
+    expect(item('Method')).toHaveAccessibleDescription('2');
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('2'));
+    expect(item('Method')).toHaveAccessibleDescription('1');
+    expect(item('Scope')).toHaveAccessibleDescription('1.1');
+    // Numbered from the outline the page holds: nothing asked the service for a number.
+    expect(fake.sent.some((request) => request.url.endsWith('/numbering'))).toBe(false);
+  });
+
+  it('takes a node out of the numbering, and its subtree with it, from its Numbered box', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Method'));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(item('Method')).not.toHaveAccessibleDescription());
+    expect(fake.edits().at(-1)?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'set', node: METHOD, numbered: false },
+    });
+    expect(item('Scope')).not.toHaveAccessibleDescription();
+    // Results takes the number Method no longer consumes.
+    expect(item('Results')).toHaveAccessibleDescription('2');
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+
+    // And back again, from the same box.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, numbered: true },
+    });
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+    expect(item('Results')).toHaveAccessibleDescription('3');
+    expect(screen.getByRole('status')).toHaveTextContent('Method is now numbered.');
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+  });
+
+  it('makes a top-level node an appendix, numbered in its own scheme, and offers it nowhere else', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Scope'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Appendix' })).toBeNull();
+    await userEvent.click(item('Method'));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('A'));
+    expect(item('Scope')).toHaveAccessibleDescription('A.1');
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, matter: 'appendix' },
+    });
+    // Only the one switch: `values` is never sent from here.
+    expect(fake.edits().at(-1)?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'set', node: METHOD, matter: 'appendix' },
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Method is now an appendix.');
+    expect(screen.getByRole('checkbox', { name: 'Appendix' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, matter: 'body' },
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer an appendix.');
+  });
+
+  it('numbers a reference to a component the reader may not read like any other node', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [reference(RESULTS, 'latest')])]),
+      { mayRead: () => false },
+    );
+    open(fake.fetch);
+    const withheld = await screen.findByRole('treeitem', { name: /A component/ });
+    expect(withheld).toHaveAccessibleDescription('1.1');
+  });
+});

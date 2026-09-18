@@ -1,5 +1,11 @@
 import {
+  conditions,
+  defaultNumberingScheme,
   hasText,
+  number,
+  resolve,
+  sectionNumbers,
+  type Contribution,
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
@@ -8,6 +14,7 @@ import {
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
@@ -134,6 +141,13 @@ export interface OutlinePanelProps {
   readonly onReloadComponents?: () => void;
 }
 
+/**
+ * What the panel knows of any occurrence's contributions: nothing. It shows section numbers alone, and
+ * a section number never depends on what an occurrence holds, so knowing nothing costs it nothing -
+ * and the panel reads no component's content to show one.
+ */
+const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
+
 const PAGE_BREAKS = [
   { value: 'none', label: 'Wherever it falls' },
   { value: 'page', label: 'A new page' },
@@ -236,6 +250,14 @@ export function OutlinePanel({
   const current = active !== null && placeOf(nodes, active) ? active : (nodes[0]?.id ?? null);
   const selected = current === null ? undefined : placeOf(nodes, current)?.node;
   const may = editable && !busy;
+  // The one numbering function, over the outline this render shows: recomputed whenever the outline
+  // is, so there is no number to fall behind it, and the same function the service numbers with, so
+  // the two cannot disagree.
+  const numbers = useMemo(
+    () =>
+      sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), defaultNumberingScheme)),
+    [outline],
+  );
 
   useEffect(() => {
     if (focusTarget === null) return;
@@ -510,6 +532,8 @@ export function OutlinePanel({
   const renderNodes = (list: readonly OutlineViewNode[], level: number) =>
     list.map((node, index) => {
       const labelId = `${prefix}-${node.id}`;
+      const numberId = `${labelId}-number`;
+      const shown = numbers.get(node.id);
       return (
         <li
           key={node.id}
@@ -520,6 +544,9 @@ export function OutlinePanel({
           aria-selected={node.id === current}
           aria-expanded={node.children.length > 0 ? true : undefined}
           aria-labelledby={labelId}
+          // The number describes the item rather than naming it: a name is what typing a title finds
+          // in a tree, and what every announcement says, and it stays put when a move renumbers it.
+          aria-describedby={shown === undefined ? undefined : numberId}
           tabIndex={node.id === current ? 0 : -1}
           data-node={node.id}
           draggable={may}
@@ -530,6 +557,11 @@ export function OutlinePanel({
         >
           {dragging !== null && (
             <div data-drop={`before:${node.id}`} aria-hidden="true" style={{ height: '0.5em' }} />
+          )}
+          {shown !== undefined && (
+            <>
+              <span id={numberId}>{shown}</span>{' '}
+            </>
           )}
           <span id={labelId} data-drop={`into:${node.id}`}>
             {nodeLabel(node, names)}
@@ -656,6 +688,7 @@ export function OutlinePanel({
         <NodeDetails
           key={selected.id}
           node={selected}
+          topLevel={placeOf(nodes, selected.id)?.parent === null}
           busy={busy}
           onOperation={(operation) => send(operation, null)}
           onRetitle={retitle}
@@ -799,6 +832,7 @@ interface Field {
 
 function NodeDetails({
   node,
+  topLevel,
   busy,
   onOperation,
   onRetitle,
@@ -807,6 +841,8 @@ function NodeDetails({
   onRemove,
 }: {
   node: OutlineViewNode;
+  /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
+  topLevel: boolean;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -838,6 +874,36 @@ function NodeDetails({
           ))}
         </select>
       </label>
+      {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
+          made then is not sent, and the box goes on showing what the node holds. Each sends the one
+          switch it is, and never `values`, which must stay empty. */}
+      <label>
+        <input
+          type="checkbox"
+          checked={node.numbered}
+          onChange={(event) => {
+            if (busy) return;
+            void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
+          }}
+        />
+        Numbered
+      </label>
+      {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
+          the outline's parse refuses one set anywhere else. */}
+      {topLevel && (
+        <label>
+          <input
+            type="checkbox"
+            checked={node.matter === 'appendix'}
+            onChange={(event) => {
+              if (busy) return;
+              const matter = event.target.checked ? 'appendix' : 'body';
+              void onOperation({ operation: 'set', node: node.id, matter });
+            }}
+          />
+          Appendix
+        </label>
+      )}
       <button type="button" onClick={() => !busy && onRemove()}>
         {node.type === 'section' ? 'Remove section' : 'Remove component'}
       </button>
