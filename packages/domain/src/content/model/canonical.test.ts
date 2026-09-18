@@ -178,4 +178,40 @@ describe('canonical serialisation', () => {
     expect(read).toEqual(one);
     expect(canonicalise(read)).toBe(canonicalise(one));
   });
+
+  it('holds a footnote as parsed, so its defaults spelled out or omitted give one string', () => {
+    const noted = (inside: unknown) => ({
+      ...base,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Dose', marks: [] },
+            { type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content: [inside] },
+          ],
+        },
+      ],
+    });
+    const spelled = parseContentDocument(
+      noted({
+        type: 'paragraph',
+        id: 'fb1',
+        style: 'body',
+        content: [{ type: 'text', value: 'Measured at the bench.', marks: [] }],
+      }),
+    );
+    // The paragraph's `style` and the run's `marks` left to their defaults, as the parse fills them
+    // in everywhere else.
+    const omitted = parseContentDocument(
+      noted({
+        type: 'paragraph',
+        id: 'fb1',
+        content: [{ type: 'text', value: 'Measured at the bench.' }],
+      }),
+    );
+    expect(omitted).toEqual(spelled);
+    expect(canonicalise(omitted)).toBe(canonicalise(spelled));
+  });
 });

@@ -393,6 +393,24 @@ describe('a section title, under the content model rules', () => {
     ).toThrow(/content model refuses/);
   });
 
+  it('holds a footnote in a title as parsed, so its defaults spelled out or omitted give one string', () => {
+    const spelled = parseOutlineDocument(titled([words, footnote([paragraph])]));
+    const omitted = parseOutlineDocument(
+      titled([
+        words,
+        footnote([
+          {
+            type: 'paragraph',
+            id: 'p1',
+            content: [{ type: 'text', value: 'Measured at the bench.' }],
+          },
+        ]),
+      ]),
+    );
+    expect(omitted).toEqual(spelled);
+    expect(canonicaliseOutline(omitted)).toBe(canonicaliseOutline(spelled));
+  });
+
   it('keeps every identifier inside a title unique within that title, as a component keeps its own', () => {
     const second = { ...footnote([{ ...paragraph, id: 'p2' }]), id: 'f2' };
     expect(() =>

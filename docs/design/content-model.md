@@ -212,6 +212,13 @@ documents can serialise differently, so the format is canonical - members in a d
 insignificant whitespace, strings already NFC by CNT-056 - and one function produces it. The hash is
 over that function's output and nothing else.
 
+**What is serialised is the parse's output, never what arrived.** A default the schema fills in - a
+paragraph's `style`, a text run's `marks` - is filled in before anything is stored, so leaving it out
+and spelling it out are one document, one string and one hash. That holds inside a footnote too: its
+content is parsed by the walk rather than by the inline schema, which cannot name a paragraph, and
+the walk hands back what it parsed rather than checking it and keeping what arrived (issue #124). A
+section title, which runs the same walk, is stored the same way.
+
 That the schema version sits inside the JSON makes the hash shortcut sound as well as fast: equal
 bytes implies equal schema version, so two versions with equal hashes cannot be two different schemas
 that happen to say the same thing.

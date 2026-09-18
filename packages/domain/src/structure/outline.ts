@@ -94,10 +94,15 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  *
  * One schema for every place a title enters: the node below, an inserted section and a retitle
  * (`operations.ts`), so a title the store would refuse is refused at the wire body instead.
+ *
+ * **A transform, not a refinement**: what it hands on is what the walk returns, so a footnote in a
+ * title is stored with its paragraphs as parsed (issue #124) and two spellings of one title are one
+ * canonical string and one digest. The wire body's published schema is the array it takes in.
  */
-export const sectionTitleSchema = z.array(inlineNodeSchema).superRefine((title, context) => {
+export const sectionTitleSchema = z.array(inlineNodeSchema).transform((title, context) => {
+  let parsed: InlineNode[] = title;
   try {
-    checkInlineContent(title, 'title', new Set());
+    parsed = checkInlineContent(title, 'title', new Set());
   } catch {
     context.addIssue({
       code: 'custom',
@@ -112,6 +117,7 @@ export const sectionTitleSchema = z.array(inlineNodeSchema).superRefine((title, 
       message: 'A title holds a character that cannot be stored',
     });
   }
+  return parsed;
 });
 
 export const sectionNodeSchema = z.strictObject({

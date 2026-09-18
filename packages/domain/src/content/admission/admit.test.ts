@@ -55,6 +55,22 @@ describe('admitting content', () => {
     ]);
   });
 
+  it('hands back a footnote as parsed, with the defaults the parse fills in everywhere else', () => {
+    const note = {
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: 'fb1', content: [{ type: 'text', value: 'Ibid.' }] }],
+    };
+    const outcome = admit(foreign([paragraph([text('York'), note])]), receiver());
+    expect(outcome.ok && outcome.content).toEqual([
+      paragraph(
+        [text('York'), { ...note, id: 'a2', content: [paragraph([text('Ibid.')], { id: 'a3' })] }],
+        { id: 'a1' },
+      ),
+    ]);
+  });
+
   it('never stores a script, an event handler, an embedded object or a link whose scheme is not allowlisted', () => {
     const outcome = admit(
       foreign([

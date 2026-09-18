@@ -116,7 +116,8 @@ gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
 
 **Plan 3 is built.** Every identifier in a component - a block's, a footnote's, a footnote
 paragraph's and a cross-reference's - is unique within it (issue #122), and a section title holds its
-own to the same rule; a footnote holds no image and no footnote (issue #123); a cross-reference carries
+own to the same rule; a footnote holds no image and no footnote (issue #123), and is stored as the
+parse reads it, so two spellings of one are one digest (issue #124); a cross-reference carries
 an identifier of its own, a closed target union of `block`, `component` and `node`, each held to where
 it may stand, and STR-055's `withoutPages`; and re-identify gives a copied reference a new identifier
 and points it at the copy of what travelled with it, leaving one whose block did not travel, or
@@ -131,8 +132,8 @@ What plan 3 deliberately leaves, named so the next plan starts from a list rathe
 of the diff: resolving a target and the named failure, for the numbering plan; checking a `component`
 target at write, for the plan that first authors a cross-reference; saying which of several
 occurrences a `component` target means, for a later structure plan; a bibliography entry as a target,
-for LIB; applying a footnote's defaults (issue #124) and bounding a block tree's depth on every write
-path (issue #125), both small content-model fixes; refusing a NUL or a lone surrogate in a component's
+for LIB; bounding a block tree's depth on every write path (issue #125), a small content-model
+fix; refusing a NUL or a lone surrogate in a component's
 content rather than answering `500` (issue #127); and cleaning up after an interrupted database test
 run (issue #126). A footnote admits the `condition`, `language`, `comment` and `suggestion` marks,
 which CNT-129's closed list does not name, because they annotate text rather than add content - a

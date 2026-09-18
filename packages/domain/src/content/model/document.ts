@@ -57,6 +57,13 @@ function claim(id: string, seen: Set<string>): void {
  *   title, an outline node alone: a title is in no component, and an outline is answered with a
  *   component the reader may not read withheld, which a title's reference would carry past.
  *
+ * **Returns the inlines as parsed** (issue #124): a footnote's content arrives unparsed, because the
+ * inline schema cannot name a paragraph, so the walk hands back each footnote with its parsed
+ * paragraphs in place of what arrived - their `style`, and their runs' `marks`, filled in as the
+ * parse fills them in everywhere else. What is stored and digested is what is returned, so two
+ * spellings of one footnote are one value, one canonical string and one digest. Everything else is
+ * returned as it was given, already parsed by the schema that reached it.
+ *
  * Exported because inline content is stored in more than one place: a section title in an outline
  * is inline content too (structure.md), and runs this same walk rather than a copy of it, so one rule
  * governs inline content wherever it is stored. Throws on the first breach.
@@ -65,8 +72,8 @@ export function checkInlineContent(
   inlines: readonly InlineNode[],
   home: InlineHome,
   seen: Set<string>,
-): void {
-  for (const inline of inlines) {
+): InlineNode[] {
+  return inlines.map((inline) => {
     if (inline.type === 'crossReference') {
       claim(inline.id, seen);
       if (home === 'component' && inline.target.kind === 'node') {
@@ -76,17 +83,62 @@ export function checkInlineContent(
         throw new Error(`Cross-reference ${inline.id} in a title targets what a title cannot name`);
       }
     }
-    if (inline.type !== 'footnote') continue;
+    if (inline.type !== 'footnote') return inline;
     claim(inline.id, seen);
-    for (const paragraph of footnoteContentSchema.parse(inline.content)) {
+    const paragraphs = footnoteContentSchema.parse(inline.content).map((paragraph) => {
       claim(paragraph.id, seen);
       for (const inner of paragraph.content) {
         if (inner.type === 'image' || inner.type === 'footnote') {
           throw new Error(`Footnote ${inline.id} holds a node a footnote may not: ${inner.type}`);
         }
       }
-      checkInlineContent(paragraph.content, home, seen);
+      return { ...paragraph, content: checkInlineContent(paragraph.content, home, seen) };
+    });
+    return { ...inline, content: paragraphs };
+  });
+}
+
+/**
+ * The block half of the walk: claims every block's identifier, runs `checkInlineContent` over every
+ * inline home a block has - a paragraph's content, a blockquote's attribution, a table's note - and
+ * rebuilds each block from what it returns, so what is stored is the parsed form all the way down.
+ */
+function checkBlocks(blocks: readonly BlockNode[], seen: Set<string>): BlockNode[] {
+  return blocks.map((block) => checkBlock(block, seen));
+}
+
+function checkBlock(block: BlockNode, seen: Set<string>): BlockNode {
+  claim(block.id, seen);
+  switch (block.type) {
+    case 'paragraph':
+      return { ...block, content: checkInlineContent(block.content, 'component', seen) };
+    case 'list':
+      return {
+        ...block,
+        items: block.items.map((item) => ({ ...item, content: checkBlocks(item.content, seen) })),
+      };
+    case 'blockquote': {
+      const attribution =
+        block.attribution && checkInlineContent(block.attribution, 'component', seen);
+      return {
+        ...block,
+        ...(attribution === undefined ? {} : { attribution }),
+        content: checkBlocks(block.content, seen),
+      };
     }
+    case 'table': {
+      const note = block.note && checkInlineContent(block.note, 'component', seen);
+      return {
+        ...block,
+        ...(note === undefined ? {} : { note }),
+        rows: block.rows.map((row) => ({
+          ...row,
+          cells: row.cells.map((cell) => ({ ...cell, content: checkBlocks(cell.content, seen) })),
+        })),
+      };
+    }
+    default:
+      return block;
   }
 }
 
@@ -105,17 +157,8 @@ export type InlineHome = 'component' | 'title';
  * paragraph is admitted, because CNT-124 requires a new component to be one.
  */
 export function parseContentDocument(value: unknown): ContentDocument {
-  const document = contentDocumentSchema.parse(value);
-
-  const seen = new Set<string>();
-  walk(document.content, (block) => {
-    claim(block.id, seen);
-    if (block.type === 'paragraph') checkInlineContent(block.content, 'component', seen);
-    if (block.type === 'blockquote' && block.attribution) {
-      checkInlineContent(block.attribution, 'component', seen);
-    }
-    if (block.type === 'table' && block.note) checkInlineContent(block.note, 'component', seen);
-  });
+  const parsed = contentDocumentSchema.parse(value);
+  const document = { ...parsed, content: checkBlocks(parsed.content, new Set()) };
 
   const isEmptyParagraph = (block: BlockNode) =>
     block.type === 'paragraph' && block.content.length === 0;
