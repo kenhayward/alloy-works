@@ -249,6 +249,8 @@ that makes them hold is narrower than "no empty paragraph": there is **no spacer
 single empty paragraph is permitted because a cursor needs somewhere to be, and **two adjacent empty
 paragraphs are refused** by validation and collapsed by the pipeline's normalise stage. What CNT-023
 is about is a block whose only purpose is the gap after it, and a lone empty paragraph is not that.
+Both hold it in every sequence of blocks the model has - the top level, a list item, a blockquote, a
+table cell and a footnote - because a rule the two write paths disagree on is one of them breaking it.
 
 ## Inlines and marks
 

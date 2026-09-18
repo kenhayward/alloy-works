@@ -23,21 +23,28 @@ export const contentDocumentSchema = z.strictObject({
 
 export type ContentDocument = z.infer<typeof contentDocumentSchema>;
 
-function walk(blocks: readonly BlockNode[], visit: (block: BlockNode) => void): void {
-  for (const block of blocks) {
-    visit(block);
-    if (block.type === 'list') for (const item of block.items) walk(item.content, visit);
-    if (block.type === 'blockquote') walk(block.content, visit);
-    if (block.type === 'table') {
-      for (const row of block.rows) for (const cell of row.cells) walk(cell.content, visit);
-    }
-  }
-}
-
 /** Adds an identifier to those already held, refusing one already there (CNT-002). */
 function claim(id: string, seen: Set<string>): void {
   if (seen.has(id)) throw new Error(`Identifier ${id} is used more than once in this component`);
   seen.add(id);
+}
+
+/**
+ * Two adjacent empty paragraphs are spacing, which CNT-023 makes unrepresentable; one is where a
+ * cursor stands (CNT-124). Held in every sequence of blocks the model has - the top level, a list
+ * item, a blockquote, a table cell and a footnote - because admission's normalise collapses them in
+ * every one, and a rule the two write paths disagree on is a rule one of them breaks.
+ */
+function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
+  const isEmptyParagraph = (block: BlockNode | undefined) =>
+    block?.type === 'paragraph' && block.content.length === 0;
+  for (let index = 1; index < blocks.length; index += 1) {
+    const previous = blocks[index - 1];
+    const current = blocks[index];
+    if (previous && current && isEmptyParagraph(previous) && isEmptyParagraph(current)) {
+      throw new Error(`Blocks ${previous.id} and ${current.id} are adjacent empty paragraphs`);
+    }
+  }
 }
 
 /**
@@ -85,7 +92,9 @@ export function checkInlineContent(
     }
     if (inline.type !== 'footnote') return inline;
     claim(inline.id, seen);
-    const paragraphs = footnoteContentSchema.parse(inline.content).map((paragraph) => {
+    const parsed = footnoteContentSchema.parse(inline.content);
+    refuseAdjacentEmpties(parsed);
+    const paragraphs = parsed.map((paragraph) => {
       claim(paragraph.id, seen);
       for (const inner of paragraph.content) {
         if (inner.type === 'image' || inner.type === 'footnote') {
@@ -104,6 +113,7 @@ export function checkInlineContent(
  * rebuilds each block from what it returns, so what is stored is the parsed form all the way down.
  */
 function checkBlocks(blocks: readonly BlockNode[], seen: Set<string>): BlockNode[] {
+  refuseAdjacentEmpties(blocks);
   return blocks.map((block) => checkBlock(block, seen));
 }
 
@@ -152,30 +162,13 @@ export type InlineHome = 'component' | 'title';
  * Four rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), and a
- * cross-reference in a component never targets an outline node. All but adjacency are
- * `checkInlineContent`'s, sharing one set of claimed identifiers with the block walk. A single empty
- * paragraph is admitted, because CNT-124 requires a new component to be one.
+ * cross-reference in a component never targets an outline node. One walk holds all four: the block
+ * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
+ * adjacency held in every sequence of blocks either half reaches, a footnote's among them. A single
+ * empty paragraph is admitted, because CNT-124 requires a new component to be one. What is returned
+ * is what the walk parsed, and nothing else.
  */
 export function parseContentDocument(value: unknown): ContentDocument {
   const parsed = contentDocumentSchema.parse(value);
-  const document = { ...parsed, content: checkBlocks(parsed.content, new Set()) };
-
-  const isEmptyParagraph = (block: BlockNode) =>
-    block.type === 'paragraph' && block.content.length === 0;
-  const refuseAdjacentEmpties = (blocks: readonly BlockNode[]) => {
-    for (let index = 1; index < blocks.length; index += 1) {
-      const previous = blocks[index - 1];
-      const current = blocks[index];
-      if (previous && current && isEmptyParagraph(previous) && isEmptyParagraph(current)) {
-        throw new Error(`Blocks ${previous.id} and ${current.id} are adjacent empty paragraphs`);
-      }
-    }
-  };
-  refuseAdjacentEmpties(document.content);
-  walk(document.content, (block) => {
-    if (block.type === 'list') for (const item of block.items) refuseAdjacentEmpties(item.content);
-    if (block.type === 'blockquote') refuseAdjacentEmpties(block.content);
-  });
-
-  return document;
+  return { ...parsed, content: checkBlocks(parsed.content, new Set()) };
 }

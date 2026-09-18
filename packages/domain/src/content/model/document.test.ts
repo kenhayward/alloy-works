@@ -112,6 +112,36 @@ describe('the content document', () => {
     expect(() => parseContentDocument(doc([empty, { ...empty, id: 'b2' }]))).toThrow(/adjacent/);
   });
 
+  it('refuses two adjacent empty paragraphs in a footnote and in a table cell, as admission removes them', () => {
+    const empty = (id: string) => ({ type: 'paragraph', id, style: 'body', content: [] });
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Dose', marks: [] },
+        { type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content },
+      ],
+    });
+    const tabling = (content: unknown[]) => ({
+      type: 'table',
+      id: 't1',
+      caption: 'Doses',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
+    });
+    // One empty paragraph is where a cursor stands, in either place; two are spacing.
+    expect(() => parseContentDocument(doc([noting([empty('fb1')])]))).not.toThrow();
+    expect(() => parseContentDocument(doc([tabling([empty('c1')])]))).not.toThrow();
+    expect(() => parseContentDocument(doc([noting([empty('fb1'), empty('fb2')])]))).toThrow(
+      /adjacent/,
+    );
+    expect(() => parseContentDocument(doc([tabling([empty('c1'), empty('c2')])]))).toThrow(
+      /adjacent/,
+    );
+  });
+
   it('CNT-117 supports three list kinds, and CNT-119 puts start and format on an ordered one', () => {
     const list = {
       type: 'list',
