@@ -129,5 +129,8 @@ export const blockEquationNodeSchema = z.strictObject({
   numbered: z.boolean(),
 });
 
-/** CNT-129: a restricted block sequence. The list is closed and admits no table and no image. */
+/**
+ * CNT-129: a restricted block sequence. The schema admits paragraphs alone, closing out a table; an
+ * image and a footnote are refused too, by the walk in `document.ts` rather than here.
+ */
 export const footnoteContentSchema = z.array(paragraphNodeSchema).min(1);

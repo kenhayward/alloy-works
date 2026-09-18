@@ -191,19 +191,52 @@ describe('the content document', () => {
     });
   });
 
-  it('CNT-129 admits no table and no image inside a footnote', () => {
-    const withTable = paragraph('b9');
-    withTable.content = [
-      {
-        type: 'footnote',
-        id: 'f1',
-        anchor: { kind: 'span' },
-        content: [
-          { type: 'table', id: 'b10', caption: 'x', headerRows: 0, headerColumns: 0, rows: [] },
-        ],
-      },
-    ] as never;
-    expect(() => parseContentDocument(doc([withTable]))).toThrow();
+  it('CNT-129 admits no table and no image inside a footnote, and nothing outside its closed list', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b9',
+      style: 'body',
+      content: [{ type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content }],
+    });
+    const note = (inline: unknown) => ({
+      type: 'paragraph',
+      id: 'fb1',
+      style: 'footnote',
+      content: [{ type: 'text', value: 'See the appendix.', marks: [] }, inline],
+    });
+    const table = {
+      type: 'table',
+      id: 'b10',
+      caption: 'x',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [],
+    };
+    const image = {
+      type: 'image',
+      asset: 'asset-1',
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' },
+    };
+    const nested = {
+      type: 'footnote',
+      id: 'f2',
+      anchor: { kind: 'span' },
+      content: [paragraph('fb2')],
+    };
+    // A table in place of a paragraph; an image, and a footnote, inside a footnote's paragraph.
+    expect(() => parseContentDocument(doc([noting([table])]))).toThrow();
+    expect(() => parseContentDocument(doc([noting([note(image)])]))).toThrow(/may not: image/);
+    expect(() => parseContentDocument(doc([noting([note(nested)])]))).toThrow(/may not: footnote/);
+    // What the list does admit: a citation, an equation, a variable and a binding.
+    for (const inline of [
+      { type: 'citation', entry: 'bib-1' },
+      { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
+      { type: 'variable', name: 'productName' },
+      { type: 'binding', query: 'query-1' },
+    ]) {
+      expect(() => parseContentDocument(doc([noting([note(inline)])]))).not.toThrow();
+    }
   });
 });
 

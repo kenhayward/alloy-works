@@ -45,7 +45,9 @@ function claim(id: string, seen: Set<string>): void {
  * `inline.ts`, because a footnote holds blocks and a block holds inlines - so one of the two files
  * has to learn about the other after the fact, and this is that place.
  *
- * - **A footnote holds paragraphs** (CNT-129), and its content is parsed as such here.
+ * - **A footnote holds paragraphs** (CNT-129), and its content is parsed as such here. Those
+ *   paragraphs hold nothing outside CNT-129's closed list: no image, and no footnote - so the walk
+ *   descends one footnote deep and no further, whatever it is given.
  * - **Every identifier inside is claimed in `seen`** - a footnote's own and each of its paragraphs' -
  *   so none can share one with a block or with anything else in what holds it (CNT-002, issue #122).
  *   A cross-reference targets a footnote by identity (STR-026), so one it shared would name two
@@ -61,6 +63,11 @@ export function checkInlineContent(inlines: readonly InlineNode[], seen: Set<str
     claim(inline.id, seen);
     for (const paragraph of footnoteContentSchema.parse(inline.content)) {
       claim(paragraph.id, seen);
+      for (const inner of paragraph.content) {
+        if (inner.type === 'image' || inner.type === 'footnote') {
+          throw new Error(`Footnote ${inline.id} holds a node a footnote may not: ${inner.type}`);
+        }
+      }
       checkInlineContent(paragraph.content, seen);
     }
   }

@@ -356,7 +356,7 @@ describe('a section title, under the content model rules', () => {
       parseOutlineDocument(titled([words, footnote([{ script: '<x>' }, 42])])),
     ).toThrow();
     expect(() => parseOutlineDocument(titled([words, footnote([])]))).toThrow();
-    // Nested: a footnote inside a footnote's paragraph is held to the same rule.
+    // Nested: a footnote inside a footnote is refused outright.
     expect(() =>
       parseOutlineDocument(
         titled([words, footnote([{ ...paragraph, content: [footnote([{ table: true }])] }])]),

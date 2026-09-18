@@ -92,14 +92,8 @@
               "content": [
                 {
                   "type": "text",
-                  "value": "A note on the span, with a decorative image ",
+                  "value": "A note on the span.",
                   "marks": []
-                },
-                {
-                  "type": "image",
-                  "asset": "asset-2",
-                  "imageStyle": "inline",
-                  "alternative": { "kind": "decorative" }
                 }
               ]
             }
