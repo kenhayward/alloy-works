@@ -3204,9 +3204,9 @@ Nothing is migrated: a development database from before 0.28.0 is numbered as it
    `2`, `2.1` and `3` before the titles.
 2. Select **Introduction** and press `Alt+Down`: it becomes `2`, **Method** `1` and **Scope** `1.1`,
    at once.
-3. Select **Method** and untick **Numbered**: **Method** and **Scope** lose their numbers, **Results**
-   takes the number **Method** had, and the page says **Method is no longer numbered.** `Ctrl+Z` puts
-   it back.
+3. Select **Method** and untick **Numbered**: **Method** and **Scope** lose their numbers,
+   **Introduction** becomes `1` and **Results** `2`, and the page says **Method is no longer
+   numbered.** **Undo** puts it back.
 4. Select **Results** and tick **Appendix**: it becomes `A`. Select **Scope**: there is no **Appendix**
    box.
 5. Add **Install the printer** under **Introduction**, twice. Each takes a section number of its own.
@@ -3317,10 +3317,14 @@ Named here so the next plan starts from a list rather than from a reading of the
 
 Found while writing this plan, and left rather than widened into it:
 
-- **An explicitly unnumbered figure or table** (finding 13): recommended for filing. **The content
-  model, before anything authors a table.**
-- **A number revealing nothing a reader may not read** (decision C): recommended for filing, so the
-  rule has a row. **IAM.**
+- **An explicitly unnumbered figure or table** (finding 13): filed as issue #129 and not built here.
+  Every figure and every table takes a number until then, a table used for layout included, as
+  STR-023 says. Adding the member is a content schema change. **The content model, before anything
+  authors a table.**
+- **A number revealing nothing a reader may not read** (decision C): filed as issue #130 and landed by
+  this plan as IAM-073, narrowed to the numbers an outline produces. A count or an order derived from
+  content anywhere else - a search count, where a component is used, a sort - is not answered, and is
+  owed a row of its own when the design that produces one exists. **IAM, beside that design.**
 - **A block tree's depth is still bounded only in admission** (issue #125). Numbering is safe from it
   - an unparseable component is simply not known - but a component deep enough to overflow the parse
     is withheld from everyone's numbering without anybody being told why. **The small content-model
@@ -3328,3 +3332,26 @@ Found while writing this plan, and left rather than widened into it:
 - **`GET /v1/documents/{id}` still resolves no component version.** The numbering route answers it;
   whether the document route should too is **structure 3's**, when the panel names what each
   occurrence resolved to.
+
+Found while building it, and left:
+
+- **A caption before any numbered appendix takes no number.** Under a rule that prefixes with the
+  chapter, appendix matter has no chapter to give it until a numbered appendix begins, so such a
+  caption is `null` and uses up nothing, rather than a bare number that would repeat a body caption's
+  label. STR-023's claim row names the exception. Whether a layout should be able to number such a
+  caption some other way is **PUB's, with the layout's scheme**.
+- **Nothing of the panel's new behaviour has been seen in a browser**: the numbers beside each row,
+  **Numbered** and **Appendix**, the hint **Not numbered while** an ancestor **is not.**, `Alt+Right`
+  on an appendix saying **An appendix stays at the top level.**, and a drop that would nest an appendix
+  not being offered. The renderer's tests drive them in jsdom with synthetic events. **The browser
+  suite, with the rest of the accessibility plan.**
+- **Issue #131's fix rests on a jsdom test and a Linux run under load.** The drag's timer is no
+  longer cleared on unmount, and a test starts a drag before the panel's effects run; a real drag in
+  a real browser under StrictMode has not been watched. **The browser suite.**
+- **`Ctrl+Z` does nothing while Numbered or Appendix has the focus.** The panel leaves the key to
+  any `input` or `select`, so a text field keeps its own undo, and a checkbox has none; **Undo**, or
+  `Ctrl+Z` from the tree, takes the change back. **Starts on** has always behaved the same way.
+  Whether the panel should undo from a box is **the accessibility plan's**, with the browser suite.
+- **The head rule has a third copy.** `revision_no desc, version_no desc` is spelled in
+  `latestVersion`, `listReadableDocuments` and now `numberingInputs`, each with a comment naming the
+  first. One helper would keep them from drifting. **Whichever plan next reads a component's head.**

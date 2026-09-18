@@ -24,9 +24,13 @@ is edited with), [relationships.md](relationships.md) (the reference index the c
 > `apps/service` and `apps/web`; [`../architecture.md`](../architecture.md) describes them as they
 > stand, and [the plan that built them](../plans/2026-09-18-structure-01-the-document-and-its-outline.md)
 > changed this document where planning and building found it wrong or silent - see
-> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
-> numbering, captions, resolving a cross-reference, the contents panel, generated lists, deep links,
-> the cycle check, a component version resolved for each occurrence, and a title edited as inline
+> [Changed while planning the build](#changed-while-planning-the-build). **Numbering is built too**, by
+> [the second structure plan](../plans/2026-09-18-structure-02-numbering.md): the scheme and the
+> product's default, what a component's content contributes, `resolve`, `conditions` and `number`,
+> the numbering route, which resolves each occurrence to a component version, and section numbers in
+> the outline panel. What is still design here: caption numbers shown in the renderer, resolving a
+> cross-reference, the contents panel, generated lists, deep links, the cycle check, a component
+> version resolved for each occurrence on `GET /v1/documents/{id}`, and a title edited as inline
 > content rather than as plain text. A cross-reference's stored shape - its identifier, its target
 > and `withoutPages` - is built, by
 > [the third content-model plan](../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md).
@@ -53,50 +57,50 @@ current outline rather than silently overwriting it.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **STR-001** | A document artifact's content is one `outline` document; its root holds one ordered array of nodes and there is nowhere to put a second                                                                                                                                                                                                                                  |
-| **STR-002** | `node` is a closed discriminated union of `section` and `reference`. A third arm is a schema version with a migration                                                                                                                                                                                                                                                    |
-| **STR-003** | `id` is required on every node, allocated from 128 random bits at insertion, spelled by the domain, and never reused - nothing reissues, because nothing recycles                                                                                                                                                                                                        |
-| **STR-004** | A section is a node inside one outline document. It has no artifact row, so there is no identity to share it by and no route that could return one                                                                                                                                                                                                                       |
-| **STR-006** | The outline panel reorders by pointer and by an enumerated keymap, and the same five operations are the routes below. All three go through one set of operations                                                                                                                                                                                                         |
-| **STR-007** | Nesting is the tree's own, bounded by the parse at 64 levels - far above nine - so no stored outline is too deep to read; the numbering scheme's counters are a stack rather than nine named members                                                                                                                                                                     |
-| **STR-008** | A move names a node, a new parent and a position among its siblings; the subtree travels because it _is_ the subtree, and the whole move is one version and one undo entry                                                                                                                                                                                               |
-| **STR-010** | Two nodes may name one component. Each is a node with its own `id`, and every occurrence-bearing thing below - numbering, captions, references - is keyed by the node, not the component                                                                                                                                                                                 |
-| **STR-012** | The outline is the document version's content, so it is versioned by the act of versioning the document; `baseline_pin` pins a document version like any other (VER-018)                                                                                                                                                                                                 |
-| **STR-014** | `sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change                                                                                                                                                                                                   |
-| **STR-015** | A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it                                                                                                                                                                                                                        |
-| **STR-016** | A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`                                                                                                                                                                                                    |
-| **STR-017** | A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter                                                                                                                                                                                                                                                              |
-| **STR-018** | `number(outline, contributions, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree                                                                                                                                                                                                                              |
-| **STR-019** | No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written                                                                                                                                                                                              |
-| **STR-021** | The engine walks occurrences, not components. A component referenced twice is two walks over one content document, and its captions take two numbers                                                                                                                                                                                                                     |
-| **STR-022** | Every entry in the numbering table names the node that produced it, the occurrence and block where it is a caption, the sequence, the counter stack at that point, and the rule applied                                                                                                                                                                                  |
-| **STR-023** | Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind                                                                                                                                                                                                                                      |
-| **STR-028** | Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer                                                                                                                                                                                                                  |
-| **STR-031** | Nothing caches a number past the inputs that produced it. The table is keyed by the document's version digest, the scheme and the profile, and a change to any of the three discards it                                                                                                                                                                                  |
-| **STR-032** | A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches a block or footnote of another component of the same document                                                                                                                                                                                                |
-| **STR-056** | A `block` target carries no occurrence, and resolution binds it to the occurrence being read, so one stored reference resolves once per occurrence                                                                                                                                                                                                                       |
-| **STR-062** | Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first                                                                                                                                  |
-| **STR-034** | The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind                                                                                                                                                                                                                                 |
-| **STR-036** | The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function                                                                                                                                                                                                                    |
-| **STR-037** | Reordering in the panel is the move operation, from the panel's own drag and from its keymap                                                                                                                                                                                                                                                                             |
-| **STR-040** | `contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it                                                                                                                                                                                                                                                               |
-| **STR-041** | `listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one                                                                                                                                                                                               |
-| **STR-044** | A node's URL is the document's path and the node's identifier, both identifiers                                                                                                                                                                                                                                                                                          |
-| **STR-046** | The URL holds no depth, no number and no position, so there is nothing in it for a reorder to invalidate                                                                                                                                                                                                                                                                 |
-| **STR-048** | A node carries `pageBreak`: none, a new page, or a new recto page                                                                                                                                                                                                                                                                                                        |
-| **STR-049** | `pageBreak` is a member of the node. The content model has no member for one, so the declaration cannot travel with the component                                                                                                                                                                                                                                        |
-| **STR-051** | The four stages are one function each, and each takes the previous stage's return type. Calling them out of order does not typecheck                                                                                                                                                                                                                                     |
-| **STR-053** | An identifier is 128 random bits in the spelling `blockIdentifierFrom` already fixes, validated unique within its outline at every write. Across documents the argument is the one the product already makes for a UUID                                                                                                                                                  |
-| **STR-057** | Before a version is recorded, a reachability walk from the document over the reference index refuses a cycle with `outline_cycle`, naming the path                                                                                                                                                                                                                       |
-| **STR-058** | A reference node carries `mode`: `pinned` with a version, `latest`, or `approved`. The three are closed, and absent is not a fourth                                                                                                                                                                                                                                      |
-| **STR-059** | Every operation carries the version it was read at and is answered `version_precondition` with the current outline when it is not the latest; `component_lock` refuses a document by a check constraint, so no document lock can be introduced by accident                                                                                                               |
-| **STR-054** | The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one. The deep link itself (STR-044) is not built, so the cited test shows the empty outline and the root's identity and no link: that clause is answered by the design and demonstrated by nothing yet |
-| **STR-061** | A document is an artifact of its own kind: its identity is the `artifact` row, `artifact_space_by_kind` puts it in exactly one space, its title lives inside its versioned content as a component's does, and it versions through the one mechanism                                                                                                                      |
-| **CNT-041** | `footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component                                                                                                                                                                                                                                                 |
-| **CNT-047** | The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it                                                                                                                                                                                                                            |
-| **IAM-073** | Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone                   |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **STR-001** | A document artifact's content is one `outline` document; its root holds one ordered array of nodes and there is nowhere to put a second                                                                                                                                                                                                                                                                                          |
+| **STR-002** | `node` is a closed discriminated union of `section` and `reference`. A third arm is a schema version with a migration                                                                                                                                                                                                                                                                                                            |
+| **STR-003** | `id` is required on every node, allocated from 128 random bits at insertion, spelled by the domain, and never reused - nothing reissues, because nothing recycles                                                                                                                                                                                                                                                                |
+| **STR-004** | A section is a node inside one outline document. It has no artifact row, so there is no identity to share it by and no route that could return one                                                                                                                                                                                                                                                                               |
+| **STR-006** | The outline panel reorders by pointer and by an enumerated keymap, and the same five operations are the routes below. All three go through one set of operations                                                                                                                                                                                                                                                                 |
+| **STR-007** | Nesting is the tree's own, bounded by the parse at 64 levels - far above nine - so no stored outline is too deep to read; the numbering scheme's counters are a stack rather than nine named members                                                                                                                                                                                                                             |
+| **STR-008** | A move names a node, a new parent and a position among its siblings; the subtree travels because it _is_ the subtree, and the whole move is one version and one undo entry                                                                                                                                                                                                                                                       |
+| **STR-010** | Two nodes may name one component. Each is a node with its own `id`, and every occurrence-bearing thing below - numbering, captions, references - is keyed by the node, not the component                                                                                                                                                                                                                                         |
+| **STR-012** | The outline is the document version's content, so it is versioned by the act of versioning the document; `baseline_pin` pins a document version like any other (VER-018)                                                                                                                                                                                                                                                         |
+| **STR-014** | `sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change                                                                                                                                                                                                                                                           |
+| **STR-015** | A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it                                                                                                                                                                                                                                                                                |
+| **STR-016** | A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`                                                                                                                                                                                                                                                            |
+| **STR-017** | A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter                                                                                                                                                                                                                                                                                                                      |
+| **STR-018** | `number(conditioned, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree                                                                                                                                                                                                                                                                                                 |
+| **STR-019** | No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written                                                                                                                                                                                                                                                      |
+| **STR-021** | The engine walks occurrences, not components. A component referenced twice is two walks over one content document, and its captions take two numbers                                                                                                                                                                                                                                                                             |
+| **STR-022** | Every entry in the numbering table names the node that produced it, the block where it is a caption or a footnote, the sequence and the matter, the section counter stack at that point, its own counter's value and the node that last restarted it; the rule applied is named by the table's scheme with the entry's sequence and matter                                                                                       |
+| **STR-023** | Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind. **One exception**: a caption met in appendix matter before any numbered appendix has begun a chapter takes no number, and uses up none, because its rule wants a chapter prefix and there is none to give it - never a bare number that would repeat a body caption's label                 |
+| **STR-028** | Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer                                                                                                                                                                                                                                                                          |
+| **STR-031** | Nothing caches a number. The numbering table is computed from the outline, each occurrence's resolved component version and the scheme whenever it is asked for, and every answer names each occurrence's version. A cache, when one is needed, is keyed by the document version, every occurrence's resolved component version, the scheme and the profile - the document's digest alone misses a `latest` component's new head |
+| **STR-032** | A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches a block or footnote of another component of the same document                                                                                                                                                                                                                                                        |
+| **STR-056** | A `block` target carries no occurrence, and resolution binds it to the occurrence being read, so one stored reference resolves once per occurrence                                                                                                                                                                                                                                                                               |
+| **STR-062** | Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first                                                                                                                                                                                          |
+| **STR-034** | The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind                                                                                                                                                                                                                                                                                         |
+| **STR-036** | The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function                                                                                                                                                                                                                                                                            |
+| **STR-037** | Reordering in the panel is the move operation, from the panel's own drag and from its keymap                                                                                                                                                                                                                                                                                                                                     |
+| **STR-040** | `contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it                                                                                                                                                                                                                                                                                                                       |
+| **STR-041** | `listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one                                                                                                                                                                                                                                                       |
+| **STR-044** | A node's URL is the document's path and the node's identifier, both identifiers                                                                                                                                                                                                                                                                                                                                                  |
+| **STR-046** | The URL holds no depth, no number and no position, so there is nothing in it for a reorder to invalidate                                                                                                                                                                                                                                                                                                                         |
+| **STR-048** | A node carries `pageBreak`: none, a new page, or a new recto page                                                                                                                                                                                                                                                                                                                                                                |
+| **STR-049** | `pageBreak` is a member of the node. The content model has no member for one, so the declaration cannot travel with the component                                                                                                                                                                                                                                                                                                |
+| **STR-051** | The four stages are one function each, and each takes the previous stage's return type. Calling them out of order does not typecheck                                                                                                                                                                                                                                                                                             |
+| **STR-053** | An identifier is 128 random bits in the spelling `blockIdentifierFrom` already fixes, validated unique within its outline at every write. Across documents the argument is the one the product already makes for a UUID                                                                                                                                                                                                          |
+| **STR-057** | Before a version is recorded, a reachability walk from the document over the reference index refuses a cycle with `outline_cycle`, naming the path                                                                                                                                                                                                                                                                               |
+| **STR-058** | A reference node carries `mode`: `pinned` with a version, `latest`, or `approved`. The three are closed, and absent is not a fourth                                                                                                                                                                                                                                                                                              |
+| **STR-059** | Every operation carries the version it was read at and is answered `version_precondition` with the current outline when it is not the latest; `component_lock` refuses a document by a check constraint, so no document lock can be introduced by accident                                                                                                                                                                       |
+| **STR-054** | The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one. The deep link itself (STR-044) is not built, so the cited test shows the empty outline and the root's identity and no link: that clause is answered by the design and demonstrated by nothing yet                                                         |
+| **STR-061** | A document is an artifact of its own kind: its identity is the `artifact` row, `artifact_space_by_kind` puts it in exactly one space, its title lives inside its versioned content as a component's does, and it versions through the one mechanism                                                                                                                                                                              |
+| **CNT-041** | `footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component                                                                                                                                                                                                                                                                                                         |
+| **CNT-047** | The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it                                                                                                                                                                                                                                                                                    |
+| **IAM-073** | Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone                                                                           |
 
 STR-062 is answered here as
 resolution returning the named failure; failing the publish on it is STR-029's, left unclaimed with
@@ -452,17 +456,30 @@ every `Alt` and arrow key it is given, and only a browser can show that this is 
 
 ## Numbering
 
-**One pure function, called in three places.**
+**One pure function, called wherever a number is needed.** The service calls it for a document's
+numbering, the outline panel for its section numbers, and the publisher will for what it prints:
 
 ```
-number(outline, contributions, scheme) -> NumberingTable
+number(conditioned, scheme) -> NumberingTable
 ```
 
-`contributions` is what each occurrence's component contributes to the sequences: an ordered list of
-`{ blockId, kind, numbered }` per occurrence, and nothing else. It is a small projection of content,
-computed in the domain from the content the renderer already has open and answered by the service for
-components it does not. **The panel does not need a component's content to show its figure numbers**,
-which is what makes STR-036 affordable rather than aspirational.
+It takes the pipeline's second stage (below) rather than an outline and a map, so whatever it numbers
+has been through `resolve` and `conditions`, in that order.
+
+**What an occurrence contributes.** `contributionsOf` projects a component version's content to an
+ordered list of `{ block, sequence, numbered }` - each figure, table and block equation, and each
+footnote, in document order wherever it is nested: a list item, a blockquote, a table cell, a table's
+note. A block equation carries `numbered` (CNT-047); every figure and every table is numbered, an
+empty caption included. `resolve(outline, contributions)` takes those lists **keyed by occurrence** -
+the reference node - and never by component, because one component placed twice is two occurrences
+(STR-010, STR-021). **An occurrence absent from the map is one nobody numbering can read**: a
+component the reader may not read, an `approved` reference, which resolves to nothing until revisions
+exist, or content that does not read.
+
+**The panel needs no contribution.** No section number depends on what an occurrence holds, which a
+test holds, so the panel numbers sections from the outline alone, knowing nothing of any occurrence,
+and reads no component to do it. A caption's number does depend on one, and nothing in the renderer
+shows one yet, so `GET /v1/documents/{id}/contributions` waits for whatever first does.
 
 **Why a pure function in `packages/domain` rather than a service call.** STR-036 requires the contents
 panel to show numbering as it will publish. That is true only if the panel and the publisher run the
@@ -473,62 +490,112 @@ is what `packages/domain` exists for.
 
 **The scheme.**
 
-| Member      | Holds                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sequences` | A map from a name to its rule. `section`, `figure`, `table`, `equation` and `footnote` are always present; more may be added                                                          |
-| Each rule   | `label` ("Figure"), `format` (decimal, alphabetic, upper or lower roman), `restartAt` (an outline depth, or none), `separator`, and whether the number is prefixed with its section's |
-| `matter`    | A variant of every rule for `appendix`, so an appendix numbers in its own scheme with its own restarts (STR-016)                                                                      |
+| Member        | Holds                                                                                                                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`          | The scheme's name - `default/1` for the product's default - so anything keyed by numbering's inputs can key by it                                                                                                                    |
+| `sequences`   | A map from a name to its rules. `section`, `figure`, `table`, `equation` and `footnote` are always present; more may be added                                                                                                        |
+| Each sequence | A rule for `body` and a rule for `appendix`, so an appendix numbers in its own scheme with its own restarts (STR-016)                                                                                                                |
+| Each rule     | `label` ("Figure", or empty), `format` - a list, one per part of the number from the top, the last repeating, each decimal, alphabetic or roman in either case - `restartAt` and `prefix` (outline depths, or none), and `separator` |
+
+`format` is a list because one format cannot write `A.1`: an appendix's top-level part is alphabetic
+and the parts beneath it decimal. A caption's prefix is the section number to `prefix`'s depth,
+written with the section rule's formats. **The scheme refuses two things.** A section number is its
+counter stack, so the section sequence neither restarts nor takes a prefix. And a rule that restarts
+must prefix with the section number down to at least the depth it restarts at, or two restarts of its
+counter could print the same label - except a footnote's, because a house style restarting footnotes
+per chapter means its labels to repeat.
 
 **The scheme is a value this design defines; the layout is what carries one, and PUB owns that.**
-Until a layout artifact exists, **the product's default scheme stands in** - decimal sections, figures
-and tables prefixed with their chapter, equations continuous, appendices in upper alphabetic. It is
-defined here, it is what T1 numbers against, and PUB replaces it with the layout's without the engine
-changing. Naming it as a default rather than leaving numbering undefined is what lets STR-036 be true
-before PUB is designed.
+Until a layout artifact exists, **the product's default scheme stands in** - decimal sections;
+figures and tables prefixed with their chapter and restarting with it, `Figure 2.4`; equations and
+footnotes continuous; appendices `A`, `B`, their sections `A.1`, their figures `Figure A.1` and their
+equations `Equation A.1`, each restarting per appendix, and their footnotes from 1 again, running
+through every appendix. A section's label is empty, so a section is
+`2.1` and not `Section 2.1`. It is defined here, it is what T1 numbers against, and PUB replaces it
+with the layout's without the engine changing. Naming it as a default rather than leaving numbering
+undefined is what lets STR-036 be true before PUB is designed - **provided PUB brings the layout's
+scheme to the panel too**, since the panel's numbers are otherwise the default's while the
+publication's are the layout's.
 
-**The counter stack.** The engine walks the outline depth-first, holding a stack of counters per
-sequence. Entering a node at a sequence's `restartAt` depth drops every counter below it. A node
-with `numbered: false` is walked for its children and increments nothing (STR-017). A top-level node
-whose `matter` is `appendix` - and only a top-level node may carry one - switches every sequence to
-its appendix rule for its whole subtree and restarts it. A caption whose rule wants a chapter prefix,
-met in appendix matter before any numbered appendix has begun one, has no count to continue and takes
-no number rather than a bare one that would repeat a body caption's own label.
+**The counter stack.** The engine walks the outline depth-first in document order, and **each matter
+keeps its own counters**: the first appendix is `A` and the second `B`, and a body chapter after them
+carries on the body's numbering. For each node, in order:
 
-**The numbering table is the answer to STR-022.** One entry per numbered thing:
+1. **Its section number**, where it and every ancestor are numbered - **a reference takes one too**,
+   being a heading in the outline. A node with `numbered: false` takes none and consumes none
+   (STR-017), and **nothing beneath it takes one either**: a number formed from an ancestor that has
+   none would be a guess. Taking a section number restarts every other sequence whose `restartAt` is
+   that depth or deeper (STR-015).
+2. **A section title's footnotes**, which count at their node, before anything beneath it.
+3. **An occurrence's contributions**, each taking the next number in its sequence (STR-023). An
+   unnumbered equation takes none.
+4. **Its children.** What an unnumbered node holds carries on the counters of the numbered node before
+   it and restarts nothing: a figure in an unnumbered interlude after chapter 2 is `Figure 2.4`,
+   continuing chapter 2's, and one in a preface before any chapter is `Figure 1`, with no chapter to
+   prefix it.
 
-| Member     | Holds                                                                    |
-| ---------- | ------------------------------------------------------------------------ |
-| `node`     | The outline node that produced it                                        |
-| `block`    | The block, where the thing is a caption-bearing block or a footnote      |
-| `sequence` | Which sequence it took from                                              |
-| `counters` | The counter stack at that point                                          |
-| `rule`     | The rule applied, naming the restart or the matter switch that shaped it |
-| `label`    | The rendered form - "Figure 3.2"                                         |
+A top-level node whose `matter` is `appendix` - and only a top-level node may carry one - numbers its
+whole subtree by the appendix rules and the appendix counters. A caption whose rule wants a chapter
+prefix, met in appendix matter before any numbered appendix has begun one, has no count to continue
+and takes no number rather than a bare one that would repeat a body caption's own label - and uses up
+no value of its counter, so the first numbered appendix's first figure is still `Figure A.1`. An
+occurrence nobody numbering can read makes every other counter in its matter unknown until that
+counter next restarts, whatever the occurrence holds ([Who is shown what](#who-is-shown-what)).
+
+**The numbering table is the answer to STR-022.** It names its scheme, and holds one entry per
+numbered thing, a `NumberingEntry`:
+
+| Member        | Holds                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| `node`        | The outline node that produced it                                                                     |
+| `block`       | The block or footnote, where the thing is a caption-bearing block or a footnote; `null` for a section |
+| `sequence`    | Which sequence it took from                                                                           |
+| `matter`      | `body` or `appendix`                                                                                  |
+| `sections`    | The section counter stack at that point                                                               |
+| `value`       | This sequence's own counter                                                                           |
+| `restartedAt` | The node whose entry last restarted that counter - for a section, its numbered parent                 |
+| `number`      | The number written - `3.2`                                                                            |
+| `label`       | The number with its label - "Figure 3.2"                                                              |
+
+The rule applied is not copied into every entry: it is named by the table's scheme with the entry's
+sequence and matter. `value`, `number` and `label` are `null` where the number could not be computed
+without a guess - a counter an unreadable occurrence has made unknown, or a caption before any
+numbered appendix. A section's never is.
 
 A wrong number is then diagnosable rather than guessable: the entry names the node, the counters and
 the rule, and the view that answers "why is this Figure 7?" reads the same table the publisher does.
-**Nothing stores it.** It is keyed in memory by the document's version digest, the scheme's version
-and the profile, and discarded when any of the three changes (STR-031).
+**Nothing stores it, and nothing caches it.** It is computed from the outline, each occurrence's
+resolved component version and the scheme whenever it is asked for, and every answer names each
+occurrence's version (STR-031). A cache keyed by the document's version digest alone would serve a
+stale figure number the moment a `latest` component gained a version, so one, when a measurement asks
+for it, is keyed by the document version, every occurrence's resolved component version, the scheme
+and the profile. Numbering 330 nodes holding 300 occurrences of 150 components took a median 19.6 ms,
+reading them included, so none is built.
 
 **The order of the four stages is a constraint, not a convention** (STR-051):
 
 ```
-resolve(outline, heads)            -> Resolved        which version each occurrence takes
-conditions(resolved, profile)      -> Resolved        REU's, T4; the identity function today
-number(resolved, scheme)           -> NumberingTable
-references(resolved, numbering)    -> Bound | Failure[]
+resolve(outline, contributions)      -> Resolved          each occurrence's contributions, by occurrence
+conditions(resolved)                 -> Conditioned       REU's, T4; the identity function today
+number(conditioned, scheme)          -> NumberingTable
+references(conditioned, numbering)   -> Bound | Failure[] structure 4's, and not built
 ```
 
-Each stage takes the previous stage's return type, so calling `number` before `conditions` does not
-typecheck and calling `references` before `number` has nothing to pass. REU-028 to REU-030 state the
-same order from the reuse side; this is where it is enforced.
+Each stage takes the previous stage's return type, and each is a type of its own, so handing `number`
+a `Resolved` does not typecheck and `references` has nothing to be passed until `number` has run.
+`conditions` takes no profile yet; REU gives it one. REU-028 to REU-030 state the same order from the
+reuse side; this is where it is enforced.
 
 ## Captions
 
 **A caption's text is the component's; its label and number are computed here.** The content model
 holds `caption` on a `table` and a `figure` and nothing on a block `equation`, which carries
 `numbered` alone. The engine takes each occurrence's caption-bearing blocks in document order and
-increments the sequence for the kind (STR-023). The label comes from the scheme.
+increments the sequence for the kind (STR-023). The label comes from the scheme. **Every figure and
+every table takes a number**, an empty caption and a table used for layout included, because only a
+block equation can say it is unnumbered; issue #129 asks for a figure or a table to be able to say so
+too, which is a content schema change for a later plan. The numbering route answers a caption's
+number, and nothing in the renderer shows one yet.
 
 **Where a caption is rendered, and on which side of its block, is not here and is not anywhere.**
 STR-025 makes placement a style property; STY's six catalogues have no caption style. The design
@@ -578,7 +645,8 @@ needs to know where the reader is on a page nobody has composed yet, which is ST
 Both leave this design as a resolved target with an unresolved form, for the publisher to finish.
 
 **A stale number is not renderable because there is no number to go stale** (STR-031). The
-cross-reference node has no member for one; the table is discarded with its inputs; and the renderer
+cross-reference node has no member for one; the table is computed afresh from its inputs and kept by
+nothing; and the renderer
 draws from the table it holds, which is the table for the outline it holds.
 
 ## Navigation
@@ -686,20 +754,24 @@ table in any tenant migration, so migration 0016 widens three checks and adds no
 Every route follows [service-foundations.md](service-foundations.md) and declares the permission and
 target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 
-| Route                                  | Permission     | Carries                         | Does                                                                                           |
-| -------------------------------------- | -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `GET /v1/documents`                    | Signed in      | `cursor`, `limit`               | The documents the caller may read, filtered by the readable set inside the query               |
-| `POST /v1/spaces/{space}/documents`    | Create, space  | Title, base language, direction | Creates a document and its version `0.1`, with an empty outline (STR-054)                      |
-| `GET /v1/documents/{id}`               | Read, artifact | -                               | The latest version: the outline, its version, and each occurrence's resolved component version |
-| `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The numbering table, for a caller that has not loaded every component                          |
-| `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version              |
-| `GET /v1/documents/{id}/contributions` | Read, artifact | `occurrences`                   | What each named occurrence's component contributes to the sequences                            |
+| Route                                  | Permission     | Carries                         | Does                                                                                                                   |
+| -------------------------------------- | -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/documents`                    | Signed in      | `cursor`, `limit`               | The documents the caller may read, filtered by the readable set inside the query                                       |
+| `POST /v1/spaces/{space}/documents`    | Create, space  | Title, base language, direction | Creates a document and its version `0.1`, with an empty outline (STR-054)                                              |
+| `GET /v1/documents/{id}`               | Read, artifact | -                               | The latest version: the outline and its version, as the caller is shown it                                             |
+| `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The latest version's numbering table, as the caller is shown it, and the component version each occurrence resolved to |
+| `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version                                      |
+| `GET /v1/documents/{id}/contributions` | Read, artifact | `occurrences`                   | What each named occurrence's component contributes to the sequences. Not built                                         |
 
-**Four of the six are built, and two of those short of this table.** `GET /v1/documents` carries
+**Five of the six are built, and one of those short of this table.** `GET /v1/documents` carries
 neither `cursor` nor `limit` and answers everything the caller may read at once, which is correct
-and linear in the number of documents; `GET /v1/documents/{id}` answers each reference node as the
-caller is shown it ([Who is shown what](#who-is-shown-what)), naming its mode, with no resolved
-component version. The numbering and contributions routes wait for numbering. Creating answers `200`
+and linear in the number of documents. `GET /v1/documents/{id}` answers each reference node as the
+caller is shown it ([Who is shown what](#who-is-shown-what)), naming its mode; it resolves no
+component version, and **the numbering route does instead**, beside the numbers that version produced:
+each occurrence's version, or `null` where the caller may not read the component, where it is
+`approved` and waits on revisions, or where its content does not read. The numbering route numbers
+the latest version alone: numbering an earlier one waits for baselines (STR-052). The contributions
+route is not built, and waits for the renderer to show a caption's number. Creating answers `200`
 rather than `201`, for the reason component-editor.md gives: a permission-checked handler cannot set
 a status.
 
@@ -725,14 +797,14 @@ them nothing they could not already read; the component routes order it the same
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree, `number`, `contents`, `listOf`, reference resolution, and the contribution projection                                                                |
-| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; later, the cycle check |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                          |
-| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                           |
-| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                               |
-| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, with no numbers                                                                                               |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - and `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers`. Not built: `contents`, `listOf` and reference resolution |
+| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                             |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                     |
+| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                      |
+| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                          |
+| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render, and offers **Numbered** and **Appendix** beside each node                                                                                                |
 
 **The operations are pure functions over a tree, and the service applies them.** `packages/domain` is
 where a tree operation can be property-tested without a database, and where determinism is provable.
@@ -786,9 +858,10 @@ cycle once there is an index to walk, and record - never rebasing one person's a
   and it is a second store to keep in step with the outline. The only question it answers is finding a
   document from a node, which the deep link answers by carrying the document. Named in
   [Open questions](#open-questions) because STR-Q02 could change the answer.
-- **Storing the numbering table.** STR-019 forbids storing a number, and a cache of the whole table
-  keyed by its inputs is what this design has instead - discarded rather than invalidated, because an
-  invalidation somebody forgets is the stale number STR-031 forbids.
+- **Storing the numbering table.** STR-019 forbids storing a number. Nothing caches one either, and
+  a cache of the whole table, when a measurement asks for one, is keyed by all its inputs (STR-031's
+  row) - discarded rather than invalidated, because an invalidation somebody forgets is the stale
+  number STR-031 forbids.
 - **A number computed on the server for the panel.** It puts a round trip in front of every keystroke
   and makes STR-036 true by agreement rather than by identity.
 - **Storing a section's depth on its node**, as the spike's `OutlineSection` did. A depth is a
@@ -851,3 +924,42 @@ negative, and what a test can show is the construction that makes it hold, not t
 | **Final review: `matter` could be set on any node**, where STR-016 makes it a top-level node's, inherited by its subtree                                                                                                 | The parse refuses it below the top level, which covers set, insert and move; "Numbering" says the same                                                                                                                                                                                                                                                                                                                |
 | **Final review: a NUL or half of a surrogate pair in a title answered `500`**, failing the insert into a `jsonb` column                                                                                                  | Refused in the schema, so it is the caller's `400`. A component's content accepts the same characters, left as the plan says                                                                                                                                                                                                                                                                                          |
 | **Final review: a retitle refused as a conflict never named its title**, though the not-saved and signed-out paths did                                                                                                   | The title is named after the refusal's sentence, for a retitle refused itself and for one given way to behind a refusal                                                                                                                                                                                                                                                                                               |
+
+[The second structure plan](../plans/2026-09-18-structure-02-numbering.md) built numbering and
+captions and left resolving a cross-reference to structure 4, with its first consumer. Planning it
+found thirteen things; building it, and reviewing each task, found eight more, marked **Built**. One
+claim is new, IAM-073 (issue #130): nothing in the corpus said a number is held to the rule an
+identity is, so decision C was a design answer with no row behind it. The row landed narrowed to the
+numbers an outline produces, because a count or an order derived elsewhere - a search count, where a
+component is used, a sort - is not answered here. No other claim changed. **STR-036 and STR-031 stay
+claimed and are cited by nothing** (the plan's decision F). STR-036 asks for numbering "as it will
+publish": the panel's section numbers are what `number` gives with the one scheme anything can number
+against, but no publisher exists to show it, and the panel is not yet a table of contents, so
+structure 3 cites it with STR-034 and STR-037. STR-031 is about cross-references resolving afresh,
+and nothing resolves one until structure 4; what numbering contributes to it - nothing cached, every
+answer naming each occurrence's version - is in its row. STR-019 is cited by nothing for the same
+kind of reason: no layout and no conditions exist to change.
+
+| Found                                                                                                                                                                        | Change                                                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **STR-031's cache key missed the component versions**: a `latest` reference's new head moves a figure without moving the digest                                              | Nothing is cached, every answer names each occurrence's version, and the key a cache would need is written into STR-031's row                                                                                      |
+| **"Who is shown what" was silent on numbers**, and a gap in them counts what a reader may not read                                                                           | An unreadable occurrence is never read, and every number it could move is withheld whatever it holds ("Who is shown what"). Filed as issue #130 and landed as IAM-073, narrowed to the numbers an outline produces |
+| **`number` had two signatures**                                                                                                                                              | The pipeline's: `resolve` carries contributions by occurrence, `conditions` and `number` take the stage before, and the order is a type                                                                            |
+| **The panel has no component open**                                                                                                                                          | It needs none: no section number depends on a contribution, which a test holds. The contributions route is not built                                                                                               |
+| **Beneath an unnumbered node was unsaid**                                                                                                                                    | Nothing beneath it takes a section number; what it holds carries on the counters before it and restarts nothing                                                                                                    |
+| **An appendix "restarting every sequence" was ambiguous**                                                                                                                    | Each matter keeps its own counters: `A`, then `B`, and a body chapter after them carries on the body's numbering                                                                                                   |
+| **One format could not write `A.1`**                                                                                                                                         | `format` is a list, one per part, the last repeating                                                                                                                                                               |
+| **A title's footnotes and a reference's heading were never placed**                                                                                                          | Both are numbered: a title's footnotes at their node, a reference in the section sequence                                                                                                                          |
+| **`approved` resolves to nothing**                                                                                                                                           | Its occurrence is not known to anybody, so the numbers it could move are withheld from everybody until revisions exist                                                                                             |
+| **The entry copied its rule**                                                                                                                                                | It names the rule by scheme, sequence and matter, and carries `matter`, `value`, `restartedAt` and `number`                                                                                                        |
+| **Each occurrence's resolved version was on `GET /v1/documents/{id}`**                                                                                                       | It is on the numbering route, beside the numbers it produced                                                                                                                                                       |
+| **Every table is numbered, one used for layout included**                                                                                                                    | Built as STR-023 says. A figure or table explicitly unnumbered is filed as issue #129, a content schema change for a later plan                                                                                    |
+| **PUB must bring its scheme to the panel**                                                                                                                                   | Recorded: the panel is right only while every document numbers against the scheme the panel uses                                                                                                                   |
+| **Built: a scheme could print one label twice**: a figure rule restarting per chapter with no prefix makes every chapter's first figure `Figure 1`                           | The scheme refuses a rule that restarts without prefixing to at least that depth, except a footnote's, whose labels a per-chapter house style means to repeat ("Numbering")                                        |
+| **Built: a caption before any numbered appendix printed a bare number**, repeating a body caption's label                                                                    | It takes no number and uses up no value of its counter, so the first numbered appendix still starts at `Figure A.1`; STR-023's row names the exception                                                             |
+| **Built: the pinned-version query could select a version of a component the reader may not read**, and discard it only afterwards - reachable only past the write-time check | Both of `numberingInputs`' queries are restricted to the readable set in the query itself, and a test recording every row they return fails if one names such a component                                          |
+| **Built: each component's head was found by sorting every version of every referenced component**                                                                            | One index probe per component, a lateral join with `limit 1`, the rule `latestVersion` reads one head by                                                                                                           |
+| **Built: an appendix was offered moves that would nest it**, which the parse refuses                                                                                         | The panel offers none: `Alt+Right` says **An appendix stays at the top level.**, and no drop that would nest one is offered                                                                                        |
+| **Built: a ticked Numbered box beneath an unnumbered node shows no number**, as if the tick were ignored                                                                     | The panel says **Not numbered while** the ancestor **is not.** beside the box                                                                                                                                      |
+| **Built: a drag started before the outline panel's first effects ran was cancelled** (issue #131) - structure 1's code, found by this plan's tests under load                | Under `<StrictMode>`, the simulated unmount cleared the drag's timer; that cleanup is gone, and a test starts a drag before the effects run                                                                        |
+| **Built: the property test numbered almost nothing**: its generator lost precision after two calls, so two hundred runs made two nodes                                       | An exact generator, a floor on what the runs contain, and an independent oracle for every section number and figure label                                                                                          |

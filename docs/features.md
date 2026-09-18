@@ -5,8 +5,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 **both change in the same PR**.
 
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
-> versioned, and documents made and their outlines restructured, but nothing is numbered, formatted
-> beyond plain paragraphs, or published. What follows describes what actually exists today, so that
+> versioned, and documents made, their outlines restructured and their sections numbered, but nothing
+> is formatted beyond plain paragraphs, cross-referenced or published. What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
 
@@ -111,8 +111,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   can still be moved, removed or started on a new page, and you can only add a component you may read.
   Every section has a title, and a rename that is not saved names the title it lost.
 
-  **This is structure, not the document.** Nothing is numbered yet - no section numbers, no figure or
-  table numbers, no cross-references resolved, and no table of contents. There is no document view:
+  **Sections are numbered.** Each section and each component in the outline shows its number - `1`,
+  `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
+  under it out of the numbering; tick **Appendix** on a top-level node to number it `A`, `B` and so on.
+  Figures, tables, equations and footnotes are numbered too, per chapter and per appendix, and the
+  service answers every number with where it came from - but the editor does not yet write a figure,
+  so you only see those through the API. A number that depends on a component you may not read is
+  left out rather than guessed. Nothing resolves a cross-reference yet, and there is no table of
+  contents.
+
+  **This is structure, not the document.** There is no document view:
   the outline is a tree you build, and you still open a component on its own to edit it. A section's
   title is plain text for now, and a document's own title, language and direction cannot be changed
   once it is made.
@@ -128,13 +136,14 @@ Named explicitly so nobody has to read the source to find out:
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view: a document's outline is a tree you build, and a component still opens on its own
-  to be edited. No numbering, no cross-references, no table of contents, no reuse or transclusion.
+  to be edited. No cross-references resolved, no table of contents, no list of figures, no reuse or
+  transclusion. No way to make a figure or a table unnumbered: every one takes a number.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or
-  comparison: versions are cut and kept, and nothing yet compares or designates one. Numbering, cross-reference resolution, conditional text and suggestion
-  handling are all described in the content model and none of them runs: content can say a paragraph
-  refers to a figure, and nothing resolves it.
+  comparison: versions are cut and kept, and nothing yet compares or designates one. Cross-reference
+  resolution, conditional text and suggestion handling are all described in the content model and
+  none of them runs: content can say a paragraph refers to a figure, and nothing resolves it.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

@@ -201,6 +201,95 @@ These steps are written from the code and its tests. Step 10's two are the ones 
 in for: the tests drive the keymap and drag and drop with synthetic events, which a browser's own Back
 and its own dragging never see.
 
+**Numbering changes nothing stored**, so a database from before 0.28.0 is numbered as it stands and
+needs no step. To see it by hand, carry on as Ada with **The dosing report** as step 10 left it:
+**Introduction**, **Method and materials** with **Install the printer** under it, and **Results**.
+
+1. Each row shows its number before its title: `1` **Introduction**, `2` **Method and materials**,
+   `2.1` **Install the printer, latest** and `3` **Results, starts on a new page**. The number is
+   what the row is described by, not part of its name, so the page's sentences still say
+   **Introduction** and not `1 Introduction`.
+2. Select **Introduction** and press `Alt+Down`: **Moved Introduction after Method and materials.**,
+   and every number changes with it - **Method and materials** `1`, **Install the printer** `1.1`,
+   **Introduction** `2`, **Results** `3`. Press `Ctrl+Z`: **Undone. Moved Introduction to the start of
+   the document.**, and the numbers go back.
+3. Select **Method and materials** and untick **Numbered**: **Method and materials is no longer
+   numbered.** It and **Install the printer** lose their numbers, and **Results** becomes `2`, because
+   a node left out uses up no number. Select **Install the printer**: its own **Numbered** is still
+   ticked, and beside it the page says **Not numbered while Method and materials is not.** Press
+   **Undo**: **Undone. Method and materials is now numbered.** (`Ctrl+Z` does nothing while a box has
+   the focus, as in any field beside the tree; it undoes from the tree.)
+4. Select **Results** and tick **Appendix**: **Results is now an appendix.**, and its number is `A`.
+   Click **Results** in the tree and press `Alt+Right`: nothing moves, and the page says **An appendix
+   stays at the top level.** Select **Install the printer**: it has a **Numbered** box and no
+   **Appendix**, which only a top-level node is offered.
+5. Select **Install the printer**, press **Add component**, choose **Replace the printer toner** (made
+   under **New component** above) and press **Add**: it goes after **Install the printer** as `2.2`.
+   Add it again, from the new row: `2.3`. One component, placed twice, each place with its number.
+6. The address bar ends `#/documents/` and the document's id. Open
+   `http://dev.acme.localhost:8088/v1/documents/<that id>/numbering` in the same window: the numbering
+   of the latest version, with `"scheme": "default/1"`, a `section` entry for each of `1`, `2`, `2.1`,
+   `2.2`, `2.3` and `A`, each naming its node, and under `occurrences` the component version each of
+   the three component rows resolved to. There is no figure yet, because nothing holds one.
+7. **Figure numbers, through the API**, because the editor writes paragraphs alone. Open **Replace the
+   printer toner**; the address bar ends `#/components/` and its id. In the browser's console, on that
+   page, give it two figures after its paragraph and make a version of that - claiming the lock
+   (`move: true` takes it from another window of yours, if one holds it), saving one iteration, and
+   **Done editing**'s release, which cuts the version:
+
+   ```js
+   const component = '<its id>';
+   const json = { 'content-type': 'application/json' };
+   const opened = await (await fetch(`/v1/components/${component}`)).json();
+   const session = crypto.randomUUID();
+   const figure = (id) => ({
+     type: 'figure',
+     id,
+     asset: 'asset',
+     imageStyle: 'wide',
+     caption: 'A caption',
+     alternative: { kind: 'decorative' },
+   });
+   await fetch(`/v1/components/${component}/lock`, {
+     method: 'POST',
+     headers: json,
+     body: JSON.stringify({ session, move: true }),
+   });
+   await fetch(`/v1/components/${component}/iterations/${session}/1`, {
+     method: 'PUT',
+     headers: json,
+     body: JSON.stringify({
+       openedFrom: opened.version.id,
+       content: {
+         ...opened.content,
+         content: [...opened.content.content, figure('f1'), figure('f2')],
+       },
+     }),
+   });
+   await fetch(
+     `/v1/components/${component}/lock?session=${session}&openedFrom=${opened.version.id}`,
+     { method: 'DELETE' },
+   );
+   ```
+
+   Open the numbering again: the first place's figures are `Figure 2.1` and `Figure 2.2`, and the
+   second's `Figure 2.3` and `Figure 2.4` - one component, numbered once per place - and both
+   occurrences name the version just made, while the document's own version is unchanged. From now
+   on the editor opens **Replace the printer toner** for reading only, because it holds figures it
+   cannot change yet.
+
+8. **A number never says what somebody may not read.** Alice has **Reader** on General from step 9.
+   As Ada, open **Replace the printer toner**, choose **Manage access**, and give Alice **Reader** at
+   **This component** with **Deny**. Signed in as Alice, open the document's numbering: the section
+   entries are the same six, both **Replace the printer toner** occurrences answer `"version": null`,
+   and there is no figure at all - nothing says whether it holds any - and its id appears nowhere in
+   the answer. Her outline names both rows **A component**, numbered `2.2` and `2.3` like everybody
+   else's.
+
+These numbering steps are written from the code and its tests, and were **not** followed in a
+browser: the renderer's tests run in jsdom and the route's on the wire. What only a person can check
+is that the numbers, the two boxes, the hint and the appendix's refusal look and read right.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8088` as the one address it returns to. Opening
 `http://dev.acme.localhost:8088/v1/sign-in/google` and choosing Ada accepts her invitation through that

@@ -15071,7 +15071,7 @@
         },
         {
           "id": "STR-018",
-          "howItIsMet": "`number(outline, contributions, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree"
+          "howItIsMet": "`number(conditioned, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree"
         },
         {
           "id": "STR-019",
@@ -15083,11 +15083,11 @@
         },
         {
           "id": "STR-022",
-          "howItIsMet": "Every entry in the numbering table names the node that produced it, the occurrence and block where it is a caption, the sequence, the counter stack at that point, and the rule applied"
+          "howItIsMet": "Every entry in the numbering table names the node that produced it, the block where it is a caption or a footnote, the sequence and the matter, the section counter stack at that point, its own counter's value and the node that last restarted it; the rule applied is named by the table's scheme with the entry's sequence and matter"
         },
         {
           "id": "STR-023",
-          "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind"
+          "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind. **One exception**: a caption met in appendix matter before any numbered appendix has begun a chapter takes no number, and uses up none, because its rule wants a chapter prefix and there is none to give it - never a bare number that would repeat a body caption's label"
         },
         {
           "id": "STR-028",
@@ -15095,7 +15095,7 @@
         },
         {
           "id": "STR-031",
-          "howItIsMet": "Nothing caches a number past the inputs that produced it. The table is keyed by the document's version digest, the scheme and the profile, and a change to any of the three discards it"
+          "howItIsMet": "Nothing caches a number. The numbering table is computed from the outline, each occurrence's resolved component version and the scheme whenever it is asked for, and every answer names each occurrence's version. A cache, when one is needed, is keyed by the document version, every occurrence's resolved component version, the scheme and the profile - the document's digest alone misses a `latest` component's new head"
         },
         {
           "id": "STR-032",
