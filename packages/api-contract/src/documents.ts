@@ -149,7 +149,8 @@ export const documentRoutes = {
         schema: DocumentView,
       },
       400: {
-        description: 'outline_invalid: the operation does not apply to the outline it names',
+        description:
+          'outline_invalid: the operation does not apply to the latest outline; or invalid_request: a body this route does not accept',
         schema: OutlineRefusal,
       },
       401: unauthenticated,

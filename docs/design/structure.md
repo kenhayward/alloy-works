@@ -546,6 +546,12 @@ target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 version, they share every refusal, and a sixth operation should be a member of a closed union rather
 than a new path with the same preconditions copied into it.
 
+**Each route checks the kind itself.** `authorise` never looks at an artifact's kind, so a
+component's id on a document's route is answered `404` by the handler once its permission is
+decided, and the other way round. Because `edit` is decided first, a caller who may read that
+component but not edit it is answered `403` on `POST /v1/documents/{id}/outline` instead, which tells
+them nothing they could not already read; the component routes order it the same way.
+
 **The refusals**, in the one error shape, with underscored wire codes as
 `apps/service/src/wire-codes.ts` maps them:
 

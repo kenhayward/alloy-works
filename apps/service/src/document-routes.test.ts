@@ -403,8 +403,13 @@ describe('documents through the service', () => {
     const loser = winner === 'First' ? 'Second' : 'First';
     expect(opened.outline.nodes).toHaveLength(1);
     expect(JSON.stringify(opened.outline)).not.toContain(loser);
-    // No document-level lock stands in the way of either: `component_lock` refuses a document by its
-    // check constraint, which packages/db's documents.test.ts shows at the database.
+    // And no document-level lock is introduced: none can be claimed on a document through the one
+    // route that claims locks. `component_lock` refuses a document by its check constraint too, which
+    // packages/db's documents.test.ts shows at the database.
+    const claimed = await call('ada', 'POST', `/v1/components/${doc.id}/lock`, {
+      session: '33333333-3333-4333-8333-333333333333',
+    });
+    expect(claimed.statusCode).toBe(404);
   });
 
   it('refuses creating where the caller may read but not create, and answers nothing for the rest', async () => {
@@ -440,26 +445,38 @@ describe('documents through the service', () => {
     expect(await chainOf(doc.id)).toHaveLength(1);
   });
 
-  it("answers a component's id on a document's routes as nothing there", async () => {
+  it("keeps components and documents apart: each one's id is nothing on the other's routes", async () => {
     const component = await call('ada', 'POST', `/v1/spaces/${general}/components`, {
       title: 'Replace the toner',
       language: 'en-GB',
       direction: 'ltr',
     });
     const { id, version } = component.json<{ id: string; version: { id: string } }>();
-    expect((await call('ada', 'GET', `/v1/documents/${id}`)).statusCode).toBe(404);
-    const edited = await act('ada', id, version.id, {
+    const insert = {
       operation: 'insert',
       parent: null,
       position: 0,
       node: section('Introduction'),
-    });
-    expect(edited.statusCode).toBe(404);
+    };
+    expect((await call('ada', 'GET', `/v1/documents/${id}`)).statusCode).toBe(404);
+    expect((await act('ada', id, version.id, insert)).statusCode).toBe(404);
+    // `authorise` decides `edit` before the handler looks at the kind, so a reader who may not edit
+    // the component is refused as forbidden - which tells them nothing they could not already read.
+    expect((await act('alice', id, version.id, insert)).statusCode).toBe(403);
     expect(
       (await call('ada', 'GET', '/v1/documents'))
         .json<{ items: { id: string }[] }>()
         .items.map((i) => i.id),
     ).not.toContain(id);
+
+    // And the other way round: a document's id is no component.
+    const doc = (await create('ada', general, 'Not a component')).json<DocumentBody>();
+    expect((await call('ada', 'GET', `/v1/components/${doc.id}`)).statusCode).toBe(404);
+    expect(
+      (await call('ada', 'GET', '/v1/components?limit=100'))
+        .json<{ items: { id: string }[] }>()
+        .items.map((i) => i.id),
+    ).not.toContain(doc.id);
   });
 
   it('refuses a body carrying a member it does not declare, and an uppercase id anywhere', async () => {
