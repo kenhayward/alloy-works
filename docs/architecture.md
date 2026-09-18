@@ -465,10 +465,17 @@ takes it back, computed from the outline before and the outline the service retu
 empties the stack, because undoing onto somebody else's outline would overwrite it unseen; a removal
 empties it too, because it has no inverse - the subtree's identifiers can never be allocated again.
 
-**One act in flight at a time.** The page sends nothing while an act is unanswered. A retitle committed
-meanwhile is held and sent after, unless the act before it is refused - as a conflict, as not permitted,
-as no longer there or as not applying. Every other act made meanwhile - a move by key or pointer, an
-undo, a page-break change, an add or a remove - is ignored, with the tree's `aria-busy` the only sign.
+**One act in flight at a time.** The page sends nothing while an act is unanswered. Every retitle goes
+through one queue in the panel that holds **one retitle per section**, in the order of its latest
+commit, and sends them one at a time once nothing is in flight, each from the version the one before it
+made: a second commit to the same section replaces the first, and a commit to another section waits
+behind it rather than taking its place. Each held retitle keeps the rules it had alone - given way to
+behind a refusal (a conflict, not permitted, no longer there, not applying), sent behind a failure, not
+sent once the author is signed out - and a title that is not saved is always named: after the refusal's
+own sentence when a refusal took it, and, when its field has closed, once no other retitle is
+outstanding, so a later one's answer cannot replace the sentence. Every other act made meanwhile - a
+move by key or pointer, an undo, a page-break change, an add or a remove - is ignored, with the tree's
+`aria-busy` the only sign.
 
 `pnpm dev:setup` makes no document: **New document** makes one in General, which Ada and Grace may
 create in.

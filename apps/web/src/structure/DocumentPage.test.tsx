@@ -116,6 +116,9 @@ function service(
   >();
   // An outline request waits on this before it is answered, so a test can act while one is in flight.
   let gate: Promise<void> = Promise.resolve();
+  // A bare status for the outline request that arrives n-th, counted from the first.
+  const numbered = new Map<number, number>();
+  let outlineRequests = 0;
   let unchangedNext = false;
   const chain: { id: string; number: string; outline: OutlineDocument }[] = [
     { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start },
@@ -155,7 +158,14 @@ function service(
     const body = request.method === 'GET' ? undefined : await request.clone().json();
     sent.push({ url, body });
     // An outline answer waits on the gate first, whatever it is going to be.
-    if (url.endsWith('/outline')) await gate;
+    if (url.endsWith('/outline')) {
+      outlineRequests += 1;
+      const arrived = outlineRequests;
+      await gate;
+      const status = numbered.get(arrived);
+      if (status !== undefined)
+        return json(status, { code: 'refused', message: 'No.', traceId: 't' });
+    }
     const refused = refusals.get(url);
     if (refused === 'network') throw new TypeError('Failed to fetch');
     if (refused !== undefined) {
@@ -208,6 +218,8 @@ function service(
     refuse: (url: string, status: number, body?: unknown) => refusals.set(url, { status, body }),
     /** No answer at all: the request fails the way a dropped connection does. */
     fail: (url: string) => refusals.set(url, 'network'),
+    /** A bare status for the outline request that arrives n-th, counting every one so far. */
+    refuseRequest: (n: number, status: number) => numbered.set(n, status),
     /** A bare status for the next request to this path only. */
     refuseNext: (url: string, status: number) => refusals.set(url, { status, once: true }),
     /** What was recorded last, as the service would now answer it. */
@@ -1062,6 +1074,144 @@ describe('the outline panel, answered', () => {
     await new Promise((resolve) => setTimeout(resolve, 30));
     // Nothing is sent that could only be refused the same way.
     expect(fake.edits()).toHaveLength(1);
+  });
+
+  describe('two retitles held on two sections', () => {
+    const V = (n: number) => `dddddddd-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const retitled = (node: string, value: string) => ({
+      operation: 'retitle',
+      node,
+      title: [{ type: 'text', value, marks: [] }],
+    });
+
+    /**
+     * The reproduction, under StrictMode: a page-break change in flight; "s" typed into the title of
+     * Method and Introduction clicked, which holds "Methods"; then "x" typed into the title of
+     * Introduction and Enter, which holds "Introductionx". Nothing is sent until the act in flight is
+     * answered.
+     */
+    async function holdTwo(fake: ReturnType<typeof service>) {
+      open(fake.fetch);
+      await screen.findByRole('treeitem', { name: 'Method' });
+      await userEvent.click(item('Method'));
+      const release = fake.hold();
+      await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+      await waitFor(() => expect(fake.edits()).toHaveLength(1));
+      await userEvent.type(screen.getByLabelText('Title'), 's');
+      await userEvent.click(item('Introduction'));
+      await userEvent.type(screen.getByLabelText('Title'), 'x{Enter}');
+      expect(fake.edits()).toHaveLength(1);
+      return release;
+    }
+    const twoSections = () =>
+      service(outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]));
+
+    it('sends both once the act in flight is answered, in order, each from the version the one before made', async () => {
+      const fake = twoSections();
+      const release = await holdTwo(fake);
+      release();
+
+      expect(await screen.findByRole('treeitem', { name: 'Introductionx' })).toBeInTheDocument();
+      await settled();
+      expect(item(/^Methods/)).toBeInTheDocument();
+      expect(fake.edits().map((request) => request.body)).toEqual([
+        { openedFrom: V(1), operation: { operation: 'set', node: METHOD, pageBreak: 'page' } },
+        { openedFrom: V(2), operation: retitled(METHOD, 'Methods') },
+        { openedFrom: V(3), operation: retitled(INTRODUCTION, 'Introductionx') },
+      ]);
+      expect(screen.getByText('Version 0.4 in General')).toBeInTheDocument();
+      expect(screen.getByRole('status')).not.toHaveTextContent(/not saved/);
+      expect(screen.getByLabelText('Title')).toHaveValue('Introductionx');
+    });
+
+    it('drops both behind a refused act, and names both after the conflict sentence', async () => {
+      const fake = twoSections();
+      const release = await holdTwo(fake);
+      fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'recto' });
+      release();
+
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          `${SOMEBODY_ELSE} Your titles Methods and Introductionx were not saved.`,
+        ),
+      );
+      await settled();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(fake.edits()).toHaveLength(1);
+      expect(item('Method')).toBeInTheDocument();
+      expect(screen.getByLabelText('Title')).toHaveValue('Introduction');
+    });
+
+    it('sends both behind an act that was not saved, since nothing they could overwrite was shown', async () => {
+      const fake = twoSections();
+      fake.refuseNext(OUTLINE_URL, 500);
+      const release = await holdTwo(fake);
+      release();
+
+      expect(await screen.findByRole('treeitem', { name: 'Introductionx' })).toBeInTheDocument();
+      await settled();
+      expect(item('Methods')).toBeInTheDocument();
+      expect(fake.edits().map((request) => request.body)).toEqual([
+        { openedFrom: V(1), operation: { operation: 'set', node: METHOD, pageBreak: 'page' } },
+        { openedFrom: V(1), operation: retitled(METHOD, 'Methods') },
+        { openedFrom: V(2), operation: retitled(INTRODUCTION, 'Introductionx') },
+      ]);
+    });
+
+    it('still names a title that was not saved once its field closed, after the next one is saved', async () => {
+      const fake = twoSections();
+      // The page-break change is the first request, Methods the second.
+      fake.refuseRequest(2, 500);
+      const release = await holdTwo(fake);
+      release();
+
+      expect(await screen.findByRole('treeitem', { name: 'Introductionx' })).toBeInTheDocument();
+      await settled();
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'The title Methods was not saved. Select the section and try it again.',
+        ),
+      );
+      expect(fake.edits()).toHaveLength(3);
+      expect(item(/^Method, starts/)).toBeInTheDocument();
+    });
+
+    it('sends neither once the author is signed out, naming the one whose field has closed', async () => {
+      const fake = twoSections();
+      fake.refuse(OUTLINE_URL, 401);
+      const release = await holdTwo(fake);
+      release();
+
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'You are signed out, so the title Methods was not saved. Sign in again to change this document.',
+        ),
+      );
+      await settled();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(fake.edits()).toHaveLength(1);
+      // Its field is still open, so what was typed is still there to send once signed in again.
+      expect(screen.getByLabelText('Title')).toHaveValue('Introductionx');
+    });
+  });
+
+  it('names the title a conflict refused, and keeps the conflict sentence', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        `${SOMEBODY_ELSE} Your title Methods was not saved.`,
+      ),
+    );
+    expect(screen.getByLabelText('Title')).toHaveValue('Method');
   });
 
   it('says why an act does not apply, in the words the service gave', async () => {

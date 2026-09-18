@@ -57,6 +57,46 @@ type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
 /** A retitle's answer, or word that a newer commit to the same section took its place. */
 type RetitleAnswer = Answered | 'superseded';
 
+/** A retitle waiting to be sent, with what it was committed behind. */
+interface Held {
+  readonly operation: RetitleOperation;
+  readonly resolve: (answer: RetitleAnswer) => void;
+  /** `refusals` and `signedOuts` when it was committed. */
+  readonly refusals: number;
+  readonly signedOuts: number;
+}
+
+/** A title that was not saved after its field closed, and whether signing out is why. */
+interface LostTitle {
+  readonly title: string;
+  readonly signedOut: boolean;
+}
+
+/** "Methods", "Methods and Results", "Scope, Methods and Results". */
+function listed(titles: readonly string[]): string {
+  if (titles.length <= 1) return titles.join('');
+  return `${titles.slice(0, -1).join(', ')} and ${titles[titles.length - 1]}`;
+}
+
+/** Said after a refusal's own sentence, naming each title it took. */
+function titlesNotSaved(titles: readonly string[]): string {
+  return titles.length === 1
+    ? `Your title ${listed(titles)} was not saved.`
+    : `Your titles ${listed(titles)} were not saved.`;
+}
+
+/** Names every title not saved after its field closed, once none is outstanding. */
+function lostTitles(lost: readonly LostTitle[]): string {
+  const titles = lost.map((each) => each.title);
+  const which =
+    titles.length === 1 ? `the title ${listed(titles)} was` : `the titles ${listed(titles)} were`;
+  return lost.some((each) => each.signedOut)
+    ? `You are signed out, so ${which} not saved. Sign in again to change this document.`
+    : `${which.charAt(0).toUpperCase()}${which.slice(1)} not saved. ${
+        titles.length === 1 ? 'Select the section' : 'Select each section'
+      } and try it again.`;
+}
+
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
   /** Whether the caller may restructure the outline at all; a reader is offered nothing to change. */
@@ -167,15 +207,22 @@ export function OutlinePanel({
   // can take it back.
   const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(dragTimer.current), []);
-  // A retitle committed while another act was in flight - Enter, or leaving the field, which may take
-  // the field away with it - held here rather than dropped, and sent once that act is answered.
-  const held = useRef<{
-    readonly operation: RetitleOperation;
-    readonly resolve: (answer: RetitleAnswer) => void;
-    /** `refusals` and `signedOuts` when it was held. */
-    readonly refusals: number;
-    readonly signedOuts: number;
-  } | null>(null);
+  // Every retitle committed - Enter, or leaving the field, which may take the field away with it - is
+  // held here, **one per section**, in the order of its latest commit (a Map keeps insertion order),
+  // and sent once nothing else is in flight: so none is dropped because another act was in flight, and
+  // none takes another section's place.
+  const held = useRef(new Map<string, Held>());
+  // A retitle sent from `held` and not yet answered: the next one waits for it.
+  const sending = useRef(false);
+  // Retitles committed and not yet answered, however far each has got.
+  const outstanding = useRef(0);
+  // Titles not saved whose fields have closed, named together once none is outstanding, so a later
+  // retitle's answer cannot replace the sentence that names an earlier one.
+  const lost = useRef<LostTitle[]>([]);
+  // Titles given way to a refusal, named after the refusal's own sentence in the render that shows it.
+  const dropped = useRef<string[]>([]);
+  // Moved whenever a retitle is committed or answered, so the render after it looks at `held` again.
+  const [, setLooked] = useState(0);
   // The section whose title field is open, written by that field's own effect: a retitle that was not
   // saved after its field closed has nowhere left to keep its text, so the notice names it instead.
   const openField = useRef<string | null>(null);
@@ -204,51 +251,77 @@ export function OutlinePanel({
     return after;
   };
 
-  // After every render, so the one where `busy` clears sends what was held - from that render's
-  // outline and `onOperation`, which is to say from the version the act in flight made.
+  // After every render. First, titles a refusal took are named after that refusal's own sentence,
+  // which is the notice this render shows. Then, when nothing is in flight, the held retitles are
+  // looked at in order: each is given way to, or sent - one at a time, from this render's outline and
+  // `onOperation`, which is to say from the version the act before it made; the render after its
+  // answer sends the next.
   useEffect(() => {
-    const waiting = held.current;
-    if (busy || waiting === null) return;
-    held.current = null;
-    const node = placeOf(nodes, waiting.operation.node)?.node;
-    // Refused with the act it waited on - the same rule as a retitle refused itself: the field gives
-    // way to the outline now shown, and the conflict sentence stays for the author to read.
-    if (refusals !== waiting.refusals || !editable || node?.type !== 'section') {
-      waiting.resolve('refused');
+    if (dropped.current.length > 0) {
+      onNotice([notice, titlesNotSaved(dropped.current)].filter(Boolean).join(' '));
+      dropped.current = [];
+    }
+    if (busy || sending.current) return;
+    for (const [id, waiting] of held.current) {
+      held.current.delete(id);
+      const node = placeOf(nodes, id)?.node;
+      // Behind a refusal - the same rule as a retitle refused itself: the field gives way to the
+      // outline now shown, and the refusal's sentence stays, with the title named after it.
+      if (refusals !== waiting.refusals || !editable || node?.type !== 'section') {
+        waiting.resolve('refused');
+        continue;
+      }
+      // Behind a sign-out it could only be refused the same way, so it is not sent.
+      if (signedOuts !== waiting.signedOuts) {
+        waiting.resolve('signedOut');
+        continue;
+      }
+      if (plainTitle(node.title) === titleText(waiting.operation.title)) {
+        waiting.resolve(outline);
+        continue;
+      }
+      // Behind a failure it is sent: nothing was recorded, so no outline was shown that it could
+      // overwrite - and if the failed act did record after all, it is refused as a conflict.
+      sending.current = true;
+      void onOperation(waiting.operation).then((answer) => {
+        sending.current = false;
+        waiting.resolve(answer);
+        setLooked((count) => count + 1);
+      });
       return;
     }
-    if (signedOuts !== waiting.signedOuts) {
-      waiting.resolve('signedOut');
-      return;
-    }
-    if (plainTitle(node.title) === titleText(waiting.operation.title)) {
-      waiting.resolve(outline);
-      return;
-    }
-    void onOperation(waiting.operation).then(waiting.resolve);
   });
 
   /**
-   * A retitle now, or once the act in flight is answered. One that was not saved, and whose field has
-   * since closed, is named in the notice, so it is never lost without a word.
+   * A retitle, held and sent once nothing else is in flight. One that was not saved, and whose field
+   * has since closed, is named in the notice once no other retitle is outstanding; one a refusal took
+   * is named after the refusal's sentence - so no title is ever lost without a word.
    */
   const retitle = async (operation: RetitleOperation): Promise<RetitleAnswer> => {
-    const answer = await (busy
-      ? new Promise<RetitleAnswer>((resolve) => {
-          const waiting = held.current;
-          // A newer commit takes the place of one still waiting: for the same section it carries the
-          // later text, so the older is simply superseded; for another, the older was not saved.
-          waiting?.resolve(waiting.operation.node === operation.node ? 'superseded' : 'unsent');
-          held.current = { operation, resolve, refusals, signedOuts };
-        })
-      : send(operation, null));
-    if ((answer === 'unsent' || answer === 'signedOut') && openField.current !== operation.node) {
-      const title = titleText(operation.title);
-      onNotice(
-        answer === 'signedOut'
-          ? `You are signed out, so the title ${title} was not saved. Sign in again to change this document.`
-          : `The title ${title} was not saved. Select the section and try it again.`,
-      );
+    outstanding.current += 1;
+    const answer = await new Promise<RetitleAnswer>((resolve) => {
+      // A newer commit to the same section carries the later text, so the older is superseded, and
+      // the newer goes to the back of the queue, in the order of its own commit.
+      const waiting = held.current.get(operation.node);
+      held.current.delete(operation.node);
+      waiting?.resolve('superseded');
+      held.current.set(operation.node, { operation, resolve, refusals, signedOuts });
+      setLooked((count) => count + 1);
+    });
+    outstanding.current -= 1;
+    const title = titleText(operation.title);
+    if (answer === 'refused') {
+      dropped.current.push(title);
+      setLooked((count) => count + 1);
+    } else if (
+      (answer === 'unsent' || answer === 'signedOut') &&
+      openField.current !== operation.node
+    ) {
+      lost.current.push({ title, signedOut: answer === 'signedOut' });
+    }
+    if (outstanding.current === 0 && lost.current.length > 0) {
+      onNotice(lostTitles(lost.current));
+      lost.current = [];
     }
     return answer;
   };
