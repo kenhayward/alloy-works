@@ -5,7 +5,9 @@ import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
+import { createComponent } from './creation.js';
 import { createTenant, provisionTenant } from './provision.js';
+import { createTenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
 describe('migration 0016, which makes a document an artifact', () => {
@@ -39,11 +41,55 @@ describe('migration 0016, which makes a document an artifact', () => {
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     const schema = tenant.schema;
 
+    // An environment already carrying a component, authored as every component is: the widened author
+    // check is validated against it when 0016 adds it back.
+    const service = createTenantDatabase(db.serviceUrl);
+    const component = await service
+      .withTenant(tenant, async (trx) => {
+        const ada = await trx
+          .insertInto('principal')
+          .values({
+            issuer: 'https://idp.example',
+            subject: 'ada',
+            email: null,
+            display_name: 'Ada',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const general = await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow();
+        return createComponent(trx, {
+          spaceId: general.id,
+          title: 'Install the printer',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada.id,
+        });
+      })
+      .finally(() => service.close());
+    if (component.answer !== 'created')
+      throw new Error(`Expected a component, got ${component.answer}`);
+
     await expect(
       queryAs(db.adminUrl, `insert into ${schema}.artifact (kind) values ('document')`),
     ).rejects.toThrow(/artifact_kind_check/);
 
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0016_documents']);
+
+    // The component and its version are as they were.
+    const { rows: held } = await queryAs(
+      db.adminUrl,
+      `select a.kind, a.space_id is not null as in_a_space, v.id, v.author_id is not null as authored
+       from ${schema}.artifact a join ${schema}.artifact_version v on v.artifact_id = a.id
+       where a.id = $1`,
+      [component.version.artifactId],
+    );
+    expect(held).toEqual([
+      { kind: 'component', in_a_space: true, id: component.version.id, authored: true },
+    ]);
 
     // A document is content, so it lives in exactly one space.
     await expect(

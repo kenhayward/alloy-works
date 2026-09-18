@@ -10,6 +10,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import {
   createArtifact,
@@ -28,9 +29,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * argument about 128 bits, not a counter's).
  */
 const newNodeIdentifier = () => blockIdentifierFrom(randomBytes(16));
-
-/** Refused when the version opened from does not read. Fixed, so no parse failure reaches a caller. */
-const UNREADABLE_OUTLINE = 'The version this was opened from does not read as an outline';
 
 export interface NewDocument {
   readonly spaceId: string;
@@ -152,8 +150,6 @@ export async function listReadableDocuments(
 ): Promise<{ readonly items: readonly DocumentSummary[] } | undefined> {
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
-  const none = ['00000000-0000-0000-0000-000000000000'];
-  const listed = <T extends string>(ids: readonly T[]) => (ids.length > 0 ? [...ids] : none);
 
   const rows = await trx
     .selectFrom('artifact as a')
@@ -173,17 +169,7 @@ export async function listReadableDocuments(
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
     .select(['latest.revision_no', 'latest.version_no'])
     .where('a.kind', '=', 'document')
-    // access.md's third disjunct, "space_id is null and tenant", is left out as it is for components:
-    // `artifact_space_by_kind` (0016) requires a document to carry a non-null `space_id` too.
-    .where((eb) =>
-      eb.or([
-        eb.and([
-          eb('a.space_id', 'in', listed(readable.spaces)),
-          eb('a.id', 'not in', listed(readable.excluded)),
-        ]),
-        eb('a.id', 'in', listed(readable.included)),
-      ]),
-    )
+    .where((eb) => readableArtifacts(eb, readable))
     .orderBy('a.id')
     .execute();
 
@@ -223,9 +209,14 @@ export async function editOutline(
     return { answer: 'artifact.missing' };
   }
   const read = readOutline(opened.content, { artifact: input.artifactId, version: opened.id });
-  // A stored outline that does not read is a broken store, and its parse failure names internal
-  // shapes: refused with a fixed reason, as `applyOutlineOperation` refuses, never with the failure.
-  if (!read.ok) return { answer: 'outline.invalid', reason: UNREADABLE_OUTLINE };
+  // A stored outline that does not read is a broken store, not the caller's mistake: thrown, as
+  // `currentDefinition` throws on a definition that does not read, so the service logs it and answers
+  // a 500. The failure names internal shapes, and a thrown error never reaches the wire.
+  if (!read.ok) {
+    throw new Error(
+      `The document ${input.artifactId} at ${opened.id} does not read: ${read.failure}`,
+    );
+  }
   const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier);
   if (!applied.applied) return { answer: 'outline.invalid', reason: applied.reason };
   return recordVersion(trx, {

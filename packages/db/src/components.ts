@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { readableArtifacts } from './readable-artifacts.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -30,8 +31,6 @@ export async function listReadableComponents(
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
   if (page.after !== undefined && !isPageCursor(page.after)) return { items: [], after: null };
-  const none = ['00000000-0000-0000-0000-000000000000'];
-  const listed = <T extends string>(ids: readonly T[]) => (ids.length > 0 ? [...ids] : none);
 
   const rows = await trx
     .selectFrom('artifact as a')
@@ -51,20 +50,7 @@ export async function listReadableComponents(
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
     .select(['latest.revision_no', 'latest.version_no'])
     .where('a.kind', '=', 'component')
-    // access.md's readable-set predicate has a third disjunct, "space_id is null and tenant", for an
-    // artifact that lives in no space. A component always has one - `artifact_space_by_kind`
-    // (0007_spaces_and_artifacts.sql, widened by 0016_documents.sql) requires both content kinds,
-    // `component` and `document`, to carry a non-null `space_id` - so that branch never applies here
-    // and is left out rather than written dead.
-    .where((eb) =>
-      eb.or([
-        eb.and([
-          eb('a.space_id', 'in', listed(readable.spaces)),
-          eb('a.id', 'not in', listed(readable.excluded)),
-        ]),
-        eb('a.id', 'in', listed(readable.included)),
-      ]),
-    )
+    .where((eb) => readableArtifacts(eb, readable))
     .$if(page.after !== undefined, (query) => query.where('a.id', '>', page.after!))
     .orderBy('a.id')
     .limit(page.limit + 1)

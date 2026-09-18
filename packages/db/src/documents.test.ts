@@ -4,7 +4,13 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
-import { createDocument, editOutline, listReadableDocuments, readDocument } from './documents.js';
+import {
+  createDocument,
+  editOutline,
+  listReadableDocuments,
+  readDocument,
+  type OutlineAnswer,
+} from './documents.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -32,8 +38,12 @@ function latch() {
 /** Like `latch`, but the opener carries a value out - here, a transaction's own backend pid. */
 function deferred<T>() {
   let resolve: (value: T) => void = () => {};
-  const promise = new Promise<T>((r) => (resolve = r));
-  return { promise, resolve };
+  let reject: (error: unknown) => void = () => {};
+  const promise = new Promise<T>((r, j) => {
+    resolve = r;
+    reject = j;
+  });
+  return { promise, resolve, reject };
 }
 
 const text = (value: string) => [{ type: 'text' as const, value, marks: [] }];
@@ -190,7 +200,12 @@ describe('a document in the version chain, and its outline edited a version at a
     expect((trimmed.content as OutlineDocument).title).toBe('The dosing report');
 
     const before = await service.withTenant(production, (trx) =>
-      trx.selectFrom('artifact').select('id').where('kind', '=', 'document').execute(),
+      trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'document')
+        .orderBy('id')
+        .execute(),
     );
     const refused = (input: { title?: string; language?: string; direction?: string }) =>
       service.withTenant(production, (trx) =>
@@ -207,7 +222,12 @@ describe('a document in the version chain, and its outline edited a version at a
     await expect(refused({ language: 'english' })).resolves.toEqual({ answer: 'content.invalid' });
     await expect(refused({ direction: 'up' })).resolves.toEqual({ answer: 'content.invalid' });
     const after = await service.withTenant(production, (trx) =>
-      trx.selectFrom('artifact').select('id').where('kind', '=', 'document').execute(),
+      trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'document')
+        .orderBy('id')
+        .execute(),
     );
     expect(after).toEqual(before);
   });
@@ -221,7 +241,12 @@ describe('a document in the version chain, and its outline edited a version at a
       answer: 'space.missing',
     });
     const documents = await service.withTenant(development, (trx) =>
-      trx.selectFrom('artifact').select('id').where('kind', '=', 'document').execute(),
+      trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'document')
+        .orderBy('id')
+        .execute(),
     );
     expect(documents).toEqual([]);
   });
@@ -283,32 +308,44 @@ describe('a document in the version chain, and its outline edited a version at a
 
   it('lets two acts from one version take turns: one is recorded, the other refused with the outline as it stands', async () => {
     const first = await created();
-    const winnerPid = deferred<number>();
-    const madeIt = latch();
+    const holding = deferred<number>();
     const commit = latch();
 
     const winner = service.withTenant(production, async (trx) => {
-      const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
-      winnerPid.resolve(rows[0]!.pid);
-      const answer = await editOutline(trx, {
-        artifactId: first.artifactId,
-        openedFrom: first.id,
-        author: ada,
-        operation: section('Introduction'),
-      });
-      madeIt.open();
+      let answer: OutlineAnswer;
+      try {
+        const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+        answer = await editOutline(trx, {
+          artifactId: first.artifactId,
+          openedFrom: first.id,
+          author: ada,
+          operation: section('Introduction'),
+        });
+        holding.resolve(rows[0]!.pid);
+      } catch (error) {
+        // Reported through `holding`, so the test fails on the winner's own error at once.
+        holding.reject(error);
+        throw error;
+      }
       await commit.opened;
       return answer;
     });
-    const pid = await winnerPid.promise;
-    await madeIt.opened;
+    // Its failure, if it has one, is already reported through `holding`.
+    winner.catch(() => undefined);
+    const pid = await holding.promise;
 
     // The winner holds the artifact's advisory lock until it commits, so the second act must wait
     // behind that backend - there is nothing else for it to do, which is what makes this
-    // deterministic rather than a sleep.
-    const loser = edit(first, section('Method'), { author: grace });
-    await untilBlockedBy(db.adminUrl, pid, 1);
-    commit.open();
+    // deterministic rather than a sleep. The latch opens in `finally`, so a wait that fails reports
+    // its own error and the winner still commits and gives its connection back, rather than the test
+    // hanging until it times out.
+    let loser: Promise<OutlineAnswer>;
+    try {
+      loser = edit(first, section('Method'), { author: grace });
+      await untilBlockedBy(db.adminUrl, pid, 1);
+    } finally {
+      commit.open();
+    }
 
     const [won, lost] = await Promise.all([winner, loser]);
     if (won.answer !== 'recorded') throw new Error(`Expected a version, got ${won.answer}`);
@@ -390,7 +427,7 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(await chainOf(first.artifactId)).toHaveLength(1);
   });
 
-  it('refuses a stored outline that no longer reads with a fixed reason, never the parse failure', async () => {
+  it("throws on a stored outline that no longer reads: a broken store, not the caller's mistake", async () => {
     const first = await created();
     // A version the store would never write, put there by hand: a title the schema refuses.
     const broken = await service.withTenant(production, (trx) =>
@@ -415,18 +452,19 @@ describe('a document in the version chain, and its outline edited a version at a
         .executeTakeFirstOrThrow(),
     );
 
-    const answer = await service.withTenant(production, (trx) =>
-      editOutline(trx, {
-        artifactId: first.artifactId,
-        openedFrom: broken.id,
-        author: ada,
-        operation: section('Method'),
-      }),
-    );
-    expect(answer).toEqual({
-      answer: 'outline.invalid',
-      reason: 'The version this was opened from does not read as an outline',
-    });
+    // Thrown, as `currentDefinition` throws on a definition that does not read, so the service logs
+    // it and answers a 500: the failure names the version, and never becomes a refusal's reason.
+    await expect(
+      service.withTenant(production, (trx) =>
+        editOutline(trx, {
+          artifactId: first.artifactId,
+          openedFrom: broken.id,
+          author: ada,
+          operation: section('Method'),
+        }),
+      ),
+    ).rejects.toThrow(`The document ${first.artifactId} at ${broken.id} does not read: `);
+    expect(await chainOf(first.artifactId)).toHaveLength(2);
   });
 
   it("cannot edit another environment's document, and leaves that document alone", async () => {
@@ -529,5 +567,47 @@ describe('a document in the version chain, and its outline edited a version at a
     // Ada is not a principal of development's, and development's own list holds none of these.
     await expect(listed(ada, development)).resolves.toBeUndefined();
     await expect(listed(ivy, development)).resolves.toEqual({ items: [] });
+  });
+  it('leaves out a document a grant on it refuses, and lists one a grant on it allows outside every granted space', async () => {
+    const denied = await created(general, 'The withdrawn report');
+    const allowed = await created(general, 'The shared report');
+    await service.withTenant(production, async (trx) => {
+      const reader = await findRole(trx, 'Reader');
+      for (const [principal, id, effect] of [
+        [ada, denied.artifactId, 'deny'],
+        [grace, allowed.artifactId, 'allow'],
+      ] as const) {
+        const answer = await grant(trx, {
+          roleId: reader!.id,
+          subject: { principal },
+          level: { kind: 'artifact', id },
+          effect,
+          grantedBy: ada,
+        });
+        if (!('granted' in answer)) throw new Error(`refused: ${answer.refused}`);
+      }
+    });
+    const listed = async (principal: string) =>
+      (
+        await service.withTenant(production, (trx) => listReadableDocuments(trx, principal))
+      )?.items.map((item) => item.id);
+
+    // Ada reads General, but not the one document in it she is denied.
+    expect(await listed(ada)).toContain(allowed.artifactId);
+    expect(await listed(ada)).not.toContain(denied.artifactId);
+    // Grace reads Quality alone, and the one document in General she is allowed - nothing else there.
+    expect(await listed(grace)).toContain(allowed.artifactId);
+    expect(await listed(grace)).not.toContain(denied.artifactId);
+    const others = (await listed(grace))!.filter((id) => id !== allowed.artifactId);
+    const spaces = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('artifact')
+        .select('space_id')
+        .distinct()
+        .where('id', 'in', [...others, allowed.artifactId])
+        .where('id', '!=', allowed.artifactId)
+        .execute(),
+    );
+    expect(spaces.map((row) => row.space_id)).toEqual(others.length > 0 ? [quality] : []);
   });
 });
