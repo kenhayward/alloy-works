@@ -24,25 +24,27 @@ a web application and a desktop application**.
 ## Architecture & data flow
 
 **One renderer, two deliveries.** `apps/web` is the entire user interface, and it is also what the
-Electron window loads. There is no per-delivery fork of a component, and there is no server yet:
-the proposed system, with a TypeScript web service as the system of record, is drawn in
+Electron window loads. There is no per-delivery fork of a component. Both talk to one web service,
+`apps/service`, which is the system of record: it resolves the environment from the hostname,
+answers the routes `packages/api-contract` declares, and serves the renderer beside them, so a page
+and its calls are one origin. Publishing, search and the rest of the proposed system are drawn in
 [`docs/design/system.md`](docs/design/system.md).
 
-| Component                      | Stack                                                                               | Path                    |
-| ------------------------------ | ----------------------------------------------------------------------------------- | ----------------------- |
-| Renderer / UI                  | React + TS + Vite - calls the service only through the API client                   | `apps/web`              |
-| Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials                   | `apps/desktop`          |
-| Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                                   | `packages/domain`       |
-| Editor                         | TypeScript + ProseMirror - schema, identity and the view; browser code, no React    | `packages/editor`       |
-| Database library               | TypeScript + `pg` + Kysely - roles, provisioning, migrations, `withTenant`          | `packages/db`           |
-| API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked | `packages/api-contract` |
-| Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer     | `apps/service`          |
-| Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only             | `packages/stand-in-idp` |
-| Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash          | `packages/objects`      |
-| Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them            | `apps/worker`           |
-| API client                     | TypeScript - types generated from `openapi.json`, and the stream reader             | `packages/api-client`   |
-| Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                    | `packages/trace`        |
-| End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                       | `tests/e2e`             |
+| Component                      | Stack                                                                                                        | Path                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| Renderer / UI                  | React + TS + Vite - calls the service only through the API client                                            | `apps/web`              |
+| Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials                                            | `apps/desktop`          |
+| Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                                                            | `packages/domain`       |
+| Editor                         | TypeScript + ProseMirror - schema, identity and the view; browser code, no React                             | `packages/editor`       |
+| Database library               | TypeScript + `pg` + Kysely - provisioning, migrations, `withTenant`, the version chain, access and documents | `packages/db`           |
+| API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked                          | `packages/api-contract` |
+| Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer                              | `apps/service`          |
+| Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only                                      | `packages/stand-in-idp` |
+| Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash                                   | `packages/objects`      |
+| Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them                                     | `apps/worker`           |
+| API client                     | TypeScript - types generated from `openapi.json`, and the stream reader                                      | `packages/api-client`   |
+| Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
+| End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                                                | `tests/e2e`             |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.

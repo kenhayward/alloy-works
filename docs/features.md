@@ -4,9 +4,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 [`README.md`](../README.md) is a short two-column summary that links here; when a feature changes,
 **both change in the same PR**.
 
-> **Status: nothing here is a product feature yet.** The repository is scaffolding. What follows
-> describes what actually exists today, so that the first real feature has something honest to be
-> added to rather than a list of intentions to be corrected.
+> **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
+> versioned, and documents made and their outlines restructured, but nothing is numbered, formatted
+> beyond plain paragraphs, or published. What follows describes what actually exists today, so that
+> each new feature has something honest to be added to rather than a list of intentions to be
+> corrected.
 
 ## What exists today
 

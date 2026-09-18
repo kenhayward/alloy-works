@@ -67,7 +67,7 @@ Six tranches, each a usable increment rather than a layer:
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
 than its name suggests, touching thirteen of the twenty-two areas, because publishing at the fidelity
-bar needs themes, templates, assets and tables as well as an editor. **None of it is built yet** - what exists today is the scaffolding under it, listed below.
+bar needs themes, templates, assets and tables as well as an editor. **The first pieces of it are built** - tenancy and sign-in, access control, components with immutable versions, a component's paragraphs edited under a lock, and documents with outlines you restructure - on the scaffolding under them. Numbering, formatting beyond plain paragraphs, templates, search and publishing are not, and the table below and [`docs/features.md`](docs/features.md) say exactly what is.
 
 ## Features
 

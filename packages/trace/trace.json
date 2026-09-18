@@ -14896,7 +14896,7 @@
         },
         {
           "id": "VER-011",
-          "howItIsMet": "One versioning mechanism parameterised by `artifact_kind`, so documents, outlines, assets, query definitions, themes, layouts and templates share it"
+          "howItIsMet": "One versioning mechanism parameterised by `artifact_kind`, so documents - one kind, whose content is the outline - assets, query definitions, themes, layouts and templates share it"
         },
         {
           "id": "VER-012",
