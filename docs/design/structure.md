@@ -114,6 +114,13 @@ alone, and a figure in an unnumbered body preface is still `Figure 1` - so the c
 "every caption-bearing block" in part. Issue #129 reopens STR-023: its superseding row answers both
 this case and a figure or table explicitly unnumbered, and this design claims that row once it does.
 
+**STR-036 is claimed on two terms that are not built yet.** The panel numbers with the same function
+the service does, over the default scheme, so it shows numbering as it will publish only while the
+publisher uses that scheme too, and only while no condition hides a node. When PUB brings a layout's
+scheme, the panel must be given it; when REU brings conditions and profiles, the panel must number
+under the profile being published. Both are named where they land ("Numbering", and the change
+history); until then there is one scheme and no condition, and the claim holds in full.
+
 ## What this document does not own
 
 Forty-one claims above. The requirements deliberately left out are where this design's edges are, and

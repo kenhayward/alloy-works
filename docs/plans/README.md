@@ -313,7 +313,7 @@ appendix. `GET /v1/documents/{id}/numbering` answers the whole table - sections,
 equations and footnotes, each entry naming what produced it - and never reads a component the caller
 may not read: every number it could have moved is `null`, for that caller, whatever it holds. That
 rule is IAM-073, filed as issue #130 and landed here, narrowed to the numbers an outline produces.
-Building it found eight more: the most serious that a scheme could print one label twice, and that a
+Building it found nine more: the most serious that a scheme could print one label twice, and that a
 caption before any numbered appendix printed a bare number repeating a body caption's; the scheme now
 refuses the first, and such a caption takes no number. It also fixed issue #131, structure 1's drag
 cancelled under load. What it leaves is listed at the end of the plan: resolving a cross-reference,

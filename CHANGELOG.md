@@ -28,6 +28,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   machine, because a drag started in the first moments after the outline appeared could be cancelled.
   Nobody can start a drag that quickly by hand, so nothing you did was affected, and the checks now
   pass every time.
+- `Ctrl+Z` now undoes the last change while the **Starts on** choice has the focus, as it does from
+  the outline itself. A text field still keeps `Ctrl+Z` for its own undo.
 
 ## 0.27.1 - 2026-09-18 (PR #128)
 
