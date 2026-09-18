@@ -487,14 +487,13 @@ describe('numbering an outline', () => {
       return seed % below;
     };
     let count = 0;
-    // Non-triviality, measured across all two hundred runs (figures confirmed by a standalone
-    // simulation of this exact generator and growth function): 6,140 nodes in all, a maximum depth
-    // of 6 (the walk stops generating beyond depth 6, by construction), 4,536 numbered and 1,604
-    // unnumbered nodes, 3,030 references against 3,110 sections, 206 body and 88 appendix top-level
-    // nodes, and 71 of the 200 runs place at least one appendix. Two occurrences of one component -
-    // STR-021's own shape - is covered on its own terms by the dedicated test above: this generator
-    // gives every occurrence its own identifier, so it demonstrates depth, breadth and every switch
-    // instead.
+    // Non-triviality, measured across all two hundred runs: 6,140 nodes in all, a maximum recursion
+    // depth of 7 (the walk stops generating children past depth 6, so 7 is the deepest call that
+    // finds nothing to add), 4,536 numbered and 1,604 unnumbered nodes, 3,030 references against
+    // 3,110 sections, 206 body and 88 appendix top-level nodes, and 71 of the 200 runs place at
+    // least one appendix. Two occurrences of one component - STR-021's own shape - is covered on
+    // its own terms by the dedicated test above: this generator gives every occurrence its own
+    // identifier, so it demonstrates depth, breadth and every switch instead.
     let totalNodes = 0;
     let maxDepth = 0;
     let numberedNodes = 0;
