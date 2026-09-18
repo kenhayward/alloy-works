@@ -461,6 +461,12 @@ no row is added, so requirements stay 1367.
 | **CNT-041** | Footnote numbering a property of the outline, not of the component                 | structure.md | `domain/src/structure/numbering.test.ts` | 2    |
 | **CNT-047** | A block equation numbered or explicitly unnumbered; unnumbered consumes no number  | structure.md | `domain/src/structure/numbering.test.ts` | 2    |
 
+**As built, STR-023 is neither claimed nor cited.** Building gave a caption met in appendix matter
+before any numbered appendix no number, a case STR-017 does not cover, so the claim was dropped at
+task 6's review, the identifier left its test's title, and structure.md names the gap; issue #129
+reopens STR-023. With IAM-073 landed and cited in task 4, the branch ends at 1368 requirements, 360
+claims and 173 citations: nine of the ten above, and IAM-073's.
+
 **STR-014 is the one a reviewer should weigh first.** Its first half - four independent sequences - is
 shown plainly: a table between two figures moves no figure's number. Its second half - "the layout
 must be able to declare further sequences" - is shown by a scheme declaring a `listing` sequence that
@@ -3338,7 +3344,9 @@ Found while building it, and left:
 - **A caption before any numbered appendix takes no number.** Under a rule that prefixes with the
   chapter, appendix matter has no chapter to give it until a numbered appendix begins, so such a
   caption is `null` and uses up nothing, rather than a bare number that would repeat a body caption's
-  label. STR-023's claim row names the exception. Whether a layout should be able to number such a
+  label. That leaves STR-023 answered in part, so structure.md no longer claims it and names the
+  gap; issue #129 reopens it with a superseding row answering this case and an explicitly unnumbered
+  figure or table together. Whether a layout should be able to number such a
   caption some other way is **PUB's, with the layout's scheme**.
 - **Nothing of the panel's new behaviour has been seen in a browser**: the numbers beside each row,
   **Numbered** and **Appendix**, the hint **Not numbered while** an ancestor **is not.**, `Alt+Right`
@@ -3348,10 +3356,10 @@ Found while building it, and left:
 - **Issue #131's fix rests on a jsdom test and a Linux run under load.** The drag's timer is no
   longer cleared on unmount, and a test starts a drag before the panel's effects run; a real drag in
   a real browser under StrictMode has not been watched. **The browser suite.**
-- **`Ctrl+Z` does nothing while Numbered or Appendix has the focus.** The panel leaves the key to
-  any `input` or `select`, so a text field keeps its own undo, and a checkbox has none; **Undo**, or
-  `Ctrl+Z` from the tree, takes the change back. **Starts on** has always behaved the same way.
-  Whether the panel should undo from a box is **the accessibility plan's**, with the browser suite.
+- **`Ctrl+Z` from Numbered, Appendix and Starts on** did nothing, because the panel left the key to
+  every `input` and `select`; it was fixed here, and now undoes the last act from a checkbox or a
+  select, while a text field keeps it as its own undo. Like the rest of the panel's keys it is shown
+  in jsdom only. **The browser suite.**
 - **The head rule has a third copy.** `revision_no desc, version_no desc` is spelled in
   `latestVersion`, `listReadableDocuments` and now `numberingInputs`, each with a comment naming the
   first. One helper would keep them from drifting. **Whichever plan next reads a component's head.**

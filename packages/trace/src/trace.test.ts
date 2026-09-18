@@ -40,6 +40,10 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1368);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-023 when the build gave a caption met in
+    // appendix matter before any numbered appendix no number - an exception STR-017 does not cover,
+    // so the row answered it only in part. The gap is named in prose beside the table, and issue #129
+    // reopens STR-023 with a superseding row.
     // 361, from 360: structure.md claims IAM-073 ("Who is shown what"): a reader is numbered only from
     // what they may read, and every number an unreadable component could have moved is null.
     // 360, from 361: structure.md stopped claiming STR-026, which the built target union answers only
@@ -81,7 +85,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(361);
+    ).toBe(360);
   });
 });
 
@@ -193,8 +197,10 @@ describe('the citations in the committed model', () => {
   // (apps/service/src/numbering-routes.test.ts): a reader who may not read a component is shown no
   // number it could have moved, across a restart, and their answer does not move by a byte when the
   // component's content changes.
+  // 173, from 174: STR-023's identifier left the title of its test in numbering.test.ts when
+  // structure.md stopped claiming it; the test stays, citing nothing.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(174);
+    expect(model.citations).toHaveLength(173);
   });
 
   it('cites no identifier the corpus does not hold', () => {

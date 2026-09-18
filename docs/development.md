@@ -217,8 +217,9 @@ needs no step. To see it by hand, carry on as Ada with **The dosing report** as 
    numbered.** It and **Install the printer** lose their numbers, and **Results** becomes `2`, because
    a node left out uses up no number. Select **Install the printer**: its own **Numbered** is still
    ticked, and beside it the page says **Not numbered while Method and materials is not.** Press
-   **Undo**: **Undone. Method and materials is now numbered.** (`Ctrl+Z` does nothing while a box has
-   the focus, as in any field beside the tree; it undoes from the tree.)
+   `Ctrl+Z`: **Undone. Method and materials is now numbered.** `Ctrl+Z` undoes from the tree, from
+   **Numbered** and **Appendix** and from **Starts on** alike, so it works straight after unticking the
+   box too; only a text field, such as **Title**, keeps it as its own undo.
 4. Select **Results** and tick **Appendix**: **Results is now an appendix.**, and its number is `A`.
    Click **Results** in the tree and press `Alt+Right`: nothing moves, and the page says **An appendix
    stays at the top level.** Select **Install the printer**: it has a **Numbered** box and no

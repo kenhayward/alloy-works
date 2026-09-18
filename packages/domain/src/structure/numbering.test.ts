@@ -95,7 +95,7 @@ describe('numbering an outline', () => {
     expect([...sectionNumbers(numbered).values()]).toEqual(['1', '2', '2.1', '2.2', '2.2.1', '3']);
   });
 
-  it('STR-023 numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
+  it('numbers every caption-bearing block in the sequence for its kind, wherever it is nested', () => {
     const figure = (block: string) => ({
       type: 'figure',
       id: block,

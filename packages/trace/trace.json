@@ -15086,16 +15086,12 @@
           "howItIsMet": "Every entry in the numbering table names the node that produced it, the block where it is a caption or a footnote, the sequence and the matter, the section counter stack at that point, its own counter's value and the node that last restarted it; the rule applied is named by the table's scheme with the entry's sequence and matter"
         },
         {
-          "id": "STR-023",
-          "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind. **One exception**: a caption met in appendix matter before any numbered appendix has begun a chapter takes no number, and uses up none, because its rule wants a chapter prefix and there is none to give it - never a bare number that would repeat a body caption's label"
-        },
-        {
           "id": "STR-028",
           "howItIsMet": "Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer"
         },
         {
           "id": "STR-031",
-          "howItIsMet": "Nothing caches a number. The numbering table is computed from the outline, each occurrence's resolved component version and the scheme whenever it is asked for, and every answer names each occurrence's version. A cache, when one is needed, is keyed by the document version, every occurrence's resolved component version, the scheme and the profile - the document's digest alone misses a `latest` component's new head"
+          "howItIsMet": "Nothing caches a number. The numbering table is computed from the outline, each occurrence's resolved component version and the scheme whenever it is asked for, and every answer names each occurrence's version. A cache, when one is needed, is keyed by the document version, every occurrence's resolved component version, the scheme and the profile - the document's digest alone misses a `latest` component's new head. That a stale number cannot be rendered is answered in [Cross-references](#cross-references): a cross-reference has no member for a number, so there is none to go stale"
         },
         {
           "id": "STR-032",
@@ -16398,12 +16394,6 @@
       "id": "STR-022",
       "file": "packages/domain/src/structure/numbering.test.ts",
       "line": 452,
-      "kind": "title"
-    },
-    {
-      "id": "STR-023",
-      "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 98,
       "kind": "title"
     },
     {

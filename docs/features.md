@@ -113,8 +113,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **Sections are numbered.** Each section and each component in the outline shows its number - `1`,
   `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
-  under it out of the numbering; tick **Appendix** on a top-level node to number it `A`, `B` and so on.
-  Figures, tables, equations and footnotes are numbered too, per chapter and per appendix, and the
+  under it out of the section numbering; tick **Appendix** on a top-level node to number it `A`, `B`
+  and so on. Figures, tables, equations and footnotes are numbered too - figures and tables per
+  chapter, equations and footnotes straight through, and each appendix on its own - and the
   service answers every number with where it came from - but the editor does not yet write a figure,
   so you only see those through the API. A number that depends on a component you may not read is
   left out rather than guessed. Nothing resolves a cross-reference yet, and there is no table of

@@ -9,7 +9,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Section numbers.** A document's outline shows every section and every component its number -
   `1`, `2.1` - and a move renumbers them straight away. Untick **Numbered** to leave a section and
-  everything under it out of the numbering, and the sections after it close the gap; a section left
+  everything under it out of the section numbering, and the sections after it close the gap; a section left
   ticked beneath one that is not says **Not numbered while** that one **is not.** Tick **Appendix** on
   a top-level section to number it `A`, `B` and so on. An appendix stays at the top level: the outline
   does not offer to move one beneath another section, and says so if you try with `Alt` and the right
