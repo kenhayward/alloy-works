@@ -2354,7 +2354,9 @@ Named here so the next plan starts from a list rather than from a reading of the
 - **The cycle check** (STR-057, REU-044): a reachability walk over relationships.md's reference index,
   which nothing builds. Decision D. **The relationships plan.**
 - **A section's field values validated against anything** (STR-060): which schemas apply at section
-  level is TPL-054's. Finding 9. **TPL's plan.**
+  level is TPL-054's. Finding 9. Until then nothing may write one: the final fix wave made an
+  operation refuse any `values` but `{}`, so every stored `values` stays empty and keeping the
+  member costs no migration. **TPL's plan.**
 - **A caption style** (issue #118, STR-025): STY-003's six catalogues have no caption style, so
   nothing can say whether a figure caption sits above or below its figure. **STY's plan.**
 - **Resolving `approved`** (decision G) and revisions. **The revisions plan.**
@@ -2410,7 +2412,7 @@ Found while building this plan, and by reviewing each task, and left rather than
   **Whichever plan builds restore.**
 - **Every act but a retitle made while another is in flight is ignored** - a move by key or pointer,
   an undo, a page-break change, an add or a remove - with the tree's `aria-busy` the only sign; only a
-  retitle is held and sent after. `DocumentPage.test.tsx` pins a second `Alt+Down` being dropped. Whether an author ever meets
+  retitle is held, one per section, and sent after. `DocumentPage.test.tsx` pins a second `Alt+Down` being dropped. Whether an author ever meets
   it, and whether a sentence should say so, is for a browser to show. **The accessibility plan**, with
   the browser suite.
 - **Two things only a browser can show**: that `Alt+Left`, which is Back in Chromium on Windows and
@@ -2445,3 +2447,28 @@ Found while building this plan, and by reviewing each task, and left rather than
 - **Signed out, the documents list, the document page and New document offer no Try again**, since
   trying again cannot work until the person signs in; **New component** still offers one. A deliberate
   divergence, and the two should agree. **Whichever plan next touches New component.**
+
+Found by the final review of the whole branch, fixed in its fix wave where the stored outline would
+otherwise have accepted what a later rule would refuse, and recorded rather than built where it would
+not:
+
+- **A component's content accepts a NUL and half of a surrogate pair**, as an outline title did:
+  `textNodeSchema`'s `value` is any string, and Postgres refuses both at the insert into a `jsonb`
+  column, which an outline route answered `500` until this wave. Not checked through the component
+  routes. `storableText` in `packages/domain/src/stored/storable.ts` is the rule to reuse. **The
+  small content-model change before structure 2.**
+- **The contract's `CreateComponentBody` still restates the BCP 47 pattern**, which document creation
+  picks from it. The outline now reads `contentDocumentSchema.shape.language`, so the store holds one
+  rule and the wire another copy of it. **Whichever plan next touches the component contract.**
+- **STR-054's deep link is not built** (STR-044): its cited test shows an empty outline and the
+  root's identity, and structure.md says beside the claim that the link clause is demonstrated by
+  nothing yet. **Structure 3, navigation.**
+- **A reference's target is checked when it is written, and only then.** A component its author may
+  read today and not tomorrow stays referenced in every version that holds it, and a reader is shown
+  it withheld; nothing re-checks a stored reference. That is access.md's rule for a document's grants,
+  not a hole, but nothing yet says what an author who has lost read on a referenced component sees
+  when they edit around it. **Whichever plan resolves an occurrence's component version.**
+- **A title of only an equation or an image is refused**, because a title must have text (the
+  editor's `titleAccepted`, now the domain's `hasText`). CNT-046 asks for an equation in a heading,
+  which is kept; one that is nothing but an equation would need a rule for what names the node in the
+  contents and to a screen reader. **Whichever plan edits a title as inline content.**

@@ -21,6 +21,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   overwriting what they did, and clears what you could undo so an undo cannot overwrite it either.
 - Somebody who may read a document but not change it sees its outline and is offered nothing to
   change.
+- **A component you may not read stays private.** A document can include one you may not read: it
+  shows as **A component**, which you can still move, remove or start on a new page, and nothing says
+  which component it is. You can only add a component you may read.
+- **Every section has a title**, and the service refuses one with none, whoever sends it.
+- **No rename is lost without a word.** Renames of two sections made while another change is being
+  saved are both saved, in order. A rename refused because somebody else changed the document first
+  names the title that was not saved, and so does one that could not be saved after you had moved on
+  to another section.
 
 ### Changed
 

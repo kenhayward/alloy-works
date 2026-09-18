@@ -107,7 +107,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   outline while you have it open, your next change is refused, the page shows you theirs rather than
   overwriting it, and what you could undo is cleared so nothing you undo can overwrite it either.
   Somebody who may read a document but not change it sees its outline and is offered nothing to
-  change.
+  change. A component you may not read stays private: in an outline it shows as **A component**, which
+  can still be moved, removed or started on a new page, and you can only add a component you may read.
+  Every section has a title, and a rename that is not saved names the title it lost.
 
   **This is structure, not the document.** Nothing is numbered yet - no section numbers, no figure or
   table numbers, no cross-references resolved, and no table of contents. There is no document view:
