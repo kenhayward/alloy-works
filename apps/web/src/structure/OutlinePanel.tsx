@@ -68,6 +68,19 @@ export interface OutlinePanelProps {
   readonly onNotice?: (message: string | null) => void;
   readonly canUndo?: boolean;
   readonly onUndo?: () => Promise<Answered>;
+  /**
+   * How many acts the page has answered `'refused'`, counted in the same render that shows the outline
+   * the refusal left. A retitle held during a flight is sent only if this has not moved since it was
+   * held: once the act in flight is refused, the page shows an outline the held title was not typed
+   * against, and sending it would overwrite that outline without anyone having seen it (STR-059).
+   */
+  readonly refusals?: number;
+  /**
+   * How many acts the page has answered `'unsent'` after sending them - not recorded, and the page asks
+   * for a retry. A retitle held behind one is not sent by itself either: it keeps its text for that
+   * retry, and the notice asking for it stays to be read.
+   */
+  readonly failures?: number;
   /** Names a reference by its component's title; `null` until the components have been read. */
   readonly names?: Names;
   readonly components?: ComponentChoices;
@@ -123,6 +136,8 @@ export function OutlinePanel({
   onNotice = () => {},
   canUndo = false,
   onUndo,
+  refusals = 0,
+  failures = 0,
   names = null,
   components = { state: 'loading' },
   onReloadComponents = () => {},
@@ -150,6 +165,9 @@ export function OutlinePanel({
   const held = useRef<{
     readonly operation: RetitleOperation;
     readonly resolve: (answer: Answered) => void;
+    /** `refusals` and `failures` when it was held. */
+    readonly refusals: number;
+    readonly failures: number;
   } | null>(null);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
@@ -183,8 +201,15 @@ export function OutlinePanel({
     if (busy || waiting === null) return;
     held.current = null;
     const node = placeOf(nodes, waiting.operation.node)?.node;
-    if (!editable || node?.type !== 'section') {
+    // Refused with the act it waited on - the same rule as a retitle refused itself: the field gives
+    // way to the outline now shown, and the conflict sentence stays for the author to read.
+    if (refusals !== waiting.refusals || !editable || node?.type !== 'section') {
       waiting.resolve('refused');
+      return;
+    }
+    // Only a held commit behind an act that was recorded, or answered unchanged, goes on by itself.
+    if (failures !== waiting.failures) {
+      waiting.resolve('unsent');
       return;
     }
     if (plainTitle(node.title) === titleText(waiting.operation.title)) {
@@ -201,7 +226,7 @@ export function OutlinePanel({
       // A newer commit from the same author supersedes one still waiting; the older one is kept by
       // its field, not refused.
       held.current?.resolve('unsent');
-      held.current = { operation, resolve };
+      held.current = { operation, resolve, refusals, failures };
     });
   };
 

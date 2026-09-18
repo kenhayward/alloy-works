@@ -144,6 +144,8 @@ function service(
     const url = new URL(request.url).pathname;
     const body = request.method === 'GET' ? undefined : await request.clone().json();
     sent.push({ url, body });
+    // An outline answer waits on the gate first, whatever it is going to be.
+    if (url.endsWith('/outline')) await gate;
     const refused = refusals.get(url);
     if (refused === 'network') throw new TypeError('Failed to fetch');
     if (refused !== undefined) {
@@ -155,7 +157,6 @@ function service(
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
-      await gate;
       if (unchangedNext) {
         unchangedNext = false;
         return json(200, view());
@@ -902,6 +903,88 @@ describe('the outline panel, answered', () => {
     expect(await screen.findByRole('treeitem', { name: /^Methods/ })).toBeInTheDocument();
     expect(fake.edits()).toHaveLength(2);
     expect(screen.getByText('Version 0.3 in General')).toBeInTheDocument();
+  });
+
+  it('drops a held retitle when the act in flight is refused because Grace renamed the same section', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    fake.theirs({
+      operation: 'retitle',
+      node: METHOD,
+      title: [{ type: 'text', value: 'Approach', marks: [] }],
+    });
+    release();
+
+    expect(await screen.findByRole('treeitem', { name: 'Approach' })).toBeInTheDocument();
+    await settled();
+    // Time for a held retitle to have gone, had it been going to.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(fake.edits()).toHaveLength(1);
+    expect(item('Approach')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByLabelText('Title')).toHaveValue('Approach');
+  });
+
+  it('drops a held retitle when the act in flight is refused because Grace changed another section', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
+    release();
+
+    expect(
+      await screen.findByRole('treeitem', { name: 'Introduction, starts on a new page' }),
+    ).toBeInTheDocument();
+    await settled();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(fake.edits()).toHaveLength(1);
+    expect(item('Method')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+  });
+
+  it('keeps a held retitle unsent, with its text, when the act in flight was not saved', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.refuse(OUTLINE_URL, 500);
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    release();
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not saved. Try it again.',
+      ),
+    );
+    await settled();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Only acts after a recorded one go on by themselves; the notice asking for a retry stays, and
+    // the text is kept for it.
+    expect(fake.edits()).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('The change was not saved. Try it again.');
+    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
   });
 
   it('says why an act does not apply, in the words the service gave', async () => {

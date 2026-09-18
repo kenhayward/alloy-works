@@ -193,6 +193,9 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
   // The document as the page last received it - written where an answer arrives, never during render.
   const latest = useRef<Opened | null>(null);
   const [withdrawn, setWithdrawn] = useState(false);
+  // Counted so the panel can tell a held retitle how the act it waited on was answered.
+  const [refusals, setRefusals] = useState(0);
+  const [failures, setFailures] = useState(0);
   const [components, setComponents] = useState<ComponentChoices>({ state: 'loading' });
   const [componentsAttempt, setComponentsAttempt] = useState(0);
 
@@ -280,11 +283,13 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
       // Refused: the page now shows an outline other than the one the act was made against.
       const refuse = (message: string): Answered => {
         setNotice(message);
+        setRefusals((count) => count + 1);
         return 'refused';
       };
       // Not sent, or not recorded: nothing changed, so what the author made is kept to try again.
       const unsent = (message: string): Answered => {
         setNotice(message);
+        setFailures((count) => count + 1);
         return 'unsent';
       };
       const failed = () =>
@@ -414,6 +419,8 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         notice={notice}
         onNotice={setNotice}
         canUndo={undo.length > 0}
+        refusals={refusals}
+        failures={failures}
         onUndo={async () => {
           const top = undo[undo.length - 1];
           return top === undefined ? 'unsent' : apply(top, true);
