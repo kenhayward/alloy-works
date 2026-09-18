@@ -195,7 +195,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
   const [withdrawn, setWithdrawn] = useState(false);
   // Counted so the panel can tell a held retitle how the act it waited on was answered.
   const [refusals, setRefusals] = useState(0);
-  const [failures, setFailures] = useState(0);
+  const [signedOuts, setSignedOuts] = useState(0);
   const [components, setComponents] = useState<ComponentChoices>({ state: 'loading' });
   const [componentsAttempt, setComponentsAttempt] = useState(0);
 
@@ -289,7 +289,6 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
       // Not sent, or not recorded: nothing changed, so what the author made is kept to try again.
       const unsent = (message: string): Answered => {
         setNotice(message);
-        setFailures((count) => count + 1);
         return 'unsent';
       };
       const failed = () =>
@@ -346,7 +345,9 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
             return refuse(SOMEBODY_ELSE);
           }
           case 401:
-            return unsent('You are signed out. Sign in again to change this document.');
+            setSignedOuts((count) => count + 1);
+            setNotice('You are signed out. Sign in again to change this document.');
+            return 'signedOut';
           case 403:
             // Nothing more is offered that could only be refused again.
             show({ ...before, mayEdit: false });
@@ -420,7 +421,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         onNotice={setNotice}
         canUndo={undo.length > 0}
         refusals={refusals}
-        failures={failures}
+        signedOuts={signedOuts}
         onUndo={async () => {
           const top = undo[undo.length - 1];
           return top === undefined ? 'unsent' : apply(top, true);

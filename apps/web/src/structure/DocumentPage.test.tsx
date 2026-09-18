@@ -104,7 +104,10 @@ function service(
   options: { mayEdit?: boolean; components?: unknown } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
-  const refusals = new Map<string, { status: number; body?: unknown } | 'network'>();
+  const refusals = new Map<
+    string,
+    { status: number; body?: unknown; once?: boolean } | 'network'
+  >();
   // An outline request waits on this before it is answered, so a test can act while one is in flight.
   let gate: Promise<void> = Promise.resolve();
   let unchangedNext = false;
@@ -149,6 +152,7 @@ function service(
     const refused = refusals.get(url);
     if (refused === 'network') throw new TypeError('Failed to fetch');
     if (refused !== undefined) {
+      if (refused.once) refusals.delete(url);
       return json(
         refused.status,
         refused.body ?? { code: 'refused', message: 'No.', traceId: 't' },
@@ -197,6 +201,8 @@ function service(
     refuse: (url: string, status: number, body?: unknown) => refusals.set(url, { status, body }),
     /** No answer at all: the request fails the way a dropped connection does. */
     fail: (url: string) => refusals.set(url, 'network'),
+    /** A bare status for the next request to this path only. */
+    refuseNext: (url: string, status: number) => refusals.set(url, { status, once: true }),
     /** What was recorded last, as the service would now answer it. */
     latest: () => view(),
     restore: (url: string) => refusals.delete(url),
@@ -960,31 +966,95 @@ describe('the outline panel, answered', () => {
     expect(screen.getByLabelText('Title')).toHaveValue('Method');
   });
 
-  it('keeps a held retitle unsent, with its text, when the act in flight was not saved', async () => {
+  it('sends a held retitle anyway when the act in flight was not saved, since nothing it could overwrite was shown', async () => {
     const fake = service(outline([section(METHOD, 'Method')]));
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Method' });
     await userEvent.click(item('Method'));
 
-    fake.refuse(OUTLINE_URL, 500);
+    fake.refuseNext(OUTLINE_URL, 500);
     const release = fake.hold();
     await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
     await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
     release();
 
+    expect(await screen.findByRole('treeitem', { name: 'Methods' })).toBeInTheDocument();
+    expect(fake.edits()).toHaveLength(2);
+    expect(fake.edits()[1]?.body).toMatchObject({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'retitle', node: METHOD },
+    });
+    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+  });
+
+  it('sends a held retitle whose field has closed when the act in flight was not saved', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.refuseNext(OUTLINE_URL, 500);
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await userEvent.click(item('Introduction'));
+    release();
+
+    expect(await screen.findByRole('treeitem', { name: 'Methods' })).toBeInTheDocument();
+    expect(fake.edits()).toHaveLength(2);
+  });
+
+  it('names a retitle that was not saved once its field has closed, rather than losing it silently', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.refuse(OUTLINE_URL, 500);
+    await userEvent.type(screen.getByLabelText('Title'), 's');
+    // Leaving for another node commits it, and closes its field.
+    await userEvent.click(item('Introduction'));
+
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
-        'The change was not saved. Try it again.',
+        'The title Methods was not saved. Select the section and try it again.',
+      ),
+    );
+    expect(item('Method')).toBeInTheDocument();
+    expect(fake.edits()).toHaveLength(1);
+  });
+
+  it('names a held retitle that cannot be sent because the author is signed out', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    fake.refuse(OUTLINE_URL, 401);
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 's');
+    await userEvent.click(item('Introduction'));
+    release();
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You are signed out, so the title Methods was not saved. Sign in again to change this document.',
       ),
     );
     await settled();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    // Only acts after a recorded one go on by themselves; the notice asking for a retry stays, and
-    // the text is kept for it.
+    // Nothing is sent that could only be refused the same way.
     expect(fake.edits()).toHaveLength(1);
-    expect(screen.getByRole('status')).toHaveTextContent('The change was not saved. Try it again.');
-    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
   });
 
   it('says why an act does not apply, in the words the service gave', async () => {

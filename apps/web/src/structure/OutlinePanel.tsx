@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type MutableRefObject,
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
@@ -43,13 +44,17 @@ export type ComponentChoices =
 /**
  * What one act came to: the outline the service returned; `'refused'`, where the page now shows an
  * outline other than the one the act was made against (a conflict, a refusal, a document gone read-only
- * or unreadable), so whatever was being edited gives way to it; or `'unsent'`, where nothing changed
- * and nothing was recorded (signed out, a server error, no answer), so what was typed is kept for the
- * retry the page's notice asks for.
+ * or unreadable), so whatever was being edited gives way to it; `'unsent'`, where nothing changed and
+ * nothing was recorded (a server error, no answer), so what was typed is kept for the retry the page's
+ * notice asks for; or `'signedOut'`, the same except that no retry can succeed until the author signs
+ * in again.
  */
-export type Answered = OutlineDocument | 'refused' | 'unsent';
+export type Answered = OutlineDocument | 'refused' | 'unsent' | 'signedOut';
 
 type RetitleOperation = Extract<OutlineOperation, { operation: 'retitle' }>;
+
+/** A retitle's answer, or word that a newer commit to the same section took its place. */
+type RetitleAnswer = Answered | 'superseded';
 
 export interface OutlinePanelProps {
   readonly outline: OutlineDocument;
@@ -76,11 +81,12 @@ export interface OutlinePanelProps {
    */
   readonly refusals?: number;
   /**
-   * How many acts the page has answered `'unsent'` after sending them - not recorded, and the page asks
-   * for a retry. A retitle held behind one is not sent by itself either: it keeps its text for that
-   * retry, and the notice asking for it stays to be read.
+   * How many acts the page has answered `'signedOut'`. A retitle held behind one is not sent, because
+   * it could only be refused the same way. Behind any other failure it is sent: nothing was recorded,
+   * so no outline was shown that it could overwrite - and if the failed act did record after all, the
+   * retitle is refused as a conflict by the ordinary path.
    */
-  readonly failures?: number;
+  readonly signedOuts?: number;
   /** Names a reference by its component's title; `null` until the components have been read. */
   readonly names?: Names;
   readonly components?: ComponentChoices;
@@ -137,7 +143,7 @@ export function OutlinePanel({
   canUndo = false,
   onUndo,
   refusals = 0,
-  failures = 0,
+  signedOuts = 0,
   names = null,
   components = { state: 'loading' },
   onReloadComponents = () => {},
@@ -164,11 +170,14 @@ export function OutlinePanel({
   // the field away with it - held here rather than dropped, and sent once that act is answered.
   const held = useRef<{
     readonly operation: RetitleOperation;
-    readonly resolve: (answer: Answered) => void;
-    /** `refusals` and `failures` when it was held. */
+    readonly resolve: (answer: RetitleAnswer) => void;
+    /** `refusals` and `signedOuts` when it was held. */
     readonly refusals: number;
-    readonly failures: number;
+    readonly signedOuts: number;
   } | null>(null);
+  // The section whose title field is open, written by that field's own effect: a retitle that was not
+  // saved after its field closed has nowhere left to keep its text, so the notice names it instead.
+  const openField = useRef<string | null>(null);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
   // first node otherwise - so a node removed, or an outline somebody else changed, never leaves the
@@ -207,9 +216,8 @@ export function OutlinePanel({
       waiting.resolve('refused');
       return;
     }
-    // Only a held commit behind an act that was recorded, or answered unchanged, goes on by itself.
-    if (failures !== waiting.failures) {
-      waiting.resolve('unsent');
+    if (signedOuts !== waiting.signedOuts) {
+      waiting.resolve('signedOut');
       return;
     }
     if (plainTitle(node.title) === titleText(waiting.operation.title)) {
@@ -219,15 +227,29 @@ export function OutlinePanel({
     void onOperation(waiting.operation).then(waiting.resolve);
   });
 
-  /** A retitle now, or once the act in flight is answered. */
-  const retitle = (operation: RetitleOperation): Promise<Answered> => {
-    if (!busy) return send(operation, null);
-    return new Promise((resolve) => {
-      // A newer commit from the same author supersedes one still waiting; the older one is kept by
-      // its field, not refused.
-      held.current?.resolve('unsent');
-      held.current = { operation, resolve, refusals, failures };
-    });
+  /**
+   * A retitle now, or once the act in flight is answered. One that was not saved, and whose field has
+   * since closed, is named in the notice, so it is never lost without a word.
+   */
+  const retitle = async (operation: RetitleOperation): Promise<RetitleAnswer> => {
+    const answer = await (busy
+      ? new Promise<RetitleAnswer>((resolve) => {
+          const waiting = held.current;
+          // A newer commit takes the place of one still waiting: for the same section it carries the
+          // later text, so the older is simply superseded; for another, the older was not saved.
+          waiting?.resolve(waiting.operation.node === operation.node ? 'superseded' : 'unsent');
+          held.current = { operation, resolve, refusals, signedOuts };
+        })
+      : send(operation, null));
+    if ((answer === 'unsent' || answer === 'signedOut') && openField.current !== operation.node) {
+      const title = titleText(operation.title);
+      onNotice(
+        answer === 'signedOut'
+          ? `You are signed out, so the title ${title} was not saved. Sign in again to change this document.`
+          : `The title ${title} was not saved. Select the section and try it again.`,
+      );
+    }
+    return answer;
   };
 
   const choose = (id: string, focus: boolean) => {
@@ -553,6 +575,7 @@ export function OutlinePanel({
           busy={busy}
           onOperation={(operation) => send(operation, null)}
           onRetitle={retitle}
+          openField={openField}
           onNotice={onNotice}
           onRemove={() => setConfirming(selected.id)}
         />
@@ -692,20 +715,22 @@ function NodeDetails({
   busy,
   onOperation,
   onRetitle,
+  openField,
   onNotice,
   onRemove,
 }: {
   node: OutlineNode;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
-  onRetitle: (operation: RetitleOperation) => Promise<Answered>;
+  onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
+  openField: MutableRefObject<string | null>;
   onNotice: (message: string | null) => void;
   onRemove: () => void;
 }) {
   return (
     <div>
       {node.type === 'section' && (
-        <TitleField node={node} onRetitle={onRetitle} onNotice={onNotice} />
+        <TitleField node={node} onRetitle={onRetitle} openField={openField} onNotice={onNotice} />
       )}
       <label>
         Starts on
@@ -736,12 +761,22 @@ function NodeDetails({
 function TitleField({
   node,
   onRetitle,
+  openField,
   onNotice,
 }: {
   node: SectionNode;
-  onRetitle: (operation: RetitleOperation) => Promise<Answered>;
+  onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
+  openField: MutableRefObject<string | null>;
   onNotice: (message: string | null) => void;
 }) {
+  // Says which section's field is open, for as long as it is: written in an effect, never in render.
+  useEffect(() => {
+    openField.current = node.id;
+    return () => {
+      if (openField.current === node.id) openField.current = null;
+    };
+  }, [openField, node.id]);
+
   const plain = plainTitle(node.title);
   const inModel = plain ?? titleText(node.title);
   const [field, setField] = useState<Field>({ typed: inModel, inModel, sent: null });
@@ -796,7 +831,7 @@ function TitleField({
             inModel: previous.inModel,
             sent: null,
           }));
-        } else if (answer === 'unsent') {
+        } else if (answer === 'unsent' || answer === 'signedOut') {
           // Nothing changed and nothing was recorded, and the page says to try again: the text stays,
           // and the author's next Enter or blur is that retry.
           setField((previous) => ({ ...previous, sent: null }));
