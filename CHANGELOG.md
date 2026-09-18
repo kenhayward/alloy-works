@@ -3,6 +3,34 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.28.0 - 2026-09-18 (PR #133)
+
+### Added
+
+- **Section numbers.** A document's outline shows every section and every component its number -
+  `1`, `2.1` - and a move renumbers them straight away. Untick **Numbered** to leave a section and
+  everything under it out of the section numbering, and the sections after it close the gap; a section left
+  ticked beneath one that is not says **Not numbered while** that one **is not.** Tick **Appendix** on
+  a top-level section to number it `A`, `B` and so on. An appendix stays at the top level: the outline
+  does not offer to move one beneath another section, and says so if you try with `Alt` and the right
+  arrow.
+- **Numbering through the API.** A document's numbering - sections, figures, tables, equations and
+  footnotes - can be read with where each number came from: which section or component produced it,
+  and which version of each component it was counted from. Figures and tables are numbered per chapter
+  (`Figure 2.1`), equations and footnotes straight through, and appendices on their own (`Figure A.1`).
+  A number that would depend on a component you may not read is left out rather than guessed, so it
+  never tells you what that component holds. Nothing in the editor adds a figure yet, so these numbers
+  are only seen through the API for now.
+
+### Fixed
+
+- The automatic checks on dragging a row in a document's outline failed now and then on a busy
+  machine, because a drag started in the first moments after the outline appeared could be cancelled.
+  Nobody can start a drag that quickly by hand, so nothing you did was affected, and the checks now
+  pass every time.
+- `Ctrl+Z` now undoes the last change while the **Starts on** choice has the focus, as it does from
+  the outline itself. A text field still keeps `Ctrl+Z` for its own undo.
+
 ## 0.27.1 - 2026-09-18 (PR #128)
 
 ### Fixed

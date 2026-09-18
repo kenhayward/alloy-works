@@ -91,6 +91,18 @@ describe('the domain package', () => {
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',
+        // Numbering, promoted in the plan that builds it
+        // (docs/plans/2026-09-18-structure-02-numbering.md).
+        'REQUIRED_SEQUENCES',
+        'numberingSchemeSchema',
+        'defaultNumberingScheme',
+        'formatCounter',
+        'contributionsOf',
+        'inlineContributions',
+        'resolve',
+        'conditions',
+        'number',
+        'sectionNumbers',
       ].sort(),
     );
   });

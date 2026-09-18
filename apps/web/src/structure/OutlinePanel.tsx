@@ -1,5 +1,11 @@
 import {
+  conditions,
+  defaultNumberingScheme,
   hasText,
+  number,
+  resolve,
+  sectionNumbers,
+  type Contribution,
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
@@ -8,6 +14,7 @@ import {
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
@@ -19,6 +26,7 @@ import {
 import {
   dropMove,
   keyMove,
+  nestsAnAppendix,
   nodeLabel,
   nodeName,
   placeOf,
@@ -134,6 +142,13 @@ export interface OutlinePanelProps {
   readonly onReloadComponents?: () => void;
 }
 
+/**
+ * What the panel knows of any occurrence's contributions: nothing. It shows section numbers alone, and
+ * a section number never depends on what an occurrence holds, so knowing nothing costs it nothing -
+ * and the panel reads no component's content to show one.
+ */
+const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
+
 const PAGE_BREAKS = [
   { value: 'none', label: 'Wherever it falls' },
   { value: 'page', label: 'A new page' },
@@ -153,13 +168,42 @@ function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
 }
 
-/** Whether a key event came from somewhere text is typed, where the key is the field's own. */
-function inField(event: KeyboardEvent): boolean {
+/** The nearest ancestor of a node that is not numbered, which takes its number away (decision D). */
+function unnumberedAncestor(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+): OutlineViewNode | undefined {
+  let parent = placeOf(nodes, id)?.parent ?? null;
+  while (parent !== null) {
+    if (!parent.numbered) return parent;
+    parent = placeOf(nodes, parent.id)?.parent ?? null;
+  }
+  return undefined;
+}
+
+/** Inputs that take no typing, and so have no undo of their own for Ctrl+Z to reach. */
+const UNTYPED_INPUTS = new Set([
+  'checkbox',
+  'radio',
+  'button',
+  'submit',
+  'reset',
+  'range',
+  'color',
+  'file',
+  'image',
+]);
+
+/**
+ * Whether a key event came from somewhere text is typed, whose own undo Ctrl+Z is. A checkbox or a
+ * select has none: there the key is the panel's, or the act just made from it could not be undone
+ * from where the focus still is.
+ */
+function inTextField(event: KeyboardEvent): boolean {
   const target = event.target;
   return (
-    target instanceof HTMLInputElement ||
     target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement
+    (target instanceof HTMLInputElement && !UNTYPED_INPUTS.has(target.type))
   );
 }
 
@@ -205,8 +249,11 @@ export function OutlinePanel({
   const items = useRef(new Map<string, HTMLElement>());
   // The drag's own state waits a tick (see `onDragStart`); this is that tick, so a drag that ends first
   // can take it back.
+  // Never cleared on unmount (issue #131). Under `<StrictMode>` React runs every effect's cleanup once
+  // as a simulated unmount when the panel mounts, indistinguishable from a real one, and under load
+  // it runs after a drag has already started - so a cleanup clearing this timer cancelled a live
+  // drag. After a real unmount the timer's one act is a state update React ignores.
   const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(dragTimer.current), []);
   // Every retitle committed - Enter, or leaving the field, which may take the field away with it - is
   // held here, **one per section**, in the order of its latest commit (a Map keeps insertion order),
   // and sent once nothing else is in flight: so none is dropped because another act was in flight, and
@@ -236,6 +283,14 @@ export function OutlinePanel({
   const current = active !== null && placeOf(nodes, active) ? active : (nodes[0]?.id ?? null);
   const selected = current === null ? undefined : placeOf(nodes, current)?.node;
   const may = editable && !busy;
+  // The one numbering function, over the outline this render shows: recomputed whenever the outline
+  // is, so there is no number to fall behind it, and the same function the service numbers with, so
+  // the two cannot disagree.
+  const numbers = useMemo(
+    () =>
+      sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), defaultNumberingScheme)),
+    [outline],
+  );
 
   useEffect(() => {
     if (focusTarget === null) return;
@@ -415,6 +470,9 @@ export function OutlinePanel({
       if (!may) return;
       const move = keyMove(nodes, current, direction);
       if (move !== null) void send(move, current);
+      else if (nestsAnAppendix(nodes, current, direction)) {
+        onNotice('An appendix stays at the top level.');
+      }
       return;
     }
     switch (event.key) {
@@ -465,7 +523,7 @@ export function OutlinePanel({
       !event.altKey &&
       event.key.toLowerCase() === 'z';
     // In a text field Ctrl+Z is the field's own undo, of what is being typed, and it is left alone.
-    if (!undoKey || inField(event)) return;
+    if (!undoKey || inTextField(event)) return;
     event.preventDefault();
     if (!may || !canUndo || !onUndo) return;
     const focus = event.target instanceof HTMLElement ? event.target.dataset.node : undefined;
@@ -510,6 +568,8 @@ export function OutlinePanel({
   const renderNodes = (list: readonly OutlineViewNode[], level: number) =>
     list.map((node, index) => {
       const labelId = `${prefix}-${node.id}`;
+      const numberId = `${labelId}-number`;
+      const shown = numbers.get(node.id);
       return (
         <li
           key={node.id}
@@ -520,6 +580,9 @@ export function OutlinePanel({
           aria-selected={node.id === current}
           aria-expanded={node.children.length > 0 ? true : undefined}
           aria-labelledby={labelId}
+          // The number describes the item rather than naming it: a name is what typing a title finds
+          // in a tree, and what every announcement says, and it stays put when a move renumbers it.
+          aria-describedby={shown === undefined ? undefined : numberId}
           tabIndex={node.id === current ? 0 : -1}
           data-node={node.id}
           draggable={may}
@@ -530,6 +593,11 @@ export function OutlinePanel({
         >
           {dragging !== null && (
             <div data-drop={`before:${node.id}`} aria-hidden="true" style={{ height: '0.5em' }} />
+          )}
+          {shown !== undefined && (
+            <>
+              <span id={numberId}>{shown}</span>{' '}
+            </>
           )}
           <span id={labelId} data-drop={`into:${node.id}`}>
             {nodeLabel(node, names)}
@@ -656,6 +724,9 @@ export function OutlinePanel({
         <NodeDetails
           key={selected.id}
           node={selected}
+          topLevel={placeOf(nodes, selected.id)?.parent === null}
+          unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
+          names={names}
           busy={busy}
           onOperation={(operation) => send(operation, null)}
           onRetitle={retitle}
@@ -799,6 +870,9 @@ interface Field {
 
 function NodeDetails({
   node,
+  topLevel,
+  unnumberedAbove,
+  names,
   busy,
   onOperation,
   onRetitle,
@@ -807,6 +881,11 @@ function NodeDetails({
   onRemove,
 }: {
   node: OutlineViewNode;
+  /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
+  topLevel: boolean;
+  /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
+  unnumberedAbove: OutlineViewNode | undefined;
+  names: Names;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -814,6 +893,12 @@ function NodeDetails({
   onNotice: (message: string | null) => void;
   onRemove: () => void;
 }) {
+  const hintId = useId();
+  // Ticked, and still without a number: said beside the box, so the tick does not look ignored.
+  const hint =
+    node.numbered && unnumberedAbove !== undefined
+      ? `Not numbered while ${nodeName(unnumberedAbove, names)} is not.`
+      : null;
   return (
     <div>
       {node.type === 'section' && (
@@ -838,6 +923,38 @@ function NodeDetails({
           ))}
         </select>
       </label>
+      {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
+          made then is not sent, and the box goes on showing what the node holds. Each sends the one
+          switch it is, and never `values`, which must stay empty. */}
+      <label>
+        <input
+          type="checkbox"
+          checked={node.numbered}
+          aria-describedby={hint === null ? undefined : hintId}
+          onChange={(event) => {
+            if (busy) return;
+            void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
+          }}
+        />
+        Numbered
+      </label>
+      {hint !== null && <span id={hintId}>{hint}</span>}
+      {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
+          the outline's parse refuses one set anywhere else. */}
+      {topLevel && (
+        <label>
+          <input
+            type="checkbox"
+            checked={node.matter === 'appendix'}
+            onChange={(event) => {
+              if (busy) return;
+              const matter = event.target.checked ? 'appendix' : 'body';
+              void onOperation({ operation: 'set', node: node.id, matter });
+            }}
+          />
+          Appendix
+        </label>
+      )}
       <button type="button" onClick={() => !busy && onRemove()}>
         {node.type === 'section' ? 'Remove section' : 'Remove component'}
       </button>

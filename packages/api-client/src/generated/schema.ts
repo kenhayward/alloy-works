@@ -170,6 +170,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/numbering": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest version's numbering, as the caller is shown it */
+        get: operations["getNumbering"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/outline": {
         parameters: {
             query?: never;
@@ -1788,6 +1805,130 @@ export interface operations {
                 };
             };
             /** @description Never answered: a document the caller may read is one they may open */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getNumbering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The numbering table */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        document: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The scheme numbered against, by its id: `default/1` until layouts exist */
+                        scheme: string;
+                        /** @description Each component reference, in outline order, and the component version it resolved to: null where the caller may not read the component, where it waits on revisions, or where its content does not read. Its contributions are then not counted, and every number it could have moved is null */
+                        occurrences: {
+                            node: string;
+                            version: string | null;
+                        }[];
+                        entries: {
+                            /** @description The outline node that produced it */
+                            node: string;
+                            /** @description The block or footnote, for a caption or a footnote */
+                            block: string | null;
+                            sequence: string;
+                            /** @enum {string} */
+                            matter: "body" | "appendix";
+                            /** @description The section counter stack at this point */
+                            sections: number[];
+                            /** @description This sequence's counter; null when not known */
+                            value: number | null;
+                            /** @description The node that last restarted the counter */
+                            restartedAt: string | null;
+                            number: string | null;
+                            label: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one they may number */
             403: {
                 headers: {
                     [name: string]: unknown;

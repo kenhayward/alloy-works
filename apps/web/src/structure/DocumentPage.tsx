@@ -152,9 +152,18 @@ function announce(
     case 'set': {
       const node = placeOf(after.nodes, operation.node)?.node;
       if (!node) return 'Changed.';
-      return operation.pageBreak !== undefined
-        ? `${nodeName(node, names)} ${STARTS[operation.pageBreak]}.`
-        : `Changed ${nodeName(node, names)}.`;
+      if (operation.pageBreak !== undefined) {
+        return `${nodeName(node, names)} ${STARTS[operation.pageBreak]}.`;
+      }
+      if (operation.numbered !== undefined) {
+        return `${nodeName(node, names)} is ${operation.numbered ? 'now' : 'no longer'} numbered.`;
+      }
+      if (operation.matter !== undefined) {
+        return operation.matter === 'appendix'
+          ? `${nodeName(node, names)} is now an appendix.`
+          : `${nodeName(node, names)} is no longer an appendix.`;
+      }
+      return `Changed ${nodeName(node, names)}.`;
     }
     case 'remove': {
       const node = placeOf(before.nodes, operation.node)?.node;

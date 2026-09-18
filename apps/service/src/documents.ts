@@ -9,6 +9,7 @@ import {
   createDocument,
   editOutline,
   listReadableDocuments,
+  numberingInputs,
   readableComponents,
   readDocument,
   type StoredDocument,
@@ -17,7 +18,16 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { decide, readOutline, walkOutline, withholdComponents } from '@alloy-works/domain';
+import {
+  conditions,
+  decide,
+  defaultNumberingScheme,
+  number,
+  readOutline,
+  resolve,
+  walkOutline,
+  withholdComponents,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
@@ -165,6 +175,41 @@ export function documentHandlers(
       if (!document) throw notFound();
       const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
       return documentView(viewer, document, document.version);
+    },
+
+    /**
+     * The latest version's numbering, as this caller is shown it (structure.md, "Numbering" and "Who
+     * is shown what"). A component they may not read is never read (`numberingInputs`), so no number
+     * here was computed from one, and every number such an occurrence could have moved is null rather
+     * than guessed. A stored outline that does not read is a broken store, thrown as the outline route
+     * throws it.
+     */
+    getNumbering: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as DocumentParams;
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const read = readOutline(document.version.content, {
+        artifact: id,
+        version: document.version.id,
+      });
+      if (!read.ok) {
+        throw new Error(
+          `The document ${id} at ${document.version.id} does not read: ${read.failure}`,
+        );
+      }
+      const inputs = await numberingInputs(trx, read.outline, principalId);
+      const table = number(
+        conditions(resolve(read.outline, inputs.contributions)),
+        defaultNumberingScheme,
+      );
+      return {
+        document: id,
+        version: { id: document.version.id, number: versionView(document.version).number },
+        scheme: table.scheme,
+        // Copied, because the domain's answers are read-only and the wire's types are not.
+        occurrences: inputs.occurrences.map((occurrence) => ({ ...occurrence })),
+        entries: table.entries.map((entry) => ({ ...entry, sections: [...entry.sections] })),
+      };
     },
 
     /**

@@ -10,12 +10,13 @@ import {
 } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { StrictMode } from 'react';
+import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
 import { NewDocument } from './NewDocument.js';
+import { OutlinePanel } from './OutlinePanel.js';
 
 const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const SPACE = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -1725,5 +1726,278 @@ describe('the documents', () => {
     render(<DocumentList client={client(listing({ status: 500, body: {} }))} onOpen={vi.fn()} />);
     expect(await screen.findByText('The documents could not be loaded.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+});
+
+describe('section numbers in the outline panel', () => {
+  it('shows each numbered node its section number, and renumbers a move without asking for one', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    // The number describes the item, and the title stays its name.
+    expect(item('Introduction')).toHaveAccessibleDescription('1');
+    expect(item('Method')).toHaveAccessibleDescription('2');
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('2'));
+    expect(item('Method')).toHaveAccessibleDescription('1');
+    expect(item('Scope')).toHaveAccessibleDescription('1.1');
+    // Numbered from the outline the page holds: nothing asked the service for a number.
+    expect(fake.sent.some((request) => request.url.endsWith('/numbering'))).toBe(false);
+  });
+
+  it('takes a node out of the numbering, and its subtree with it, from its Numbered box', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Method'));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(item('Method')).not.toHaveAccessibleDescription());
+    expect(fake.edits().at(-1)?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'set', node: METHOD, numbered: false },
+    });
+    expect(item('Scope')).not.toHaveAccessibleDescription();
+    // Results takes the number Method no longer consumes.
+    expect(item('Results')).toHaveAccessibleDescription('2');
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+
+    // And back again, from the same box.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, numbered: true },
+    });
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+    expect(item('Results')).toHaveAccessibleDescription('3');
+    expect(screen.getByRole('status')).toHaveTextContent('Method is now numbered.');
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+  });
+
+  it('makes a top-level node an appendix, numbered in its own scheme, and offers it nowhere else', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Scope'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Appendix' })).toBeNull();
+    await userEvent.click(item('Method'));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('A'));
+    expect(item('Scope')).toHaveAccessibleDescription('A.1');
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, matter: 'appendix' },
+    });
+    // Only the one switch: `values` is never sent from here.
+    expect(fake.edits().at(-1)?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'set', node: METHOD, matter: 'appendix' },
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Method is now an appendix.');
+    expect(screen.getByRole('checkbox', { name: 'Appendix' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, matter: 'body' },
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer an appendix.');
+  });
+
+  it('numbers a reference to a component the reader may not read like any other node', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [reference(RESULTS, 'latest')])]),
+      { mayRead: () => false },
+    );
+    open(fake.fetch);
+    const withheld = await screen.findByRole('treeitem', { name: /A component/ });
+    expect(withheld).toHaveAccessibleDescription('1.1');
+  });
+});
+
+describe('an appendix in the outline panel', () => {
+  /** Method with Scope beneath it, then Results as an appendix. */
+  const withAnAppendix = () =>
+    outline([
+      section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      { ...section(RESULTS, 'Results'), matter: 'appendix' },
+    ]);
+
+  it('sends nothing when Alt+Right would put an appendix below the top level, and says why', async () => {
+    const fake = service(withAnAppendix());
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    expect(item('Results')).toHaveAccessibleDescription('A');
+    await userEvent.click(item('Results'));
+    await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('An appendix stays at the top level.'),
+    );
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('offers no drop into a node for an appendix, and sends nothing on one', async () => {
+    const fake = service(withAnAppendix());
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    fireEvent.dragStart(item('Results'));
+    await screen.findByText('Move to the end of the document');
+    // Not taken: a drop place the browser is not told it may drop on.
+    expect(fireEvent.dragOver(screen.getByText('Method'))).toBe(true);
+    fireEvent.drop(screen.getByText('Method'));
+    fireEvent.dragEnd(item('Results'));
+    await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('offers no drop before a nested node for an appendix, and sends nothing on one', async () => {
+    const fake = service(withAnAppendix());
+    const { container } = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    fireEvent.dragStart(item('Results'));
+    await screen.findByText('Move to the end of the document');
+    const beforeScope = container.querySelector(`[data-drop="before:${SCOPE}"]`);
+    expect(beforeScope).not.toBeNull();
+    expect(fireEvent.dragOver(beforeScope!)).toBe(true);
+    fireEvent.drop(beforeScope!);
+    fireEvent.dragEnd(item('Results'));
+    await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('says why a node whose own box is ticked has no number', async () => {
+    const fake = service(
+      outline([
+        { ...section(METHOD, 'Method', [section(SCOPE, 'Scope')]), numbered: false },
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Scope'));
+    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    expect(box).toBeChecked();
+    expect(box).toHaveAccessibleDescription('Not numbered while Method is not.');
+    expect(screen.getByText('Not numbered while Method is not.')).toBeInTheDocument();
+
+    // Nothing to say beside a node that is itself unticked, or one with a number.
+    await userEvent.click(item('Method'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    await userEvent.click(item('Results'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.queryByText(/Not numbered while/)).toBeNull();
+  });
+});
+
+describe('a drag started before the panel has settled', () => {
+  /**
+   * Starts a drag on the first tree item from a layout effect: after the panel's DOM is in the page,
+   * and before its passive effects have run - which under `<StrictMode>` include the simulated
+   * unmount React runs once on mount. Under load the scheduler defers those effects past a real
+   * `dragstart` the same way (issue #131); this puts the drag there every time rather than by luck.
+   * Once only, so StrictMode's replayed layout effect does not start a second drag that would hide it.
+   */
+  function DragOnMount({ children }: { children: ReactNode }) {
+    const box = useRef<HTMLDivElement>(null);
+    const started = useRef(false);
+    useLayoutEffect(() => {
+      if (started.current) return;
+      started.current = true;
+      box.current
+        ?.querySelector('[role="treeitem"]')
+        ?.dispatchEvent(new Event('dragstart', { bubbles: true }));
+    }, []);
+    return <div ref={box}>{children}</div>;
+  }
+
+  it('records a drag that starts before the panel mounts its effects', async () => {
+    render(
+      <StrictMode>
+        <DragOnMount>
+          <OutlinePanel
+            outline={withholdComponents(
+              outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+              () => true,
+            )}
+            editable
+            onOperation={vi.fn()}
+            notice={null}
+          />
+        </DragOnMount>
+      </StrictMode>,
+    );
+    expect(await screen.findByText('Move to the end of the document')).toBeInTheDocument();
+  });
+});
+
+describe('undo from the node details', () => {
+  it('undoes from a checkbox or a select, which have no undo of their own, and leaves a title field its own', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    await userEvent.click(box);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.'),
+    );
+    await settled();
+    expect(fake.edits()).toHaveLength(1);
+
+    // A title field keeps Ctrl+Z for what is being typed in it: nothing is sent.
+    screen.getByRole('textbox', { name: 'Title' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    expect(fake.edits()).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
+
+    // The box has no undo of its own, so the panel's takes the act back, with the focus still on it.
+    screen.getByRole('checkbox', { name: 'Numbered' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Undone. Method is now numbered.'),
+    );
+    expect(fake.edits()).toHaveLength(2);
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, numbered: true },
+    });
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+    expect(item('Method')).toHaveAccessibleDescription('2');
+    await settled();
+
+    // And the same from the select beside it.
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Starts on' }), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(3));
+    await settled();
+    screen.getByRole('combobox', { name: 'Starts on' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(4));
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: METHOD, pageBreak: 'none' },
+    });
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Undone\./));
   });
 });

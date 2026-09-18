@@ -161,15 +161,16 @@ later forbidden - and nothing in the interface would ever say so.
 
 ## 6. Permissions
 
-| ID          | Requirement                                                                                                                                                                                                                                   | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **IAM-018** | Permissions must be declarable at tenant, space, template, document and component level                                                                                                                                                       | T1         | Specified |
-| **IAM-019** | The permission set must cover at least: read, create, edit, comment, suggest, approve, publish and administer                                                                                                                                 | T1         | Specified |
-| **IAM-020** | The right to see a data connection's results must be separately grantable from the right to read the document containing them                                                                                                                 | T2         | Specified |
-| **IAM-021** | A role must be a named bundle of permissions, definable by a tenant rather than fixed by the product                                                                                                                                          | T1         | Specified |
-| **IAM-022** | A role must be assignable to a group as well as to an individual                                                                                                                                                                              | T1         | Specified |
-| **IAM-023** | The modes of access in CNT-104 must derive from these permissions, so that a mode a user cannot have is a mode they are never offered                                                                                                         | T1         | Specified |
-| **IAM-062** | Every permission must be held through a role. A grant binds a role to a principal or to a group at one level of IAM-018; no principal may hold a permission outside a role, so that IAM-030 can always name the grant that produced an answer | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                  | Tranche    | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **IAM-018** | Permissions must be declarable at tenant, space, template, document and component level                                                                                                                                                                                                      | T1         | Specified |
+| **IAM-019** | The permission set must cover at least: read, create, edit, comment, suggest, approve, publish and administer                                                                                                                                                                                | T1         | Specified |
+| **IAM-020** | The right to see a data connection's results must be separately grantable from the right to read the document containing them                                                                                                                                                                | T2         | Specified |
+| **IAM-021** | A role must be a named bundle of permissions, definable by a tenant rather than fixed by the product                                                                                                                                                                                         | T1         | Specified |
+| **IAM-022** | A role must be assignable to a group as well as to an individual                                                                                                                                                                                                                             | T1         | Specified |
+| **IAM-023** | The modes of access in CNT-104 must derive from these permissions, so that a mode a user cannot have is a mode they are never offered                                                                                                                                                        | T1         | Specified |
+| **IAM-062** | Every permission must be held through a role. A grant binds a role to a principal or to a group at one level of IAM-018; no principal may hold a permission outside a role, so that IAM-030 can always name the grant that produced an answer                                                | Constraint | Specified |
+| **IAM-073** | A number a document's outline produces - for a section, or for a figure, table, equation or footnote its components contribute - must reveal nothing about content the reader may not read: where a reader may not read a component, no number it could have changed is shown to that reader | T1         | Specified |
 
 **IAM-070 stops `administer` becoming an unexamined superpower.** One permission covering
 everything from adding a user to exporting the tenant and releasing a legal hold gives a regulated
@@ -189,6 +190,14 @@ report may be widely readable while the figures behind one of its tables are not
 right, the only way to protect the numbers is to protect the whole report, and people work around
 that by copying numbers into a document that has no binding at all - which is the behaviour this
 product exists to stop.
+
+**IAM-073 carries access.md's "indistinguishable from one that does not exist" from an identity to
+what is computed from one.** Withholding a component's identity is not enough when the numbers
+around it are still counted through it: a reader shown Figure 1.2 and then Figure 1.4 has been told
+the component between them holds a figure, and how many. So a number that component could have moved
+is not shown to that reader at all, whatever the component holds - a gap would say as much as a
+number. The row is narrower than [issue #130](https://github.com/kenhayward/alloy-works/issues/130)
+asked, and section 15 says why.
 
 ## 7. Inheritance
 
@@ -327,6 +336,7 @@ several.
 | IAM-058            | ADM-030 and ADM-Q06 - the same clock, seen from the administrative end                                                                                                                                                |
 | IAM-059 to IAM-061 | ADM-Q04 asks who bootstraps a tenant; ADM-022 to ADM-025 own support access                                                                                                                                           |
 | IAM-072            | [Issue #113](https://github.com/kenhayward/alloy-works/issues/113) - IAM-059's invitation, asked for everybody; section 15                                                                                            |
+| IAM-073            | [Issue #130](https://github.com/kenhayward/alloy-works/issues/130) - access.md's rule on an identity, carried to a number; section 15                                                                                 |
 | IAM-055 to IAM-065 | [The v1 review](<../../reviews/IAM - Identity, tenancy and access control.md>); section 15                                                                                                                            |
 
 ## 15. Change history
@@ -387,5 +397,23 @@ invitation to a named address only for a tenant's first administrator.
 | Counts           | Before | After |
 | ---------------- | ------ | ----- |
 | Requirements     | 71     | 72    |
+| Non-requirements | 6      | 6     |
+| Open questions   | 9      | 9     |
+
+### From planning numbering
+
+Not a review. [Issue #130](https://github.com/kenhayward/alloy-works/issues/130), filed while
+planning [the second structure plan](../../plans/2026-09-18-structure-02-numbering.md), found that
+access.md's rule reached an identity and nothing said a number derived from content was held to it.
+It was landed by that plan, narrowed.
+
+| What was found                                                                                                                                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A reader who may not read a component was never shown its identity, but a gap in the figure numbers after it would still say it held a figure, and how many | **IAM-073**: where a reader may not read a component, no number it could have changed is shown to that reader                                                                                                                                                                                                                                                                                                                                                                                                                |
+| The issue asked it of "a number, count or order derived from content"                                                                                       | **Narrowed** to the numbers a document's outline produces - sections, and the figures, tables, equations and footnotes its components contribute - because that is all the design answering it ([structure.md](../../design/structure.md), "Who is shown what") builds. A count or an order derived elsewhere - a search result count, a where-used listing, a sort by a field - is not answered by this row, and a row for one is owed when that design is written, rather than claimed by a design that does not answer it |
+
+| Counts           | Before | After |
+| ---------------- | ------ | ----- |
+| Requirements     | 72     | 73    |
 | Non-requirements | 6      | 6     |
 | Open questions   | 9      | 9     |

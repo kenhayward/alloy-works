@@ -275,6 +275,7 @@ over a tree that has to exist before any of them can be written.
 | #   | Plan                                                                                    | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status          |
 | --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | 1   | [The document and its outline](2026-09-18-structure-01-the-document-and-its-outline.md) | In `packages/domain`, `src/structure/`: the outline document's schema - one tree of sections and component references, each identified, each carrying its positional switches, a section title being inline content - its parse, its migration chain, its own canonical form where marks are a set, and the five operations as pure functions over a tree; a third arm in `VersionSubstance`. In `packages/db`, migration 0016 widening `artifact.kind`, `artifact_space_by_kind` and the author check, `document` as a content kind, the version chain branching three ways, and `createDocument`, `readDocument`, `listReadableDocuments` and `editOutline`. Four routes; in `apps/web`, the documents page and the outline panel with its keymap and undo stack. And STR-061, what a document is. No numbering, captions, cross-references, generated lists, deep links or cycle check | Built (PR #121) |
+| 2   | [Numbering](2026-09-18-structure-02-numbering.md)                                       | In `packages/domain`, `src/structure/`: the numbering scheme and the product's default, the projection from a component's content to what it contributes, and `resolve`, `conditions` and `number` - one pure function over occurrences, a counter stack per matter, restarts, appendices and excluded nodes, and a numbering table whose every entry names what produced it. In `packages/db`, `numberingInputs`, resolving each occurrence with two reads of component versions and never reading a component the reader may not read. `GET /v1/documents/{id}/numbering`, withholding every number such a component could move. In `apps/web`, section numbers in the outline panel, and Numbered and Appendix beside each node. Nothing stored, no migration. No cross-reference resolved                                                                                             | Built (PR #133) |
 
 Plan 1 leads with ten findings - the most serious that the version chain assumes every artifact that
 is not a component is a definition, and that migration 0016 cannot alter `artifact_version` on a
@@ -295,6 +296,31 @@ check, the relationships plan's; a component version resolved for each reference
 title, language and direction changed after it is made; paging the documents listing; getting a
 removed subtree back; and `Alt+Left` and drag and drop checked in a browser, with the rest of the
 accessibility suite.
+
+Plan 2 builds numbering and captions, and leaves resolving a cross-reference to **structure 4**,
+planned beside the first editor slice that authors or renders one: resolution is small in code, but
+what it shows a reader of a target they may not read is an access decision, and nothing would call
+it yet. It leads with thirteen findings - the most serious that the design's cache key would serve a
+stale figure number once a `latest` component moves on, and that a gap in the numbers would tell a
+reader how many figures a component they may not read holds - and ten decisions for Ken. It stores
+nothing; its code was run against a scratch database, numbering 330 nodes and 300 occurrences in a
+median 19.6 ms. Structure 3 stays navigation.
+
+**Plan 2 is built.** Every section and component in a document's outline shows its number, computed
+in the page by the same function the service numbers with, so a move renumbers everything at once; an
+author can take a node and everything under it out of the section numbering, and make a top-level node an
+appendix. `GET /v1/documents/{id}/numbering` answers the whole table - sections, figures, tables,
+equations and footnotes, each entry naming what produced it - and never reads a component the caller
+may not read: every number it could have moved is `null`, for that caller, whatever it holds. That
+rule is IAM-073, filed as issue #130 and landed here, narrowed to the numbers an outline produces.
+Building it found nine more: the most serious that a scheme could print one label twice, and that a
+caption before any numbered appendix printed a bare number repeating a body caption's; the scheme now
+refuses the first, and such a caption takes no number. It also fixed issue #131, structure 1's drag
+cancelled under load. What it leaves is listed at the end of the plan: resolving a cross-reference,
+structure 4's; the contents panel, generated lists, deep links and the contributions route, structure
+3's; a layout's scheme and bringing it to the panel, PUB's; conditions, REU's; resolving `approved`,
+the revisions plan's; an explicitly unnumbered figure or table, issue #129; and the panel's new
+controls checked in a browser.
 
 ## The editor
 

@@ -59,6 +59,9 @@ function contains(node: OutlineViewNode, id: string): boolean {
  */
 function moveOrNothing(from: Place, parent: string | null, position: number): MoveOperation | null {
   if ((from.parent?.id ?? null) === parent && from.index === position) return null;
+  // An appendix is one at the top level alone (STR-016), and the outline's parse refuses one anywhere
+  // else - so a move that would nest one is not offered, rather than sent to be refused.
+  if (from.node.matter === 'appendix' && parent !== null) return null;
   return { operation: 'move', node: from.node.id, parent, position };
 }
 
@@ -97,6 +100,20 @@ export function keyMove(
       return moveOrNothing(from, before.id, before.children.length);
     }
   }
+}
+
+/**
+ * Whether a key move has nowhere to go only because the node is an appendix: said, so the key does
+ * not look broken. An appendix is always at the top level, where promoting has nowhere to go and up
+ * and down keep it there, so demoting beneath the sibling before it is the one move this refuses.
+ */
+export function nestsAnAppendix(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+  direction: 'up' | 'down' | 'promote' | 'demote',
+): boolean {
+  const from = placeOf(nodes, id);
+  return from?.node.matter === 'appendix' && direction === 'demote' && from.index > 0;
 }
 
 /**

@@ -21,6 +21,9 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1368, from 1367: IAM-073, a number an outline produces revealing nothing about a component the
+    // reader may not read (issue #130), landed by the numbering plan and narrowed from the issue's "a
+    // number, count or order", which asked more than structure.md answers.
     // 1367, from 1366: STR-062, a cross-reference to a block resolving against exactly one occurrence
     // (issue #73), landed by the third content-model plan.
     // 1366, from 1365: STR-061, what a document is - a named, versioned artifact in exactly one space
@@ -34,9 +37,15 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1367);
+    expect(model.requirements).toHaveLength(1368);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-023 when the build gave a caption met in
+    // appendix matter before any numbered appendix no number - an exception STR-017 does not cover,
+    // so the row answered it only in part. The gap is named in prose beside the table, and issue #129
+    // reopens STR-023 with a superseding row.
+    // 361, from 360: structure.md claims IAM-073 ("Who is shown what"): a reader is numbered only from
+    // what they may read, and every number an unreadable component could have moved is null.
     // 360, from 361: structure.md stopped claiming STR-026, which the built target union answers only
     // in part - it has no bibliography entry arm, and a component cannot reference a section - so the
     // claim was dropped and the gap named in prose (the third content-model plan's final fix wave).
@@ -181,8 +190,17 @@ describe('the citations in the committed model', () => {
   // to the node inserted after it was removed.
   // 163 still: the third content-model plan's CNT-002 test sits in a file that already cites CNT-002,
   // and a file cites an identifier once.
+  // 173, from 163: the numbering plan (docs/plans/2026-09-18-structure-02-numbering.md) cites ten
+  // requirements structure.md claims, all in packages/domain/src/structure/numbering.test.ts: STR-014,
+  // STR-015, STR-016, STR-017, STR-018, STR-021, STR-022, STR-023, CNT-041 and CNT-047.
+  // 174, from 173: the same plan cites IAM-073, landed by it, in the numbering route's tests
+  // (apps/service/src/numbering-routes.test.ts): a reader who may not read a component is shown no
+  // number it could have moved, across a restart, and their answer does not move by a byte when the
+  // component's content changes.
+  // 173, from 174: STR-023's identifier left the title of its test in numbering.test.ts when
+  // structure.md stopped claiming it; the test stays, citing nothing.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(163);
+    expect(model.citations).toHaveLength(173);
   });
 
   it('cites no identifier the corpus does not hold', () => {
