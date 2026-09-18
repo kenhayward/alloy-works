@@ -182,6 +182,25 @@ describe('the inverse of an act is one operation', () => {
     expect(applied(after, inverse)).toEqual(before);
   });
 
+  it('puts a node moved among its own siblings back, counting the way the move did', () => {
+    const before = three();
+    const move: OutlineOperation = {
+      operation: 'move',
+      node: INTRODUCTION,
+      parent: null,
+      position: 2,
+    };
+    const after = applied(before, move);
+    expect(shape(after.nodes)).toBe('Method Results Introduction');
+    const inverse = inverseOf(before, after, move);
+    expect(inverse).toEqual({ operation: 'move', node: INTRODUCTION, parent: null, position: 0 });
+    expect(applied(after, inverse)).toEqual(before);
+
+    const up = keyMove(before.nodes, RESULTS, 'up');
+    const raised = applied(before, up);
+    expect(applied(raised, inverseOf(before, raised, up!))).toEqual(before);
+  });
+
   it('removes what an insert added, by the identifier the service allocated', () => {
     const before = three();
     const insert: OutlineOperation = {

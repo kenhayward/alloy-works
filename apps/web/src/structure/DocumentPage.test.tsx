@@ -99,9 +99,12 @@ const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
  *
  * Built on the house shape (`NewComponent.test.tsx`): `openapi-fetch` calls `fetch` with a `Request`.
  */
-function service(start: OutlineDocument, options: { mayEdit?: boolean } = {}) {
+function service(
+  start: OutlineDocument,
+  options: { mayEdit?: boolean; components?: unknown } = {},
+) {
   const sent: { url: string; body: unknown }[] = [];
-  const refusals = new Map<string, number>();
+  const refusals = new Map<string, { status: number; body?: unknown } | 'network'>();
   // An outline request waits on this before it is answered, so a test can act while one is in flight.
   let gate: Promise<void> = Promise.resolve();
   let unchangedNext = false;
@@ -142,10 +145,14 @@ function service(start: OutlineDocument, options: { mayEdit?: boolean } = {}) {
     const body = request.method === 'GET' ? undefined : await request.clone().json();
     sent.push({ url, body });
     const refused = refusals.get(url);
+    if (refused === 'network') throw new TypeError('Failed to fetch');
     if (refused !== undefined) {
-      return json(refused, { code: 'refused', message: 'No.', traceId: 't' });
+      return json(
+        refused.status,
+        refused.body ?? { code: 'refused', message: 'No.', traceId: 't' },
+      );
     }
-    if (url === '/v1/components') return json(200, COMPONENTS);
+    if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
       await gate;
@@ -186,7 +193,11 @@ function service(start: OutlineDocument, options: { mayEdit?: boolean } = {}) {
     fetch,
     sent,
     edits: () => sent.filter((request) => request.url.endsWith('/outline')),
-    refuse: (url: string, status: number) => refusals.set(url, status),
+    refuse: (url: string, status: number, body?: unknown) => refusals.set(url, { status, body }),
+    /** No answer at all: the request fails the way a dropped connection does. */
+    fail: (url: string) => refusals.set(url, 'network'),
+    /** What was recorded last, as the service would now answer it. */
+    latest: () => view(),
     restore: (url: string) => refusals.delete(url),
     /** Holds every outline answer until the returned function is called. */
     hold: () => {
@@ -224,6 +235,14 @@ function open(fetch: typeof globalThis.fetch) {
 }
 
 const item = (name: RegExp | string) => screen.getByRole('treeitem', { name });
+
+/** Undo stays focusable when there is nothing to undo, so it says so through `aria-disabled`. */
+const undoable = () =>
+  screen.getByRole('button', { name: 'Undo' }).getAttribute('aria-disabled') !== 'true';
+
+/** Waits for the act in flight to be answered: the tree says it is busy until then. */
+const settled = () =>
+  waitFor(() => expect(screen.getByRole('tree')).toHaveAttribute('aria-busy', 'false'));
 
 describe('the outline panel', () => {
   it('STR-008 moves a node with its whole subtree, as one action undo takes back', async () => {
@@ -273,7 +292,7 @@ describe('the outline panel', () => {
     expect(
       within(item('Introduction')).getByRole('treeitem', { name: 'Scope' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(undoable()).toBe(false);
   });
 
   it('moves by pointer with the same position convention the service applies', async () => {
@@ -306,6 +325,7 @@ describe('the outline panel', () => {
 
     // A drop onto a node makes the dragged node its last child.
     fireEvent.dragStart(item('Introduction'));
+    await screen.findByText('Move to the end of the document');
     fireEvent.dragOver(screen.getByText('Method'));
     fireEvent.drop(screen.getByText('Method'));
     await waitFor(() =>
@@ -507,12 +527,14 @@ describe('the outline panel', () => {
     await userEvent.click(item('Introduction'));
     await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled());
+    await waitFor(() => expect(undoable()).toBe(true));
 
     await userEvent.click(item('Method'));
     await userEvent.keyboard('{Delete}');
     expect(
-      screen.getByText('Remove Method and everything beneath it? This cannot be undone.'),
+      screen.getByText(
+        'Remove Method and everything beneath it? This cannot be undone, and nothing before it can be undone afterwards.',
+      ),
     ).toBeInTheDocument();
     expect(fake.edits()).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
@@ -524,7 +546,7 @@ describe('the outline panel', () => {
       operation: { operation: 'remove', node: METHOD },
     });
     expect(screen.getByRole('status')).toHaveTextContent('Removed Method.');
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(undoable()).toBe(false);
   });
 
   it('keeps the node when the removal is not confirmed', async () => {
@@ -553,7 +575,7 @@ describe('the outline panel', () => {
     await waitFor(() =>
       expect(screen.getByRole('tree')).toHaveTextContent(/Method[\s\S]*Introduction/),
     );
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    expect(undoable()).toBe(true);
 
     // Grace renames Method and moves Introduction back to the top, from another window.
     fake.theirs({
@@ -579,7 +601,7 @@ describe('the outline panel', () => {
     });
 
     // And the undo stack is gone: Ada's earlier move cannot be undone onto Grace's outline.
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(undoable()).toBe(false);
     item('Introduction').focus();
     await userEvent.keyboard('{Control>}z{/Control}');
     expect(fake.edits()).toHaveLength(2);
@@ -646,11 +668,11 @@ describe('the outline panel', () => {
     await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
 
     await waitFor(() => expect(fake.edits()).toHaveLength(1));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Add section' })).toBeEnabled());
+    await settled();
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(screen.getByRole('tree')).toHaveTextContent(/Introduction[\s\S]*Method/);
     expect(screen.getByText('Version 0.1 in General')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(undoable()).toBe(false);
   });
 
   it('renders a reference whose mode is approved as waiting on revisions rather than a version', async () => {
@@ -737,6 +759,296 @@ describe('the outline panel', () => {
     fake.restore(`/v1/documents/${DOCUMENT}`);
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('treeitem', { name: 'Method' })).toBeInTheDocument();
+  });
+});
+
+const OUTLINE_URL = `/v1/documents/${DOCUMENT}/outline`;
+const SOMEBODY_ELSE = 'Somebody else changed this document. This is how it stands now.';
+
+describe('the outline panel, answered', () => {
+  it('gives a refused retitle back to the outline, so leaving the field does not send it again', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    // Grace changes something unrelated - Introduction's page break - so Method's title stays as it was.
+    fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
+    await userEvent.clear(screen.getByLabelText('Title'));
+    await userEvent.type(screen.getByLabelText('Title'), 'Methods{Enter}');
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    expect(item('Method')).toBeInTheDocument();
+    // The field gives way to the outline it was refused against, rather than holding the refused text.
+    expect(screen.getByLabelText('Title')).toHaveValue('Method');
+
+    // Leaving the field sends nothing: the act she was told was refused does not go through.
+    await userEvent.click(screen.getByRole('button', { name: 'Add section' }));
+    expect(fake.edits()).toHaveLength(1);
+    expect(screen.queryByRole('treeitem', { name: 'Methods' })).toBeNull();
+  });
+
+  it('keeps every key typed while an act is in flight, and every control focusable', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    const release = fake.hold();
+    await userEvent.selectOptions(screen.getByLabelText('Starts on'), 'page');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    expect(screen.getByRole('tree')).toHaveAttribute('aria-busy', 'true');
+    // Nothing that may hold focus is disabled under the author while the answer is awaited.
+    expect(screen.getByLabelText('Starts on')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Undo' })).not.toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Title'), 's');
+    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+
+    release();
+    await settled();
+    expect(screen.getByRole('status')).toHaveTextContent('Method now starts on a new page.');
+    expect(screen.getByLabelText('Title')).toHaveValue('Methods');
+    expect(fake.edits()).toHaveLength(1);
+  });
+
+  it('says why an act does not apply, in the words the service gave', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    fake.refuse(OUTLINE_URL, 400, {
+      code: 'outline_invalid',
+      message: 'This change does not apply to the outline as it stands.',
+      traceId: 't',
+      reason: 'The position is past the end of these children',
+    });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The position is past the end of these children.',
+      ),
+    );
+    expect(screen.getByRole('tree')).toHaveTextContent(/Introduction[\s\S]*Method/);
+    expect(screen.getByText('Version 0.1 in General')).toBeInTheDocument();
+  });
+
+  it('does not call a body the route would not take an outline that does not apply', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    fake.refuse(OUTLINE_URL, 400, { code: 'invalid_request', message: 'x', traceId: 't' });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('The change could not be made.'),
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent(/does not apply|Try/);
+  });
+
+  it('clears the whole undo stack when an undo is refused as not applying', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method'),
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(screen.getByText('Version 0.2 in General')).toBeInTheDocument());
+    await settled();
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(screen.getByText('Version 0.3 in General')).toBeInTheDocument());
+    await settled();
+
+    fake.refuse(OUTLINE_URL, 400, {
+      code: 'outline_invalid',
+      message: 'x',
+      traceId: 't',
+      reason: 'The node is not in this outline',
+    });
+    await userEvent.keyboard('{Control>}z{/Control}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'That change cannot be undone any more.',
+      ),
+    );
+    // The entry beneath it was computed for a state that will now never exist, so it goes too.
+    expect(undoable()).toBe(false);
+    expect(fake.edits()).toHaveLength(3);
+  });
+
+  it('goes read-only, without claiming the caller may still read it, on a 404', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    fake.refuse(OUTLINE_URL, 404);
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'This document is no longer open to you.',
+      ),
+    );
+    expect(screen.queryByRole('button', { name: 'Add section' })).toBeNull();
+    expect(screen.queryByText('You may read this document but not change it.')).toBeNull();
+  });
+
+  it('says an act was not saved on a server error, and keeps an undo that did not arrive', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(screen.getByText('Version 0.2 in General')).toBeInTheDocument());
+    await settled();
+
+    fake.refuse(OUTLINE_URL, 500);
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not saved. Try it again.',
+      ),
+    );
+    expect(screen.getByRole('tree')).toHaveTextContent(/Method[\s\S]*Introduction/);
+
+    fake.fail(OUTLINE_URL);
+    await settled();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'The change was not undone. Try it again.',
+      ),
+    );
+    expect(undoable()).toBe(true);
+
+    // And trying again does work, because the entry was kept.
+    fake.restore(OUTLINE_URL);
+    await settled();
+    item('Introduction').focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() =>
+      expect(screen.getByRole('tree')).toHaveTextContent(/Introduction[\s\S]*Method/),
+    );
+    expect(undoable()).toBe(false);
+  });
+
+  it('reads the document again when a conflict carries no outline it can show', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+
+    fake.theirs({
+      operation: 'retitle',
+      node: METHOD,
+      title: [{ type: 'text', value: 'Methods', marks: [] }],
+    });
+    fake.refuse(OUTLINE_URL, 409, { code: 'version_precondition', message: 'x', traceId: 't' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+
+    expect(await screen.findByRole('treeitem', { name: 'Methods' })).toBeInTheDocument();
+    expect(screen.getByText('Version 0.2 in General')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE);
+  });
+
+  it('says the document cannot be read when an answer carries an outline it cannot read', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    fake.refuse(OUTLINE_URL, 200, {
+      ...fake.latest(),
+      outline: { schemaVersion: 1, nodes: 'none' },
+    });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+
+    expect(await screen.findByText('This document could not be read.')).toBeInTheDocument();
+    expect(screen.queryByText(/Reload/)).toBeNull();
+  });
+
+  it('names a reference "A component" when the listing was cut short, never one the caller may not read', async () => {
+    const fake = service(outline([reference(RESULTS, 'latest')]), {
+      components: {
+        items: [
+          {
+            id: 'cccccccc-0000-4000-8000-000000000002',
+            title: 'Replace the toner',
+            space: { id: SPACE, name: 'General' },
+            version: '0.1',
+          },
+        ],
+        next: 42,
+      },
+    });
+    open(fake.fetch);
+    expect(
+      await screen.findByRole('treeitem', { name: 'A component, latest' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the page as it is when a drag starts, and offers the drop places a moment later', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+
+    // Chromium ends a drag whose source changes in the same task it started in.
+    fireEvent.dragStart(item('Introduction'));
+    expect(screen.queryByText('Move to the end of the document')).toBeNull();
+    expect(await screen.findByText('Move to the end of the document')).toBeInTheDocument();
+    fireEvent.dragEnd(item('Introduction'));
+    await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
+  });
+
+  it('keeps Undo focusable once there is nothing left to undo', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(undoable()).toBe(true));
+    await settled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(undoable()).toBe(false));
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Undo' })).not.toBeDisabled();
+    // Pressed again with nothing to undo, it sends nothing.
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(fake.edits()).toHaveLength(2);
+  });
+
+  it('describes its keys, including what a Mac keyboard uses to remove', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    const tree = await screen.findByRole('tree');
+    const help = document.getElementById(tree.getAttribute('aria-describedby') ?? '');
+    expect(help).toHaveTextContent(/Alt and the arrow keys/);
+    expect(help).toHaveTextContent(/On a Mac keyboard, remove it with the Remove button/);
   });
 });
 

@@ -2,6 +2,7 @@ import type { createApiClient, paths } from '@alloy-works/api-client';
 import { readOutline, type OutlineDocument, type OutlineOperation } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { everyPage } from '../paging.js';
 import { OutlinePanel, type ComponentChoice, type ComponentChoices } from './OutlinePanel.js';
 import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.js';
 
@@ -57,16 +58,29 @@ function documentIn(data: unknown): Read {
   };
 }
 
-/** One page of `GET /v1/components`, checked; `next` is a cursor only when it is a string. */
-function componentsIn(
-  data: unknown,
-): { items: ComponentChoice[]; next: string | null } | undefined {
-  if (!isRecord(data) || !Array.isArray(data.items)) return undefined;
-  const items = data.items.flatMap((item: unknown) => {
+/** The components a listing held, each checked rather than trusted: the client's bodies are `any`. */
+function componentsIn(items: readonly unknown[]): ComponentChoice[] {
+  return items.flatMap((item) => {
     if (!isRecord(item) || typeof item.id !== 'string' || typeof item.title !== 'string') return [];
     return [{ id: item.id, title: item.title }];
   });
-  return { items, next: typeof data.next === 'string' && data.next !== '' ? data.next : null };
+}
+
+/**
+ * Why an act does not apply, in the service's words when it gave some: `outline_invalid` carries a
+ * `reason` that is one of the domain's own fixed sentences, never an exception's text (task 4), so it
+ * is safe to show. Any other 400 - `invalid_request` - is a body this page should never have sent,
+ * which the author cannot correct and trying again cannot fix.
+ */
+function doesNotApply(refusal: unknown): string {
+  if (!isRecord(refusal) || refusal.code !== 'outline_invalid') {
+    return 'The change could not be made.';
+  }
+  const { reason } = refusal;
+  if (typeof reason !== 'string' || reason.trim() === '' || reason.length > 200) {
+    return 'That change does not apply to the outline as it stands.';
+  }
+  return /[.!?]$/.test(reason) ? reason : `${reason}.`;
 }
 
 type Loaded =
@@ -171,6 +185,9 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  // The document as the page last received it - written where an answer arrives, never during render.
+  const latest = useRef<Opened | null>(null);
+  const [withdrawn, setWithdrawn] = useState(false);
   const [components, setComponents] = useState<ComponentChoices>({ state: 'loading' });
   const [componentsAttempt, setComponentsAttempt] = useState(0);
 
@@ -182,7 +199,10 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         if (!current) return;
         const read = documentIn(data);
         if (read === 'unreadable') setLoaded({ state: 'unreadable' });
-        else if (read !== undefined) setLoaded({ state: 'open', document: read });
+        else if (read !== undefined) {
+          latest.current = read;
+          setLoaded({ state: 'open', document: read });
+        }
         // Only a 404 means missing or unreadable, which the service answers alike: signed out, a
         // server error or no answer is not the document's absence.
         else if (response.status === 404) setLoaded({ state: 'missing' });
@@ -196,36 +216,28 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
     };
   }, [client, id, attempt]);
 
-  // Every component the caller may read, page by page: what **Add component** offers, and what names
-  // a reference - one that is not among them is one the caller may not read. Paging stops at a cursor
-  // that is missing, malformed, or one already asked for.
+  // Every component the caller may read, read to its end by the shared `everyPage`: what **Add
+  // component** offers, and what names a reference - one that is not among them is one the caller may
+  // not read. A listing cut short, by a missing, malformed or repeated cursor, is a failure rather than
+  // a shorter answer, or a readable component past the cut would be named as one the caller may not
+  // read.
   useEffect(() => {
     let current = true;
     setComponents({ state: 'loading' });
-    void (async () => {
-      const items: ComponentChoice[] = [];
-      const asked = new Set<string>();
-      let cursor: string | null = null;
-      try {
-        for (;;) {
-          const query: { cursor?: string } = cursor === null ? {} : { cursor };
-          const { data, response } = await client.GET('/v1/components', { params: { query } });
-          if (!current) return;
-          const page = componentsIn(data);
-          if (page === undefined) {
-            setComponents({ state: 'failed', signedOut: response.status === 401 });
-            return;
-          }
-          items.push(...page.items);
-          if (page.next === null || asked.has(page.next)) break;
-          asked.add(page.next);
-          cursor = page.next;
+    everyPage((cursor) =>
+      client.GET('/v1/components', { params: { query: cursor === undefined ? {} : { cursor } } }),
+    )
+      .then((answer) => {
+        if (!current) return;
+        if ('status' in answer) {
+          setComponents({ state: 'failed', signedOut: answer.status === 401 });
+          return;
         }
-        setComponents({ state: 'loaded', items });
-      } catch {
+        setComponents({ state: 'loaded', items: componentsIn(answer.items) });
+      })
+      .catch(() => {
         if (current) setComponents({ state: 'failed', signedOut: false });
-      }
-    })();
+      });
     return () => {
       current = false;
     };
@@ -241,9 +253,19 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
 
   const opened = loaded.state === 'open' ? loaded.document : null;
 
+  /** Shows a document, and remembers it as the latest one the page holds (written only here). */
+  const show = useCallback((document: Opened) => {
+    latest.current = document;
+    setLoaded({ state: 'open', document });
+  }, []);
+
   const apply = useCallback(
     async (operation: OutlineOperation, undoing: boolean): Promise<OutlineDocument | null> => {
       if (pending.current || opened === null) return null;
+      // An act from a render older than the answer the page now holds: a key that landed between the
+      // last answer and the re-render showing it. Computed against the outline before that answer,
+      // it would be refused as a conflict with the author's own act, so it is not sent at all.
+      if (opened.version.id !== latest.current?.version.id) return null;
       const before = opened;
       pending.current = true;
       setBusy(true);
@@ -266,7 +288,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         });
         const after = documentIn(data);
         if (after !== undefined && after !== 'unreadable') {
-          setLoaded({ state: 'open', document: after });
+          show(after);
           if (after.version.id === before.version.id) {
             // Decision K: put back where it was, so the chain keeps no row - not a refusal, and not
             // an act worth an undo entry. An undo answered this way is spent all the same.
@@ -288,7 +310,10 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
           return after.outline;
         }
         if (after === 'unreadable') {
-          return refuse('The document came back in a form this page cannot read. Reload it.');
+          // The act may well have been recorded, but what came back cannot be shown or acted on, so the
+          // page says so in place of the outline rather than going on offering a stale one.
+          setLoaded({ state: 'unreadable' });
+          return null;
         }
         switch (response.status) {
           case 409: {
@@ -296,7 +321,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
             const refusal: unknown = error;
             const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
             if (current !== undefined && current !== 'unreadable') {
-              setLoaded({ state: 'open', document: current });
+              show(current);
             } else {
               // A refusal that does not carry a readable outline still means ours is stale: read it.
               setAttempt((count) => count + 1);
@@ -307,17 +332,24 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
             return refuse('You are signed out. Sign in again to change this document.');
           case 403:
             // Nothing more is offered that could only be refused again.
-            setLoaded({ state: 'open', document: { ...before, mayEdit: false } });
+            show({ ...before, mayEdit: false });
             return refuse('You may not change this document.');
           case 404:
-            setLoaded({ state: 'open', document: { ...before, mayEdit: false } });
+            // Not readable any more either, so the page stops saying it may be read.
+            setWithdrawn(true);
+            show({ ...before, mayEdit: false });
             return refuse('This document is no longer open to you.');
           case 400:
             if (undoing) {
-              spend();
-              return refuse('That change cannot be undone any more.');
+              // Every entry beneath this one was computed for a state that will now never exist.
+              setUndo([]);
+              return refuse(
+                isRecord(error) && error.code === 'outline_invalid'
+                  ? 'That change cannot be undone any more.'
+                  : 'The change could not be made.',
+              );
             }
-            return refuse('That change does not apply to the outline as it stands.');
+            return refuse(doesNotApply(error));
           default:
             return failed();
         }
@@ -328,7 +360,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         setBusy(false);
       }
     },
-    [client, id, names, opened],
+    [client, id, names, opened, show],
   );
 
   if (loaded.state === 'loading') return <p>Opening...</p>;
@@ -361,7 +393,7 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
           Version {document.version.number} in {document.space.name}
         </p>
       </header>
-      {!document.mayEdit && <p>You may read this document but not change it.</p>}
+      {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
       <OutlinePanel
         outline={document.outline}
         editable={document.mayEdit}

@@ -81,8 +81,8 @@ function useHash(): string {
 
 /**
  * The list of components, one component open, the list of documents or one document open, chosen by
- * the address's hash - so opening one is a link, a reload reopens it, and the renderer's relative asset paths (built for the desktop shell's
- * `file://` fallback) are never put under a deep path.
+ * the address's hash - so opening one is a link, a reload reopens it, and the renderer's relative
+ * asset paths (built for the desktop shell's `file://` fallback) are never put under a deep path.
  */
 export function Workspace({ fetch: given }: WorkspaceProps) {
   const origin = window.location.origin;

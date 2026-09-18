@@ -69,6 +69,15 @@ const PAGE_BREAKS = [
   { value: 'recto', label: 'A new right-hand page' },
 ] as const;
 
+/**
+ * The keymap, said once beside the tree and tied to it by `aria-describedby`. A Mac keyboard's delete
+ * key is Backspace, which the tree leaves alone, so it says where removing is on one.
+ */
+const KEYS =
+  'Move between items with the arrow keys. Move the selected item with Alt and the arrow keys ' +
+  '(Option on a Mac), add a section after it with Enter, remove it with Delete, and undo with ' +
+  'Ctrl+Z (Cmd+Z on a Mac). On a Mac keyboard, remove it with the Remove button.';
+
 function isPageBreak(value: string): value is OutlineNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
 }
@@ -121,6 +130,10 @@ export function OutlinePanel({
   const [dragging, setDragging] = useState<string | null>(null);
   // Filled by each item's ref callback, never during render.
   const items = useRef(new Map<string, HTMLElement>());
+  // The drag's own state waits a tick (see `onDragStart`); this is that tick, so a drag that ends first
+  // can take it back.
+  const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(dragTimer.current), []);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
   // first node otherwise - so a node removed, or an outline somebody else changed, never leaves the
@@ -357,13 +370,22 @@ export function OutlinePanel({
     <div onKeyDown={onPanelKeyDown}>
       {editable && (
         <div role="toolbar" aria-label="Outline">
-          <button type="button" disabled={busy} onClick={() => openAdding('section')}>
+          {/* Nothing here is disabled while an act is in flight, because a control that is disabled
+              under the focus drops it to the page body in a real browser: each waits instead, and
+              Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
+          <button type="button" onClick={() => !busy && openAdding('section')}>
             Add section
           </button>
-          <button type="button" disabled={busy} onClick={() => openAdding('component')}>
+          <button type="button" onClick={() => !busy && openAdding('component')}>
             Add component
           </button>
-          <button type="button" disabled={busy || !canUndo} onClick={() => void onUndo?.()}>
+          <button
+            type="button"
+            aria-disabled={!canUndo}
+            onClick={() => {
+              if (!busy && canUndo) void onUndo?.();
+            }}
+          >
             Undo
           </button>
         </div>
@@ -389,15 +411,12 @@ export function OutlinePanel({
             <input
               autoFocus
               value={newTitle}
-              readOnly={busy}
               onChange={(event) => setNewTitle(event.target.value)}
             />
           </label>
           {/* Said about the field as it stands, so it goes the moment the field is fine. */}
           {attempted && newTitle.trim() === '' && <p>A section needs a title.</p>}
-          <button type="submit" disabled={busy}>
-            Add
-          </button>
+          <button type="submit">Add</button>
           <button type="button" onClick={cancelAdding}>
             Cancel
           </button>
@@ -407,7 +426,6 @@ export function OutlinePanel({
         <ComponentChooser
           components={components}
           chosen={chosen}
-          busy={busy}
           onChoose={setChosen}
           onAdd={(component) =>
             void insert({ type: 'reference', component, mode: { kind: 'latest' } })
@@ -416,26 +434,35 @@ export function OutlinePanel({
           onReload={onReloadComponents}
         />
       )}
+      <p id={`${prefix}-keys`}>{editable ? KEYS : 'Move between items with the arrow keys.'}</p>
       {nodes.length === 0 ? (
         <p>This document has no sections yet.</p>
       ) : (
         <ul
           role="tree"
           aria-label="Outline"
+          aria-describedby={`${prefix}-keys`}
+          aria-busy={busy}
           onKeyDown={onTreeKeyDown}
           onClick={onTreeClick}
           onDragStart={(event) => {
             const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
             const id = item?.dataset.node;
             if (!may || id === undefined) return;
-            setDragging(id);
+            // A tick later, not now: the drop places this renders change the page under the drag,
+            // and Chromium ends a drag whose source changes in the same task it started in.
+            clearTimeout(dragTimer.current);
+            dragTimer.current = setTimeout(() => setDragging(id), 0);
             // Firefox starts no drag without data; the node's identifier is what is being moved.
             event.dataTransfer?.setData('text/plain', id);
             if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
           }}
           onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
           onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
-          onDragEnd={() => setDragging(null)}
+          onDragEnd={() => {
+            clearTimeout(dragTimer.current);
+            setDragging(null);
+          }}
         >
           {renderNodes(nodes, 1)}
         </ul>
@@ -462,7 +489,6 @@ export function OutlinePanel({
         <ConfirmRemoval
           node={placeOf(nodes, confirming)?.node}
           names={names}
-          busy={busy}
           onRemove={() => void remove(confirming)}
           onKeep={() => {
             setConfirming(null);
@@ -478,7 +504,6 @@ export function OutlinePanel({
 function ComponentChooser({
   components,
   chosen,
-  busy,
   onChoose,
   onAdd,
   onCancel,
@@ -486,7 +511,6 @@ function ComponentChooser({
 }: {
   components: ComponentChoices;
   chosen: string;
-  busy: boolean;
   onChoose: (id: string) => void;
   onAdd: (id: string) => void;
   onCancel: () => void;
@@ -528,9 +552,7 @@ function ComponentChooser({
           ))}
         </select>
       </label>
-      <button type="submit" disabled={busy}>
-        Add
-      </button>
+      <button type="submit">Add</button>
       <button type="button" onClick={onCancel}>
         Cancel
       </button>
@@ -538,16 +560,20 @@ function ComponentChooser({
   );
 }
 
+/**
+ * A removal has no inverse (`tree.ts`, `inverseOf`), and it empties the undo stack, because every entry
+ * beneath it was computed against an outline that still held what it took - so the question says both.
+ */
+const IRREVERSIBLE = 'This cannot be undone, and nothing before it can be undone afterwards.';
+
 function ConfirmRemoval({
   node,
   names,
-  busy,
   onRemove,
   onKeep,
 }: {
   node: OutlineNode | undefined;
   names: Names;
-  busy: boolean;
   onRemove: () => void;
   onKeep: () => void;
 }) {
@@ -563,11 +589,11 @@ function ConfirmRemoval({
     >
       <p>
         {node.children.length > 0
-          ? `Remove ${name} and everything beneath it? This cannot be undone.`
-          : `Remove ${name}? This cannot be undone.`}
+          ? `Remove ${name} and everything beneath it? ${IRREVERSIBLE}`
+          : `Remove ${name}? ${IRREVERSIBLE}`}
       </p>
       {/* Focus goes to the question the author has just asked to be put. */}
-      <button type="button" autoFocus disabled={busy} onClick={onRemove}>
+      <button type="button" autoFocus onClick={onRemove}>
         Remove
       </button>
       <button type="button" onClick={onKeep}>
@@ -585,6 +611,8 @@ function ConfirmRemoval({
 interface Field {
   readonly typed: string;
   readonly inModel: string;
+  /** The title this field last sent and has not yet heard back about, or `null`. */
+  readonly sent: string | null;
 }
 
 function NodeDetails({
@@ -609,10 +637,11 @@ function NodeDetails({
         Starts on
         <select
           value={node.pageBreak}
-          disabled={busy}
           onChange={(event) => {
+            // Left enabled while an act is in flight, so it keeps the focus; a choice made then is
+            // not sent, and the select, being controlled, goes on showing what the node holds.
             const pageBreak = event.target.value;
-            if (!isPageBreak(pageBreak) || pageBreak === node.pageBreak) return;
+            if (busy || !isPageBreak(pageBreak) || pageBreak === node.pageBreak) return;
             void onOperation({ operation: 'set', node: node.id, pageBreak });
           }}
         >
@@ -623,7 +652,7 @@ function NodeDetails({
           ))}
         </select>
       </label>
-      <button type="button" disabled={busy} onClick={onRemove}>
+      <button type="button" onClick={() => !busy && onRemove()}>
         {node.type === 'section' ? 'Remove section' : 'Remove component'}
       </button>
     </div>
@@ -643,14 +672,21 @@ function TitleField({
 }) {
   const plain = plainTitle(node.title);
   const inModel = plain ?? titleText(node.title);
-  const [field, setField] = useState<Field>({ typed: inModel, inModel });
+  const [field, setField] = useState<Field>({ typed: inModel, inModel, sent: null });
 
   // State derived from a prop, adjusted during render the way React documents it: a second render
-  // pass reads what the first set, and the comparison is by value, so it settles at once. The field
-  // gives way only when the outline's title differs from what it last heard - an undo, a refusal
-  // carrying somebody else's outline, its own retitle coming back - and never because the page
-  // re-rendered for some other reason while the author was typing.
-  if (inModel !== field.inModel) setField({ typed: inModel, inModel });
+  // pass reads what the first set, and the comparison is by value, so it settles at once. Nothing
+  // happens unless the outline's title differs from what the field last heard, so a re-render for
+  // any other reason - another act answered while the author is typing here - leaves the field alone.
+  // When it does differ, the field's own retitle coming back keeps what has been typed since it was
+  // sent; anything else - an undo, somebody else's title - gives way to the outline.
+  if (inModel !== field.inModel) {
+    setField(
+      inModel === field.sent
+        ? { typed: field.typed, inModel, sent: null }
+        : { typed: inModel, inModel, sent: null },
+    );
+  }
 
   if (plain === null) {
     return (
@@ -671,11 +707,25 @@ function TitleField({
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
       // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
       onNotice('A section needs a title.');
-      setField({ typed: inModel, inModel });
+      setField({ typed: inModel, inModel, sent: null });
       return;
     }
     if (text === inModel) return;
-    void onOperation({ operation: 'retitle', node: node.id, title: sectionTitle(text) });
+    setField((previous) => ({ ...previous, sent: text }));
+    void onOperation({ operation: 'retitle', node: node.id, title: sectionTitle(text) }).then(
+      (after) => {
+        // Refused - somebody else moved first, or it was not saved - and the page has said so. The
+        // field gives way to the outline as it now stands, rather than holding the refused title for
+        // the next blur to send again as an act nobody chose a second time.
+        if (after === null) {
+          setField((previous) => ({
+            typed: previous.inModel,
+            inModel: previous.inModel,
+            sent: null,
+          }));
+        }
+      },
+    );
   };
 
   return (
@@ -683,7 +733,6 @@ function TitleField({
       Title
       <input
         value={field.typed}
-        readOnly={busy}
         onChange={(event) => {
           const typed = event.target.value;
           setField((previous) => ({ ...previous, typed }));

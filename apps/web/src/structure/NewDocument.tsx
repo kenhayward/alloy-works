@@ -1,9 +1,9 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { outlineDocumentSchema } from '@alloy-works/domain';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
-import { creatableSpacesIn, type Space } from '../spaces.js';
+import { useCreatableSpaces } from '../spaces.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -23,11 +23,13 @@ export interface NewDocumentProps {
  * and built the way `NewComponent` is so the two pages do not disagree about what a person may do.
  */
 export function NewDocument({ client, onCreated }: NewDocumentProps) {
-  const [spaces, setSpaces] = useState<readonly Space[] | null>(null);
-  // A read that failed is not a read that came back empty, and signed out is neither: the first says
-  // something, the second is silent by design, and the third is not something Try again fixes.
-  const [spacesProblem, setSpacesProblem] = useState<'signedOut' | 'failed' | null>(null);
-  const [where, setWhere] = useState('');
+  const {
+    spaces,
+    problem: spacesProblem,
+    where,
+    setWhere,
+    reload: loadSpaces,
+  } = useCreatableSpaces(client);
   const [title, setTitle] = useState('');
   const [languageTag, setLanguageTag] = useState('en-GB');
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
@@ -35,37 +37,6 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   const [sending, setSending] = useState(false);
   // Checked before any await, so a second click that lands before React re-renders sends nothing.
   const pending = useRef(false);
-  // A generation counter, because the read is started imperatively too - after a 403 or a 404 - and
-  // a read that is no longer the latest must be told apart from one that is.
-  const spacesRequest = useRef(0);
-
-  const loadSpaces = useCallback(async () => {
-    const generation = ++spacesRequest.current;
-    setSpacesProblem(null);
-    try {
-      const { data, response } = await client.GET('/v1/spaces');
-      if (spacesRequest.current !== generation) return;
-      const open = creatableSpacesIn(data);
-      if (open === undefined) {
-        setSpacesProblem(response.status === 401 ? 'signedOut' : 'failed');
-        return;
-      }
-      setSpaces(open);
-      // The author's choice survives a re-read that did not take it away.
-      setWhere((chosen) =>
-        open.some((space) => space.id === chosen) ? chosen : (open[0]?.id ?? ''),
-      );
-    } catch {
-      if (spacesRequest.current === generation) setSpacesProblem('failed');
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void loadSpaces();
-    return () => {
-      spacesRequest.current += 1;
-    };
-  }, [loadSpaces]);
 
   const create = useCallback(async () => {
     if (pending.current) return;
