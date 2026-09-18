@@ -142,22 +142,29 @@ has as many correct numberings as it has profiles, and none of them can be store
 
 ## 6. Cross-references
 
-| ID          | Requirement                                                                                                                                                                                                                                          | Tranche    | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **STR-026** | A cross-reference must target an outline node, a caption-bearing block, a footnote, or a bibliography entry, by identity                                                                                                                             | T1         | Specified |
-| **STR-027** | The display form must be selectable: number, title, number and title, page, or a relative form such as "above" or "below"                                                                                                                            | T1         | Specified |
-| **STR-028** | A cross-reference must resolve in the context of the document doing the resolving, never in the component that contains it                                                                                                                           | T1         | Specified |
-| **STR-029** | A cross-reference whose target is not present in the resolving document must fail the publish with a named error identifying both the reference and its target                                                                                       | T1         | Specified |
-| **STR-030** | A cross-reference whose target is excluded by a condition must fail the publish, and must never render as a blank, a zero, or the word "error"                                                                                                       | T4         | Specified |
-| **STR-031** | Cross-references must resolve afresh whenever the outline changes; a stale number must not be renderable                                                                                                                                             | T1         | Specified |
-| **STR-032** | A cross-reference must be able to target something in the same component and something in another component of the same document                                                                                                                     | T1         | Specified |
-| **STR-033** | The author must be able to see, for any node, what references it - so that deleting something referenced is a warning rather than a discovery at publish time                                                                                        | T3         | Specified |
-| **STR-056** | A cross-reference to something in its own component must target the nodes of its own occurrence: a component referenced twice resolves "see Figure 2" against the occurrence the reader is in (STR-010, STR-021)                                     | Constraint | Specified |
-| **STR-055** | A cross-reference whose display form is a page (STR-027) must render a declared alternative form in an output format that has no pages, and must fail the publish where none is declared - never a blank, and never a page number that means nothing | T1         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                 | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **STR-026** | A cross-reference must target an outline node, a caption-bearing block, a footnote, or a bibliography entry, by identity                                                                                                                                                                                                                                                                                                                    | T1         | Specified |
+| **STR-027** | The display form must be selectable: number, title, number and title, page, or a relative form such as "above" or "below"                                                                                                                                                                                                                                                                                                                   | T1         | Specified |
+| **STR-028** | A cross-reference must resolve in the context of the document doing the resolving, never in the component that contains it                                                                                                                                                                                                                                                                                                                  | T1         | Specified |
+| **STR-029** | A cross-reference whose target is not present in the resolving document must fail the publish with a named error identifying both the reference and its target                                                                                                                                                                                                                                                                              | T1         | Specified |
+| **STR-030** | A cross-reference whose target is excluded by a condition must fail the publish, and must never render as a blank, a zero, or the word "error"                                                                                                                                                                                                                                                                                              | T4         | Specified |
+| **STR-031** | Cross-references must resolve afresh whenever the outline changes; a stale number must not be renderable                                                                                                                                                                                                                                                                                                                                    | T1         | Specified |
+| **STR-032** | A cross-reference must be able to target something in the same component and something in another component of the same document                                                                                                                                                                                                                                                                                                            | T1         | Specified |
+| **STR-033** | The author must be able to see, for any node, what references it - so that deleting something referenced is a warning rather than a discovery at publish time                                                                                                                                                                                                                                                                               | T3         | Specified |
+| **STR-056** | A cross-reference to something in its own component must target the nodes of its own occurrence: a component referenced twice resolves "see Figure 2" against the occurrence the reader is in (STR-010, STR-021)                                                                                                                                                                                                                            | Constraint | Specified |
+| **STR-055** | A cross-reference whose display form is a page (STR-027) must render a declared alternative form in an output format that has no pages, and must fail the publish where none is declared - never a blank, and never a page number that means nothing                                                                                                                                                                                        | T1         | Specified |
+| **STR-062** | A cross-reference to a block must resolve against exactly one outline occurrence of that block's component: the occurrence it is read in, for a block of its own component (STR-056), and otherwise the one occurrence of that component in the resolving document. Where there is none, or more than one, it must fail with a named error (STR-029) rather than resolve against the first occurrence or against the block identifier alone | T1         | Specified |
 
 **STR-056 states something two requirements implied and neither said.** A component containing "see
 Figure 2" resolves differently as the first occurrence and as the second, which follows from STR-010
 and STR-021 and is subtle enough that two implementers would disagree about it.
+
+**STR-062 says what "the occurrence" means for a block.** CNT-002 scopes a block identifier to its
+component and STR-056 resolves a reference into its own component against the occurrence the reader
+is in, so one identifier appears once per occurrence and on its own names nothing. What the stored
+reference holds cannot be the pair: a component does not know where it is placed. The pair is what
+resolution looks up, and where it cannot find exactly one, it says so.
 
 **STR-055 closes an asymmetry with STR-050.** A page break in a format with no pages is ignored
 without error, deliberately; a cross-reference whose display form is a page had no such rule and
@@ -241,6 +248,7 @@ and travels with them wherever they are used. That half is CNT's, through a bloc
 | STR-051                   | REU-028 to REU-030, PUB-002 - one order, stated once                                                            |
 | STR-052                   | VER-018, REU-040 - what a baseline pins, and what a publication records                                         |
 | STR-055                   | STR-027, STR-050 - the paged and unpaged forms                                                                  |
+| STR-062                   | STR-056, STR-029, CNT-002 - one occurrence, or a named failure                                                  |
 | STR-057                   | REU-044 - the same cycle rule from the reuse side                                                               |
 | STR-051 to STR-057        | [The v1 review](<../../reviews/STR - Structure, numbering and cross-references.md>); section 14                 |
 | Section 3                 | Scope §6 (outline, section, component reference); CNT's governing constraint                                    |
@@ -314,5 +322,23 @@ found that nothing in the corpus declared what a document is.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 60, of which 3 superseded | 61, of which 3 superseded |
+| Non-requirements | 5                         | 5                         |
+| Open questions   | 4                         | 4                         |
+
+### From planning the third content-model plan
+
+Not a review. [Issue #73](https://github.com/kenhayward/alloy-works/issues/73), filed while designing
+the content model, was landed by
+[the third content-model plan](../../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md),
+reworded.
+
+| What was found                                                                                                                                                      | Change                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A block identifier on its own does not name a target in a document holding its component twice, and resolving one against the first occurrence fails without a word | **STR-062**: a cross-reference to a block resolves against exactly one occurrence, or fails by name                                                                                                                            |
+| The issue asked that the target be _identified_ by the pair of occurrence and block, never by the block identifier alone                                            | Reworded to _resolve_: a reference into its own component can store nothing but the block identifier, because a component does not know where it is placed (STR-056), so the pair is what resolution finds, not what is stored |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 61, of which 3 superseded | 62, of which 3 superseded |
 | Non-requirements | 5                         | 5                         |
 | Open questions   | 4                         | 4                         |

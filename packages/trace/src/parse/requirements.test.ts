@@ -126,6 +126,7 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
+    // 1367, from 1366: STR-062 (issue #73).
     // 1366, from 1365: STR-061, what a document is (issue #120).
     // 1365, from 1364: CNT-149, creating a component (issue #115).
     // 1364, from 1363: IAM-072, inviting anybody by address before their first sign-in (issue #113).
@@ -135,7 +136,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1366);
+    expect(total((document) => document.requirements)).toBe(1367);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

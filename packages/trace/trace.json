@@ -10036,13 +10036,22 @@
       "line": 156
     },
     {
+      "id": "STR-062",
+      "area": "STR",
+      "statement": "A cross-reference to a block must resolve against exactly one outline occurrence of that block's component: the occurrence it is read in, for a block of its own component (STR-056), and otherwise the one occurrence of that component in the resolving document. Where there is none, or more than one, it must fail with a named error (STR-029) rather than resolve against the first occurrence or against the block identifier alone",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 157
+    },
+    {
       "id": "STR-034",
       "area": "STR",
       "statement": "A navigable table of contents must reflect the live outline, and must update as the outline changes",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 177
+      "line": 184
     },
     {
       "id": "STR-035",
@@ -10051,7 +10060,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 178
+      "line": 185
     },
     {
       "id": "STR-036",
@@ -10060,7 +10069,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 179
+      "line": 186
     },
     {
       "id": "STR-037",
@@ -10069,7 +10078,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 180
+      "line": 187
     },
     {
       "id": "STR-038",
@@ -10078,7 +10087,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 181
+      "line": 188
     },
     {
       "id": "STR-039",
@@ -10087,7 +10096,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 182
+      "line": 189
     },
     {
       "id": "STR-040",
@@ -10096,7 +10105,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 188
+      "line": 195
     },
     {
       "id": "STR-041",
@@ -10105,7 +10114,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 189
+      "line": 196
     },
     {
       "id": "STR-042",
@@ -10114,7 +10123,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 190
+      "line": 197
     },
     {
       "id": "STR-043",
@@ -10123,7 +10132,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 191
+      "line": 198
     },
     {
       "id": "STR-044",
@@ -10132,7 +10141,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 197
+      "line": 204
     },
     {
       "id": "STR-045",
@@ -10141,7 +10150,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 198
+      "line": 205
     },
     {
       "id": "STR-046",
@@ -10150,7 +10159,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 199
+      "line": 206
     },
     {
       "id": "STR-047",
@@ -10159,7 +10168,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 200
+      "line": 207
     },
     {
       "id": "STR-048",
@@ -10168,7 +10177,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 214
+      "line": 221
     },
     {
       "id": "STR-049",
@@ -10177,7 +10186,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 215
+      "line": 222
     },
     {
       "id": "STR-050",
@@ -10186,7 +10195,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 216
+      "line": 223
     },
     {
       "id": "STY-001",
@@ -12870,31 +12879,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 222
+      "line": 229
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 223
+      "line": 230
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 224
+      "line": 231
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 225
+      "line": 232
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 226
+      "line": 233
     },
     {
       "id": "STY-N01",
@@ -13796,28 +13805,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 232
+      "line": 239
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 233
+      "line": 240
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 234
+      "line": 241
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 235
+      "line": 242
     },
     {
       "id": "STY-Q01",
@@ -14298,7 +14307,7 @@
         },
         {
           "id": "CNT-027",
-          "howItIsMet": "`crossReference` carries a target and a display kind, and has no member for a number or a title"
+          "howItIsMet": "`crossReference` carries an identifier of its own, a target identity - a closed union of a block of its own component, a block of another, or an outline node - and a display kind, and has no member for a number or a title"
         },
         {
           "id": "CNT-028",
@@ -14366,7 +14375,7 @@
         },
         {
           "id": "CNT-129",
-          "howItIsMet": "Footnote content is a restricted block sequence, and the schema admits no table and no image inside it"
+          "howItIsMet": "Footnote content is paragraphs, holding no table, no image and no footnote. The schema admits paragraphs alone, so a table is refused there; the image and the footnote are refused by the walk `parseContentDocument` runs, which a section title runs too. The `condition`, `language`, `comment` and `suggestion` marks, which the closed list does not name, are admitted in a footnote, because they annotate text rather than add content"
         },
         {
           "id": "CNT-043",
@@ -15085,7 +15094,15 @@
         },
         {
           "id": "STR-032",
-          "howItIsMet": "A target with no occurrence means the occurrence the reference is in; a target naming an occurrence reaches another component of the same document"
+          "howItIsMet": "A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches one of another component of the same document"
+        },
+        {
+          "id": "STR-056",
+          "howItIsMet": "A `block` target carries no occurrence, and resolution binds it to the occurrence being read, so one stored reference resolves once per occurrence"
+        },
+        {
+          "id": "STR-062",
+          "howItIsMet": "Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first"
         },
         {
           "id": "STR-034",

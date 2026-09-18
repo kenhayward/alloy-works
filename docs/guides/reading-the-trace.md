@@ -3,7 +3,7 @@
 > How to run the traceability tooling, and how to read what it tells you. Two audiences, two reading
 > paths, one worked example that goes all the way through.
 
-This repository holds 1,366 product requirements. Every one of them has an identifier, and the point
+This repository holds 1,367 product requirements. Every one of them has an identifier, and the point
 of `packages/trace` is that the identifier is a handle: you can ask what answers a requirement, what
 demonstrates it, and whether the demonstration passed, and get an answer computed from the repository
 rather than remembered by somebody.
@@ -205,7 +205,7 @@ change.
 
 | Your question                                                | Where it is answered                                                                              |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| What does this product claim to do?                          | [`../specification/requirements/`](../specification/requirements/) - 1,366 requirements, 22 areas |
+| What does this product claim to do?                          | [`../specification/requirements/`](../specification/requirements/) - 1,367 requirements, 22 areas |
 | What is this **release** answerable for?                     | [`../specification/baselines/`](../specification/baselines/) - one document per release           |
 | For each of those, what answers it and what demonstrates it? | the release's `matrix.md` in [`../trace/`](../trace/)                                             |
 | What is known to be missing?                                 | that release's `gaps.md`, and `pnpm trace check`                                                  |
@@ -219,7 +219,7 @@ computed, no command writes one, and
 [`../specification/baselines/README.md`](../specification/baselines/README.md) explains why: a
 baseline a tool can edit is not a declaration, it is a cache.
 
-**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,366 is not an error. When it was declared the product was scaffolding: it could sign
+**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,367 is not an error. When it was declared the product was scaffolding: it could sign
 in, isolate a tenant, run a job and resolve a theme, and those were the things it could demonstrate end
 to end. It is still the only baseline, so what has been built since - access, versioned components,
 the editor, documents and their outlines - is cited by tests and shown by `pnpm trace verify`, and
