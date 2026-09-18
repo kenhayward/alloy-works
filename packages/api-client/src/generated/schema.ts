@@ -136,6 +136,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The documents the caller may read */
+        get: operations["listDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A document at its latest version, and whether the caller may restructure it */
+        get: operations["getDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/outline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply one operation to the outline, as one version */
+        post: operations["editOutline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grants": {
         parameters: {
             query?: never;
@@ -438,6 +489,23 @@ export interface paths {
         put?: never;
         /** Create a component in this space, at version 0.1 */
         post: operations["createComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a document in this space, at version 0.1, with an empty outline */
+        post: operations["createDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1570,6 +1638,717 @@ export interface operations {
                             note: string | null;
                         };
                         latest?: number;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The documents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            /** @description `revision.version` of the latest version */
+                            version: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one they may open */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    editOutline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The version the outline was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    operation: {
+                        /** @constant */
+                        operation: "insert";
+                        parent: string | null;
+                        position: number;
+                        node: {
+                            /** @constant */
+                            type: "section";
+                            title: ({
+                                /** @constant */
+                                type: "text";
+                                value: string;
+                                /** @default [] */
+                                marks?: ({
+                                    /** @constant */
+                                    type: "emphasis";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "strong";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "underline";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "subscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "superscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "inlineCode";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "quotedPhrase";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "definedTerm";
+                                    id: string;
+                                    term: string;
+                                } | {
+                                    /** @constant */
+                                    type: "condition";
+                                    id: string;
+                                    axis: string;
+                                    values: string[];
+                                } | {
+                                    /** @constant */
+                                    type: "suggestion";
+                                    id: string;
+                                    /** @enum {string} */
+                                    operation: "insert" | "delete" | "replace";
+                                    author: string;
+                                } | {
+                                    /** @constant */
+                                    type: "comment";
+                                    id: string;
+                                    threadId: string;
+                                } | {
+                                    /** @constant */
+                                    type: "hyperlink";
+                                    id: string;
+                                    href: string;
+                                    title?: string;
+                                } | {
+                                    /** @constant */
+                                    type: "language";
+                                    id: string;
+                                    tag: string;
+                                })[];
+                            } | {
+                                /** @constant */
+                                type: "equation";
+                                mathml: string;
+                                latex?: string;
+                            } | {
+                                /** @constant */
+                                type: "footnote";
+                                id: string;
+                                anchor: {
+                                    /** @constant */
+                                    kind: "span";
+                                } | {
+                                    /** @constant */
+                                    kind: "cell";
+                                    key: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "cellPosition";
+                                    row: number;
+                                    column: number;
+                                } | {
+                                    /** @constant */
+                                    kind: "table";
+                                };
+                                content: unknown[];
+                            } | {
+                                /** @constant */
+                                type: "crossReference";
+                                target: string;
+                                /** @enum {string} */
+                                display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                            } | {
+                                /** @constant */
+                                type: "citation";
+                                entry: string;
+                                locator?: string;
+                            } | {
+                                /** @constant */
+                                type: "variable";
+                                name: string;
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                query: string;
+                            } | {
+                                /** @constant */
+                                type: "image";
+                                asset: string;
+                                imageStyle: string;
+                                alternative: {
+                                    /** @constant */
+                                    kind: "own";
+                                    text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "inherited";
+                                } | {
+                                    /** @constant */
+                                    kind: "decorative";
+                                };
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "reference";
+                            component: string;
+                            mode: {
+                                /** @constant */
+                                kind: "pinned";
+                                version: string;
+                            } | {
+                                /** @constant */
+                                kind: "latest";
+                            } | {
+                                /** @constant */
+                                kind: "approved";
+                            };
+                        };
+                    } | {
+                        /** @constant */
+                        operation: "move";
+                        node: string;
+                        parent: string | null;
+                        position: number;
+                    } | {
+                        /** @constant */
+                        operation: "remove";
+                        node: string;
+                    } | {
+                        /** @constant */
+                        operation: "retitle";
+                        node: string;
+                        title: ({
+                            /** @constant */
+                            type: "text";
+                            value: string;
+                            /** @default [] */
+                            marks?: ({
+                                /** @constant */
+                                type: "emphasis";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "strong";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "underline";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "subscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "superscript";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "inlineCode";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "quotedPhrase";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                type: "definedTerm";
+                                id: string;
+                                term: string;
+                            } | {
+                                /** @constant */
+                                type: "condition";
+                                id: string;
+                                axis: string;
+                                values: string[];
+                            } | {
+                                /** @constant */
+                                type: "suggestion";
+                                id: string;
+                                /** @enum {string} */
+                                operation: "insert" | "delete" | "replace";
+                                author: string;
+                            } | {
+                                /** @constant */
+                                type: "comment";
+                                id: string;
+                                threadId: string;
+                            } | {
+                                /** @constant */
+                                type: "hyperlink";
+                                id: string;
+                                href: string;
+                                title?: string;
+                            } | {
+                                /** @constant */
+                                type: "language";
+                                id: string;
+                                tag: string;
+                            })[];
+                        } | {
+                            /** @constant */
+                            type: "equation";
+                            mathml: string;
+                            latex?: string;
+                        } | {
+                            /** @constant */
+                            type: "footnote";
+                            id: string;
+                            anchor: {
+                                /** @constant */
+                                kind: "span";
+                            } | {
+                                /** @constant */
+                                kind: "cell";
+                                key: string;
+                            } | {
+                                /** @constant */
+                                kind: "cellPosition";
+                                row: number;
+                                column: number;
+                            } | {
+                                /** @constant */
+                                kind: "table";
+                            };
+                            content: unknown[];
+                        } | {
+                            /** @constant */
+                            type: "crossReference";
+                            target: string;
+                            /** @enum {string} */
+                            display: "number" | "title" | "numberAndTitle" | "page" | "relative";
+                        } | {
+                            /** @constant */
+                            type: "citation";
+                            entry: string;
+                            locator?: string;
+                        } | {
+                            /** @constant */
+                            type: "variable";
+                            name: string;
+                        } | {
+                            /** @constant */
+                            type: "binding";
+                            query: string;
+                        } | {
+                            /** @constant */
+                            type: "image";
+                            asset: string;
+                            imageStyle: string;
+                            alternative: {
+                                /** @constant */
+                                kind: "own";
+                                text: string;
+                            } | {
+                                /** @constant */
+                                kind: "inherited";
+                            } | {
+                                /** @constant */
+                                kind: "decorative";
+                            };
+                        })[];
+                    } | {
+                        /** @constant */
+                        operation: "set";
+                        node: string;
+                        numbered?: boolean;
+                        /** @enum {string} */
+                        matter?: "body" | "appendix";
+                        /** @enum {string} */
+                        pageBreak?: "none" | "page" | "recto";
+                        mode?: {
+                            /** @constant */
+                            kind: "pinned";
+                            version: string;
+                        } | {
+                            /** @constant */
+                            kind: "latest";
+                        } | {
+                            /** @constant */
+                            kind: "approved";
+                        };
+                        /** @description Empty: nothing may be written into a node's values until TPL-054 says what they hold */
+                        values?: Record<string, never>;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or nothing changed: the document at its latest version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description outline_invalid: the operation does not apply to the latest outline; or invalid_request: a body this route does not accept */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the outline has changed since it was read */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
                     };
                 };
             };
@@ -3520,6 +4299,148 @@ export interface operations {
             };
             /** @description component_type_missing: no such component type in this environment */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    language: string;
+                    /** @enum {string} */
+                    direction: "ltr" | "rtl";
+                };
+            };
+        };
+        responses: {
+            /** @description Created, at version 0.1 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description The title, language or direction is not one an outline accepts */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not create in it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

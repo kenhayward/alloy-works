@@ -5,9 +5,10 @@ revisable components that publications assemble rather than own - delivered as *
 application and a desktop application**.
 
 > **Status: research, and scaffolding.** One path runs end to end - open an environment, sign in,
-> ask for a document, watch a worker make it - and that is the whole of it. A store of versioned
-> content exists and nothing uses it yet: no route, no editor. There is no authoring UI and no
-> publishing yet.
+> ask for a sample document, watch a worker make it. Beside it, a component can be made and its
+> paragraphs edited and versioned, and a document can be made and its outline of sections and
+> components restructured, a version at a time. Nothing is numbered, formatted beyond plain
+> paragraphs, or published yet.
 > [`docs/features.md`](docs/features.md) is explicit about what does and does not exist.
 
 ## What it is for
@@ -66,7 +67,7 @@ Six tranches, each a usable increment rather than a layer:
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
 than its name suggests, touching thirteen of the twenty-two areas, because publishing at the fidelity
-bar needs themes, templates, assets and tables as well as an editor. **None of it is built yet** - what exists today is the scaffolding under it, listed below.
+bar needs themes, templates, assets and tables as well as an editor. **The first pieces of it are built** - tenancy and sign-in, access control, components with immutable versions, a component's paragraphs edited under a lock, and documents with outlines you restructure - on the scaffolding under them. Numbering, formatting beyond plain paragraphs, templates, search and publishing are not, and the table below and [`docs/features.md`](docs/features.md) say exactly what is.
 
 ## Features
 
@@ -79,6 +80,7 @@ bar needs themes, templates, assets and tables as well as an editor. **None of i
 | Access                       | Who may do what, decided through roles and grants, which an administrator gives and takes away on a component's Manage access page - to people invited by address before they first sign in, too - with why for each answer |
 | Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                                                                                              |
 | Making a component           | Create one in a space you may create in, with a title, a base language and a direction, and change them afterwards above the surface                                                                                        |
+| Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time                                                                                                        |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                                                                                            |
 
 Full prose list: [`docs/features.md`](docs/features.md).

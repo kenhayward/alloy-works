@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useCreatableSpaces } from '../spaces.js';
 import { DirectionSelect } from './DirectionSelect.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -13,10 +14,6 @@ type Client = ReturnType<typeof createApiClient>;
  */
 const language = contentDocumentSchema.shape.language;
 
-interface Space {
-  readonly id: string;
-  readonly name: string;
-}
 interface ComponentType {
   readonly id: string;
   readonly name: string;
@@ -24,24 +21,10 @@ interface ComponentType {
 }
 
 /**
- * The client's bodies are `any`, so every one is checked rather than trusted before it is read.
- * `spacesIn` and `typesIn` stay two small functions rather than one shared `itemsIn(data, read)`
- * (review round 1, item 7): the shapes only look alike - a space is kept by a boolean permission
- * (`mayCreate`), a type by which one is the default - and a generic version would have to smuggle
- * that distinction back in through its caller anyway, for two call sites total.
+ * The client's bodies are `any`, so every one is checked rather than trusted before it is read. The
+ * spaces are read by `creatableSpacesIn`, which **New document** shares; the types stay here, because
+ * only a component has one.
  */
-function spacesIn(data: unknown): Space[] | undefined {
-  if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
-  const items = (data as { items: unknown }).items;
-  if (!Array.isArray(items)) return undefined;
-  return items.flatMap((item: unknown) => {
-    if (typeof item !== 'object' || item === null) return [];
-    const { id, name, mayCreate } = item as Record<string, unknown>;
-    if (typeof id !== 'string' || typeof name !== 'string' || mayCreate !== true) return [];
-    return [{ id, name }];
-  });
-}
-
 function typesIn(data: unknown): ComponentType[] | undefined {
   if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
   const items = (data as { items: unknown }).items;
@@ -68,15 +51,16 @@ export interface NewComponentProps {
  * somewhere the caller may create, so nobody is offered a form that could only refuse them.
  */
 export function NewComponent({ client, onCreated }: NewComponentProps) {
-  const [spaces, setSpaces] = useState<readonly Space[] | null>(null);
-  // A read that failed is not the same as a read that came back legitimately empty (review round 1,
-  // item 6): the first is a page that never rendered its own form at all and is worth saying
-  // something about, the second is silent by design (nobody is offered a form that could only refuse
-  // them) - conflating the two would hide a real outage behind the same nothing an empty environment
-  // shows on its best day. Signed out is distinct again (fix round 2): it is not something Try again
-  // fixes by itself, and this renderer says so wherever a call can answer 401.
-  const [spacesProblem, setSpacesProblem] = useState<'signedOut' | 'failed' | null>(null);
-  const [where, setWhere] = useState<string>('');
+  // Read by the loader New document shares (`useCreatableSpaces`): the three states it tells apart -
+  // failed, legitimately empty, and signed out - are this form's own review history (review round 1,
+  // item 6; fix round 2), kept in one place so the two forms cannot drift apart.
+  const {
+    spaces,
+    problem: spacesProblem,
+    where,
+    setWhere,
+    reload: loadSpaces,
+  } = useCreatableSpaces(client);
   const [types, setTypes] = useState<readonly ComponentType[]>([]);
   // The same three states as `spacesProblem`, for the same reason (final review): a refused or failed
   // component-types read otherwise left an empty chooser and no reason at all, beside a spaces read
@@ -92,35 +76,10 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   // Checked before any await, so a second click that lands before React re-renders sends nothing.
   const pending = useRef(false);
 
-  // A generation counter each, not a mount-scoped `current` flag (the shape the brief's other effects
-  // use): both are now called imperatively too - on demand, after a 404 or a 409 - not only once from
-  // an effect at mount, so a request that is no longer the latest one still has to be told apart from
-  // one that is, whichever call started it.
-  const spacesRequest = useRef(0);
+  // A generation counter, not a mount-scoped `current` flag: the types are read imperatively too -
+  // after a 409 - so a request that is no longer the latest one still has to be told apart from one
+  // that is, whichever call started it. The spaces' own counter lives in `useCreatableSpaces`.
   const typesRequest = useRef(0);
-
-  const loadSpaces = useCallback(async () => {
-    const generation = ++spacesRequest.current;
-    setSpacesProblem(null);
-    try {
-      const { data, response } = await client.GET('/v1/spaces');
-      if (spacesRequest.current !== generation) return;
-      const open = spacesIn(data);
-      if (open === undefined) {
-        setSpacesProblem(response.status === 401 ? 'signedOut' : 'failed');
-        return;
-      }
-      setSpaces(open);
-      // The author's own choice survives a read that did not take it away (fix round 2, finding G):
-      // a retry, or the re-read a 404 asks for, is not a reason to move them back to the first space
-      // in the list. Only a space that is no longer offered gives way, and then to whatever is first.
-      setWhere((chosen) =>
-        open.some((space) => space.id === chosen) ? chosen : (open[0]?.id ?? ''),
-      );
-    } catch {
-      if (spacesRequest.current === generation) setSpacesProblem('failed');
-    }
-  }, [client]);
 
   /**
    * Answers whether there is a chooser to choose from afterwards, which is what the 409 below has to
@@ -158,18 +117,10 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     [client],
   );
 
-  // Each effect leaves its generation behind on the way out (fix round 2, finding F): the guard the
-  // refactor above dropped, restored in the shape the imperative calls already use. Without it a read
-  // still in flight when the page goes finds its own generation current and sets state into a
-  // component that is no longer there - which is how a stray act() warning gets into a suite that is
-  // supposed to run silent.
-  useEffect(() => {
-    void loadSpaces();
-    return () => {
-      spacesRequest.current += 1;
-    };
-  }, [loadSpaces]);
-
+  // The effect leaves its generation behind on the way out (fix round 2, finding F), as the spaces'
+  // loader does in `useCreatableSpaces`. Without it a read still in flight when the page goes finds
+  // its own generation current and sets state into a component that is no longer there - which is how
+  // a stray act() warning gets into a suite that is supposed to run silent.
   useEffect(() => {
     if (where === '') return undefined;
     setTypes([]);

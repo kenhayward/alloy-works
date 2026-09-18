@@ -3,6 +3,40 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.27.0 - 2026-09-18 (PR #121)
+
+### Added
+
+- **Documents.** A document is a thing of its own now. Choose **Documents** beside **Components**, and
+  **New document** makes one in a space you may create in, with a title, a base language and a
+  direction. It opens at version 0.1 with an empty outline.
+- **Outlines.** Build a document's structure as a tree: add a section or a component after the one
+  selected, move one under another by dragging it or with `Alt` and the arrow keys, rename a section,
+  choose whether one starts on a new page or a new right-hand page, and remove one with everything
+  beneath it. The same component can appear more than once. Each act is its own version, and `Ctrl+Z`
+  or **Undo** takes the last one back - except a removal, which cannot be undone, so the page asks
+  before it removes anything.
+- **No lock on a document.** Two people can have the same outline open. If somebody else changes it
+  first, your next change is refused and the page shows you the outline as it now stands, rather than
+  overwriting what they did, and clears what you could undo so an undo cannot overwrite it either.
+- Somebody who may read a document but not change it sees its outline and is offered nothing to
+  change.
+- **A component you may not read stays private.** A document can include one you may not read: it
+  shows as **A component**, which you can still move, remove or start on a new page, and nothing says
+  which component it is. You can only add a component you may read.
+- **Every section has a title**, and the service refuses one with none, whoever sends it.
+- **No rename is lost without a word.** Renames of two sections made while another change is being
+  saved are both saved, in order. A rename refused because somebody else changed the document first
+  names the title that was not saved, and so does one that could not be saved after you had moved on
+  to another section.
+
+### Changed
+
+- The version chain now holds a fifth kind of thing, a document, on the same terms as a component: one
+  space, one chain of versions, the same two digests, and an author for every version.
+  A development database from before this release gains three widened checks and nothing else.
+- **Components** and **Documents** are links above either list, so each is one click from the other.
+
 ## 0.26.0 - 2026-09-18 (PR #117)
 
 ### Added

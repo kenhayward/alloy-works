@@ -165,6 +165,18 @@ export {
 export { seedDevelopmentContent, type SeededContent } from './dev-content.js';
 export { listReadableComponents, type ComponentPage, type ComponentSummary } from './components.js';
 export {
+  createDocument,
+  editOutline,
+  listReadableDocuments,
+  readableComponents,
+  readDocument,
+  type CreateDocumentAnswer,
+  type DocumentSummary,
+  type NewDocument,
+  type OutlineAnswer,
+  type StoredDocument,
+} from './documents.js';
+export {
   createComponent,
   currentDefinitionsFor,
   defaultComponentType,

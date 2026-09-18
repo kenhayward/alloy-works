@@ -386,4 +386,53 @@ describe('the workspace', () => {
     expect(pageTwoRequests).toBe(1);
     expect(screen.getAllByRole('link', { name: 'Replace the toner' })).toHaveLength(1);
   });
+
+  it('offers Documents beside Components, and lists the documents the address asks for', async () => {
+    const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
+      if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+      if (url.pathname === '/v1/documents') {
+        return json(200, {
+          items: [
+            {
+              id: DOCUMENT,
+              title: 'The dosing report',
+              space: { id: 's1', name: 'General' },
+              version: '0.1',
+            },
+          ],
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    render(<Workspace fetch={fetching} />);
+    const documents = await screen.findByRole('link', { name: 'Documents' });
+    expect(documents).toHaveAttribute('href', '#/documents');
+    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute('href', '#/');
+
+    window.location.hash = '#/documents';
+    fireEvent(window, new HashChangeEvent('hashchange'));
+    expect(await screen.findByRole('link', { name: 'The dosing report' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+    expect(screen.queryByRole('heading', { name: 'Components' })).toBeNull();
+  });
+
+  it('opens the document the address names, with a way back to the documents', async () => {
+    window.location.hash = '#/documents/eeeeeeee-0000-4000-8000-000000000001';
+    render(<Workspace fetch={serviceThat({})} />);
+    expect(await screen.findByRole('link', { name: 'Back to documents' })).toHaveAttribute(
+      'href',
+      '#/documents',
+    );
+    expect(
+      await screen.findByText('There is nothing here, or nothing you may read.'),
+    ).toBeInTheDocument();
+  });
 });

@@ -5,6 +5,7 @@ import {
   bootstrapCluster,
   configureOrganisationSignIn,
   createArtifact,
+  createDocument,
   createTenant,
   createTenantDatabase,
   findRole,
@@ -67,6 +68,9 @@ const OTHER_TENANT_IDS: Readonly<
   listComponentTypes: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createComponent: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  createDocument: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -89,6 +93,13 @@ const VALID_INPUT: Readonly<
 > = {
   createComponent: {
     payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' },
+  },
+  createDocument: { payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' } },
+  editOutline: {
+    payload: {
+      openedFrom: SESSION,
+      operation: { operation: 'remove', node: 'a'.repeat(26) },
+    },
   },
   claimLock: { payload: { session: SESSION } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
@@ -179,6 +190,36 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
       },
     });
     return made.artifactId;
+  });
+
+/** A document in environment B's General space, made through the store as the route makes one, so a
+ * route that opens one has a real version to find. */
+const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createDocument(trx, {
+      spaceId: general.id,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.version.artifactId;
   });
 
 /** A grant in environment B: Reader on its General space, to a principal of its own. */

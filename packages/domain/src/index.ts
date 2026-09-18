@@ -15,11 +15,15 @@ export {
 export type {
   ComponentSubstance,
   DefinitionSubstance,
+  DocumentSubstance,
   VersionSubstance,
 } from './version/substance.js';
 
 // Access: who may do what to which artifact, and why (docs/design/access.md). The caller loads facts.
 export * from './access/index.js';
+
+// The document's outline: the tree, its parse, and the five operations over it.
+export * from './structure/index.js';
 
 // Scaffolding. This is NOT the content model - see docs/design/content-model.md for that, and
 // CLAUDE.md for why this exists. `apps/web` still uses it; retiring it is that app's change.

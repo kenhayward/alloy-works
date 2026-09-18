@@ -16,6 +16,14 @@ export {
   SpaceParams,
 } from './components.js';
 export {
+  CreateDocumentBody,
+  DocumentList,
+  DocumentParams,
+  DocumentView,
+  OutlineOperationBody,
+  OutlineRefusal,
+} from './documents.js';
+export {
   ClaimBody,
   CutAnswer,
   CutBody,

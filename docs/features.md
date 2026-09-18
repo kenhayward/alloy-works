@@ -4,9 +4,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 [`README.md`](../README.md) is a short two-column summary that links here; when a feature changes,
 **both change in the same PR**.
 
-> **Status: nothing here is a product feature yet.** The repository is scaffolding. What follows
-> describes what actually exists today, so that the first real feature has something honest to be
-> added to rather than a list of intentions to be corrected.
+> **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
+> versioned, and documents made and their outlines restructured, but nothing is numbered, formatted
+> beyond plain paragraphs, or published. What follows describes what actually exists today, so that
+> each new feature has something honest to be added to rather than a list of intentions to be
+> corrected.
 
 ## What exists today
 
@@ -94,6 +96,27 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   title, the language and the direction can be changed as you work: each is part of the document, so
   each is undone by `Ctrl+Z` and recorded in the next version you cut.
 
+- **Documents and their outlines.** A document is a thing of its own, made in a space you may create
+  in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
+  Its outline is a tree: add a section, put a component in it, move one under another with the mouse
+  or with `Alt` and the arrow keys, rename a section, mark one to start on a new page or a new
+  right-hand page, and remove one with everything under it. Every act is its own version, so the
+  history reads as what somebody did rather than as keystrokes, and `Ctrl+Z` or **Undo** takes the
+  last one back - except a removal, which cannot be undone, so the page asks first. The same component
+  can appear in one outline more than once. Nobody locks a document: if somebody else changes the
+  outline while you have it open, your next change is refused, the page shows you theirs rather than
+  overwriting it, and what you could undo is cleared so nothing you undo can overwrite it either.
+  Somebody who may read a document but not change it sees its outline and is offered nothing to
+  change. A component you may not read stays private: in an outline it shows as **A component**, which
+  can still be moved, removed or started on a new page, and you can only add a component you may read.
+  Every section has a title, and a rename that is not saved names the title it lost.
+
+  **This is structure, not the document.** Nothing is numbered yet - no section numbers, no figure or
+  table numbers, no cross-references resolved, and no table of contents. There is no document view:
+  the outline is a tree you build, and you still open a component on its own to edit it. A section's
+  title is plain text for now, and a document's own title, language and direction cannot be changed
+  once it is made.
+
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
@@ -103,8 +126,9 @@ Named explicitly so nobody has to read the source to find out:
   document is a fixed template with no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
-- No way to delete a component, including one made by mistake.
-- No document view, component tree, reuse or transclusion.
+- No way to delete a component or a document, including one made by mistake.
+- No document view: a document's outline is a tree you build, and a component still opens on its own
+  to be edited. No numbering, no cross-references, no table of contents, no reuse or transclusion.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.

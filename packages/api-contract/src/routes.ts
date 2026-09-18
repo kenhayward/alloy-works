@@ -1,5 +1,6 @@
 import { componentRoutes } from './components.js';
 import type { RouteContract } from './contract.js';
+import { documentRoutes } from './documents.js';
 import { editingRoutes } from './editing.js';
 import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
@@ -239,8 +240,9 @@ export const routes = {
       404: notFound,
     },
   },
-  // Finding, opening and editing components, each declared beside its schemas.
+  // Finding, opening and editing components and documents, each declared beside its schemas.
   ...componentRoutes,
+  ...documentRoutes,
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,

@@ -16,7 +16,9 @@ per-tenant without saying so again.
 > expired rows, which this plan found may remove a row only once it is past `expires_at` **and** a later
 > version of its artifact exists, never on `expires_at` alone, which would delete unsaved work its session
 > still needs; iterations visible only to the lock holder through a reading route (VER-002), revisions,
-> baselines, restore, legal hold and derived data.
+> baselines, restore, legal hold and derived data. [The first structure plan](../plans/2026-09-18-structure-01-the-document-and-its-outline.md)
+> added a document to the chain as a second content kind, whose content is its outline - no new table,
+> and one mechanism still (VER-011).
 
 ## The shape in one paragraph
 
@@ -39,7 +41,7 @@ designation applied to a row in that chain rather than a second history beside i
 | **VER-008** | `artifact_version` takes inserts only. No update or delete grant exists on it for the application role                                                                                                                                                                             |
 | **VER-009** | `revision_no` and `version_no` are columns on the version row; the pair renders as `revision.version`                                                                                                                                                                              |
 | **VER-010** | `schema_version` is a column on the version row, written at insert from the schema the content was authored against                                                                                                                                                                |
-| **VER-011** | One versioning mechanism parameterised by `artifact_kind`, so documents, outlines, assets, query definitions, themes, layouts and templates share it                                                                                                                               |
+| **VER-011** | One versioning mechanism parameterised by `artifact_kind`, so documents - one kind, whose content is the outline - assets, query definitions, themes, layouts and templates share it                                                                                               |
 | **VER-012** | A revision is a designation row referring to an existing version, adding no content of its own                                                                                                                                                                                     |
 | **VER-013** | Only the lifecycle service may insert a designation, and it does so as part of passing a gate                                                                                                                                                                                      |
 | **VER-014** | Designator, timestamp and gate are columns on the designation row                                                                                                                                                                                                                  |
@@ -97,19 +99,21 @@ specified and undesigned rather than half claimed.
 
 ## Stores
 
-**`artifact`** is the identity of a versioned thing: a kind and an id. A component, a document, an outline, an asset, a query definition, a theme, a layout, a template, a field, a metadata schema or a component type are all artifacts, and
+**`artifact`** is the identity of a versioned thing: a kind and an id. A component, a document - whose content is its outline ([structure.md](structure.md)) - an asset, a query definition, a theme, a layout, a template, a field, a metadata schema or a component type are all artifacts, and
 **a content artifact belongs to exactly one space** (`space_id`, [access.md](access.md)), while a definition belongs to none. VER-011 is satisfied by that being literally true rather than by seven tables agreeing to behave the
 same way. Seven bespoke version tables would be seven implementations of the same rules, and they
 would drift - one would forget the immutability grant or the schema-version column, and the failure
 would not be an error. It would be a baseline that resolves slightly differently in four years.
 
 **`artifact_version`** is the permanent chain. One row per version: the artifact, `revision_no` and `version_no`, author, timestamp, `schema_version`, an optional note, the content and its content hash, the metadata values, the values not carried forward, the component type's version where the artifact is a component, and the version digest. The application role holds `INSERT` and `SELECT` on it and nothing else, so VER-008 is a grant
-rather than a convention. **A component's version always names an author; any other kind's may leave it
-null** (0015, `artifact_version_component_author`). The rule is that narrow because a definition the
-environment itself started with has nobody to name, the way nobody made the eight roles or the space
-_General_ - and today the starter component type is the only version in the chain that takes it. The
-constraint permits a null author on any non-component version rather than on that one row alone, because
-a check constraint can name a kind and cannot name a row.
+rather than a convention. **A component's version and a document's always name an author; a
+definition's may leave it null** (`artifact_version_component_author`, written by 0015 for a component
+and widened by 0016 to a document). The rule is that narrow because a definition the environment itself
+started with has nobody to name, the way nobody made the eight roles or the space _General_ - and today
+the starter component type is the only version in the chain that takes it. Nothing starts with a
+document, so a document is held to the component's rule. The constraint permits a null author on any
+definition version rather than on that one row alone, because a check constraint can name a kind and
+cannot name a row.
 
 **`revision_designation`** refers to a version row and adds who designated it, when, and against
 which gate. ADR-0006 said a revision is a marker on a version rather than a second history; this is
@@ -189,7 +193,9 @@ depends on four hundred call sites remembering is not a boundary. Using the reas
 deliberate.
 
 VER-018 makes the pin set wide - components, assets, query definitions, themes, typefaces, layouts,
-citation styles and the outline. Because all of those are artifacts, `baseline_pin` needs no column per kind and no special case for the one added next - which is what happened when fields, metadata schemas and component types arrived: a document's recorded schema and field versions (TPL-056) are pinned like any other artifact version.
+citation styles and the outline. The outline is not an artifact of its own: it is the content of the
+document, so pinning a document version pins its outline ([structure.md](structure.md)). Because
+everything else in that list is an artifact too, `baseline_pin` needs no column per kind and no special case for the one added next - which is what happened when fields, metadata schemas and component types arrived: a document's recorded schema and field versions (TPL-056) are pinned like any other artifact version.
 
 ## Derived data
 
@@ -265,3 +271,14 @@ the reason given under "Stores".
 | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **A definition the environment itself started with had no author to name**, and `artifact_version.author_id` was `not null`       | 0015 drops the `not null` and adds `artifact_version_component_author`, so a component still cannot be written without one. `StoredVersion.author` is `string \| null`, and so is a version as the API answers it |
 | **Nothing declared which component type a component takes when its author names none** (MET-011's default, MET-012's declaration) | `component_type_default`, one row, written by 0015 and readable but not updatable by the runtime role ("Stores")                                                                                                  |
+
+[The first structure plan](../plans/2026-09-18-structure-01-the-document-and-its-outline.md) was written
+against this document in turn, and found three places where it was wrong. No requirement claim changed:
+VER-011's row says one mechanism is parameterised by `artifact_kind`, which is as true with a document in
+it as without.
+
+| Found                                                                                                                                                                                                             | Change                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **"Stores" listed a document and an outline as two artifact kinds**, which [structure.md](structure.md) makes one, because STR-012 wants the outline versioned with the document                                  | One kind, `document`, whose content is its outline ("Stores")                                                                                                                                                                                                                                                                                                                                                                                       |
+| **The chain assumed every artifact that is not a component is a definition**, parsing its content by kind and requiring its payload to repeat the artifact's id; adding a third kind would not even have compiled | `prepare`, `createArtifact` and `recordVersion` branch three ways. A document's identity is its artifact row's, as a component's is, and an outline carries no id of its own; only a definition's payload must name its artifact                                                                                                                                                                                                                    |
+| **A document version could have been written without an author**, because 0015's check names a component alone                                                                                                    | 0016 widens `artifact_version_component_author` to a document ("Stores"). Its ALTER sets `artifact_version_component_type_recorded` immediate first and deferred again after: on a fresh environment every migration runs in one transaction, and 0015's insert has left a pending trigger event on the table, which Postgres will not ALTER past (55006). An environment upgraded from 0015 never meets it, which is why only a fresh one shows it |

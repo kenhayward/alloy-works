@@ -9802,13 +9802,22 @@
       "line": 62
     },
     {
+      "id": "STR-061",
+      "area": "STR",
+      "statement": "A document must be a named, versioned artifact belonging to exactly one space, carrying its own title and identity.",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 63
+    },
+    {
       "id": "STR-013",
       "area": "STR",
       "statement": "Numbering schemes must be declared by the publishing layout, and applied here (**PUB** owns the declaration)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 100
+      "line": 106
     },
     {
       "id": "STR-014",
@@ -9817,7 +9826,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 101
+      "line": 107
     },
     {
       "id": "STR-015",
@@ -9826,7 +9835,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 102
+      "line": 108
     },
     {
       "id": "STR-016",
@@ -9835,7 +9844,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 103
+      "line": 109
     },
     {
       "id": "STR-017",
@@ -9844,7 +9853,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 104
+      "line": 110
     },
     {
       "id": "STR-018",
@@ -9853,7 +9862,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 105
+      "line": 111
     },
     {
       "id": "STR-019",
@@ -9862,7 +9871,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 106
+      "line": 112
     },
     {
       "id": "STR-020",
@@ -9871,7 +9880,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 107
+      "line": 113
     },
     {
       "id": "STR-021",
@@ -9880,7 +9889,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 108
+      "line": 114
     },
     {
       "id": "STR-022",
@@ -9889,7 +9898,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 109
+      "line": 115
     },
     {
       "id": "STR-051",
@@ -9898,7 +9907,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 110
+      "line": 116
     },
     {
       "id": "STR-052",
@@ -9907,7 +9916,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 111
+      "line": 117
     },
     {
       "id": "STR-023",
@@ -9916,7 +9925,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 133
+      "line": 139
     },
     {
       "id": "STR-024",
@@ -9925,7 +9934,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 134
+      "line": 140
     },
     {
       "id": "STR-025",
@@ -9934,7 +9943,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 135
+      "line": 141
     },
     {
       "id": "STR-026",
@@ -9943,7 +9952,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 141
+      "line": 147
     },
     {
       "id": "STR-027",
@@ -9952,7 +9961,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 142
+      "line": 148
     },
     {
       "id": "STR-028",
@@ -9961,7 +9970,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 143
+      "line": 149
     },
     {
       "id": "STR-029",
@@ -9970,7 +9979,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 144
+      "line": 150
     },
     {
       "id": "STR-030",
@@ -9979,7 +9988,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 145
+      "line": 151
     },
     {
       "id": "STR-031",
@@ -9988,7 +9997,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 146
+      "line": 152
     },
     {
       "id": "STR-032",
@@ -9997,7 +10006,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 147
+      "line": 153
     },
     {
       "id": "STR-033",
@@ -10006,7 +10015,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 148
+      "line": 154
     },
     {
       "id": "STR-056",
@@ -10015,7 +10024,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 149
+      "line": 155
     },
     {
       "id": "STR-055",
@@ -10024,7 +10033,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 150
+      "line": 156
     },
     {
       "id": "STR-034",
@@ -10033,7 +10042,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 171
+      "line": 177
     },
     {
       "id": "STR-035",
@@ -10042,7 +10051,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 172
+      "line": 178
     },
     {
       "id": "STR-036",
@@ -10051,7 +10060,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 173
+      "line": 179
     },
     {
       "id": "STR-037",
@@ -10060,7 +10069,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 174
+      "line": 180
     },
     {
       "id": "STR-038",
@@ -10069,7 +10078,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 175
+      "line": 181
     },
     {
       "id": "STR-039",
@@ -10078,7 +10087,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 176
+      "line": 182
     },
     {
       "id": "STR-040",
@@ -10087,7 +10096,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 182
+      "line": 188
     },
     {
       "id": "STR-041",
@@ -10096,7 +10105,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 183
+      "line": 189
     },
     {
       "id": "STR-042",
@@ -10105,7 +10114,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 184
+      "line": 190
     },
     {
       "id": "STR-043",
@@ -10114,7 +10123,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 185
+      "line": 191
     },
     {
       "id": "STR-044",
@@ -10123,7 +10132,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 191
+      "line": 197
     },
     {
       "id": "STR-045",
@@ -10132,7 +10141,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 192
+      "line": 198
     },
     {
       "id": "STR-046",
@@ -10141,7 +10150,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 193
+      "line": 199
     },
     {
       "id": "STR-047",
@@ -10150,7 +10159,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 194
+      "line": 200
     },
     {
       "id": "STR-048",
@@ -10159,7 +10168,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 214
     },
     {
       "id": "STR-049",
@@ -10168,7 +10177,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 209
+      "line": 215
     },
     {
       "id": "STR-050",
@@ -10177,7 +10186,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 210
+      "line": 216
     },
     {
       "id": "STY-001",
@@ -12861,31 +12870,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 216
+      "line": 222
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 217
+      "line": 223
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 218
+      "line": 224
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 219
+      "line": 225
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 220
+      "line": 226
     },
     {
       "id": "STY-N01",
@@ -13787,28 +13796,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 226
+      "line": 232
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 227
+      "line": 233
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 228
+      "line": 234
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 229
+      "line": 235
     },
     {
       "id": "STY-Q01",
@@ -14887,7 +14896,7 @@
         },
         {
           "id": "VER-011",
-          "howItIsMet": "One versioning mechanism parameterised by `artifact_kind`, so documents, outlines, assets, query definitions, themes, layouts and templates share it"
+          "howItIsMet": "One versioning mechanism parameterised by `artifact_kind`, so documents - one kind, whose content is the outline - assets, query definitions, themes, layouts and templates share it"
         },
         {
           "id": "VER-012",
@@ -14984,6 +14993,171 @@
         {
           "id": "VER-042",
           "howItIsMet": "Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)"
+        }
+      ]
+    },
+    {
+      "document": "structure.md",
+      "owns": [
+        {
+          "id": "STR-001",
+          "howItIsMet": "A document artifact's content is one `outline` document; its root holds one ordered array of nodes and there is nowhere to put a second"
+        },
+        {
+          "id": "STR-002",
+          "howItIsMet": "`node` is a closed discriminated union of `section` and `reference`. A third arm is a schema version with a migration"
+        },
+        {
+          "id": "STR-003",
+          "howItIsMet": "`id` is required on every node, allocated from 128 random bits at insertion, spelled by the domain, and never reused - nothing reissues, because nothing recycles"
+        },
+        {
+          "id": "STR-004",
+          "howItIsMet": "A section is a node inside one outline document. It has no artifact row, so there is no identity to share it by and no route that could return one"
+        },
+        {
+          "id": "STR-006",
+          "howItIsMet": "The outline panel reorders by pointer and by an enumerated keymap, and the same five operations are the routes below. All three go through one set of operations"
+        },
+        {
+          "id": "STR-007",
+          "howItIsMet": "Nesting is the tree's own, bounded by the parse at 64 levels - far above nine - so no stored outline is too deep to read; the numbering scheme's counters are a stack rather than nine named members"
+        },
+        {
+          "id": "STR-008",
+          "howItIsMet": "A move names a node, a new parent and a position among its siblings; the subtree travels because it _is_ the subtree, and the whole move is one version and one undo entry"
+        },
+        {
+          "id": "STR-010",
+          "howItIsMet": "Two nodes may name one component. Each is a node with its own `id`, and every occurrence-bearing thing below - numbering, captions, references - is keyed by the node, not the component"
+        },
+        {
+          "id": "STR-012",
+          "howItIsMet": "The outline is the document version's content, so it is versioned by the act of versioning the document; `baseline_pin` pins a document version like any other (VER-018)"
+        },
+        {
+          "id": "STR-014",
+          "howItIsMet": "`sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change"
+        },
+        {
+          "id": "STR-015",
+          "howItIsMet": "A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it"
+        },
+        {
+          "id": "STR-016",
+          "howItIsMet": "A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`"
+        },
+        {
+          "id": "STR-017",
+          "howItIsMet": "A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter"
+        },
+        {
+          "id": "STR-018",
+          "howItIsMet": "`number(outline, contributions, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree"
+        },
+        {
+          "id": "STR-019",
+          "howItIsMet": "No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written"
+        },
+        {
+          "id": "STR-021",
+          "howItIsMet": "The engine walks occurrences, not components. A component referenced twice is two walks over one content document, and its captions take two numbers"
+        },
+        {
+          "id": "STR-022",
+          "howItIsMet": "Every entry in the numbering table names the node that produced it, the occurrence and block where it is a caption, the sequence, the counter stack at that point, and the rule applied"
+        },
+        {
+          "id": "STR-023",
+          "howItIsMet": "Each occurrence contributes its component's caption-bearing blocks in document order, and each increments the sequence for its kind"
+        },
+        {
+          "id": "STR-026",
+          "howItIsMet": "The target is a closed union - an outline node, a block, a footnote, or a bibliography entry - each naming an identity, never a position"
+        },
+        {
+          "id": "STR-028",
+          "howItIsMet": "Resolution reads the numbering table, which is built for one document. The component is never consulted: it holds a target, and targets carry no answer"
+        },
+        {
+          "id": "STR-031",
+          "howItIsMet": "Nothing caches a number past the inputs that produced it. The table is keyed by the document's version digest, the scheme and the profile, and a change to any of the three discards it"
+        },
+        {
+          "id": "STR-032",
+          "howItIsMet": "A target with no occurrence means the occurrence the reference is in; a target naming an occurrence reaches another component of the same document"
+        },
+        {
+          "id": "STR-034",
+          "howItIsMet": "The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind"
+        },
+        {
+          "id": "STR-036",
+          "howItIsMet": "The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function"
+        },
+        {
+          "id": "STR-037",
+          "howItIsMet": "Reordering in the panel is the move operation, from the panel's own drag and from its keymap"
+        },
+        {
+          "id": "STR-040",
+          "howItIsMet": "`contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it"
+        },
+        {
+          "id": "STR-041",
+          "howItIsMet": "`listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one"
+        },
+        {
+          "id": "STR-044",
+          "howItIsMet": "A node's URL is the document's path and the node's identifier, both identifiers"
+        },
+        {
+          "id": "STR-046",
+          "howItIsMet": "The URL holds no depth, no number and no position, so there is nothing in it for a reorder to invalidate"
+        },
+        {
+          "id": "STR-048",
+          "howItIsMet": "A node carries `pageBreak`: none, a new page, or a new recto page"
+        },
+        {
+          "id": "STR-049",
+          "howItIsMet": "`pageBreak` is a member of the node. The content model has no member for one, so the declaration cannot travel with the component"
+        },
+        {
+          "id": "STR-051",
+          "howItIsMet": "The four stages are one function each, and each takes the previous stage's return type. Calling them out of order does not typecheck"
+        },
+        {
+          "id": "STR-053",
+          "howItIsMet": "An identifier is 128 random bits in the spelling `blockIdentifierFrom` already fixes, validated unique within its outline at every write. Across documents the argument is the one the product already makes for a UUID"
+        },
+        {
+          "id": "STR-057",
+          "howItIsMet": "Before a version is recorded, a reachability walk from the document over the reference index refuses a cycle with `outline_cycle`, naming the path"
+        },
+        {
+          "id": "STR-058",
+          "howItIsMet": "A reference node carries `mode`: `pinned` with a version, `latest`, or `approved`. The three are closed, and absent is not a fourth"
+        },
+        {
+          "id": "STR-059",
+          "howItIsMet": "Every operation carries the version it was read at and is answered `version_precondition` with the current outline when it is not the latest; `component_lock` refuses a document by a check constraint, so no document lock can be introduced by accident"
+        },
+        {
+          "id": "STR-054",
+          "howItIsMet": "The root is the document artifact, which carries the identity a top-level deep link addresses, and `nodes` has no minimum - unlike content's, which CNT-124 gives one. The deep link itself (STR-044) is not built, so the cited test shows the empty outline and the root's identity and no link: that clause is answered by the design and demonstrated by nothing yet"
+        },
+        {
+          "id": "STR-061",
+          "howItIsMet": "A document is an artifact of its own kind: its identity is the `artifact` row, `artifact_space_by_kind` puts it in exactly one space, its title lives inside its versioned content as a component's does, and it versions through the one mechanism"
+        },
+        {
+          "id": "CNT-041",
+          "howItIsMet": "`footnote` is a sequence in the scheme like any other, counted over the resolved document rather than within a component"
+        },
+        {
+          "id": "CNT-047",
+          "howItIsMet": "The model's `numbered` decides whether a block equation takes from the equation sequence; an unnumbered one is walked and never increments it"
         }
       ]
     },
@@ -15279,7 +15453,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 281,
+      "line": 294,
       "kind": "title"
     },
     {
@@ -15297,7 +15471,25 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 283,
+      "line": 324,
+      "kind": "title"
+    },
+    {
+      "id": "STR-054",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "STR-059",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 382,
+      "kind": "title"
+    },
+    {
+      "id": "STR-061",
+      "file": "apps/service/src/document-routes.test.ts",
+      "line": 188,
       "kind": "title"
     },
     {
@@ -15397,6 +15589,18 @@
       "kind": "title"
     },
     {
+      "id": "STR-008",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 274,
+      "kind": "title"
+    },
+    {
+      "id": "STR-059",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 591,
+      "kind": "title"
+    },
+    {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
       "line": 220,
@@ -15418,6 +15622,12 @@
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
       "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "STR-003",
+      "file": "packages/db/src/documents.test.ts",
+      "line": 271,
       "kind": "title"
     },
     {
@@ -15849,7 +16059,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 79,
+      "line": 98,
       "kind": "title"
     },
     {
@@ -16102,6 +16312,54 @@
       "id": "CNT-012",
       "file": "packages/domain/src/stored/migrate.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "STR-003",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 217,
+      "kind": "title"
+    },
+    {
+      "id": "STR-007",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 266,
+      "kind": "title"
+    },
+    {
+      "id": "STR-010",
+      "file": "packages/domain/src/structure/operations.test.ts",
+      "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "STR-001",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "STR-002",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "STR-048",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "STR-049",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 136,
+      "kind": "title"
+    },
+    {
+      "id": "STR-058",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 165,
       "kind": "title"
     },
     {

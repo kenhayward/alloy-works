@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1366, from 1365: STR-061, what a document is - a named, versioned artifact in exactly one space
+    // with its own title and identity (issue #120), filed while planning the first structure plan.
     // 1365, from 1364: CNT-149, creating a component in a space the author may create in (issue #115).
     // 1364, from 1363: IAM-072, inviting anybody by address and granting before their first sign-in,
     // filed as issue #113 while planning invitations, when IAM-059 asked it only of the first administrator.
@@ -30,9 +32,17 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1365);
+    expect(model.requirements).toHaveLength(1366);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 359, from 358: structure.md claims STR-061, the document as an artifact of its own kind, which
+    // it answers by construction.
+    // 358, from 319: structure.md claims 39 - the document artifact, its outline, numbering, captions,
+    // cross-references, the contents panel, deep links and page breaks, plus CNT-041 and CNT-047, the
+    // two numbering clauses content-model.md left for STR. Sixteen more of STR's are deliberately
+    // unclaimed, most of them because PUB's layout declares what this design applies, or because the
+    // named failure is produced here and the publish that fails on it is PUB's; that document names
+    // each one.
     // 319, from 318: component-editor.md claims CNT-149 once creating a component is an act somebody
     // performs rather than a shape somebody is given.
     // 318, from 317: access.md claims IAM-072 once any administrator of the environment invites an
@@ -59,7 +69,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(319);
+    ).toBe(359);
   });
 });
 
@@ -140,8 +150,30 @@ describe('the citations in the committed model', () => {
   // the caller may create in, a title, a language tag and a direction are given and sent exactly as
   // typed, and the page opens what came back. MET-011 appears only in a comment there, a mention
   // rather than a demonstration of its own statement, so it does not move this count.
+  // 154, from 149: the document and its outline (docs/plans/2026-09-18-structure-01-the-document-and-its-outline.md)
+  // cites STR-001, STR-002, STR-048, STR-049 and STR-058 in the outline's schema.
+  // 157, from 154: the same plan cites STR-003, STR-007 and STR-010 in the operations
+  // (packages/domain/src/structure/operations.test.ts): every node gets a stable identifier that a
+  // remove never hands back out, the tree nests to nine levels with no maximum the schema declares,
+  // and one component referenced twice is two nodes with their own identity and their own switches.
+  // 160, from 157: the same plan cites STR-054, STR-059 and STR-061 in the service's document routes
+  // (apps/service/src/document-routes.test.ts): a document created, opened and listed with no nodes;
+  // two acts from one version, one recorded and one refused against the current outline, the chain
+  // holding only the winner's version; and a document made a named, versioned artifact in exactly one
+  // space, its title inside its versioned content. The plan's 161 also counted STR-004, cited nowhere
+  // because the test shows a construction rather than its statement. Task 5 cites STR-059 again,
+  // where its conflict detection in the interface is built.
+  // 162, from 160: the same plan cites STR-008 and STR-059 in the renderer's documents page
+  // (apps/web/src/structure/DocumentPage.test.tsx): one move from the keymap sends one operation
+  // naming the node and not its subtree, the subtree travels, and one Ctrl+Z sends the one inverse
+  // that puts it all back; and a conflicting act answered 409 renders the outline the refusal carried,
+  // says somebody else changed the document, and leaves nothing on the undo stack to overwrite it.
+  // 163, from 162: the structure plan's final fix wave cites STR-003 a second time, in the store
+  // (packages/db/src/documents.test.ts), where the identifier comes from node:crypto rather than a
+  // test's counter: allocated at the insert, carried unchanged into the next version, and never handed
+  // to the node inserted after it was removed.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(149);
+    expect(model.citations).toHaveLength(163);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -184,6 +216,7 @@ describe('scanning the repository for test files', () => {
 
     expect(files).toContain('apps/web/src/App.test.tsx');
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(7);
+    // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(8);
   });
 });

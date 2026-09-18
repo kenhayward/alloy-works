@@ -1,4 +1,4 @@
-import { contentDocumentSchema } from '@alloy-works/domain';
+import { contentDocumentSchema, hasText } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
 import type { Command } from 'prosemirror-state';
 
@@ -37,9 +37,10 @@ const setRoot =
  * without a document (fix round 2). A field that shows a title as it is typed has to tell a refusal
  * from a value the document already holds, because the command answers `false` to both; asking the
  * rule here keeps it in one place rather than restating it in the renderer, where it would rot
- * silently the day this rule changes.
+ * silently the day this rule changes. It is the domain's `hasText` itself, so the store holds an
+ * outline's titles to the very function the editor gates a component's with.
  */
-export const titleAccepted = (title: string) => title.trim() !== '';
+export const titleAccepted = hasText;
 
 /**
  * A title the content model would refuse is refused here instead, without dispatching: the document

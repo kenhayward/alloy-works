@@ -1,3 +1,4 @@
+import { hasText } from '@alloy-works/domain';
 import { undo } from 'prosemirror-history';
 import type { EditorState, Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
@@ -77,6 +78,9 @@ describe('the component header', () => {
     }
     expect(titleAccepted('  Replace the toner  ')).toBe(true);
     expect(run(opened(), setTitle('  Replace the toner  ')).ran).toBe(true);
+    // The domain's rule itself, not a second spelling of it: an outline's section title and a
+    // document's title are held to the same function in the store.
+    expect(titleAccepted).toBe(hasText);
   });
 
   it('stores the title trimmed, the same agreement createComponent holds at creation', () => {

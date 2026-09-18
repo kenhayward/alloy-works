@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { everyPage } from '../paging.js';
 import {
   describeGrant,
   describeInvitation,
@@ -60,33 +61,6 @@ type Opened =
       readonly people: readonly ShownPerson[];
       readonly roles: readonly ShownRole[];
     };
-
-type Page<T> = { readonly items: readonly T[]; readonly next: string | null };
-
-/**
- * Every page of a listing, or the status the first page that failed was refused with. A `next` that
- * is neither `null` (paging is over) nor a string this page has not already used (paging continues)
- * is treated the same as a refused page, rather than read for ever: the service holding one bad cursor
- * must not turn into a page that never stops asking for the next one.
- */
-async function everyPage<T>(
-  fetchPage: (
-    cursor: string | undefined,
-  ) => Promise<{ readonly data?: Page<T>; readonly response: Response }>,
-): Promise<{ readonly items: T[] } | { readonly status: number }> {
-  const items: T[] = [];
-  let cursor: string | undefined;
-  const asked = new Set<string>();
-  for (;;) {
-    const { data, response } = await fetchPage(cursor);
-    if (!data) return { status: response.status };
-    items.push(...data.items);
-    if (data.next === null) return { items };
-    if (typeof data.next !== 'string' || asked.has(data.next)) return { status: response.status };
-    asked.add(data.next);
-    cursor = data.next;
-  }
-}
 
 /** How a refused list read is shown: signed out, not allowed to manage here, or unreadable. */
 function listingStateFor(status: number): 'unauthorized' | 'unmanaged' | 'failed' {

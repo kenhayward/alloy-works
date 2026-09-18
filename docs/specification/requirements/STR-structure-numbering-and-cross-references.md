@@ -60,6 +60,7 @@ are separable precisely because a section is never reused.
 | **STR-057** | The graph of component references reachable from a document's outline must be acyclic: no document may contain itself through any chain of component references, and the check must run before an edit is stored (**REU-044** is the same rule from the reuse side)                                                                                                                                                                         | Constraint | Specified             |
 | **STR-053** | An outline node's identifier must be unique within the tenant rather than within its document, so that a reference across documents cannot collide (**STR-Q02** may widen what references one, never what identity means)                                                                                                                                                                                                                   | Constraint | Specified             |
 | **STR-054** | An outline must have an implicit root - the document itself - which carries the document's own identity and deep link (STR-044), and must be allowed to hold no nodes at all. An empty outline is a valid document (**PUB-079**), not an error                                                                                                                                                                                              | T1         | Specified             |
+| **STR-061** | A document must be a named, versioned artifact belonging to exactly one space, carrying its own title and identity.                                                                                                                                                                                                                                                                                                                         | T1         | Specified             |
 
 **STR-059 answers a question that was delegated to a document which does not own it.** The boundary
 table sent concurrent outline edits to **COL**, and COL holds locks per component and explicitly
@@ -77,6 +78,11 @@ drifting apart.
 something to address, and a document whose outline is empty has to be either valid or refused - both
 are defensible, and silence meant the first test suite would decide. It is valid, it publishes its
 front matter, and its root is the document.
+
+**STR-061 says what a document is.** TPL-001 says a template is "a named, versioned artifact
+belonging to a space", and nothing said the same of a document: STR-001 presumes one, TPL
+instantiates one, and VER versions one. The design answers it by construction, which is exactly the
+kind of answer that ought to have a row behind it.
 
 **STR-010 is small to write and awkward everywhere else.** A component used twice in one report is
 two figures, two numbers and two cross-reference targets. If the occurrence has no identity of its
@@ -292,5 +298,21 @@ STR-005 had used the word with no source for its fields.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 59, of which 2 superseded | 60, of which 3 superseded |
+| Non-requirements | 5                         | 5                         |
+| Open questions   | 4                         | 4                         |
+
+### From planning the document and its outline
+
+Not a review. [Issue #120](https://github.com/kenhayward/alloy-works/issues/120), filed while
+planning [the first structure plan](../../plans/2026-09-18-structure-01-the-document-and-its-outline.md),
+found that nothing in the corpus declared what a document is.
+
+| What was found                                                                                                   | Change                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| STR-001 presumes a document, TPL instantiates one and VER versions one, and no requirement declares its identity | **STR-061**: a document is a named, versioned artifact belonging to exactly one space, carrying its own title and identity |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 60, of which 3 superseded | 61, of which 3 superseded |
 | Non-requirements | 5                         | 5                         |
 | Open questions   | 4                         | 4                         |

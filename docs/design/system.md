@@ -229,7 +229,7 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 | Realtime                                       | [realtime.md](realtime.md)                                                                                                 |
 | The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                             |
 | Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1 |
-| Outlines, numbering and cross-references       | Not yet designed; T1                                                                                                       |
+| Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                               |
 | The publishing pipeline - resolve and template | Not yet designed; T1. ADR-0013 and the publishing spike fix its shape                                                      |
 | The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1             |
 | Data, collaboration, reuse, AI, interchange    | Later tranches, designed when their tranche arrives                                                                        |

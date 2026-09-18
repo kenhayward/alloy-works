@@ -229,6 +229,39 @@ IAM-059's design owns; managing roles, groups and a principal's kind, with the l
 cases; extending a grant and the external listing (IAM-050, IAM-051); and Access on anything but a
 component.
 
+## Structure
+
+The document, its outline, and everything positional computed over it, designed in
+[structure.md](../design/structure.md). It comes after the editor's first two slices, because a
+document's outline points at components and a component nobody can make is an outline nobody can
+fill. The design claims forty requirements and is built in slices: the document and its outline
+first, because numbering, captions, cross-references and the contents panel are each a pure function
+over a tree that has to exist before any of them can be written.
+
+| #   | Plan                                                                                    | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status          |
+| --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1   | [The document and its outline](2026-09-18-structure-01-the-document-and-its-outline.md) | In `packages/domain`, `src/structure/`: the outline document's schema - one tree of sections and component references, each identified, each carrying its positional switches, a section title being inline content - its parse, its migration chain, its own canonical form where marks are a set, and the five operations as pure functions over a tree; a third arm in `VersionSubstance`. In `packages/db`, migration 0016 widening `artifact.kind`, `artifact_space_by_kind` and the author check, `document` as a content kind, the version chain branching three ways, and `createDocument`, `readDocument`, `listReadableDocuments` and `editOutline`. Four routes; in `apps/web`, the documents page and the outline panel with its keymap and undo stack. And STR-061, what a document is. No numbering, captions, cross-references, generated lists, deep links or cycle check | Built (PR #121) |
+
+Plan 1 leads with ten findings - the most serious that the version chain assumes every artifact that
+is not a component is a definition, and that migration 0016 cannot alter `artifact_version` on a
+fresh environment without flushing pending trigger events first - and eleven decisions for Ken, the
+first of which is that numbering is not in this slice. It files one requirement, STR-061, since
+nothing in the corpus declared what a document is.
+
+**Plan 1 is built.** A person makes a document in a space they may create in, and builds its outline of
+sections and component references by pointer or by keyboard, each act a version of its own and each
+but a removal undoable; a second person's conflicting act is refused against the outline as it now
+stands, and no document can be locked. Building it found ten more: the most serious that a removal
+cannot be undone, because its inverse would need identifiers STR-003 forbids reusing, and that the
+content model's marks rule, applied to the whole outline, would have sorted a section's metadata
+field named `marks`; the canonical form is now composed member by member. What it leaves is listed at
+the end of the plan: numbering, captions and cross-references, structure 2's, after a small
+content-model change; the contents panel, generated lists and deep links, structure 3's; the cycle
+check, the relationships plan's; a component version resolved for each reference; a document's own
+title, language and direction changed after it is made; paging the documents listing; getting a
+removed subtree back; and `Alt+Left` and drag and drop checked in a browser, with the rest of the
+accessibility suite.
+
 ## The editor
 
 Opening, editing and saving components, designed in [component-editor.md](../design/component-editor.md)

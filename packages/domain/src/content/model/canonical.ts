@@ -22,7 +22,12 @@ export function canonicalise(document: ContentDocument): string {
   return canonicalJson(document, marksAsASet);
 }
 
-function marksAsASet(member: string, array: readonly unknown[]): readonly unknown[] {
+/**
+ * Marks are a set (CNT-003): sorted by type then identifier, which is total because an identifier is
+ * unique. Exported so the outline's own canonical form (`structure/outline.ts`) applies the same rule
+ * to a section title's marks, rather than a copy that could drift from this one.
+ */
+export function marksAsASet(member: string, array: readonly unknown[]): readonly unknown[] {
   if (member !== 'marks') return array;
   return [...(array as { type: string; id: string }[])].sort((a, b) =>
     a.type === b.type ? (a.id < b.id ? -1 : 1) : a.type < b.type ? -1 : 1,

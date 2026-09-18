@@ -83,7 +83,10 @@ describe('spaces and artifacts', () => {
   it('refuses a kind the version chain does not hold', async () => {
     await expect(
       service.withTenant(production, (trx) =>
-        sql`insert into artifact (kind) values ('document')`.execute(trx),
+        // Not 'document' any more: 0016 made it a kind the chain holds, so it now fails
+        // artifact_space_by_kind instead. A template is the next kind to arrive, by a migration
+        // widening this check (TPL's plan).
+        sql`insert into artifact (kind) values ('template')`.execute(trx),
       ),
     ).rejects.toThrow(/artifact_kind_check/);
   });
