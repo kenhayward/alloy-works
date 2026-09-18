@@ -1195,6 +1195,69 @@ describe('the outline panel, answered', () => {
     });
   });
 
+  it('keeps what is typed after two commits to one field, whichever of them comes back first', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+
+    // The first commit is sent and waits for its answer; the second is held behind it.
+    const release = fake.hold();
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.type(screen.getByLabelText('Title'), 't{Enter}');
+    await userEvent.type(screen.getByLabelText('Title'), 'u');
+    expect(fake.edits()).toHaveLength(1);
+    release();
+
+    expect(await screen.findByRole('treeitem', { name: 'Methodst' })).toBeInTheDocument();
+    await settled();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(fake.edits().map((edit) => (edit.body as { operation: unknown }).operation)).toEqual([
+      {
+        operation: 'retitle',
+        node: METHOD,
+        title: [{ type: 'text', value: 'Methods', marks: [] }],
+      },
+      {
+        operation: 'retitle',
+        node: METHOD,
+        title: [{ type: 'text', value: 'Methodst', marks: [] }],
+      },
+    ]);
+    // Each title that came back was one this field sent, so nothing typed since is given away.
+    expect(screen.getByLabelText('Title')).toHaveValue('Methodstu');
+  });
+
+  it('names each title a conflict took once, in one sentence', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+    fake.theirs({ operation: 'set', node: INTRODUCTION, pageBreak: 'page' });
+
+    // Methods is sent and waits; leaving the field after Enter commits the same text again, and
+    // Introductionx is held behind it. The conflict refuses Methods, and Introductionx behind it.
+    const release = fake.hold();
+    await userEvent.type(screen.getByLabelText('Title'), 's{Enter}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.click(item('Introduction'));
+    await userEvent.type(screen.getByLabelText('Title'), 'x{Enter}');
+    release();
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/Introductionx were not saved\.$/),
+    );
+    await settled();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(screen.getByRole('status').textContent).toBe(
+      `${SOMEBODY_ELSE} Your titles Methods and Introductionx were not saved.`,
+    );
+    expect(fake.edits()).toHaveLength(1);
+  });
+
   it('names the title a conflict refused, and keeps the conflict sentence', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),

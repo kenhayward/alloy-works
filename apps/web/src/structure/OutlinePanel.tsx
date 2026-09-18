@@ -221,6 +221,9 @@ export function OutlinePanel({
   const lost = useRef<LostTitle[]>([]);
   // Titles given way to a refusal, named after the refusal's own sentence in the render that shows it.
   const dropped = useRef<string[]>([]);
+  // The last sentence that named them, the refusal's sentence it was said after, and the titles it
+  // named: titles a later render drops behind the same refusal join that one sentence.
+  const named = useRef<{ said: string; after: string; titles: readonly string[] } | null>(null);
   // Moved whenever a retitle is committed or answered, so the render after it looks at `held` again.
   const [, setLooked] = useState(0);
   // The section whose title field is open, written by that field's own effect: a retitle that was not
@@ -258,8 +261,15 @@ export function OutlinePanel({
   // answer sends the next.
   useEffect(() => {
     if (dropped.current.length > 0) {
-      onNotice([notice, titlesNotSaved(dropped.current)].filter(Boolean).join(' '));
+      // Still showing the sentence this effect said last: the refusal is the same one, so its titles
+      // and these are named together, each once, rather than in a second sentence after the first.
+      const same = named.current !== null && notice === named.current.said;
+      const after = same ? named.current!.after : (notice ?? '');
+      const titles = [...new Set([...(same ? named.current!.titles : []), ...dropped.current])];
+      const said = [after, titlesNotSaved(titles)].filter(Boolean).join(' ');
+      named.current = { said, after, titles };
       dropped.current = [];
+      onNotice(said);
     }
     if (busy || sending.current) return;
     for (const [id, waiting] of held.current) {
@@ -780,8 +790,11 @@ function ConfirmRemoval({
 interface Field {
   readonly typed: string;
   readonly inModel: string;
-  /** The title this field last sent and has not yet heard back about, or `null`. */
-  readonly sent: string | null;
+  /**
+   * Every title this field has sent and not yet heard back about, oldest first. A second commit can
+   * be made while the first is still in flight, and either coming back is this field's own.
+   */
+  readonly sent: readonly string[];
 }
 
 function NodeDetails({
@@ -832,6 +845,12 @@ function NodeDetails({
   );
 }
 
+/** `sent` with the first occurrence of `text` taken out: the one commit that will not come back. */
+function withoutFirst(sent: readonly string[], text: string): readonly string[] {
+  const at = sent.indexOf(text);
+  return at < 0 ? sent : [...sent.slice(0, at), ...sent.slice(at + 1)];
+}
+
 function TitleField({
   node,
   onRetitle,
@@ -853,19 +872,21 @@ function TitleField({
 
   const plain = plainTitle(node.title);
   const inModel = plain ?? titleText(node.title);
-  const [field, setField] = useState<Field>({ typed: inModel, inModel, sent: null });
+  const [field, setField] = useState<Field>({ typed: inModel, inModel, sent: [] });
 
   // State derived from a prop, adjusted during render the way React documents it: a second render
   // pass reads what the first set, and the comparison is by value, so it settles at once. Nothing
   // happens unless the outline's title differs from what the field last heard, so a re-render for
   // any other reason - another act answered while the author is typing here - leaves the field alone.
-  // When it does differ, the field's own retitle coming back keeps what has been typed since it was
-  // sent; anything else - an undo, somebody else's title - gives way to the outline.
+  // When it does differ, any of the field's own retitles coming back keeps what has been typed since
+  // (and the ones sent after it are still to come); anything else - an undo, somebody else's title -
+  // gives way to the outline.
   if (inModel !== field.inModel) {
+    const at = field.sent.indexOf(inModel);
     setField(
-      inModel === field.sent
-        ? { typed: field.typed, inModel, sent: null }
-        : { typed: inModel, inModel, sent: null },
+      at >= 0
+        ? { typed: field.typed, inModel, sent: field.sent.slice(at + 1) }
+        : { typed: inModel, inModel, sent: [] },
     );
   }
 
@@ -890,11 +911,13 @@ function TitleField({
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
       // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
       onNotice('A section needs a title.');
-      setField({ typed: inModel, inModel, sent: null });
+      setField({ typed: inModel, inModel, sent: [] });
       return;
     }
-    if (text === inModel) return;
-    setField((previous) => ({ ...previous, sent: text }));
+    // Nothing new: the outline holds it, or it is the text this field sent last and is still waiting
+    // on - the blur that follows an Enter - so it is not committed a second time.
+    if (text === inModel || text === field.sent[field.sent.length - 1]) return;
+    setField((previous) => ({ ...previous, sent: [...previous.sent, text] }));
     void onRetitle({ operation: 'retitle', node: node.id, title: sectionTitle(text) }).then(
       (answer) => {
         if (answer === 'refused') {
@@ -904,12 +927,13 @@ function TitleField({
           setField((previous) => ({
             typed: previous.inModel,
             inModel: previous.inModel,
-            sent: null,
+            sent: [],
           }));
-        } else if (answer === 'unsent' || answer === 'signedOut') {
-          // Nothing changed and nothing was recorded, and the page says to try again: the text stays,
-          // and the author's next Enter or blur is that retry.
-          setField((previous) => ({ ...previous, sent: null }));
+        } else if (answer === 'unsent' || answer === 'signedOut' || answer === 'superseded') {
+          // Nothing changed and nothing was recorded - or a later commit took its place - so it will
+          // not come back: the text stays, and after a failure the author's next Enter or blur is the
+          // retry the page asks for.
+          setField((previous) => ({ ...previous, sent: withoutFirst(previous.sent, text) }));
         }
       },
     );
