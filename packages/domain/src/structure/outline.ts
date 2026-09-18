@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 import { marksAsASet } from '../content/model/canonical.js';
-import { refuseForbiddenFootnoteContent } from '../content/model/document.js';
+import {
+  contentDocumentSchema,
+  refuseForbiddenFootnoteContent,
+} from '../content/model/document.js';
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
@@ -9,10 +12,6 @@ import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 
 export const OUTLINE_SCHEMA_VERSION = 1;
-
-const bcp47 = z
-  .string()
-  .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/, 'not a BCP 47 tag');
 
 /** 128 bits as 26 lower-case base32 characters: the spelling `blockIdentifierFrom` already fixes. */
 const nodeIdentifier = z.string().regex(/^[a-z2-7]{26}$/, 'not an outline node identifier');
@@ -141,7 +140,8 @@ export const outlineDocumentSchema = z.strictObject({
     .string()
     .refine(hasText, 'A document needs a title')
     .refine(storableText, 'A title holds a character that cannot be stored'),
-  language: bcp47,
+  // The content model's own tag rule, as creation and the editor's header read it: one rule, not two.
+  language: contentDocumentSchema.shape.language,
   direction: z.enum(['ltr', 'rtl']),
   nodes: z.array(outlineNodeSchema),
 });

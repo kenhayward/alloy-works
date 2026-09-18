@@ -11,6 +11,7 @@ import {
   canonicaliseOutline,
   migrateOutline,
   OUTLINE_SCHEMA_VERSION,
+  outlineDocumentSchema,
   outlineNodeSchema,
   parseOutlineDocument,
   readOutline,
@@ -365,6 +366,10 @@ describe('a section title, under the content model rules', () => {
 });
 
 describe('what a stored outline refuses, because nothing later could take it back', () => {
+  it('holds its language to the content model rule itself, not to a copy of it', () => {
+    expect(outlineDocumentSchema.shape.language).toBe(contentDocumentSchema.shape.language);
+  });
+
   const titled = (title: unknown) => ({ ...empty, nodes: [section(NODE, { title })] });
   const words = (value: string) => ({ type: 'text', value, marks: [] });
 
