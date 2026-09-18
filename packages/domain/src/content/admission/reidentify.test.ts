@@ -321,6 +321,36 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it('never allocates an identifier the receiving component still names in a reference, though its block is gone', () => {
+    // The receiver's own sentence cites a figure since deleted: n3, as the counter would draw next.
+    const citing: ContentDocument = {
+      ...document,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'n1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'See ', marks: [{ type: 'strong', id: 'n2' }] },
+            {
+              type: 'crossReference',
+              id: 'r1',
+              target: { kind: 'block', block: 'n3' },
+              display: 'number',
+            },
+          ],
+        },
+      ],
+    };
+    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const { outcome } = run({ schemaVersion: 1, content: [dose] }, receiver({ document: citing }));
+    // Given n3, the pasted figure would silently become what the receiver's reference resolves to.
+    expect(outcome).toEqual({
+      ok: true,
+      value: { schemaVersion: 1, content: [{ ...dose, id: 'n4' }] },
+    });
+  });
+
   it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {
     const { outcome, entries } = run({
       schemaVersion: 1,

@@ -45,10 +45,7 @@ export function reidentify(
   report: ReportCollector,
 ): StageResult<Record<string, unknown>> {
   const state: State = {
-    taken: new Set([
-      ...identifiersIn(receiver.document),
-      ...referencedBlockTargets(candidate.content),
-    ]),
+    taken: new Set([...namesIn(receiver.document.content), ...namesIn(candidate.content)]),
     axes: new Set(receiver.conditionAxes),
     newIdentifier: receiver.newIdentifier,
     report,
@@ -146,13 +143,16 @@ function repoint(state: State): { repointed: number; leftStanding: number } {
 }
 
 /**
- * Every `block` target a candidate's cross-references still name, wherever they sit - reserved in
- * `taken` before anything is allocated, so a freshly allocated identifier can never coincide with one
- * of these. Without this, a reference whose block does not travel (or is ambiguous, and so is left
- * unrepointed) keeps naming its old identifier literally, and a counter or an unlucky draw could hand
- * that exact string to an unrelated block - silently making the reference point at it.
+ * Every identifier a value holds - a block's, a footnote's, a cross-reference's, a mark's - and every
+ * `block` target its cross-references name, wherever they sit. Run over the receiving component and
+ * over what arrived, and reserved in `taken` before anything is allocated, so a new identifier can
+ * never coincide with any of them. A target is reserved as well as an identifier because a reference
+ * can outlive its block: the receiver's own reference to a figure since deleted, or a pasted one whose
+ * block did not travel (or is ambiguous, and so is left unrepointed), keeps naming the old identifier
+ * literally - and a counter or an unlucky draw handing that exact string to a pasted block would
+ * silently make the reference point at it.
  */
-function referencedBlockTargets(value: unknown): Set<string> {
+function namesIn(value: unknown): Set<string> {
   const found = new Set<string>();
   const walk = (node: unknown): void => {
     if (Array.isArray(node)) {
@@ -161,6 +161,7 @@ function referencedBlockTargets(value: unknown): Set<string> {
     }
     if (typeof node !== 'object' || node === null) return;
     const record = node as Record<string, unknown>;
+    if (typeof record.id === 'string') found.add(record.id);
     if (record.type === 'crossReference') {
       const target = asRecord(record.target);
       if (target?.kind === 'block' && typeof target.block === 'string') found.add(target.block);
@@ -168,23 +169,6 @@ function referencedBlockTargets(value: unknown): Set<string> {
     for (const member of Object.values(record)) walk(member);
   };
   walk(value);
-  return found;
-}
-
-/** Every identifier a document holds: its blocks', its footnotes' and its marks'. */
-function identifiersIn(document: ContentDocument): Set<string> {
-  const found = new Set<string>();
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      for (const member of value) walk(member);
-      return;
-    }
-    if (typeof value !== 'object' || value === null) return;
-    const record = value as Record<string, unknown>;
-    if (typeof record.id === 'string') found.add(record.id);
-    for (const member of Object.values(record)) walk(member);
-  };
-  walk(document.content);
   return found;
 }
 

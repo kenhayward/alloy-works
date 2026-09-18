@@ -330,7 +330,9 @@ why it is the pipeline's job rather than a caller's discipline. Footnotes and cr
 re-identified with the blocks, and a cross-reference copied with the block it names is pointed at
 the copy. One whose block did not travel, or whose block's old identifier arrived on two blocks in
 one paste - so which one it meant cannot be known - is left as it stands rather than guessed, and
-the admission report counts it.
+the admission report counts it. **Nothing is allocated that is already named**, in the receiving
+component or in what arrived, as an identifier or as a reference's `block` target: a reference can
+outlive its block, and a new block given the name it still holds would silently become its target.
 
 ## Schema version, and migration as a projection
 
