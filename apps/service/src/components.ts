@@ -1,7 +1,15 @@
-import type { ComponentListQuery, ComponentParams } from '@alloy-works/api-contract';
+import type {
+  ComponentListQuery,
+  ComponentParams,
+  CreateComponentBody,
+  SpaceParams,
+} from '@alloy-works/api-contract';
 import {
+  createComponent,
   latestVersion,
+  listComponentTypes,
   listReadableComponents,
+  listSpacesFor,
   readLock,
   type LockState,
   type StoredVersion,
@@ -13,6 +21,7 @@ import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
+import { wireCode } from './wire-codes.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PAGE = 50;
@@ -69,6 +78,66 @@ export function componentHandlers(
   principalOf: (request: FastifyRequest) => SessionPrincipal,
 ) {
   return {
+    listSpaces: async (request: FastifyRequest) => {
+      const items = await db.withTenant(tenantOf(request), (trx) =>
+        listSpacesFor(trx, principalOf(request).principalId),
+      );
+      return { items: [...items] };
+    },
+
+    listComponentTypes: async (_request: FastifyRequest, { trx }: Authorised) => ({
+      items: [...(await listComponentTypes(trx))],
+    }),
+
+    createComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
+      const { space } = request.params as SpaceParams;
+      const body = request.body as CreateComponentBody;
+      const answer = await createComponent(trx, {
+        spaceId: space,
+        title: body.title,
+        language: body.language,
+        direction: body.direction,
+        ...(body.componentType === undefined ? {} : { componentTypeId: body.componentType }),
+        author: principalId,
+      });
+      // The space was decided on before this ran, so `space.missing` here means it went in the moment
+      // between; answered as absent either way, never as a refusal that says it exists.
+      if (answer.answer === 'space.missing') throw notFound();
+      if (answer.answer === 'component_type.missing') {
+        throw new AppError(
+          409,
+          wireCode('component_type.missing'),
+          'There is no such component type in this environment.',
+        );
+      }
+      if (answer.answer === 'content.invalid') {
+        throw new AppError(
+          400,
+          wireCode('content.invalid'),
+          'A component needs a title and a language tag such as en-GB.',
+        );
+      }
+      const { version } = answer;
+      const held = await trx
+        .selectFrom('space')
+        .select(['id', 'name'])
+        .where('id', '=', space)
+        .executeTakeFirstOrThrow();
+      return {
+        id: version.artifactId,
+        space: held,
+        version: versionView(version),
+        content: version.content as Record<string, unknown>,
+        // Whoever created it may edit it: `create` and `edit` are separate permissions, so this is
+        // the decision a write would take, not an assumption from having created the thing. Decided
+        // against the space, because that is the target the route was authorised on - the component
+        // did not exist when the facts were loaded, so a denial of `edit` on the component itself
+        // cannot exist yet; nothing has had a chance to make one.
+        mayEdit: decide('edit', facts).allowed,
+        lock: null,
+      };
+    },
+
     listComponents: async (request: FastifyRequest) => {
       const query = request.query as ComponentListQuery;
       const after = afterCursor(query.cursor);

@@ -85,19 +85,25 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   longer edit or read the component, the page says that instead, and keeps the text for you to copy.
 
   **This is paragraphs of text, not the editor.** A component holding a list, a table, an equation, a
-  footnote or any formatting opens for reading only. Nothing yet creates a component: in development,
-  `pnpm dev:setup` makes one, "Install the printer", and lets Ada and Grace edit it; an administrator
-  lets anybody else edit it from **Manage access**.
-  Changes saved but never made into a version are kept and cannot yet be got back, undo does not
-  survive a reload, and there is no metadata to fill in.
+  footnote or any formatting opens for reading only. Changes saved but never made into a version are
+  kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
+
+- **Making a component.** On the list of components, **New component** offers the spaces you may create
+  in, a title, a base language such as `en-GB`, a direction, and the component type the environment
+  offers. Creating makes version 0.1 with one empty paragraph and opens it. Above the surface, the
+  title, the language and the direction can be changed as you work: each is part of the document, so
+  each is undone by `Ctrl+Z` and recorded in the next version you cut.
 
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
 
-- No way to create a component, or to author anything but paragraphs of text in one that exists.
-  Nothing imports content from a Word file or exports it anywhere. The one sample document is a fixed
-  template with no content of yours in it.
+- No way to author anything but paragraphs of text: a list, a table, an equation or any formatting still
+  opens for reading only. Nothing imports content from a Word file or exports it anywhere. The one sample
+  document is a fixed template with no content of yours in it.
+- No way to make, change or choose between component types: every environment has one, named Topic, and
+  nothing yet lets an administrator add another or change which is the default.
+- No way to delete a component, including one made by mistake.
 - No document view, component tree, reuse or transclusion.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.

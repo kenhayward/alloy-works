@@ -11,6 +11,7 @@ describe('wireCode', () => {
     expect(wireCode('version.unchanged')).toBe('version_unchanged');
     expect(wireCode('content.invalid')).toBe('content_invalid');
     expect(wireCode('artifact.missing')).toBe('artifact_missing');
+    expect(wireCode('component_type.missing')).toBe('component_type_missing');
   });
 
   it('spells every refusal where a grant is made or removed with an underscore too', () => {

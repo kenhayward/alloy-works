@@ -1,7 +1,8 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { Selection, type EditorView } from '@alloy-works/editor';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fromEditor, Selection, type EditorView } from '@alloy-works/editor';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentEditor } from './ComponentEditor.js';
@@ -69,21 +70,35 @@ function service(answers: Record<string, Answer>) {
 
 const quick = { ...designTiming, idleMs: 10, continuousMs: 50 };
 
-function open(answers: Record<string, Answer>) {
+/**
+ * Opens the editor. `strict` renders it inside `<StrictMode>`, which is how the application itself
+ * runs it (apps/web/src/main.tsx) and which double-invokes every render: anything that keeps its
+ * bearings by counting renders, rather than by comparing values, behaves differently there than it
+ * does in a test that leaves StrictMode off (fix round 2, findings A-C).
+ */
+function open(answers: Record<string, Answer>, timing = quick, strict = false) {
   const { client, asked } = service(answers);
   let view: EditorView | undefined;
-  render(
+  const editor = (
     <ComponentEditor
       componentId={COMPONENT}
       client={client}
       principalId={ADA}
       sessionId={SESSION}
-      timing={quick}
+      timing={timing}
       onView={(mounted) => (view = mounted)}
-    />,
+    />
   );
+  render(strict ? <StrictMode>{editor}</StrictMode> : editor);
   const surface = async () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    // ProseMirror puts the surface into the page itself, outside React, so the surface is there
+    // before the render it asks for in the same breath - the header, which is state - has been
+    // committed. Waiting only for the surface therefore lands inside that window often enough to
+    // fail a slow machine: the article shows its fallback heading and no header fields at all, and
+    // every `getByLabelText` a test runs next finds nothing. Waiting for a field the header renders
+    // waits for that commit, and it is a field every component opened here has, editable or not.
+    await screen.findByLabelText('Title');
     return view!;
   };
   return { asked, surface };
@@ -840,5 +855,470 @@ describe('the component editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');
     expect(view.state.selection.from).toBe(at);
+  });
+
+  it('edits the title, the language and the direction above the surface, and sends them', async () => {
+    // The first edit claims the lock at once, from `reading` (session.ts, `changed()`), so a service
+    // that answers no lock route refuses the claim - and a refused claim puts the surface straight
+    // back to the version (the same behaviour 'puts the surface back...' already exercises), silently
+    // discarding every keystroke before the test ever reads the document. The default timing, not
+    // `quick`, then keeps a save from firing mid-test until it is explicitly asked for: `quick`'s much
+    // shorter idle window would need every intermediate iteration stubbed too, for no reason this test
+    // cares about; `finish` (via Save version) flushes regardless of timing.
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'POST /v1/components/{id}/versions': () =>
+          json(200, {
+            outcome: 'cut',
+            version: {
+              id: 'v2',
+              number: '0.2',
+              author: ADA,
+              createdAt: '2026-09-16T09:05:00.000Z',
+              note: null,
+            },
+          }),
+      },
+      designTiming,
+    );
+    const view = await surface();
+    const title = screen.getByLabelText('Title') as HTMLInputElement;
+
+    // Selecting the whole field before typing over it, not `{selectall}` (S23's suggestion): that is
+    // the legacy v13 pseudo-key and does nothing in the pinned user-event 14, which types are
+    // selected with `initialSelectionStart`/`initialSelectionEnd` instead. The title input is
+    // controlled by the document, and an empty value is refused, so a genuine clear() would put the
+    // old title straight back and the following keystrokes would append to it instead of replacing.
+    await userEvent.type(title, 'Replace the toner', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: title.value.length,
+    });
+    // Waits for the claim itself to settle before touching the other fields: its own async resolution
+    // otherwise races the language field's own refusal-then-cleared notice below, and whichever lands
+    // last stomps the other, unreliably in either direction.
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
+    );
+    await userEvent.clear(screen.getByLabelText('Language'));
+    await userEvent.type(screen.getByLabelText('Language'), 'fr-CA');
+    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Replace the toner');
+    // The fields themselves, not only the document they end up producing (review round 1, item 10).
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+    expect(screen.getByLabelText('Language')).toHaveValue('fr-CA');
+    // The document the session would send now carries all three, which is the whole of the header's
+    // wiring - not only the title (review round 1, item 4).
+    expect(fromEditor(view.state.doc)).toMatchObject({
+      title: 'Replace the toner',
+      language: 'fr-CA',
+      direction: 'rtl',
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Save version' }));
+    // The last PUT, not the first (fix round 2, minor): an idle save landing part-way through the
+    // three edits would otherwise decide this assertion - passing or failing on which keystroke it
+    // happened to catch rather than on what the header finally sent.
+    await waitFor(() =>
+      expect(asked.filter((each) => each.route.startsWith('PUT')).at(-1)?.body).toMatchObject({
+        content: { title: 'Replace the toner', language: 'fr-CA', direction: 'rtl' },
+      }),
+    );
+  });
+
+  it('refuses to clear the title, saying why once the field is left, and leaves the document alone', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+
+    await userEvent.clear(screen.getByLabelText('Title'));
+    fireEvent.blur(screen.getByLabelText('Title'));
+    expect(screen.getByRole('status')).toHaveTextContent('A component needs a title.');
+    // Leaving the field puts the document's title back in it. Clearing never reaches the document, so
+    // `header.title` never changes and the value comparison that resyncs this field never fires -
+    // nothing else in the page could put an empty input right, and it would sit over a component that
+    // plainly has a title until the page was reloaded (re-review, finding 1).
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer');
+    expect(fromEditor(view.state.doc).title).toBe('Install the printer');
+  });
+
+  it('leaves the field agreeing with the heading after a title is typed and then cleared', async () => {
+    // Reverting to what the document holds now, not to what it held when the page opened - and the
+    // heading is what a reader has in front of them, so the two must say the same thing. Left empty,
+    // this field would stay empty through a version cut and through the surface going read-only,
+    // because nothing changed the document and nothing else can resync it (re-review, finding 1).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+
+    fireEvent.change(field, { target: { value: 'Replace the toner' } });
+    await userEvent.clear(field);
+    fireEvent.blur(field);
+
+    expect(field).toHaveValue('Replace the toner');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Replace the toner');
+    expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
+  });
+
+  it('says nothing about a title being retyped, and never beside a title that is there, under StrictMode', async () => {
+    // Clearing the field used to report "A component needs a title." and put the document's own
+    // title straight back into the field in the same breath, so the message stood beside a perfectly
+    // good title and nothing ever took it down again (final review, finding 3). Retyping a title is
+    // an ordinary thing to do - select all, type the new one - and the language field already has
+    // this shape: what is on its way somewhere is shown as typed and said nothing about.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+
+    await userEvent.clear(field);
+    expect(field).toHaveValue('');
+    expect(screen.getByRole('status')).toHaveTextContent('');
+
+    fireEvent.change(field, { target: { value: 'Replace the toner' } });
+    fireEvent.blur(field);
+
+    expect(screen.getByRole('status')).not.toHaveTextContent('A component needs a title.');
+    expect(field).toHaveValue('Replace the toner');
+    expect(fromEditor(view.state.doc).title).toBe('Replace the toner');
+  });
+
+  it('reverts a cleared title on blur even when the field is disabled out from under it', async () => {
+    // The mirror image of 'does not report a refused language tag when the field is disabled out from
+    // under it': an empty title is worse than an unfinished tag, because clearing it never reaches the
+    // document (re-review, finding 1) - nothing but this field's own blur can put it right. The guard
+    // that skips reporting a refusal while read-only used to skip the revert too: clear the title, lose
+    // the session under it, and the field went disabled while still empty, sitting beside a heading
+    // that kept showing the real title, with nothing left in the page able to correct it.
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const field = screen.getByLabelText('Title');
+    fireEvent.change(field, { target: { value: '' } });
+    expect(field).toHaveValue('');
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await waitFor(() => expect(field).toBeDisabled());
+    fireEvent.blur(field);
+
+    expect(field).toHaveValue('Install the printer');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Install the printer');
+    // The notice that explained the lock loss is still the one showing, not overwritten and not
+    // replaced by silence (finding H, re-applied here to the field it was not written for).
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Newer text was saved from another window',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent('A component needs a title.');
+  });
+
+  it('does not report a refusal, or revert the field, for a no-op such as the same title with different surrounding space', async () => {
+    // `setTitle` answers `false` not only when refused but also when the trimmed value already
+    // matches the document (packages/editor/src/header.ts, `setRoot`) - a no-op, not a refusal, and
+    // reporting it as one shows "A component needs a title." beside a title that plainly is not empty
+    // (review round 1, item 2).
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Title'), {
+      target: { value: 'Install the printer  ' },
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer  ');
+  });
+
+  it('does not report a refusal for a language tag still being typed, or once it is finished', async () => {
+    // A tag under construction ("f", "fr-C") is not yet a BCP 47 tag, and validating - and reporting -
+    // it on every keystroke shouts a refusal for text nobody has finished typing yet, which also never
+    // clears once the tag it was building towards lands, because nothing here ever un-reports it
+    // (review round 1, item 3). Reported on blur instead: nothing is said about a tag while it is
+    // still being typed, whether or not what is there yet would parse, so finishing "fr-CA" - without
+    // ever leaving the field - never shows a refusal for it to begin with.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+    );
+    await surface();
+    const language = screen.getByLabelText('Language');
+
+    fireEvent.change(language, { target: { value: 'f' } });
+    expect(screen.getByRole('status')).toHaveTextContent('');
+
+    fireEvent.change(language, { target: { value: 'fr-CA' } });
+    expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
+
+    fireEvent.blur(language);
+    expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
+  });
+
+  it('reports a refused language tag once the field is left with one still incomplete', async () => {
+    // Deliberately its own test, dispatching nothing at all (S23's own trap, one door over): a tag
+    // that ever becomes valid claims the lock on its first accepted step, and that claim's own async
+    // resolution would otherwise land at an unpredictable point relative to this test's own assertions.
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+    );
+    await surface();
+    const language = screen.getByLabelText('Language');
+
+    fireEvent.change(language, { target: { value: 'x' } });
+    fireEvent.blur(language);
+
+    expect(screen.getByRole('status')).toHaveTextContent('A language tag looks like en-GB.');
+  });
+
+  it('keeps the header in step with a document change it did not make itself, such as an undo', async () => {
+    // The header's own fields buffer what was typed (so trimming and in-progress validation do not
+    // corrupt live typing) but must still pick up a change that reaches the document some other way -
+    // an undo reverting a `DocAttrStep` the same as this one - rather than going on showing what this
+    // field last sent, which the next keystroke would then resend (review round 1, item 1).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+    );
+    const view = await surface();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Replace the toner' } });
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+
+    // What undo does mechanically - reverts the title's `DocAttrStep` through the same `view.dispatch`
+    // path a real `Mod-z` keymap binding uses (packages/editor/src/state.ts) - without depending on
+    // simulating a keyboard event through jsdom into a ProseMirror view, which this codebase's other
+    // tests avoid for the same reason surface interaction here is done by transaction throughout. A
+    // bare `view.dispatch` reaches React's state from outside its own event handling (the same reason
+    // every other test in this file checking the DOM after one waits, rather than asserting straight
+    // after it), so the DOM-facing assertions below are inside `waitFor` too.
+    view.dispatch(view.state.tr.setDocAttribute('title', 'Install the printer'));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Install the printer'),
+    );
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer');
+  });
+
+  it('reflects a refusal that reverts the surface, not the title it was showing beforehand', async () => {
+    // The same shape as 'puts the surface back and offers what was typed as text...', but through the
+    // header: `onRefused` resets the view with `view.updateState`, which bypasses the `dispatch` hook
+    // that otherwise keeps `header` in step, so without refreshing it there too, the heading and the
+    // field would keep showing what was typed even after the surface itself discarded it (review
+    // round 1, item 1).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () =>
+          json(409, {
+            code: 'lock_held',
+            message: 'held',
+            traceId: 't',
+            holder: { id: 'grace', name: 'Grace' },
+            expectedRelease: '2026-09-16T09:15:00.000Z',
+          }),
+      },
+      designTiming,
+    );
+    const view = await surface();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Replace the toner' } });
+    await screen.findByRole('textbox', { name: 'Text that was not saved' });
+
+    expect(view.state.doc.attrs.title).toBe('Install the printer');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Install the printer');
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer');
+  });
+
+  it('disables the header fields once the surface itself goes read-only, such as in the lost phase', async () => {
+    // The header's own `editable` must follow the surface's, `lost` among the phases it excludes
+    // (review round 1, item 9) - `loaded.state === 'open'` alone does not change here, so a rule that
+    // used only that would leave the fields editable while the surface itself has gone read-only.
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await screen.findByRole('button', { name: 'Continue' });
+
+    expect(screen.getByLabelText('Title')).toBeDisabled();
+  });
+
+  it('shows the header for reading only where the caller may not edit', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })),
+    });
+    await surface();
+
+    expect(screen.getByLabelText('Title')).toBeDisabled();
+  });
+
+  it('keeps a trailing space in the title as it is typed, under StrictMode', async () => {
+    // The application runs under `<StrictMode>` (apps/web/src/main.tsx), which renders every
+    // component twice. A field that decides whether to resync itself by what happened during a
+    // render loses that decision on the second pass and snaps back to the document (fix round 2,
+    // finding A): a title is stored trimmed, so every interior space is trimmed away the instant it
+    // is typed and is briefly trailing, and the field arrives at "Installtheprinter".
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Install the printer ' } });
+
+    expect(screen.getByLabelText('Title')).toHaveValue('Install the printer ');
+  });
+
+  it('keeps a language tag still being typed, under StrictMode', async () => {
+    // The same defect, worse: only a complete tag ever reaches the document, so every keystroke of a
+    // new one leaves the document's own language untouched - and a field that resyncs on the second
+    // render pass puts "en-GB" straight back, making the language impossible to retype at all (fix
+    // round 2, finding A).
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'f' } });
+
+    expect(screen.getByLabelText('Language')).toHaveValue('f');
+  });
+
+  it('does not revert a field being typed when something else re-renders the page', async () => {
+    // Nothing about the header changed here: a paragraph was edited, which re-renders the page
+    // through `header`, `session` and the notice alike. Such renders are routine - the claim
+    // resolving, every save's saving/saved transition - and each one of them reverted an
+    // in-progress value (fix round 2, finding B).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    const view = await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
+    );
+    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+  });
+
+  it('leaves the language alone while the title is edited, and the title alone while the language is', async () => {
+    // Each field answers for its own value only (fix round 2, finding C): editing one changed
+    // `header`, and a field that resyncs on any change to it wiped the other's half-typed tag
+    // silently, leaving a refusal standing over a value that was by then perfectly good.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      designTiming,
+      true,
+    );
+    await surface();
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Replace the toner' } });
+
+    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-CA' } });
+
+    expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
+    );
+  });
+
+  it('does not report a refused language tag when the field is disabled out from under it', async () => {
+    // Disabling a focused input blurs it in a real browser, and the header goes read-only exactly
+    // when the surface does - so the blur that arrives when the session is lost is the page changing
+    // under the author, not the author leaving an unfinished tag behind. Reporting a refusal there
+    // writes over the notice that just said what happened (fix round 2, finding H).
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+    );
+    const view = await surface();
+    const language = screen.getByLabelText('Language');
+    fireEvent.change(language, { target: { value: 'fr-' } });
+
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await waitFor(() => expect(language).toBeDisabled());
+    fireEvent.blur(language);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Newer text was saved from another window',
+    );
+    expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
   });
 });

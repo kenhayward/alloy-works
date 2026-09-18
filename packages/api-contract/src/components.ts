@@ -1,10 +1,56 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
-import { ErrorBody } from './schemas.js';
+import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** A component, by the id its artifact carries. */
 export const ComponentParams = z.object({ id: z.uuid() });
 export type ComponentParams = z.infer<typeof ComponentParams>;
+
+/** A space, by the id it carries. */
+export const SpaceParams = z.object({ space: LowercaseUuid });
+export type SpaceParams = z.infer<typeof SpaceParams>;
+
+export const SpaceList = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      mayCreate: z.boolean().describe('Whether the caller may create a component in this space'),
+    }),
+  ),
+});
+export type SpaceList = z.infer<typeof SpaceList>;
+
+export const ComponentTypeList = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      isDefault: z.boolean().describe("The environment's default, preselected (MET-011, MET-012)"),
+    }),
+  ),
+});
+export type ComponentTypeList = z.infer<typeof ComponentTypeList>;
+
+/**
+ * What creating takes. The language is checked here against the same rule the content model applies
+ * (`contentDocumentSchema`, packages/domain/src/content/model/document.ts) - repeated rather than
+ * imported, because the contract cannot import a piece of the domain's schema - so a tag that would
+ * be refused deep inside `parseContentDocument` is refused at the door with a message about the tag
+ * rather than about the document.
+ */
+export const CreateComponentBody = z.strictObject({
+  title: z.string().min(1).max(200),
+  language: z
+    .string()
+    .regex(
+      /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/,
+      'not a BCP 47 tag',
+    ),
+  direction: z.enum(['ltr', 'rtl']),
+  componentType: LowercaseUuid.optional().describe("Absent: the environment's default (MET-011)"),
+});
+export type CreateComponentBody = z.infer<typeof CreateComponentBody>;
 
 export const ComponentListQuery = z.object({
   cursor: z.string().optional().describe('Where the previous page ended; absent for the first'),
@@ -19,7 +65,7 @@ export type ComponentListQuery = z.infer<typeof ComponentListQuery>;
 export const VersionSummary = z.object({
   id: z.string(),
   number: z.string().describe('`revision.version`, as `0.2`'),
-  author: z.string().describe('The principal who cut it'),
+  author: z.string().nullable().describe('The principal who cut it; null for a starter definition'),
   createdAt: z.string(),
   note: z.string().nullable(),
 });
@@ -78,6 +124,74 @@ export const componentRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
+    },
+  },
+  listSpaces: {
+    operationId: 'listSpaces',
+    method: 'GET',
+    path: '/v1/spaces',
+    summary: 'The spaces the caller may read, and whether they may create a component in each',
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The spaces', schema: SpaceList },
+      401: unauthenticated,
+    },
+  },
+  listComponentTypes: {
+    operationId: 'listComponentTypes',
+    method: 'GET',
+    path: '/v1/spaces/{space}/component-types',
+    summary: 'The component types a component created here may take, with the default marked',
+    tenantScoped: true,
+    // A definition is read through what uses it (access.md), extended to creating: whoever may create
+    // here, and only they, may see what they may create. Editor 1's finding 4.
+    access: { check: 'permission', permission: 'create', target: { space: 'space' } },
+    params: SpaceParams,
+    responses: {
+      200: { description: 'The component types', schema: ComponentTypeList },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the space but may not create in it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such space in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  createComponent: {
+    operationId: 'createComponent',
+    method: 'POST',
+    path: '/v1/spaces/{space}/components',
+    summary: 'Create a component in this space, at version 0.1',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'create', target: { space: 'space' } },
+    params: SpaceParams,
+    body: CreateComponentBody,
+    responses: {
+      // 200, not 201: a permission-checked handler is given no reply and cannot set a status, which
+      // is the guard that stops it sending before its transaction commits (app.ts). Every other
+      // permission-checked write answers 200 too.
+      200: { description: 'Created, at version 0.1', schema: ComponentView },
+      400: {
+        description: 'The title, language or direction is not one the content model accepts',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the space but may not create in it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such space in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description: 'component_type_missing: no such component type in this environment',
+        schema: ErrorBody,
+      },
     },
   },
   getComponent: {

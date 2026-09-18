@@ -393,6 +393,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The spaces the caller may read, and whether they may create a component in each */
+        get: operations["listSpaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/component-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The component types a component created here may take, with the default marked */
+        get: operations["listComponentTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/components": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a component in this space, at version 0.1 */
+        post: operations["createComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stream": {
         parameters: {
             query?: never;
@@ -825,8 +876,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1068,8 +1119,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1216,8 +1267,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1276,8 +1327,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1362,8 +1413,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1427,8 +1478,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -1513,8 +1564,8 @@ export interface operations {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
                             number: string;
-                            /** @description The principal who cut it */
-                            author: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
                             createdAt: string;
                             note: string | null;
                         };
@@ -3131,6 +3182,344 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listSpaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The spaces */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            /** @description Whether the caller may create a component in this space */
+                            mayCreate: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listComponentTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The component types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            /** @description The environment's default, preselected (MET-011, MET-012) */
+                            isDefault: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not create in it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    language: string;
+                    /** @enum {string} */
+                    direction: "ltr" | "rtl";
+                    /** @description Absent: the environment's default (MET-011) */
+                    componentType?: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Created, at version 0.1 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's content document (content-model.md), exactly as stored */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the caller may take the lock and write */
+                        mayEdit: boolean;
+                        lock: {
+                            holder: {
+                                id: string;
+                                name: string | null;
+                            };
+                            /** @description When it lapses unless the holder saves again */
+                            expectedRelease: string;
+                            /** @description Whether the caller holds it, from this session or another */
+                            yours: boolean;
+                            /** @description The holding session, told only to its own principal */
+                            session: string | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description The title, language or direction is not one the content model accepts */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not create in it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description component_type_missing: no such component type in this environment */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { ComponentListQuery } from './components.js';
 import type { RouteContract } from './contract.js';
-import { LowercaseUuid } from './editing.js';
-import { ErrorBody } from './schemas.js';
+import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 export const InvitationListQuery = z.object({ ...ComponentListQuery.shape });
 export type InvitationListQuery = z.infer<typeof InvitationListQuery>;

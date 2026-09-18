@@ -14,6 +14,7 @@ const WIRE_CODES = {
   'version.unchanged': 'version_unchanged',
   'content.invalid': 'content_invalid',
   'artifact.missing': 'artifact_missing',
+  'component_type.missing': 'component_type_missing',
   'grant.duplicate': 'grant_duplicate',
   'grant.allow_without_read': 'grant_allow_without_read',
   'grant.administer_denied_at_tenant': 'grant_administer_denied_at_tenant',

@@ -3,15 +3,21 @@ import { parseContentDocument } from '@alloy-works/domain';
 import {
   createEditorState,
   fromEditor,
+  headerOf,
   mountEditor,
   newBlockIdentifier,
+  setDirection,
+  setLanguage,
+  setTitle,
   toEditor,
+  type ComponentHeader as Header,
   type EditorView,
   type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import { useEffect, useRef, useState } from 'react';
 
+import { ComponentHeader } from './ComponentHeader.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -60,6 +66,14 @@ const textOf = (view: EditorView) => {
 };
 
 /**
+ * Whether the surface takes changes in this phase - the one predicate, shared by the view's own
+ * `editable` and the header's (review round 1, item 9): the header must go read-only exactly when the
+ * surface does, `lost` among them, rather than staying editable by a narrower rule of its own.
+ */
+const isEditablePhase = (phase: SessionView['phase']) =>
+  phase === 'reading' || phase === 'claiming' || phase === 'editing';
+
+/**
  * One component, open for editing (component-editor.md): its title, the surface, the save indicator,
  * Save version and Done editing, and one status region that says what happened. The surface is one
  * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on its
@@ -80,8 +94,10 @@ export function ComponentEditor({
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [header, setHeader] = useState<Header | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
+  const viewRef = useRef<EditorView | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
   // shown again for the life of this session.
@@ -223,6 +239,11 @@ export function ComponentEditor({
         // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
         captureKept();
         view.updateState(fresh(base));
+        // `updateState` does not go through `dispatch` above, so nothing else refreshes `header`
+        // (review round 1, item 1): left alone, it would keep showing whatever was typed right up to
+        // the refusal, and the next keystroke into that stale field would resend it - resurrecting
+        // text the surface itself just discarded.
+        setHeader(headerOf(view.state.doc));
       },
       onVersion: () => {
         // Undo must not reach past a version (CNT-103): a fresh state has a fresh history. Cutting a
@@ -231,18 +252,24 @@ export function ComponentEditor({
         const { selection } = view.state;
         base = view.state.doc;
         view.updateState(fresh(base, selection));
+        // As above: cutting changes nothing about the header, but this keeps that an invariant the
+        // surface enforces rather than one a future change could silently break.
+        setHeader(headerOf(view.state.doc));
       },
     });
     controls.current = editing;
     setSession(editing.view());
     const view = mountEditor(place.current, {
       state: fresh(),
+      // Named once, from what the component opened with (task 5 brief): it does not follow a title
+      // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
+      // surface's naming.
       label: `Content of ${opened.doc.attrs.title as string}`,
-      editable: () =>
-        component.mayEdit && (phase === 'reading' || phase === 'claiming' || phase === 'editing'),
+      editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
         if (transaction.docChanged) {
+          setHeader(headerOf(target.state.doc));
           // A real change invalidates whatever `kept` already captured (fix round 2, minor): the next
           // refusal, if there is one, has something new to capture again.
           keptIsCurrent.current = false;
@@ -251,10 +278,13 @@ export function ComponentEditor({
       },
       refused: () => setNotice('Pasting is not available yet. Type the text instead.'),
     });
+    viewRef.current = view;
+    setHeader(headerOf(view.state.doc));
     onViewRef.current?.(view);
     return () => {
       editing.dispose();
       controls.current = null;
+      viewRef.current = null;
       view.destroy();
     };
   }, [component, client, principalId]);
@@ -277,6 +307,26 @@ export function ComponentEditor({
     window.addEventListener('beforeunload', warnBeforeClose);
     return () => window.removeEventListener('beforeunload', warnBeforeClose);
   }, [session, kept]);
+
+  /**
+   * Asks the view to make a header step, answering the header the document holds afterwards - the
+   * model's own answer to what was sent, which the fields compare against rather than assuming their
+   * value survived unchanged (fix round 2): a title comes back trimmed, and a step the editor refused
+   * or found redundant comes back as whatever was already there. `null` where there is no view left
+   * to ask, which leaves a field showing what was typed rather than reverting it to nothing.
+   */
+  const changeHeader = <K extends keyof Header>(member: K, value: Header[K]): Header | null => {
+    const view = viewRef.current;
+    if (!view) return null;
+    const command =
+      member === 'title'
+        ? setTitle(value as string)
+        : member === 'language'
+          ? setLanguage(value as string)
+          : setDirection(value as Header['direction']);
+    command(view.state, view.dispatch.bind(view));
+    return headerOf(view.state.doc);
+  };
 
   if (loaded.state === 'loading') return <p>Opening...</p>;
   if (loaded.state === 'missing') {
@@ -314,7 +364,16 @@ export function ComponentEditor({
   return (
     <article aria-labelledby="component-title">
       <header>
-        <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+        {header ? (
+          <ComponentHeader
+            header={header}
+            editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
+            onChange={changeHeader}
+            onRefused={setNotice}
+          />
+        ) : (
+          <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+        )}
         <p>
           Version {session?.version.number ?? shown.version.number} in {shown.space.name}
         </p>

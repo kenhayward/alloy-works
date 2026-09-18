@@ -40,10 +40,14 @@ describe('the version mirrors', () => {
     expect(read('packages', 'stand-in-idp', 'package.json').version).toBe('0.0.0');
   });
 
-  it('matches the newest changelog entry', () => {
+  it('matches the newest changelog entry, which carries its date and its PR number', () => {
+    // The whole heading, not just the version at the front of it (final review): `## 0.26.0 -
+    // YYYY-MM-DD (PR #n)` is how an entry is written before the PR exists, and a version-only match
+    // waved it through - so the placeholder that is meant to be filled in before merging could ship.
     const changelog = readFileSync(join(repoRoot, 'CHANGELOG.md'), 'utf8');
-    const newest = /^## (\d+\.\d+\.\d+)/m.exec(changelog);
+    const newest = (/^## (.*)$/m.exec(changelog)?.[1] ?? '').trim();
 
-    expect(newest?.[1]).toBe(canonical);
+    expect(newest).toMatch(/^\d+\.\d+\.\d+ - \d{4}-\d{2}-\d{2} \(PR #\d+\)$/);
+    expect(newest.split(' ')[0]).toBe(canonical);
   });
 });

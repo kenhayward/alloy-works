@@ -493,6 +493,12 @@ describe('routes that check a permission', () => {
       url: `/v1/access/explain?principal=${ids.ada}&target=tenant`,
       status: 403,
     }),
+    listComponentTypes: () => ({ url: `/v1/spaces/${clinical}/component-types`, status: 404 }),
+    createComponent: () => ({
+      url: `/v1/spaces/${clinical}/components`,
+      status: 404,
+      payload: { title: 'Not mine', language: 'en-GB', direction: 'ltr' },
+    }),
     getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
     claimLock: () => ({
       url: `/v1/components/${dosing}/lock`,

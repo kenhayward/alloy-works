@@ -1,6 +1,26 @@
 import { parseLevel, permissions } from '@alloy-works/domain';
 import { z } from 'zod';
 
+const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * A uuid, lowercase only. Postgres' `uuid` type returns its canonical form lowercase regardless of the
+ * case it was written in, and a session or an opened-from version is compared against that reading in
+ * JavaScript - never through Postgres' own case-insensitive equality - so an uppercase one sent back
+ * would compare unequal to the very record it names, for as long as the session or the version lasts.
+ * Refusing it at the door, rather than downcasing it, keeps what a caller sent and what is stored the
+ * same string everywhere this is echoed back (a lock's `session`, a refusal's `holder`).
+ *
+ * Defined here, with the other shared primitives (`ErrorBody`, `Target`, `SampleParams`), rather than
+ * in `editing.ts` or `components.ts`: those two already import from each other, so either owning the
+ * definition and the other importing it is a circular import - live values referenced at module-body
+ * evaluation time, which throws `ReferenceError: Cannot access 'Lock' before initialization` at
+ * runtime the moment anything imports this module tree. `schemas.ts` imports from neither, so every
+ * consumer (`components.ts`, `editing.ts`, `invitations.ts`, `managing-access.ts`) can import it
+ * directly, with no re-export hop.
+ */
+export const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
+
 export const ErrorBody = z.object({
   code: z.string().describe('Stable and machine-readable: branch on this, never on the message'),
   message: z.string().describe('For people. It may change between releases'),

@@ -104,13 +104,29 @@ would drift - one would forget the immutability grant or the schema-version colu
 would not be an error. It would be a baseline that resolves slightly differently in four years.
 
 **`artifact_version`** is the permanent chain. One row per version: the artifact, `revision_no` and `version_no`, author, timestamp, `schema_version`, an optional note, the content and its content hash, the metadata values, the values not carried forward, the component type's version where the artifact is a component, and the version digest. The application role holds `INSERT` and `SELECT` on it and nothing else, so VER-008 is a grant
-rather than a convention.
+rather than a convention. **A component's version always names an author; any other kind's may leave it
+null** (0015, `artifact_version_component_author`). The rule is that narrow because a definition the
+environment itself started with has nobody to name, the way nobody made the eight roles or the space
+_General_ - and today the starter component type is the only version in the chain that takes it. The
+constraint permits a null author on any non-component version rather than on that one row alone, because
+a check constraint can name a kind and cannot name a row.
 
 **`revision_designation`** refers to a version row and adds who designated it, when, and against
 which gate. ADR-0006 said a revision is a marker on a version rather than a second history; this is
 that sentence as a table.
 
 **`version_definition`** relates a version to each field, schema and component type version it was written against (MET-017), one row per definition version, by foreign key. It takes inserts only, on the same terms as the version row, and a baseline reaches every definition its versions used through it.
+
+**`component_type_default`** is one row per environment naming the component type a component takes when
+its author names none (MET-012). Migration 0015 writes it, pointing at the component type every
+environment is provisioned with - _Topic_, assigning no schemas - so creating always has a type to take.
+The runtime role may read it and insert into it, and may not update, delete or truncate it: nothing in the
+service changes an environment's default yet, and a table restricted to the writes something actually
+makes is the same treatment 0011, 0012 and 0014 give theirs.
+
+**MET-012 is not claimed**, and this is the gap: nothing lets a tenant change that row. The store is here
+and the default is real; "a tenant must declare a default component type" is answered when the
+definitions-management design ships the route that sets it, and that design claims MET-012 then.
 
 **`iteration`** is the separate ephemeral store. Same substance, different lifecycle: editor, timestamp, content, metadata values, `expires_at`. **No foreign key points at it from anywhere**, which is how VER-005
 is enforced rather than asserted - a row nothing can reference cannot appear in comparison, in audit,
@@ -237,3 +253,15 @@ half that pays.
 | **VER-Q01** | The iteration retention window still has no number behind it, and this design makes the cost of getting it wrong concrete: the sweep is cheap, the storage is not                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **VER-Q03** | Erasure against immutable history. VER-038 points at the resolution - the author is a reference, not a copy - and this design adopts it, but the legal question of what else must go is not answered here                                                                                                                                                                                                                                                                                                                                                                           |
 | Answered    | Whether inline JSONB holds up at authoring volumes. Measured by [the version chain plan](../plans/2026-09-15-storage-01-the-version-chain.md)'s load test at 200,000 components: every measure passed - a cut through `recordVersion` at p95 11.92 ms, opening a component through `latestVersion` at p95 4.41 ms, 900 versions' content in one read at p95 148.8 ms - and the chain projects to 31.3 GB for a tenant of a million components, so content stays inline. What it did not measure - a chain several times the machine's memory - stays open with the hosting decision |
+
+## Changed while planning the build
+
+[The second editor plan](../plans/2026-09-17-editor-02-creating-a-component.md) was written against this
+document and proved in code before it was built. It found one place where the document was wrong, and
+added one store. No requirement claim changed: MET-012's store is here and MET-012 stays unclaimed, for
+the reason given under "Stores".
+
+| Found                                                                                                                             | Change                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A definition the environment itself started with had no author to name**, and `artifact_version.author_id` was `not null`       | 0015 drops the `not null` and adds `artifact_version_component_author`, so a component still cannot be written without one. `StoredVersion.author` is `string \| null`, and so is a version as the API answers it |
+| **Nothing declared which component type a component takes when its author names none** (MET-011's default, MET-012's declaration) | `component_type_default`, one row, written by 0015 and readable but not updatable by the runtime role ("Stores")                                                                                                  |

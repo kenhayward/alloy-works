@@ -97,14 +97,41 @@ accepted, with everything given to it. Somebody who has signed in already, like 
 directly, and inviting their address is refused. **Remove** takes a grant away again, except the last
 grant that lets anyone administer the environment.
 
-It also makes something to edit, since nothing in the product creates a component yet: in each
-environment, a component type called Topic, a component called "Install the printer" in General, and Ada,
-through her invitation, and Grace, made as a principal before she first signs in, allowed Author on
-General; Grace makes the grants and the component's versions, since a principal still waiting on an
-invitation could be withdrawn. Alice and Ivy are given nothing. Sign in as Ada, open "Install the
-printer", type, and **Save version**. To see
-the lock from the other side, sign in as Grace in a private window - the stand-in remembers who signed
-in last in a window - and start typing in the same component.
+It also makes something to edit without creating one by hand: in each environment, a component called
+"Install the printer" in General, and Ada, through her invitation, and Grace, made as a principal before
+she first signs in, allowed Author on General; Grace makes the grants and the component's versions, since
+a principal still waiting on an invitation could be withdrawn. Alice and Ivy are given nothing. Sign in as
+Ada, open "Install the printer", type, and **Save version**. To see the lock from the other side, sign in
+as Grace in a private window - the stand-in remembers who signed in last in a window - and start typing in
+the same component.
+
+**It no longer makes a component type of its own.** Every environment is provisioned with one, called
+Topic and assigning no schemas, and declares it the default, so creating always has a type to take; the
+seed takes that default like anything else. **A database prepared before 0.26.0** keeps the Topic it
+already has, with the author it was made by, and gains only the row declaring it the default - nothing you
+had changes, and there is no second type beside it.
+
+To make a component by hand, sign in as Ada and use **New component**, above the list:
+
+1. **Where** offers the spaces you may create in, which is **General** alone. **Component type** already
+   shows **Topic**, the environment's default.
+2. Type `Replace the toner` in **Title**, leave **Language** at `en-GB` and **Direction** at **Left to
+   right**, and press **Create**. The page opens the new component at **Version 0.1 in General**, with one
+   empty paragraph in it. Nothing focuses that paragraph yet, so click into it.
+3. Type a sentence: the lock is claimed by the first keystroke, not by creating, so the page says **You
+   are editing this component.** and then **Saved at** the time.
+4. Change **Title** to `Replace the printer toner`. The heading follows as you type and the page saves
+   again, because the title is part of the document; `Ctrl+Z` takes it back a character at a time, in the
+   same history as the text. Clearing it changes nothing, and leaving the field empty says **A component
+   needs a title.** and puts the title back in it - so retyping a title in place says nothing at all;
+   typing `english` into **Language** and leaving the field says **A language tag looks like en-GB.**,
+   while `pt-BR` is taken as you type it.
+5. **Save version**, then **Back to components**: the list shows the new title at version 0.2.
+
+Signed in as Alice, who holds nothing, the list says there is nothing she may read and there is no **New
+component** at all. Give her **Reader** on General from **Manage access** and reload: she sees both
+components and still has no **New component**, because a Reader may read and not create. Give her
+**Author** instead and it appears, offering General.
 
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8088` as the one address it returns to. Opening

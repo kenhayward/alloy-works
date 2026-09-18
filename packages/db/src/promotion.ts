@@ -2,12 +2,9 @@ import {
   carryForward,
   definitionsFor,
   parseContentDocument,
-  readDefinition,
   resolveComponentFields,
-  type DefinitionKind,
-  type DefinitionOf,
-  type Versioned,
 } from '@alloy-works/domain';
+import { currentDefinitionsFor } from './creation.js';
 import {
   holding,
   isComponent,
@@ -37,19 +34,6 @@ export type ReleaseAnswer =
   /** Released; `version` is the one cut, or null when there was nothing to cut. */
   | { readonly answer: 'released'; readonly version: StoredVersion | null }
   | Exclude<CutAnswer, { answer: 'recorded' } | { answer: 'version.unchanged' }>;
-
-/** The latest version of a definition, read the way stored definitions are: migrated, then parsed. */
-async function currentDefinition<K extends DefinitionKind>(
-  trx: TenantTransaction,
-  kind: K,
-  id: string,
-): Promise<Versioned<DefinitionOf[K]>> {
-  const stored = await latestVersion(trx, id);
-  if (!stored || stored.kind !== kind) throw new Error(`No ${kind} ${id} is stored in this tenant`);
-  const read = readDefinition(kind, stored.content, { artifact: id, version: stored.id });
-  if (!read.ok) throw new Error(`The ${kind} ${id} at ${stored.id} does not read: ${read.failure}`);
-  return { version: stored.id, definition: read.definition };
-}
 
 /**
  * Cuts a version (component-editor.md, "Cutting a version"): promotes the session's latest iteration
@@ -83,18 +67,9 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
 
   const typeRef = current.definitions.find((each) => each.kind === 'componentType');
   if (!typeRef) throw new Error(`Component ${input.artifactId} records no component type`);
-  // One statement at a time, in the order they are named: a transaction is one connection.
-  const type = await currentDefinition(trx, 'componentType', typeRef.id);
-  const schemas: Versioned<DefinitionOf['metadataSchema']>[] = [];
-  for (const assignment of type.definition.assignments) {
-    schemas.push(await currentDefinition(trx, 'metadataSchema', assignment.schema));
-  }
-  // A field two schemas group is one definition, supplied once.
-  const fieldIds = [
-    ...new Set(schemas.flatMap((schema) => schema.definition.entries.map((each) => each.field))),
-  ];
-  const fields: Versioned<DefinitionOf['field']>[] = [];
-  for (const id of fieldIds) fields.push(await currentDefinition(trx, 'field', id));
+  const definitions = await currentDefinitionsFor(trx, typeRef.id);
+  if (!definitions) throw new Error(`No componentType ${typeRef.id} is stored in this tenant`);
+  const { type, schemas, fields } = definitions;
   const effective = resolveComponentFields(
     type.definition,
     schemas.map((each) => each.definition),

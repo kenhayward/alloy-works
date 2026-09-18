@@ -64,6 +64,8 @@ const OTHER_TENANT_IDS: Readonly<
       return sample.id;
     }),
   }),
+  listComponentTypes: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  createComponent: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -85,6 +87,9 @@ const OTHER_TENANT_IDS: Readonly<
 const VALID_INPUT: Readonly<
   Record<string, { readonly query?: string; readonly payload?: Record<string, unknown> }>
 > = {
+  createComponent: {
+    payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' },
+  },
   claimLock: { payload: { session: SESSION } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
@@ -120,6 +125,17 @@ const CONTENT = {
     },
   ],
 };
+
+/** The General space of environment B, so a route naming a space names one that is not ours. */
+const spaceIdIn = async (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const space = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    return space.id;
+  });
 
 /** A component in environment B's General space, complete with a version, so a route that opens
  * one has something to actually find - never a bare artifact row a missing-version 404 would

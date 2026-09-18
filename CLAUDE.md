@@ -10,10 +10,11 @@ independently revisable components that publications assemble rather than own - 
 a web application and a desktop application**.
 
 > **Status: scaffolding.** The workspaces, the split between web and desktop, and the seam between
-> them are real and tested. A component's paragraphs can be opened, edited and saved as versions in
-> `packages/editor`, `apps/web` and `apps/service`, over the version chain in `packages/db` - and
-> nothing else authors content: no creating a component, no lists, tables, marks or equations, no
-> paste, no metadata panel, and no publishing. The single `Component` in `packages/domain` is the
+> them are real and tested. A component can be created in a space, and its paragraphs opened, edited
+> and saved as versions, in `packages/editor`, `apps/web` and `apps/service`, over the version chain
+> in `packages/db`; its title, base language and base direction are edited above the surface - and
+> nothing else authors content: no lists, tables, marks or equations, no paste, no metadata panel, no
+> making a component type, and no publishing. The single `Component` in `packages/domain` is the
 > scaffolding's, and nothing renders it any more. [`docs/features.md`](docs/features.md) lists what
 > does and does not exist.
 
@@ -53,7 +54,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,364 requirements in 22 documents under
+There are 1,365 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements

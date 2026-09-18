@@ -416,6 +416,11 @@ decision: what the author sees of them is what the component needs. Reading a de
 listing fields, opening a component type - is `read` asked of the definition, whose chain is itself and
 the tenant.
 
+The same holds when a component is being created and does not exist yet: a route authorised by `create`
+on a space - `GET /v1/spaces/{space}/component-types` - reads the component types a component made there
+could take. Creating asks about the space (step 1), so the definitions it needs to offer are read by the
+same decision, and an author granted only a space is never refused the choice MET-011 makes them make.
+
 ### Taking the decision with the act
 
 IAM-063 is met with one row. Each tenant schema holds `access_epoch`, a single row. **Every change to a
@@ -707,3 +712,10 @@ inviting anybody but the first administrator.
 | **Built: inviting the first administrator renewed an external invitation to the address**, and granted Administrator by a raw insert the external rules never saw                             | Refused as `first_administrator.external` ("Roles")                                                                                                                                                     |
 | **Built: "no decision reads" a principal's issuer and subject** overlooked the lock-out guard, which counts only principals with an issuer                                                    | Said, with why reading it without the epoch is safe ("Invitations")                                                                                                                                     |
 | **Built: a principal from before 0014 has `email_verified` false**, which was not said                                                                                                        | Said: it refuses no invitation to its address until its next sign-in, and never claims one ("Invitations")                                                                                              |
+
+[The second editor plan](../plans/2026-09-17-editor-02-creating-a-component.md) was written against this
+document in turn, and found one. No requirement claim changed.
+
+| Found                                                                                                                                                                                                                                                                      | Change                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **A definition is read through what uses it, and creating uses one before it exists**: an author granted only a space could not read the component types MET-011 makes them choose between, because there was no component yet to read them through (editor 1's finding 4) | The rule is extended by one sentence ("Deciding"): a route authorised by `create` on a space reads the component types a component made there could take. `GET /v1/spaces/{space}/component-types` is that route, and `GET /v1/spaces`, which this document already designed, is built beside it |
