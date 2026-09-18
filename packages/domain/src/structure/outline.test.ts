@@ -16,6 +16,7 @@ import {
   parseOutlineDocument,
   readOutline,
   referenceModeSchema,
+  walkOutline,
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
@@ -407,5 +408,49 @@ describe('what a stored outline refuses, because nothing later could take it bac
       title: [words(pair)],
     });
     expect(parseOutlineDocument({ ...empty, title: pair }).title).toBe(pair);
+  });
+});
+
+describe('what the parse bounds', () => {
+  /** A distinct identifier for each level: four digits spelled as letters, as the operations test does. */
+  const idAt = (level: number) =>
+    `${String(level).padStart(4, '0')}${'a'.repeat(22)}`.replace(
+      /\d/g,
+      (digit) => 'abcdefghij'[Number(digit)]!,
+    );
+  /** One section per level, each the only child of the one above it. */
+  const nested = (
+    levels: number,
+    over: (level: number) => Record<string, unknown> = () => ({}),
+  ) => {
+    let node: Record<string, unknown> | null = null;
+    for (let level = levels; level >= 1; level -= 1) {
+      node = section(idAt(level), { children: node === null ? [] : [node], ...over(level) });
+    }
+    return { ...empty, nodes: node === null ? [] : [node] };
+  };
+
+  it('reads an outline 64 levels deep, and refuses one a level deeper, however deep it goes', () => {
+    let deepest = 0;
+    walkOutline(parseOutlineDocument(nested(64)).nodes, (_node, depth) => {
+      deepest = Math.max(deepest, depth);
+    });
+    expect(deepest).toBe(64);
+    expect(() => parseOutlineDocument(nested(65))).toThrow(/no deeper than 64 levels/);
+    // Refused by the bound, never by the stack: deep enough to overflow a recursive parse.
+    expect(() => parseOutlineDocument(nested(5000))).toThrow(/no deeper than 64 levels/);
+  });
+
+  it('refuses an appendix anywhere but the top level, where its subtree inherits it', () => {
+    expect(
+      parseOutlineDocument(nested(3, (level) => (level === 1 ? { matter: 'appendix' } : {})))
+        .nodes[0],
+    ).toMatchObject({ matter: 'appendix' });
+    expect(() =>
+      parseOutlineDocument(nested(3, (level) => (level === 2 ? { matter: 'appendix' } : {}))),
+    ).toThrow(/top level/);
+    expect(() =>
+      parseOutlineDocument(nested(3, (level) => ({ matter: level === 3 ? 'appendix' : 'body' }))),
+    ).toThrow(/top level/);
   });
 });

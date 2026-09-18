@@ -161,18 +161,59 @@ export function walkOutline(
 }
 
 /**
- * The one entry point. One rule the schema cannot express on its own, because it is about a document
- * rather than a node: an identifier is unique within its outline (STR-003), the way a block
- * identifier is unique within its component (CNT-002).
+ * How deep an outline may nest. STR-007 asks for nine levels and this is well above it; it exists
+ * because a recursive parse of an unbounded tree overflows the stack - between 500 and 800 levels in
+ * Node, and fewer in a browser - so a stored outline deep enough would read as unreadable to everyone,
+ * on every read, for ever. Bounded here, a deeper one is refused when it is written instead.
+ */
+export const MAXIMUM_OUTLINE_DEPTH = 64;
+
+/**
+ * The bound, checked before the schema recurses into the value and without recursing itself, so a
+ * value of any depth is refused by the bound and never by the stack.
+ */
+function refuseTooDeep(value: unknown): void {
+  if (typeof value !== 'object' || value === null || !('nodes' in value)) return;
+  const pending: { readonly nodes: unknown; readonly depth: number }[] = [
+    { nodes: value.nodes, depth: 1 },
+  ];
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    if (!Array.isArray(next.nodes)) continue;
+    for (const node of next.nodes as unknown[]) {
+      if (next.depth > MAXIMUM_OUTLINE_DEPTH) {
+        throw new Error(`An outline nests no deeper than ${MAXIMUM_OUTLINE_DEPTH} levels`);
+      }
+      if (typeof node === 'object' && node !== null && 'children' in node) {
+        pending.push({ nodes: node.children, depth: next.depth + 1 });
+      }
+    }
+  }
+}
+
+/**
+ * The one entry point. Three rules the schema cannot express on its own, because each is about a
+ * document rather than a node:
+ *
+ * - an identifier is unique within its outline (STR-003), the way a block identifier is unique within
+ *   its component (CNT-002);
+ * - the outline nests no deeper than `MAXIMUM_OUTLINE_DEPTH`;
+ * - **`matter` is set at the top level alone**: a top-level node carries it and its subtree inherits
+ *   it (STR-016), so a node below the top level is `body` and never says otherwise. One rule here,
+ *   rather than a refusal in `set`, another in `insert` and a third in `move`, covers every path that
+ *   could put an appendix at a depth - an operation's result comes back through this parse.
  */
 export function parseOutlineDocument(value: unknown): OutlineDocument {
+  refuseTooDeep(value);
   const outline = outlineDocumentSchema.parse(value);
   const seen = new Set<string>();
-  walkOutline(outline.nodes, (node) => {
+  walkOutline(outline.nodes, (node, depth) => {
     if (seen.has(node.id)) {
       throw new Error(`Outline node identifier ${node.id} is used more than once in this document`);
     }
     seen.add(node.id);
+    if (depth > 1 && node.matter !== 'body') {
+      throw new Error(`Outline node ${node.id} sets its matter below the top level`);
+    }
   });
   return outline;
 }

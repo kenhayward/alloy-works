@@ -226,7 +226,7 @@ describe('the five operations over an outline', () => {
     });
   });
 
-  it('STR-007 nests to nine levels, with no maximum the schema declares', () => {
+  it('STR-007 nests to nine levels, far inside the bound the parse declares', () => {
     const { allocate } = identifiers();
     let outline = empty;
     let parent: string | null = null;
@@ -507,5 +507,69 @@ describe('the five operations over an outline', () => {
     // through uncaught before (round 2 review).
     expect(subtreeContainmentRefusals).toBeGreaterThan(0);
     expect(multiChildReorders).toBeGreaterThan(0);
+  });
+});
+
+describe('what an operation cannot build, because the parse refuses it', () => {
+  const UNSTORABLE = {
+    applied: false,
+    reason: 'This operation would produce an outline that cannot be stored',
+  };
+
+  it('refuses a section inserted, or a subtree moved, below the sixty-fourth level', () => {
+    const { allocate } = identifiers();
+    let outline = empty;
+    let parent: string | null = null;
+    for (let level = 1; level <= 64; level += 1) {
+      outline = run(outline, addSection(parent, 0, `Level ${level}`), allocate);
+      let node = outline.nodes[0]!;
+      while (node.children[0]) node = node.children[0];
+      parent = node.id;
+    }
+    expect(applyOutlineOperation(outline, addSection(parent), allocate)).toEqual(UNSTORABLE);
+    // A second top-level section, moved under the deepest, would sit at level sixty-five.
+    outline = run(outline, addSection(null, 1, 'Results'), allocate);
+    const results = outline.nodes[1]!.id;
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'move', node: results, parent, position: 0 },
+        allocate,
+      ),
+    ).toEqual(UNSTORABLE);
+  });
+
+  it('refuses an appendix set on, or moved to, anywhere but the top level', () => {
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null, 0, 'Introduction'), allocate);
+    const introduction = outline.nodes[0]!.id;
+    outline = run(outline, addSection(introduction, 0, 'Scope'), allocate);
+    const scope = outline.nodes[0]!.children[0]!.id;
+    outline = run(outline, addSection(null, 1, 'Glossary'), allocate);
+    const glossary = outline.nodes[1]!.id;
+
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'set', node: scope, matter: 'appendix' },
+        allocate,
+      ),
+    ).toEqual(UNSTORABLE);
+    outline = run(outline, { operation: 'set', node: glossary, matter: 'appendix' }, allocate);
+    expect(outline.nodes[1]).toMatchObject({ matter: 'appendix' });
+    expect(
+      applyOutlineOperation(
+        outline,
+        { operation: 'move', node: glossary, parent: introduction, position: 0 },
+        allocate,
+      ),
+    ).toEqual(UNSTORABLE);
+    // Its place among the top level is its own to change.
+    outline = run(
+      outline,
+      { operation: 'move', node: glossary, parent: null, position: 0 },
+      allocate,
+    );
+    expect(outline.nodes[0]).toMatchObject({ id: glossary, matter: 'appendix' });
   });
 });
