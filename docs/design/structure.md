@@ -554,6 +554,15 @@ else**: a title is in no component, and a `component` target in a title would ca
 identity past the withholding "Who is shown what" requires. A bibliography entry (**LIB**) joins the
 union when LIB says what an entry's identity is.
 
+**A title's reference shows a number or a page, and nothing that could be a title.** Resolving a
+title that shows a title resolves that title, so a section whose heading shows its own title, or two
+headings showing each other's, would recurse without end. Until resolution can refuse a cycle by name,
+the parse refuses a reference in a section title whose `display` is `title`, `numberAndTitle` or
+`relative`, and a `page` reference whose `withoutPages` is anything but `number` - the form it falls
+back to where there are no pages would otherwise loop the same way. A number and a page are drawn from
+the numbering table and the paginator, never from a title, so neither can. Widening this later, once
+a cycle fails by name, changes nothing stored.
+
 **Resolution reads the numbering table and never the component.** For each cross-reference in the
 resolved document, the key is `(occurrence being read, block)` for a `block` target,
 `(that component's one occurrence, block)` for a `component` target, and `(node)` for a `node` target;

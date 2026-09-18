@@ -82,7 +82,8 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  * equation (CNT-046), a variable (REU-019) - validated identically. Word allows a footnote in a
  * heading, and nothing in the corpus or structure.md narrows it; a narrower rule would be a second
  * inline vocabulary to keep in step with the first. A cross-reference in a heading targets an outline
- * node and nothing else (`checkInlineContent`).
+ * node and nothing else, and shows a number or a page, never a title that could loop back to its own
+ * (`checkInlineContent`).
  *
  * **A title has text**: its text runs, joined, are not blank once trimmed - `hasText`, the rule the
  * editor's `titleAccepted` is, so an API caller cannot store the untitled section the panel refuses.

@@ -80,6 +80,11 @@ function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
  *   node: a node belongs to one document's outline, and a component is used in many. In a section
  *   title, an outline node alone: a title is in no component, and an outline is answered with a
  *   component the reader may not read withheld, which a title's reference would carry past.
+ * - **A reference in a section title shows a number or a page, and nothing that could be a title.**
+ *   Resolving a title that shows a title resolves that title, so a node naming itself, or two titles
+ *   naming each other, would never finish. The `withoutPages` form a page reference falls back to is
+ *   held to the same rule, and so is `relative`, which says nothing a heading needs. Widening this
+ *   later, once resolution can refuse a cycle by name, changes nothing stored.
  *
  * **Returns the inlines as parsed** (issue #124): a footnote's content arrives unparsed, because the
  * inline schema cannot name a paragraph, so the walk hands back each footnote with its parsed
@@ -106,6 +111,9 @@ export function checkInlineContent(
       }
       if (home === 'title' && inline.target.kind !== 'node') {
         throw new Error(`Cross-reference ${inline.id} in a title targets what a title cannot name`);
+      }
+      if (home === 'title' && !shownInATitle(inline)) {
+        throw new Error(`Cross-reference ${inline.id} in a title shows what could name a title`);
       }
     }
     if (inline.type !== 'footnote') return inline;
@@ -168,6 +176,15 @@ function checkBlock(block: BlockNode, seen: Set<string>): BlockNode {
     default:
       return block;
   }
+}
+
+/** Whether a reference shows only what cannot contain a title: a number, or a page falling back to one. */
+function shownInATitle(reference: { display: string; withoutPages?: string | undefined }): boolean {
+  if (reference.display === 'number') return true;
+  return (
+    reference.display === 'page' &&
+    (reference.withoutPages === undefined || reference.withoutPages === 'number')
+  );
 }
 
 /** Where inline content is stored, which decides what a cross-reference in it may target. */

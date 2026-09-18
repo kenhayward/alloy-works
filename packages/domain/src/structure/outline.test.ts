@@ -393,6 +393,33 @@ describe('a section title, under the content model rules', () => {
     ).toThrow(/content model refuses/);
   });
 
+  it('lets a reference in a title show a number or a page, and never a title, so no title can loop', () => {
+    const shown = (display: string, withoutPages?: string) => ({
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'node', node: OTHER },
+      display,
+      ...(withoutPages === undefined ? {} : { withoutPages }),
+    });
+    for (const reference of [shown('number'), shown('page'), shown('page', 'number')]) {
+      expect(() => parseOutlineDocument(titled([words, reference]))).not.toThrow();
+    }
+    // Resolving a title that shows a title resolves that title: a node naming itself, or two titles
+    // naming each other, would never finish. And a page reference falls back, where there are no
+    // pages, to the form it declares - so that form is held to the same rule.
+    for (const reference of [
+      shown('title'),
+      shown('numberAndTitle'),
+      shown('relative'),
+      shown('page', 'title'),
+      shown('page', 'numberAndTitle'),
+    ]) {
+      expect(() => parseOutlineDocument(titled([words, reference]))).toThrow(
+        /content model refuses/,
+      );
+    }
+  });
+
   it('holds a footnote in a title as parsed, so its defaults spelled out or omitted give one string', () => {
     const spelled = parseOutlineDocument(titled([words, footnote([paragraph])]));
     const omitted = parseOutlineDocument(
