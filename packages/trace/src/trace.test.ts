@@ -163,8 +163,13 @@ describe('the citations in the committed model', () => {
   // space, its title inside its versioned content. The plan's 161 also counted STR-004, cited nowhere
   // because the test shows a construction rather than its statement. Task 5 cites STR-059 again,
   // where its conflict detection in the interface is built.
+  // 162, from 160: the same plan cites STR-008 and STR-059 in the renderer's documents page
+  // (apps/web/src/structure/DocumentPage.test.tsx): one move from the keymap sends one operation
+  // naming the node and not its subtree, the subtree travels, and one Ctrl+Z sends the one inverse
+  // that puts it all back; and a conflicting act answered 409 renders the outline the refusal carried,
+  // says somebody else changed the document, and leaves nothing on the undo stack to overwrite it.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(160);
+    expect(model.citations).toHaveLength(162);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -207,6 +212,7 @@ describe('scanning the repository for test files', () => {
 
     expect(files).toContain('apps/web/src/App.test.tsx');
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(7);
+    // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(8);
   });
 });

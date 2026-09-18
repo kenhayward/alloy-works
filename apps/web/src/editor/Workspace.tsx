@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
+import { DocumentList } from '../structure/DocumentList.js';
+import { DocumentPage } from '../structure/DocumentPage.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
 
@@ -12,6 +14,17 @@ export interface WorkspaceProps {
 }
 
 const OPEN = /^#\/components\/([0-9a-f-]{36})(\/access)?$/;
+/** The documents, or one document open (structure 01): the same hash routing, beside `OPEN`. */
+const DOCUMENTS = /^#\/documents(?:\/([0-9a-f-]{36}))?$/;
+
+/** What sits above either listing: the two kinds of thing a person can open, each a plain link. */
+function Places() {
+  return (
+    <nav aria-label="Workspace">
+      <a href="#/">Components</a> <a href="#/documents">Documents</a>
+    </nav>
+  );
+}
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -67,8 +80,8 @@ function useHash(): string {
 }
 
 /**
- * The list of components, or one component open, chosen by the address's hash - so opening one is a
- * link, a reload reopens it, and the renderer's relative asset paths (built for the desktop shell's
+ * The list of components, one component open, the list of documents or one document open, chosen by
+ * the address's hash - so opening one is a link, a reload reopens it, and the renderer's relative asset paths (built for the desktop shell's
  * `file://` fallback) are never put under a deep path.
  */
 export function Workspace({ fetch: given }: WorkspaceProps) {
@@ -142,5 +155,34 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       </>
     );
   }
-  return <ComponentList client={client} />;
+  const documents = DOCUMENTS.exec(hash);
+  if (documents?.[1]) {
+    return (
+      <>
+        <p>
+          <a href="#/documents">Back to documents</a>
+        </p>
+        <DocumentPage key={documents[1]} client={client} id={documents[1]} />
+      </>
+    );
+  }
+  if (documents) {
+    return (
+      <>
+        <Places />
+        <DocumentList
+          client={client}
+          onOpen={(id) => {
+            window.location.hash = `#/documents/${id}`;
+          }}
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      <Places />
+      <ComponentList client={client} />
+    </>
+  );
 }

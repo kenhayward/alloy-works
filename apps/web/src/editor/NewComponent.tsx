@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { creatableSpacesIn, type Space } from '../spaces.js';
 import { DirectionSelect } from './DirectionSelect.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -13,10 +14,6 @@ type Client = ReturnType<typeof createApiClient>;
  */
 const language = contentDocumentSchema.shape.language;
 
-interface Space {
-  readonly id: string;
-  readonly name: string;
-}
 interface ComponentType {
   readonly id: string;
   readonly name: string;
@@ -24,24 +21,10 @@ interface ComponentType {
 }
 
 /**
- * The client's bodies are `any`, so every one is checked rather than trusted before it is read.
- * `spacesIn` and `typesIn` stay two small functions rather than one shared `itemsIn(data, read)`
- * (review round 1, item 7): the shapes only look alike - a space is kept by a boolean permission
- * (`mayCreate`), a type by which one is the default - and a generic version would have to smuggle
- * that distinction back in through its caller anyway, for two call sites total.
+ * The client's bodies are `any`, so every one is checked rather than trusted before it is read. The
+ * spaces are read by `creatableSpacesIn`, which **New document** shares; the types stay here, because
+ * only a component has one.
  */
-function spacesIn(data: unknown): Space[] | undefined {
-  if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
-  const items = (data as { items: unknown }).items;
-  if (!Array.isArray(items)) return undefined;
-  return items.flatMap((item: unknown) => {
-    if (typeof item !== 'object' || item === null) return [];
-    const { id, name, mayCreate } = item as Record<string, unknown>;
-    if (typeof id !== 'string' || typeof name !== 'string' || mayCreate !== true) return [];
-    return [{ id, name }];
-  });
-}
-
 function typesIn(data: unknown): ComponentType[] | undefined {
   if (typeof data !== 'object' || data === null || !('items' in data)) return undefined;
   const items = (data as { items: unknown }).items;
@@ -105,7 +88,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     try {
       const { data, response } = await client.GET('/v1/spaces');
       if (spacesRequest.current !== generation) return;
-      const open = spacesIn(data);
+      const open = creatableSpacesIn(data);
       if (open === undefined) {
         setSpacesProblem(response.status === 401 ? 'signedOut' : 'failed');
         return;
