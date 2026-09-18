@@ -26,6 +26,7 @@ import {
 import {
   dropMove,
   keyMove,
+  nestsAnAppendix,
   nodeLabel,
   nodeName,
   placeOf,
@@ -165,6 +166,19 @@ const KEYS =
 
 function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
+}
+
+/** The nearest ancestor of a node that is not numbered, which takes its number away (decision D). */
+function unnumberedAncestor(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+): OutlineViewNode | undefined {
+  let parent = placeOf(nodes, id)?.parent ?? null;
+  while (parent !== null) {
+    if (!parent.numbered) return parent;
+    parent = placeOf(nodes, parent.id)?.parent ?? null;
+  }
+  return undefined;
 }
 
 /** Whether a key event came from somewhere text is typed, where the key is the field's own. */
@@ -437,6 +451,9 @@ export function OutlinePanel({
       if (!may) return;
       const move = keyMove(nodes, current, direction);
       if (move !== null) void send(move, current);
+      else if (nestsAnAppendix(nodes, current, direction)) {
+        onNotice('An appendix stays at the top level.');
+      }
       return;
     }
     switch (event.key) {
@@ -689,6 +706,8 @@ export function OutlinePanel({
           key={selected.id}
           node={selected}
           topLevel={placeOf(nodes, selected.id)?.parent === null}
+          unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
+          names={names}
           busy={busy}
           onOperation={(operation) => send(operation, null)}
           onRetitle={retitle}
@@ -833,6 +852,8 @@ interface Field {
 function NodeDetails({
   node,
   topLevel,
+  unnumberedAbove,
+  names,
   busy,
   onOperation,
   onRetitle,
@@ -843,6 +864,9 @@ function NodeDetails({
   node: OutlineViewNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
   topLevel: boolean;
+  /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
+  unnumberedAbove: OutlineViewNode | undefined;
+  names: Names;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -850,6 +874,12 @@ function NodeDetails({
   onNotice: (message: string | null) => void;
   onRemove: () => void;
 }) {
+  const hintId = useId();
+  // Ticked, and still without a number: said beside the box, so the tick does not look ignored.
+  const hint =
+    node.numbered && unnumberedAbove !== undefined
+      ? `Not numbered while ${nodeName(unnumberedAbove, names)} is not.`
+      : null;
   return (
     <div>
       {node.type === 'section' && (
@@ -881,6 +911,7 @@ function NodeDetails({
         <input
           type="checkbox"
           checked={node.numbered}
+          aria-describedby={hint === null ? undefined : hintId}
           onChange={(event) => {
             if (busy) return;
             void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
@@ -888,6 +919,7 @@ function NodeDetails({
         />
         Numbered
       </label>
+      {hint !== null && <span id={hintId}>{hint}</span>}
       {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
           the outline's parse refuses one set anywhere else. */}
       {topLevel && (

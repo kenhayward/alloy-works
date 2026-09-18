@@ -1832,3 +1832,80 @@ describe('section numbers in the outline panel', () => {
     expect(withheld).toHaveAccessibleDescription('1.1');
   });
 });
+
+describe('an appendix in the outline panel', () => {
+  /** Method with Scope beneath it, then Results as an appendix. */
+  const withAnAppendix = () =>
+    outline([
+      section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      { ...section(RESULTS, 'Results'), matter: 'appendix' },
+    ]);
+
+  it('sends nothing when Alt+Right would put an appendix below the top level, and says why', async () => {
+    const fake = service(withAnAppendix());
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    expect(item('Results')).toHaveAccessibleDescription('A');
+    await userEvent.click(item('Results'));
+    await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('An appendix stays at the top level.'),
+    );
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('offers no drop into a node for an appendix, and sends nothing on one', async () => {
+    const fake = service(withAnAppendix());
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    fireEvent.dragStart(item('Results'));
+    await screen.findByText('Move to the end of the document');
+    // Not taken: a drop place the browser is not told it may drop on.
+    expect(fireEvent.dragOver(screen.getByText('Method'))).toBe(true);
+    fireEvent.drop(screen.getByText('Method'));
+    fireEvent.dragEnd(item('Results'));
+    await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('offers no drop before a nested node for an appendix, and sends nothing on one', async () => {
+    const fake = service(withAnAppendix());
+    const { container } = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    fireEvent.dragStart(item('Results'));
+    await screen.findByText('Move to the end of the document');
+    const beforeScope = container.querySelector(`[data-drop="before:${SCOPE}"]`);
+    expect(beforeScope).not.toBeNull();
+    expect(fireEvent.dragOver(beforeScope!)).toBe(true);
+    fireEvent.drop(beforeScope!);
+    fireEvent.dragEnd(item('Results'));
+    await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
+    expect(fake.edits()).toEqual([]);
+    expect(item('Results')).toHaveAttribute('aria-level', '1');
+  });
+
+  it('says why a node whose own box is ticked has no number', async () => {
+    const fake = service(
+      outline([
+        { ...section(METHOD, 'Method', [section(SCOPE, 'Scope')]), numbered: false },
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    await userEvent.click(item('Scope'));
+    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    expect(box).toBeChecked();
+    expect(box).toHaveAccessibleDescription('Not numbered while Method is not.');
+    expect(screen.getByText('Not numbered while Method is not.')).toBeInTheDocument();
+
+    // Nothing to say beside a node that is itself unticked, or one with a number.
+    await userEvent.click(item('Method'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    await userEvent.click(item('Results'));
+    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.queryByText(/Not numbered while/)).toBeNull();
+  });
+});
