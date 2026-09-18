@@ -10,13 +10,16 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - A component can no longer be saved with two things sharing one identifier when one of them is
   inside a footnote. Every identifier in a component is now unique, footnotes included.
 - A footnote can no longer hold an image or another footnote, as the content rules always said.
+- A footnote's text is held the same however it was spelled, so the same footnote saved twice is
+  recognised as no change rather than as a new version.
 
 ### Changed
 
 - A cross-reference now carries an identifier of its own, says whether it points at something in its
   own component, in another component, or at a section of the document, and a reference to a page can
-  say what to show instead where there are no pages. Nothing in the product writes cross-references or
-  footnotes yet, so nothing you have made changes.
+  say what to show instead where there are no pages. A cross-reference in a section title shows a
+  number or a page only, for now, so a heading can never end up showing itself. Nothing in the
+  product writes cross-references or footnotes yet, so nothing you have made changes.
 
 ## 0.27.0 - 2026-09-18 (PR #121)
 
