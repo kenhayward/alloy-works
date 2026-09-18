@@ -53,7 +53,7 @@ interface Numbering {
 interface DocumentBody {
   id: string;
   version: { id: string };
-  outline: { nodes: { id: string; children: { id: string }[] }[] };
+  outline: { nodes: { id: string; children: { id: string; children: { id: string }[] }[] }[] };
 }
 
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
@@ -414,6 +414,121 @@ describe('a document numbered through the service', () => {
       expect(answer.statusCode, answer.body).toBe(200);
       expect(answer.body).toBe(restricted[reader]);
     }
+  });
+
+  it('answers every mode and switch the outline stores with the numbers the domain gives them', async () => {
+    const shared = await componentWith(general, 'Install the printer', [
+      figure('f1'),
+      figure('f2'),
+    ]);
+    // `older` is pinned at 0.2, which holds one figure; its head holds two, and is not what is read.
+    const older = await componentWith(general, 'Calibration', [figure('p1')]);
+    await revise(older, [figure('p1'), figure('p2')]);
+    let doc = await create('The dosing report');
+    const act = async (operation: Json) => {
+      const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation,
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      doc = answer.json<DocumentBody>();
+    };
+    const section = (title: string) => ({ type: 'section', title: text(title) });
+    const latest = { type: 'reference', component: shared.id, mode: { kind: 'latest' } };
+    const top = () => doc.outline.nodes.map((node) => node.id);
+    const childrenOf = (index: number) => doc.outline.nodes[index]!.children.map((node) => node.id);
+
+    // Glossary (an unnumbered leading appendix), Introduction, Results, Appendix.
+    for (const [position, title] of ['Glossary', 'Introduction', 'Results', 'Appendix'].entries()) {
+      await act({ operation: 'insert', parent: null, position, node: section(title) });
+    }
+    const [glossary, introduction, results, appendix] = top();
+    await act({ operation: 'set', node: glossary, matter: 'appendix', numbered: false });
+    await act({ operation: 'set', node: appendix, matter: 'appendix' });
+    await act({ operation: 'insert', parent: glossary, position: 0, node: latest });
+    // Introduction: a pinned placement, an unnumbered aside holding a placement, an `approved`
+    // placement, and a placement after it.
+    await act({
+      operation: 'insert',
+      parent: introduction,
+      position: 0,
+      node: {
+        type: 'reference',
+        component: older.id,
+        mode: { kind: 'pinned', version: older.version },
+      },
+    });
+    await act({ operation: 'insert', parent: introduction, position: 1, node: section('Aside') });
+    await act({
+      operation: 'insert',
+      parent: introduction,
+      position: 2,
+      node: { type: 'reference', component: shared.id, mode: { kind: 'approved' } },
+    });
+    await act({ operation: 'insert', parent: introduction, position: 3, node: latest });
+    const [pinned, aside, approved, after] = childrenOf(1);
+    await act({ operation: 'set', node: aside!, numbered: false });
+    await act({ operation: 'insert', parent: aside, position: 0, node: latest });
+    await act({ operation: 'insert', parent: results, position: 0, node: latest });
+    await act({ operation: 'insert', parent: appendix, position: 0, node: latest });
+    const [inGlossary] = childrenOf(0);
+    const [inAside] = doc.outline.nodes[1]!.children[1]!.children.map((node) => node.id);
+    const [inResults] = childrenOf(2);
+    const [inAppendix] = childrenOf(3);
+
+    const answers: string[] = [];
+    // Alice reads General, so she is shown exactly what Grace is: `approved` withholds for everyone.
+    for (const reader of ['grace', 'alice']) {
+      const answer = await call(reader, 'GET', `/v1/documents/${doc.id}/numbering`);
+      expect(answer.statusCode, answer.body).toBe(200);
+      answers.push(answer.body);
+      const body = answer.json<Numbering>();
+      expect(body.occurrences).toEqual([
+        { node: inGlossary, version: shared.version },
+        { node: pinned, version: older.version },
+        { node: inAside, version: shared.version },
+        { node: approved, version: null },
+        { node: after, version: shared.version },
+        { node: inResults, version: shared.version },
+        { node: inAppendix, version: shared.version },
+      ]);
+      expect(
+        body.entries
+          .filter((entry) => entry.sequence === 'section')
+          .map((entry) => [entry.node, entry.number]),
+      ).toEqual([
+        [introduction, '1'],
+        [pinned, '1.1'],
+        [approved, '1.2'],
+        [after, '1.3'],
+        [results, '2'],
+        [inResults, '2.1'],
+        [appendix, 'A'],
+        [inAppendix, 'A.1'],
+      ]);
+      expect(
+        body.entries
+          .filter((entry) => entry.sequence === 'figure')
+          .map((entry) => [entry.node, entry.block, entry.matter, entry.label]),
+      ).toEqual([
+        // No chapter to number against yet, so the leading appendix's captions are withheld.
+        [inGlossary, 'f1', 'appendix', null],
+        [inGlossary, 'f2', 'appendix', null],
+        // The pinned version's one figure, not the head's two.
+        [pinned, 'p1', 'body', 'Figure 1.1'],
+        // Beneath an unnumbered node: no section number, and its figures carry on the chapter's.
+        [inAside, 'f1', 'body', 'Figure 1.2'],
+        [inAside, 'f2', 'body', 'Figure 1.3'],
+        // After `approved`, which nobody can number yet, until the next chapter restarts.
+        [after, 'f1', 'body', null],
+        [after, 'f2', 'body', null],
+        [inResults, 'f1', 'body', 'Figure 2.1'],
+        [inResults, 'f2', 'body', 'Figure 2.2'],
+        [inAppendix, 'f1', 'appendix', 'Figure A.1'],
+        [inAppendix, 'f2', 'appendix', 'Figure A.2'],
+      ]);
+    }
+    expect(answers[1]).toBe(answers[0]);
   });
 
   it('numbers a document with no nodes as nothing at all, without an error', async () => {
