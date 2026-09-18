@@ -14,6 +14,7 @@ describe('the domain package', () => {
         'blockNodeSchema',
         'canonicalise',
         'contentDocumentSchema',
+        'hasText',
         'inlineNodeSchema',
         'markSchema',
         'markTypes',

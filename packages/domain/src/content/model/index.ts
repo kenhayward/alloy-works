@@ -12,6 +12,8 @@ export type { ContentDocument } from './document.js';
 
 export { blockIdentifierFrom } from './identifier.js';
 
+export { hasText } from './text.js';
+
 export { canonicalise } from './canonical.js';
 export { migrate, readContent } from './migrate.js';
 export type { ReadOutcome } from './migrate.js';

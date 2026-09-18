@@ -232,6 +232,22 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(after).toEqual(before);
   });
 
+  it('refuses a title Postgres cannot store as the caller mistake, never as a failed insert', async () => {
+    const NUL = String.fromCharCode(0);
+    const HALF = String.fromCharCode(0xd800);
+    for (const title of [`The ${NUL}dosing report`, `The dosing report ${HALF}`]) {
+      await expect(create(general, title)).resolves.toEqual({ answer: 'content.invalid' });
+    }
+    const first = await created();
+    for (const title of [`Me${NUL}thod`, `Method ${HALF}`]) {
+      await expect(edit(first, section(title))).resolves.toEqual({
+        answer: 'outline.invalid',
+        reason: 'This operation would produce an outline that cannot be stored',
+      });
+    }
+    expect(await chainOf(first.artifactId)).toHaveLength(1);
+  });
+
   it('answers space.missing for a space this environment does not hold, and writes nothing', async () => {
     for (const spaceId of [randomUUID(), 'General', elsewhere]) {
       await expect(create(spaceId)).resolves.toEqual({ answer: 'space.missing' });

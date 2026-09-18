@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { outlineDocumentSchema } from '@alloy-works/domain';
+import { hasText, outlineDocumentSchema } from '@alloy-works/domain';
 import { useCallback, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
@@ -40,7 +40,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
 
   const create = useCallback(async () => {
     if (pending.current) return;
-    if (title.trim() === '') {
+    if (!hasText(title)) {
       setNotice('A document needs a title.');
       return;
     }

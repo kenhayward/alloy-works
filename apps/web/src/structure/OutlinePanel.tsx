@@ -1,8 +1,9 @@
-import type {
-  OutlineDocument,
-  OutlineNode,
-  OutlineOperation,
-  SectionNode,
+import {
+  hasText,
+  type OutlineDocument,
+  type OutlineNode,
+  type OutlineOperation,
+  type SectionNode,
 } from '@alloy-works/domain';
 import {
   useEffect,
@@ -488,7 +489,7 @@ export function OutlinePanel({
           onSubmit={(event) => {
             event.preventDefault();
             const text = newTitle.trim();
-            if (text === '') {
+            if (!hasText(text)) {
               setAttempted(true);
               return;
             }
@@ -508,7 +509,7 @@ export function OutlinePanel({
             />
           </label>
           {/* Said about the field as it stands, so it goes the moment the field is fine. */}
-          {attempted && newTitle.trim() === '' && <p>A section needs a title.</p>}
+          {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
           <button type="submit">Add</button>
           <button type="button" onClick={cancelAdding}>
             Cancel
@@ -811,7 +812,8 @@ function TitleField({
   // answered, so nothing typed is dropped because the author pressed Enter, or left, too soon.
   const commit = () => {
     const text = field.typed.trim();
-    if (text === '') {
+    // The store's own rule (`hasText`), asked here so the field refuses exactly what the store would.
+    if (!hasText(text)) {
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
       // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
       onNotice('A section needs a title.');

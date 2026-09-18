@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { marksAsASet } from '../content/model/canonical.js';
 import { refuseForbiddenFootnoteContent } from '../content/model/document.js';
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
+import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
+import { storableEverywhere, storableText } from '../stored/storable.js';
 
 export const OUTLINE_SCHEMA_VERSION = 1;
 
@@ -86,6 +88,14 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  * heading, and nothing in the corpus or structure.md narrows it; a narrower rule would be a second
  * inline vocabulary to keep in step with the first.
  *
+ * **A title has text**: its text runs, joined, are not blank once trimmed - `hasText`, the rule the
+ * editor's `titleAccepted` is, so an API caller cannot store the untitled section the panel refuses.
+ * A title of only an equation or an image is refused with the rest: a title is also what names a node
+ * in the contents, in an announcement and to a screen reader, and those read its words.
+ *
+ * **And every string in it is one Postgres can store** (`storableEverywhere`), however deep - a NUL or
+ * half of a surrogate pair fails the insert, which would otherwise be answered as our failure.
+ *
  * One schema for every place a title enters: the node below, an inserted section and a retitle
  * (`operations.ts`), so a title the store would refuse is refused at the wire body instead.
  */
@@ -94,6 +104,14 @@ export const sectionTitleSchema = z.array(inlineNodeSchema).superRefine((title, 
     refuseForbiddenFootnoteContent(title);
   } catch {
     context.addIssue({ code: 'custom', message: 'A footnote in a title holds paragraphs alone' });
+  }
+  const words = title.map((inline) => (inline.type === 'text' ? inline.value : '')).join('');
+  if (!hasText(words)) context.addIssue({ code: 'custom', message: 'A section needs a title' });
+  if (!storableEverywhere(title)) {
+    context.addIssue({
+      code: 'custom',
+      message: 'A title holds a character that cannot be stored',
+    });
   }
 });
 
@@ -118,7 +136,11 @@ export const referenceNodeSchema = z.strictObject({
  */
 export const outlineDocumentSchema = z.strictObject({
   schemaVersion: z.literal(OUTLINE_SCHEMA_VERSION),
-  title: z.string().min(1),
+  // The one title rule, and the one storable rule, that a section title is held to above.
+  title: z
+    .string()
+    .refine(hasText, 'A document needs a title')
+    .refine(storableText, 'A title holds a character that cannot be stored'),
   language: bcp47,
   direction: z.enum(['ltr', 'rtl']),
   nodes: z.array(outlineNodeSchema),

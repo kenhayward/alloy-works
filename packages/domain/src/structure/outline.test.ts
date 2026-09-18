@@ -363,3 +363,44 @@ describe('a section title, under the content model rules', () => {
     expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
   });
 });
+
+describe('what a stored outline refuses, because nothing later could take it back', () => {
+  const titled = (title: unknown) => ({ ...empty, nodes: [section(NODE, { title })] });
+  const words = (value: string) => ({ type: 'text', value, marks: [] });
+
+  it('refuses a section title with no text, or text that is only whitespace', () => {
+    expect(() => parseOutlineDocument(titled([]))).toThrow();
+    expect(() => parseOutlineDocument(titled([words('  \t ')]))).toThrow();
+    expect(() => parseOutlineDocument(titled([words(''), words(' ')]))).toThrow();
+    expect(parseOutlineDocument(titled([words(' Method ')])).nodes).toHaveLength(1);
+    // And the document's own title, which creation trims and the parse holds to the same rule.
+    expect(() => parseOutlineDocument({ ...empty, title: '   ' })).toThrow();
+  });
+
+  it('refuses a character Postgres cannot store in JSON: a NUL, or half of a surrogate pair', () => {
+    for (const value of ['Me\u0000thod', 'Method \uD800', '\uDC00 Method', 'Method \uDBFFx']) {
+      expect(() => parseOutlineDocument(titled([words(value)]))).toThrow();
+      expect(() => parseOutlineDocument({ ...empty, title: value })).toThrow();
+    }
+    // Deeper than the title's own runs: inside a footnote's paragraph, too.
+    expect(() =>
+      parseOutlineDocument(
+        titled([
+          words('Method'),
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'span' },
+            content: [{ type: 'paragraph', id: 'p1', style: 'body', content: [words('a\u0000')] }],
+          },
+        ]),
+      ),
+    ).toThrow();
+    // A whole pair is one character, and is stored as one.
+    const pair = 'Method \uD83D\uDE00';
+    expect(parseOutlineDocument(titled([words(pair)])).nodes[0]).toMatchObject({
+      title: [words(pair)],
+    });
+    expect(parseOutlineDocument({ ...empty, title: pair }).title).toBe(pair);
+  });
+});

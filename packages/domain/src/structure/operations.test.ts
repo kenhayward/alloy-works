@@ -76,18 +76,19 @@ const addSection = (
 
 describe('outlineOperationSchema', () => {
   it('is the one gate between the wire body and the tree, and refuses what does not belong', () => {
+    const title = [{ type: 'text', value: 'Introduction', marks: [] }];
     const validInsert = {
       operation: 'insert',
       parent: null,
       position: 0,
-      node: { type: 'section', title: [] },
+      node: { type: 'section', title },
     };
     expect(outlineOperationSchema.safeParse(validInsert).success).toBe(true);
     // A mode belongs to a reference's own insert body, never to a section's.
     expect(
       outlineOperationSchema.safeParse({
         ...validInsert,
-        node: { type: 'section', title: [], mode: { kind: 'latest' } },
+        node: { type: 'section', title, mode: { kind: 'latest' } },
       }).success,
     ).toBe(false);
     // A position is a non-negative integer: never negative, never fractional.
@@ -129,6 +130,7 @@ describe('outlineOperationSchema', () => {
 });
 
 describe('a title an operation carries', () => {
+  const NUL = String.fromCharCode(0);
   const words = { type: 'text', value: 'Method', marks: [] };
   const footnote = (content: unknown) => ({
     type: 'footnote',
@@ -143,6 +145,22 @@ describe('a title an operation carries', () => {
     parent: null,
     position: 0,
     node: { type: 'section', title },
+  });
+
+  it('is refused at the wire body with no text, or a character Postgres cannot store', () => {
+    for (const make of [retitle, insert]) {
+      expect(outlineOperationSchema.safeParse(make([])).success).toBe(false);
+      expect(outlineOperationSchema.safeParse(make([{ ...words, value: '   ' }])).success).toBe(
+        false,
+      );
+      expect(
+        outlineOperationSchema.safeParse(make([{ ...words, value: `Me${NUL}thod` }])).success,
+      ).toBe(false);
+      expect(
+        outlineOperationSchema.safeParse(make([{ ...words, value: 'Method \uD800' }])).success,
+      ).toBe(false);
+      expect(outlineOperationSchema.safeParse(make([words])).success).toBe(true);
+    }
   });
 
   it('is refused at the wire body when a footnote in it holds anything but paragraphs', () => {
@@ -301,7 +319,7 @@ describe('the five operations over an outline', () => {
           operation: 'insert',
           parent: null,
           position: candidatePosition,
-          node: { type: 'section', title: [] },
+          node: { type: 'section', title: [{ type: 'text', value: 'C', marks: [] }] },
         },
         allocate,
       ).applied;

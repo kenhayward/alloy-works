@@ -531,6 +531,64 @@ describe('documents through the service', () => {
     expect(whitespace.json()).toMatchObject({ code: 'content_invalid' });
   });
 
+  it('refuses a section title the store could not keep: blank, unstorable, or a footnote holding anything but paragraphs', async () => {
+    const NUL = String.fromCharCode(0);
+    const HALF = String.fromCharCode(0xd800);
+    for (const title of [`The ${NUL}dosing report`, `The dosing report ${HALF}`]) {
+      const refused = await create('ada', general, title);
+      expect(refused.statusCode).toBe(400);
+      expect(refused.json()).toMatchObject({ code: 'content_invalid' });
+    }
+    const doc = (await create('ada', general, 'Titles')).json<DocumentBody>();
+    const added = (await addSection(doc, 'Method')).json<DocumentBody>();
+    const node = added.outline.nodes[0]!.id;
+    const footnote = (content: unknown) => ({
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content,
+    });
+    const paragraph = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: text('At the bench.'),
+    };
+    for (const title of [
+      [],
+      text('   '),
+      text(`Me${NUL}thod`),
+      text(`Method ${HALF}`),
+      [...text('Method'), footnote([{ script: '<x>' }, 42])],
+      [...text('Method'), footnote([])],
+    ]) {
+      const retitled = await act('ada', doc.id, added.version.id, {
+        operation: 'retitle',
+        node,
+        title,
+      });
+      expect(retitled.statusCode).toBe(400);
+      expect(retitled.json()).toMatchObject({ code: 'invalid_request' });
+      const inserted = await act('ada', doc.id, added.version.id, {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'section', title },
+      });
+      expect(inserted.statusCode).toBe(400);
+      expect(inserted.json()).toMatchObject({ code: 'invalid_request' });
+    }
+    expect(await chainOf(doc.id)).toHaveLength(2);
+    // What the content model admits in a heading is admitted: a footnote of paragraphs.
+    const footnoted = await act('ada', doc.id, added.version.id, {
+      operation: 'retitle',
+      node,
+      title: [...text('Method'), footnote([paragraph])],
+    });
+    expect(footnoted.statusCode).toBe(200);
+    expect(await chainOf(doc.id)).toHaveLength(3);
+  });
+
   it('answers a stored outline that no longer reads as a failure on our side, saying nothing of it', async () => {
     const doc = (await create('ada', general, 'Broken')).json<DocumentBody>();
     // A version the store would never write, put there by hand: a title the schema refuses.
