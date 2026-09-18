@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { marksAsASet } from '../content/model/canonical.js';
 import { checkInlineContent, contentDocumentSchema } from '../content/model/document.js';
+import {
+  artifactIdentifierSchema as artifactIdentifier,
+  nodeIdentifierSchema as nodeIdentifier,
+} from '../content/model/identifier.js';
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
@@ -9,15 +13,6 @@ import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 
 export const OUTLINE_SCHEMA_VERSION = 1;
-
-/** 128 bits as 26 lower-case base32 characters: the spelling `blockIdentifierFrom` already fixes. */
-const nodeIdentifier = z.string().regex(/^[a-z2-7]{26}$/, 'not an outline node identifier');
-
-// Duplicates the wire contract's `LowercaseUuid` deliberately: `packages/domain` stays platform-free
-// and does not depend on `packages/api-contract`, which is a service-side concern (routes, wire
-// codes). One regex, defined twice on purpose, rather than a cross-package dependency for a pattern.
-const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const artifactIdentifier = z.string().regex(LOWERCASE_UUID, 'not a lowercase uuid');
 
 /** STR-058: the three REU and LIF name, closed, and absent is not a fourth. */
 export const referenceModeSchema = z.discriminatedUnion('kind', [
@@ -86,7 +81,8 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  * **What a heading may hold is what the content model allows** - a footnote, an image, a binding, an
  * equation (CNT-046), a variable (REU-019) - validated identically. Word allows a footnote in a
  * heading, and nothing in the corpus or structure.md narrows it; a narrower rule would be a second
- * inline vocabulary to keep in step with the first.
+ * inline vocabulary to keep in step with the first. A cross-reference in a heading targets an outline
+ * node and nothing else (`checkInlineContent`).
  *
  * **A title has text**: its text runs, joined, are not blank once trimmed - `hasText`, the rule the
  * editor's `titleAccepted` is, so an API caller cannot store the untitled section the panel refuses.
@@ -101,7 +97,7 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  */
 export const sectionTitleSchema = z.array(inlineNodeSchema).superRefine((title, context) => {
   try {
-    checkInlineContent(title, new Set());
+    checkInlineContent(title, 'title', new Set());
   } catch {
     context.addIssue({
       code: 'custom',

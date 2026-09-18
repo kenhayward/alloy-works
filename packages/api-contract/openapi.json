@@ -3431,9 +3431,72 @@
                                               "type": "string",
                                               "const": "crossReference"
                                             },
-                                            "target": {
+                                            "id": {
                                               "type": "string",
                                               "minLength": 1
+                                            },
+                                            "target": {
+                                              "oneOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "block"
+                                                    },
+                                                    "block": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "block"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "component"
+                                                    },
+                                                    "component": {
+                                                      "type": "string",
+                                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                                    },
+                                                    "block": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "component",
+                                                    "block"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "node"
+                                                    },
+                                                    "node": {
+                                                      "type": "string",
+                                                      "pattern": "^[a-z2-7]{26}$"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "node"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              ]
                                             },
                                             "display": {
                                               "type": "string",
@@ -3444,10 +3507,19 @@
                                                 "page",
                                                 "relative"
                                               ]
+                                            },
+                                            "withoutPages": {
+                                              "type": "string",
+                                              "enum": [
+                                                "number",
+                                                "title",
+                                                "numberAndTitle"
+                                              ]
                                             }
                                           },
                                           "required": [
                                             "type",
+                                            "id",
                                             "target",
                                             "display"
                                           ],
@@ -4176,9 +4248,72 @@
                                       "type": "string",
                                       "const": "crossReference"
                                     },
-                                    "target": {
+                                    "id": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "target": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "block"
+                                            },
+                                            "block": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "block"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "component"
+                                            },
+                                            "component": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "block": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "component",
+                                            "block"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "node"
+                                            },
+                                            "node": {
+                                              "type": "string",
+                                              "pattern": "^[a-z2-7]{26}$"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "node"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
                                     },
                                     "display": {
                                       "type": "string",
@@ -4189,10 +4324,19 @@
                                         "page",
                                         "relative"
                                       ]
+                                    },
+                                    "withoutPages": {
+                                      "type": "string",
+                                      "enum": [
+                                        "number",
+                                        "title",
+                                        "numberAndTitle"
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "type",
+                                    "id",
                                     "target",
                                     "display"
                                   ],

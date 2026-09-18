@@ -240,6 +240,65 @@ describe('the content document', () => {
   });
 });
 
+describe('a cross-reference, where a component holds one', () => {
+  const COMPONENT = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+  const reference = (id: string, target: unknown) => ({
+    type: 'crossReference',
+    id,
+    target,
+    display: 'number',
+  });
+  const citing = (id: string, inlines: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content: [{ type: 'text', value: 'See ', marks: [] }, ...inlines],
+  });
+
+  it('keeps its identifier unique in the component, beside every block and footnote', () => {
+    const own = { kind: 'block', block: 'b2' };
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference('x1', own), reference('x2', own)]), paragraph('b2')]),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(doc([citing('b1', [reference('x1', own), reference('x1', own)])])),
+    ).toThrow(/x1/);
+    expect(() =>
+      parseContentDocument(doc([citing('b1', [reference('b2', own)]), paragraph('b2')])),
+    ).toThrow(/b2/);
+    // Inside a footnote, too: the walk that claims a footnote's paragraphs claims what they hold.
+    const noted = citing('b1', [
+      {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [{ ...citing('fb1', [reference('x1', own)]), style: 'footnote' }],
+      },
+      reference('x1', own),
+    ]);
+    expect(() => parseContentDocument(doc([noted, paragraph('b2')]))).toThrow(/x1/);
+  });
+
+  it('reaches a block of its own component or of another, and never an outline node', () => {
+    for (const target of [
+      { kind: 'block', block: 'b2' },
+      { kind: 'component', component: COMPONENT, block: 'b2' },
+    ]) {
+      expect(() =>
+        parseContentDocument(doc([citing('b1', [reference('x1', target)]), paragraph('b2')])),
+      ).not.toThrow();
+    }
+    // A node belongs to one document's outline, and a component is used in many.
+    expect(() =>
+      parseContentDocument(
+        doc([citing('b1', [reference('x1', { kind: 'node', node: 'a'.repeat(26) })])]),
+      ),
+    ).toThrow(/outline node/);
+  });
+});
+
 describe('an equation, stored only as the MathML reader writes it', () => {
   const kept = `<math xmlns="${MATHML_NAMESPACE}" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>`;
 

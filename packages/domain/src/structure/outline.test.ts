@@ -367,6 +367,32 @@ describe('a section title, under the content model rules', () => {
     expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
   });
 
+  it('lets a cross-reference in a title target an outline node, and nothing a title cannot show', () => {
+    const reference = (id: string, target: unknown) => ({
+      type: 'crossReference',
+      id,
+      target,
+      display: 'number',
+    });
+    const toNode = { kind: 'node', node: OTHER };
+    expect(() => parseOutlineDocument(titled([words, reference('x1', toNode)]))).not.toThrow();
+    // A block of "its own" component: a title is in no component.
+    expect(() =>
+      parseOutlineDocument(titled([words, reference('x1', { kind: 'block', block: 'b2' })])),
+    ).toThrow(/content model refuses/);
+    // Another component's block: an outline is answered with a component the reader may not read
+    // withheld, and a title's reference would carry its identity past that (decision E).
+    expect(() =>
+      parseOutlineDocument(
+        titled([words, reference('x1', { kind: 'component', component: COMPONENT, block: 'b2' })]),
+      ),
+    ).toThrow(/content model refuses/);
+    // And its identifier is unique within the title.
+    expect(() =>
+      parseOutlineDocument(titled([words, reference('x1', toNode), reference('x1', toNode)])),
+    ).toThrow(/content model refuses/);
+  });
+
   it('keeps every identifier inside a title unique within that title, as a component keeps its own', () => {
     const second = { ...footnote([{ ...paragraph, id: 'p2' }]), id: 'f2' };
     expect(() =>

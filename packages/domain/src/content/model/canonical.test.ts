@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { canonicalise } from './canonical.js';
-import { CURRENT_SCHEMA_VERSION, parseContentDocument } from './document.js';
+import { CURRENT_SCHEMA_VERSION, parseContentDocument, type ContentDocument } from './document.js';
 
 const base = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -106,5 +106,76 @@ describe('canonical serialisation', () => {
       }),
     );
     expect(serialised).not.toMatch(/\n|\t|: | ,/);
+  });
+
+  it('serialises a cross-reference and its target to one string whatever their member order, and reads it back', () => {
+    const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
+    const one = parseContentDocument({
+      ...base,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'See ', marks: [] },
+            {
+              type: 'crossReference',
+              id: 'x1',
+              target: { kind: 'component', component, block: 'b2' },
+              display: 'page',
+              withoutPages: 'number',
+            },
+          ],
+        },
+        {
+          type: 'figure',
+          id: 'b2',
+          asset: 'asset-1',
+          imageStyle: 'column-width',
+          caption: 'Dose',
+          alternative: { kind: 'decorative' },
+        },
+      ],
+    });
+    // Unparsed on purpose: the parse rebuilds every object in the schema's member order, so two
+    // parsed spellings are one value before `canonicalise` sorts anything. Every member reversed -
+    // the root, each block, the reference and its target.
+    const other = {
+      content: [
+        {
+          content: [
+            { marks: [], value: 'See ', type: 'text' },
+            {
+              withoutPages: 'number',
+              display: 'page',
+              target: { block: 'b2', component, kind: 'component' },
+              id: 'x1',
+              type: 'crossReference',
+            },
+          ],
+          style: 'body',
+          id: 'b1',
+          type: 'paragraph',
+        },
+        {
+          alternative: { kind: 'decorative' },
+          caption: 'Dose',
+          imageStyle: 'column-width',
+          asset: 'asset-1',
+          id: 'b2',
+          type: 'figure',
+        },
+      ],
+      direction: 'ltr',
+      language: 'en-GB',
+      title: 'A component',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+    } as unknown as ContentDocument;
+    expect(canonicalise(one)).toBe(canonicalise(other));
+    // What is stored is the canonical string; read back, it is the same document and the same string.
+    const read = parseContentDocument(JSON.parse(canonicalise(one)));
+    expect(read).toEqual(one);
+    expect(canonicalise(read)).toBe(canonicalise(one));
   });
 });
