@@ -39,8 +39,12 @@ function walk(blocks: readonly BlockNode[], visit: (block: BlockNode) => void): 
  * holds inlines - so one of the two files has to learn about the other after the fact, and this is
  * that place. Recursive, because a footnote's own paragraphs can carry footnotes and a restriction
  * that stops at the first level is not a restriction.
+ *
+ * Exported because inline content is stored in more than one place: a section title in an outline
+ * is inline content too (structure.md), and runs this same walk rather than a copy of it, so one rule
+ * governs inline content wherever it is stored. Throws on the first footnote that breaks it.
  */
-function refuseForbiddenFootnoteContent(inlines: readonly InlineNode[]): void {
+export function refuseForbiddenFootnoteContent(inlines: readonly InlineNode[]): void {
   for (const inline of inlines) {
     if (inline.type !== 'footnote') continue;
     for (const paragraph of footnoteContentSchema.parse(inline.content)) {

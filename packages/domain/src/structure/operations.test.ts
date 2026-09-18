@@ -128,6 +128,36 @@ describe('outlineOperationSchema', () => {
   });
 });
 
+describe('a title an operation carries', () => {
+  const words = { type: 'text', value: 'Method', marks: [] };
+  const footnote = (content: unknown) => ({
+    type: 'footnote',
+    id: 'f1',
+    anchor: { kind: 'span' },
+    content,
+  });
+  const paragraph = { type: 'paragraph', id: 'p1', style: 'body', content: [words] };
+  const retitle = (title: unknown) => ({ operation: 'retitle', node: NODE, title });
+  const insert = (title: unknown) => ({
+    operation: 'insert',
+    parent: null,
+    position: 0,
+    node: { type: 'section', title },
+  });
+
+  it('is refused at the wire body when a footnote in it holds anything but paragraphs', () => {
+    for (const make of [retitle, insert]) {
+      expect(
+        outlineOperationSchema.safeParse(make([words, footnote([{ script: '<x>' }, 42])])).success,
+      ).toBe(false);
+      expect(outlineOperationSchema.safeParse(make([words, footnote([])])).success).toBe(false);
+      expect(outlineOperationSchema.safeParse(make([words, footnote([paragraph])])).success).toBe(
+        true,
+      );
+    }
+  });
+});
+
 describe('the five operations over an outline', () => {
   it('STR-003 gives every node an identifier at insertion, and never reissues one', () => {
     const { allocate, made } = identifiers();

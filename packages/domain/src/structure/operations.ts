@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { inlineNodeSchema } from '../content/model/inline.js';
-
 import {
   parseOutlineDocument,
   referenceModeSchema,
@@ -21,7 +19,7 @@ const position = z.number().int().min(0);
 
 const newSectionSchema = z.strictObject({
   type: z.literal('section'),
-  title: z.array(inlineNodeSchema),
+  title: sectionNodeSchema.shape.title,
 });
 
 const newReferenceSchema = z.strictObject({
@@ -58,7 +56,7 @@ export const outlineOperationSchema = z
     z.strictObject({
       operation: z.literal('retitle'),
       node: nodeIdentifier,
-      title: z.array(inlineNodeSchema),
+      title: sectionNodeSchema.shape.title,
     }),
     z.strictObject({
       operation: z.literal('set'),

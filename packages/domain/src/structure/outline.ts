@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { marksAsASet } from '../content/model/canonical.js';
+import { refuseForbiddenFootnoteContent } from '../content/model/document.js';
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
@@ -73,10 +74,33 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
   z.discriminatedUnion('type', [sectionNodeSchema, referenceNodeSchema]),
 );
 
+/**
+ * A section title: inline content, held to the content model's own rules rather than to the bare
+ * shape of an inline node. `inlineNodeSchema` leaves a footnote's `content` open (`z.array(z.unknown())`)
+ * because the recursion between blocks and inlines closes in `blocks.ts`; CNT-129's restriction is
+ * applied by `refuseForbiddenFootnoteContent`, the walk `parseContentDocument` runs, so a title is
+ * checked by the same code a component's paragraph is and never by a copy of it.
+ *
+ * **What a heading may hold is what the content model allows** - a footnote, an image, a binding, an
+ * equation (CNT-046), a variable (REU-019) - validated identically. Word allows a footnote in a
+ * heading, and nothing in the corpus or structure.md narrows it; a narrower rule would be a second
+ * inline vocabulary to keep in step with the first.
+ *
+ * One schema for every place a title enters: the node below, an inserted section and a retitle
+ * (`operations.ts`), so a title the store would refuse is refused at the wire body instead.
+ */
+export const sectionTitleSchema = z.array(inlineNodeSchema).superRefine((title, context) => {
+  try {
+    refuseForbiddenFootnoteContent(title);
+  } catch {
+    context.addIssue({ code: 'custom', message: 'A footnote in a title holds paragraphs alone' });
+  }
+});
+
 export const sectionNodeSchema = z.strictObject({
   type: z.literal('section'),
   ...positional,
-  title: z.array(inlineNodeSchema),
+  title: sectionTitleSchema,
   children: z.array(outlineNodeSchema),
 });
 

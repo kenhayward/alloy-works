@@ -330,3 +330,36 @@ describe('the outline a document version holds', () => {
     }
   });
 });
+
+describe('a section title, under the content model rules', () => {
+  const titled = (title: unknown) => ({ ...empty, nodes: [section(NODE, { title })] });
+  const footnote = (content: unknown) => ({
+    type: 'footnote',
+    id: 'f1',
+    anchor: { kind: 'span' },
+    content,
+  });
+  const paragraph = {
+    type: 'paragraph',
+    id: 'p1',
+    style: 'body',
+    content: [{ type: 'text', value: 'Measured at the bench.', marks: [] }],
+  };
+  const words = { type: 'text', value: 'Method', marks: [] };
+
+  it('refuses a footnote in a title whose content is not paragraphs, as a component refuses one', () => {
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([{ script: '<x>' }, 42])])),
+    ).toThrow();
+    expect(() => parseOutlineDocument(titled([words, footnote([])]))).toThrow();
+    // Nested: a footnote inside a footnote's paragraph is held to the same rule.
+    expect(() =>
+      parseOutlineDocument(
+        titled([words, footnote([{ ...paragraph, content: [footnote([{ table: true }])] }])]),
+      ),
+    ).toThrow();
+    // What the content model admits in a heading, the outline admits too.
+    const parsed = parseOutlineDocument(titled([words, footnote([paragraph])]));
+    expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
+  });
+});
