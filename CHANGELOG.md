@@ -12,6 +12,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - A footnote can no longer hold an image or another footnote, as the content rules always said.
 - A footnote's text is held the same however it was spelled, so the same footnote saved twice is
   recognised as no change rather than as a new version.
+- A component or a footnote can no longer be saved with two empty paragraphs side by side in a table
+  cell or a footnote, and an identifier must be written in one standard form of its characters, so
+  two identifiers that look the same can never be two different things.
 
 ### Changed
 
