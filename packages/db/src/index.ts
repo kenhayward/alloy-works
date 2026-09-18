@@ -176,6 +176,7 @@ export {
   type OutlineAnswer,
   type StoredDocument,
 } from './documents.js';
+export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,
   currentDefinitionsFor,
