@@ -127,6 +127,27 @@ describe('outlineOperationSchema', () => {
       outlineOperationSchema.safeParse({ operation: 'set', node: NODE, values: [] }).success,
     ).toBe(false);
   });
+
+  it("writes nothing into a node's values until something says what they hold", () => {
+    // TPL-054 decides which fields a section carries, and nothing yet does: while every stored
+    // `values` is `{}`, keeping the member or dropping it later is one migration either way.
+    const set = (values: unknown) => ({ operation: 'set', node: NODE, values });
+    expect(outlineOperationSchema.safeParse(set({ audience: 'clinical' })).success).toBe(false);
+    expect(outlineOperationSchema.safeParse(set({ nested: {} })).success).toBe(false);
+    expect(outlineOperationSchema.safeParse(set({})).success).toBe(true);
+    // And an insert carries none at all, for either kind of node.
+    for (const node of [
+      { type: 'section', title: [{ type: 'text', value: 'Method', marks: [] }] },
+      { type: 'reference', component: COMPONENT, mode: { kind: 'latest' } },
+    ]) {
+      const insert = { operation: 'insert', parent: null, position: 0, node };
+      expect(outlineOperationSchema.safeParse(insert).success).toBe(true);
+      expect(
+        outlineOperationSchema.safeParse({ ...insert, node: { ...node, values: { a: 1 } } })
+          .success,
+      ).toBe(false);
+    }
+  });
 });
 
 describe('a title an operation carries', () => {

@@ -4417,11 +4417,10 @@
                             ]
                           },
                           "values": {
+                            "description": "Empty: nothing may be written into a node's values until TPL-054 says what they hold",
                             "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {}
+                            "properties": {},
+                            "additionalProperties": false
                           }
                         },
                         "required": [

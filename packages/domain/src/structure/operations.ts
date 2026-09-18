@@ -65,7 +65,16 @@ export const outlineOperationSchema = z
       matter: sectionNodeSchema.shape.matter.optional(),
       pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
       mode: referenceModeSchema.optional(),
-      values: sectionNodeSchema.shape.values.optional(),
+      // Empty, and nothing else, until TPL-054 (or a requirement for an occurrence's metadata) says
+      // what a node's values hold: nothing validates or reads one yet, and keeping the member at
+      // schema version 1 is one migration either way only while every stored `values` is `{}`
+      // (structure.md, "The outline, and why it is one tree"). An insert carries none at all.
+      values: z
+        .strictObject({})
+        .optional()
+        .describe(
+          "Empty: nothing may be written into a node's values until TPL-054 says what they hold",
+        ),
     }),
   ])
   .refine(

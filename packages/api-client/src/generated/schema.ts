@@ -2175,9 +2175,8 @@ export interface operations {
                             /** @constant */
                             kind: "approved";
                         };
-                        values?: {
-                            [key: string]: unknown;
-                        };
+                        /** @description Empty: nothing may be written into a node's values until TPL-054 says what they hold */
+                        values?: Record<string, never>;
                     };
                 };
             };
