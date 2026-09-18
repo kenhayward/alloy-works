@@ -198,7 +198,7 @@ records a version that says nothing new, and comparison's short-circuit stops wo
 an error.
 
 **And the correction must stop at the title.** The content model's rule treats any member named
-`marks` as a set, at any depth. A section's `values` sit in the same tree, and a metadata field whose
+`marks` as a set, at any depth. A node's `values` sit in the same tree, and a metadata field whose
 identifier happens to be `marks` holds its values in the order given (MET-030); sorted as though it were
 formatting, two different orders would digest as one and an edit to the order would be refused as
 changing nothing. So `canonicaliseOutline` composes a node member by member: its `title` through the
@@ -213,7 +213,7 @@ them. A **document's** own field values (TPL-055) are the template design's, and
 constraint is its change to make.
 
 **Why one kind rather than two.** [storage-and-versioning.md](storage-and-versioning.md) and
-[access.md](access.md) each list "a document, an outline" among the artifact kinds, following
+[access.md](access.md) listed "a document, an outline" among the artifact kinds, following
 VER-011's own wording. This design makes them one, and the reason is STR-012: the outline must be
 "versioned with the document, and pinned by a baseline like anything else". Two artifacts are two
 chains, two version numbers for one thing, and a document version that has to pin an outline version,
@@ -233,14 +233,18 @@ OutlineDocument = {
 }
 ```
 
-| Node        | Carries                                                                                   |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| `section`   | `id`, `title` (inline content), `values`, `numbered`, `matter`, `pageBreak`, `children`   |
-| `reference` | `id`, `component` (an artifact id), `mode`, `numbered`, `matter`, `pageBreak`, `children` |
+| Node        | Carries                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| `section`   | `id`, `title` (inline content), `values`, `numbered`, `matter`, `pageBreak`, `children`             |
+| `reference` | `id`, `component` (an artifact id), `mode`, `values`, `numbered`, `matter`, `pageBreak`, `children` |
 
 Both arms carry children, so a component reference can have sections beneath it - a chapter that is
 one component and whose sub-sections are others. Both carry the same positional switches, because
-STR-048 and STR-017 are properties of a node's place rather than of what fills it.
+STR-048 and STR-017 are properties of a node's place rather than of what fills it. **Both carry
+`values` too, and on a reference that is deliberate**: STR-060 asks for a section's, and nothing yet
+asks for an occurrence's, but removing the member from a reference later would cost a migration of
+every stored outline exactly as adding it later would, while an empty `{}` costs nothing and leaves
+room for metadata that belongs to one occurrence of a component rather than to the component.
 
 **A title is inline content, not a string.** CNT-046 requires an equation to work in a heading, and
 headings are outline nodes. content-model.md named this as the first of two things it requires of
@@ -325,8 +329,8 @@ points at a component, and editing that component's content still claims its loc
 | Insert    | Parent, position, and the node                                                | A parent that is not in the outline; a position past the end of its children                                     |
 | Move      | Node, new parent, position                                                    | A node that is not there; a parent inside the node's own subtree, or not in the outline; a position past the end |
 | Remove    | Node                                                                          | A node that is not there. The subtree goes with it                                                               |
-| Retitle   | Node, the new title as inline content                                         | A node that is not a section; a title the content model will not parse                                           |
-| Set       | Node, and at least one of `numbered`, `matter`, `pageBreak`, `mode`, `values` | A `set` naming no switch; a `mode` on a section; a `mode` of `pinned` with no version                            |
+| Retitle   | Node, the new title as inline content                                         | A node that is not there, or not a section; a title the content model will not parse                             |
+| Set       | Node, and at least one of `numbered`, `matter`, `pageBreak`, `mode`, `values` | A node that is not there; a `set` naming no switch; a `mode` on a section; a `mode` of `pinned` with no version  |
 
 A body the union does not accept - a title that will not parse, `pinned` with no version, a `set`
 naming nothing - is refused at the door as `invalid_request`; the rest are the domain's, answered
@@ -377,11 +381,13 @@ still in every earlier version, which the chain keeps; nothing yet offers it bac
 for its answer before it sends another; the tree says it is busy through `aria-busy`, and nothing is
 disabled under the focus, because a control disabled under the focus drops it to the page in a real
 browser. A retitle committed while an act is in flight is held and sent once that act is answered,
-from the version it made - unless the act is refused as a conflict, when the held title gives way to
-the outline now shown rather than overwriting it, or the author has been signed out, when it is not
-sent and the page says so. **A page-break change, an add or a remove made while an act is in flight is ignored**,
-with `aria-busy` the only sign; the select goes on showing what the node holds. That is a known limit,
-not a rule, and it is left for the browser suite to show whether anybody meets it.
+from the version it made - unless the act is refused, whether as a conflict, as not permitted, as
+no longer there or as not applying, when the held title gives way to the outline now shown rather than
+overwriting it, or the author has been signed out, when it is not sent and the page says so. **Every
+act but a retitle - a move by key or pointer, an undo, a page-break change, an add or a remove - made
+while an act is in flight is ignored**, with `aria-busy` the only sign; the select goes on showing what
+the node holds. That is a known limit, not a rule, and it is left for the browser suite to show
+whether anybody meets it - a second `Alt+Down` pressed before the first is answered is the likeliest.
 
 **The cycle check runs before the version is recorded** (STR-057). A reachability walk from this
 document over the reference index, in the write transaction, refusing with `outline_cycle` and naming
@@ -390,11 +396,13 @@ no document. **It is not built yet**: there is no reference index to walk, becau
 is designed and not built, so STR-057 stays claimed here and is cited by nothing until the plan that
 builds the index writes the check beside it - see [Changed while planning the build](#changed-while-planning-the-build).
 
-**Accessibility.** Every operation is in the panel's keymap as well as its pointer surface (STR-006):
-`Alt+Up` and `Alt+Down` to move among siblings, `Alt+Left` and `Alt+Right` to promote and demote,
-`Enter` to insert a sibling, `Delete` for a node and its subtree, asking first, and `Ctrl+Z` to undo.
-The panel is one tab stop with arrow-key movement, `Home` and `End`, as component-editor.md's toolbar
-is, and every act announces what it did - a move, what moved and where it landed. The pointer drags a
+**Accessibility.** Every operation can be done from the keyboard as well as by pointer (STR-006). The
+tree's keymap moves and inserts: `Alt+Up` and `Alt+Down` to move among siblings, `Alt+Left` and
+`Alt+Right` to promote and demote, `Enter` to insert a sibling, `Delete` for a node and its subtree,
+asking first, and `Ctrl+Z` to undo. Retitling and setting a switch are form fields beside the tree -
+**Title** and **Starts on** - reached with `Tab` like any other. The tree itself is one tab stop with
+arrow-key movement, `Home` and `End`, as component-editor.md's toolbar is, and every act announces
+what it did - a move, what moved and where it landed. The pointer drags a
 node onto another to make it the last child, onto the gap before one to put it there, or onto **Move
 to the end of the document**. `Alt+Left` is the browser's Back on Windows and Linux, so the tree takes
 every `Alt` and arrow key it is given, and only a browser can show that this is enough.
@@ -727,9 +735,9 @@ makes it hold, not the statement itself.
 | **The panel is not yet a table of contents**                                                                                                                                                                             | It shows no numbers and jumps nowhere, so STR-034, STR-036 and STR-037 stay claimed and cited by nothing until the navigation plan                                                                                                                                                                                                                                                |
 | **Built: the content model's marks rule reached a section's `values`**: applied to the whole tree, it would sort a metadata field whose identifier is `marks`, so two orders of its values (MET-030) would digest as one | The canonical form is composed member by member - the title through the marks rule, everything else through the plain one - and a test fails if a member is added to a node and left out ("The document artifact")                                                                                                                                                                |
 | **Built: an operation that does not apply to a stale version would have been answered `outline_invalid`**, which leaves the caller nothing to recover from                                                               | A stale caller is told it is stale first, with the current outline ("Editing the outline")                                                                                                                                                                                                                                                                                        |
-| **Built: a stored outline that does not read** had no answer                                                                                                                                                             | It is a broken store rather than the caller's mistake: thrown, logged, and answered `500` with a fixed message that names neither the document nor why                                                                                                                                                                                                                            |
+| **Built: a stored outline that does not read** had no answer                                                                                                                                                             | It is a broken store rather than the caller's mistake. On the outline route it is thrown, logged, and answered `500` with a fixed message that names neither the document nor why; `GET /v1/documents/{id}` answers the stored content as it is, and the page, parsing it with the domain's `readOutline`, says **This document could not be read.** rather than showing it       |
 | **Built: a removal cannot be undone**, so "the inverse of an operation is another operation" is false for one of the five                                                                                                | The panel asks first and says so, and a recorded removal empties the undo stack ("Editing the outline")                                                                                                                                                                                                                                                                           |
-| **Built: an act made while another is in flight** had no rule                                                                                                                                                            | A retitle is held and sent after, or given way to behind a conflict; a page-break change, an add or a remove is ignored with only `aria-busy` to say so, a known limit ("Editing the outline")                                                                                                                                                                                    |
+| **Built: an act made while another is in flight** had no rule                                                                                                                                                            | A retitle is held and sent after, or given way to behind any refusal; every other act - a move by key or pointer, an undo, a page-break change, an add or a remove - is ignored with only `aria-busy` to say so, a known limit ("Editing the outline")                                                                                                                            |
 | **Built: an operation's edges were unsaid** - a `set` naming no switch, a position past the end, and whether a same-parent move reads its position before or after the node leaves                                       | A `set` must name a switch and a position past the end is refused; a move's position counts the children once the node has left them, pinned by a test in the domain and one in the panel ("Editing the outline")                                                                                                                                                                 |
 | **Built: two routes fall short of "Routes"**                                                                                                                                                                             | `GET /v1/documents` is not paged, and `GET /v1/documents/{id}` resolves no component version for a reference: both said under "Routes", and left for later plans                                                                                                                                                                                                                  |
 | **Built: `content_invalid` meant a title that will not parse**, and a title in an operation is refused by the body's schema before any handler runs                                                                      | `content_invalid` is creating's alone - a blank title or a tag that is not one; an operation's title that will not parse is `invalid_request` ("Routes")                                                                                                                                                                                                                          |

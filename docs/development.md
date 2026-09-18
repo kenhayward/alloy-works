@@ -185,10 +185,12 @@ To make a document and build its outline by hand, sign in as Ada and choose **Do
    the arrow keys move between rows, and `Alt` with the arrows, `Enter` and `Delete` do nothing. **You
    may not change this document.** is what somebody who could edit sees instead, if that is taken away
    while the document is open.
-10. Two things only a browser can show, so check them by hand whenever the panel changes. As Ada, click
-    **Introduction**, a top-level row, and press `Alt+Left`: nothing happens, because it has nowhere to
-    be promoted to - and the browser must not go Back, which is what `Alt+Left` does on Windows and
-    Linux; if it does, the page returns to the list of documents. Then select **Method and materials**
+10. Two things only a browser can show, so check them by hand whenever the panel changes. As Ada, who
+    left the document for **Manage access** in step 9, go **Back to the component**, then **Back to
+    components**, choose **Documents** and open **The dosing report** again from there. Click **Introduction**, a top-level row, and press `Alt+Left`: nothing
+    happens, because it has nowhere to be promoted to - and the browser must not go Back, which is what
+    `Alt+Left` does on Windows and Linux; if it does, the page leaves the document for the list of
+    documents it was opened from. Then select **Method and materials**
     and press `Alt+Left`: **Moved Method and materials to the top level, after Introduction.** And drag
     and drop: drag **Results** onto the **Introduction** row and it becomes Introduction's last child
     (**Moved Results under Introduction.**); drag it again, and **Move to the end of the document**

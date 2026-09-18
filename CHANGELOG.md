@@ -24,8 +24,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Changed
 
-- The version chain now holds a fifth kind of thing, a document, on the same terms as everything else
-  it holds: one space, one chain of versions, the same two digests, and an author for every version.
+- The version chain now holds a fifth kind of thing, a document, on the same terms as a component: one
+  space, one chain of versions, the same two digests, and an author for every version.
   A development database from before this release gains three widened checks and nothing else.
 - **Components** and **Documents** are links above either list, so each is one click from the other.
 

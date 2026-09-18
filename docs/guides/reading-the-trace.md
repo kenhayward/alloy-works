@@ -219,9 +219,12 @@ computed, no command writes one, and
 [`../specification/baselines/README.md`](../specification/baselines/README.md) explains why: a
 baseline a tool can edit is not a declaration, it is a cache.
 
-**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,366 is not an error. This product is scaffolding: it can sign in, isolate a tenant, run a job and
-resolve a theme, and those are the things it can demonstrate end to end. A matrix that is complete
-across a declared scope of seven is better evidence than one 13% populated across everything.
+**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,366 is not an error. When it was declared the product was scaffolding: it could sign
+in, isolate a tenant, run a job and resolve a theme, and those were the things it could demonstrate end
+to end. It is still the only baseline, so what has been built since - access, versioned components,
+the editor, documents and their outlines - is cited by tests and shown by `pnpm trace verify`, and
+declared by no release yet. A matrix that is complete across a declared scope of seven is better
+evidence than one 13% populated across everything.
 
 Each exclusion says why. `IAM-018` is excluded because, at that release, it was named only by a
 `rule:` field and claimed by no design, so it could not be traced end to end - not because it was

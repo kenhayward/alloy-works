@@ -193,7 +193,9 @@ depends on four hundred call sites remembering is not a boundary. Using the reas
 deliberate.
 
 VER-018 makes the pin set wide - components, assets, query definitions, themes, typefaces, layouts,
-citation styles and the outline. Because all of those are artifacts, `baseline_pin` needs no column per kind and no special case for the one added next - which is what happened when fields, metadata schemas and component types arrived: a document's recorded schema and field versions (TPL-056) are pinned like any other artifact version.
+citation styles and the outline. The outline is not an artifact of its own: it is the content of the
+document, so pinning a document version pins its outline ([structure.md](structure.md)). Because
+everything else in that list is an artifact too, `baseline_pin` needs no column per kind and no special case for the one added next - which is what happened when fields, metadata schemas and component types arrived: a document's recorded schema and field versions (TPL-056) are pinned like any other artifact version.
 
 ## Derived data
 

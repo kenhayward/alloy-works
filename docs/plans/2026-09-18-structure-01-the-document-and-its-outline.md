@@ -2318,7 +2318,7 @@ Steps 1 to 8 were **not** done in a browser before this plan was committed; the 
 built. Everything below the renderer was run on the wire, and the table above says which test stands
 in for each.
 
-**As built, four of these steps read differently**, and [`docs/development.md`](../development.md)
+**As built, six of these steps read differently**, and [`docs/development.md`](../development.md)
 carries them as they now are. **Add section** and **Add component** insert after the selected node,
 not under it, and `Alt+Right` then nests one (steps 3 and 5). One `Ctrl+Z` takes back one act, so
 step 4's two moves take two. A page break is **Starts on**, a three-way select, and it shows in the
@@ -2408,8 +2408,9 @@ Found while building this plan, and by reviewing each task, and left rather than
   (structure.md, "Editing the outline"). The subtree is still in every earlier version. Getting it
   back from there is a restore, which storage-and-versioning.md designs and nothing builds.
   **Whichever plan builds restore.**
-- **A page-break change, an add or a remove made while another act is in flight is ignored**, with the
-  tree's `aria-busy` the only sign; only a retitle is held and sent after. Whether an author ever meets
+- **Every act but a retitle made while another is in flight is ignored** - a move by key or pointer,
+  an undo, a page-break change, an add or a remove - with the tree's `aria-busy` the only sign; only a
+  retitle is held and sent after. `DocumentPage.test.tsx` pins a second `Alt+Down` being dropped. Whether an author ever meets
   it, and whether a sentence should say so, is for a browser to show. **The accessibility plan**, with
   the browser suite.
 - **Two things only a browser can show**: that `Alt+Left`, which is Back in Chromium on Windows and
@@ -2417,11 +2418,12 @@ Found while building this plan, and by reviewing each task, and left rather than
   Both are exercised with synthetic events in jsdom and neither has been done in a browser; the gaps a
   row is dropped before are unstyled. `docs/development.md` asks for both by hand. **The accessibility
   plan**, with the browser suite.
-- **The page's stale-act guard has no test.** `DocumentPage` refuses to send an act computed against
-  an outline older than the one it last received; the window it closes lies between an answer's
-  `finally` and the next render, which jsdom cannot reach, and removing the guard leaves every test
-  green. It is kept as a belt over the `busy` checks and rests on reading the code. **The accessibility
-  plan's browser suite**, or never, if nothing can reach it.
+- **The page's stale-act guard has no test, because it guards nothing reachable.** `DocumentPage`
+  refuses to send an act computed against an outline older than the one it last received. Task 5's
+  review looked for the window it would close, between an answer's `finally` and the next render, and
+  found it does not exist: every handler reads `busy` from the same render as the outline it acts on.
+  Removing the guard leaves every test green. It is kept as a belt over the `busy` checks. **Nothing to
+  do** unless a later change opens the window.
 - **A section title holding a mark or anything but text** shows in a disabled field with a sentence
   saying why, so the plain-text retitle of decision B never drops formatting. Nothing authors such a
   title yet. **The plan that mounts the title editor.**
@@ -2433,8 +2435,9 @@ Found while building this plan, and by reviewing each task, and left rather than
   from `GET /v1/components`. structure.md's route table says it answers each occurrence's resolved
   version. **Structure 2**, whose `resolve` stage is where that answer comes from.
 - **Nothing observes 0016's restored deferral.** 0016 sets `artifact_version_component_type_recorded`
-  immediate and back to deferred; nothing runs after it in the same transaction yet, so no test sees
-  the second half, and the SQL is its only evidence. **Whichever plan writes 0017**, whose fresh-path
+  immediate and back to deferred; nothing runs after it in the same transaction yet, so no committed
+  test sees the second half. Task 3's re-review proved it with a throwaway probe migration run after
+  0016, which was not kept. **Whichever plan writes 0017**, whose fresh-path
   test is the first place it can show.
 - **`set`'s patch is cast** (`{ ...node, ...patch } as OutlineNode` in `operations.ts`), relying on the
   check above it that only a reference takes a `mode`, and on the parse every result goes through,
