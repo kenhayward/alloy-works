@@ -16,13 +16,13 @@ import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
-import { numberingInputs, readablePinnedVersions } from './numbering.js';
+import { numberingInputs } from './numbering.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
@@ -275,19 +275,52 @@ describe('what a document numbers against, read from the store', () => {
     });
   });
 
-  it('the pinned-rows query never selects a version outside the readable set (F7)', async () => {
+  it('never selects a row naming a component the reader may not read, in any query it runs (F7)', async () => {
     await service.withTenant(production, async (trx) => {
       const shared = await component(trx, general, ada, 'Install the printer');
       const secret = await component(trx, quality, grace, 'Calibration');
 
-      // Proved directly against the query, not only against what `numberingInputs` returns: an
-      // unreadable component's row is never selected - not "selected, then the caller discards it".
-      const rows = await readablePinnedVersions(
-        trx,
-        [shared.head.id, secret.head.id],
-        new Set([shared.head.artifactId]),
+      // The component Ada may not read, placed every way an outline can name one: `latest`,
+      // `pinned` to its own version, `approved`, and a crossed pin from a component Ada may read
+      // (only reachable by bypassing `editOutline`, as the other tests' comments say) - beside a
+      // placement of the component she may read, so the recording is not trivially empty.
+      const viaLatest = referenceNode(secret.head.artifactId, { kind: 'latest' });
+      const viaPinned = referenceNode(secret.head.artifactId, {
+        kind: 'pinned',
+        version: secret.head.id,
+      });
+      const viaApproved = referenceNode(secret.head.artifactId, { kind: 'approved' });
+      const crossed = referenceNode(shared.head.artifactId, {
+        kind: 'pinned',
+        version: secret.head.id,
+      });
+      const readablePlacement = referenceNode(shared.head.artifactId, { kind: 'latest' });
+      const outline = await documentWith(trx, [
+        sectionNode('Chapter', [viaLatest, viaPinned, viaApproved, crossed, readablePlacement]),
+      ]);
+
+      // Every row any query on this transaction returns, whichever table or column it names -
+      // proof against the rows the query returns, not against what `numberingInputs` answers with,
+      // which cannot tell "never selected" apart from "selected here, then discarded there".
+      const rows: Record<string, unknown>[] = [];
+      const recording = trx.withPlugin({
+        transformQuery: (args) => args.node,
+        transformResult: async (args) => {
+          rows.push(...args.result.rows);
+          return args.result;
+        },
+      });
+
+      const inputs = await numberingInputs(recording, outline, ada);
+      // Still correct: the readable placement is known, nothing about `secret` is.
+      expect(inputs.contributions.has(readablePlacement.id)).toBe(true);
+      expect(inputs.contributions.size).toBe(1);
+
+      const forbidden = new Set([secret.head.artifactId, secret.first.id, secret.head.id]);
+      const leaked = rows.some((row) =>
+        Object.values(row).some((value) => typeof value === 'string' && forbidden.has(value)),
       );
-      expect(rows.map((row) => row.id)).toEqual([shared.head.id]);
+      expect(leaked).toBe(false);
     });
   });
 
@@ -328,6 +361,44 @@ describe('what a document numbers against, read from the store', () => {
       const after = await numberingInputs(trx, outline, ada);
       expect(after.occurrences).toEqual([{ node: placement.id, version: revised.version.id }]);
       expect(after.contributions.get(placement.id)).toHaveLength(4);
+    });
+  });
+
+  it('a head that fails to read back resolves to null; a pinned earlier version still resolves', async () => {
+    // Created in its own transaction, so it is committed before the admin connection below - a
+    // second, separate connection - can see it at all.
+    const shared = await service.withTenant(production, (trx) =>
+      component(trx, general, ada, 'Install the printer'),
+    );
+
+    // Corrupt the head's stored content directly, as only the admin role can - the tenant's runtime
+    // role has no update grant on artifact_version (0008_version_chain.sql). The earlier version,
+    // `shared.first`, is untouched, and the corrupted row's own database-level checks (schema_version,
+    // content_hash) still hold, so only content-schema validation catches it.
+    await queryAs(
+      db.adminUrl,
+      `update ${production.schema}.artifact_version
+       set content = jsonb_set(content, '{title}', '5'::jsonb)
+       where id = $1`,
+      [shared.head.id],
+    );
+
+    await service.withTenant(production, async (trx) => {
+      const latestPlacement = referenceNode(shared.head.artifactId, { kind: 'latest' });
+      const pinnedPlacement = referenceNode(shared.head.artifactId, {
+        kind: 'pinned',
+        version: shared.first.id,
+      });
+      const outline = await documentWith(trx, [latestPlacement, pinnedPlacement]);
+      const inputs = await numberingInputs(trx, outline, ada);
+
+      expect(inputs.occurrences).toEqual([
+        { node: latestPlacement.id, version: null },
+        { node: pinnedPlacement.id, version: shared.first.id },
+      ]);
+      expect(inputs.contributions.has(latestPlacement.id)).toBe(false);
+      // Version 0.1 is one empty paragraph: known, and contributing nothing.
+      expect(inputs.contributions.get(pinnedPlacement.id)).toEqual([]);
     });
   });
 });

@@ -33,39 +33,18 @@ interface VersionRow {
 }
 
 /**
- * The rows a `pinned` reference's target versions read as, restricted to `readableComponentIds` -
- * so a version whose artifact is not in that set is never selected at all, rather than selected and
- * then discarded once its `artifact_id` is compared against the reference's own (F7). Exported so the
- * restriction is checked directly against the rows the query returns, which `numberingInputs`'s
- * result cannot distinguish from "read, then discarded": a mismatched `artifact_id` is refused either
- * way, so only the query itself proves which one happened.
- */
-export async function readablePinnedVersions(
-  trx: TenantTransaction,
-  pinnedIds: readonly string[],
-  readableComponentIds: ReadonlySet<string>,
-): Promise<VersionRow[]> {
-  if (pinnedIds.length === 0 || readableComponentIds.size === 0) return [];
-  return trx
-    .selectFrom('artifact_version')
-    .select(['id', 'artifact_id', 'content'])
-    .where('id', 'in', [...pinnedIds])
-    .where('artifact_id', 'in', [...readableComponentIds])
-    .execute();
-}
-
-/**
  * The resolve stage's inputs, for one principal (structure.md, "Numbering"): which version each
  * occurrence takes, and what that version's content contributes to the sequences.
  *
  * **A component the principal may not read is never read at all**, so nothing it contains can reach
  * the answer: its occurrence is simply absent from `contributions`, and `number` withholds every number
  * it could have moved. Readable components are read in two queries whatever the outline's size - the
- * head of every `latest` one, and every `pinned` version, each restricted to the readable set so an
- * unreadable component's row is never selected (F7) - each version once, however many occurrences
- * resolve to it, and each version's content through `readContent`, the read-back rule every stored
- * component is held to (CNT-013). One whose content does not read is not known either, and says so in
- * no other way: numbering it would be a guess.
+ * head of every `latest` one, and every `pinned` version - **each restricted to the readable set in
+ * the query itself**, so an unreadable component's row is never selected at all, rather than selected
+ * and discarded once its `artifact_id` is compared against the reference's own (F7) - each version
+ * once, however many occurrences resolve to it, and each version's content through `readContent`, the
+ * read-back rule every stored component is held to (CNT-013). One whose content does not read is not
+ * known either, and says so in no other way: numbering it would be a guess.
  */
 export async function numberingInputs(
   trx: TenantTransaction,
@@ -107,21 +86,43 @@ export async function numberingInputs(
     ),
   ];
 
+  // One row per component in `latest`, each its own head - a lateral join, as `listReadableDocuments`
+  // already does, so Postgres can answer each with a single backward scan of the
+  // `(artifact_id, revision_no, version_no)` index and a `limit 1`, the way `latestVersion` reads one
+  // component's head. `distinctOn` ordered `artifact_id asc, revision_no desc, version_no desc` does
+  // not match that index in either direction, so it would sort every version of every referenced
+  // component instead of the one this needs - proportional to versions, not to components.
   const heads =
     latest.length === 0
       ? []
       : await trx
-          .selectFrom('artifact_version')
-          .distinctOn('artifact_id')
-          .select(['id', 'artifact_id', 'content'])
-          // Mirrors `latestVersion`'s rule for a component's head, over the readable set already
-          // computed above; `artifact_id in latest` alone already excludes every unreadable one.
-          .where('artifact_id', 'in', latest)
-          .orderBy('artifact_id')
-          .orderBy('revision_no', 'desc')
-          .orderBy('version_no', 'desc')
+          .selectFrom('artifact as a')
+          .where('a.id', 'in', latest)
+          .innerJoinLateral(
+            (eb) =>
+              eb
+                .selectFrom('artifact_version as v')
+                .select(['v.id', 'v.artifact_id', 'v.content'])
+                .whereRef('v.artifact_id', '=', 'a.id')
+                .orderBy('v.revision_no', 'desc')
+                .orderBy('v.version_no', 'desc')
+                .limit(1)
+                .as('head'),
+            (join) => join.onTrue(),
+          )
+          .select(['head.id', 'head.artifact_id', 'head.content'])
           .execute();
-  const pins = await readablePinnedVersions(trx, pinned, readable);
+  // Restricted to the readable set in the query itself (F7): a version whose artifact is not
+  // readable is never selected, not selected and discarded once `artifact_id` is compared below.
+  const pins =
+    pinned.length === 0
+      ? []
+      : await trx
+          .selectFrom('artifact_version')
+          .select(['id', 'artifact_id', 'content'])
+          .where('id', 'in', pinned)
+          .where('artifact_id', 'in', [...readable])
+          .execute();
 
   const headOf = new Map(heads.map((row) => [row.artifact_id, row]));
   const pinOf = new Map(pins.map((row) => [row.id, row]));
