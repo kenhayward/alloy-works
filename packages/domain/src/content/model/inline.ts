@@ -70,8 +70,6 @@ export const crossReferenceTargetSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('node'), node: nodeIdentifierSchema }),
 ]);
 
-export type CrossReferenceTarget = z.infer<typeof crossReferenceTargetSchema>;
-
 /** The forms a reference to a page may fall back to where the output has no pages (STR-055). */
 const withoutPagesForms = ['number', 'title', 'numberAndTitle'] as const;
 

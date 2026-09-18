@@ -115,29 +115,37 @@ route and a component split from a document - for IMP's design; and retiring the
 gate-case tests, and resolution, both plan 1's leftovers and still unchanged.
 
 **Plan 3 is built.** Every identifier in a component - a block's, a footnote's, a footnote
-paragraph's and a cross-reference's - is unique within it (issue #122), and a section title holds its
-own to the same rule; a footnote holds no image and no footnote (issue #123), and is stored as the
-parse reads it, so two spellings of one are one digest (issue #124); a cross-reference carries
-an identifier of its own, a closed target union of `block`, `component` and `node`, each held to where
-it may stand, and STR-055's `withoutPages`; and re-identify gives a copied reference a new identifier
-and points it at the copy of what travelled with it, leaving one whose block did not travel, or
-arrived twice, as it stands and counted in the report. All of it is at content schema version 1 and
-in place, on the evidence of a read-only query that nothing stored held either construct. STR-062
-landed from issue #73, reworded from identifying a target by the pair of occurrence and block to
-resolving against exactly one occurrence, because a component does not know where it is placed; it
-and STR-056 are claimed by structure.md and cited by nothing until numbering resolves a target. What
-that is not: nothing authors a footnote or a cross-reference, and nothing resolves one.
+paragraph's and a cross-reference's - is unique within it (issue #122), and a section title holds
+its own to the same rule; a footnote holds no image and no footnote (issue #123), and is stored as
+the parse reads it, so two spellings of one are one digest (issue #124); a cross-reference carries
+an identifier of its own, a closed target union of `block`, `component` and `node`, each held to
+where it may stand, and STR-055's `withoutPages`; and re-identify gives a copied reference a new
+identifier and points it at the copy of what travelled with it, leaving one whose block did not
+travel, or arrived twice, as it stands - counted in the report where the receiving component does
+not hold its target - and allocates nothing a reference in the receiving component or the paste
+still names. Every identifier, and the block a target names, is in NFC; two adjacent empty
+paragraphs are refused in a footnote and a table cell as everywhere else; and a section title's
+reference shows a number or a page, never a title that could loop. All of it is at content schema
+version 1 and in place, on the evidence of a read-only query that nothing stored held either
+construct. STR-062 landed from issue #73, reworded from identifying a target by the pair of
+occurrence and block to resolving against exactly one occurrence, because a component does not know
+where it is placed; it and STR-056 are claimed by structure.md and cited by nothing until numbering
+resolves a target. What that is not: nothing authors a footnote or a cross-reference, and nothing
+resolves one.
 
-What plan 3 deliberately leaves, named so the next plan starts from a list rather than from a reading
-of the diff: resolving a target and the named failure, for the numbering plan; checking a `component`
-target at write, for the plan that first authors a cross-reference; saying which of several
-occurrences a `component` target means, for a later structure plan; a bibliography entry as a target,
-for LIB; bounding a block tree's depth on every write path (issue #125), a small content-model
-fix; refusing a NUL or a lone surrogate in a component's
-content rather than answering `500` (issue #127); and cleaning up after an interrupted database test
-run (issue #126). A footnote admits the `condition`, `language`, `comment` and `suggestion` marks,
-which CNT-129's closed list does not name, because they annotate text rather than add content - a
-ruling made while building, and a walk rule to add before footnotes are writable if it is wrong.
+What plan 3 deliberately leaves, named so the next plan starts from a list rather than from a
+reading of the diff: resolving a target and the named failure, for the numbering plan; checking a
+`component` target at write, and pasting a cross-reference between components - where a `block`
+target whose block did not travel resolves in the receiver - for the plan that first authors a
+cross-reference; a component's reference to a section, which with the missing entry arm is why
+STR-026 is not claimed; saying which of several occurrences a `component` target means, for a later
+structure plan; a bibliography entry as a target, for LIB; bounding a block tree's depth on every
+write path (issue #125), a small content-model fix; refusing a NUL or a lone surrogate in a
+component's content rather than answering `500` (issue #127); and cleaning up after an interrupted
+database test run (issue #126). A footnote admits the `condition`, `language`, `comment` and
+`suggestion` marks, which CNT-129's closed list does not name, because they annotate text rather
+than add content - a ruling made while building, and a walk rule to add before footnotes are
+writable if it is wrong.
 
 ## Metadata
 
