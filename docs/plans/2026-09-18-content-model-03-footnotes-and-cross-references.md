@@ -213,8 +213,12 @@ Reject one and the plan changes where the decision says.
   accept. Each refusal can be lifted later as a widening, which changes nothing stored.
 - **F. A copied reference whose block did not travel is left as it stands.** Pasted without its
   figure, a reference keeps naming a block the receiving component does not have, and resolution names
-  it as missing (STR-029), as it would for a figure deleted after the reference was written. It is not
-  reported at paste, because nothing was discarded or rewritten (CNT-064). Recommended: accept.
+  it as missing (STR-029), as it would for a figure deleted after the reference was written. As built,
+  it is also counted at paste, under a report action of its own, `kept` - nothing was discarded or
+  rewritten (CNT-064), but the author is told now rather than only at resolution - and only where the
+  receiving component does not hold its target: a sentence copied within one component resolves as
+  the original does, and is not counted. Amended in the final fix wave to match what was built; the
+  plan first said it was not reported at paste. Recommended: accept.
   **Otherwise**: drop the reference and report it - which silently leaves "see " in the sentence until
   the author reads the report.
 - **G. Nothing checks at write that a `component` target is a component the author may read.** The

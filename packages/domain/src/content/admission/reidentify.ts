@@ -44,8 +44,9 @@ export function reidentify(
   receiver: Receiver,
   report: ReportCollector,
 ): StageResult<Record<string, unknown>> {
+  const held = namesIn(receiver.document.content);
   const state: State = {
-    taken: new Set([...namesIn(receiver.document.content), ...namesIn(candidate.content)]),
+    taken: new Set([...held.reserved, ...namesIn(candidate.content).reserved]),
     axes: new Set(receiver.conditionAxes),
     newIdentifier: receiver.newIdentifier,
     report,
@@ -58,7 +59,7 @@ export function reidentify(
   };
   try {
     const content = mapArray(candidate.content, (block) => reidentifyBlock(block, state));
-    const { repointed, leftStanding } = repoint(state);
+    const { repointed, leftStanding } = repoint(state, held.targetable);
     if (state.reidentified > 0) {
       report.add('reidentify', 'rewritten', 'blockIdentifier', { count: state.reidentified });
     }
@@ -66,7 +67,7 @@ export function reidentify(
       report.add('reidentify', 'rewritten', 'crossReferenceTarget', { count: repointed });
     }
     if (leftStanding > 0) {
-      report.add('reidentify', 'rewritten', 'crossReferenceUnresolved', { count: leftStanding });
+      report.add('reidentify', 'kept', 'crossReferenceUnresolved', { count: leftStanding });
     }
     if (state.marks.size > 0) {
       report.add('reidentify', 'rewritten', 'markIdentifier', { count: state.marks.size });
@@ -123,9 +124,17 @@ function recordRenamed(state: State, from: string, to: string): void {
  * travel, or whose old identifier is ambiguous, is left as it stands - resolution names it as missing
  * (STR-029) - and so is one naming another component's block, whose identifiers nothing here renames
  * and which this count leaves out. Returns how many were pointed at a copy, and how many `block`
- * targets were left standing instead, so the author is told here rather than only at resolution.
+ * targets were left standing that the receiving component does not hold - `held`, its blocks' and
+ * footnotes' identifiers - so the author is told here rather than only at resolution. One left
+ * standing that the receiver does hold, as a sentence copied within one component does, resolves as
+ * the original does, and is not counted: telling the author its target did not arrive would be false.
+ * No new identifier can be one a target names (`namesIn` reserved them), so what the receiver held
+ * before the paste is all a standing target can resolve to.
  */
-function repoint(state: State): { repointed: number; leftStanding: number } {
+function repoint(
+  state: State,
+  held: ReadonlySet<string>,
+): { repointed: number; leftStanding: number } {
   let repointed = 0;
   let leftStanding = 0;
   for (const reference of state.references) {
@@ -133,7 +142,7 @@ function repoint(state: State): { repointed: number; leftStanding: number } {
     if (target?.kind !== 'block' || typeof target.block !== 'string') continue;
     const block = state.renamed.get(target.block);
     if (block === undefined) {
-      leftStanding += 1;
+      if (!held.has(target.block)) leftStanding += 1;
       continue;
     }
     reference.target = { ...target, block };
@@ -150,26 +159,31 @@ function repoint(state: State): { repointed: number; leftStanding: number } {
  * can outlive its block: the receiver's own reference to a figure since deleted, or a pasted one whose
  * block did not travel (or is ambiguous, and so is left unrepointed), keeps naming the old identifier
  * literally - and a counter or an unlucky draw handing that exact string to a pasted block would
- * silently make the reference point at it.
+ * silently make the reference point at it. Also returns `targetable`: the identifiers a `block`
+ * target can name - a block's and a footnote's, never a mark's or a cross-reference's.
  */
-function namesIn(value: unknown): Set<string> {
-  const found = new Set<string>();
-  const walk = (node: unknown): void => {
+function namesIn(value: unknown): { reserved: Set<string>; targetable: Set<string> } {
+  const reserved = new Set<string>();
+  const targetable = new Set<string>();
+  const walk = (node: unknown, inMarks: boolean): void => {
     if (Array.isArray(node)) {
-      for (const member of node) walk(member);
+      for (const member of node) walk(member, inMarks);
       return;
     }
     if (typeof node !== 'object' || node === null) return;
     const record = node as Record<string, unknown>;
-    if (typeof record.id === 'string') found.add(record.id);
+    if (typeof record.id === 'string') {
+      reserved.add(record.id);
+      if (!inMarks && record.type !== 'crossReference') targetable.add(record.id);
+    }
     if (record.type === 'crossReference') {
       const target = asRecord(record.target);
-      if (target?.kind === 'block' && typeof target.block === 'string') found.add(target.block);
+      if (target?.kind === 'block' && typeof target.block === 'string') reserved.add(target.block);
     }
-    for (const member of Object.values(record)) walk(member);
+    for (const [name, member] of Object.entries(record)) walk(member, name === 'marks');
   };
-  walk(value);
-  return found;
+  walk(value, false);
+  return { reserved, targetable };
 }
 
 const EXHAUSTED = `${ATTEMPTS} identifiers in a row were empty or already used in the receiving component`;

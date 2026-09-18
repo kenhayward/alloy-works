@@ -182,7 +182,7 @@ describe('the re-identify stage', () => {
       { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
       // The component target isn't counted (nothing here renames another component's
       // identifiers), so only old-x2 - the untravelled block target - is left standing.
-      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -254,7 +254,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 4 },
-      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -287,7 +287,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 5 },
-      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -317,7 +317,7 @@ describe('the re-identify stage', () => {
     });
     expect(entries).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
-      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceUnresolved', count: 1 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
   });
 
@@ -349,6 +349,41 @@ describe('the re-identify stage', () => {
       ok: true,
       value: { schemaVersion: 1, content: [{ ...dose, id: 'n4' }] },
     });
+  });
+
+  it('says nothing of a reference left standing whose target the receiving component holds', () => {
+    // A sentence copied within one component: the figure it cites stayed where it was, so the copy
+    // resolves exactly as the original does, and telling the author it did not arrive would be false.
+    const holding: ContentDocument = {
+      ...document,
+      content: [
+        ...document.content,
+        {
+          type: 'figure',
+          id: 'fig',
+          asset: 'asset-1',
+          imageStyle: 'column-width',
+          caption: 'Dose',
+          alternative: { kind: 'decorative' },
+        },
+      ],
+    };
+    const copied = (block: string) =>
+      run(
+        {
+          schemaVersion: 1,
+          content: [paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block })])],
+        },
+        receiver({ document: holding }),
+      ).entries;
+    expect(copied('fig')).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+    ]);
+    // Held by the receiver as something else - a mark's identifier - is not held as a target.
+    expect(copied('n2')).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+    ]);
   });
 
   it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {
