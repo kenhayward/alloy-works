@@ -38,6 +38,36 @@ const copyOfTheFaces = async (prefix: string) => {
   return directory;
 };
 
+/**
+ * A face renamed "Interloper" wherever its `name` table says "Liberation" - the same length, in both
+ * the Macintosh (one byte) and Unicode (two byte) records - so Typst reads it as another family.
+ */
+const renamed = (face: Buffer) => {
+  const copy = Buffer.from(face);
+  for (let table = 0; table < copy.readUInt16BE(4); table += 1) {
+    const record = 12 + 16 * table;
+    if (copy.toString('latin1', record, record + 4) !== 'name') continue;
+    const start = copy.readUInt32BE(record + 8);
+    const end = start + copy.readUInt32BE(record + 12);
+    for (const [from, to] of [
+      [Buffer.from('Liberation', 'latin1'), Buffer.from('Interloper', 'latin1')],
+      [
+        Buffer.from('Liberation', 'utf16le').swap16(),
+        Buffer.from('Interloper', 'utf16le').swap16(),
+      ],
+    ] as const) {
+      for (
+        let at = copy.indexOf(from, start);
+        at !== -1 && at < end;
+        at = copy.indexOf(from, at + 1)
+      ) {
+        to.copy(copy, at);
+      }
+    }
+  }
+  return copy;
+};
+
 describe('the pinned Typst', () => {
   it('is the version this worker was built against', async () => {
     expect(await typst.version()).toBe(TYPST_RELEASE.version);
@@ -86,12 +116,42 @@ describe('the pinned fonts (issue #145)', () => {
     expect(families(pdf)).toEqual(['LiberationSerif', 'LiberationSerif-Bold']);
   });
 
-  it('hands Typst the pinned directory alone, with its own and the system fonts ignored', () => {
-    const flags = typstArguments('/root', fonts.directory, at);
+  it('names one font directory, with its own and the system fonts ignored', () => {
+    // `compile` passes a directory inside the compile root; the next test shows what it holds.
+    const flags = typstArguments('/root', join('/root', 'fonts'), at);
     expect(flags).toContain('--ignore-system-fonts');
     expect(flags).toContain('--ignore-embedded-fonts');
     const path = flags.indexOf('--font-path');
-    expect(flags.slice(path, path + 2)).toEqual(['--font-path', FONT_DIRECTORY]);
+    expect(flags.slice(path, path + 2)).toEqual(['--font-path', join('/root', 'fonts')]);
+  });
+
+  it('hands Typst the pinned faces alone, whatever else lies beside them', async () => {
+    // Typst loads every face in the directory it is given. A fifth face beside the pinned four - a
+    // copy of the Regular renamed "Interloper Serif", and asked for by name - must not reach the PDF.
+    const directory = await copyOfTheFaces('aw-planted-fonts-');
+    try {
+      const loaded = await loadPinnedFonts(directory);
+      await writeFile(
+        join(directory, 'Interloper.ttf'),
+        renamed(await readFile(join(directory, 'LiberationSerif-Regular.ttf'))),
+      );
+      await writeFile(
+        join(directory, 'asks.typ'),
+        [
+          '#set document(title: "Planted")',
+          '#set text(font: "Interloper Serif", lang: "en")',
+          'A sentence.',
+        ].join('\n'),
+      );
+      const pdf = await createTypst({ binary: typstBinaryPath(), fonts: loaded }).compile(
+        join(directory, 'asks.typ'),
+        '{}',
+        at,
+      );
+      expect(families(pdf)).toEqual(['LiberationSerif']);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it('refuses to start with no fonts, where Typst would print blank pages and exit 0', async () => {
