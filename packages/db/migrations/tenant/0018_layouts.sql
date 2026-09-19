@@ -72,8 +72,8 @@ create trigger publication_request_made_under_a_layout before insert on publicat
   for each row execute function publication_request_made_under_a_layout();
 
 -- A publication records the layout version it was made under: its request's, exactly (checked at
--- commit, below). Template 1 may have none, where its request was made before layouts; template 2
--- always has one.
+-- commit, below). Template 1 has none - it is only for a request made before layouts - and template 2
+-- always has one, so the template a publication names says which kind of request it was made from.
 alter table publication
   add column layout_id uuid,
   add column layout_version_id uuid,
@@ -82,7 +82,7 @@ alter table publication
     references artifact_version (id, artifact_id, kind) on delete restrict,
   add constraint publication_layout check (
     (layout_id is null) = (layout_version_id is null)
-    and (template_version = 1 or layout_version_id is not null)
+    and (template_version = 1) = (layout_version_id is null)
   );
 
 -- 0017's finish-once rule, with the layout among what finishing a request never changes.

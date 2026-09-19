@@ -667,12 +667,15 @@ describe('requesting and recording a publication', () => {
     );
     expect(occurrences).toHaveLength(1);
   });
-  /** What a worker records for a request, over an output the store need not hold. */
+  /**
+   * What a worker records for a request made under a layout - template 2 and pipeline 2 - over an
+   * output the store need not hold.
+   */
   const recording = (requestId: string) => ({
     requestId,
     engineVersion: '0.15.1',
-    templateVersion: 1,
-    pipelineVersion: '1',
+    templateVersion: 2,
+    pipelineVersion: '2',
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
@@ -798,6 +801,12 @@ describe('requesting and recording a publication', () => {
         .returning('id')
         .executeTakeFirstOrThrow();
       const made = recording(queued);
+      // Under its request's own layout, so the row passes every check but the one at commit.
+      const under = await trx
+        .selectFrom('publication_request')
+        .select(['layout_id', 'layout_version_id'])
+        .where('id', '=', queued)
+        .executeTakeFirstOrThrow();
       await trx
         .insertInto('publication')
         .values({
@@ -817,6 +826,8 @@ describe('requesting and recording a publication', () => {
           fonts: JSON.stringify(made.fonts),
           data_sha256: made.dataSha256,
           numbering: JSON.stringify(made.numbering),
+          layout_id: under.layout_id,
+          layout_version_id: under.layout_version_id,
         })
         .execute();
       return artifact.id;
@@ -903,8 +914,8 @@ describe('requesting and recording a publication', () => {
         engine: 'typst',
         engine_version: '0.15.1',
         template: 'publication',
-        template_version: 1,
-        pipeline_version: '1',
+        template_version: 2,
+        pipeline_version: '2',
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         data_sha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },

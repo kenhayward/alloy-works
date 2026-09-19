@@ -98,12 +98,16 @@ describe('migration 0018, which gives every environment its default layout', () 
     return { ada: ada.id, space: general.id, version: made.version };
   };
 
-  /** What a worker records for a request under template 1, over an output the store need not hold. */
-  const recording = (tenant: Tenant, requestId: string) => ({
+  /**
+   * What a worker records for a request, over an output the store need not hold: under template 2 and
+   * pipeline 2 for a request made under a layout, and under template 1 and pipeline 1 for one made
+   * before layouts.
+   */
+  const recording = (tenant: Tenant, requestId: string, template: 1 | 2 = 2) => ({
     requestId,
     engineVersion: '0.15.1',
-    templateVersion: 1,
-    pipelineVersion: '1',
+    templateVersion: template,
+    pipelineVersion: String(template),
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
@@ -123,7 +127,7 @@ describe('migration 0018, which gives every environment its default layout', () 
     trx: TenantTransaction,
     tenant: Tenant,
     request: string,
-    options: { readonly templateVersion?: number; readonly done?: boolean } = {},
+    options: { readonly templateVersion?: 1 | 2; readonly done?: boolean } = {},
   ) => {
     const row = await sql<{
       document_id: string;
@@ -140,7 +144,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       insert into artifact (kind, space_id) values ('publication', ${row.space_id}) returning id`
       .execute(trx)
       .then((result) => result.rows[0]!.id);
-    const made = recording(tenant, request);
+    const made = recording(tenant, request, options.templateVersion ?? 1);
     await sql`insert into publication (id, request_id, document_id, document_version_id, publisher,
                 published_at, approval, formats, engine, engine_version, template, template_version,
                 pipeline_version, fonts, data_sha256, numbering)
@@ -262,7 +266,7 @@ describe('migration 0018, which gives every environment its default layout', () 
     );
     expect(inputs).toMatchObject({ layout: null, revision: '0.1' });
     const publication = await service.withTenant(tenant, (trx) =>
-      recordPublication(trx, recording(tenant, made.toPublish)),
+      recordPublication(trx, recording(tenant, made.toPublish, 1)),
     );
     expect(publication).toBeDefined();
 
@@ -426,6 +430,40 @@ describe('migration 0018, which gives every environment its default layout', () 
       [publication],
     );
     expect(rows).toEqual([{ layout_version_id: declared.versionId }]);
+  });
+
+  it('refuses a template-1 publication under a layout: template 1 is only for a request made before layouts', async () => {
+    const tenant = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Template 1 under a layout' },
+      hostnames: ['template-one.acme.alloy.test'],
+    });
+    const request = await service.withTenant(tenant, async (trx) => {
+      const { ada, version } = await personAndDocument(trx);
+      const answer = await requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+
+    // The request was made under a layout, and a template 1 publication copying it is refused at once.
+    await expect(
+      service.withTenant(tenant, (trx) => recordPublication(trx, recording(tenant, request, 1))),
+    ).rejects.toThrow(/publication_layout/);
+    // Nothing was recorded, and the request is still queued, to publish under template 2.
+    expect(await layoutsOf(tenant)).toEqual([
+      {
+        row: 'request',
+        id: request,
+        state: 'queued',
+        layout_id: DEFAULT_LAYOUT_ID,
+        layout_version_id: expect.any(String),
+      },
+    ]);
   });
 
   it("keeps the layout an environment already holds under the default's identifier", async () => {

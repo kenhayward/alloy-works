@@ -151,8 +151,9 @@ describe('publishing a document through the service', () => {
       const id = await recordPublication(trx, {
         requestId,
         engineVersion: '0.15.1',
-        templateVersion: 1,
-        pipelineVersion: '1',
+        // Made under a layout, as every request since layouts is: template 2 and pipeline 2.
+        templateVersion: 2,
+        pipelineVersion: '2',
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         dataSha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },
@@ -487,8 +488,8 @@ describe('publishing a document through the service', () => {
       approval: 'none',
       formats: ['pdf'],
       engine: { name: 'typst', version: '0.15.1' },
-      template: { name: 'publication', version: 1 },
-      pipeline: '1',
+      template: { name: 'publication', version: 2 },
+      pipeline: '2',
     });
     expect(body.outputs).toHaveLength(1);
     expect(body.outputs[0]).toMatchObject({ format: 'pdf', standard: 'ua-1', bytes: 19 });
