@@ -417,6 +417,58 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(JSON.stringify(logged)).not.toContain('\u{627}');
   });
 
+  it('PUB-094 refuses a publish holding a component the publisher may not read, naming its node and nothing of it, and makes no publication', async () => {
+    logged.length = 0;
+    let hidden = '';
+    let unreadable = '';
+    const id = await requested(async (trx) => {
+      const readable = reference(await component(trx, general, 'Scope', ['Set the tray.']));
+      hidden = await component(trx, quality, 'Calibration', ['Never read']);
+      const refused = reference(hidden);
+      unreadable = refused.id;
+      return [readable, refused];
+    });
+    const versions = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', hidden)
+        .execute()
+        .then((rows) => rows.map((row) => row.id)),
+    );
+    expect(versions).toHaveLength(2);
+    const before = await publicationCount();
+    expect(await work()).toBe('failed');
+    // After the job, not only at the request: the job writes the request's failures again, from
+    // `assemble`'s list, and that list must still say nothing of the component.
+    const row = await requestRow(id);
+    expect(row.state).toBe('failed');
+    expect(row.failures).toEqual([
+      {
+        stage: 'resolve',
+        code: 'occurrence_unreadable',
+        node: unreadable,
+        block: null,
+        detail: null,
+      },
+    ]);
+    expect(await publicationOf(id)).toBeUndefined();
+    expect(await publicationCount()).toBe(before);
+    const occurrences = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication_request_occurrence')
+        .selectAll()
+        .where('request_id', '=', id)
+        .execute(),
+    );
+    // The readable one alone was recorded; the other was never resolved, so never read.
+    expect(occurrences).toHaveLength(1);
+    const everything = JSON.stringify({ row, occurrences, logged });
+    for (const withheld of [hidden, ...versions, 'Calibration']) {
+      expect(everything).not.toContain(withheld);
+    }
+  });
+
   it('PUB-053 records no publication and no artifact when the store will not take the PDF', async () => {
     const id = await requested(async (trx) => [
       reference(await component(trx, general, 'Calibration', ['Set the tray.'])),

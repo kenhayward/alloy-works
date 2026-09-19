@@ -12,6 +12,8 @@ import {
   grant,
   invite,
   migrate,
+  recordPublication,
+  requestPublication,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -73,6 +75,8 @@ const OTHER_TENANT_IDS: Readonly<
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getNumbering: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getContributions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  requestPublication: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getPublicationRequest: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).request }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -104,6 +108,7 @@ const VALID_INPUT: Readonly<
     },
   },
   claimLock: { payload: { session: SESSION } },
+  requestPublication: { payload: { version: SESSION, formats: ['pdf'] } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
   invite: { payload: { email: 'ivy@example.com' } },
@@ -223,6 +228,39 @@ const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.version.artifactId;
   });
+
+/**
+ * A publication in environment B, and the request that made it: asked for through the store and
+ * recorded as a worker records one, over an output that need not exist - nothing here fetches it.
+ */
+const publicationIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const document = await documentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select(['id', 'author_id'])
+      .where('artifact_id', '=', document)
+      .executeTakeFirstOrThrow();
+    const asked = await requestPublication(trx, {
+      documentId: document,
+      version: version.id,
+      formats: ['pdf'],
+      requester: version.author_id!,
+    });
+    if (asked.answer !== 'requested') throw new Error(`refused: ${asked.answer}`);
+    const publication = await recordPublication(trx, {
+      requestId: asked.request.id,
+      engineVersion: '0.15.1',
+      templateVersion: 1,
+      pipelineVersion: '1',
+      fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+      dataSha256: 'b'.repeat(64),
+      numbering: { scheme: 'default/1', entries: [] },
+      output: { key: `${tenant.role}/sha256/${'c'.repeat(64)}`, sha256: 'c'.repeat(64), bytes: 1 },
+    });
+    return { request: asked.request.id, publication: publication! };
+  });
+};
 
 /** A grant in environment B: Reader on its General space, to a principal of its own. */
 const grantIdIn = (tenant: Tenant, db: TenantDatabase) =>

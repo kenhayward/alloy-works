@@ -18,6 +18,7 @@ export {
 export {
   failPublicationRequest,
   publicationInputs,
+  readPublicationRequest,
   recordPublication,
   requestPublication,
   resolveOccurrences,
@@ -25,6 +26,7 @@ export {
   type OccurrenceOutcome,
   type PublicationInputs,
   type PublicationRequestAnswer,
+  type StoredPublicationRequest,
 } from './publishing.js';
 export type {
   PublicationInputTable,

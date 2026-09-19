@@ -80,7 +80,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                |
 | **PUB-087** | The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))                                             |
 | **PUB-088** | A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))                                                                                                                                                                           |
-| **IAM-074** | Decision C: every occurrence is resolved at the request, restricted to what the publisher may read, and one the publisher may not read refuses the publish, whoever placed the reference                                                                                                          |
+| **PUB-094** | Decision C: the request resolves every occurrence restricted to what the publisher may read, in the query; one they may not read is `occurrence_unreadable`, naming its node and nothing else, and compose never reads it                                                                         |
 | **PUB-073** | A request names one source and a non-empty set of formats; the publication records the set, and publishing the same source to another format is another request and another publication                                                                                                           |
 | **PUB-074** | A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited                                                                                |
 | **PUB-079** | Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`                                                                                                                                       |
@@ -214,9 +214,10 @@ runs, so compose adds its failures for what the publisher can read and the autho
 alternatives were worse. **Publishing with the component withheld** makes a document with a hole in it
 and, by IAM-073, `null` where every number it could move should be - a publication nobody should send.
 **Publishing it anyway** lets anybody with `publish` release what they cannot read, which is the
-laundering IAM-074 (formerly IAM-017) exists to stop. The corpus had no row saying this of every
-component; Ken filed one as [issue #143](https://github.com/kenhayward/alloy-works/issues/143), and it
-lands as a row, claimed here, with the first publishing build.
+laundering IAM-017 exists to stop. The corpus had no row saying this of every component; Ken filed one
+as [issue #143](https://github.com/kenhayward/alloy-works/issues/143), which landed with the first
+publishing build as **PUB-094**, claimed here. IAM-074, which said it of a referenced component in T4,
+was withdrawn for it.
 
 **Who starts able to publish: nobody.** access.md's eight starter roles hold `publish` in none, and
 `packages/domain/src/access/role.test.ts` asserts it "because nothing publishes in T1" - but T1 is
@@ -635,20 +636,20 @@ the rest stand.
 Ken asked for these to be challenged. **Ken's answer (2026-09-19): every challenge below accepted**,
 and decisions A to M with it. The corpus now says:
 
-| Challenge           | Now                                                                                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PUB-001             | Superseded by **PUB-086**: every failure names its stage and what it concerns. Claimed                                                                           |
-| PUB-015             | Superseded by **PUB-087**: PDF output passes the publishing regression corpus. Claimed                                                                           |
-| PUB-010             | Superseded by **PUB-088** (cover, contents, appendices; T1, claimed) and **PUB-089** (the approval page; T3, unclaimed)                                          |
-| PUB-064             | Superseded by **PUB-085**: p95 ten seconds on a declared 300-page reference document. Unclaimed until slice 5 settles it against PUB-091, beside the table       |
-| PUB-030 and PUB-036 | Superseded by **PUB-090** (PDF/UA-1, veraPDF, and the person-judged checkpoints on the regression corpus; unclaimed, beside the table) and **PUB-091** (claimed) |
-| PUB-018             | Superseded by **PUB-092**, which defines "honoured"; unclaimed, since the style projection is themes.md's                                                        |
-| PUB-004 against T1  | Unchanged; drafts accepted, and #142 lands with the first build                                                                                                  |
-| TPL-030             | Withdrawn, as TPL-013's duplicate                                                                                                                                |
-| CNT-095             | Superseded by **CNT-150**, PDF alone; unclaimed with preview                                                                                                     |
-| CNT-136             | Superseded by **CNT-151**, measured from the save being recorded; unclaimed with preview                                                                         |
-| IAM-017             | Superseded by **IAM-074**, the publisher's permission, decided at the publication. Claimed                                                                       |
-| Citations in T1     | Not answered yet: every citation fails the publish until LIB (CNT-054)                                                                                           |
+| Challenge           | Now                                                                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PUB-001             | Superseded by **PUB-086**: every failure names its stage and what it concerns. Claimed                                                                                                           |
+| PUB-015             | Superseded by **PUB-087**: PDF output passes the publishing regression corpus. Claimed                                                                                                           |
+| PUB-010             | Superseded by **PUB-088** (cover, contents, appendices; T1, claimed) and **PUB-089** (the approval page; T3, unclaimed)                                                                          |
+| PUB-064             | Superseded by **PUB-085**: p95 ten seconds on a declared 300-page reference document. Unclaimed until slice 5 settles it against PUB-091, beside the table                                       |
+| PUB-030 and PUB-036 | Superseded by **PUB-090** (PDF/UA-1, veraPDF, and the person-judged checkpoints on the regression corpus; unclaimed, beside the table) and **PUB-091** (claimed)                                 |
+| PUB-018             | Superseded by **PUB-092**, which defines "honoured"; unclaimed, since the style projection is themes.md's                                                                                        |
+| PUB-004 against T1  | Unchanged; drafts accepted, and #142 lands with the first build                                                                                                                                  |
+| TPL-030             | Withdrawn, as TPL-013's duplicate                                                                                                                                                                |
+| CNT-095             | Superseded by **CNT-150**, PDF alone; unclaimed with preview                                                                                                                                     |
+| CNT-136             | Superseded by **CNT-151**, measured from the save being recorded; unclaimed with preview                                                                                                         |
+| IAM-017             | Superseded by **IAM-074**, the publisher's permission, decided at the publication; IAM-074 was then withdrawn for **PUB-094** (#143), which says it of every component in T1. PUB-094 is claimed |
+| Citations in T1     | Not answered yet: every citation fails the publish until LIB (CNT-054)                                                                                                                           |
 
 What was proposed, as it was written:
 

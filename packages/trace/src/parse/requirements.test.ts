@@ -126,6 +126,8 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
+    // 1382, from 1381: PUB-094, publishing never containing what its publisher could not read (issue
+    // #143), landed by the first publishing plan. IAM-074 is withdrawn for it and keeps its row.
     // 1381, from 1380: PUB-093, a publication not made from a baseline saying it is not approved
     // (issue #142), landed by the first publishing plan.
     // 1380, from 1369: Ken's answer to the publishing design - PUB-085 to PUB-092, CNT-150, CNT-151
@@ -142,7 +144,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1381);
+    expect(total((document) => document.requirements)).toBe(1382);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

@@ -48,6 +48,7 @@ import {
   type ProviderSettings,
   type SignInStart,
 } from './oidc.js';
+import { publishingHandlers } from './publishing.js';
 import { rendererFallback, serveRenderer } from './renderer.js';
 import type { SecretStore } from './secrets.js';
 import {
@@ -299,6 +300,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
+    ...publishingHandlers(db, tenantOf, principalOf),
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),

@@ -13,6 +13,8 @@ import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion } from './versions.js';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /** What resolving one occurrence came to, as its publisher: the version it takes, or why none. */
 export type OccurrenceOutcome =
   | {
@@ -452,4 +454,51 @@ async function insertPublication(
     .where('id', '=', request.id)
     .execute();
   return artifact.id;
+}
+
+/** A request as its requester is shown it. */
+export interface StoredPublicationRequest {
+  readonly id: string;
+  readonly documentId: string;
+  readonly requestedBy: string;
+  readonly state: 'queued' | 'done' | 'failed';
+  readonly failures: readonly PublishFailure[];
+  readonly publication: string | null;
+}
+
+/**
+ * One request, with the publication it made, if any; undefined when this environment holds none of
+ * that id. It decides nothing: who may be shown it is the caller's to decide, by `requestedBy`. Its
+ * failures are written only by `requestPublication` and `failPublicationRequest`, each a
+ * `PublishFailure` built in code - an unreadable place carrying its node alone - so they are read back
+ * without a parse.
+ */
+export async function readPublicationRequest(
+  trx: TenantTransaction,
+  id: string,
+): Promise<StoredPublicationRequest | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const row = await trx
+    .selectFrom('publication_request as r')
+    .leftJoin('publication as p', 'p.request_id', 'r.id')
+    .select([
+      'r.id',
+      'r.document_id',
+      'r.requested_by',
+      'r.state',
+      'r.failures',
+      'p.id as publication',
+    ])
+    .where('r.id', '=', id)
+    .executeTakeFirst();
+  return (
+    row && {
+      id: row.id,
+      documentId: row.document_id,
+      requestedBy: row.requested_by,
+      state: row.state,
+      failures: row.failures as PublishFailure[],
+      publication: row.publication,
+    }
+  );
 }

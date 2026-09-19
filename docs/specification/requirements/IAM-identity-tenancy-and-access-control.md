@@ -154,11 +154,17 @@ verification. See [ADR-0009](../../decisions/0009-federation-and-google-accounts
 | **IAM-015** | Content must be movable between spaces within a tenant, and moving it must re-evaluate its permissions rather than carrying the old ones                                                                                                             | T2      | Specified             |
 | **IAM-016** | A component in one space must be referenceable from a document in another only where the referring user may read it                                                                                                                                  | T4      | Specified             |
 | **IAM-017** | That permission must be re-checked when the document is published, not only when the reference was created, because access changes and publication is what escapes                                                                                   | T4      | Superseded by IAM-074 |
-| **IAM-074** | Whether the publisher may read each component a document references must be decided when the document is published, whoever created the reference and whatever they could read when they did, because access changes and publication is what escapes | T4      | Specified             |
+| **IAM-074** | Whether the publisher may read each component a document references must be decided when the document is published, whoever created the reference and whatever they could read when they did, because access changes and publication is what escapes | T4      | Withdrawn             |
 
-**IAM-017 is the quiet one**, and IAM-074 now carries it, saying whose permission is decided. A reference created while somebody had access outlives their access. If
+**IAM-017 is the quiet one**, and PUB-094 now carries it, saying whose permission is decided, by way of IAM-074. A reference created while somebody had access outlives their access. If
 permission is checked only at insert, a document silently keeps publishing content its readers were
 later forbidden - and nothing in the interface would ever say so.
+
+**IAM-074 is withdrawn: PUB-094 states it of every component, T1.** A publication is decided on its
+publisher's read of each component it contains, at the publication, whoever placed the reference -
+which is IAM-074's rule, asked of every component rather than only one in another space. Two rows
+saying one thing would be claimed and cited twice. IAM-017 stays superseded by IAM-074, as its
+history.
 
 ## 6. Permissions
 
@@ -433,3 +439,18 @@ permission is re-checked, and Ken accepted the challenge.
 | Requirements     | 73, of which 1 superseded | 74, of which 2 superseded |
 | Non-requirements | 6                         | 6                         |
 | Open questions   | 9                         | 9                         |
+
+### From building the first publishing slice
+
+Not a review. [The first publishing plan](../../plans/2026-09-19-publishing-01-a-document-to-pdf.md)
+landed issue [#143](https://github.com/kenhayward/alloy-works/issues/143) as **PUB-094**, in T1.
+
+| What was found                                                                                                                                                                                                                            | Change                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| IAM-074 asks that the publisher's read of a referenced component be decided at the publication, and PUB-094 ([#143](https://github.com/kenhayward/alloy-works/issues/143)) asks the same of every component a publication contains, in T1 | **IAM-074 withdrawn**, keeping its row. PUB-094 is the one to claim and cite; IAM-017 stays superseded by IAM-074 |
+
+| Counts           | Before                    | After                                     |
+| ---------------- | ------------------------- | ----------------------------------------- |
+| Requirements     | 74, of which 2 superseded | 74, of which 2 superseded and 1 withdrawn |
+| Non-requirements | 6                         | 6                                         |
+| Open questions   | 9                         | 9                                         |

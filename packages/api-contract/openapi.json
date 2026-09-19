@@ -2763,6 +2763,10 @@
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
+                    },
+                    "mayPublish": {
+                      "type": "boolean",
+                      "description": "Whether the caller may publish the document"
                     }
                   },
                   "required": [
@@ -2770,7 +2774,8 @@
                     "space",
                     "version",
                     "outline",
-                    "mayEdit"
+                    "mayEdit",
+                    "mayPublish"
                   ]
                 }
               }
@@ -5231,6 +5236,10 @@
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
+                    },
+                    "mayPublish": {
+                      "type": "boolean",
+                      "description": "Whether the caller may publish the document"
                     }
                   },
                   "required": [
@@ -5238,7 +5247,8 @@
                     "space",
                     "version",
                     "outline",
-                    "mayEdit"
+                    "mayEdit",
+                    "mayPublish"
                   ]
                 }
               }
@@ -5335,6 +5345,10 @@
                         "mayEdit": {
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
                         }
                       },
                       "required": [
@@ -5342,7 +5356,8 @@
                         "space",
                         "version",
                         "outline",
-                        "mayEdit"
+                        "mayEdit",
+                        "mayPublish"
                       ]
                     },
                     "reason": {
@@ -5549,6 +5564,10 @@
                         "mayEdit": {
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
                         }
                       },
                       "required": [
@@ -5556,12 +5575,381 @@
                         "space",
                         "version",
                         "outline",
-                        "mayEdit"
+                        "mayEdit",
+                        "mayPublish"
                       ]
                     },
                     "reason": {
                       "description": "outline_invalid: why the operation does not apply",
                       "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/publications": {
+      "post": {
+        "operationId": "requestPublication",
+        "summary": "Publish the latest version of this document",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The document version the caller is publishing, which must be the latest"
+                  },
+                  "formats": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "The formats to publish; `pdf` is the only one until a layout declares another"
+                  }
+                },
+                "required": [
+                  "version",
+                  "formats"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asked for, and queued; follow the request for its outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "done",
+                        "failed"
+                      ]
+                    },
+                    "failures": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string",
+                            "enum": [
+                              "resolve",
+                              "compose",
+                              "engine",
+                              "store"
+                            ]
+                          },
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "occurrence_unreadable",
+                              "occurrence_unresolved",
+                              "title_not_publishable",
+                              "block_not_publishable",
+                              "inline_not_publishable",
+                              "style_missing",
+                              "language_not_publishable",
+                              "glyph_missing",
+                              "character_disallowed",
+                              "engine_failed",
+                              "store_failed"
+                            ]
+                          },
+                          "node": {
+                            "description": "The outline node it concerns",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "block": {
+                            "description": "The block within that node's component",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "detail": {
+                            "description": "The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "code",
+                          "node",
+                          "block",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "publication": {
+                      "description": "The publication it made, once done",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "document",
+                    "state",
+                    "failures",
+                    "publication"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`format_unsupported`: a format the template cannot make",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not publish it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`version_precondition`: the document has a newer version than the one named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
@@ -7732,6 +8120,237 @@
         }
       }
     },
+    "/v1/publication-requests/{id}": {
+      "get": {
+        "operationId": "getPublicationRequest",
+        "summary": "A publish the caller asked for: its state, every failure, and its publication once made",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "done",
+                        "failed"
+                      ]
+                    },
+                    "failures": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string",
+                            "enum": [
+                              "resolve",
+                              "compose",
+                              "engine",
+                              "store"
+                            ]
+                          },
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "occurrence_unreadable",
+                              "occurrence_unresolved",
+                              "title_not_publishable",
+                              "block_not_publishable",
+                              "inline_not_publishable",
+                              "style_missing",
+                              "language_not_publishable",
+                              "glyph_missing",
+                              "character_disallowed",
+                              "engine_failed",
+                              "store_failed"
+                            ]
+                          },
+                          "node": {
+                            "description": "The outline node it concerns",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "block": {
+                            "description": "The block within that node's component",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "detail": {
+                            "description": "The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "code",
+                          "node",
+                          "block",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "publication": {
+                      "description": "The publication it made, once done",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "document",
+                    "state",
+                    "failures",
+                    "publication"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request, or one somebody else asked for",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/roles": {
       "get": {
         "operationId": "listRoles",
@@ -9808,6 +10427,10 @@
                     "mayEdit": {
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
+                    },
+                    "mayPublish": {
+                      "type": "boolean",
+                      "description": "Whether the caller may publish the document"
                     }
                   },
                   "required": [
@@ -9815,7 +10438,8 @@
                     "space",
                     "version",
                     "outline",
-                    "mayEdit"
+                    "mayEdit",
+                    "mayPublish"
                   ]
                 }
               }
