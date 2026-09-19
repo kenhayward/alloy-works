@@ -364,6 +364,13 @@ cp deploy/worker.env.example deploy/worker.env
 pnpm --filter @alloy-works/worker dev
 ```
 
+The worker's own test suite also fetches and runs the pinned veraPDF checker in Docker, once per
+machine:
+
+```bash
+pnpm --filter @alloy-works/worker fetch-verapdf   # verapdf/cli, pulled by digest, needs Docker running
+```
+
 With the service signed in to (above), ask for a sample and follow it. The worker picks the job up
 within a second or two, and the answer then carries a link that fetches the PDF:
 

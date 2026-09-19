@@ -92,15 +92,15 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **CNT-054** | A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component                                                                                                              |
 | **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                          |
 
-**PUB-090 is not claimed, and the reason is one measurement nobody has made yet.** It asks that every
-publication pass veraPDF's PDF/UA-1 profile and that the checkpoints only a person can judge pass on
-the regression corpus. The design compiles every publication as PDF/UA-1 and runs veraPDF on each
-(PUB-091) - but STR-007 lets an outline nest nine levels, PDF/UA-1's standard heading types stop at
-H6, and whether the pinned Typst's headings at levels seven to nine pass veraPDF, and how assistive
-technology is told they are headings, is not known ([Open questions](#open-questions)). Until it is,
-claiming PUB-090 would claim it for documents the design may not be able to publish accessibly. **The
-first task of the first publishing plan settles it**, by running veraPDF over a nine-level document in
-the worker's suite; the claim follows only if the answer holds for every depth STR-007 allows.
+**PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
+nine-level regression case passes every veraPDF PDF/UA-1 machine rule - 106 rules, 0 failed - and the
+pinned Typst 0.15.1 role-maps `H7` to `H9` to `P`, because PDF/UA-1's standard heading types stop at
+`H6`. So a heading at those depths is bookmarked and numbered correctly, but reaches assistive
+technology as a paragraph, not announced as a heading - exactly the person-judged checkpoint PUB-090
+asks for and the machine rules cannot see. **PUB-090 stays unclaimed, and is not reworded** (Ken's
+answer A, 2026-09-19): an accessibility requirement is not weakened to fit an engine; the gap - the
+person-judged checkpoint failing from level seven - is named beside the table above rather than
+claimed away, and stands until Typst writes PDF/UA-2, which has more heading types.
 
 ## What this document does not own
 
@@ -246,6 +246,15 @@ and the layout, and must decide none of them. So the intermediate is one type in
 | `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children |
 | `back`   | Generated back matter                                                                                                                                        |
 
+**A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
+reversed.** Typst's `text(lang:)` takes two or three letters and `text(region:)` exactly two, so a
+script subtag (`sr-Latn`), a numeric region (`es-419`) or any variant is not a tag Typst can be handed.
+The plan proposed carrying only the language and a two-letter region and dropping the rest; **Ken
+reversed it (2026-09-19)**: `assemble` refuses such a tag instead, as `language_not_publishable`,
+naming the tag exactly as stored and what the engine accepts, for the document and for any occurrence
+whose own language differs from the document's - because `sr-Latn` and `sr-Cyrl` are not the same
+language to a screen reader, and silently dropping the script is the wrong default for accessibility.
+
 **Blocks are the content model's, bound.** A figure carries its label ("Figure 2.1"), its caption,
 its resolved alternative text and its asset's path inside the compile root; a table its label and
 caption; a block equation its maths tree, its number and its alternative text; a footnote its number;
@@ -337,8 +346,11 @@ request names everything else. The worker runs each compile in a fresh directory
 the template's version directory, the fonts and the assets, and runs Typst with:
 `--root` at that directory, `--ignore-system-fonts`, **`--ignore-embedded-fonts`**, `--font-path`
 at the job's fonts, empty package paths, `--pdf-standard ua-1`, `--creation-timestamp` at the request
-time, and `--diagnostic-format short`. The sample passes neither font flag; the publisher must pass
-both (finding 2).
+time, and `--diagnostic-format short`. **The sample now passes both font flags** (#145, task 2 of the
+first publishing plan - finding 2 fixed, not left for the publisher): the worker re-hashes the pinned
+faces immediately before every compile, writes the just-checked bytes into the compile root and points
+`--font-path` there alone, and refuses to run Typst - `FontsUnavailable`, an ordinary error the queue
+retries - if a face is missing or has changed since the last check.
 
 **Fonts in T1 before typeface artifacts exist - decision I.** The product's default theme's faces,
 open-licence (ADR-0010), are files in the worker image pinned by hash as the Typst binary is, and the
@@ -355,14 +367,17 @@ hash - is the same.
 
 ## Failure, retry, and what an author sees
 
-**Two kinds of failure, and only one is retried.** The queue retries anything a handler throws
+**Three kinds of failure, and only one is retried.** The queue retries anything a handler throws
 (`packages/db/src/queue.ts`), which would run a document with a missing alternative text three times
-and fail it three times (finding 4).
+and fail it three times (finding 4) - so a document's own failures are never thrown, and Typst's own
+refusal, once it is recognised as one (`JobRefused`, #146), is finished at once rather than thrown back
+to the queue's default retry.
 
-| Kind           | Examples                                                                                 | What happens                                                                                                                               |
-| -------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| The document's | `alternative_missing`, `equation_unrenderable`, `occurrence_unreadable`, `glyph_missing` | The job **completes**: its verdict is the failure list, written to the request, which is `failed`. Nothing is retried                      |
-| The platform's | The store unreachable, Typst timing out or refusing, the database gone                   | The handler throws; the queue retries with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store` |
+| Kind                     | Examples                                                                                                             | What happens                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The document's           | `alternative_missing`, `equation_unrenderable`, `occurrence_unreadable`, `glyph_missing`, `language_not_publishable` | Checked before Typst runs. The job **completes**: its verdict is the failure list, written to the request, which is `failed`. Nothing is retried |
+| The engine's own refusal | Typst exits refusing what the checks above did not catch - a full disk, for one                                      | `JobRefused` (#146, decision F): the job is **failed at once**, in one attempt, with its code (such as `typst_refused`). Never retried           |
+| The platform's           | A crash, a timeout, a missing binary, the store unreachable, the database gone                                       | The handler throws; the queue **retries** with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store`   |
 
 **Every failure names its stage** - `resolve`, `compose`, `engine`, `store` - its code, and the node,
 block, reference or definition it concerns. That is PUB-086, which replaced PUB-001's four stages
@@ -532,12 +547,15 @@ publication when they list the document's.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                                                                                                                                                                                                                          |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | Whether Typst's heading levels seven to nine pass veraPDF. They compile under PDF/UA-1, and PDF/UA-1's standard heading types stop at H6. If they fail, a document deeper than six levels cannot be published as PDF/UA-1 by this engine, which STR-007 and PUB-090 together forbid - so the first plan runs veraPDF on the nine-level case before anything else, and PUB-090 is claimed only once it is answered |
-| New | Which faces the default theme ships, and the mathematics face with them: settled by the first plan, open-licence (ADR-0010)                                                                                                                                                                                                                                                                                       |
-| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way                                                                                                                                                                                                                                                                                             |
-| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                                                                                                                                                                            |
+| ID  | Question                                                                                                                                                                                                                                                  |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way. Slice 1 runs it only in the test suite, in its own container (Ken's answer B); this stays open for slice 5's per-publication check |
+| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                    |
+
+Answered by 1a of the first publishing plan: whether Typst's heading levels seven to nine pass veraPDF
+(they do - see the table above and [What was run](#what-was-run)) and which faces the default theme
+ships (Liberation Serif 2.1.5, committed and pinned by hash - see
+[Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)).
 
 ## Findings against what exists
 
@@ -658,6 +676,55 @@ As proposed:
 3. **PUB**: "A layout must declare the language its generated words are written in, and publishing a
    document in another language under it must be refused rather than mixing languages."
 
+## Changed while planning and building the first slice
+
+The first slice of this design (docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md) landed as two
+pull requests: **1a** - the regression corpus and veraPDF, the pinned faces (#145), a refused job
+finished rather than retried (#146), and `assemble` in `packages/domain/src/publishing/`, which nothing
+calls yet - and **1b**, the Publisher role, the request, the job, the routes and the page, a person can
+see. This section records what 1a changed against what this design said before it was built; 1b will
+extend it.
+
+- **PUB-090 stays unclaimed, not reworded (Ken's answer A).** Measured: the nine-level case passes
+  every veraPDF machine rule, and headings from level seven read as paragraphs. See
+  [What this document does not own](#what-this-document-does-not-own) and
+  [What was run](#what-was-run).
+- **Decision K is reversed.** The plan proposed carrying a language tag's language and a two-letter
+  region and dropping the rest; Ken reversed it (2026-09-19): a tag the engine cannot carry is refused
+  instead, naming it in full, never shortened. See
+  [The published document](#the-published-document).
+- **The faces are pinned, and checked before every compile, not only at start-up (#145).** Liberation
+  Serif 2.1.5 is committed in `apps/worker/fonts/`, pinned by SHA-256; the worker refuses to start if
+  one is missing or altered, and `compile` re-hashes them again immediately before every run, because
+  the worker's own user can write to them at runtime (the image's `deploy/Dockerfile` copies them
+  `--chown=node:node` - see [`../architecture.md`](../architecture.md)). A face changed or removed
+  between compiles is a known behaviour, not a defect: `FontsUnavailable` is an ordinary error, so the job
+  retries like any other platform failure, to its maximum attempts, and is then failed as
+  `fonts_unavailable` - to the author, indistinguishable from any other exhausted failure except by
+  that code.
+- **A refused job is finished at once, not retried (#146).** `JobRefused` (decision F) covers Typst's
+  own non-zero exit; a missing binary, a timeout or a crash is still retried. The failure table above
+  is corrected to the built behaviour.
+- **`assemble` is built, called by nothing yet.** `packages/domain/src/publishing/` holds the published
+  document's types, the failure vocabulary and `assemble` over resolved input, checking language,
+  numbering and glyph coverage and refusing everything the checks above 1a can produce, all at once
+  (PUB-052). **PUB-086's claim is answered for the resolve and compose stages in 1a** - the only two
+  `assemble` can produce; its `engine` and `store` stages are cited once 1b's job exists to produce
+  them.
+- **The glyph check's exemptions are measured, not guessed.** `SET_WITHOUT_A_GLYPH` is exactly what the
+  pinned Typst 0.15.1 sets without complaint under PDF/UA-1, plus U+FEFF - measured by recompiling each
+  range on its own with the pinned faces (see [What was run](#what-was-run)). The regression case that
+  holds `assemble`'s verdict to the engine's own (decision J) needs the publication template, and
+  arrives with 1b's plan task 7, not 1a's.
+- **#145's "records which fonts it used" is only a start-up log line so far.** The worker logs the
+  pinned files' names once, at start-up; the publication record that would hold them on every
+  publication is 1b's (`publication.fonts`). Ken's answer accepts 1a as closing #145 regardless: naming
+  the faces once, from a worker that refuses to run in any other face, is enough to close the issue as
+  filed, and the recording half is 1b's to build.
+- **The requirement corpus did not change.** No row was added, superseded or reworded by 1a: 1,380
+  requirements, unchanged (`pnpm trace pins`); citations moved from 180 to 182 as tasks 1 to 4 added two
+  titled tests.
+
 ## Build order
 
 Each slice is a plan, lands into something that runs, and cites only what its tests demonstrate.
@@ -714,3 +781,13 @@ Throwaway files in a scratch directory, compiled by the pinned Typst 0.15.1 from
 | No fonts at all (`--ignore-embedded-fonts`, no font path)                  | **Exit 0, no warning**, a PDF with no text                 |
 | A character the face lacks                                                 | Refused under PDF/UA-1, quoting the character and the face |
 | 432 pages with contents and footnotes, three times, one on a single thread | 1.3 seconds each, container start included; byte-identical |
+
+**Measured since, in the worker's committed suite (tasks 1 to 4 of the first publishing plan), not a
+throwaway spike:**
+
+| Case                                                                                                                                                                                               | Result                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The nine-level case, compiled by the pinned Typst under `--pdf-standard ua-1` and checked by the pinned veraPDF image                                                                              | Passes every PDF/UA-1 machine rule: 106 rules, 0 failed, 1252 checks. Bookmarked nine deep; the role tree reads `H1`-`H6` then `P` from level seven                                          |
+| veraPDF, one page, wall time of `docker run` (two runs each)                                                                                                                                       | 11.2 s and 11.1 s; almost all of it the container and the JVM starting - veraPDF's own processing of the page is about 0.20 s                                                                |
+| A PDF that is not PDF/UA-1 (no `--pdf-standard`, no title), checked by the pinned veraPDF image                                                                                                    | `compliant: false`; 103 rules passed, 3 failed (`5-1`, `7.1-9`, `7.1-10`), naming each                                                                                                       |
+| The 4,142 code points across 14 ranges the pinned Typst sets without complaint under PDF/UA-1 (bidi isolates, tag characters and the like), each range recompiled on its own with the pinned faces | Every range exits 0 and writes a PDF with no error. Only U+4E2D, U+0627 and U+FEFF are refused, each quoting the character - `assemble` refuses exactly these, everywhere, before Typst runs |
