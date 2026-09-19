@@ -16414,7 +16414,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 114,
+      "line": 119,
       "kind": "title"
     },
     {
@@ -16637,6 +16637,18 @@
       "id": "MET-030",
       "file": "packages/domain/src/metadata/validate.test.ts",
       "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-052",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 210,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-086",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 262,
       "kind": "title"
     },
     {

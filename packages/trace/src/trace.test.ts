@@ -235,8 +235,11 @@ describe('the citations in the committed model', () => {
   // apps/web/src/structure/DocumentPage.test.tsx, where the page now numbers captions itself and shows a
   // reader none a component they may not read could have moved; and STR-037, reordering from the
   // contents by key and by pointer.
+  // 182, from 180: the first publishing plan (docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md)
+  // cites PUB-052 and PUB-086 in packages/domain/src/publishing/assemble.test.ts: every failure at
+  // once, each naming its stage and its place.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(180);
+    expect(model.citations).toHaveLength(182);
   });
 
   it('cites no identifier the corpus does not hold', () => {
