@@ -86,7 +86,7 @@ none of them but its starting outline.
 | **TPL-014** | It must be able to declare a component that every document from this template includes - shared boilerplate, a standard methodology statement                            | T4         | Specified |
 | **TPL-015** | It must declare what an author may change: whether sections can be added, removed or reordered                                                                           | T1         | Specified |
 | **TPL-016** | A starting outline must not be a document's outline. Once instantiated, the document owns it (**STR**)                                                                   | Constraint | Specified |
-| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-010**) | T4         | Specified |
+| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**) | T4         | Specified |
 
 ## 6. Parameters
 
@@ -140,8 +140,13 @@ not have the section every other report from this template has" is worth somebod
 | **TPL-027** | A document must own its outline after instantiation, and must be able to depart from the template's starting shape                                                                                                                    | T1      | Specified |
 | **TPL-028** | Departures must be listable: what this document has that the template does not, and what it lacks                                                                                                                                     | T3      | Specified |
 | **TPL-029** | A section the template marked required must not be removable without a stated reason, recorded on the document                                                                                                                        | T3      | Specified |
-| **TPL-030** | Publishing must fail where a required section is absent                                                                                                                                                                               | T1      | Specified |
-| **TPL-044** | A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-030 give a required section | T4      | Specified |
+| **TPL-030** | Publishing must fail where a required section is absent                                                                                                                                                                               | T1      | Withdrawn |
+| **TPL-044** | A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-013 give a required section | T4      | Specified |
+
+**TPL-030 is withdrawn: TPL-013 already says a document may not be published without a required
+section.** Two rows saying one thing would be claimed and cited twice, and would drift the first time
+either was reworded. TPL-044 now names TPL-029 and TPL-013 as the treatment a required section is
+given.
 
 **TPL-044 gives required components the enforcement required sections already had.** A template can
 declare that every document carries the standard methodology statement, and until now an author could
@@ -233,7 +238,7 @@ the same guarantees.
 | TPL-041, TPL-042   | REU-016, REU-018, REU-036 - what a variable is and what it resolves against                            |
 | TPL-043            | TPL-011, TPL-031 - the reading that reconciles them with TPL-036                                       |
 | TPL-050            | LIF-026, LIF-027 - who did what, when, in the audit log                                                |
-| TPL-049            | PUB-010 - document-level matter the layout places                                                      |
+| TPL-049            | PUB-088 - document-level matter the layout places                                                      |
 | TPL-041 to TPL-050 | [The v1 review](<../../reviews/TPL - Templates and document instantiation.md>); section 15             |
 | TPL-052 to TPL-058 | [MET](MET-metadata-and-component-types.md); section 15, "From specifying metadata and component types" |
 
@@ -309,3 +314,23 @@ build from.
 | Requirements     | 51     | 58, of which 11 superseded |
 | Non-requirements | 4      | 4                          |
 | Open questions   | 4      | 4                          |
+
+### Ken's answer to the publishing design, 2026-09-19
+
+Not a review. [The publishing design](../../design/publishing.md) found two rows saying one thing, and
+Ken accepted cutting one. It also proposed that a layout declare the language of its words, filed as
+issue [#144](https://github.com/kenhayward/alloy-works/issues/144); it lands as a row with the layout
+slice that builds it, not here.
+
+| What was found                                                                                                                     | Change                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TPL-030, "publishing must fail where a required section is absent", repeats TPL-013's "a document may not be published without it" | **TPL-030 withdrawn**, keeping its row. TPL-013 is the one to claim and cite; the prose beside TPL-044 says so                                                                                                 |
+| TPL-049 cited PUB-010, superseded by PUB-088 and PUB-089                                                                           | TPL-049 now cites **PUB-088**, a clarity edit: it relies on the front and back matter a layout declares and places, which PUB-088 carries; PUB-089, the approval page, shows approvals and places no component |
+| TPL-044 named "the treatment TPL-029 and TPL-030 give a required section", and TPL-030 is withdrawn                                | TPL-044 now names **TPL-029 and TPL-013**, a clarity edit: TPL-013 says what TPL-030 did, that a document may not be published without a required section. The prose beside it says the same                   |
+| Section 14's traceability row for TPL-049 rested on PUB-010                                                                        | It rests on **PUB-088**                                                                                                                                                                                        |
+
+| Counts           | Before                     | After                                      |
+| ---------------- | -------------------------- | ------------------------------------------ |
+| Requirements     | 58, of which 11 superseded | 58, of which 11 superseded and 1 withdrawn |
+| Non-requirements | 4                          | 4                                          |
+| Open questions   | 4                          | 4                                          |

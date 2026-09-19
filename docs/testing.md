@@ -197,6 +197,32 @@ its own and removes it afterwards, exactly as it takes a database of its own, so
 each other's objects. The worker's suite renders with the real Typst rather than a stand-in for it:
 the binary is the thing being pinned.
 
+## The regression corpus and veraPDF
+
+`apps/worker/regression/` holds one Typst source file per case - meant to be the publishing spike's
+cases, grown by a case for every publishing defect found (PUB-087) - each compiled by the pinned Typst
+and read back with `apps/worker/src/testing/pdf.ts` (bookmarks, roles, marked structure, language and
+title) to check against its expected outcome. It holds one case today, `nine-heading-levels.typ`; the
+spike's other cases arrive with the publication template.
+
+Each case is also checked against PDF/UA-1 by veraPDF: `apps/worker/src/testing/verapdf.ts` runs the
+pinned `verapdf/cli` image, fetched once by digest with `pnpm --filter @alloy-works/worker
+fetch-verapdf` (needs Docker; it retries the pull three times before failing, since Docker Hub is
+outside the repository's control - an outage or an anonymous rate limit fails the step before the
+traceability gate even runs). A cold veraPDF run costs about eleven seconds, almost all of it the
+container and the JVM starting rather than checking the page, so the suite runs it in the worker's test
+suite on every change to the template or the engine - not on every publication, which is a later
+slice's, warmed differently. Nothing in the corpus exercises `assemble` yet.
+
+What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
+checks - tagging, a document title, alternative text present - are part of what a screen reader is told
+when it reads the structure tree. Passing them is necessary but not sufficient: the nine-level case
+passes every one, and its headings at levels seven to nine still reach a screen reader as paragraphs,
+because the pinned Typst tags them `P`. Reading order, and the other Matterhorn checkpoints only a
+person can judge - whether a heading sounds like a heading, whether a table's structure matches what it
+shows - are read from the same cases by hand when the engine or the template changes; they are not run
+by any suite.
+
 ## The end-to-end suite
 
 `tests/e2e` drives the whole system as a person's browser would meet it, and nothing else does: the

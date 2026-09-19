@@ -21,6 +21,12 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1380, from 1369: Ken's answer to the publishing design (2026-09-19) - eleven new rows, each
+    // superseding one: PUB-085 (PUB-064's budget, p95 ten seconds), PUB-086 (PUB-001), PUB-087
+    // (PUB-015, the regression corpus), PUB-088 and PUB-089 (PUB-010 split, the approval page to T3),
+    // PUB-090 (PUB-030, PDF/UA-1 and veraPDF), PUB-091 (PUB-036), PUB-092 (PUB-018, "honoured"
+    // defined), CNT-150 (CNT-095, PDF alone), CNT-151 (CNT-136, from the save) and IAM-074 (IAM-017,
+    // the publisher's permission). TPL-030 is withdrawn and keeps its row, so it still counts.
     // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number an outline produces revealing nothing about a component the
     // reader may not read (issue #130), landed by the numbering plan and narrowed from the issue's "a
@@ -38,9 +44,24 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1369);
+    expect(model.requirements).toHaveLength(1380);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 405, from 406: publishing.md stopped claiming PUB-085 (1a's final review). A cold veraPDF takes
+    // 11.2 s a page, so the ten-second p95 cannot hold alongside PUB-091's report on every
+    // publication, and Ken deferred the choice - a warm checker or changing the requirement - to
+    // slice 5. The gap is named in prose beside the table.
+    // 406, from 403: Ken's answer to the publishing design. publishing.md stopped claiming PUB-030,
+    // which it answers only once the first publishing plan has run veraPDF over headings at levels
+    // seven to nine, and moved PUB-036 and PUB-064 to their replacements, PUB-091 and PUB-085, which
+    // it answers in full. It claims four more it now answers in full: PUB-086 (PUB-001 reworded),
+    // PUB-087 (the regression corpus, PUB-015's replacement), PUB-088 (PUB-010's T1 half) and
+    // IAM-074 (IAM-017, the publisher's permission). PUB-090, PUB-089 and PUB-092 are named in prose.
+    // 403, from 360: publishing.md claims 43 - the request, the order, the layout, the published
+    // document, the record and preview: 32 of PUB's, the seven STR clauses structure.md left for the
+    // publisher (STR-013, STR-024, STR-027, STR-029, STR-050, STR-052, STR-055) and four CNT clauses
+    // content-model.md left for it (CNT-042, CNT-049, CNT-054, CNT-084). PUB-001, PUB-004, PUB-010,
+    // PUB-015, PUB-018 and the rest it answers only in part are named in prose beside the table.
     // 360, from 361: structure.md stopped claiming STR-034, which the panel answers for the author's
     // own acts and not for another person's - named in prose beside the table (the navigation plan,
     // decision I).
@@ -91,7 +112,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(360);
+    ).toBe(405);
   });
 });
 
@@ -218,8 +239,11 @@ describe('the citations in the committed model', () => {
   // apps/web/src/structure/DocumentPage.test.tsx, where the page now numbers captions itself and shows a
   // reader none a component they may not read could have moved; and STR-037, reordering from the
   // contents by key and by pointer.
+  // 182, from 180: the first publishing plan (docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md)
+  // cites PUB-052 and PUB-086 in packages/domain/src/publishing/assemble.test.ts: every failure at
+  // once, each naming its stage and its place.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(180);
+    expect(model.citations).toHaveLength(182);
   });
 
   it('cites no identifier the corpus does not hold', () => {

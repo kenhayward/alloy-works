@@ -2579,18 +2579,27 @@
       "area": "CNT",
       "statement": "An author must be able to preview the document as it will be published, in a selectable output format, without leaving the editor",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by CNT-150",
       "document": "CNT-content-and-authoring.md",
       "line": 445
     },
     {
-      "id": "CNT-096",
+      "id": "CNT-150",
       "area": "CNT",
-      "statement": "Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-136, tested",
+      "statement": "An author must be able to preview the document as it will be published to PDF, without leaving the editor",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 446
+    },
+    {
+      "id": "CNT-096",
+      "area": "CNT",
+      "statement": "Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 447
     },
     {
       "id": "CNT-114",
@@ -2599,16 +2608,25 @@
       "tranche": "T1",
       "status": "Superseded by CNT-136",
       "document": "CNT-content-and-authoring.md",
-      "line": 447
+      "line": 448
     },
     {
       "id": "CNT-136",
       "area": "CNT",
       "statement": "Preview must reflect an edit within one second, and never more than two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)",
       "tranche": "T1",
+      "status": "Superseded by CNT-151",
+      "document": "CNT-content-and-authoring.md",
+      "line": 449
+    },
+    {
+      "id": "CNT-151",
+      "area": "CNT",
+      "statement": "Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)",
+      "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 448
+      "line": 450
     },
     {
       "id": "CNT-104",
@@ -2617,7 +2635,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 454
+      "line": 456
     },
     {
       "id": "CNT-105",
@@ -2626,7 +2644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 455
+      "line": 457
     },
     {
       "id": "CNT-106",
@@ -2635,7 +2653,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 456
+      "line": 458
     },
     {
       "id": "CNT-108",
@@ -2644,7 +2662,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 462
+      "line": 464
     },
     {
       "id": "CNT-109",
@@ -2653,7 +2671,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 463
+      "line": 465
     },
     {
       "id": "CNT-110",
@@ -2662,7 +2680,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 464
+      "line": 466
     },
     {
       "id": "CNT-141",
@@ -2671,7 +2689,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 465
+      "line": 467
     },
     {
       "id": "CNT-111",
@@ -2680,7 +2698,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 466
+      "line": 468
     },
     {
       "id": "CNT-112",
@@ -2689,7 +2707,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 467
+      "line": 469
     },
     {
       "id": "CNT-113",
@@ -2698,7 +2716,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 468
+      "line": 470
     },
     {
       "id": "CNT-077",
@@ -2707,7 +2725,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 509
+      "line": 511
     },
     {
       "id": "CNT-078",
@@ -2716,7 +2734,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 510
+      "line": 512
     },
     {
       "id": "CNT-079",
@@ -2725,7 +2743,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 511
+      "line": 513
     },
     {
       "id": "CNT-080",
@@ -2734,7 +2752,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 512
+      "line": 514
     },
     {
       "id": "CNT-137",
@@ -2743,7 +2761,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 513
+      "line": 515
     },
     {
       "id": "CNT-138",
@@ -2752,7 +2770,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 514
+      "line": 516
     },
     {
       "id": "CNT-139",
@@ -2761,7 +2779,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 515
+      "line": 517
     },
     {
       "id": "COL-001",
@@ -4856,9 +4874,18 @@
       "area": "IAM",
       "statement": "That permission must be re-checked when the document is published, not only when the reference was created, because access changes and publication is what escapes",
       "tranche": "T4",
-      "status": "Specified",
+      "status": "Superseded by IAM-074",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 156
+    },
+    {
+      "id": "IAM-074",
+      "area": "IAM",
+      "statement": "Whether the publisher may read each component a document references must be decided when the document is published, whoever created the reference and whatever they could read when they did, because access changes and publication is what escapes",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 157
     },
     {
       "id": "IAM-018",
@@ -4867,7 +4894,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "IAM-019",
@@ -4876,7 +4903,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "IAM-020",
@@ -4885,7 +4912,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "IAM-021",
@@ -4894,7 +4921,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "IAM-022",
@@ -4903,7 +4930,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "IAM-023",
@@ -4912,7 +4939,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "IAM-062",
@@ -4921,7 +4948,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 172
+      "line": 173
     },
     {
       "id": "IAM-073",
@@ -4930,7 +4957,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "IAM-024",
@@ -4939,7 +4966,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "IAM-025",
@@ -4948,7 +4975,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "IAM-026",
@@ -4957,7 +4984,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "IAM-027",
@@ -4966,7 +4993,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "IAM-028",
@@ -4975,7 +5002,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "IAM-063",
@@ -4984,7 +5011,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "IAM-029",
@@ -4993,7 +5020,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 228
+      "line": 229
     },
     {
       "id": "IAM-030",
@@ -5002,7 +5029,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "IAM-031",
@@ -5011,7 +5038,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "IAM-032",
@@ -5020,7 +5047,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "IAM-033",
@@ -5029,7 +5056,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "IAM-034",
@@ -5038,7 +5065,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "IAM-035",
@@ -5047,7 +5074,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 244
+      "line": 245
     },
     {
       "id": "IAM-036",
@@ -5056,7 +5083,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "IAM-037",
@@ -5065,7 +5092,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "IAM-038",
@@ -5074,7 +5101,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 257
+      "line": 258
     },
     {
       "id": "IAM-039",
@@ -5083,7 +5110,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 258
+      "line": 259
     },
     {
       "id": "IAM-040",
@@ -5092,7 +5119,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 259
+      "line": 260
     },
     {
       "id": "IAM-045",
@@ -5101,7 +5128,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 265
+      "line": 266
     },
     {
       "id": "IAM-046",
@@ -5110,7 +5137,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 266
+      "line": 267
     },
     {
       "id": "IAM-047",
@@ -5119,7 +5146,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 267
+      "line": 268
     },
     {
       "id": "IAM-048",
@@ -5128,7 +5155,7 @@
       "tranche": "Constraint",
       "status": "Superseded by IAM-071",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 268
+      "line": 269
     },
     {
       "id": "IAM-049",
@@ -5137,7 +5164,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 269
+      "line": 270
     },
     {
       "id": "IAM-050",
@@ -5146,7 +5173,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 270
+      "line": 271
     },
     {
       "id": "IAM-051",
@@ -5155,7 +5182,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 271
+      "line": 272
     },
     {
       "id": "IAM-071",
@@ -5164,7 +5191,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 272
+      "line": 273
     },
     {
       "id": "IAM-057",
@@ -5173,7 +5200,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 273
+      "line": 274
     },
     {
       "id": "IMP-001",
@@ -7448,9 +7475,18 @@
       "area": "PUB",
       "statement": "Publishing must run as four named stages - resolve, compose, paginate, render - each able to fail with diagnostics naming the stage",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by PUB-086",
       "document": "PUB-publishing-and-output.md",
       "line": 43
+    },
+    {
+      "id": "PUB-086",
+      "area": "PUB",
+      "statement": "Every publishing failure must name the stage it arose in - resolving the document, composing it against its layout and theme, the engine, or storing the output - and the node, block, reference or definition it concerns",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 44
     },
     {
       "id": "PUB-002",
@@ -7459,7 +7495,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "PUB-003",
@@ -7468,7 +7504,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "PUB-004",
@@ -7477,7 +7513,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "PUB-005",
@@ -7486,7 +7522,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "PUB-006",
@@ -7495,7 +7531,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 48
+      "line": 49
     },
     {
       "id": "PUB-061",
@@ -7504,7 +7540,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 49
+      "line": 50
     },
     {
       "id": "PUB-062",
@@ -7513,7 +7549,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 50
+      "line": 51
     },
     {
       "id": "PUB-007",
@@ -7522,7 +7558,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 60
+      "line": 61
     },
     {
       "id": "PUB-008",
@@ -7531,7 +7567,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 61
+      "line": 62
     },
     {
       "id": "PUB-009",
@@ -7540,16 +7576,34 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 62
+      "line": 63
     },
     {
       "id": "PUB-010",
       "area": "PUB",
       "statement": "A layout must declare the front and back matter a document carries: cover, approval page, contents, appendices",
       "tranche": "T1",
+      "status": "Superseded by PUB-088",
+      "document": "PUB-publishing-and-output.md",
+      "line": 64
+    },
+    {
+      "id": "PUB-088",
+      "area": "PUB",
+      "statement": "A layout must declare the front and back matter a document carries: cover, contents and appendices",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 63
+      "line": 65
+    },
+    {
+      "id": "PUB-089",
+      "area": "PUB",
+      "statement": "A layout must be able to declare an approval page, showing the approvals recorded for what is published",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 66
     },
     {
       "id": "PUB-011",
@@ -7558,7 +7612,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 64
+      "line": 67
     },
     {
       "id": "PUB-012",
@@ -7567,7 +7621,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 65
+      "line": 68
     },
     {
       "id": "PUB-013",
@@ -7576,7 +7630,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 66
+      "line": 69
     },
     {
       "id": "PUB-014",
@@ -7585,16 +7639,25 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 67
+      "line": 70
     },
     {
       "id": "PUB-015",
       "area": "PUB",
       "statement": "PDF must be a first-class output and must meet the fidelity bar in scope §4",
       "tranche": "T1",
+      "status": "Superseded by PUB-087",
+      "document": "PUB-publishing-and-output.md",
+      "line": 76
+    },
+    {
+      "id": "PUB-087",
+      "area": "PUB",
+      "statement": "PDF output must pass the publishing regression corpus - the engine spike's cases, grown by a case for every publishing defect found - on every change to the engine, the template or the pipeline",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 73
+      "line": 77
     },
     {
       "id": "PUB-016",
@@ -7603,7 +7666,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 74
+      "line": 78
     },
     {
       "id": "PUB-017",
@@ -7612,16 +7675,25 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 75
+      "line": 79
     },
     {
       "id": "PUB-018",
       "area": "PUB",
       "statement": "Widow and orphan control, keep-with-next and keep-together must be honoured",
       "tranche": "T1",
+      "status": "Superseded by PUB-092",
+      "document": "PUB-publishing-and-output.md",
+      "line": 80
+    },
+    {
+      "id": "PUB-092",
+      "area": "PUB",
+      "statement": "Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to each engine as that engine's own rule, and shown by the publishing regression corpus to hold wherever the page allows",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 76
+      "line": 81
     },
     {
       "id": "PUB-019",
@@ -7630,7 +7702,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 77
+      "line": 82
     },
     {
       "id": "PUB-020",
@@ -7639,7 +7711,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 78
+      "line": 83
     },
     {
       "id": "PUB-021",
@@ -7648,7 +7720,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 79
+      "line": 84
     },
     {
       "id": "PUB-022",
@@ -7657,7 +7729,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 80
+      "line": 85
     },
     {
       "id": "PUB-068",
@@ -7666,7 +7738,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 81
+      "line": 86
     },
     {
       "id": "PUB-069",
@@ -7675,7 +7747,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 82
+      "line": 87
     },
     {
       "id": "PUB-070",
@@ -7684,7 +7756,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 83
+      "line": 88
     },
     {
       "id": "PUB-023",
@@ -7693,7 +7765,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 100
+      "line": 105
     },
     {
       "id": "PUB-024",
@@ -7702,7 +7774,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 101
+      "line": 106
     },
     {
       "id": "PUB-025",
@@ -7711,7 +7783,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 102
+      "line": 107
     },
     {
       "id": "PUB-026",
@@ -7720,7 +7792,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 103
+      "line": 108
     },
     {
       "id": "PUB-027",
@@ -7729,7 +7801,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 104
+      "line": 109
     },
     {
       "id": "PUB-028",
@@ -7738,7 +7810,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 105
+      "line": 110
     },
     {
       "id": "PUB-029",
@@ -7747,7 +7819,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 106
+      "line": 111
     },
     {
       "id": "PUB-065",
@@ -7756,7 +7828,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 107
+      "line": 112
     },
     {
       "id": "PUB-066",
@@ -7765,7 +7837,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 108
+      "line": 113
     },
     {
       "id": "PUB-067",
@@ -7774,7 +7846,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 109
+      "line": 114
     },
     {
       "id": "PUB-078",
@@ -7783,16 +7855,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 110
+      "line": 115
     },
     {
       "id": "PUB-030",
       "area": "PUB",
       "statement": "PDF output must be tagged and must meet PDF/UA",
       "tranche": "T1",
+      "status": "Superseded by PUB-090",
+      "document": "PUB-publishing-and-output.md",
+      "line": 132
+    },
+    {
+      "id": "PUB-090",
+      "area": "PUB",
+      "statement": "PDF output must be tagged and must conform to PDF/UA-1: every publication must pass veraPDF's PDF/UA-1 validation profile, and the Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus whenever the engine, the template or the pipeline changes",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 127
+      "line": 133
     },
     {
       "id": "PUB-031",
@@ -7801,7 +7882,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 128
+      "line": 134
     },
     {
       "id": "PUB-032",
@@ -7810,7 +7891,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 129
+      "line": 135
     },
     {
       "id": "PUB-033",
@@ -7819,7 +7900,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 130
+      "line": 136
     },
     {
       "id": "PUB-034",
@@ -7828,7 +7909,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 131
+      "line": 137
     },
     {
       "id": "PUB-035",
@@ -7837,16 +7918,25 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 132
+      "line": 138
     },
     {
       "id": "PUB-036",
       "area": "PUB",
       "statement": "Accessibility must be checked automatically as part of publishing, and the result must be retained with the publication",
       "tranche": "T1",
+      "status": "Superseded by PUB-091",
+      "document": "PUB-publishing-and-output.md",
+      "line": 139
+    },
+    {
+      "id": "PUB-091",
+      "area": "PUB",
+      "statement": "Every PDF publication must be checked by veraPDF against its PDF/UA-1 validation profile as part of publishing, and the report must be retained with the publication",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 133
+      "line": 140
     },
     {
       "id": "PUB-080",
@@ -7855,7 +7945,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 134
+      "line": 141
     },
     {
       "id": "PUB-037",
@@ -7864,7 +7954,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 144
+      "line": 157
     },
     {
       "id": "PUB-038",
@@ -7873,7 +7963,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 145
+      "line": 158
     },
     {
       "id": "PUB-039",
@@ -7882,7 +7972,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 146
+      "line": 159
     },
     {
       "id": "PUB-040",
@@ -7891,7 +7981,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 147
+      "line": 160
     },
     {
       "id": "PUB-041",
@@ -7900,7 +7990,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 148
+      "line": 161
     },
     {
       "id": "PUB-042",
@@ -7909,7 +7999,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 149
+      "line": 162
     },
     {
       "id": "PUB-043",
@@ -7918,7 +8008,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 165
+      "line": 178
     },
     {
       "id": "PUB-063",
@@ -7927,16 +8017,25 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 166
+      "line": 179
     },
     {
       "id": "PUB-064",
       "area": "PUB",
       "statement": "A 300-page document must publish in under thirty seconds - a provisional budget, to be confirmed against real content",
       "tranche": "T1",
+      "status": "Superseded by PUB-085",
+      "document": "PUB-publishing-and-output.md",
+      "line": 180
+    },
+    {
+      "id": "PUB-085",
+      "area": "PUB",
+      "statement": "A declared 300-page reference document - prose, figures, tables, equations and footnotes - must publish to PDF, from the request to the recorded publication, at or under ten seconds at p95 with no measured sample above thirty, measured on a declared reference configuration recorded beside the result",
+      "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 167
+      "line": 181
     },
     {
       "id": "PUB-044",
@@ -7945,7 +8044,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 168
+      "line": 182
     },
     {
       "id": "PUB-045",
@@ -7954,7 +8053,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 169
+      "line": 183
     },
     {
       "id": "PUB-082",
@@ -7963,7 +8062,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 170
+      "line": 184
     },
     {
       "id": "PUB-046",
@@ -7972,7 +8071,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 171
+      "line": 185
     },
     {
       "id": "PUB-075",
@@ -7981,7 +8080,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 172
+      "line": 186
     },
     {
       "id": "PUB-076",
@@ -7990,7 +8089,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 173
+      "line": 187
     },
     {
       "id": "PUB-077",
@@ -7999,7 +8098,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 174
+      "line": 188
     },
     {
       "id": "PUB-047",
@@ -8008,7 +8107,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 199
+      "line": 213
     },
     {
       "id": "PUB-048",
@@ -8017,7 +8116,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 200
+      "line": 214
     },
     {
       "id": "PUB-049",
@@ -8026,7 +8125,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 201
+      "line": 215
     },
     {
       "id": "PUB-050",
@@ -8035,7 +8134,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 202
+      "line": 216
     },
     {
       "id": "PUB-057",
@@ -8044,7 +8143,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 203
+      "line": 217
     },
     {
       "id": "PUB-058",
@@ -8053,7 +8152,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 204
+      "line": 218
     },
     {
       "id": "PUB-059",
@@ -8062,7 +8161,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 205
+      "line": 219
     },
     {
       "id": "PUB-060",
@@ -8071,7 +8170,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 206
+      "line": 220
     },
     {
       "id": "PUB-073",
@@ -8080,7 +8179,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 207
+      "line": 221
     },
     {
       "id": "PUB-074",
@@ -8089,7 +8188,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 208
+      "line": 222
     },
     {
       "id": "PUB-081",
@@ -8098,7 +8197,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 209
+      "line": 223
     },
     {
       "id": "PUB-083",
@@ -8107,7 +8206,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 210
+      "line": 224
     },
     {
       "id": "PUB-084",
@@ -8116,7 +8215,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 211
+      "line": 225
     },
     {
       "id": "PUB-051",
@@ -8125,7 +8224,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 241
+      "line": 255
     },
     {
       "id": "PUB-052",
@@ -8134,7 +8233,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 242
+      "line": 256
     },
     {
       "id": "PUB-053",
@@ -8143,7 +8242,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 243
+      "line": 257
     },
     {
       "id": "PUB-071",
@@ -8152,7 +8251,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 244
+      "line": 258
     },
     {
       "id": "PUB-072",
@@ -8161,7 +8260,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 245
+      "line": 259
     },
     {
       "id": "PUB-079",
@@ -8170,7 +8269,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 246
+      "line": 260
     },
     {
       "id": "PUB-054",
@@ -8179,7 +8278,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 262
+      "line": 276
     },
     {
       "id": "PUB-055",
@@ -8188,7 +8287,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 263
+      "line": 277
     },
     {
       "id": "PUB-056",
@@ -8197,7 +8296,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 264
+      "line": 278
     },
     {
       "id": "REL-001",
@@ -10389,7 +10488,7 @@
     {
       "id": "STY-069",
       "area": "STY",
-      "statement": "A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-030**, **CNT-078**, **STY-Q05**)",
+      "statement": "A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-090**, **CNT-078**, **STY-Q05**)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
@@ -10686,7 +10785,7 @@
     {
       "id": "STY-037",
       "area": "STY",
-      "statement": "Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-095)",
+      "statement": "Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-150)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
@@ -11280,7 +11379,7 @@
     {
       "id": "TAB-039",
       "area": "TAB",
-      "statement": "A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-030**)",
+      "statement": "A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)",
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
@@ -11487,7 +11586,7 @@
     {
       "id": "TPL-049",
       "area": "TPL",
-      "statement": "A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-010**)",
+      "statement": "A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)",
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -11669,14 +11768,14 @@
       "area": "TPL",
       "statement": "Publishing must fail where a required section is absent",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 143
     },
     {
       "id": "TPL-044",
       "area": "TPL",
-      "statement": "A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-030 give a required section",
+      "statement": "A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-013 give a required section",
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -11689,7 +11788,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 155
+      "line": 160
     },
     {
       "id": "TPL-032",
@@ -11698,7 +11797,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 156
+      "line": 161
     },
     {
       "id": "TPL-033",
@@ -11707,7 +11806,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 157
+      "line": 162
     },
     {
       "id": "TPL-034",
@@ -11716,7 +11815,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 158
+      "line": 163
     },
     {
       "id": "TPL-035",
@@ -11725,7 +11824,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 159
+      "line": 164
     },
     {
       "id": "TPL-058",
@@ -11734,7 +11833,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 160
+      "line": 165
     },
     {
       "id": "TPL-036",
@@ -11743,7 +11842,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 171
+      "line": 176
     },
     {
       "id": "TPL-037",
@@ -11752,7 +11851,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 172
+      "line": 177
     },
     {
       "id": "TPL-038",
@@ -11761,7 +11860,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 173
+      "line": 178
     },
     {
       "id": "TPL-043",
@@ -11770,7 +11869,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 174
+      "line": 179
     },
     {
       "id": "TPL-055",
@@ -11779,7 +11878,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 175
+      "line": 180
     },
     {
       "id": "TPL-056",
@@ -11788,7 +11887,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 176
+      "line": 181
     },
     {
       "id": "TPL-057",
@@ -11797,7 +11896,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 177
+      "line": 182
     },
     {
       "id": "TPL-039",
@@ -11806,7 +11905,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 201
+      "line": 206
     },
     {
       "id": "TPL-040",
@@ -11815,7 +11914,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 202
+      "line": 207
     },
     {
       "id": "TPL-047",
@@ -11824,7 +11923,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 203
+      "line": 208
     },
     {
       "id": "VER-001",
@@ -12411,61 +12510,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 533
+      "line": 535
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 534
+      "line": 536
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 535
+      "line": 537
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 536
+      "line": 538
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 537
+      "line": 539
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 538
+      "line": 540
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 539
+      "line": 541
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 540
+      "line": 542
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 541
+      "line": 543
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 542
+      "line": 544
     },
     {
       "id": "COL-N01",
@@ -12585,37 +12684,37 @@
       "id": "IAM-N01",
       "statement": "**Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 296
+      "line": 297
     },
     {
       "id": "IAM-N02",
       "statement": "**No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 297
+      "line": 298
     },
     {
       "id": "IAM-N03",
       "statement": "**No sharing between tenants.** An outsider participates as a guest principal inside the host tenant (section 11), never as a bridge between two. Cross-tenant sharing is deferred rather than refused - see [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 298
+      "line": 299
     },
     {
       "id": "IAM-N04",
       "statement": "**No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 299
+      "line": 300
     },
     {
       "id": "IAM-N05",
       "statement": "**No permission outside a role** (IAM-062). A grant binds a role to a principal or a group at a level; there is no per-user permission set beside it, because section 8 could not explain one",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 300
+      "line": 301
     },
     {
       "id": "IAM-N06",
       "statement": "**No vendor account inside a tenant** once it is bootstrapped (IAM-061). Support reaches a tenant through access that tenant granted, bounded and can revoke (**ADM-023**), and by no other route",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 301
+      "line": 302
     },
     {
       "id": "IMP-N01",
@@ -12789,25 +12888,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 270
+      "line": 284
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 271
+      "line": 285
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 272
+      "line": 286
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 273
+      "line": 287
     },
     {
       "id": "REL-N01",
@@ -12981,25 +13080,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 209
+      "line": 214
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 210
+      "line": 215
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 211
+      "line": 216
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 212
+      "line": 217
     },
     {
       "id": "VER-N01",
@@ -13172,105 +13271,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 548
+      "line": 550
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 549
+      "line": 551
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 550
+      "line": 552
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 551
+      "line": 553
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 552
+      "line": 554
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 553
+      "line": 555
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 554
+      "line": 556
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 555
+      "line": 557
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 556
+      "line": 558
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 557
+      "line": 559
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 558
+      "line": 560
     },
     {
       "id": "CNT-Q13",
-      "question": "**What is the reference configuration the preview budget is measured on (CNT-136)?** Two seconds on what, rendering what content",
+      "question": "**What is the reference configuration the preview budget is measured on (CNT-151)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 559
+      "line": 561
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 560
+      "line": 562
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 561
+      "line": 563
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 562
+      "line": 564
     },
     {
       "id": "COL-Q01",
@@ -13403,63 +13502,63 @@
       "question": "**Pure federation, or a first-party identity provider with federation as an option?**",
       "settledBy": "**Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 307
+      "line": 308
     },
     {
       "id": "IAM-Q02",
       "question": "**Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report",
       "settledBy": "A customer requirement that cannot be met by putting the annex in its own space",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 308
+      "line": 309
     },
     {
       "id": "IAM-Q03",
       "question": "**Is there anonymous or link-based read for a published artifact?**",
       "settledBy": "**Settled.** Link-based, never anonymous: a publication is shared to a named recipient who proves who they are once (PUB-057 to PUB-060). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 309
+      "line": 310
     },
     {
       "id": "IAM-Q04",
       "question": "**How does cross-tenant collaboration work, if at all?**",
       "settledBy": "**Settled for now.** Guest principals inside the host tenant, and true cross-tenant sharing deferred until customers' clients become customers themselves. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 310
+      "line": 311
     },
     {
       "id": "IAM-Q05",
       "question": "**What happens to a guest's attribution when their access is revoked?** Their comments and accepted suggestions are part of the audited record of how the document reached its wording, and a name that vanishes from a five-year-old baseline is the failure this specification keeps finding. An erasure request points the other way",
       "settledBy": "Legal advice on where attribution in an audited record sits against a right to erasure, which is a question about the regime rather than about the product",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 311
+      "line": 312
     },
     {
       "id": "IAM-Q06",
       "question": "**Is the same human guesting for three tenants three unrelated principals?** ADR-0008 implies yes, and a shared directory across tenants would be a convenience that quietly crosses the isolation boundary",
       "settledBy": "Whether a guest ever needs to see their work across tenants in one place, which nobody has yet asked for",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 312
+      "line": 313
     },
     {
       "id": "IAM-Q07",
       "question": "**What makes IAM-010 and IAM-035 immediate, and what does the check cost?** Short-lived tokens with refresh, an introspection call per request, or a revocation list each buy immediacy at a different price, and the answer constrains every service the product ever has",
       "settledBy": "An architecture decision, which this one owes and does not yet have. IAM-055 states the property the answer must have",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 313
+      "line": 314
     },
     {
       "id": "IAM-Q08",
       "question": "**How many days is the timetable in IAM-006 and IAM-058?**",
       "settledBy": "**ADM-Q06**, which asks the same question from the administrative end. One clock, one number, one answer",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 314
+      "line": 315
     },
     {
       "id": "IAM-Q09",
       "question": "**May a tenant buy a grace window for an identity provider outage (IAM-064)?** Failing closed is correct and means an outage at the provider is an outage of the product",
       "settledBy": "A customer with an availability expectation that collides with failing closed, and a view on whether that risk is theirs to accept",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 315
+      "line": 316
     },
     {
       "id": "IMP-Q01",
@@ -13669,35 +13768,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 279
+      "line": 293
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 280
+      "line": 294
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 281
+      "line": 295
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 282
+      "line": 296
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 283
+      "line": 297
     },
     {
       "id": "REL-Q01",
@@ -13914,28 +14013,28 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 218
+      "line": 223
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 219
+      "line": 224
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 220
+      "line": 225
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 226
     },
     {
       "id": "VER-Q01",
@@ -14567,6 +14666,191 @@
         {
           "id": "MET-022",
           "howItIsMet": "Every failure is `{ code, field, rule, schemas, detail }`, with a stable `code`; the caller adds the artifact. A rule a schema imposed - required, fixed - lists every schema that imposed it, since more than one can. A requirement an assignment imposed names the schema assigned"
+        }
+      ]
+    },
+    {
+      "document": "publishing.md",
+      "owns": [
+        {
+          "id": "PUB-003",
+          "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. Each stage takes the previous stage's type, and a test builds a document whose output differs under every adjacent swap"
+        },
+        {
+          "id": "PUB-005",
+          "howItIsMet": "A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once in the tagged text, and in its title"
+        },
+        {
+          "id": "PUB-006",
+          "howItIsMet": "A preview is a request of kind `preview` run by the same job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show"
+        },
+        {
+          "id": "PUB-061",
+          "howItIsMet": "A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. Only the warm range preview omits tagging, and it is images, never a PDF"
+        },
+        {
+          "id": "PUB-062",
+          "howItIsMet": "The compile root holds `data.json`, the template, the fonts and the assets, nothing else. The template reads values with `json()` and has no `eval`; content reaches Typst only as strings and numbers"
+        },
+        {
+          "id": "PUB-080",
+          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it"
+        },
+        {
+          "id": "PUB-007",
+          "howItIsMet": "A layout's paged format declares page size, orientation, margins as top, bottom, inside and outside, and a gutter"
+        },
+        {
+          "id": "PUB-008",
+          "howItIsMet": "Running heads and feet are three slots each, holding literal words and the fields `title`, `section`, `page`, `pages` and `revision`; `revision` is the document version as `revision.version` (VER-009)"
+        },
+        {
+          "id": "PUB-009",
+          "howItIsMet": "Page numbering is declared per matter - front, body, appendix - each with a format and whether it restarts; front matter is the generated front matter and the outline's `front` matter ([The layout](#the-layout))"
+        },
+        {
+          "id": "PUB-011",
+          "howItIsMet": "A layout carries a numbering scheme in structure.md's shape; `number` is given the layout's, in the publisher, in the numbering route and in the outline panel"
+        },
+        {
+          "id": "PUB-012",
+          "howItIsMet": "A layout holds one member per format, each its own declaration; `paged` is a property of a format"
+        },
+        {
+          "id": "PUB-013",
+          "howItIsMet": "A layout is an artifact kind versioned by the chain; a publication pins the layout version it used, and a baseline pins it as it pins any version (VER-018)"
+        },
+        {
+          "id": "PUB-014",
+          "howItIsMet": "A format is supported where the layout has a member for it; a request naming another is refused `format_unsupported` before anything is queued"
+        },
+        {
+          "id": "PUB-016",
+          "howItIsMet": "A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases"
+        },
+        {
+          "id": "PUB-021",
+          "howItIsMet": "Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers"
+        },
+        {
+          "id": "PUB-033",
+          "howItIsMet": "Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block"
+        },
+        {
+          "id": "PUB-034",
+          "howItIsMet": "The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))"
+        },
+        {
+          "id": "PUB-091",
+          "howItIsMet": "veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row"
+        },
+        {
+          "id": "PUB-037",
+          "howItIsMet": "The layout's `contents.depth` is passed to `contents`; the template sets each entry as a link with its page from Typst"
+        },
+        {
+          "id": "PUB-038",
+          "howItIsMet": "The layout's `lists` names sequences; each is one `listOf` call, set like the contents"
+        },
+        {
+          "id": "PUB-042",
+          "howItIsMet": "`contents` and `listOf` take the numbering table made after `conditions`, and the checks and projection read only the conditioned document"
+        },
+        {
+          "id": "PUB-047",
+          "howItIsMet": "A publication has no expiry and no delete route; it is `#/publications/{id}` in the renderer and `GET /v1/publications/{id}` in the API; reading it is `read` decided on the publication artifact"
+        },
+        {
+          "id": "PUB-048",
+          "howItIsMet": "`GET /v1/documents/{id}/publications` lists the document's publications the caller may read, each with its publisher and time, and the document page shows them"
+        },
+        {
+          "id": "PUB-050",
+          "howItIsMet": "`publication`, `publication_input` and `publication_output` take inserts only; publishing again inserts another publication"
+        },
+        {
+          "id": "PUB-052",
+          "howItIsMet": "Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse"
+        },
+        {
+          "id": "PUB-053",
+          "howItIsMet": "The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing and swept"
+        },
+        {
+          "id": "PUB-063",
+          "howItIsMet": "The publication records the engine and its version, the template's name and version, and the pipeline's version"
+        },
+        {
+          "id": "PUB-086",
+          "howItIsMet": "Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))"
+        },
+        {
+          "id": "PUB-087",
+          "howItIsMet": "The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))"
+        },
+        {
+          "id": "PUB-088",
+          "howItIsMet": "A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))"
+        },
+        {
+          "id": "IAM-074",
+          "howItIsMet": "Decision C: every occurrence is resolved at the request, restricted to what the publisher may read, and one the publisher may not read refuses the publish, whoever placed the reference"
+        },
+        {
+          "id": "PUB-073",
+          "howItIsMet": "A request names one source and a non-empty set of formats; the publication records the set, and publishing the same source to another format is another request and another publication"
+        },
+        {
+          "id": "PUB-074",
+          "howItIsMet": "A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited"
+        },
+        {
+          "id": "PUB-079",
+          "howItIsMet": "Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`"
+        },
+        {
+          "id": "STR-013",
+          "howItIsMet": "The scheme is declared by the layout (here) and applied by `number` (structure.md); the numbering route and the panel number with the document's layout's scheme"
+        },
+        {
+          "id": "STR-024",
+          "howItIsMet": "The caption's text is the component's; its label is the layout scheme's rule, and its number is `number`'s"
+        },
+        {
+          "id": "STR-027",
+          "howItIsMet": "`number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is \"above\" or \"below\" by document order, in the layout's words"
+        },
+        {
+          "id": "STR-029",
+          "howItIsMet": "`references`' failures are the resolve stage's, each naming the reference and its target, and any fails the publish"
+        },
+        {
+          "id": "STR-050",
+          "howItIsMet": "A format whose layout member is not `paged` has no page breaks in its projection, and nothing reports their absence"
+        },
+        {
+          "id": "STR-052",
+          "howItIsMet": "`number` is pure over the outline, the layout's scheme and the profile; the publication pins the first two and records the numbering table it published, in full"
+        },
+        {
+          "id": "STR-055",
+          "howItIsMet": "In a format that is not `paged`, a `page` reference renders its `withoutPages` form, and one with none fails `page_reference_without_pages`, naming it"
+        },
+        {
+          "id": "CNT-042",
+          "howItIsMet": "A footnote anchored to a cell whose key or position the table does not hold fails `footnote_anchor_unresolved`, naming the footnote and its component"
+        },
+        {
+          "id": "CNT-049",
+          "howItIsMet": "One converter turns stored MathML into the maths tree both writers read; an element it does not know fails `equation_unrenderable`, naming the block, before either writer runs"
+        },
+        {
+          "id": "CNT-054",
+          "howItIsMet": "A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component"
+        },
+        {
+          "id": "CNT-084",
+          "howItIsMet": "As PUB-034: each run's language reaches the published document, and each writer emits it"
         }
       ]
     },
@@ -16126,7 +16410,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 114,
+      "line": 119,
       "kind": "title"
     },
     {
@@ -16349,6 +16633,18 @@
       "id": "MET-030",
       "file": "packages/domain/src/metadata/validate.test.ts",
       "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-052",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 210,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-086",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 283,
       "kind": "title"
     },
     {

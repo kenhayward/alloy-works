@@ -10,6 +10,10 @@
 *.icns binary
 *.woff binary
 *.woff2 binary
+# Fonts are pinned by hash (apps/worker/src/fonts.ts): a face whose bytes were normalised would no
+# longer be the file pinned, and the worker would refuse to start.
+*.ttf binary
+*.otf binary
 
 # Office formats are ZIP archives. Left to the `text=auto` heuristic above, a checkout on a
 # platform that normalises line endings can rewrite bytes inside the archive and produce a file

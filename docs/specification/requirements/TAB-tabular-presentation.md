@@ -152,7 +152,7 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 | **TAB-032** | A table's behaviour at a page break must follow its table style (**STY-013**)                                                                                                                           | T1      | Specified |
 | **TAB-033** | A table too wide for its page must be handled by a declared strategy - rotation, scaling or splitting - not by silent clipping                                                                          | T2      | Specified |
 | **TAB-034** | A table must carry a caption, and must be numbered by the outline (**STR-023**)                                                                                                                         | T1      | Specified |
-| **TAB-039** | A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-030**)                                                                                 | T1      | Specified |
+| **TAB-039** | A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)                                                                                 | T1      | Specified |
 | **TAB-040** | Header rows repeated across a page break must be exposed to assistive technology as headers rather than as new rows of data (**PUB-031**, **PUB-032**)                                                  | T1      | Specified |
 | **TAB-041** | A table must carry its role and reading order into tagged output, and a table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones | T1      | Specified |
 
@@ -182,19 +182,19 @@ table split across pages that is still one table.
 
 ## 12. Traceability
 
-| This document      | Rests on                                                                   |
-| ------------------ | -------------------------------------------------------------------------- |
-| TAB-036            | DAT-011, DAT-012 - a column is addressed by the key the query declares     |
-| TAB-042            | STY-013 - the table style says how a break behaves                         |
-| TAB-045            | LOC-028, CNT-140 - the locale a document publishes in                      |
-| TAB-047            | DAT-040 - provenance for a number no query returned                        |
-| TAB-039 to TAB-041 | PUB-030 to PUB-032 - tagged output, reading order and header association   |
-| TAB-035 to TAB-048 | [The v1 review](<../../reviews/TAB - Tabular presentation.md>); section 13 |
-| Section 6          | Scope §7.5, pivot pushed into the query layer                              |
-| TAB-024, TAB-025   | DAT-012, CNT-039, spike case 3                                             |
-| TAB-019            | DAT section 9, provenance records what the source returned                 |
-| TAB-031            | PUB-032, scope §11 accessibility                                           |
-| TAB-012, TAB-028   | STY-012 to STY-014                                                         |
+| This document      | Rests on                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| TAB-036            | DAT-011, DAT-012 - a column is addressed by the key the query declares             |
+| TAB-042            | STY-013 - the table style says how a break behaves                                 |
+| TAB-045            | LOC-028, CNT-140 - the locale a document publishes in                              |
+| TAB-047            | DAT-040 - provenance for a number no query returned                                |
+| TAB-039 to TAB-041 | PUB-090, PUB-031 and PUB-032 - tagged output, reading order and header association |
+| TAB-035 to TAB-048 | [The v1 review](<../../reviews/TAB - Tabular presentation.md>); section 13         |
+| Section 6          | Scope §7.5, pivot pushed into the query layer                                      |
+| TAB-024, TAB-025   | DAT-012, CNT-039, spike case 3                                                     |
+| TAB-019            | DAT section 9, provenance records what the source returned                         |
+| TAB-031            | PUB-032, scope §11 accessibility                                                   |
+| TAB-012, TAB-028   | STY-012 to STY-014                                                                 |
 
 ## 13. Change history
 
@@ -232,3 +232,15 @@ it. The rules for what gets a new identifier are in
 | Requirements     | 34     | 48, of which 2 superseded |
 | Non-requirements | 4      | 4                         |
 | Open questions   | 4      | 4                         |
+
+### Pointers repointed after the publishing design, 2026-09-19
+
+Not a review. [Ken's answer to the publishing design](../../design/publishing.md#requirements-challenged)
+superseded rows this document points at; the final review of the first publishing build found the
+pointers still live. Each is a clarity edit, checked against what the replacement says; no row was
+added, superseded or withdrawn here.
+
+| What was found                                                                    | Change                                                                                                                                            |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TAB-039 cited PUB-030, superseded by PUB-090                                      | TAB-039 now cites **PUB-090**. It relies on tagged output, which PUB-090 requires of every PDF; Word's side was never PUB-030's, and is PUB-035's |
+| Section 12's traceability row for TAB-039 to TAB-041 rested on PUB-030 to PUB-032 | It rests on **PUB-090**, PUB-031 and PUB-032 - tagged output, reading order and header association                                                |

@@ -152,28 +152,33 @@ sequenceDiagram
     participant W as Publishing worker
     participant O as Object storage
     R->>S: publish
-    S->>D: queue row: tenant, kind, ids
+    S->>D: decide publish; resolve each occurrence as the publisher;<br/>record the resolution; queue row: tenant, kind, ids
     W->>D: claim with SKIP LOCKED
-    W->>D: resolve the document as the tenant's role
-    W->>O: fetch the fonts the baseline pins
-    W->>W: Typst: resolved JSON through the fixed template to PDF/UA
-    W->>W: Word writer: the same resolved document to .docx
+    W->>D: read the recorded inputs as the tenant's role
+    W->>O: fetch the fonts and assets the inputs pin
+    W->>W: assemble: the published document, or every failure
+    W->>W: Typst: the published document through the fixed template to PDF/UA-1
+    W->>W: Word writer: the same published document to .docx
     W->>O: store the outputs by hash
-    W->>D: publication record: versions, engine, template; notify
-    S-->>R: inbox nudge on the stream
+    W->>D: publication record: versions, engine, template, fonts, digests; notify
+    S-->>R: the requester's stream: done or failed
 ```
 
-The resolved document is the one intermediate every output is made from (ADR-0013): Typst reads it
-as data through one fixed template, and the Word writer reads the same thing (ADR-0015), both styled
-by one resolved theme (ADR-0014, [themes.md](themes.md), [word-output.md](word-output.md)). Typst runs
-with no network and only the fonts the baseline pins.
+The permission is decided, and every component reference resolved to a version, at the request -
+the worker has no principal to decide for. The published document is the one intermediate every output
+is made from (ADR-0013): Typst reads it as data through one fixed template, and the Word writer reads
+the same thing (ADR-0015), both styled by one resolved theme (ADR-0014, [themes.md](themes.md),
+[word-output.md](word-output.md)). Typst runs with no network and only the fonts the inputs pin. A
+failed publish leaves no publication. See [publishing.md](publishing.md).
 
 ### Previewing
 
-Opening a document's preview binds it to a preview worker running `typst watch` on that document's
-data. Each saved change rewrites the data; Typst recompiles only what changed, and the pages come
-back to the renderer. A preview is never a publication: it is untagged when it is a page range, and
-nothing is recorded (PUB-061).
+A whole-document preview is a publishing job of its own kind: the same pipeline, a tagged PDF that
+says it is a preview of unapproved content, kept an hour for its asker and never recorded as a
+publication. The warm preview binds an open document to a preview worker running `typst watch` on its
+data; each saved change rewrites the data, Typst recompiles only what changed, and the visible pages
+come back to the renderer **as images**, each saying it is an untagged preview and naming the tagged
+PDF (PUB-061, PUB-080). See [publishing.md](publishing.md).
 
 ### Model output
 
@@ -230,7 +235,7 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 | The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                             |
 | Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1 |
 | Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                               |
-| The publishing pipeline - resolve and template | Not yet designed; T1. ADR-0013 and the publishing spike fix its shape                                                      |
+| The publishing pipeline - resolve and template | [publishing.md](publishing.md)                                                                                             |
 | The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1             |
 | Data, collaboration, reuse, AI, interchange    | Later tranches, designed when their tranche arrives                                                                        |
 
@@ -239,6 +244,5 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 | ID  | Question                                                                                                                                                |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New | Hosting and self-hosting, open in scope §10                                                                                                             |
-| New | How preview pages reach the renderer - rendered images, or the PDF's pages - which the publishing pipeline's design decides                             |
 | New | How many tenants one account's object store credentials serve before short-lived credentials are needed instead: AWS caps IAM users at 5,000 (ADR-0021) |
 | New | Which email delivery service. Only the inbox is designed; a provider needs choosing before notifications by email (COL-033) are built                   |

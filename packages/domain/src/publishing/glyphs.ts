@@ -1,0 +1,72 @@
+/**
+ * Characters the pinned Typst sets without a glyph of their own, as inclusive ranges: the tab, line,
+ * vertical tab, form feed, carriage return, U+0085 and the line and paragraph separators, which it lays
+ * out as space, as it does the medium mathematical and ideographic spaces; the soft hyphen, the Arabic
+ * letter mark, the zero-width, joining, invisible-operator and bidi isolate controls, the Hangul
+ * fillers, the Khmer inherent vowels, the Mongolian and other variation selectors, the shorthand and
+ * musical format controls and the tag characters, which it shapes away; U+FFF0 to U+FFF8, which are
+ * unassigned; and the non-breaking hyphen, which it sets with the face's hyphen. Each was measured
+ * against Typst 0.15.1 under PDF/UA-1 with only Liberation Serif available; the regression case that
+ * holds the measurement to the engine arrives with the publication template (the plan's task 7).
+ */
+const SET_WITHOUT_A_GLYPH: readonly (readonly [number, number])[] = [
+  [0x09, 0x0d],
+  [0x85, 0x85],
+  [0xad, 0xad],
+  [0x61c, 0x61c],
+  [0x115f, 0x1160],
+  [0x17b4, 0x17b5],
+  [0x180b, 0x180f],
+  [0x200b, 0x200d],
+  [0x2011, 0x2011],
+  [0x2028, 0x2029],
+  [0x205f, 0x2069],
+  [0x3000, 0x3000],
+  [0x3164, 0x3164],
+  [0xfe00, 0xfe0f],
+  [0xffa0, 0xffa0],
+  [0xfff0, 0xfff8],
+  [0x1bca0, 0x1bca3],
+  [0x1d173, 0x1d17a],
+  [0xe0000, 0xe0fff],
+];
+
+const setWithoutAGlyph = (codePoint: number) =>
+  SET_WITHOUT_A_GLYPH.some(([first, last]) => codePoint >= first && codePoint <= last);
+
+/**
+ * Characters PDF/UA-1 forbids in text whatever the face holds. The pinned Typst refuses a byte-order
+ * mark between some letters and not others, depending on how it shapes the cluster, so it is refused
+ * everywhere here rather than wherever the engine happens to notice (measured while planning:
+ * docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md, "Where publishing.md and the built code
+ * are wrong", its third point).
+ */
+const DISALLOWED = new Set([0xfeff, 0xfffe, 0xffff]);
+
+export type CharacterProblem = 'glyph_missing' | 'character_disallowed';
+
+/** `U+0627`, the spelling a failure's detail uses: never the character itself. */
+export const codePointName = (codePoint: number) =>
+  `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
+
+/**
+ * Each character of `text` the engine would refuse, once each, in the order they first appear:
+ * disallowed anywhere, or missing from every face the template sets it in (`covers`).
+ */
+export function characterProblems(
+  text: string,
+  covers: (codePoint: number) => boolean,
+): { readonly problem: CharacterProblem; readonly codePoint: number }[] {
+  const seen = new Set<number>();
+  const found: { problem: CharacterProblem; codePoint: number }[] = [];
+  for (const character of text) {
+    const codePoint = character.codePointAt(0)!;
+    if (seen.has(codePoint)) continue;
+    seen.add(codePoint);
+    if (DISALLOWED.has(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
+    else if (!setWithoutAGlyph(codePoint) && !covers(codePoint)) {
+      found.push({ problem: 'glyph_missing', codePoint });
+    }
+  }
+  return found;
+}

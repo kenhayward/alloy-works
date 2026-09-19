@@ -1,9 +1,11 @@
 import type { Job, JobQueue, Tenant, TenantDatabase } from '@alloy-works/db';
+import { JobRefused } from './refusal.js';
 
 /** What a kind of work knows how to do, and what to do when it has failed for the last time. */
 export interface JobHandler {
   run(tenant: Tenant, job: Job): Promise<void>;
-  failed(tenant: Tenant, job: Job): Promise<void>;
+  /** `cause` is what the last attempt threw; absent for a job whose worker never came back. */
+  failed(tenant: Tenant, job: Job, cause?: unknown): Promise<void>;
 }
 
 /** As much of a logger as the worker uses; pino is one. */
@@ -63,12 +65,17 @@ export async function processNext(deps: WorkerDeps): Promise<'idle' | 'done' | '
     return 'done';
   } catch (error) {
     const reason = reasonFor(error);
-    const outcome = await deps.queue.fail(job, reason);
+    // Refused on its merits: the same input fails the same way, so it is finished now (issue #146).
+    const refused = error instanceof JobRefused;
+    const outcome = await deps.queue.fail(
+      refused ? { ...job, attempts: job.maxAttempts } : job,
+      reason,
+    );
     deps.log.warn(
       { job: job.id, kind: job.kind, tenant: tenant.id, reason, outcome },
       'job did not finish',
     );
-    if (outcome === 'failed') await handler.failed(tenant, job);
+    if (outcome === 'failed') await handler.failed(tenant, job, error);
     return outcome;
   }
 }

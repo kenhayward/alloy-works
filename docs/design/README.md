@@ -28,6 +28,7 @@ understand the storage layer, rather than something to be thrown away.
 | [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata          |
 | [access.md](access.md)                                 | Spaces, roles and grants, and deciding what a principal may do to an artifact and why                         |
 | [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it            |
+| [publishing.md](publishing.md)                         | A document version to a kept, reproducible PDF: who may publish, the layout, the pipeline and the record      |
 
 ## Why these are not one per requirement area
 

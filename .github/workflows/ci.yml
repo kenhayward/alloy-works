@@ -65,6 +65,10 @@ jobs:
       - name: Typst
         run: pnpm --filter @alloy-works/worker fetch-typst
 
+      # The pinned veraPDF, by digest: the checker the regression corpus answers to (PUB-087).
+      - name: veraPDF
+        run: pnpm --filter @alloy-works/worker fetch-verapdf
+
       # ---------------------------------------------------------------------------------------
       # TEMPORARY: every check below is continue-on-error while the repo is finding its baseline.
       # The run reports results without blocking a merge.

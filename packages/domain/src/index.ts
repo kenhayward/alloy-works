@@ -36,3 +36,6 @@ export {
 } from './component.js';
 
 export type { Component, ComponentDraft, ComponentType } from './component.js';
+
+// Publishing: the published document, its failures, and assemble (docs/design/publishing.md).
+export * from './publishing/index.js';

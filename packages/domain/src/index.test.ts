@@ -107,6 +107,11 @@ describe('the domain package', () => {
         // (docs/plans/2026-09-18-structure-03-navigation.md).
         'contents',
         'listOf',
+        // Publishing: the published document, its failures and assemble (publishing.md).
+        'DRAFT_NOTICE',
+        'PUBLISHING_SCHEMA',
+        'assemble',
+        'publishFailureCodes',
       ].sort(),
     );
   });

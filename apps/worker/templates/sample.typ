@@ -2,7 +2,7 @@
 // the data is ever Typst source (ADR-0013).
 #let data = json("data.json")
 #set document(title: "Alloy Works sample: " + data.environment, author: "Alloy Works")
-#set text(lang: "en", size: 11pt)
+#set text(font: "Liberation Serif", lang: "en", size: 11pt)
 #set page(paper: "a4", margin: 2.5cm)
 
 = Alloy Works

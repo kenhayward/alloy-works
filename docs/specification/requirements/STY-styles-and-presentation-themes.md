@@ -66,7 +66,7 @@ in a support conversation.
 | **STY-054** | A line's extra space must sit above it, with its baseline one descender above the foot of its line, in every output format; a typeface must therefore carry the vertical metrics that place its baseline                                                                                                                                                            | Constraint | Specified |
 | **STY-055** | Word output must render every run as the theme resolves it, setting a run's formatting directly wherever Word's own rules for combining styles would compute otherwise                                                                                                                                                                                              | Constraint | Specified |
 | **STY-068** | The composition of styles must be canonical and stated once: a character style's properties compose over the paragraph style's, property by property, with the nearest declaration winning. The resolved value must be computed once and projected into each output format, never recomputed by the format's own rules (STY-055 is that rule's consequence in Word) | Constraint | Specified |
-| **STY-069** | A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-030**, **CNT-078**, **STY-Q05**)                                                          | T1         | Specified |
+| **STY-069** | A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-090**, **CNT-078**, **STY-Q05**)                                                          | T1         | Specified |
 
 **STY-050 and STY-051 exist because the same words mean different things in each target.** CSS and
 Typst take the larger of two adjoining spaces; Word adds them. "Line spacing 1.15" multiplies the
@@ -81,7 +81,7 @@ projected three times.
 
 **STY-069 is cheap insurance for a product whose point is legible documents.** Nothing in this
 document or its neighbours required a theme's own colours to be readable: CNT-078 holds the editor to
-WCAG and PUB-030 holds output to PDF/UA, and a theme with grey text on a grey ground satisfies both
+WCAG and PUB-090 holds output to PDF/UA-1, and a theme with grey text on a grey ground satisfies both
 by being an input rather than a surface. Checking at save is the only moment anything can be done
 about it.
 
@@ -185,7 +185,7 @@ one day, and a theme change months later re-renders something that was signed.
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
 | **STY-035** | The editor and the publisher must resolve the same style from the same catalogue, by the same rules                                                                                                                                                                                                                            | Constraint | Specified             |
 | **STY-036** | The editor must render typefaces, sizes, colours and spacing as the theme declares (CNT-082, CNT-097)                                                                                                                                                                                                                          | T1         | Superseded by STY-058 |
-| **STY-037** | Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-095)                                                                                                                                                                          | T1         | Specified             |
+| **STY-037** | Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-150)                                                                                                                                                                          | T1         | Specified             |
 | **STY-038** | Style resolution must be deterministic: the same content, style and theme version must always produce the same appearance                                                                                                                                                                                                      | Constraint | Specified             |
 | **STY-053** | Every style property must be verified, by an automated suite, to render the same measured value in each output format that renders it - in the editor, in PDF and in Word                                                                                                                                                      | T1         | Specified             |
 | **STY-058** | The editor must render every declared property of every paragraph and character style as the theme declares it, not a sample of them, so that STY-053's suite tests nothing STY-036 did not oblige (CNT-082, CNT-097)                                                                                                          | T1         | Specified             |
@@ -282,7 +282,7 @@ The check has to be the pipeline's own. See
 | STY-N01            | CNT-N08, no per-document override                                                                                                         |
 | STY-050 to STY-055 | The publishing engine and Word spikes; ADR-0013 and ADR-0015 - which is why their numbers sit below their topic                           |
 | Section 7          | CNT-120 - the admonition vocabulary content takes from here                                                                               |
-| STY-069            | PUB-030, CNT-078 - accessibility of output and of the editor                                                                              |
+| STY-069            | PUB-090, CNT-078 - accessibility of output and of the editor                                                                              |
 | STY-061            | API-005 - a stable machine-readable code beside the message                                                                               |
 | STY-056 to STY-073 | [The v1 review](<../../reviews/STY - Styles and presentation themes.md>); section 17                                                      |
 
@@ -342,3 +342,18 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections     | Change                                                                                                                                                                                                                                                               |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 3.1.8, 3.1.9, 3.2.6 | The image-style traceability row now cites CNT-121 to CNT-123 rather than a typo and two requirements since superseded into this area. **STY-048** cites the supported locales and CNT-059's bidirectional text rather than LOC-004, which is about interface layout |
+
+### Pointers repointed after the publishing design, 2026-09-19
+
+Not a review. [Ken's answer to the publishing design](../../design/publishing.md#requirements-challenged)
+superseded rows this document points at; the final review of the first publishing build found the
+pointers still live. Each is a clarity edit, checked against what the replacement says; no row was
+added, superseded or withdrawn here.
+
+| What was found                                                                        | Change                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STY-069 cited PUB-030, superseded by PUB-090                                          | STY-069 now cites **PUB-090**. It relies only on published output being held to an accessibility standard, and PUB-090 holds PDF output to PDF/UA-1                                                  |
+| The reasoning under STY-069 said PUB-030 holds output to PDF/UA                       | It now says PUB-090 holds output to PDF/UA-1                                                                                                                                                         |
+| Section 16's traceability row for STY-069 rested on PUB-030                           | It rests on **PUB-090** and CNT-078                                                                                                                                                                  |
+| STY-037 cited CNT-095, superseded by CNT-150                                          | STY-037 now cites **CNT-150**. It relies on a preview showing what depends on pagination, and CNT-150's preview is of the PDF, the one paged output                                                  |
+| Section 17's finding "Whether anything covers accessibility" names PUB-030 to PUB-036 | **Not changed.** It records what the v1 review found while those rows were live; a finding is evidence of what was visible when it was written, and is not rewritten to match what happened after it |
