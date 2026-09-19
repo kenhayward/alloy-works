@@ -5996,6 +5996,8 @@
                               "glyph_missing",
                               "character_disallowed",
                               "nothing_to_publish",
+                              "layout_glyph_missing",
+                              "layout_language_not_publishable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -8450,6 +8452,8 @@
                               "glyph_missing",
                               "character_disallowed",
                               "nothing_to_publish",
+                              "layout_glyph_missing",
+                              "layout_language_not_publishable",
                               "engine_failed",
                               "store_failed"
                             ]

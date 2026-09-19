@@ -126,18 +126,29 @@ export function assemble(input: AssembleInput): Assembled {
   }
 
   // The layout's own words are set in the pinned faces too, so each is checked as the title is. A
-  // failure in one names no place in the document, because nothing in the document put it there.
+  // failure in one is the layout's, never the document's: it has codes of its own, names no place in
+  // the document, and nothing the author does to the document puts it right. The layout's parse
+  // refuses a language the engine cannot carry and a character it refuses whatever the face, so only
+  // a layout built past the parse reaches those two here.
   const wordsLanguage = layout === null ? null : publishedLanguage(layout.language);
   if (layout !== null) {
     if (wordsLanguage === null) {
-      failures.push(failure('compose', 'language_not_publishable', null, null, layout.language));
+      failures.push(
+        failure('compose', 'layout_language_not_publishable', null, null, layout.language),
+      );
     }
     const { head, foot } = layout.formats.pdf;
     const slotWords = [...head, ...foot]
       .flat()
       .flatMap((part) => (part.kind === 'words' ? [part.text] : []));
     const { contents: title, notice, noticeSentence } = layout.words;
-    for (const words of [title, notice, noticeSentence, ...slotWords]) check(words, null, null);
+    for (const words of [title, notice, noticeSentence, ...slotWords]) {
+      for (const { codePoint } of characterProblems(words, input.covers)) {
+        failures.push(
+          failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)),
+        );
+      }
+    }
   }
 
   /** A block the template can set, or a failure naming what it is. */
@@ -245,7 +256,10 @@ export function assemble(input: AssembleInput): Assembled {
     declared !== null && contents(conditioned, numbering, declared.depth).length > 0
       ? { depth: declared.depth }
       : null;
-  if (nodes.length === 0 && !cover && shownContents === null) {
+  // What survives conditions, not what the outline holds: once conditions remove nodes, an outline
+  // whose every node is conditioned away has nothing to publish either.
+  const survivors = conditioned.resolved.outline.nodes.length;
+  if (survivors === 0 && !cover && shownContents === null) {
     failures.push(failure('compose', 'nothing_to_publish', null, null, null));
   }
 

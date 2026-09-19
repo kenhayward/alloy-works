@@ -204,6 +204,30 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it("blames the layout, not the document, for the layout's own words and language", async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },
+      {
+        stage: 'compose',
+        code: 'layout_language_not_publishable',
+        node: null,
+        block: null,
+        detail: 'sr-Latn',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "This publication's layout uses a character, U+0627, that no typeface it can use has. The layout has to change before this document can be published.",
+    );
+    expect(why).toHaveTextContent(
+      "This publication's layout is in the language sr-Latn, which cannot be published. The layout has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+    expect(why).not.toHaveTextContent('is in no typeface this publication can use');
+  });
+
   it('says a failure of the engine or the store is nothing in the document, and to publish again', async () => {
     for (const [stage, code, words] of [
       ['engine', 'engine_failed', 'The publication could not be made. Publish again.'],

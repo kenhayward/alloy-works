@@ -535,7 +535,7 @@ describe('assemble', () => {
     expect(assembled.ok && assembled.document.revision).toBe('0.7');
   });
 
-  it("checks the layout's words against the faces, and names no place in the document for them", () => {
+  it("checks the layout's words against the faces, and blames the layout, never the document, for them", () => {
     const foreign = layoutWith((layout) => {
       layout.words.contents = 'Contents \u{4e2d}';
       layout.words.noticeSentence = 'Not approved \u{627}';
@@ -547,7 +547,7 @@ describe('assemble', () => {
     );
     const missing = (detail: string) => ({
       stage: 'compose',
-      code: 'glyph_missing',
+      code: 'layout_glyph_missing',
       node: null,
       block: null,
       detail,
@@ -558,9 +558,19 @@ describe('assemble', () => {
       missing('U+05D0'),
       missing('U+05D1'),
     ]);
+
+    // A character the engine refuses whatever the face: the layout's parse refuses it, and one built
+    // past the parse is still the layout's to put right, not the document's.
+    const refused = assemble(
+      input({
+        outline: outline([section('intro', 'Introduction')]),
+        layout: { ...defaultLayout, words: { ...defaultLayout.words, notice: 'Not\u{feff}ok' } },
+      }),
+    );
+    expect(!refused.ok && refused.failures).toEqual([missing('U+FEFF')]);
   });
 
-  it("refuses a layout whose language the engine cannot carry, naming the layout's tag", () => {
+  it("refuses a layout whose language the engine cannot carry, naming the layout's tag and blaming the layout", () => {
     // The layout's parse refuses such a tag; one built past it is still refused, not shortened.
     const assembled = assemble(
       input({
@@ -571,7 +581,7 @@ describe('assemble', () => {
     expect(!assembled.ok && assembled.failures).toEqual([
       {
         stage: 'compose',
-        code: 'language_not_publishable',
+        code: 'layout_language_not_publishable',
         node: null,
         block: null,
         detail: 'sr-Latn',

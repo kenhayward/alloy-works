@@ -23,6 +23,10 @@ export const publishFailureCodes = [
   // No outline node survives conditions, and the layout declares nothing with something to show: no
   // cover, and a contents would hold no entry (PUB-079, decision K). Never an empty artifact.
   'nothing_to_publish',
+  // The layout's, not the document's: a character in the layout's own words that the engine cannot
+  // set, and a layout language it cannot carry. Named apart so that neither reads as the document's.
+  'layout_glyph_missing',
+  'layout_language_not_publishable',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
