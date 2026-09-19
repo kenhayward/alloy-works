@@ -7563,7 +7563,7 @@
     {
       "id": "PUB-008",
       "area": "PUB",
-      "statement": "A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the total pages and the revision",
+      "statement": "A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the physical page count and the revision",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -16014,61 +16014,79 @@
     {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 244,
+      "line": 291,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-008",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 438,
       "kind": "title"
     },
     {
       "id": "PUB-009",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 293,
+      "line": 340,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-037",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 474,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-088",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 525,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 334,
+      "line": 335,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 489,
+      "line": 539,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 361,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 377,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 382,
+      "line": 384,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 507,
+      "line": 557,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 348,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 434,
+      "line": 484,
       "kind": "title"
     },
     {

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import {
   assemble,
+  defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseOutlineDocument,
@@ -75,7 +76,7 @@ const holding = (text: string): AssembleInput => ({
     ],
   ]),
   refused: [],
-  layout: null,
+  layout: defaultLayout,
   revision: '0.1',
   covers: fonts.covers,
 });
@@ -89,14 +90,15 @@ describe('the publishing regression corpus', () => {
       outline: outline([nested(1)]),
       occurrences: new Map(),
       refused: [],
-      layout: null,
+      layout: defaultLayout,
       revision: '0.1',
       covers: fonts.covers,
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    // No layout, so `publishing/1` through template 1: what a request made before layouts publishes.
+    // Under the default layout, so `publishing/2` through template 2: what every request made since
+    // layouts publishes, with its cover and its contents.
     const pdf = await typst.compile(
-      PUBLICATION_TEMPLATE[1].file,
+      PUBLICATION_TEMPLATE[2].file,
       JSON.stringify(assembled.document),
       at,
     );
@@ -114,20 +116,39 @@ describe('the publishing regression corpus', () => {
       language: 'en-GB',
     });
     expect(depthOf(read.bookmarks)).toBe(9);
-    // The title is a heading on the page and nothing in the bookmarks, which are the sections alone.
+    // The title is a heading on the page and nothing in the bookmarks, which are the sections alone;
+    // nor is the contents' title, which is the layout's word and no section.
     expect(read.bookmarks.map((each) => each.title)).toEqual(['1 Level 1']);
     expect(read.taggedText.flat()[0]).toBe('The dosing report');
     // PDF/UA-1's standard heading types stop at H6. Typst 0.15.1 writes levels seven to nine as H7 to
     // H9 role-mapped to P, so assistive technology is told they are paragraphs (decision A). The whole
-    // tree is pinned as measured through the template - the document's title as a heading of its own
-    // (Typst's `title()` would be tagged Title and role-mapped to P, a paragraph to a screen reader),
-    // the notice's sentence, the six headings, then the three deep headings as three paragraphs; the
-    // sections hold no blocks - so an engine that drops them, tags them `Span` or changes the mapping
-    // is noticed; PUB-090 stays unclaimed while it holds.
+    // tree is pinned as measured through the template, a page at a time as pdf.js reads it, so each
+    // page's begins at its Document: the cover - the document's title as a heading of its own (Typst's
+    // `title()` would be tagged Title and role-mapped to P, a paragraph to a screen reader) and the
+    // notice's sentence; the contents - its title, then a table of contents to the default layout's
+    // depth of three, each level a TOC nested in the last, each item a TOCI holding a reference and a
+    // link; then the six headings and the three deep headings as three paragraphs - the sections hold
+    // no blocks - so an engine that drops them, tags them `Span` or changes the mapping is noticed;
+    // PUB-090 stays unclaimed while it holds.
     expect(read.roles).toEqual([
       'Document',
       'H1',
       'P',
+      'Document',
+      'H1',
+      'TOC',
+      'TOCI',
+      'Reference',
+      'Link',
+      'TOC',
+      'TOCI',
+      'Reference',
+      'Link',
+      'TOC',
+      'TOCI',
+      'Reference',
+      'Link',
+      'Document',
       'H1',
       'H2',
       'H3',
@@ -191,7 +212,7 @@ describe('the publishing regression corpus', () => {
         '"text":"PROBE"',
         `"text":${JSON.stringify(text)}`,
       );
-      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[1].file, data, at).then(
+      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[2].file, data, at).then(
         () => false,
         (error: unknown) => {
           if (error instanceof TypstRefused) return true;

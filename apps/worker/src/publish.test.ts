@@ -11,6 +11,7 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  defaultLayout,
   findRole,
   grant,
   migrate,
@@ -349,10 +350,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
     const { read, row } = await published();
     expect(read.pages).toBeGreaterThan(1);
     // On every page, as an artifact - where no layout can remove it, and a screen reader skips it -
-    // and nothing else there.
-    expect(read.artifactText.map(spoken)).toEqual(
-      Array.from({ length: read.pages }, () => DRAFT_NOTICE.page),
-    );
+    // once, beside the running heads and feet the layout sets there.
+    expect(read.artifactText).toHaveLength(read.pages);
+    for (const [index, runs] of read.artifactText.entries()) {
+      expect(occurrencesOf(DRAFT_NOTICE.page, spoken(runs)), `page ${index + 1}`).toBe(1);
+    }
     // And once where a screen reader reads it: the whole sentence, however the page wraps it.
     expect(occurrencesOf(DRAFT_NOTICE.text, spoken(read.taggedText.flat()))).toBe(1);
     expect(row).toMatchObject({ approval: 'none' });
@@ -401,6 +403,54 @@ describe('publishing a document, from the request to the stored PDF', () => {
     ]);
     expect(await requestRow(request)).toMatchObject({ state: 'done', failures: [] });
   });
+
+  it("records the default layout's version on the publication", async () => {
+    const { request } = await published();
+    const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
+    expect(await publicationOf(request)).toMatchObject({
+      layout_id: declared.artifactId,
+      layout_version_id: declared.versionId,
+    });
+  });
+
+  it('publishes an empty document as its cover alone, under the default layout', async () => {
+    const request = await service.withTenant(tenant, async (trx) => {
+      const made = await createDocument(trx, {
+        spaceId: general,
+        title: 'The empty report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      expect((made.version.content as OutlineDocument).nodes).toEqual([]);
+      const answer = await requestPublication(trx, {
+        documentId: made.version.artifactId,
+        version: made.version.id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+    expect(await work()).toBe('done');
+    const pdf = await pdfOf((await publicationOf(request))!.object_key);
+    const read = await readPdf(pdf);
+
+    // The default layout declares a cover, and a contents that would hold nothing and so is not set
+    // (decision K): one page, the title and the notice's sentence, the notice above them.
+    expect(read.pages).toBe(1);
+    expect(spoken(read.taggedText[0]!)).toBe(`The empty report ${DRAFT_NOTICE.text}`);
+    expect(spoken(read.artifactText[0]!)).toBe(DRAFT_NOTICE.page);
+    // The cover has no label, but here the PDF says so by declaring none: the pinned Typst writes page
+    // labels only where some page is numbered, so a cover alone has none, and a reader shows it as 1.
+    expect(read.pageLabels).toBeNull();
+    expect(await checkPdfUa1(pdf)).toMatchObject({
+      compliant: true,
+      profile: 'PDF/UA-1 validation profile',
+      failedRules: 0,
+    });
+  }, 120_000);
 
   it('refuses a publish job with no subject at once, rather than completing it silently', async () => {
     // Nothing enqueues a publish job with no subject; this is the row such a bug would leave.

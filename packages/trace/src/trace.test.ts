@@ -282,8 +282,12 @@ describe('the citations in the committed model', () => {
   // 201, from 199: the same plan cites PUB-007 and PUB-009 in apps/worker/src/layout.test.ts: template
   // 2 sets the page size, orientation, margins and gutter the layout declares, and numbers each
   // matter's pages in its own format, restarting where the layout says.
+  // 204, from 201: the same plan cites PUB-008, PUB-037 and PUB-088 in apps/worker/src/layout.test.ts:
+  // template 2 sets running heads and feet from the layout's words and fields, a contents to the
+  // layout's depth tagged as a table of contents, and the cover, contents and appendix pages the
+  // layout declares, and none where it declares none.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(201);
+    expect(model.citations).toHaveLength(204);
   });
 
   it('cites no identifier the corpus does not hold', () => {

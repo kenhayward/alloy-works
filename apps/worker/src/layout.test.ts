@@ -1,10 +1,15 @@
 import {
   assemble,
+  conditions,
+  contents,
+  contributionsOf,
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseLayout,
   parseOutlineDocument,
+  resolve,
+  type AssembleInput,
   type ContentDocument,
   type Layout,
   type OutlineMatter,
@@ -54,10 +59,10 @@ const reference = (
 ): Node => ({ title, matter, paragraphs, numbered, children });
 
 /**
- * The published document of these top-level nodes, assembled as the job assembles one, under the
- * layout given. A node below the top level is in its top-level node's matter; its own is `body`.
+ * What the job would assemble a document of these top-level nodes from, under the layout given. A node
+ * below the top level is in its top-level node's matter; its own is `body`.
  */
-const assembled = (nodes: readonly Node[], layout: Layout) => {
+const inputOf = (nodes: readonly Node[], layout: Layout): AssembleInput => {
   const occurrences = new Map<string, ContentDocument>();
   const outlineNode = (node: Node, top: boolean): unknown => {
     const positional = {
@@ -98,7 +103,7 @@ const assembled = (nodes: readonly Node[], layout: Layout) => {
       ...positional,
     };
   };
-  const made = assemble({
+  return {
     outline: parseOutlineDocument({
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: TITLE,
@@ -111,9 +116,35 @@ const assembled = (nodes: readonly Node[], layout: Layout) => {
     layout,
     revision: '0.7',
     covers: fonts.covers,
-  });
+  };
+};
+
+/** The published document of these top-level nodes, assembled as the job assembles one. */
+const assembled = (nodes: readonly Node[], layout: Layout) => {
+  const made = assemble(inputOf(nodes, layout));
   if (!made.ok) throw new Error(JSON.stringify(made.failures));
   return made.document;
+};
+
+/**
+ * The contents the domain makes of these nodes to a depth (STR-040), each entry as its heading reads:
+ * `number`'s number, where it has one, and the section's title or its component's.
+ */
+const expectedContents = (nodes: readonly Node[], layout: Layout, depth: number) => {
+  const input = inputOf(nodes, layout);
+  const made = assemble(input);
+  if (!made.ok) throw new Error(JSON.stringify(made.failures));
+  const contributions = new Map(
+    [...input.occurrences].map(([node, content]) => [node, contributionsOf(content)] as const),
+  );
+  const conditioned = conditions(resolve(input.outline, contributions));
+  return contents(conditioned, made.numbering, depth).map((entry) => {
+    const title =
+      entry.title === null
+        ? input.occurrences.get(entry.node)!.title
+        : entry.title.map((inline) => (inline.type === 'text' ? inline.value : '')).join('');
+    return entry.number === null ? title : `${entry.number} ${title}`;
+  });
 };
 
 /** The fixture: front matter, a body with a section three deep, and two appendices. */
@@ -233,6 +264,22 @@ const headingPage = (read: ReadPdf, title: string) => {
   return index;
 };
 
+/** A page's tagged runs, each trimmed: what a screen reader meets on it, in order. */
+const runsOn = (read: ReadPdf, page: number) => read.taggedText[page]!.map((run) => run.trim());
+
+/**
+ * What a contents page should say: its title, then each entry the domain makes of these nodes to the
+ * depth, followed by the label of the page its heading is on - and nothing else.
+ */
+const contentsSaid = (read: ReadPdf, nodes: readonly Node[], layout: Layout, depth: number) =>
+  spoken([
+    layout.words.contents,
+    ...expectedContents(nodes, layout, depth).flatMap((entry) => [
+      entry,
+      read.pageLabels![headingPage(read, entry)]!,
+    ]),
+  ]);
+
 const decimals = (from: number, count: number) =>
   Array.from({ length: count }, (_, index) => String(from + index));
 const letters = (count: number) =>
@@ -332,25 +379,28 @@ describe('template 2 lays out the page', () => {
       reference('Findings', 'body', 4),
     ];
 
-    // Appendices continuing the body: one run of numbers from the first body page to the last page.
+    // The default declares a contents, which is front matter of its own here: page `i`, after the
+    // cover. Appendices continuing the body: one run of numbers from the first body page to the last.
     const { read: continuing } = await compiled(reentered, defaultLayout);
-    expect(continuing.pageLabels![0]).toBe('');
-    expect(continuing.pageLabels!.slice(1)).toEqual(decimals(1, continuing.pages - 1));
+    expect(continuing.pageLabels!.slice(0, 2)).toEqual(['', 'i']);
+    expect(continuing.pageLabels!.slice(2)).toEqual(decimals(1, continuing.pages - 2));
 
     // Appendices lettered from A: the body carries on after them from its own last page.
     const { read } = await compiled(reentered, letteringAppendices(defaultLayout));
     const appendix = headingPage(read, 'A Tables');
     const again = headingPage(read, '2 Findings');
+    const body = appendix - 2;
     // Each part runs to more than one page, and the body to more than the appendix, so a label
     // repeated or a count carried on from the appendix would show.
-    expect(appendix - 1).toBeGreaterThan(1);
+    expect(body).toBeGreaterThan(1);
     expect(again - appendix).toBeGreaterThan(1);
-    expect(appendix - 1).toBeGreaterThan(again - appendix);
+    expect(body).toBeGreaterThan(again - appendix);
     expect(read.pageLabels).toEqual([
       '',
-      ...decimals(1, appendix - 1),
+      'i',
+      ...decimals(1, body),
       ...letters(again - appendix),
-      ...decimals(appendix, read.pages - again),
+      ...decimals(body + 1, read.pages - again),
     ]);
   }, 120_000);
 
@@ -383,6 +433,150 @@ describe('template 2 lays out the page', () => {
     // refuses `nothing_to_publish` before the engine runs, decision K.)
     expect(read.pageLabels).toBeNull();
     expect(spoken(read.taggedText[0]!)).toBe(`${TITLE} ${NOTICE_SENTENCE}`);
+  }, 120_000);
+
+  it("PUB-008 sets running heads and feet from the layout's words and fields", async () => {
+    const { read } = await compiled(FIXTURE, testLayout);
+    const labels = read.pageLabels!;
+    // The cover carries no head and no foot: the notice alone, which is the template's, not a slot's.
+    expect(spoken(read.artifactText[0]!)).toBe(NOTICE);
+    // Every other page: the title, the layout's words around the revision, and the page's label
+    // against the physical page count - which is not the last label of any matter (decision I).
+    for (let index = 1; index < read.pages; index += 1) {
+      const said = spoken(read.artifactText[index]!);
+      expect(said, `page ${index + 1}`).toContain(TITLE);
+      expect(said, `page ${index + 1}`).toContain('Revision 0.7');
+      expect(said, `page ${index + 1}`).toContain(`Page ${labels[index]} of ${read.pages}`);
+    }
+    // The section is the level-one node the page is in: on the page a chapter begins it is that
+    // chapter, never the one before, and on the page after it is still that chapter.
+    const method = headingPage(read, '2 Method');
+    expect(method + 1).toBeLessThan(headingPage(read, 'A Tables'));
+    for (const index of [method, method + 1]) {
+      const said = spoken(read.artifactText[index]!);
+      expect(said, `page ${index + 1}`).toContain('2 Method');
+      expect(said, `page ${index + 1}`).not.toContain('1 Scope');
+    }
+    const scope = headingPage(read, '1 Scope');
+    expect(spoken(read.artifactText[scope]!)).toContain('1 Scope');
+    expect(spoken(read.artifactText[scope]!)).not.toContain('Preface');
+
+    // Another layout's heads and feet are its own: the default's foot says the page, not of how many.
+    const { read: plain } = await compiled(FIXTURE, defaultLayout);
+    for (let index = 1; index < plain.pages; index += 1) {
+      const said = spoken(plain.artifactText[index]!);
+      expect(said, `page ${index + 1}`).toContain(`Page ${plain.pageLabels![index]}`);
+      expect(said, `page ${index + 1}`).not.toContain(' of ');
+      expect(said, `page ${index + 1}`).toContain('Revision 0.7');
+    }
+  }, 120_000);
+
+  it("PUB-037 sets a contents to the layout's depth, tagged as a table of contents, with number's numbers and Typst's pages", async () => {
+    // The domain's contents to the test layout's depth, two: `Units`, three deep, is not in it.
+    expect(expectedContents(FIXTURE, testLayout, 2)).toEqual([
+      'Preface',
+      '1 Scope',
+      '1.1 Terms',
+      '2 Method',
+      'A Tables',
+      'A.1 Readings',
+      'B Sources',
+      'B.1 Notes',
+    ]);
+    for (const [layout, depth] of [
+      [testLayout, 2],
+      [defaultLayout, 3],
+    ] as const) {
+      const { read } = await compiled(FIXTURE, layout);
+      const entries = expectedContents(FIXTURE, layout, depth);
+      // Tagged as a table of contents, an item per entry, which a screen reader announces as such.
+      expect(read.roles).toContain('TOC');
+      expect(read.roles.filter((role) => role === 'TOCI')).toHaveLength(entries.length);
+      // The page after the cover holds the contents and nothing else: each entry exactly as the
+      // domain makes it, then the label of the page its heading is on.
+      expect(spoken(read.taggedText[1]!)).toBe(contentsSaid(read, FIXTURE, layout, depth));
+      expect(spoken(read.taggedText[1]!).includes('1.1.1 Units')).toBe(depth >= 3);
+    }
+  }, 120_000);
+
+  it('ends the contents on a page of its own, which opens the front matter whether or not there is any', async () => {
+    // No cover: the title, the notice's sentence and the contents open the first page, `i`, and the
+    // preface starts the next.
+    const uncovered = parseLayout({
+      ...testLayout,
+      matter: { ...testLayout.matter, cover: false },
+    });
+    const { read } = await compiled(FIXTURE, uncovered);
+    expect(spoken(read.taggedText[0]!)).toBe(
+      `${TITLE} ${NOTICE_SENTENCE} ${contentsSaid(read, FIXTURE, uncovered, 2)}`,
+    );
+    expect(read.pageLabels!.slice(0, 2)).toEqual(['i', 'ii']);
+    expect(runsOn(read, 1)[0]).toBe('Preface');
+
+    // No front matter in the outline: the contents is front matter of its own, on page `i` after the
+    // cover, and the body starts the next page at 1.
+    const bodyOnly = FIXTURE.filter((node) => node.matter !== 'front');
+    const { read: bare } = await compiled(bodyOnly, defaultLayout);
+    expect(bare.pageLabels!.slice(0, 3)).toEqual(['', 'i', '1']);
+    expect(spoken(bare.taggedText[1]!)).toBe(contentsSaid(bare, bodyOnly, defaultLayout, 3));
+    expect(runsOn(bare, 2)[0]).toBe('1 Scope');
+  }, 120_000);
+
+  it('PUB-088 sets the cover and contents a layout declares, starts each appendix on a new page, and sets none of them where it declares none', async () => {
+    // The default declares all three: the cover alone on page 1, the contents after it, and each
+    // appendix at the head of a page.
+    const { read } = await compiled(FIXTURE, defaultLayout);
+    expect(spoken(read.taggedText[0]!)).toBe(`${TITLE} ${NOTICE_SENTENCE}`);
+    expect(read.roles).toContain('TOC');
+    expect(runsOn(read, 1)[0]).toBe(defaultLayout.words.contents);
+    for (const appendix of ['A Tables', 'B Sources']) {
+      expect(runsOn(read, headingPage(read, appendix))[0], appendix).toBe(appendix);
+    }
+
+    // A layout declaring none of them: the title opens page 1 and the preface follows it, there is no
+    // contents, and the second appendix runs on from the first.
+    const bare = parseLayout({
+      ...defaultLayout,
+      matter: { cover: false, contents: null, appendices: { newPage: false } },
+    });
+    const { read: plain } = await compiled(FIXTURE, bare);
+    expect(spoken(plain.taggedText[0]!).startsWith(`${TITLE} ${NOTICE_SENTENCE} Preface`)).toBe(
+      true,
+    );
+    expect(plain.roles).not.toContain('TOC');
+    expect(plain.roles).not.toContain('TOCI');
+    expect(plain.taggedText.flat().map((run) => run.trim())).not.toContain(
+      defaultLayout.words.contents,
+    );
+    const sources = headingPage(plain, 'B Sources');
+    expect(headingPage(plain, 'A.1 Readings')).toBeLessThanOrEqual(sources);
+    // On the page `B Sources` begins, a line of the readings comes before it.
+    const on = runsOn(plain, sources);
+    const at = on.indexOf('B Sources');
+    expect(at).toBeGreaterThan(0);
+    expect(PARAGRAPH).toContain(on[at - 1]);
+  }, 120_000);
+
+  it("sets a layout's own notice and sentence, not the default's, on every page and once to assistive technology", async () => {
+    const reviewing = parseLayout({
+      ...testLayout,
+      words: {
+        contents: 'In this report',
+        notice: 'For review',
+        noticeSentence: 'For review. Nobody has approved this publication yet.',
+      },
+    });
+    const { read } = await compiled(FIXTURE, reviewing);
+    for (const [index, runs] of read.artifactText.entries()) {
+      expect(spoken(runs).split('For review').length - 1, `page ${index + 1}`).toBe(1);
+    }
+    const tagged = spoken(read.taggedText.flat());
+    expect(tagged.split(reviewing.words.noticeSentence).length - 1).toBe(1);
+    // The default's words are nowhere, read or skipped.
+    expect(spoken(read.artifactText.flat())).not.toContain(NOTICE);
+    expect(tagged).not.toContain(NOTICE);
+    // And the contents is titled in the layout's words.
+    expect(runsOn(read, 1)[0]).toBe('In this report');
   }, 120_000);
 
   it('says Not approved on every page, the cover included, and once to assistive technology, under any layout', async () => {

@@ -28,10 +28,11 @@ describe('the publication template', () => {
     // names the old bytes. Template 2 is re-pinned freely until the pull request that makes it
     // merges, since nothing is published from a branch. It moved from the port of template 1
     // (b02df4a5...) when it came to set the layout's page, its cover and each matter's page numbers,
-    // and again (dad852c3...) when a comment said what starts each matter on a page of its own.
+    // again (dad852c3...) when a comment said what starts each matter on a page of its own, and again
+    // (729e21cd...) when it came to set the running heads and feet, the contents and the appendices.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
-      2: '729e21cdc46abd22a60b8c28fb40005d51f0f0eb7037f36fa4248dc47a7c3466',
+      2: '5ec19bf6063a7aa75d1966a3f636b3d410703650f920b27b45f21cffd4e5f0f5',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
