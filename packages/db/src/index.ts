@@ -16,9 +16,14 @@ export {
   type ContentKind,
 } from './artifact-kind.js';
 export {
+  failPublicationRequest,
+  publicationInputs,
+  recordPublication,
   requestPublication,
   resolveOccurrences,
+  type NewPublication,
   type OccurrenceOutcome,
+  type PublicationInputs,
   type PublicationRequestAnswer,
 } from './publishing.js';
 export type {

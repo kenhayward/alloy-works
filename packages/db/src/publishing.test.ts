@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
+  defaultNumberingScheme,
   type OutlineDocument,
   type OutlineNode,
   type ReferenceNode,
@@ -13,12 +14,23 @@ import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { requestPublication, resolveOccurrences } from './publishing.js';
+import {
+  failPublicationRequest,
+  publicationInputs,
+  recordPublication,
+  requestPublication,
+  resolveOccurrences,
+} from './publishing.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  untilBlockedBy,
+  type TestDatabase,
+} from './testing/database.js';
 import { recordVersion, type StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
@@ -40,6 +52,23 @@ const section = (title: string, children: OutlineNode[]): OutlineNode => ({
   ...base,
   children,
 });
+
+function latch() {
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => (open = resolve));
+  return { opened, open };
+}
+
+/** Like `latch`, but the opener carries a value out - here, a transaction's own backend pid. */
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  let reject: (error: unknown) => void = () => {};
+  const promise = new Promise<T>((r, j) => {
+    resolve = r;
+    reject = j;
+  });
+  return { promise, resolve, reject };
+}
 
 /**
  * Every row any query returned, as Postgres returned it, so a test can say what was never selected -
@@ -477,5 +506,313 @@ describe('requesting and recording a publication', () => {
         .execute(),
     );
     expect(occurrences).toHaveLength(1);
+  });
+  /** What a worker records for a request, over an output the store need not hold. */
+  const recording = (requestId: string) => ({
+    requestId,
+    engineVersion: '0.15.1',
+    templateVersion: 1,
+    pipelineVersion: '1',
+    fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+    dataSha256: 'b'.repeat(64),
+    numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+    output: {
+      key: `${production.role}/sha256/${'c'.repeat(64)}`,
+      sha256: 'c'.repeat(64),
+      bytes: 1000,
+    },
+  });
+
+  /** How many of each row a publication is made of the tenant holds - to say a record left none. */
+  const publications = () =>
+    service.withTenant(production, async (trx) => ({
+      records: (await trx.selectFrom('publication').select('id').execute()).length,
+      artifacts: (
+        await trx.selectFrom('artifact').select('id').where('kind', '=', 'publication').execute()
+      ).length,
+      inputs: (await trx.selectFrom('publication_input').select('version_id').execute()).length,
+      outputs: (await trx.selectFrom('publication_output').select('sha256').execute()).length,
+    }));
+
+  const stateOf = (id: string) =>
+    service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select(['state', 'failures', 'finished_at'])
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(),
+    );
+
+  it('reads back exactly the versions a request recorded, and nothing it refused', async () => {
+    await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const open = reference(shared.artifactId);
+      const hidden = reference(secret.artifactId);
+      const version = await documentWith(trx, [section('Introduction', [open, hidden])]);
+      const adas = await publicationInputs(trx, await requested(trx, version, ada));
+      expect([...adas!.occurrences.keys()]).toEqual([open.id]);
+      expect(adas!.refused.map((each) => each.node)).toEqual([hidden.id]);
+      // Grace may read both.
+      const graces = await publicationInputs(trx, await requested(trx, version, grace));
+      expect([...graces!.occurrences.keys()]).toEqual([open.id, hidden.id]);
+      expect(graces!.refused).toEqual([]);
+    });
+  });
+
+  it('reads a request as it was made: who asked, when, the document at its version, and each version it took', async () => {
+    await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const open = reference(shared.artifactId);
+      const version = await documentWith(trx, [section('Method', [open])]);
+      const id = await requested(trx, version, ada);
+      const row = await trx
+        .selectFrom('publication_request')
+        .select('requested_at')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      const inputs = await publicationInputs(trx, id);
+      expect(inputs!.request).toEqual({
+        id,
+        documentId: version.artifactId,
+        documentVersionId: version.id,
+        requestedBy: ada,
+        requestedAt: row.requested_at,
+        spaceId: general,
+      });
+      expect(inputs!.outline).toEqual(version.content);
+      expect(inputs!.occurrences.get(open.id)?.version).toBe(shared.id);
+      expect(inputs!.occurrences.get(open.id)?.content).toEqual(shared.content);
+      expect(await publicationInputs(trx, randomUUID())).toBeUndefined();
+    });
+  });
+
+  it('PUB-050 records a publication the runtime role can insert and read and never change', async () => {
+    const [first, again] = await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, []);
+      const one = await recordPublication(trx, recording(await requested(trx, version, ada)));
+      // A second worker racing an expired lease finds the request done and records nothing.
+      const request = await trx
+        .selectFrom('publication')
+        .select('request_id')
+        .where('id', '=', one!)
+        .executeTakeFirstOrThrow();
+      expect(await recordPublication(trx, recording(request.request_id))).toBeUndefined();
+      // Correcting it is publishing again: another request, another publication, the first unchanged.
+      const two = await recordPublication(trx, recording(await requested(trx, version, ada)));
+      return [one!, two!];
+    });
+    expect(again).not.toBe(first);
+    for (const statement of [
+      sql`update publication set approval = 'none' where id = ${first}`,
+      sql`delete from publication where id = ${first}`,
+      sql`delete from publication_output where publication_id = ${first}`,
+      sql`update publication_input set node = null where publication_id = ${first}`,
+    ]) {
+      await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        /permission denied/,
+      );
+    }
+  });
+
+  it('records every version a publication read, what made it, and its output by its own digest', async () => {
+    const made = await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const other = await component(trx, general, ada, 'Method');
+      const open = reference(shared.artifactId);
+      const pinned = reference(other.artifactId, { kind: 'pinned', version: other.id });
+      const version = await documentWith(trx, [
+        section('Introduction', [open]),
+        section('Scope', [pinned]),
+      ]);
+      const request = await requested(trx, version, ada);
+      const id = await recordPublication(trx, recording(request));
+      return { id: id!, request, version, shared, other, open, pinned };
+    });
+
+    await service.withTenant(production, async (trx) => {
+      const request = await trx
+        .selectFrom('publication_request')
+        .select(['state', 'failures', 'finished_at', 'requested_at'])
+        .where('id', '=', made.request)
+        .executeTakeFirstOrThrow();
+      expect(request).toMatchObject({ state: 'done', failures: [] });
+      expect(request.finished_at).toBeInstanceOf(Date);
+
+      const artifact = await trx
+        .selectFrom('artifact')
+        .select(['kind', 'space_id'])
+        .where('id', '=', made.id)
+        .executeTakeFirstOrThrow();
+      expect(artifact).toEqual({ kind: 'publication', space_id: general });
+
+      const publication = await trx
+        .selectFrom('publication')
+        .selectAll()
+        .where('id', '=', made.id)
+        .executeTakeFirstOrThrow();
+      expect(publication).toEqual({
+        id: made.id,
+        kind: 'publication',
+        request_id: made.request,
+        document_id: made.version.artifactId,
+        document_version_id: made.version.id,
+        document_kind: 'document',
+        publisher: ada,
+        // The time it was asked for, which is the time compiled into the PDF.
+        published_at: request.requested_at,
+        approval: 'none',
+        formats: ['pdf'],
+        engine: 'typst',
+        engine_version: '0.15.1',
+        template: 'publication',
+        template_version: 1,
+        pipeline_version: '1',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        data_sha256: 'b'.repeat(64),
+        numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+      });
+
+      const inputs = await trx
+        .selectFrom('publication_input')
+        .select(['version_id', 'node'])
+        .where('publication_id', '=', made.id)
+        .execute();
+      // The document's version with no place, and each occurrence's version at its place.
+      expect(inputs).toHaveLength(3);
+      expect(inputs).toEqual(
+        expect.arrayContaining([
+          { version_id: made.version.id, node: null },
+          { version_id: made.shared.id, node: made.open.id },
+          { version_id: made.other.id, node: made.pinned.id },
+        ]),
+      );
+
+      const outputs = await trx
+        .selectFrom('publication_output')
+        .selectAll()
+        .where('publication_id', '=', made.id)
+        .execute();
+      expect(outputs).toEqual([
+        {
+          publication_id: made.id,
+          format: 'pdf',
+          object_key: `${production.role}/sha256/${'c'.repeat(64)}`,
+          sha256: 'c'.repeat(64),
+          bytes: 1000,
+          standard: 'ua-1',
+        },
+      ]);
+    });
+  });
+
+  it('leaves no row of a record any part of which is refused, such as an output keyed by other bytes', async () => {
+    const id = await service.withTenant(production, async (trx) =>
+      requested(trx, await documentWith(trx, []), ada),
+    );
+    const before = await publications();
+    const elsewhere = {
+      ...recording(id),
+      output: {
+        key: `${production.role}/sha256/${'d'.repeat(64)}`,
+        sha256: 'c'.repeat(64),
+        bytes: 1000,
+      },
+    };
+    await expect(
+      service.withTenant(production, (trx) => recordPublication(trx, elsewhere)),
+    ).rejects.toThrow(/publication_output_check/);
+    expect(await publications()).toEqual(before);
+    expect(await stateOf(id)).toEqual({ state: 'queued', failures: [], finished_at: null });
+    // Nothing of the refused record was kept, so the request can still be recorded whole.
+    expect(
+      await service.withTenant(production, (trx) => recordPublication(trx, recording(id))),
+    ).toBeDefined();
+  });
+
+  it('refuses loudly to record a request carrying failures, and leaves no row of it', async () => {
+    const { id, hidden } = await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const hidden = reference(secret.artifactId);
+      const version = await documentWith(trx, [
+        section('Method', [reference(shared.artifactId), hidden]),
+      ]);
+      return { id: await requested(trx, version, ada), hidden: hidden.id };
+    });
+    const before = await publications();
+    await expect(
+      service.withTenant(production, (trx) => recordPublication(trx, recording(id))),
+    ).rejects.toThrow(/carries failures/);
+    expect(await publications()).toEqual(before);
+    expect(await stateOf(id)).toEqual({
+      state: 'queued',
+      failures: [
+        {
+          stage: 'resolve',
+          code: 'occurrence_unreadable',
+          node: hidden,
+          block: null,
+          detail: null,
+        },
+      ],
+      finished_at: null,
+    });
+  });
+
+  it('lets two workers racing one request make one publication: the second waits, then records nothing', async () => {
+    const id = await service.withTenant(production, async (trx) =>
+      requested(trx, await documentWith(trx, []), ada),
+    );
+    const before = await publications();
+    const holding = deferred<number>();
+    const commit = latch();
+    const winner = service.withTenant(production, async (trx) => {
+      let answer: string | undefined;
+      try {
+        const { rows } = await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(trx);
+        answer = await recordPublication(trx, recording(id));
+        holding.resolve(rows[0]!.pid);
+      } catch (error) {
+        // Reported through `holding`, so the test fails on the winner's own error at once.
+        holding.reject(error);
+        throw error;
+      }
+      await commit.opened;
+      return answer;
+    });
+    winner.catch(() => undefined);
+    const pid = await holding.promise;
+    // The winner holds the request's row until it commits, so the second worker must wait behind it.
+    // The latch opens in `finally`, so a wait that fails still lets the winner commit.
+    let loser: Promise<string | undefined>;
+    try {
+      loser = service.withTenant(production, (trx) => recordPublication(trx, recording(id)));
+      await untilBlockedBy(db.adminUrl, pid, 1);
+    } finally {
+      commit.open();
+    }
+    const [won, lost] = await Promise.all([winner, loser]);
+    expect(won).toBeDefined();
+    expect(lost).toBeUndefined();
+    expect(await publications()).toMatchObject({
+      records: before.records + 1,
+      artifacts: before.artifacts + 1,
+    });
+  });
+
+  it('fails a request with every failure at once, after which it has nothing left to publish', async () => {
+    await service.withTenant(production, async (trx) => {
+      const id = await requested(trx, await documentWith(trx, []), ada);
+      await failPublicationRequest(trx, id, [
+        { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
+      ]);
+      expect(await publicationInputs(trx, id)).toBeUndefined();
+      expect(await recordPublication(trx, recording(id))).toBeUndefined();
+      // Only finishing it: nothing else about a request can be changed.
+      await expect(
+        sql`update publication_request set requested_by = ${grace} where id = ${id}`.execute(trx),
+      ).rejects.toThrow(/permission denied/);
+    });
   });
 });

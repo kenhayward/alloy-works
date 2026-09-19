@@ -242,8 +242,10 @@ describe('the citations in the committed model', () => {
   // 182, from 180: the first publishing plan (docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md)
   // cites PUB-052 and PUB-086 in packages/domain/src/publishing/assemble.test.ts: every failure at
   // once, each naming its stage and its place.
+  // 183, from 182: the same plan cites PUB-050 in packages/db/src/publishing.test.ts: the runtime role
+  // inserts and reads a publication and can change none of it, and correcting one is another.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(182);
+    expect(model.citations).toHaveLength(183);
   });
 
   it('cites no identifier the corpus does not hold', () => {
