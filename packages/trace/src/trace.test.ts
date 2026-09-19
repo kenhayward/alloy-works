@@ -21,6 +21,7 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number an outline produces revealing nothing about a component the
     // reader may not read (issue #130), landed by the numbering plan and narrowed from the issue's "a
     // number, count or order", which asked more than structure.md answers.
@@ -37,9 +38,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1368);
+    expect(model.requirements).toHaveLength(1369);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 361, from 360: structure.md claims STR-063, which the navigation plan measures in the service
+    // suite.
     // 360, from 361: structure.md stopped claiming STR-023 when the build gave a caption met in
     // appendix matter before any numbered appendix no number - an exception STR-017 does not cover,
     // so the row answered it only in part. The gap is named in prose beside the table, and issue #129
@@ -85,7 +88,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(360);
+    ).toBe(361);
   });
 });
 
@@ -202,8 +205,11 @@ describe('the citations in the committed model', () => {
   // 175, from 173: the navigation plan (docs/plans/2026-09-18-structure-03-navigation.md) cites
   // STR-040 and STR-041 in packages/domain/src/structure/lists.test.ts: a contents generated to a
   // declared depth, and a list of figures, of tables and of equations.
+  // 176, from 175: the same plan cites STR-063, landed by it, in
+  // apps/service/src/navigation-budget.test.ts, which measures the service's routes over a document
+  // of five hundred nodes.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(175);
+    expect(model.citations).toHaveLength(176);
   });
 
   it('cites no identifier the corpus does not hold', () => {
