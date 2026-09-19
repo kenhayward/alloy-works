@@ -406,3 +406,26 @@ foundations'; the desktop's checker languages (CNT-147, CNT-148); the accessibil
 CNT-139) and autosave measured under load; a theme for a component opened on its own; a repository-wide
 policy for how every future error code is spelled, this plan's own six having settled on an underscore at
 the wire (decision F) rather than waiting for one; and retiring the scaffolding's `createComponent`.
+
+## Publishing
+
+A document version to a PDF somebody can download, cite and keep, designed in
+[publishing.md](../design/publishing.md) as Ken's answer of 2026-09-19 amended it. It comes after
+structure, because a publication is an outline numbered by `number` with each component's content
+beneath its reference, and both had to exist first. The design claims forty-six requirements and is
+built in seven slices: a document to PDF first, then the layout, the rest of the content, themes and
+typefaces, accessible output checked on every publication, preview, and Word.
+
+| #   | Plan                                                               | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status  |
+| --- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | [A document to PDF](2026-09-19-publishing-01-a-document-to-pdf.md) | veraPDF over nine heading levels, first, and the regression corpus it starts; Liberation Serif pinned by hash and the worker refusing to start without it (#145); a job refused on its merits finished at once (#146); in `packages/domain`, the published document and `assemble`, checking every character against the pinned faces before Typst runs; in `packages/db`, migration 0017, the Publisher role, a request resolved as its publisher that refuses a component they may not read by its place alone (#143), and the immutable record; the fixed template and the publish job, every page saying **Not approved** (#142); four routes, the publishing panel on the document page and a publication's own page | Planned |
+
+Plan 1 leads with fifteen findings - the most serious that PUB-085's ten seconds and PUB-091's veraPDF on
+every publication cannot both hold while veraPDF starts cold in eleven seconds, and that headings at
+levels seven to nine pass veraPDF and are read to assistive technology as paragraphs - and sixteen
+decisions for Ken, the first of which is to publish deep documents as the engine tags them and keep
+PUB-090 unclaimed. It lands #142 and #143 as rows and fixes #145 and #146, and makes #147 no worse by
+putting nothing on the stream. Its load-bearing code was run before it was committed: nine levels
+through veraPDF, fifteen characters through `assemble` and the engine, a publish through the queue,
+the store and Typst in 385 ms, 208 pages compiled in 425 ms, the request refusing by place, and the
+routes and the page against the service and the renderer's suites.
