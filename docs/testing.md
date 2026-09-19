@@ -199,11 +199,15 @@ the binary is the thing being pinned.
 
 ## The regression corpus and veraPDF
 
-`apps/worker/regression/` holds one Typst source file per case - meant to be the publishing spike's
-cases, grown by a case for every publishing defect found (PUB-087) - each compiled by the pinned Typst
-and read back with `apps/worker/src/testing/pdf.ts` (bookmarks, roles, marked structure, language and
-title) to check against its expected outcome. It holds one case today, `nine-heading-levels.typ`; the
-spike's other cases arrive with the publication template.
+`apps/worker/src/regression.test.ts` holds the corpus - meant to be the publishing spike's cases,
+grown by a case for every publishing defect found (PUB-087). A case is an outline, not Typst source: it
+goes through `assemble` and the publication template (`apps/worker/templates/publication/1/`), so what
+is checked is what ships, and each PDF is read back with `apps/worker/src/testing/pdf.ts` (bookmarks,
+roles, marked structure, language and title) to check against its expected outcome. It holds three
+cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and
+sixteen character probes, each refused by `assemble` exactly where the pinned Typst would refuse it
+(the byte-order mark aside, which Typst refuses between some letters and not others, and `assemble`
+refuses everywhere). The spike's other cases arrive with what they exercise.
 
 Each case is also checked against PDF/UA-1 by veraPDF: `apps/worker/src/testing/verapdf.ts` runs the
 pinned `verapdf/cli` image, fetched once by digest with `pnpm --filter @alloy-works/worker
@@ -212,7 +216,7 @@ outside the repository's control - an outage or an anonymous rate limit fails th
 traceability gate even runs). A cold veraPDF run costs about eleven seconds, almost all of it the
 container and the JVM starting rather than checking the page, so the suite runs it in the worker's test
 suite on every change to the template or the engine - not on every publication, which is a later
-slice's, warmed differently. Nothing in the corpus exercises `assemble` yet.
+slice's, warmed differently.
 
 What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
 checks - tagging, a document title, alternative text present - are part of what a screen reader is told

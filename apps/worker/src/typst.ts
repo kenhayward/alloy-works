@@ -63,7 +63,7 @@ export function howItEnded(error: unknown): {
   return { code, signal, killed: ended.killed === true };
 }
 
-/** The one template. Publishing proper adds its own; the data is always data. */
+/** The sample job's template; publishing's is `PUBLICATION_TEMPLATE`. The data is always data. */
 export const SAMPLE_TEMPLATE = fileURLToPath(new URL('../templates/sample.typ', import.meta.url));
 
 /** `TYPST_BINARY`, or what `pnpm --filter @alloy-works/worker fetch-typst` put in `.tools/`. */
@@ -95,7 +95,8 @@ export function createTypst(options: {
       } catch (error) {
         throw new TypstFailed(
           `Typst ${TYPST_RELEASE.version} did not answer. Run \`pnpm --filter @alloy-works/worker fetch-typst\`.`,
-          { cause: error },
+          // As `compile`'s: a job's `failed` is handed this, and the raw error names the command line.
+          { cause: howItEnded(error) },
         );
       }
     },

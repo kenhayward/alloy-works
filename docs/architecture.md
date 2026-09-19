@@ -702,15 +702,20 @@ the sample.
   document's types, the failure vocabulary and `assemble`: a pure function over a resolved document
   that numbers it, resolves each occurrence's and the document's own language (refusing a tag the
   engine cannot carry, never shortening it), checks every character against the pinned faces' coverage,
-  and returns either the published document or every failure at once (PUB-052). Nothing in
-  `apps/worker` imports `@alloy-works/domain` yet; wiring `assemble` into a `publish` job is 1b's.
-- **The regression corpus and veraPDF.** `apps/worker/regression/` holds Typst source cases, compiled
-  and checked by `apps/worker/src/regression.test.ts`; the checker
-  (`apps/worker/src/testing/verapdf.ts`) runs the pinned `verapdf/cli` image, pulled by digest
+  and returns either the published document or every failure at once (PUB-052). Only the worker's
+  regression corpus calls it yet; wiring `assemble` into a `publish` job is 1b's.
+- **The publication template.** `apps/worker/templates/publication/1/main.typ` reads `assemble`'s
+  published document (`publishing/1`) from `data.json` as values and evaluates none of it. A version
+  is immutable: `apps/worker/src/template.test.ts` holds its hash, an edit is `publication/2/`, and
+  `.gitattributes` keeps every `.typ` file LF so no checkout rewrites a pinned template.
+- **The regression corpus and veraPDF.** `apps/worker/src/regression.test.ts` builds each case as an
+  outline, through `assemble` and the publication template, and compiles it with the pinned Typst; the
+  checker (`apps/worker/src/testing/verapdf.ts`) runs the pinned `verapdf/cli` image, pulled by digest
   (`pnpm --filter @alloy-works/worker fetch-verapdf`), against each PDF's PDF/UA-1 profile. This runs
-  in the worker's own test suite, on every change to the template or the engine - not yet per
-  publication, which is a later slice's. The corpus holds one case today, and nothing in it exercises
-  `assemble` yet.
+  in the worker's own test suite, on every change to the template, the engine or `assemble` - not yet
+  per publication, which is a later slice's. It holds three cases: nine heading levels, which veraPDF
+  passes; a PDF not made to PDF/UA-1, which veraPDF must fail; and `assemble`'s verdict on sixteen
+  character probes held to the engine's.
 
 ## Containers and images
 

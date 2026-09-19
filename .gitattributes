@@ -14,6 +14,9 @@
 # longer be the file pinned, and the worker would refuse to start.
 *.ttf binary
 *.otf binary
+# A publication template is pinned by hash too (apps/worker/src/template.test.ts), of its LF bytes:
+# a checkout that wrote CRLF would be a different template.
+*.typ text eol=lf
 
 # Office formats are ZIP archives. Left to the `text=auto` heuristic above, a checkout on a
 # platform that normalises line endings can rewrite bytes inside the archive and produce a file
