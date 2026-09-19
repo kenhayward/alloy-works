@@ -7,7 +7,7 @@ import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { problems } from './check.js';
-import { REPO_ROOT, compile } from './compile.js';
+import { REPO_ROOT, areaDocumentNames, compile, testFilesIn } from './compile.js';
 import { draftRequirement } from './draft.js';
 import {
   formatAllAreas,
@@ -30,6 +30,7 @@ import { parseBaseline } from './parse/baseline.js';
 import { FiledRequirement, normalizeTranche, parseIssue } from './parse/issue.js';
 import { packDocuments } from './pack.js';
 import { dirtyTreeRefusal } from './pack-guard.js';
+import { PINS, comparePins, formatPins, readPinFile } from './pins.js';
 import {
   type NamedReport,
   type TestOutcome,
@@ -82,6 +83,9 @@ const USAGE = `pnpm trace <command>
   next <XXX>         the next free identifier in an area
   stats              the whole corpus, by tranche and state
   check              every problem in the corpus: holes, double claims, citations naming nothing
+  pins               the exact counts CLAUDE.md pins in the trace tests, against what the working
+                     tree compiles to right now - marking each that has moved, and where to edit
+                     it. Reads and prints only; always exits 0
   draft <issue>      read GitHub issue <issue> and draft a row from it
   draft --area XXX --statement "..." [--tranche T1] [--issue 42]
                      draft a row from the command line - no gh required. Prints only; never
@@ -434,6 +438,18 @@ function main(argv: string[]): number {
         const found = problems(model);
         console.log(formatProblems(found));
         return found.length > 0 ? 1 : 0;
+      }
+      case 'pins': {
+        // Reuses the `model` already compiled above, rather than `corpusIn` - which recompiles from
+        // scratch - so the command does not read every document and scan every test file twice.
+        const corpus = {
+          model,
+          testFiles: testFilesIn(REPO_ROOT),
+          areaDocuments: areaDocumentNames(REPO_ROOT),
+        };
+        const reports = comparePins(PINS, corpus, (file) => readPinFile(REPO_ROOT, file));
+        console.log(formatPins(reports));
+        return 0;
       }
       case 'draft': {
         const input = readDraftInput(argv.slice(1));
