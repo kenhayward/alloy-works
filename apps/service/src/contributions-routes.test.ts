@@ -234,7 +234,9 @@ describe('what each occurrence contributes, through the service', () => {
     for (const reader of ['alice', 'ada']) {
       const answer = await call(reader, 'GET', route);
       expect(answer.statusCode, answer.body).toBe(200);
-      expect(answer.json<Contributions>()).toMatchObject({
+      expect(answer.json<Contributions>()).toEqual({
+        document: doc.id,
+        version: { id: doc.version.id, number: '0.5' },
         occurrences: [
           { node: first, version: shared.version },
           { node: hidden, version: null },
