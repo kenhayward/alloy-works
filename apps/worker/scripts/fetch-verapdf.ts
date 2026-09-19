@@ -21,11 +21,16 @@ for (let attempt = 1; ; attempt += 1) {
   }
 }
 
+// A pull by digest cannot fetch anything else, but say so from what Docker holds rather than assume it.
 const { stdout } = await run('docker', [
   'image',
   'inspect',
   '--format',
-  '{{index .RepoDigests 0}}',
+  '{{json .RepoDigests}}',
   VERAPDF_IMAGE,
 ]);
-console.log(`veraPDF is ${stdout.trim()}`);
+const digests = JSON.parse(stdout) as string[];
+if (!digests.includes(VERAPDF_IMAGE)) {
+  throw new Error(`veraPDF pulled as ${digests.join(', ')}, not the pinned ${VERAPDF_IMAGE}`);
+}
+console.log(`veraPDF is ${VERAPDF_IMAGE}`);

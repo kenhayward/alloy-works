@@ -38,15 +38,30 @@ describe('the publishing regression corpus', () => {
     });
     expect(depthOf(read.bookmarks)).toBe(9);
     // PDF/UA-1's standard heading types stop at H6. Typst 0.15.1 writes levels seven to nine as H7 to
-    // H9 role-mapped to P, so assistive technology is told they are paragraphs (decision A). Pinned, so
-    // an engine that changes it is noticed; PUB-090 stays unclaimed while it holds.
-    expect(read.roles.filter((role) => /^H\d$/.test(role))).toEqual([
+    // H9 role-mapped to P, so assistive technology is told they are paragraphs (decision A). The whole
+    // tree is pinned - a heading and its paragraph for levels one to six, then the three deep headings
+    // and their paragraphs as six paragraphs - so an engine that drops them, tags them `Span` or
+    // changes the mapping is noticed; PUB-090 stays unclaimed while it holds.
+    expect(read.roles).toEqual([
+      'Document',
       'H1',
+      'P',
       'H2',
+      'P',
       'H3',
+      'P',
       'H4',
+      'P',
       'H5',
+      'P',
       'H6',
+      'P',
+      'P',
+      'P',
+      'P',
+      'P',
+      'P',
+      'P',
     ]);
   }, 120_000);
 
