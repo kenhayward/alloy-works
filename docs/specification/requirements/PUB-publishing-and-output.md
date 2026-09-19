@@ -211,6 +211,7 @@ answers it - a publication that does not record what made it cannot be reproduce
 | ID          | Requirement                                                                                                                                                                                                                                                                                                                                                      | Tranche    | Status    |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **PUB-047** | A publication must be retained, addressable by URL, and permissioned (**IAM**)                                                                                                                                                                                                                                                                                   | T1         | Specified |
+| **PUB-093** | A publication not produced from a baseline must say that it is not approved, visibly on every page and once where assistive technology reads it, and its record must say so.                                                                                                                                                                                     | T1         | Specified |
 | **PUB-048** | A publication must be listed alongside the document that produced it, with who published it and when                                                                                                                                                                                                                                                             | T1         | Specified |
 | **PUB-049** | A publication must be accompanied by the provenance of every bound value in it (**DAT-042**)                                                                                                                                                                                                                                                                     | T2         | Specified |
 | **PUB-050** | A publication must be immutable; correcting one must produce another rather than replacing it                                                                                                                                                                                                                                                                    | Constraint | Specified |
@@ -394,5 +395,20 @@ builds each, not here.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 84, of which 1 superseded | 92, of which 8 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### From building the first publishing slice
+
+Not a review. [The first publishing plan](../../plans/2026-09-19-publishing-01-a-document-to-pdf.md)
+landed the requirements Ken filed from the publishing design.
+
+| What was found                                                                                                                                            | Change                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Nothing said a publication that is not approved must say so, and T1 can make no other kind ([#142](https://github.com/kenhayward/alloy-works/issues/142)) | **PUB-093**: on every page, once where assistive technology reads it, and in its record |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 92, of which 8 superseded | 93, of which 8 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

@@ -76,6 +76,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-052** | Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse                                                                             |
 | **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing and swept                                                                               |
 | **PUB-063** | The publication records the engine and its version, the template's name and version, and the pipeline's version                                                                                                                                                                                   |
+| **PUB-093** | Decision A: every T1 publication is a draft; the template sets **Not approved** on every page as a pagination artifact and the full sentence once as tagged text, and the record says `approval: 'none'`                                                                                          |
 | **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                |
 | **PUB-087** | The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))                                             |
 | **PUB-088** | A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))                                                                                                                                                                           |
@@ -117,7 +118,7 @@ described under [Verification](#verification).
 
 ## What this document does not own
 
-Forty-five claims. What is left out is either answered only in part, answered with another design,
+Forty-six claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
 | Left unclaimed                       | Why                                                                                                                                                                                                                                                    |
@@ -157,8 +158,8 @@ a real publication, kept and addressable, that cannot be mistaken for an approve
 prints its status on every page in a place no layout can remove, and once as tagged text at the start**,
 because a running foot is a pagination artifact assistive technology does not read. The record says
 `approval: 'none'`; T3 widens it. The corpus had no row saying a draft must say so; Ken filed one as
-[issue #142](https://github.com/kenhayward/alloy-works/issues/142), and it lands as a row, claimed
-here, with the first publishing build.
+[issue #142](https://github.com/kenhayward/alloy-works/issues/142), and it landed with the first
+publishing build as **PUB-093**, claimed here.
 
 ## The order
 

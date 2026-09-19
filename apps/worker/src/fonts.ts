@@ -8,8 +8,8 @@ import { codePoints } from './cmap.js';
  * The faces every PDF is set in, pinned by hash as the Typst binary is (design decision I; issue #145):
  * Liberation Serif 2.1.5, under the SIL Open Font License 1.1 (ADR-0010), whose text ships beside them.
  * Typst is handed these files and nothing else - no system fonts and none of its own - so a page is
- * set in these files or not at all. The worker names them when it starts; the publication record,
- * which is to record the faces each publication used, does not exist yet.
+ * set in these files or not at all. The worker names them when it starts, and every publication's
+ * record names them, each with its hash.
  */
 export const PINNED_FONT_FILES = [
   {
