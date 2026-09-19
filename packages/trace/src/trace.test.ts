@@ -41,6 +41,11 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1369);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 403, from 360: publishing.md claims 43 - the request, the order, the layout, the published
+    // document, the record and preview: 32 of PUB's, the seven STR clauses structure.md left for the
+    // publisher (STR-013, STR-024, STR-027, STR-029, STR-050, STR-052, STR-055) and four CNT clauses
+    // content-model.md left for it (CNT-042, CNT-049, CNT-054, CNT-084). PUB-001, PUB-004, PUB-010,
+    // PUB-015, PUB-018 and the rest it answers only in part are named in prose beside the table.
     // 360, from 361: structure.md stopped claiming STR-034, which the panel answers for the author's
     // own acts and not for another person's - named in prose beside the table (the navigation plan,
     // decision I).
@@ -91,7 +96,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(360);
+    ).toBe(403);
   });
 });
 
