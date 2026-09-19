@@ -1,11 +1,12 @@
 import {
   conditions,
-  defaultNumberingScheme,
   hasText,
+  mayBeFront,
   number,
   resolve,
   sectionNumbers,
   type Contribution,
+  type NumberingScheme,
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
@@ -24,9 +25,10 @@ import {
 } from 'react';
 
 import {
+  breaksFrontFirst,
   dropMove,
   keyMove,
-  nestsAnAppendix,
+  leavesTheTopLevel,
   nodeLabel,
   nodeName,
   placeOf,
@@ -107,6 +109,13 @@ function lostTitles(lost: readonly LostTitle[]): string {
 
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
+  /**
+   * The scheme the outline is numbered with: the scheme of the layout version this document would be
+   * published under (STR-036), never the product's default, so the panel shows the numbers a publish
+   * prints. `null` where that scheme could not be read, and then nothing is numbered at all - a
+   * fallback would show numbers no publish could produce.
+   */
+  readonly scheme: NumberingScheme | null;
   /** Whether the caller may restructure the outline at all; a reader is offered nothing to change. */
   readonly editable: boolean;
   /** An operation is in flight: everything that would send another waits for it. */
@@ -161,6 +170,17 @@ const PAGE_BREAKS = [
   { value: 'recto', label: 'A new right-hand page' },
 ] as const;
 
+/** The three matters a top-level node may be in, in the order a publication prints them (STR-064). */
+const MATTERS = [
+  { value: 'front', label: 'Front matter' },
+  { value: 'body', label: 'Body' },
+  { value: 'appendix', label: 'Appendix' },
+] as const;
+
+/** Said where a key move is refused, in the words of the rule that refused it. */
+const TOP_LEVEL_ONLY = 'Front matter and appendices stay at the top level.';
+const FRONT_FIRST = 'Front matter comes before the rest of the outline.';
+
 /**
  * The keymap, said once beside the tree and tied to it by `aria-describedby`. A Mac keyboard's delete
  * key is Backspace, which the tree leaves alone, so it says where removing is on one.
@@ -172,6 +192,10 @@ const KEYS =
 
 function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
+}
+
+function isMatter(value: string): value is OutlineViewNode['matter'] {
+  return MATTERS.some((each) => each.value === value);
 }
 
 /** The nearest ancestor of a node that is not numbered, which takes its number away (decision D). */
@@ -226,6 +250,7 @@ function inTextField(event: KeyboardEvent): boolean {
  */
 export function OutlinePanel({
   outline,
+  scheme,
   editable,
   busy = false,
   onOperation,
@@ -324,8 +349,10 @@ export function OutlinePanel({
   // the two cannot disagree.
   const numbers = useMemo(
     () =>
-      sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), defaultNumberingScheme)),
-    [outline],
+      scheme === null
+        ? new Map<string, string>()
+        : sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), scheme)),
+    [outline, scheme],
   );
 
   useEffect(() => {
@@ -512,9 +539,8 @@ export function OutlinePanel({
       if (!may) return;
       const move = keyMove(nodes, current, direction);
       if (move !== null) void send(move, current);
-      else if (nestsAnAppendix(nodes, current, direction)) {
-        onNotice('An appendix stays at the top level.');
-      }
+      else if (leavesTheTopLevel(nodes, current, direction)) onNotice(TOP_LEVEL_ONLY);
+      else if (breaksFrontFirst(nodes, current, direction)) onNotice(FRONT_FIRST);
       return;
     }
     switch (event.key) {
@@ -771,6 +797,7 @@ export function OutlinePanel({
           key={selected.id}
           node={selected}
           topLevel={placeOf(nodes, selected.id)?.parent === null}
+          frontOffered={mayBeFront(nodes, selected.id)}
           unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
           names={names}
           busy={busy}
@@ -964,6 +991,7 @@ interface Field {
 function NodeDetails({
   node,
   topLevel,
+  frontOffered,
   unnumberedAbove,
   names,
   busy,
@@ -976,6 +1004,8 @@ function NodeDetails({
   node: OutlineViewNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
   topLevel: boolean;
+  /** Whether **Front matter** is one of the node's choices: what `mayBeFront` says (STR-064). */
+  frontOffered: boolean;
   /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
   unnumberedAbove: OutlineViewNode | undefined;
   names: Names;
@@ -1033,19 +1063,29 @@ function NodeDetails({
       </label>
       {hint !== null && <span id={hintId}>{hint}</span>}
       {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
-          the outline's parse refuses one set anywhere else. */}
+          the outline's parse refuses one set anywhere else. **Front matter** is left out where the
+          parse would refuse it, so only what can be chosen is offered - a node already in front
+          matter keeps it whatever `mayBeFront` says, or the select would show a value it has no
+          option for. Left enabled while an act is in flight, as the select above is. */}
       {topLevel && (
         <label>
-          <input
-            type="checkbox"
-            checked={node.matter === 'appendix'}
+          Matter
+          <select
+            value={node.matter}
             onChange={(event) => {
-              if (busy) return;
-              const matter = event.target.checked ? 'appendix' : 'body';
+              const matter = event.target.value;
+              if (busy || !isMatter(matter) || matter === node.matter) return;
               void onOperation({ operation: 'set', node: node.id, matter });
             }}
-          />
-          Appendix
+          >
+            {MATTERS.filter(
+              (each) => each.value !== 'front' || frontOffered || node.matter === 'front',
+            ).map((each) => (
+              <option key={each.value} value={each.value}>
+                {each.label}
+              </option>
+            ))}
+          </select>
         </label>
       )}
       <button type="button" onClick={() => !busy && onRemove()}>

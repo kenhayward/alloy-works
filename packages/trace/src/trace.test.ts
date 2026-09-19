@@ -286,8 +286,11 @@ describe('the citations in the committed model', () => {
   // template 2 sets running heads and feet from the layout's words and fields, a contents to the
   // layout's depth tagged as a table of contents, and the cover, contents and appendix pages the
   // layout declares, and none where it declares none.
+  // 205, from 204: the same plan cites STR-036 in apps/web/src/structure/DocumentPage.test.tsx: the
+  // outline panel and the generated lists number with the scheme of the layout the document would be
+  // published under, and the test shows those are the numbers `assemble` prints under that layout.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(204);
+    expect(model.citations).toHaveLength(205);
   });
 
   it('cites no identifier the corpus does not hold', () => {

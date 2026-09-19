@@ -8,9 +8,11 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import {
+  breaksFrontFirst,
   dropMove,
   inverseOf,
   keyMove,
+  leavesTheTopLevel,
   plainTitle,
   sectionTitle,
   titleText,
@@ -21,6 +23,7 @@ const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
 const SCOPE = 'ssssssssssssssssssssssssss';
 const METHOD = 'mmmmmmmmmmmmmmmmmmmmmmmmmm';
 const RESULTS = 'rrrrrrrrrrrrrrrrrrrrrrrrrr';
+const PREFACE = 'pppppppppppppppppppppppppp';
 const NEW = 'nnnnnnnnnnnnnnnnnnnnnnnnnn';
 
 function section(id: string, title: string, children: OutlineNode[] = []): OutlineNode {
@@ -34,6 +37,11 @@ function section(id: string, title: string, children: OutlineNode[] = []): Outli
     values: {},
     children,
   };
+}
+
+/** The same node in another matter, which only a top-level node may be in. */
+function inMatter(node: OutlineNode, matter: 'front' | 'appendix'): OutlineNode {
+  return { ...node, matter };
 }
 
 function outline(nodes: OutlineNode[]): OutlineDocument {
@@ -165,6 +173,76 @@ describe('dropping', () => {
   });
 });
 
+describe('front matter and appendices at the top level', () => {
+  /** A preface and an introduction as front matter, Method with Scope beneath it, then an appendix. */
+  const withFrontMatter = () =>
+    outline([
+      inMatter(section(PREFACE, 'Preface'), 'front'),
+      inMatter(section(INTRODUCTION, 'Introduction'), 'front'),
+      section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      inMatter(section(RESULTS, 'Results'), 'appendix'),
+    ]);
+
+  it('sends no key move that would nest front matter or an appendix, and says that is why', () => {
+    const { nodes } = withFrontMatter();
+    for (const id of [INTRODUCTION, RESULTS]) {
+      expect(keyMove(nodes, id, 'demote')).toBeNull();
+      expect(leavesTheTopLevel(nodes, id, 'demote')).toBe(true);
+      expect(breaksFrontFirst(nodes, id, 'demote')).toBe(false);
+    }
+    // A body node nests under front matter perfectly well: below the top level every node is body.
+    expect(keyMove(nodes, METHOD, 'demote')).toEqual({
+      operation: 'move',
+      node: METHOD,
+      parent: INTRODUCTION,
+      position: 0,
+    });
+    expect(leavesTheTopLevel(nodes, METHOD, 'demote')).toBe(false);
+  });
+
+  it('sends no key move that would put front matter after the rest, and says that is why', () => {
+    const { nodes } = withFrontMatter();
+    // A front node down past a body node, and a body node up past a front node.
+    expect(keyMove(nodes, INTRODUCTION, 'down')).toBeNull();
+    expect(breaksFrontFirst(nodes, INTRODUCTION, 'down')).toBe(true);
+    expect(leavesTheTopLevel(nodes, INTRODUCTION, 'down')).toBe(false);
+    expect(keyMove(nodes, METHOD, 'up')).toBeNull();
+    expect(breaksFrontFirst(nodes, METHOD, 'up')).toBe(true);
+    // Among themselves the front nodes move as any others do.
+    expect(keyMove(nodes, INTRODUCTION, 'up')).toEqual({
+      operation: 'move',
+      node: INTRODUCTION,
+      parent: null,
+      position: 0,
+    });
+
+    // A node promoted to the top level ahead of a front node breaks the rule the same way.
+    const nested = outline([
+      inMatter(section(PREFACE, 'Preface', [section(SCOPE, 'Scope')]), 'front'),
+      inMatter(section(INTRODUCTION, 'Introduction'), 'front'),
+      section(METHOD, 'Method'),
+    ]).nodes;
+    expect(keyMove(nested, SCOPE, 'promote')).toBeNull();
+    expect(breaksFrontFirst(nested, SCOPE, 'promote')).toBe(true);
+    expect(leavesTheTopLevel(nested, SCOPE, 'promote')).toBe(false);
+  });
+
+  it('sends no drop that would nest either, or put front matter after the rest', () => {
+    const { nodes } = withFrontMatter();
+    expect(dropMove(nodes, INTRODUCTION, { kind: 'into', node: METHOD })).toBeNull();
+    expect(dropMove(nodes, RESULTS, { kind: 'into', node: METHOD })).toBeNull();
+    expect(dropMove(nodes, INTRODUCTION, { kind: 'end', parent: null })).toBeNull();
+    expect(dropMove(nodes, METHOD, { kind: 'before', node: PREFACE })).toBeNull();
+    // What the rule allows still goes: an appendix dropped before the body it follows.
+    expect(dropMove(nodes, RESULTS, { kind: 'before', node: METHOD })).toEqual({
+      operation: 'move',
+      node: RESULTS,
+      parent: null,
+      position: 2,
+    });
+  });
+});
+
 describe('the inverse of an act is one operation', () => {
   it('puts a moved node back where it was, subtree and all', () => {
     const before = outline([
@@ -233,6 +311,19 @@ describe('the inverse of an act is one operation', () => {
     const after = applied(before, set);
     const inverse = inverseOf(before, after, set);
     expect(inverse).toEqual({ operation: 'set', node: RESULTS, pageBreak: 'none' });
+    expect(applied(after, inverse)).toEqual(before);
+  });
+
+  it('takes a Matter change back to the matter the node had', () => {
+    const before = outline([
+      inMatter(section(PREFACE, 'Preface'), 'front'),
+      inMatter(section(INTRODUCTION, 'Introduction'), 'front'),
+      section(METHOD, 'Method'),
+    ]);
+    const set: OutlineOperation = { operation: 'set', node: INTRODUCTION, matter: 'body' };
+    const after = applied(before, set);
+    const inverse = inverseOf(before, after, set);
+    expect(inverse).toEqual({ operation: 'set', node: INTRODUCTION, matter: 'front' });
     expect(applied(after, inverse)).toEqual(before);
   });
 

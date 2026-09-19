@@ -1,10 +1,18 @@
-import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
+import { defaultLayout, OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace.js';
+
+/** The environment's layout, as every `DocumentView` carries it: what the page numbers with. */
+const LAYOUT = {
+  id: 'llllllll-0000-4000-8000-000000000001',
+  version: { id: 'llllllll-0000-4000-8000-000000000002', number: '0.1' },
+  language: defaultLayout.language,
+  scheme: defaultLayout.scheme,
+};
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 
@@ -529,6 +537,7 @@ describe('the workspace', () => {
           },
           mayEdit: false,
           mayPublish: false,
+          layout: LAYOUT,
         });
       }
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
@@ -635,6 +644,7 @@ describe('the workspace', () => {
           },
           mayEdit: false,
           mayPublish: false,
+          layout: LAYOUT,
         });
       }
       if (url.pathname === `/v1/documents/${DOCUMENT}/contributions`) {
