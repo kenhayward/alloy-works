@@ -195,6 +195,23 @@ records the rest.
 Each is a choice this plan makes provisionally so that it can be built, with a recommendation and what
 was rejected. Reject one and the plan changes where it says.
 
+**Ken's answers (2026-09-19):** every recommendation accepted, except as follows.
+
+- **The plan lands as two pull requests.** **1a** is tasks 1 to 4 - the regression corpus and veraPDF,
+  the pinned faces (#145), a refused job finished rather than retried (#146) and `assemble` - with the
+  design, the requirement amendments of Part 1 and a short release task of its own (0.29.2, a fix
+  release: it closes #145 and #146 and publishes nothing a person can see). **1b** is tasks 5 to 11, the
+  publishing a person sees, at 0.30.0. Each gets its own pre-flight, reviews and CI run.
+- **A: PUB-090 is not reworded.** It stays unclaimed with the gap named - levels seven to nine tagged as
+  paragraphs - until Typst writes PDF/UA-2; an accessibility requirement is not weakened to fit an
+  engine.
+- **PUB-085 is not amended to leave out the accessibility report.** Slice 5, which runs veraPDF on every
+  publication, decides between a warm checker and changing the requirement.
+- **K is reversed: a language tag the engine cannot carry is refused**, with a message naming the tag
+  and what the engine accepts, never shortened. `sr-Latn` and `sr-Cyrl` are not the same language to a
+  screen reader, and silently dropping the script is the wrong default for accessibility.
+- **IAM-074 is withdrawn in 1b**, in the same pull request that lands PUB-094 (#143), which covers it.
+
 - **A. Deep headings publish as Typst tags them, and PUB-090 stays unclaimed.** Measured: nine levels
   pass veraPDF, bookmark nine deep, and are announced as paragraphs from level seven. The plan publishes
   them, pins the mapping in the regression corpus, and leaves PUB-090 unclaimed with the gap named: the
