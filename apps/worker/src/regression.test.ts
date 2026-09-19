@@ -111,15 +111,19 @@ describe('the publishing regression corpus', () => {
       language: 'en-GB',
     });
     expect(depthOf(read.bookmarks)).toBe(9);
+    // The title is a heading on the page and nothing in the bookmarks, which are the sections alone.
+    expect(read.bookmarks.map((each) => each.title)).toEqual(['1 Level 1']);
+    expect(read.taggedText.flat()[0]).toBe('The dosing report');
     // PDF/UA-1's standard heading types stop at H6. Typst 0.15.1 writes levels seven to nine as H7 to
     // H9 role-mapped to P, so assistive technology is told they are paragraphs (decision A). The whole
-    // tree is pinned as measured through the template - the document's title (tagged Title, which
-    // Typst role-maps to P), the notice's sentence, the six headings, then the three deep headings as
-    // three paragraphs; the sections hold no blocks - so an engine that drops them, tags them `Span`
-    // or changes the mapping is noticed; PUB-090 stays unclaimed while it holds.
+    // tree is pinned as measured through the template - the document's title as a heading of its own
+    // (Typst's `title()` would be tagged Title and role-mapped to P, a paragraph to a screen reader),
+    // the notice's sentence, the six headings, then the three deep headings as three paragraphs; the
+    // sections hold no blocks - so an engine that drops them, tags them `Span` or changes the mapping
+    // is noticed; PUB-090 stays unclaimed while it holds.
     expect(read.roles).toEqual([
       'Document',
-      'P',
+      'H1',
       'P',
       'H1',
       'H2',
@@ -205,7 +209,7 @@ describe('the publishing regression corpus', () => {
       'a byte-order mark between capitals',
     ]);
     // Refused by assemble wherever Typst refuses, and nowhere else but the byte-order mark, which
-    // Typst refuses between some letters and not others (finding 3).
+    // the pinned Typst refuses between capitals and not between small letters, as measured above.
     for (const [name, verdict] of Object.entries(verdicts)) {
       expect(verdict.assemble, name).toBe(verdict.typst || name.startsWith('a byte-order mark'));
     }

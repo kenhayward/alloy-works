@@ -14,7 +14,8 @@
 #set par(justify: false, leading: 0.65em, spacing: 0.9em)
 // Every page carries the status in its header, where no layout can remove it. Typst marks a
 // header as a pagination artifact, which assistive technology does not read, so the notice is
-// also set once as tagged text below. Its words are the template's, in English.
+// also set once as tagged text below. Its words are the data's - DRAFT_NOTICE in packages/domain,
+// carried by assemble - in English, and set as English whatever the document's language.
 #set page(
   paper: "a4",
   margin: (x: 2.5cm, y: 2.5cm),
@@ -52,7 +53,10 @@
   for c in n.children { node(c) }
 }
 
-#title()
+// The document's title as a heading a screen reader announces: Typst's `title()` is tagged Title
+// and role-mapped to P under PDF/UA-1. Kept out of the outline and the bookmarks, which are the
+// document's sections; the PDF's own title is `set document` above.
+#heading(level: 1, outlined: false, bookmarked: false, doc.title)
 #par(text(lang: "en", region: none, dir: ltr, weight: "bold", doc.notice.text))
 
 #for n in doc.nodes { node(n) }
