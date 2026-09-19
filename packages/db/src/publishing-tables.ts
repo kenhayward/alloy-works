@@ -16,6 +16,13 @@ export interface PublicationRequestTable {
   /** JSONB in as the text of a JSON document, as a version's content is. */
   failures: ColumnType<unknown[], string | undefined, string>;
   finished_at: ColumnType<Date | null, never, Date>;
+  /**
+   * The layout version the request was made under (0018): both or neither, and never neither on a
+   * request made since - a request made before layouts keeps none, and publishes under template 1.
+   */
+  layout_id: ColumnType<string | null, string, never>;
+  layout_version_id: ColumnType<string | null, string, never>;
+  layout_kind: ColumnType<'layout', never, never>;
 }
 
 /** Insert and read, nothing else (0017). */
@@ -47,6 +54,10 @@ export interface PublicationTable {
   fonts: ColumnType<{ file: string; sha256: string }[], string, never>;
   data_sha256: ColumnType<string, string, never>;
   numbering: ColumnType<unknown, string, never>;
+  /** Its request's layout version, exactly: null for null (0018's `publication_recorded_whole`). */
+  layout_id: ColumnType<string | null, string | null, never>;
+  layout_version_id: ColumnType<string | null, string | null, never>;
+  layout_kind: ColumnType<'layout', never, never>;
 }
 
 export interface PublicationInputTable {

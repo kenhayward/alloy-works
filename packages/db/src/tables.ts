@@ -204,6 +204,14 @@ export interface ComponentTypeDefaultTable {
   set_at: ColumnType<Date, never, Date>;
 }
 
+/** The environment's declared layout: one row, set by 0018. The runtime role reads it and nothing else. */
+export interface LayoutDefaultTable {
+  singleton: ColumnType<boolean, boolean | undefined, never>;
+  layout_id: ColumnType<string, string, string>;
+  layout_kind: ColumnType<'layout', never, never>;
+  set_at: ColumnType<Date, never, Date>;
+}
+
 export interface AccessPolicyTable {
   singleton: Generated<boolean>;
   external_default_days: Generated<number>;
@@ -315,6 +323,7 @@ export interface TenantTables {
   access_grant: AccessGrantTable;
   first_administrator: FirstAdministratorTable;
   component_type_default: ComponentTypeDefaultTable;
+  layout_default: LayoutDefaultTable;
   publication_request: PublicationRequestTable;
   publication_request_occurrence: PublicationRequestOccurrenceTable;
   publication: PublicationTable;

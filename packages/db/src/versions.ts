@@ -119,11 +119,6 @@ async function insertVersion(
   substance: VersionSubstance,
   digests = versionDigests(substance),
 ): Promise<StoredVersion> {
-  // Unreachable until migration 0018 makes a layout an artifact kind: `createArtifact` refuses one,
-  // and no layout artifact exists for `recordVersion` to version.
-  if (substance.kind === 'layout') {
-    throw new Error('A layout version cannot be stored until a layout is an artifact kind');
-  }
   const component = substance.kind === 'component' ? substance : undefined;
   const row = await trx
     .insertInto('artifact_version')

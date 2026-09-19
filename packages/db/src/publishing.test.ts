@@ -12,6 +12,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
+import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import {
@@ -575,7 +576,9 @@ describe('requesting and recording a publication', () => {
       expect(adas!.refused.map((each) => each.node)).toEqual([hidden.id]);
       // Grace may read both.
       const graces = await publicationInputs(trx, await requested(trx, version, grace));
-      expect([...graces!.occurrences.keys()]).toEqual([open.id, hidden.id]);
+      // As a set: the occurrences are keyed by node, and the query reading them names no order, so
+      // the order rows come back in is the plan's (it changed when 0018 added the layout's version).
+      expect(new Set(graces!.occurrences.keys())).toEqual(new Set([open.id, hidden.id]));
       expect(graces!.refused).toEqual([]);
     });
   });
@@ -725,6 +728,7 @@ describe('requesting and recording a publication', () => {
     });
 
     await service.withTenant(production, async (trx) => {
+      const layout = await defaultLayout(trx);
       const request = await trx
         .selectFrom('publication_request')
         .select(['state', 'failures', 'finished_at', 'requested_at'])
@@ -765,6 +769,10 @@ describe('requesting and recording a publication', () => {
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         data_sha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+        // Its request's layout version, copied under the request's lock (0018).
+        layout_id: DEFAULT_LAYOUT_ID,
+        layout_version_id: layout.versionId,
+        layout_kind: 'layout',
       });
 
       const inputs = await trx

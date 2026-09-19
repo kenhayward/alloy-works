@@ -10,6 +10,7 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
+import { defaultLayout } from './layouts.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
@@ -169,6 +170,9 @@ export async function requestPublication(
   const read = readOutline(latest.content, { artifact: input.documentId, version: latest.id });
   if (!read.ok) throw new Error(`The document ${input.documentId} at ${latest.id} does not read`);
 
+  // Made under the environment's declared layout at its latest version, recorded by its key: the job
+  // publishes under that version, whatever the layout becomes before it runs.
+  const layout = await defaultLayout(trx);
   const outcomes = await resolveOccurrences(trx, read.outline, input.requester);
   const failures: PublishFailure[] = outcomes.flatMap((each) =>
     each.outcome === 'resolved'
@@ -194,6 +198,8 @@ export async function requestPublication(
       formats: ['pdf'],
       requested_by: input.requester,
       failures: JSON.stringify(failures),
+      layout_id: layout.artifactId,
+      layout_version_id: layout.versionId,
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -357,6 +363,8 @@ export async function recordPublication(
       'r.requested_by',
       'r.requested_at',
       'r.failures',
+      'r.layout_id',
+      'r.layout_version_id',
       'a.space_id',
     ])
     .where('r.id', '=', input.requestId)
@@ -393,6 +401,8 @@ async function insertPublication(
     readonly document_version_id: string;
     readonly requested_by: string;
     readonly requested_at: Date;
+    readonly layout_id: string | null;
+    readonly layout_version_id: string | null;
     readonly space_id: string | null;
   },
   input: NewPublication,
@@ -421,6 +431,9 @@ async function insertPublication(
       fonts: JSON.stringify(input.fonts),
       data_sha256: input.dataSha256,
       numbering: JSON.stringify(input.numbering),
+      // The request's, read under its lock: none for a request made before layouts (0018).
+      layout_id: request.layout_id,
+      layout_version_id: request.layout_version_id,
     })
     .execute();
   const occurrences = await trx
