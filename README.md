@@ -81,6 +81,7 @@ bar needs themes, templates, assets and tables as well as an editor. **The first
 | Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                                                                                              |
 | Making a component           | Create one in a space you may create in, with a title, a base language and a direction, and change them afterwards above the surface                                                                                        |
 | Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time. Sections are numbered as you go, every part has a link, and figures, tables and equations are listed  |
+| Publishing a document        | Publish a document as a tagged PDF of its outline and paragraphs, marked not approved on every page, kept, listed beneath the outline and downloaded from its own page                                                      |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                                                                                            |
 
 Full prose list: [`docs/features.md`](docs/features.md).

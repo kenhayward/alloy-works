@@ -19,16 +19,18 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 [themes.md](themes.md) (the theme's Typst projection and the typefaces) and
 [word-output.md](word-output.md) (the other writer that reads the same resolved document).
 
-> **Nothing publishes yet.** What exists is the scaffolding it stands on - the job queue in the
-> platform schema, `apps/worker` claiming a `sample_pdf` job and rendering a fixed template through
-> Typst 0.15.1 pinned by hash, a tenant's own corner of the object store with signed links, and a
-> stream that says a sample finished - and what 1a of the first publishing plan built on it: the
-> regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in pinned
-> Liberation Serif and refusing to start without it (#145), a job Typst refuses finished at once
-> rather than retried (#146), and `assemble` in `packages/domain/src/publishing/`, which nothing calls
-> yet. The Publisher role, the request, the `publish` job, the record, the routes and the page are
-> 1b's. [`../architecture.md`](../architecture.md) describes what is built. Everything else below is
-> design, checked against that code and against the pinned binary - see [What was run](#what-was-run).
+> **The first slice is built: a document publishes to a tagged PDF of its outline and its
+> paragraphs, and nothing else yet.** The first publishing plan built it in two pull requests: 1a,
+> the regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in
+> pinned Liberation Serif (#145), a job Typst refuses finished at once (#146), and `assemble`; 1b, the
+> Publisher role, the request decided and resolved as its publisher, the `publish` job and the fixed
+> template, the immutable record, four routes, the publishing panel on the document page and a
+> publication's own page. Every block but a paragraph, every mark, the layout, the theme, veraPDF on
+> every publication, preview and Word are later slices' ([Build order](#build-order)).
+> [`../architecture.md`](../architecture.md) describes what is built, and
+> [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)
+> where it departs from what follows. Everything else below is design, checked against that code and
+> against the pinned binary - see [What was run](#what-was-run).
 
 ## The shape in one paragraph
 
@@ -74,7 +76,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-048** | `GET /v1/documents/{id}/publications` lists the document's publications the caller may read, each with its publisher and time, and the document page shows them                                                                                                                                   |
 | **PUB-050** | `publication`, `publication_input` and `publication_output` take inserts only; publishing again inserts another publication                                                                                                                                                                       |
 | **PUB-052** | Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse                                                                             |
-| **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing and swept                                                                               |
+| **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing, and no link can be signed for it                                                       |
 | **PUB-063** | The publication records the engine and its version, the template's name and version, and the pipeline's version                                                                                                                                                                                   |
 | **PUB-093** | Decision A: every T1 publication is a draft; the template sets **Not approved** on every page as a pagination artifact and the full sentence once as tagged text, and the record says `approval: 'none'`                                                                                          |
 | **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                |
@@ -225,7 +227,8 @@ defined as publishing PDF and Word (scope section 12). **Decision L: a ninth sta
 holding `read` and `publish`**, added by a tenant migration as the others were and granted like any
 role. Adding `publish` to Author instead was rejected: publishing is the act that escapes, and a tenant
 that granted Author to every contributor would find each of them able to release the whole document
-(finding 1).
+(finding 1). Built: migration 0017 adds Publisher to every environment, and `pnpm dev:setup` grants it
+to Ada and Grace on General.
 
 **Decision D: a publication is an artifact in its document's space, and its readers are decided on it,
 not on the document.** access.md already says so of external shares (IAM-071), and making it a
@@ -243,7 +246,12 @@ and the tenant, exactly as every artifact's is. Two consequences, both stated ra
   grant made for the document. Rejected; the Access view explains the refusal, as it explains any.
 
 **What a reader is shown.** Everything in the publication. Numbers are the publication's own, computed
-with everything readable, so IAM-073 has nothing to withhold inside one.
+with everything readable, so IAM-073 has nothing to withhold inside one. The record a reader is
+answered also carries the document's title at the version published, the document's id and the
+version's id and number, because a reader of the publication is shown them in the PDF anyway; a reader
+granted the publication alone is answered `404` for both the document and the version, as for anything
+else they may not read, so the ids open nothing: the publication's page offers **Open the document**,
+and the document page then says **There is nothing here, or nothing you may read.**
 
 ## The published document
 
@@ -353,8 +361,9 @@ sequenceDiagram
     W->>W: Typst: data.json, template, fonts; PDF/UA-1; creation time pinned
     W->>W: veraPDF over the PDF
     W->>O: put the PDF and the report by hash
-    W->>D: one transaction: publication artifact, record, inputs, outputs; request done; notify
-    S-->>R: the requester's stream: publication_request, done
+    W->>D: one transaction: publication artifact, record, inputs, outputs; request done
+    R->>S: GET /v1/publication-requests/{id}, while the page is open
+    S-->>R: the request's state, and every failure once it has failed
 ```
 
 **Two job kinds**, `publish` and `preview`, on the existing queue. A job names the request; the
@@ -385,19 +394,19 @@ hash - is the same.
 
 **Three kinds of failure, and only one is retried.** The queue retries anything a handler throws
 (`packages/db/src/queue.ts`), which would run a document with a missing alternative text three times
-and fail it three times (finding 4) - so a document's own failures are never thrown, and Typst's own
-refusal, once it is recognised as one (`JobRefused`, #146), is finished at once rather than thrown back
-to the queue's default retry. **The tradeoff:** Typst also exits 1 when it cannot write its output - a
+and fail it three times (finding 4) - so a document's own failures, and Typst's own refusal once it is
+recognised as one, are each thrown as a refusal (`JobRefused`, #146) that the queue fails at once rather
+than handing it back to its default retry. **The tradeoff:** Typst also exits 1 when it cannot write its output - a
 full disk, which is the platform's fault and would pass on a retry - and the worker cannot tell that
 exit from a refusal without parsing Typst's messages, which this design rules out. So such a job is
 finished rather than retried, and the author asks again; a platform fault that stops Typst before it
 exits 1 - a crash, a timeout, a missing binary - is still retried.
 
-| Kind                     | Examples                                                                                                             | What happens                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The document's           | `alternative_missing`, `equation_unrenderable`, `occurrence_unreadable`, `glyph_missing`, `language_not_publishable` | Checked before Typst runs. The job **completes**: its verdict is the failure list, written to the request, which is `failed`. Nothing is retried |
-| The engine's own refusal | Typst exits refusing a document the checks passed - a pipeline defect, such as a check behind the template's version | `JobRefused` (#146, decision F): the job is **failed at once**, in one attempt, with its code (such as `typst_refused`). Never retried           |
-| The platform's           | A crash, a timeout, a missing binary, the store unreachable, the database gone                                       | The handler throws; the queue **retries** with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store`   |
+| Kind                     | Examples                                                                                                             | What happens                                                                                                                                                                                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The document's           | `alternative_missing`, `equation_unrenderable`, `occurrence_unreadable`, `glyph_missing`, `language_not_publishable` | Checked before Typst runs. The job is **failed at once**, in one attempt, as `publish_refused` (`PublishRefused`, a `JobRefused`): its verdict is the failure list, written to the request, which is `failed`. Nothing is retried                                                               |
+| The engine's own refusal | Typst exits refusing a document the checks passed - a pipeline defect, such as a check behind the template's version | `JobRefused` (#146, decision F): the job is **failed at once**, in one attempt, with its code (such as `typst_refused`). Never retried                                                                                                                                                          |
+| The platform's           | A crash, a timeout, a missing binary, the store unreachable, the database gone                                       | The handler throws; the queue **retries** with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store` - `store` where the PDF was made and could not be kept, the store refusing it or the database refusing its record - and no node, block or detail |
 
 **Every failure names its stage** - `resolve`, `compose`, `engine`, `store` - its code, and the node,
 block, reference or definition it concerns. That is PUB-086, which replaced PUB-001's four stages
@@ -421,12 +430,15 @@ whose failed items are replaced by neutral stand-ins, so layout failures arrive 
 than after the author has fixed the others; its output is discarded, as every failed publish's is.
 
 **A failed publish produces no publication** (PUB-053): the publication is inserted only after every
-output is stored, in one transaction; an object put before a failure is referenced by no row and is
-removed by the sweep ADR-0019 describes.
+output is stored, in one transaction; an object put before a failure - a PDF stored, then its record
+refused - is referenced by no row, and no link can be signed for it. ADR-0019 removes such an object
+by a sweep that finds no row pointing at it; **nothing sweeps objects yet**, so it is left behind,
+content-addressed, until that sweep is built.
 
 **Idempotent under a lease.** The lease is two minutes and a publish takes seconds; if a worker stalls
 past it, a second may run the same request. The publication carries the request's id under a unique
-constraint - a plain value, not a foreign key, since finished requests are swept - so one insert wins
+constraint - a plain value, not a foreign key, so that finished requests can be swept (nothing sweeps
+them yet) - so one insert wins
 and the other finds the request `done` and stops; the objects they both put are one object, because
 the bytes are the same.
 
@@ -488,14 +500,14 @@ the paged record (PUB-065).
 One tenant migration. The application role holds `INSERT` and `SELECT` on everything a publication is
 made of, so PUB-050 is a grant, as VER-008 is.
 
-| Table                            | Holds                                                                                                                                                                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `artifact.kind`                  | Gains `publication`, in a space, and `layout`, in none                                                                                                                                                                                                                                     |
-| `publication_request`            | Operational and mutable: kind, document, document version, formats, layout version, requester, `requested_at`, state (`queued`, `done`, `failed`), the failure list, and a preview's object and expiry. Swept once finished and a week old; a publication needs nothing in it              |
-| `publication_request_occurrence` | Insert-only: request, node, the version it took                                                                                                                                                                                                                                            |
-| `publication`                    | Insert-only; its id is its artifact's. The request's id (unique, no foreign key), document, document version, publisher, `published_at`, `approval` (`none`; T3 adds `baseline` and `baseline_id`), formats, engine, template, pipeline, fonts, `data_sha256`, the numbering table as JSON |
-| `publication_input`              | Insert-only: publication, a version it read, and the node for an occurrence. The foreign key restricts deletion                                                                                                                                                                            |
-| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and the accessibility report's object                                                                                                                                                        |
+| Table                            | Holds                                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `artifact.kind`                  | Gains `publication`, in a space, and `layout`, in none                                                                                                                                                                                                                                                             |
+| `publication_request`            | Operational and mutable: kind, document, document version, formats, layout version, requester, `requested_at`, state (`queued`, `done`, `failed`), the failure list, and a preview's object and expiry. Swept once finished and a week old - not built: nothing sweeps them yet; a publication needs nothing in it |
+| `publication_request_occurrence` | Insert-only: request, node, the version it took                                                                                                                                                                                                                                                                    |
+| `publication`                    | Insert-only; its id is its artifact's. The request's id (unique, no foreign key), document, document version, publisher, `published_at`, `approval` (`none`; T3 adds `baseline` and `baseline_id`), formats, engine, template, pipeline, fonts, `data_sha256`, the numbering table as JSON                         |
+| `publication_input`              | Insert-only: publication, a version it read, and the node for an occurrence. The foreign key restricts deletion                                                                                                                                                                                                    |
+| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and the accessibility report's object                                                                                                                                                                                |
 
 **Settled now because they would be migrations later.** The occurrence resolution is recorded per node,
 not as a set. `approval` is a closed column from the first row, so T3 widens a check rather than
@@ -503,6 +515,24 @@ inferring approval from a nullable foreign key. The fonts and the input digest a
 publication, so reproduction (PUB-077) has something to verify against in the first publication ever
 made. The numbering table is recorded whole rather than re-derivable, because STR-052 asks for the
 numbers published, and a derivation is only as good as the engine that repeats it.
+
+**As built, migration 0017 holds more than the grants.** The first slice's tables carry what slice 1
+publishes and nothing it does not: a request has no kind, no layout version and no preview object, and
+`formats` is `{pdf}` by a check that a later slice widens. The runtime role inserts a request by what
+was asked alone, so every request starts queued, under its own id and at its own time; a trigger lets
+it finish once, from queued to done or failed, and only the move to failed may write the failures;
+`done` is refused while the request carries any. An occurrence is taken only while its request is
+queued, and so are a publication's inputs and its output, whose object key must name its own digest
+in its own tenant's store. A constraint trigger checked at commit refuses a publication not recorded
+whole: its request done and matching, its artifact in the document's space, exactly one output, and
+its inputs exactly the document's version and each version the request recorded. **Three gaps are
+named rather than closed**, each reachable only by SQL written as the runtime role, never by the
+product's code: a version row can be inserted for a `publication` artifact directly, since what a
+version may be of is `VersionSubstance`'s rule, in code; a request can be moved to `done` by the column
+grant with no publication behind it, because the database suite's own request tests do exactly that;
+and a publication's inputs are read from the request's occurrences when the record is made, not
+carried from what the job compiled, so an occurrence inserted into a queued request between the two
+would be recorded as read.
 
 ## Routes
 
@@ -518,11 +548,16 @@ numbers published, and a derivation is only as good as the engine that repeats i
 anything is queued; everything else is the job's. A signed link's file name is the publication's id,
 never its title: the link's query string reaches the store's logs, and a title is content.
 
-**The stream tells the requester alone.** A `publication_request` event carries the request's id and
-state to the principal who asked, as an inbox nudge reaches its recipient. The stream as built sends
-every event to every viewer in the environment (`apps/service/src/stream.ts`), which is harmless for a
-sample and not for a publication of a document somebody may not read (finding 7). Others see a
-publication when they list the document's.
+**Nothing goes on the stream; the requester asks** (the first publishing plan's decision G). The
+design had a `publication_request` event carrying the request's state to the principal who asked. The
+stream as built sends every event to every viewer in the environment (`apps/service/src/stream.ts`),
+which is harmless for a sample and not for a publication of a document somebody may not read (finding
+7, issue #147), and filtering it per viewer is #147's own fix. So nothing about a publication is
+announced: while the page is open, the requester follows `GET /v1/publication-requests/{id}`, which
+answers the requester alone - a second after asking, then twice as long after each answer that it is
+still queued, up to half a minute - and the list is read again once the request is done. Others see a
+publication when they list the document's. The first slice answers `POST` with `200` and the request,
+not `202`: a permission-checked handler cannot set its status.
 
 ## Where the code lives
 
@@ -531,7 +566,7 @@ publication when they list the document's.
 | `packages/domain`       | `src/publishing/`: the layout schema and the default layout, `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection |
 | `packages/db`           | The migration, the Publisher role, `requestPublication` (decide, resolve, record, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                                          |
 | `packages/api-contract` | The routes above                                                                                                                                                                                                                          |
-| `apps/service`          | The handlers, and the `publication_request` event addressed to its requester                                                                                                                                                              |
+| `apps/service`          | The handlers; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                          |
 | `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/`                                                                                                 |
 | `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, and the failure list naming each place in the outline                                   |
 
@@ -568,24 +603,30 @@ publication when they list the document's.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                                                                  |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way. Slice 1 runs it only in the test suite, in its own container (Ken's answer B); this stays open for slice 5's per-publication check |
-| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                    |
-| New | Whether PUB-085's ten-second p95 is met by a warm veraPDF or by changing the requirement, since a cold veraPDF takes 11.2 s a page and PUB-091 asks for its report on every publication. Ken deferred it to slice 5; PUB-085 is unclaimed until then      |
+| ID  | Question                                                                                                                                                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way. Slice 1 runs it only in the test suite, in its own container (Ken's answer B); this stays open for slice 5's per-publication check                                                                                       |
+| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                                                                                                          |
+| New | Whether PUB-085's ten-second p95 is met by a warm veraPDF or by changing the requirement, since a cold veraPDF takes 11.2 s a page and PUB-091 asks for its report on every publication. Ken deferred it to slice 5; PUB-085 is unclaimed until then                                                                                            |
+| New | When the page stops asking about a request. It asks a second after publishing, then twice as long each time up to half a minute, and never stops while the page is open: a request no worker takes is asked about every thirty seconds for as long as the page stays open. A limit, and what the page says when it is reached, are not designed |
+| New | What a publication's page does once its download link expires. The link is signed for five minutes when the page opens; a page left open longer offers a link the store refuses, until the page is opened again. Signing on demand, or re-reading the publication when the link is followed, would answer it                                    |
+| New | Whether the desktop app saves a download at all. The link leaves the renderer's origin for the store's, and the Electron shell handles neither `will-navigate` nor `setWindowOpenHandler` for it; nothing has checked what the window does with it, and it is to be checked by hand                                                             |
 
 Answered by 1a of the first publishing plan: whether Typst's heading levels seven to nine pass veraPDF
 (they do - see the table above and [What was run](#what-was-run)) and which faces the default theme
 ships (Liberation Serif 2.1.5, committed and pinned by hash - see
 [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)).
+Answered by 1b: how the requester hears that a publish finished - by asking, with nothing on the
+stream ([Routes](#routes)).
 
 ## Findings against what exists
 
-Most serious first. Two are fixed by 1a of the first publishing plan - findings 2 (#145) and 4 (#146);
-the rest stand.
+Most serious first. Findings 2 (#145) and 4 (#146) are fixed by 1a of the first publishing plan, and
+finding 1 by 1b, which adds the Publisher role; finding 7 is made no worse by 1b; the rest stand.
 
 1. **Nobody can publish.** No starter role holds `publish`, and `role.test.ts` asserts it on the premise
-   that nothing publishes in T1, which scope section 12 contradicts. Decision L.
+   that nothing publishes in T1, which scope section 12 contradicts. Decision L; fixed by 1b, whose
+   migration 0017 adds Publisher.
 2. **The worker does not pin fonts.** `apps/worker/src/typst.ts` passes `--ignore-system-fonts` and
    neither `--ignore-embedded-fonts` nor `--font-path`, so the sample is set in Typst's own faces.
    Worse, measured: with no fonts at all, Typst 0.15.1 compiles, exits 0 and warns about nothing.
@@ -601,8 +642,8 @@ the rest stand.
 4. **The queue retries everything**, including a document's own failures. A handler must complete a
    job whose verdict is a failure. Filed as
    [issue #146](https://github.com/kenhayward/alloy-works/issues/146); fixed by 1a - a job Typst
-   refuses is finished at once (`JobRefused`). A document's own failures are completed as a verdict by
-   1b's `publish` job, which does not exist yet.
+   refuses is finished at once (`JobRefused`). 1b's `publish` job fails a document's own failures at
+   once the same way, as `PublishRefused`, with every one of them written to the request.
 5. **A document knows nothing of its template.** STY-025 and TPL-052 say it takes its template's theme
    and layout, and the outline holds no reference to one; TPL-013 also needs to know which
    of a document's sections came from which template section. Until TPL designs it, the default layout
@@ -611,9 +652,10 @@ the rest stand.
    which has no principal. This design moves the decision and the resolution to the request, and
    system.md is corrected.
 7. **The stream filters nothing per viewer.** realtime.md says each viewer hears only what they may
-   see; the built stream sends every event to every viewer. Publication events go to the requester
-   alone until it does. Filed as [issue #147](https://github.com/kenhayward/alloy-works/issues/147);
-   the first publishing build must at least not make it worse.
+   see; the built stream sends every event to every viewer. Filed as
+   [issue #147](https://github.com/kenhayward/alloy-works/issues/147). The first publishing build
+   makes it no worse by putting nothing about a publication on the stream: the requester follows the
+   request by asking while the page is open (the first publishing plan's decision G).
 8. **The outline has no front matter**, which PUB-009 needs. Decision M.
 9. **ADR-0013 and themes.md are out of date about glyphs.** Both say no engine reports a face that
    lacks a character. Under PDF/UA-1, Typst 0.15.1 fails the compile, quoting the character. The
@@ -706,8 +748,9 @@ The first slice of this design (docs/plans/2026-09-19-publishing-01-a-document-t
 pull requests: **1a** - the regression corpus and veraPDF, the pinned faces (#145), a refused job
 finished rather than retried (#146), and `assemble` in `packages/domain/src/publishing/`, which nothing
 calls yet - and **1b**, the Publisher role, the request, the job, the routes and the page, a person can
-see. This section records what 1a changed against what this design said before it was built; 1b will
-extend it.
+see. This section records what each changed against what this design said before it was built.
+
+**What 1a changed.**
 
 - **PUB-090 stays unclaimed, not reworded (Ken's answer A).** Measured: the nine-level case passes
   every veraPDF machine rule, and headings from level seven read as paragraphs. See
@@ -760,37 +803,91 @@ extend it.
   was withdrawn as TPL-013's duplicate. Citations moved from 180 to 182 as tasks 1 to 4 added two
   titled tests.
 
+**What 1b changed.**
+
+- **Slice 1 publishes paragraphs of unmarked text, and nothing else.** No marks, language marks or
+  hyperlinks, and no theme: a paragraph holding any mark or inline item fails `inline_not_publishable`,
+  every other block `block_not_publishable`, and a paragraph not in the body style `style_missing`, all
+  at once. The template sets one face, Liberation Serif, at fixed sizes. Marks, hyperlinks and language
+  marks move to slice 3 and the theme's projection to slice 4 ([Build order](#build-order)).
+- **The Publisher role is built (decision L), and the development seed grants it** to Ada and Grace on
+  General beside Author, so the development environment has somebody who may publish (the plan's
+  decision N).
+- **The request answers `200`**, not `202`: a permission-checked handler cannot set its status.
+- **Nothing goes on the stream (the plan's decision G)**, replacing "The stream tells the requester
+  alone": the requester asks, as [Routes](#routes) says, so #147 is made no worse. The sequence diagram,
+  finding 7, "Where the code lives" and system.md's flow say the same.
+- **IAM-074 is withdrawn for PUB-094** (#143), which says of every component in T1 what IAM-074 said of
+  a referenced one in T4; PUB-094 is claimed in its place, and #142 landed as PUB-093. The design's
+  claims stand at 46.
+- **The database holds the record, not only the grants.** Migration 0017's triggers finish a request
+  once, keep `done` for a request without failures, take occurrences, inputs and outputs only while the
+  request is queued, and refuse at commit a publication not recorded whole; an output's key must name
+  its own digest in its own tenant's store. Three gaps remain, named under [Stores](#stores).
+- **A document's own failures fail the job at once**, as `publish_refused`, rather than completing it;
+  the request is `failed` either way. A record the database refuses is the `store` stage's, like a
+  refused put, since the PDF was made. The failure table says so.
+- **An object stored before a refused record is left behind.** This design said it was swept; nothing
+  sweeps objects yet, so it stays, content-addressed and referenced by nothing, until ADR-0019's sweep
+  is built.
+- **Requests are not swept either.** Nothing removes a finished request; how long one is kept stays an
+  open question.
+- **Every publication records its fonts**, each pinned file by name and SHA-256, so #145's "records
+  which fonts it used" is now true of every publication and not only of the worker's start-up log.
+- **The document's title is set as a level-one heading**, kept out of the bookmarks, because Typst's
+  `title()` is tagged `Title` and role-mapped to `P`, which a screen reader reads as a paragraph. It
+  changed before anything was published, so the template's first version was re-pinned rather than
+  becoming `publication/2`.
+- **The pipeline's version is held to `assemble`.** `PIPELINE_VERSION` is pinned by a test to the
+  digest of what `assemble` makes of one fixed input, draft notice included, because the notice's words
+  are the data's and the template's hash does not cover them.
+- **veraPDF runs in the suites only.** The job does not run it, so no report is stored and a
+  publication's output row references none; slice 5's per-publication check adds both (PUB-091).
+- **What the page shows.** A failure's place is named against the outline the page holds when it is
+  answered, not the version published, so a part moved since may show another number, and one removed
+  since reads **A part no longer in this document**; neither names a component. Failures of the engine
+  or the store are introduced as the product's, never as something in the document to put right.
+- **A `publish` job with no subject is not guarded.** The job reads its request by `subjectId!`, so
+  such a job - which nothing enqueues - fails in the database, is retried, and is failed with nothing
+  recorded, since `failed` ignores a job without a subject.
+- **What slice 1 cites.** PUB-021, PUB-047, PUB-048, PUB-050, PUB-053, PUB-061, PUB-062, PUB-063,
+  PUB-093 and PUB-094, and PUB-086 again for its engine and store stages, beside PUB-052 and PUB-086
+  cited by 1a - not PUB-003 or PUB-073, which need the order's swaps and a second format. It lands #142
+  and #143 as rows; #145 and #146 were fixed by 1a. The corpus now holds 1,382 requirements, and the
+  tests cite 193 across every area.
+
 ## Build order
 
 Each slice is a plan, lands into something that runs, and cites only what its tests demonstrate.
 
-1. **A document to PDF.** The Publisher role; the request and its resolution; the `publish` job; the
-   template's first version over the outline, section numbers and the component paragraphs that exist
-   today, with marks, languages and hyperlinks; the default theme's Typst projection and faces from the
-   image, with glyph coverage checked against their character maps before Typst runs, so decision G
-   holds from the first publication; the pinned flags; the draft notice; the veraPDF run on the
-   nine-level case; the publication, its inputs and output; the listing,
-   the page and the download; the requester's event. Every other block fails `block_not_publishable`,
-   all of them at once. Cites PUB-003, PUB-021, PUB-047, PUB-048, PUB-050, PUB-052, PUB-053,
-   PUB-061, PUB-062, PUB-063 and PUB-073. Lands #142 and #143 as rows, and fixes #145 and #146.
+1. **A document to PDF - built.** The Publisher role; the request and its resolution; the `publish`
+   job; the template's first version over the outline, section numbers and the components' paragraphs
+   of unmarked text, each occurrence's language where it differs; the image's pinned faces, with glyph
+   coverage checked against their character maps before Typst runs, so decision G holds from the first
+   publication; the pinned flags; the draft notice; veraPDF over the regression corpus and a
+   publication in the suites; the publication, its inputs and output; the listing, the page and the
+   download, the requester following the request by asking. Every other block, and any mark or inline
+   item, fails, all of them at once. Cites PUB-021, PUB-047, PUB-048, PUB-050, PUB-052, PUB-053,
+   PUB-061, PUB-062, PUB-063, PUB-086, PUB-093 and PUB-094. Landed #142 and #143 as rows.
 2. **The layout.** The layout artifact and its default version; running heads and feet; page
    numbering per matter and outline `front` matter; the cover; the contents and lists; the layout's
    scheme to the numbering route and the panel. Cites PUB-007 to PUB-009, PUB-011, PUB-012, PUB-014,
    PUB-037, PUB-038, PUB-079, STR-013, STR-024, and STR-036 in structure.md's name.
-3. **The rest of the content.** Lists, quotations, preformatted text, tables with captions and header
-   rows, footnotes, equations through the maths tree, figures with assets, citations failing, and
-   cross-references once structure 4 has built `references`. Cites PUB-016, PUB-033, CNT-042, CNT-049,
-   CNT-054, STR-027 and STR-029.
-4. **Themes and typefaces.** themes.md's typeface and theme artifacts replace the image's faces, and
-   the coverage check reads theirs. Its claims are themes.md's.
+3. **The rest of the content.** Marks, hyperlinks and language marks; lists, quotations, preformatted
+   text, tables with captions and header rows, footnotes, equations through the maths tree, figures
+   with assets, citations failing, and cross-references once structure 4 has built `references`. Cites
+   PUB-003, PUB-016, PUB-033, CNT-042, CNT-049, CNT-054, STR-027 and STR-029.
+4. **Themes and typefaces.** The default theme's Typst projection; themes.md's typeface and theme
+   artifacts replace the image's faces, and the coverage check reads theirs. Its claims are
+   themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; reading order of floats
    verified; the budget measured. Cites PUB-091; claims and cites PUB-085 once a warm checker or a
    changed requirement settles it against PUB-091 (Ken's deferral); claims PUB-031 once verified.
    PUB-090 stays unclaimed, since slice 1 measured headings from level seven read as paragraphs.
 6. **Preview.** The whole-document preview (PUB-005, PUB-006), then the warm range preview as images
    (PUB-080), once the cadence question is answered.
-7. **Word.** word-output.md's writer in the job, `docx` in the default layout. Cites PUB-034, CNT-084
-   and PUB-074, which need a second format to show.
+7. **Word.** word-output.md's writer in the job, `docx` in the default layout. Cites PUB-034, CNT-084,
+   PUB-073 and PUB-074, which need a second format to show.
 
 **Claimed and cited by nothing yet**, each for a reason a test cannot get round: PUB-013 and STR-052
 need a baseline to pin into (T3); PUB-042 needs conditions to be anything but the identity (REU, T4);
@@ -827,3 +924,13 @@ throwaway spike:**
 | veraPDF, one page, wall time of `docker run` (two runs each)                                                                                                                                       | 11.2 s and 11.1 s; almost all of it the container and the JVM starting - veraPDF's own processing of the page is about 0.20 s                                                                                                                                                                  |
 | A PDF that is not PDF/UA-1 (no `--pdf-standard`, no title), checked by the pinned veraPDF image                                                                                                    | `compliant: false`; 103 rules passed, 3 failed (`5-1`, `7.1-9`, `7.1-10`), naming each                                                                                                                                                                                                         |
 | The 4,142 code points across 14 ranges the pinned Typst sets without complaint under PDF/UA-1 (bidi isolates, tag characters and the like), each range recompiled on its own with the pinned faces | Every range exits 0 and writes a PDF with no error. The three control cases compiled beside them - U+4E2D, U+0627 and U+FEFF - are refused, each quoting the character. `assemble` refuses all three before Typst runs, and U+FEFF everywhere, with U+FFFE and U+FFFF, which were not compiled |
+
+**Measured by 1b, in the committed suites (tasks 5 to 10 of the first publishing plan):**
+
+| Case                                                                                                                                                       | Result                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The nine-level case as an outline, through `assemble` and the publication template, checked by the pinned veraPDF image                                    | Compliant. The role tree reads `Document`, `H1` (the title), `P` (the draft notice's sentence), `H1` to `H6`, then `P` three times - levels seven to nine, tagged `H7` to `H9` and role-mapped to `P`. Bookmarked nine deep, the title not among them. 11.2 s, almost all of it veraPDF starting |
+| Sixteen characters, each through `assemble` and, with the check skipped, through the template and the pinned Typst                                         | Typst refuses exactly Arabic, a CJK ideograph, an emoji, a private-use character, a control character and a byte-order mark between capitals; `assemble` refuses those six, a byte-order mark between small letters, and nothing else. 0.7 s for all sixteen                                     |
+| A multi-page document through the whole job - the request, `assemble`, the template, Typst, the store and the record - checked by the pinned veraPDF image | Compliant, 0 rules failed. **Not approved** is the only artifact text on every page, and the sentence appears once in the tagged text; the bookmarks are the outline with its numbers                                                                                                            |
+| A publish whose store refuses the PDF, three attempts, each compiling                                                                                      | Failed at the `store` stage with no place, no publication and no artifact: 232 ms for all three                                                                                                                                                                                                  |
+| The same request compiled again from what it recorded                                                                                                      | Byte-identical, and `data_sha256` is the digest of the data compiled again: 149 ms                                                                                                                                                                                                               |

@@ -14792,7 +14792,7 @@
         },
         {
           "id": "PUB-053",
-          "howItIsMet": "The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing and swept"
+          "howItIsMet": "The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing, and no link can be signed for it"
         },
         {
           "id": "PUB-063",

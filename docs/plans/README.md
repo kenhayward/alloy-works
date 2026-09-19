@@ -412,14 +412,14 @@ the wire (decision F) rather than waiting for one; and retiring the scaffolding'
 A document version to a PDF somebody can download, cite and keep, designed in
 [publishing.md](../design/publishing.md) as Ken's answer of 2026-09-19 amended it. It comes after
 structure, because a publication is an outline numbered by `number` with each component's content
-beneath its reference, and both had to exist first. The design claims forty-five requirements and is
+beneath its reference, and both had to exist first. The design claims forty-six requirements and is
 built in seven slices: a document to PDF first, then the layout, the rest of the content, themes and
 typefaces, accessible output checked on every publication, preview, and Word.
 
 | #   | Plan                                                                           | Builds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status          |
 | --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
 | 1a  | [A document to PDF](2026-09-19-publishing-01-a-document-to-pdf.md) (tasks 1-4) | veraPDF over nine heading levels, first, and the regression corpus it starts (levels seven to nine pass, read to assistive technology as paragraphs; PUB-090 stays unclaimed, not reworded); Liberation Serif pinned by hash into `apps/worker/fonts`, re-checked before every compile, and the worker refusing to start or compile without it (#145); a job refused on its merits finished at once, never retried (#146); in `packages/domain/src/publishing/`, the published document's types and `assemble`, resolving language and refusing a tag the engine cannot carry, and checking every character against the pinned faces before Typst runs - called by nothing yet | Built (PR #150) |
-| 1b  | Same plan, tasks 5-11                                                          | in `packages/db`, migration 0017, the Publisher role, a request resolved as its publisher that refuses a component they may not read by its place alone (#143), and the immutable record; the fixed template and the publish job, wiring 1a's `assemble` in; every page saying **Not approved** (#142); four routes, the publishing panel on the document page and a publication's own page                                                                                                                                                                                                                                                                                    | Planned         |
+| 1b  | Same plan, tasks 5-11                                                          | in `packages/db`, migration 0017, the Publisher role, a request resolved as its publisher that refuses a component they may not read by its place alone (#143), and the immutable record; the fixed template and the publish job, wiring 1a's `assemble` in; every page saying **Not approved** (#142); four routes, the publishing panel on the document page and a publication's own page                                                                                                                                                                                                                                                                                    | Built (PR #151) |
 
 Plan 1 leads with fifteen findings - the most serious that PUB-085's ten seconds and PUB-091's veraPDF on
 every publication cannot both hold while veraPDF starts cold in eleven seconds, and that headings at
@@ -445,3 +445,29 @@ faces, and additionally U+FEFF, U+FFFE and U+FFFF. The characters it lets throug
 its own with the pinned Typst. PUB-085 is no longer claimed: with a cold veraPDF at 11.2 s a page it
 cannot hold alongside PUB-091, and Ken deferred that choice to slice 5. `assemble` itself is built
 and tested but wired into no job: publishing still produces nothing a person can see until 1b.
+
+**1b**, built: a person who may publish a document presses **Publish as PDF** beneath its outline and,
+a second or two later, has a tagged PDF of the version on the page - its title, its sections numbered
+and bookmarked, each component's paragraphs beneath its heading - that says **Not approved** at the
+top of every page and once where a screen reader reads it (#142, landed as PUB-093). The publication is
+an artifact in the document's space, read on its own grants, listed with the document and opened at
+its own address with a download named by its id. A publish holding a component its publisher may not
+read is refused, naming the place and nothing of the component (#143, landed as PUB-094, with IAM-074
+withdrawn for it). Nothing goes on the stream: the requester asks until the request is done, so #147 is
+made no worse. Building it found that the database, not only the grants, had to hold the record: a
+caught error part way through recording could otherwise have committed half a publication, and the
+runtime role could have added inputs to a finished one, so migration 0017 gained triggers that finish
+a request once and refuse at commit a publication not recorded whole. The document's title, which
+Typst tags as a paragraph, became a level-one heading before anything was published, re-pinning the
+template's first version; a record the database refuses is the store's failure, not the engine's; and
+a failure of the engine or the store is introduced on the page as the product's, never as the
+document's. Three stored-shape gaps reachable only by SQL are named in publishing.md rather than
+closed. It cites PUB-021, PUB-047, PUB-048, PUB-050, PUB-053, PUB-061, PUB-062, PUB-063, PUB-093,
+PUB-094 and PUB-086's engine and store stages; 1,382 requirements, 193 citations. What it leaves is
+listed at the end of the plan: the layout, publishing 2's; marks, hyperlinks, language marks and every
+other block, publishing 3's, with PUB-003; the theme and its typefaces, publishing 4's; veraPDF on every
+publication and its report kept, PUB-085 settled and floats' reading order, publishing 5's; preview,
+publishing 6's; Word and PUB-073, publishing 7's; sweeping finished requests and unreferenced objects;
+a stop for the page's asking; a download link that outlives five minutes; the desktop app's handling
+of the download, unchecked; per-viewer events on the stream (#147); contributions after conditions
+(#148); and a publication shared outside the tenant (PUB-084).

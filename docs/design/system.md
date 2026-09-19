@@ -160,8 +160,9 @@ sequenceDiagram
     W->>W: Typst: the published document through the fixed template to PDF/UA-1
     W->>W: Word writer: the same published document to .docx
     W->>O: store the outputs by hash
-    W->>D: publication record: versions, engine, template, fonts, digests; notify
-    S-->>R: the requester's stream: done or failed
+    W->>D: publication record: versions, engine, template, fonts, digests
+    R->>S: the requester asks how the request stands, while the page is open
+    S-->>R: queued, done, or failed with every failure
 ```
 
 The permission is decided, and every component reference resolved to a version, at the request -
@@ -169,7 +170,9 @@ the worker has no principal to decide for. The published document is the one int
 is made from (ADR-0013): Typst reads it as data through one fixed template, and the Word writer reads
 the same thing (ADR-0015), both styled by one resolved theme (ADR-0014, [themes.md](themes.md),
 [word-output.md](word-output.md)). Typst runs with no network and only the fonts the inputs pin. A
-failed publish leaves no publication. See [publishing.md](publishing.md).
+failed publish leaves no publication. Nothing about a publication goes on the stream, which does not
+yet filter what each viewer hears (issue #147): the requester asks until it is done or failed. See
+[publishing.md](publishing.md).
 
 ### Previewing
 

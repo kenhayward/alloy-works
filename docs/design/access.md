@@ -147,7 +147,7 @@ denies `read` too, as it denies everything the role holds.
 ## Roles
 
 A **role** is `id`, a `name` unique in the tenant, and its permissions - at least one, each once. A
-tenant starts with eight, which are ordinary rows it may rename, change or remove:
+tenant starts with nine, which are ordinary rows it may rename, change or remove:
 
 | Role                | Permissions                                    |
 | ------------------- | ---------------------------------------------- |
@@ -159,10 +159,13 @@ tenant starts with eight, which are ordinary rows it may rename, change or remov
 | Definitions manager | `read`, `manage_definitions`                   |
 | Administrator       | `read`, `administer`                           |
 | Editing             | `edit` - for denials; it cannot be allowed     |
+| Publisher           | `read`, `publish`                              |
 
 Editing is a starter role rather than one each tenant makes, because "read-only here" is the first
 denial anybody reaches for, and a role a tenant must think to create before it can do that is a role
-nobody finds.
+nobody finds. Publisher is the ninth, added with publishing ([publishing.md](publishing.md), decision
+L): it alone holds `publish`, because publishing is the act that releases content, and adding it to
+Author would let every contributor release a whole document.
 
 Changing a role changes the access of everybody holding it, at once, which is what a bundle is for.
 Removing a role that any grant names is refused; the grants go first, so nobody loses access as a
@@ -756,3 +759,4 @@ superseded by IAM-074, which publishing.md claims.
 | Found                                                                                                                  | Change                                                                                                              |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **IAM-074 was withdrawn for PUB-094**, which says of every component in T1 what IAM-074 said of a referenced one in T4 | "Permissions", the unclaimed IAM-016 row and "A document's grants" now name PUB-094; the row above stays as history |
+| **No starter role held `publish`**, so nobody could publish (publishing.md, finding 1)                                 | "Roles" gains Publisher, `read` and `publish`, the ninth starter role, which migration 0017 adds                    |
