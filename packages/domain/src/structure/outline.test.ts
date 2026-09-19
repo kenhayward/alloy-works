@@ -258,15 +258,38 @@ describe('the outline a document version holds', () => {
   });
 
   it('reads a stored schema 1 outline as schema 2, member for member', () => {
-    // Schema 1 could not hold front matter, so the front-first rule holds of it vacuously, and the
-    // step to schema 2 is the identity: the stored bytes read back as they were written, bar the
-    // version they say they are.
+    // Schema 1 could not hold front matter, so a schema 1 outline this product wrote holds none, and
+    // the step to schema 2 changes nothing else: the stored bytes read back as they were written, bar
+    // the version they say they are. One holding front matter anyway is refused (the next test).
     const stored: Record<string, unknown> = JSON.parse(
       readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
     );
     const outcome = readOutline(stored, { artifact: 'a', version: 'v' });
     expect(outcome).toEqual({ ok: true, outline: { ...stored, schemaVersion: 2 } });
     expect(OUTLINE_SCHEMA_VERSION).toBe(2);
+  });
+
+  it('refuses a stored schema 1 outline holding front matter, which schema 1 could never store', () => {
+    // Schema 1's parse refused `front`, so a schema 1 row holding it was never written by this
+    // product: forged or corrupt, and read as unreadable rather than adopted as schema 2 front matter.
+    const stored: Record<string, unknown> = JSON.parse(
+      readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
+    );
+    const preface = section('e'.repeat(26), { matter: 'front', numbered: false });
+    const nested = section('f'.repeat(26), {
+      children: [section('g'.repeat(26), { matter: 'front' })],
+    });
+    for (const nodes of [
+      [preface, ...(stored.nodes as unknown[])],
+      [...(stored.nodes as unknown[]), nested],
+    ]) {
+      expect(readOutline({ ...stored, nodes }, { artifact: 'a', version: 'v' })).toEqual({
+        ok: false,
+        artifact: 'a',
+        version: 'v',
+        failure: 'Stored outline at schema version 1 holds front matter, which schema 1 could not',
+      });
+    }
   });
 
   it('parses every fixture stored at every schema version, and the fixture holds every node', () => {

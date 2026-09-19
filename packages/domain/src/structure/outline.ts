@@ -14,8 +14,9 @@ import { storableEverywhere, storableText } from '../stored/storable.js';
 
 /**
  * Schema 2 adds `front` to `matter` (publishing.md, decision M; STR-064). Nothing else changed, so a
- * schema 1 outline reads as schema 2 member for member: schema 1 could not hold `front`, so the
- * front-first rule holds of every one vacuously.
+ * schema 1 outline this product wrote reads as schema 2 member for member: schema 1's parse refused
+ * `front`, so it holds none. A schema 1 row that holds some anyway was never written by this product,
+ * and the migration refuses it rather than adopting it as front matter.
  */
 export const OUTLINE_SCHEMA_VERSION = 2;
 
@@ -383,11 +384,36 @@ export const outlineMigrationChain: MigrationChain = {
   subject: 'outline',
   current: OUTLINE_SCHEMA_VERSION,
   migrations: {
-    // Schema 2 only widened `matter`, so every schema 1 outline is a schema 2 outline as it stands;
-    // `migrateStored` restamps the version. A read-time projection: the stored bytes never change.
-    1: (value) => value,
+    // Schema 2 only widened `matter`, so a schema 1 outline is a schema 2 outline as it stands and
+    // `migrateStored` restamps the version - a read-time projection: the stored bytes never change.
+    // Except one holding `front`, which schema 1 could not store: forged or corrupt, so unreadable.
+    1: (value) => {
+      refuseFrontInSchema1(value.nodes);
+      return value;
+    },
   },
 };
+
+/**
+ * Walked without recursing, as `refuseTooDeep` is, because a migration runs before the depth bound
+ * does and a stored value of any depth must be refused by a rule, never by the stack. Anything that is
+ * not a node is left for the parse to refuse.
+ */
+function refuseFrontInSchema1(nodes: unknown): void {
+  const pending: unknown[] = [nodes];
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    if (!Array.isArray(next)) continue;
+    for (const node of next as unknown[]) {
+      if (typeof node !== 'object' || node === null) continue;
+      if ('matter' in node && node.matter === 'front') {
+        throw new Error(
+          'Stored outline at schema version 1 holds front matter, which schema 1 could not',
+        );
+      }
+      if ('children' in node) pending.push(node.children);
+    }
+  }
+}
 
 export function migrateOutline(value: unknown): unknown {
   return migrateStored(value, outlineMigrationChain);

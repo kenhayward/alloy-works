@@ -308,10 +308,11 @@ one below the top level. The body and appendices interleave as they always could
 would break the order - a section inserted above the preface, the preface moved down, `front` set on a
 node the body precedes - is refused before the parse with `Front matter comes before the rest of the
 outline`, because an author meets it in the ordinary course of editing and the constant an unstorable
-result is answered with would tell them nothing. Schema 1 could not hold `front`, so its migration is
-the identity and every schema 1 outline holds the rule already; the one cost is that the first
-operation on a schema 1 document that changes nothing records a version, once, because its digest
-is taken over schema 2.
+result is answered with would tell them nothing. Schema 1 could not hold `front`, so its migration
+changes nothing but the version, and a schema 1 row holding `front` anyway - forged or corrupt, since
+nothing here wrote it - is refused by the migration and reads as unreadable rather than adopted as
+front matter. The one cost is that the first operation on a schema 1 document that changes nothing
+records a version, once, because its digest is taken over schema 2.
 
 **The depth is bounded at 64.** STR-007 asks for nine levels. A recursive parse of an unbounded tree
 overflows the stack - between 500 and 800 levels in Node, and fewer in a browser - so a stored
