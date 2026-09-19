@@ -419,7 +419,7 @@ documents in any space, so a permission that flowed from a document would make a
 depend on who happens to use it, and one grant on a report would open every component the report
 quotes. A component's chain is the component, its space and the tenant, never a document. Seeing a
 component inside a document therefore needs `read` on the component, which is the rule IAM-016 and
-IAM-017 already state for T4.
+IAM-074 (IAM-017's replacement) already state for T4.
 
 **A definition is read through what uses it.** A field, a metadata schema and a component type live in
 no space, so an author granted only a space would otherwise be refused `read` on the very definitions
