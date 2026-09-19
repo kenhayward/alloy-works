@@ -127,6 +127,9 @@ function service(
   const numbered = new Map<number, number>();
   let outlineRequests = 0;
   let unchangedNext = false;
+  // The next contributions request, once held, waits on this; the answer is what stood when it arrived.
+  let contributionsGate: Promise<void> | null = null;
+  let contributionsAnswered = 0;
   const chain: { id: string; number: string; outline: OutlineDocument }[] = [
     { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start },
   ];
@@ -206,12 +209,17 @@ function service(
         }
       };
       walk(latest().outline.nodes);
-      return json(200, {
+      const answer = {
         document: DOCUMENT,
         version: { id: latest().id, number: latest().number },
         occurrences,
         versions: [...versions.values()],
-      });
+      };
+      const held = contributionsGate;
+      contributionsGate = null;
+      if (held !== null) await held;
+      contributionsAnswered += 1;
+      return json(200, answer);
     }
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
       if (unchangedNext) {
@@ -262,6 +270,17 @@ function service(
     latest: () => view(),
     restore: (url: string) => refusals.delete(url),
     /** Holds every outline answer until the returned function is called. */
+    /**
+     * Holds the next contributions request - only that one - until the returned function is called,
+     * and answers it then with what stood when it arrived.
+     */
+    holdContributions: () => {
+      let release = () => {};
+      contributionsGate = new Promise((resolve) => (release = resolve));
+      return release;
+    },
+    /** How many contributions requests have been answered so far. */
+    contributionsAnswered: () => contributionsAnswered,
     hold: () => {
       let release = () => {};
       gate = new Promise((resolve) => (release = resolve));
@@ -2230,14 +2249,27 @@ describe('the lists of figures, tables and equations', () => {
       ['Equation 2', at(AGAIN)],
     ]);
 
+    // The version the move makes is asked about again; that answer is held, so what renumbers the
+    // lists is the page, from the answer it already has - at once, not when the next one lands.
+    const release = fake.holdContributions();
     await userEvent.click(item('Method'));
     await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
     await waitFor(() =>
-      expect(listed('Figures')).toEqual([
-        ['Figure 1.1 The paper tray', at(AGAIN)],
-        ['Figure 2.1 The paper tray', at(RESULTS)],
-      ]),
+      expect(fake.sent.filter((request) => request.url.endsWith('/contributions'))).toHaveLength(2),
     );
+    expect(fake.contributionsAnswered()).toBe(1);
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(AGAIN)],
+      ['Figure 2.1 The paper tray', at(RESULTS)],
+    ]);
+    release();
+    await waitFor(() => expect(fake.contributionsAnswered()).toBe(2));
+    await settled();
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(AGAIN)],
+      ['Figure 2.1 The paper tray', at(RESULTS)],
+    ]);
     expect(fake.sent.some((request) => request.url.endsWith('/numbering'))).toBe(false);
   });
 
@@ -2367,11 +2399,76 @@ describe('the lists of figures, tables and equations', () => {
     expect(asked()).toBe(3);
   });
 
-  it('says a document holds no figures, tables or equations, and says so when they could not be read', async () => {
-    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
-    fake.refuseNext(`/v1/documents/${DOCUMENT}/contributions`, 500);
+  it('never numbers with an answer for a version the page no longer holds', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    // The first answer - for the version the page opens at - is held until after the next one.
+    const release = fake.holdContributions();
     open(fake.fetch);
-    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await screen.findByRole('treeitem', { name: 'Method' });
+    expect(screen.getByText('Reading the figures, tables and equations...')).toBeInTheDocument();
+
+    // Grace places the component under Method; Ada's act is refused and carries Grace's version,
+    // whose answer arrives while the first is still held.
+    fake.theirs({
+      operation: 'insert',
+      parent: METHOD,
+      position: 0,
+      node: { type: 'reference', component: PRINTER, mode: { kind: 'latest' } },
+    });
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    await screen.findByRole('region', { name: 'Figures' });
+    const added = fake.latest().outline.nodes[1]?.children[0]?.id;
+    expect(added).toBeDefined();
+    const expected = [
+      ['Figure 1.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${RESULTS}`],
+      ['Figure 2.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${added}`],
+    ];
+    await waitFor(() => expect(listed('Figures')).toEqual(expected));
+    expect(fake.contributionsAnswered()).toBe(1);
+
+    // The first answer lands last, knowing nothing of Grace's occurrence: it is not used.
+    release();
+    await waitFor(() => expect(fake.contributionsAnswered()).toBe(2));
+    // Time for the stale answer to have been read, had it been going to be.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(listed('Figures')).toEqual(expected);
+  });
+
+  it('says a document holds no figures, tables or equations, and says so when they could not be read', async () => {
+    const contributions = `/v1/documents/${DOCUMENT}/contributions`;
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    fake.refuse(contributions, 500);
+    open(fake.fetch);
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(
+      screen.getByText('The figures, tables and equations could not be read.'),
+    ).toBeInTheDocument();
+
+    // The outline works all the same: an act lands and the section numbers move.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
+    expect(item('Introduction')).toHaveAccessibleDescription('2');
+    expect(fake.edits()).toHaveLength(1);
+    await settled();
+    // The act's version is asked about too, and refused the same way: Try again still stands.
+    await waitFor(() =>
+      expect(fake.sent.filter((request) => request.url === contributions)).toHaveLength(2),
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+
+    fake.restore(contributions);
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(
       await screen.findByText('This document has no figures, tables or equations.'),
     ).toBeInTheDocument();
