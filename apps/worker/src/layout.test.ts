@@ -173,6 +173,36 @@ const letteringAppendices = (layout: Layout): Layout =>
     },
   });
 
+/** The test layout with deeper top and bottom margins, to tell the layout's margins from any default. */
+const deepMargins = parseLayout({
+  ...testLayout,
+  formats: {
+    pdf: {
+      ...testLayout.formats.pdf,
+      margins: { ...testLayout.formats.pdf.margins, top: 144, bottom: 108 },
+    },
+  },
+});
+
+/** A layout as another, its front matter in upper roman and its appendices lettered from A. */
+const renumbered = (layout: Layout): Layout =>
+  parseLayout({
+    ...layout,
+    formats: {
+      pdf: {
+        ...layout.formats.pdf,
+        pageNumbering: {
+          front: { format: 'upperRoman', restart: true },
+          body: layout.formats.pdf.pageNumbering.body,
+          appendix: { format: 'upperAlpha', restart: true },
+        },
+      },
+    },
+  });
+
+/** One line of the body text, baseline to baseline at most: 11pt type and its leading. */
+const LINE = 11 * 1.65;
+
 /** Each compile once: the engine takes a second or two a document. */
 const made = new Map<string, Promise<{ pdf: Buffer; read: ReadPdf }>>();
 const compiled = (nodes: readonly Node[], layout: Layout) => {
@@ -208,6 +238,7 @@ const decimals = (from: number, count: number) =>
 const letters = (count: number) =>
   Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
 const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+const UPPER_ROMAN = ROMAN.map((numeral) => numeral.toUpperCase());
 
 describe('template 2 lays out the page', () => {
   it('PUB-007 sets the page the layout declares: its size, orientation, and inside and outside margins alternating about the gutter', async () => {
@@ -226,6 +257,37 @@ describe('template 2 lays out the page', () => {
       expect(left, `page ${index + 1}`).not.toBeNull();
       expect(Math.abs(left! - (odd ? 90 : 54)), `page ${index + 1}`).toBeLessThanOrEqual(0.5);
     });
+
+    // The top and bottom margins: the same document with the top margin 72 deeper and the bottom 36
+    // deeper. The two break their pages in different places, so a page's first line is a heading in
+    // one and body text in the other; what holds of every page is that its first baseline lies within
+    // a line below the top margin, and its last at or above the bottom margin.
+    const { read: deep } = await compiled(FIXTURE, deepMargins);
+    const HEIGHT = 595.28;
+    for (const [layout, pages] of [
+      [testLayout, read.textBaselines],
+      [deepMargins, deep.textBaselines],
+    ] as const) {
+      const { top, bottom } = layout.formats.pdf.margins;
+      pages.forEach((baselines, index) => {
+        expect(baselines, `page ${index + 1}`).not.toBeNull();
+        expect(baselines!.top, `page ${index + 1}`).toBeLessThanOrEqual(HEIGHT - top);
+        expect(baselines!.top, `page ${index + 1}`).toBeGreaterThan(HEIGHT - top - LINE);
+        expect(baselines!.bottom, `page ${index + 1}`).toBeGreaterThanOrEqual(bottom);
+      });
+    }
+    // Where the first lines are alike - the cover, and the highest a page's text begins, which is a
+    // line of body text - the deeper top margin sets them exactly 72 lower.
+    const tops = (pages: ReadPdf['textBaselines']) => pages.map((baselines) => baselines!.top);
+    expect(
+      Math.abs(tops(read.textBaselines)[0]! - 72 - tops(deep.textBaselines)[0]!),
+    ).toBeLessThanOrEqual(0.5);
+    expect(
+      Math.abs(Math.max(...tops(read.textBaselines)) - 72 - Math.max(...tops(deep.textBaselines))),
+    ).toBeLessThanOrEqual(0.5);
+    // And the fullest page comes within a line of the bottom margin: text fills the page to it.
+    const bottoms = deep.textBaselines.map((baselines) => baselines!.bottom);
+    expect(Math.min(...bottoms)).toBeLessThan(108 + LINE);
   }, 120_000);
 
   it("PUB-009 numbers each matter's pages as the layout declares", async () => {
@@ -247,14 +309,19 @@ describe('template 2 lays out the page', () => {
       decimals(appendixStart - bodyStart + 1, read.pages - appendixStart),
     );
 
-    // A layout that letters its appendices from A restarts them there, and changes nothing before.
-    const { read: lettered } = await compiled(FIXTURE, letteringAppendices(testLayout));
-    const letteredStart = headingPage(lettered, 'A Tables');
-    expect(lettered.pageLabels!.slice(0, letteredStart)).toEqual(labels.slice(0, appendixStart));
-    expect(lettered.pageLabels![letteredStart]).toBe('A');
-    expect(lettered.pageLabels!.slice(letteredStart)).toEqual(
-      letters(lettered.pages - letteredStart),
+    // A layout that numbers its front matter in upper roman and letters its appendices from A: each
+    // matter takes its own scheme, the appendices restart, and the body is numbered as before.
+    const { read: other } = await compiled(FIXTURE, renumbered(testLayout));
+    const otherLabels = other.pageLabels!;
+    const otherBody = headingPage(other, '1 Scope');
+    const otherAppendix = headingPage(other, 'A Tables');
+    expect(otherLabels[0]).toBe('');
+    expect(otherLabels.slice(1, otherBody)).toEqual(UPPER_ROMAN.slice(0, otherBody - 1));
+    expect(otherLabels.slice(otherBody, otherAppendix)).toEqual(
+      labels.slice(bodyStart, appendixStart),
     );
+    expect(otherLabels[otherAppendix]).toBe('A');
+    expect(otherLabels.slice(otherAppendix)).toEqual(letters(other.pages - otherAppendix));
   }, 120_000);
 
   it('numbers a matter entered again from where its own pages stopped, never giving two pages one label', async () => {
@@ -309,8 +376,11 @@ describe('template 2 lays out the page', () => {
   it('sets an empty document as its cover alone, on one page that numbers nothing', async () => {
     const { read } = await compiled([], defaultLayout);
     expect(read.pages).toBe(1);
-    // Typst declares page labels only in a PDF where some page is numbered. With none, it declares
-    // none, and a reader shows the page's place, 1, where a longer document's cover shows nothing.
+    // This pins the engine's behaviour as it is, not a choice: Typst declares page labels only in a
+    // PDF where some page is numbered. With none, it declares none, and a reader shows the page's
+    // place, 1, where a longer document's cover shows nothing. (The template's `or doc.nodes.len()
+    // == 0` beside the cover cannot be reached from here: with no cover and no node, `assemble`
+    // refuses `nothing_to_publish` before the engine runs, decision K.)
     expect(read.pageLabels).toBeNull();
     expect(spoken(read.taggedText[0]!)).toBe(`${TITLE} ${NOTICE_SENTENCE}`);
   }, 120_000);

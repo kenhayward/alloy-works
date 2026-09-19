@@ -127,6 +127,8 @@
 #let last-in(chain) = state("aw-chain-" + chain, 0)
 
 #for (i, s) in chained.enumerate() {
+  // The `set page` is what starts each segment on a page of its own (decision J): a page rule in
+  // the flow always breaks the page. The weak break before it says so, and adds no page of its own.
   pagebreak(weak: true)
   set page(numbering: s.pattern)
   if s.start == "restart" {
