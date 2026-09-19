@@ -404,6 +404,28 @@ describe('numbering an outline', () => {
     ]);
   });
 
+  it('restarts front figures per front section, and counts front footnotes from 1 apart from the body', () => {
+    const footnote = (block: string): Contribution => ({
+      block,
+      sequence: 'footnote',
+      numbered: true,
+    });
+    const numbered = table(
+      [
+        section('preface', [reference('p')], { matter: 'front' }),
+        section('foreword', [reference('q')], { matter: 'front' }),
+        section('one', [reference('r')]),
+      ],
+      { p: [...figures('p1'), footnote('pn')], q: figures('q1'), r: [footnote('bn')] },
+    );
+    expect(labels(numbered.entries, 'figure')).toEqual(['Figure i.1', 'Figure ii.1']);
+    expect(numbered.entries.filter((entry) => entry.sequence === 'footnote')).toMatchObject([
+      { block: 'pn', matter: 'front', value: 1, number: '1' },
+      // The body's first footnote is 1 again: front matter's footnotes moved no body number.
+      { block: 'bn', matter: 'body', value: 1, number: '1' },
+    ]);
+  });
+
   it('withholds a front caption before any numbered front section, spending no value', () => {
     const outline = [
       section('dedication', [reference('p')], { matter: 'front', numbered: false }),

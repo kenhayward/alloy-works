@@ -57,9 +57,11 @@ export const sequenceRulesSchema = z.strictObject({
 export const REQUIRED_SEQUENCES = ['section', 'figure', 'table', 'equation', 'footnote'] as const;
 
 /**
- * A numbering scheme: an open map from a sequence's name to its rules. **Not stored anywhere** - the
- * product's default below is a value in code, and a layout's will be a value PUB reads from the layout
- * artifact (STR-013) - so nothing here is a shape a later rule could find already written.
+ * A numbering scheme: an open map from a sequence's name to its rules. The product's default below is
+ * a value in code, and a layout's is **stored inside the layout's versions** (STR-013, PUB-011), which
+ * are insert-only: whatever this parse accepts, a later reader must go on accepting. So every rule
+ * below holds in every matter - front, body and appendix alike - and nothing the engine cannot number
+ * sensibly is let in to be found already written.
  *
  * `id` names the scheme so that anything keyed by the inputs to a numbering (STR-031) can key by it.
  * The section sequence's `restartAt` and `prefix` are `null`: a section number is the counter stack
