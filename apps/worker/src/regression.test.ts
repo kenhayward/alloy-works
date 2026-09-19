@@ -94,8 +94,9 @@ describe('the publishing regression corpus', () => {
       covers: fonts.covers,
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    // No layout, so `publishing/1` through template 1: what a request made before layouts publishes.
     const pdf = await typst.compile(
-      PUBLICATION_TEMPLATE.file,
+      PUBLICATION_TEMPLATE[1].file,
       JSON.stringify(assembled.document),
       at,
     );
@@ -190,7 +191,7 @@ describe('the publishing regression corpus', () => {
         '"text":"PROBE"',
         `"text":${JSON.stringify(text)}`,
       );
-      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE.file, data, at).then(
+      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[1].file, data, at).then(
         () => false,
         (error: unknown) => {
           if (error instanceof TypstRefused) return true;

@@ -63,7 +63,7 @@ export function howItEnded(error: unknown): {
   return { code, signal, killed: ended.killed === true };
 }
 
-/** The sample job's template; publishing's is `PUBLICATION_TEMPLATE`. The data is always data. */
+/** The sample job's template; publishing's are `PUBLICATION_TEMPLATE`. The data is always data. */
 export const SAMPLE_TEMPLATE = fileURLToPath(new URL('../templates/sample.typ', import.meta.url));
 
 /** `TYPST_BINARY`, or what `pnpm --filter @alloy-works/worker fetch-typst` put in `.tools/`. */
