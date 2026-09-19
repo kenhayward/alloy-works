@@ -47,6 +47,10 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1380);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 405, from 406: publishing.md stopped claiming PUB-085 (1a's final review). A cold veraPDF takes
+    // 11.2 s a page, so the ten-second p95 cannot hold alongside PUB-091's report on every
+    // publication, and Ken deferred the choice - a warm checker or changing the requirement - to
+    // slice 5. The gap is named in prose beside the table.
     // 406, from 403: Ken's answer to the publishing design. publishing.md stopped claiming PUB-030,
     // which it answers only once the first publishing plan has run veraPDF over headings at levels
     // seven to nine, and moved PUB-036 and PUB-064 to their replacements, PUB-091 and PUB-085, which
@@ -108,7 +112,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(406);
+    ).toBe(405);
   });
 });
 

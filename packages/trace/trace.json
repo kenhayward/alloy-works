@@ -10488,7 +10488,7 @@
     {
       "id": "STY-069",
       "area": "STY",
-      "statement": "A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-030**, **CNT-078**, **STY-Q05**)",
+      "statement": "A theme's body text must meet a stated contrast minimum against its paper - 4.5:1, and 3:1 for large text - checked when the theme is saved rather than discovered in output, because the same colours are published to PDF and Word where nothing can adjust them (**PUB-090**, **CNT-078**, **STY-Q05**)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
@@ -10785,7 +10785,7 @@
     {
       "id": "STY-037",
       "area": "STY",
-      "statement": "Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-095)",
+      "statement": "Where the editor cannot reproduce an effect because it depends on pagination, it must not approximate it silently; preview is what shows it (CNT-150)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
@@ -11379,7 +11379,7 @@
     {
       "id": "TAB-039",
       "area": "TAB",
-      "statement": "A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-030**)",
+      "statement": "A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)",
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
@@ -11586,7 +11586,7 @@
     {
       "id": "TPL-049",
       "area": "TPL",
-      "statement": "A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-010**)",
+      "statement": "A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)",
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -11775,7 +11775,7 @@
     {
       "id": "TPL-044",
       "area": "TPL",
-      "statement": "A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-030 give a required section",
+      "statement": "A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-013 give a required section",
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
@@ -14779,10 +14779,6 @@
         {
           "id": "PUB-063",
           "howItIsMet": "The publication records the engine and its version, the template's name and version, and the pipeline's version"
-        },
-        {
-          "id": "PUB-085",
-          "howItIsMet": "Measured in the worker suite: a generated 300-page reference document of prose, figures, tables, equations and footnotes, from request to recorded publication, p95 at or under ten seconds with no sample above thirty, on a declared configuration recorded beside the result"
         },
         {
           "id": "PUB-086",

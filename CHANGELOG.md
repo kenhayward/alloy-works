@@ -5,12 +5,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ## 0.29.2 - 2026-09-19 (PR #150)
 
+### Changed
+
+- The publishing requirements were revised after the publishing design: ten were replaced by eleven
+  more precise ones and one duplicate was withdrawn, so the product now has 1,380 requirements.
+
 ### Fixed
 
 - The sample PDF is now set only in the Liberation Serif faces the product ships and pins by hash,
   checked again before every compile, and the worker refuses to render anything if a face is missing
   or has changed since it was checked (#145).
-- A publish or sample that fails because of what it was asked to render, such as a document the
+- A sample PDF that fails because of what it was asked to render, such as a document the
   engine refuses to set, is now finished at once with that reason recorded, instead of being tried
   again for no different result (#146).
 

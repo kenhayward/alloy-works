@@ -439,6 +439,9 @@ as Ken's answer A asked. The pinned faces are re-checked before every compile, n
 because the worker's own user can write to them at runtime (`deploy/Dockerfile`); a face that fails
 that check is retried like any other platform failure rather than refused outright. `assemble` refuses
 a language tag the engine cannot carry - naming it, never shortening it - reversing what the plan
-proposed (decision K), and checks every character against what the pinned faces and Typst agree on,
-measured by recompiling each of the 4,142 exempted code points on its own. `assemble` itself is built
+proposed (decision K), and refuses a character the pinned Typst refuses under PDF/UA-1 with the pinned
+faces, and additionally U+FEFF, U+FFFE and U+FFFF. The characters it lets through with no glyph are
+4,170 code points in 19 ranges; the fix round added 4,142 of them in 14 ranges, each range compiled on
+its own with the pinned Typst. PUB-085 is no longer claimed: with a cold veraPDF at 11.2 s a page it
+cannot hold alongside PUB-091, and Ken deferred that choice to slice 5. `assemble` itself is built
 and tested but wired into no job: publishing still produces nothing a person can see until 1b.

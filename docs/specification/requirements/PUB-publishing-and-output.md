@@ -50,7 +50,7 @@ number, and before references, or a reader is told to consult something they wer
 | **PUB-061** | A preview of a page range may be untagged where the engine cannot tag a partial document, but a publication must never be                                                                                                  | Constraint | Specified             |
 | **PUB-062** | Content must reach the publishing engine as data and never as source in the engine's own language, so that no content, however it is written, can execute                                                                  | Constraint | Specified             |
 
-**PUB-006 is the requirement that makes CNT-095 worth having.** A preview rendered by a different
+**PUB-006 is the requirement that makes CNT-150 worth having.** A preview rendered by a different
 path is a second implementation of the hardest part of the product, and the two will disagree
 exactly when it matters.
 
@@ -298,24 +298,24 @@ fails by name. Either answer is defensible and the silence was not.
 
 ## 15. Traceability
 
-| This document      | Rests on                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| PUB-002, PUB-003   | STR-020 and STR-030 - conditions before numbering and references                                                      |
-| PUB-029            | Content model spike findings, the standing lesson about self-consistent tests                                         |
-| PUB-019, PUB-072   | STY-040 to STY-042, typefaces and their licences; PUB-072 carries the unavailable-typeface and missing-glyph failures |
-| PUB-030 to PUB-036 | Scope §11 accessibility, tested rather than asserted                                                                  |
-| Section 9          | Scope §7.10 deterministic publishing                                                                                  |
-| PUB-054 to PUB-056 | Scope §9 decision 7, Google Docs as a labelled lossy export                                                           |
-| PUB-005, PUB-006   | CNT-095, CNT-096 - preview in the editor, and its budget                                                              |
-| PUB-013            | VER-018 - the baseline's side of the same pin                                                                         |
-| PUB-028            | COL - suggestions; IMP - tracked changes arriving as them                                                             |
-| PUB-033, PUB-034   | CNT-022 alternative text; CNT-140 and CNT-084, the language of a passage                                              |
-| PUB-039, PUB-040   | LIB - the terms and citations generated matter is built from                                                          |
-| PUB-060            | LIF-026 - access to a shared publication in the audit log                                                             |
-| PUB-068 to PUB-070 | STY-049, STY-052, STY-053 - glyphs, substitution, and the conformance suite                                           |
-| PUB-077            | STY-047, VER-018, VER-022 - what a baseline pins, and that it stays retrievable                                       |
-| PUB-081            | ADM-029, ADM-030 - the export before closure, and the grace period after it                                           |
-| PUB-068 to PUB-081 | [The v1 review](<../../reviews/PUB - Publishing and output.md>); section 16                                           |
+| This document                        | Rests on                                                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| PUB-002, PUB-003                     | STR-020 and STR-030 - conditions before numbering and references                                                      |
+| PUB-029                              | Content model spike findings, the standing lesson about self-consistent tests                                         |
+| PUB-019, PUB-072                     | STY-040 to STY-042, typefaces and their licences; PUB-072 carries the unavailable-typeface and missing-glyph failures |
+| PUB-030 to PUB-036, PUB-090, PUB-091 | Scope §11 accessibility, tested rather than asserted                                                                  |
+| Section 9                            | Scope §7.10 deterministic publishing                                                                                  |
+| PUB-054 to PUB-056                   | Scope §9 decision 7, Google Docs as a labelled lossy export                                                           |
+| PUB-005, PUB-006                     | CNT-150, CNT-096 - preview in the editor, and its budget                                                              |
+| PUB-013                              | VER-018 - the baseline's side of the same pin                                                                         |
+| PUB-028                              | COL - suggestions; IMP - tracked changes arriving as them                                                             |
+| PUB-033, PUB-034                     | CNT-022 alternative text; CNT-140 and CNT-084, the language of a passage                                              |
+| PUB-039, PUB-040                     | LIB - the terms and citations generated matter is built from                                                          |
+| PUB-060                              | LIF-026 - access to a shared publication in the audit log                                                             |
+| PUB-068 to PUB-070                   | STY-049, STY-052, STY-053 - glyphs, substitution, and the conformance suite                                           |
+| PUB-077                              | STY-047, VER-018, VER-022 - what a baseline pins, and that it stays retrievable                                       |
+| PUB-081                              | ADM-029, ADM-030 - the export before closure, and the grace period after it                                           |
+| PUB-068 to PUB-081                   | [The v1 review](<../../reviews/PUB - Publishing and output.md>); section 16                                           |
 
 ## 16. Change history
 
@@ -379,16 +379,17 @@ issues [#142](https://github.com/kenhayward/alloy-works/issues/142),
 [#144](https://github.com/kenhayward/alloy-works/issues/144), and land as rows in the pull request that
 builds each, not here.
 
-| What was found                                                                                                                                                       | Change                                                                                                                                                                                                                              |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PUB-064's thirty seconds would not notice a tenfold regression: the pinned engine compiled 432 pages in about 1.3 seconds, container start included                  | **PUB-064 superseded by PUB-085** - a declared 300-page reference document, from the request to the recorded publication, at or under ten seconds at p95 with no measured sample above thirty. A tighter number is a new identifier |
-| PUB-001 prescribed four separately failing stages, and the engine paginates and renders in one run while Word paginates for itself                                   | **PUB-001 superseded by PUB-086** - every failure names the stage it arose in and the node, block, reference or definition it concerns, which was the requirement's purpose. The stages changed, so it is a new identifier          |
-| PUB-015's "fidelity bar in scope §4" - indistinguishable from what the organisation produces today - has no measure, and its measurable parts are PUB-016 to PUB-022 | **PUB-015 superseded by PUB-087** - PDF output passes the publishing regression corpus, grown by a case for every defect, on every change to the engine, the template or the pipeline                                               |
-| PUB-010's approval page shows approvals, which LIF records and T1 lacks, so it held the rest of the row out of T1                                                    | **PUB-010 superseded by PUB-088 and PUB-089** - cover, contents and appendices stay T1; the approval page is T3's, with baselines. Splitting a row changes what T1 must do, so both are new identifiers                             |
-| PUB-030 said "PDF/UA", which has parts the engine does not write, and promised of every publication the checkpoints only a person can judge                          | **PUB-030 superseded by PUB-090** - PDF/UA-1, veraPDF's validation profile on every publication, and the person-judged checkpoints reviewed and passed on the regression corpus                                                     |
-| PUB-036 did not say what checks accessibility                                                                                                                        | **PUB-036 superseded by PUB-091** - veraPDF, against its PDF/UA-1 profile, with the report retained on the publication                                                                                                              |
-| PUB-018's "honoured" cannot be tested: widow and orphan control is a cost in Typst and in Word, not a guarantee                                                      | **PUB-018 superseded by PUB-092** - declared by style, passed to each engine as its own rule, and shown by the regression corpus to hold wherever the page allows                                                                   |
-| PUB-004 against T1: nothing in T1 can approve a publication                                                                                                          | **Not changed.** Every T1 publication is a draft (the design's decision A), and #142 asks that a draft say so; it lands with the build                                                                                              |
+| What was found                                                                                                                                                                                | Change                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PUB-064's thirty seconds would not notice a tenfold regression: the pinned engine compiled 432 pages in about 1.3 seconds, container start included                                           | **PUB-064 superseded by PUB-085** - a declared 300-page reference document, from the request to the recorded publication, at or under ten seconds at p95 with no measured sample above thirty. A tighter number is a new identifier |
+| PUB-001 prescribed four separately failing stages, and the engine paginates and renders in one run while Word paginates for itself                                                            | **PUB-001 superseded by PUB-086** - every failure names the stage it arose in and the node, block, reference or definition it concerns, which was the requirement's purpose. The stages changed, so it is a new identifier          |
+| PUB-015's "fidelity bar in scope §4" - indistinguishable from what the organisation produces today - has no measure, and its measurable parts are PUB-016 to PUB-022                          | **PUB-015 superseded by PUB-087** - PDF output passes the publishing regression corpus, grown by a case for every defect, on every change to the engine, the template or the pipeline                                               |
+| PUB-010's approval page shows approvals, which LIF records and T1 lacks, so it held the rest of the row out of T1                                                                             | **PUB-010 superseded by PUB-088 and PUB-089** - cover, contents and appendices stay T1; the approval page is T3's, with baselines. Splitting a row changes what T1 must do, so both are new identifiers                             |
+| PUB-030 said "PDF/UA", which has parts the engine does not write, and promised of every publication the checkpoints only a person can judge                                                   | **PUB-030 superseded by PUB-090** - PDF/UA-1, veraPDF's validation profile on every publication, and the person-judged checkpoints reviewed and passed on the regression corpus                                                     |
+| PUB-036 did not say what checks accessibility                                                                                                                                                 | **PUB-036 superseded by PUB-091** - veraPDF, against its PDF/UA-1 profile, with the report retained on the publication                                                                                                              |
+| PUB-018's "honoured" cannot be tested: widow and orphan control is a cost in Typst and in Word, not a guarantee                                                                               | **PUB-018 superseded by PUB-092** - declared by style, passed to each engine as its own rule, and shown by the regression corpus to hold wherever the page allows                                                                   |
+| PUB-004 against T1: nothing in T1 can approve a publication                                                                                                                                   | **Not changed.** Every T1 publication is a draft (the design's decision A), and #142 asks that a draft say so; it lands with the build                                                                                              |
+| After this answer, the reasoning under PUB-006 and section 15's traceability still pointed at CNT-095, superseded by CNT-150, and section 15 named PUB-030 to PUB-036 alone for accessibility | Clarity edits: both now point at **CNT-150**, the PDF preview, which is the preview PUB-006 makes worth having; the accessibility row adds **PUB-090 and PUB-091**, which rest on the same scope section                            |
 
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |

@@ -474,7 +474,7 @@ the view; the component boundary is what an author needs and a reader does not. 
 would make the product look like an authoring tool rather than a document, which is the first thing
 a prospect judges.
 
-**CNT-097 and CNT-095 are not the same requirement, and both are needed.** The editor can show
+**CNT-097 and CNT-150 are not the same requirement, and both are needed.** The editor can show
 the theme's type, spacing and styles, so an author sees the words a reader will see. It cannot show
 pagination, because a continuous scroll has no pages - where a table breaks, whether a heading
 strands, what lands on page 12. That is what preview is for, and it is why preview has to be fast
@@ -720,6 +720,7 @@ and leaves both rows unclaimed until its own slice.
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CNT-095 asked for a preview "in a selectable output format", and a Word preview would be our guess at Word's pagination, which PUB-065 says is Word's alone                                                           | **CNT-095 superseded by CNT-150** - preview as it will be published to PDF. Dropping a format changes what must be built, so it is a new identifier                                                                                                                                                |
 | CNT-136 did not say where its second starts, and the editor sends an iteration two seconds after the author stops typing, so a preview fed from saved state trails a keystroke by two seconds before anything renders | **CNT-136 superseded by CNT-151** - measured from the save being recorded, with no measured sample above two. Measuring from the keystroke would need the editor's unsaved content fed to a preview worker, a second write path the design does not have. CNT-096 and CNT-Q13 now point at CNT-151 |
+| After this answer, the reasoning "CNT-097 and CNT-095 are not the same requirement" still pointed at CNT-095                                                                                                          | A clarity edit: it names **CNT-150**, whose PDF preview is the one that shows pagination, which is the reasoning's point                                                                                                                                                                           |
 
 | Counts           | Before                      | After                       |
 | ---------------- | --------------------------- | --------------------------- |
