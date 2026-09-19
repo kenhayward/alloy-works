@@ -16087,7 +16087,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 110,
+      "line": 114,
       "kind": "title"
     },
     {
@@ -16340,6 +16340,18 @@
       "id": "CNT-012",
       "file": "packages/domain/src/stored/migrate.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "STR-040",
+      "file": "packages/domain/src/structure/lists.test.ts",
+      "line": 79,
+      "kind": "title"
+    },
+    {
+      "id": "STR-041",
+      "file": "packages/domain/src/structure/lists.test.ts",
+      "line": 152,
       "kind": "title"
     },
     {

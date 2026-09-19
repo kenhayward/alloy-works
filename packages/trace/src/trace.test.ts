@@ -199,8 +199,11 @@ describe('the citations in the committed model', () => {
   // component's content changes.
   // 173, from 174: STR-023's identifier left the title of its test in numbering.test.ts when
   // structure.md stopped claiming it; the test stays, citing nothing.
+  // 175, from 173: the navigation plan (docs/plans/2026-09-18-structure-03-navigation.md) cites
+  // STR-040 and STR-041 in packages/domain/src/structure/lists.test.ts: a contents generated to a
+  // declared depth, and a list of figures, of tables and of equations.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(173);
+    expect(model.citations).toHaveLength(175);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -66,12 +66,12 @@ describe('what a component contributes to the sequences', () => {
     // The table before its cells, its cells before its note, and an unnumbered equation said so.
     expect(contributionsOf(content)).toEqual([
       { block: 'n1', sequence: 'footnote', numbered: true },
-      { block: 'f1', sequence: 'figure', numbered: true },
-      { block: 't1', sequence: 'table', numbered: true },
+      { block: 'f1', sequence: 'figure', numbered: true, caption: 'A caption' },
+      { block: 't1', sequence: 'table', numbered: true, caption: 'Parts' },
       { block: 'n2', sequence: 'footnote', numbered: true },
       { block: 'e1', sequence: 'equation', numbered: true },
       { block: 'n3', sequence: 'footnote', numbered: true },
-      { block: 'f2', sequence: 'figure', numbered: true },
+      { block: 'f2', sequence: 'figure', numbered: true, caption: 'A caption' },
       { block: 'e2', sequence: 'equation', numbered: false },
       { block: 'n4', sequence: 'footnote', numbered: true },
     ]);
