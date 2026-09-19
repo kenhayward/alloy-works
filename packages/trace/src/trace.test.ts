@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1384, from 1383: PUB-095, a layout's words in one declared language, and a document in another
+    // refused naming both (issue #144), landed by the second publishing plan.
     // 1383, from 1382: STR-064, front matter only at the top level and before the rest of the outline
     // (issue #152), landed by the second publishing plan.
     // 1382, from 1381: PUB-094, publishing never containing what its publisher could not read (issue
@@ -51,9 +53,10 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1383);
+    expect(model.requirements).toHaveLength(1384);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 408, from 407: publishing.md claims PUB-095, met by the layout's language matched as a range.
     // 407, from 406: structure.md claims STR-064, front matter first, met by the outline parse.
     // 406, unchanged: publishing.md claims PUB-094 (#143) and no longer IAM-074, which Ken withdrew for it.
     // 406, from 405: publishing.md claims PUB-093, decision A as a requirement.
@@ -122,7 +125,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(407);
+    ).toBe(408);
   });
 });
 
@@ -269,8 +272,11 @@ describe('the citations in the committed model', () => {
   // 195, from 194: the same plan cites PUB-011 in packages/domain/src/publishing/layout.test.ts: the
   // layout carries the scheme sections, figures, tables and equations number by, and is refused
   // without one or with one that numbers no figures.
+  // 197, from 195: the same plan cites PUB-014 and PUB-095 in packages/db/src/publishing.test.ts: a
+  // format the layout does not make is refused naming it, and a document in another language than the
+  // layout's words is refused naming both, while one its tag matches as a range is taken.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(195);
+    expect(model.citations).toHaveLength(197);
   });
 
   it('cites no identifier the corpus does not hold', () => {

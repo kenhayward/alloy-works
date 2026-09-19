@@ -102,6 +102,9 @@ export function publishingHandlers(
             wireCode('format.unsupported'),
             'This document can be published as PDF only.',
           );
+        // Not yet worded at the door: until it is, a refusal the store made and the route cannot say.
+        case 'layout.language':
+          throw new Error('A publish refused for its language has no words at the door yet');
         case 'requested': {
           const made = await readPublicationRequest(trx, answer.request.id);
           if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);
