@@ -34,7 +34,6 @@ export const FONT_DIRECTORY = fileURLToPath(new URL('../fonts/', import.meta.url
 
 export interface PinnedFonts {
   readonly directory: string;
-  readonly files: readonly { readonly file: string; readonly sha256: string }[];
   /** Whether every face can set this character: a heading's bold as well as a paragraph's regular. */
   covers(codePoint: number): boolean;
 }
@@ -87,7 +86,6 @@ export async function loadPinnedFonts(directory: string = FONT_DIRECTORY): Promi
   );
   return {
     directory,
-    files: PINNED_FONT_FILES.map((each) => ({ ...each })),
     covers: (codePoint) => everywhere.has(codePoint),
   };
 }
