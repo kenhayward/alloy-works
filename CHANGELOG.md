@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.29.1 - 2026-09-19 (PR #149)
+
+### Added
+
+- **`pnpm trace pins`.** Editing the requirement corpus can move the exact counts `trace.test.ts`
+  and `parse/requirements.test.ts` pin, and working out by hand what each becomes is slow. The new
+  command prints what each pin counts, its pinned value, what the working tree compiles to now, and
+  the file and line to edit, marking each one that has moved. It only reads and prints.
+
 ## 0.29.0 - 2026-09-19 (PR #136)
 
 ### Added

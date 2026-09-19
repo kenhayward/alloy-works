@@ -61,11 +61,21 @@ export function testFilesIn(repoRoot: string): string[] {
   return found.sort();
 }
 
+/**
+ * The requirement area documents on disk, by filename - `CNT-content-model.md` and its siblings.
+ * Exported so `pins.ts` can pin their count against the same listing `compile` itself reads,
+ * without a second copy of the directory scan and the naming convention it depends on.
+ */
+export function areaDocumentNames(repoRoot: string): string[] {
+  const requirementsDir = join(repoRoot, 'docs', 'specification', 'requirements');
+  return documentsIn(requirementsDir, (name) => AREA_DOCUMENT.test(name));
+}
+
 export function compile(repoRoot: string): TraceModel {
   const requirementsDir = join(repoRoot, 'docs', 'specification', 'requirements');
   const designDir = join(repoRoot, 'docs', 'design');
 
-  const areas = documentsIn(requirementsDir, (name) => AREA_DOCUMENT.test(name)).map((name) =>
+  const areas = areaDocumentNames(repoRoot).map((name) =>
     parseAreaDocument(name, read(requirementsDir, name)),
   );
 

@@ -148,6 +148,22 @@ there is anything to report, so it is usable as a gate. Nine kinds:
 `not-contiguous` is the one worth understanding: it is what catches a requirement **deleted** rather
 than withdrawn. A hole is the only trace such a deletion leaves.
 
+### Moving a pin
+
+`trace.test.ts` and `parse/requirements.test.ts` pin exact counts of the corpus - requirements,
+non-requirements, questions, design claims, citations and scanned test files - so that a change to
+the corpus is seen in a diff rather than absorbed silently. Editing the corpus moves some of these,
+and working out by hand what each becomes is slow:
+
+```bash
+pnpm trace pins
+```
+
+For every pin it prints what it counts, the value pinned in the test file, what the working tree
+compiles to right now, and the file and line to edit - marking each one that has moved, and ending
+with a one-line summary. It only reads and prints, never a file: edit the pinned values it names by
+hand, then run `pnpm --filter @alloy-works/trace generate` to bring `trace.json` up to date too.
+
 ### What makes the gate fail
 
 ```bash
@@ -343,6 +359,7 @@ product does, and it is checkable at every step rather than asserted at the end.
 | `pnpm trace tranche <Tn> [XXX]`                    | A tranche by area, or one area of it in full                                                                                                                                                                                                                                                                                                                                                  |
 | `pnpm trace stats`                                 | The corpus by tranche and state                                                                                                                                                                                                                                                                                                                                                               |
 | `pnpm trace check`                                 | Every problem in the corpus. Non-zero exit when there is one                                                                                                                                                                                                                                                                                                                                  |
+| `pnpm trace pins`                                  | The exact counts CLAUDE.md pins, against what the working tree compiles to now, marked where they differ. Reads and prints only; always exits 0                                                                                                                                                                                                                                               |
 | `pnpm trace verify [dir]`                          | The same table, with `Verified` computed from a test run                                                                                                                                                                                                                                                                                                                                      |
 | `pnpm trace baseline [name]`                       | A committed baseline: what it includes, excludes and why                                                                                                                                                                                                                                                                                                                                      |
 | `pnpm trace gate [name]`                           | Pass or fail a baseline. Non-zero exit on failure                                                                                                                                                                                                                                                                                                                                             |
