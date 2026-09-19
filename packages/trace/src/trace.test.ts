@@ -266,8 +266,11 @@ describe('the citations in the committed model', () => {
   // 194, from 193: the second publishing plan cites STR-064 in
   // packages/domain/src/structure/outline.test.ts: the parse takes front matter first and refuses it
   // below the top level, after the body and after an appendix, naming the node.
+  // 195, from 194: the same plan cites PUB-011 in packages/domain/src/publishing/layout.test.ts: the
+  // layout carries the scheme sections, figures, tables and equations number by, and is refused
+  // without one or with one that numbers no figures.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(194);
+    expect(model.citations).toHaveLength(195);
   });
 
   it('cites no identifier the corpus does not hold', () => {

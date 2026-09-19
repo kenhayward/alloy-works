@@ -16151,31 +16151,31 @@
     {
       "id": "CNT-145",
       "file": "packages/db/src/versions.test.ts",
-      "line": 221,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "MET-016",
       "file": "packages/db/src/versions.test.ts",
-      "line": 206,
+      "line": 213,
       "kind": "title"
     },
     {
       "id": "VER-007",
       "file": "packages/db/src/versions.test.ts",
-      "line": 171,
+      "line": 178,
       "kind": "title"
     },
     {
       "id": "VER-010",
       "file": "packages/db/src/versions.test.ts",
-      "line": 200,
+      "line": 207,
       "kind": "title"
     },
     {
       "id": "VER-042",
       "file": "packages/db/src/versions.test.ts",
-      "line": 285,
+      "line": 292,
       "kind": "title"
     },
     {
@@ -16511,7 +16511,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 123,
+      "line": 134,
       "kind": "title"
     },
     {
@@ -16746,6 +16746,12 @@
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 287,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-011",
+      "file": "packages/domain/src/publishing/layout.test.ts",
+      "line": 24,
       "kind": "title"
     },
     {

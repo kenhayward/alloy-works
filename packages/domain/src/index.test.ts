@@ -116,6 +116,17 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA',
         'assemble',
         'publishFailureCodes',
+        // The layout, promoted in the plan that adds it
+        // (docs/plans/2026-09-19-publishing-02-the-layout.md).
+        'LAYOUT_SCHEMA_VERSION',
+        'PUBLISHING_FORMATS',
+        'layoutSchema',
+        'parseLayout',
+        'readLayout',
+        'layoutMigrationChain',
+        'defaultLayout',
+        'speaksFor',
+        'unsupportedFormats',
       ].sort(),
     );
   });
