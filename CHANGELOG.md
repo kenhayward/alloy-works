@@ -13,6 +13,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Figures, tables and equations listed.** Beneath the outline, a document lists its figures, tables
   and equations with their numbers and captions, each a link to where it is placed. Move anything and
   the numbers change at once. A number that would depend on a component you may not read is left off.
+  Nothing in the editor adds a figure, table or equation yet, so the lists show only those made
+  through the API.
 - **A time limit for large documents.** On a document of five hundred sections and components, the
   service now has to open, number and restructure it within a quarter of a second for 95 requests in
   100, and never take more than half a second in a test run. Every test run checks it.

@@ -336,22 +336,22 @@ hundred nodes at p95 17 ms, its contributions at 39 ms, its numbering at 45 ms a
 and, bundled into Electron's Chromium over a fake service, the page opened it at p95 110 ms and
 answered a move at 91 ms.
 
-**Plan 3 is built.** Every node in a document's outline has a link, `#/documents/{document}/nodes/{node}`,
-that opens the document with that node chosen, focused and marked, survives a reorder, and is copied
-with **Copy link**; a node the address names that is no longer in the document says **The linked part
-is not in this document.** Beneath the outline, the document lists its figures, tables and equations,
-each with its number and caption, renumbered at once when anything moves; `GET
-/v1/documents/{id}/contributions` answers what the numbering route reads, so the page numbers no
-caption from a component the reader may not read. Building it found twelve more: the most serious that
-STR-034 is claimed and answered only for the author's own acts, so the claim is dropped and the gap
-named in prose, and that an answer per occurrence would have repeated a reused component's
-contributions - now answered once per version, 232 KB rather than 542 KB at 500 nodes. What it leaves
-is listed at the end of the plan: resolving a cross-reference and a component's reference to a
-section, structure 4's; another person's outline change reaching an open page, the plan that puts
-document versions on the stream; the interface's share of the navigation budget, issue #134 and the
-browser suite; tracking the reader's position as they scroll and a link into the body, the document
-view's; a published contents and lists, PUB's; expanding and collapsing the tree, the accessibility
-plan; and a pinned reference named by its pinned version's title, issue #135.
+**Plan 3 is built.** Every node in a document's outline has a link,
+`#/documents/{document}/nodes/{node}`, that opens the document with that node chosen, focused and
+marked, survives a reorder, and is copied with **Copy link**; a node the address names that is no
+longer in the document says **The linked part is not in this document.** Beneath the outline, the
+document lists its figures, tables and equations, each with its number and caption, renumbered at
+once when anything moves; `GET /v1/documents/{id}/contributions` answers what the numbering route
+reads, so the page numbers no caption from a component the reader may not read. Beyond the plan's
+twelve, building it found the guard that takes an arrival once, the mark's clearing and the address
+written with `replaceState` all unpinned until review, and a list entry that did nothing when it
+named the address already shown, now taken as an arrival again. What it leaves is listed at the end
+of the plan: resolving a cross-reference and a component's reference to a section, structure 4's;
+another person's outline change reaching an open page, the plan that puts document versions on the
+stream; the interface's share of the navigation budget, issue #134 and the browser suite; tracking
+the reader's position as they scroll and a link into the body, the document view's; a published
+contents and lists, PUB's; expanding and collapsing the tree, the accessibility plan; and a pinned
+reference named by its pinned version's title, issue #135.
 
 ## The editor
 
