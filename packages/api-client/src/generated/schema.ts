@@ -2084,7 +2084,7 @@ export interface operations {
                             block: string | null;
                             sequence: string;
                             /** @enum {string} */
-                            matter: "body" | "appendix";
+                            matter: "front" | "body" | "appendix";
                             /** @description The section counter stack at this point */
                             sections: number[];
                             /** @description This sequence's counter; null when not known */

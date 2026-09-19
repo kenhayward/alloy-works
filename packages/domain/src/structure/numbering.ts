@@ -73,7 +73,7 @@ export interface NumberingEntry {
   readonly node: string;
   readonly block: string | null;
   readonly sequence: string;
-  readonly matter: 'body' | 'appendix';
+  readonly matter: OutlineMatter;
   readonly sections: readonly number[];
   readonly value: number | null;
   readonly restartedAt: string | null;
@@ -109,9 +109,9 @@ const labelled = (rule: NumberingRule, written: string) =>
  * agreement but by being one function (STR-036). Pure (STR-018): no clock, no randomness, and no
  * order but the tree's.
  *
- * The walk is depth-first in document order, and each matter keeps a counter stack of its own - an
- * appendix numbers in its own scheme (STR-016), and a body node after an appendix carries on the body's
- * numbering. For each node:
+ * The walk is depth-first in document order, and each matter keeps a counter stack of its own - front
+ * matter and an appendix each number in their own scheme (STR-016, decision E), so a preface moves no
+ * body number, and a body node after an appendix carries on the body's numbering. For each node:
  *
  * 1. **Its section number**, if it and every ancestor is numbered. A node with `numbered: false` takes
  *    none and consumes none (STR-017), and neither does anything beneath it: a number formed from an
@@ -129,7 +129,8 @@ const labelled = (rule: NumberingRule, written: string) =>
 export function number(conditioned: Conditioned, scheme: NumberingScheme): NumberingTable {
   const { outline, contributions } = conditioned.resolved;
   const others = Object.keys(scheme.sequences).filter((name) => name !== 'section');
-  const states: Record<'body' | 'appendix', MatterState> = {
+  const states: Record<OutlineMatter, MatterState> = {
+    front: { sections: [], counters: new Map() },
     body: { sections: [], counters: new Map() },
     appendix: { sections: [], counters: new Map() },
   };
@@ -144,7 +145,7 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
     return counter;
   };
 
-  const take = (node: string, contribution: Contribution, matter: 'body' | 'appendix') => {
+  const take = (node: string, contribution: Contribution, matter: OutlineMatter) => {
     const rule = scheme.sequences[contribution.sequence]?.[matter];
     const sectionRule = scheme.sequences['section']?.[matter];
     // A sequence the scheme does not declare numbers nothing, and an unnumbered equation takes no
@@ -157,10 +158,12 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
         ? []
         : Array.from({ length: rule.prefix }, (_, index) => state.sections[index] ?? 0);
     const hasChapter = prefix.some((part) => part > 0);
-    // A chapter-hungry appendix rule with no chapter yet withholds this caption without spending
-    // a counter value on it - otherwise a rule that never restarts (a layout's, not the default
-    // scheme's) would carry the withheld captions' count into the first real chapter's numbers.
-    const withheld = counter.known && rule.prefix !== null && !hasChapter && matter === 'appendix';
+    // A chapter-hungry rule outside the body, with no chapter yet in its matter, withholds this
+    // caption without spending a counter value on it: a bare number there would repeat one of the
+    // body's own, and spending a value would let a rule that never restarts (a layout's, not the
+    // default scheme's) carry the withheld captions' count into the first real chapter's numbers.
+    // The body alone prints a bare number before its first chapter, as it always has.
+    const withheld = counter.known && rule.prefix !== null && !hasChapter && matter !== 'body';
     if (!withheld) counter.value += 1;
     let written: string | null = null;
     if (counter.known && !withheld) {
@@ -175,7 +178,7 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
       sequence: contribution.sequence,
       matter,
       sections: [...state.sections],
-      // Tied to `written`, not just `counter.known`: a chapter-hungry appendix rule with no
+      // Tied to `written`, not just `counter.known`: a chapter-hungry rule outside the body with no
       // chapter yet is known but still unprintable, and its value is withheld along with it.
       value: written === null ? null : counter.value,
       restartedAt: counter.restartedAt,
@@ -187,7 +190,7 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
   const visit = (
     node: NumberableNode,
     depth: number,
-    matter: 'body' | 'appendix',
+    matter: OutlineMatter,
     parent: string | null,
     numberedAbove: boolean,
   ) => {
@@ -232,11 +235,7 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
     }
   };
 
-  for (const node of outline.nodes) {
-    // Front matter numbers nothing while the scheme declares no rule for it - as a sequence the scheme
-    // does not declare numbers nothing - and its subtree is front matter with it (STR-016).
-    if (node.matter !== 'front') visit(node, 1, node.matter, null, true);
-  }
+  for (const node of outline.nodes) visit(node, 1, node.matter, null, true);
   return { scheme: scheme.id, entries };
 }
 

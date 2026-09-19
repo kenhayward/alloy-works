@@ -1,4 +1,4 @@
-import { outlineOperationSchema } from '@alloy-works/domain';
+import { outlineMatterSchema, outlineOperationSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { CreateComponentBody, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -93,7 +93,7 @@ export const NumberingView = z.object({
       node: z.string().describe('The outline node that produced it'),
       block: z.string().nullable().describe('The block or footnote, for a caption or a footnote'),
       sequence: z.string(),
-      matter: z.enum(['body', 'appendix']),
+      matter: outlineMatterSchema,
       sections: z.array(z.number().int()).describe('The section counter stack at this point'),
       value: z.number().int().nullable().describe("This sequence's counter; null when not known"),
       restartedAt: z.string().nullable().describe('The node that last restarted the counter'),
