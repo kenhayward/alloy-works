@@ -103,6 +103,45 @@ export const NumberingView = z.object({
 });
 export type NumberingView = z.infer<typeof NumberingView>;
 
+/**
+ * What each occurrence of the latest version contributes to the sequences (structure.md,
+ * "Numbering"), as the caller is shown it: enough for the renderer to number every caption itself,
+ * with the same function the numbering route calls, and to list each with its caption.
+ */
+export const ContributionsView = z.object({
+  document: z.string(),
+  version: z.object({ id: z.string(), number: z.string() }),
+  occurrences: z
+    .array(z.object({ node: z.string(), version: z.string().nullable() }))
+    .describe(
+      'Each component reference, in outline order, and the component version it resolved to: null ' +
+        'where the caller may not read the component, where it waits on revisions, or where its ' +
+        'content does not read, and what it contributes is then not known',
+    ),
+  versions: z
+    .array(
+      z.object({
+        id: z.string(),
+        contributions: z.array(
+          z.object({
+            block: z.string(),
+            sequence: z.string(),
+            numbered: z.boolean(),
+            caption: z
+              .string()
+              .nullable()
+              .describe("A figure's or a table's caption; null for anything else"),
+          }),
+        ),
+      }),
+    )
+    .describe(
+      'What each version an occurrence resolved to contributes, in document order, each once however ' +
+        'many occurrences name it',
+    ),
+});
+export type ContributionsView = z.infer<typeof ContributionsView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -185,6 +224,25 @@ export const documentRoutes = {
       401: unauthenticated,
       403: {
         description: 'Never answered: a document the caller may read is one they may number',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  getContributions: {
+    operationId: 'getContributions',
+    method: 'GET',
+    path: '/v1/documents/{id}/contributions',
+    summary: 'What each occurrence of the latest version contributes, as the caller is shown it',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    responses: {
+      200: { description: 'Each occurrence and its contributions', schema: ContributionsView },
+      401: unauthenticated,
+      403: {
+        description:
+          'Never answered: a document the caller may read is one whose contributions they may read',
         schema: ErrorBody,
       },
       404: notFound,

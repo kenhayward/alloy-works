@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.29.0 - 2026-09-19 (PR #136)
+
+### Added
+
+- **A link to every part of a document.** Choose a section or a component in the outline to see its
+  link, or copy it with Copy link. Opening the link opens the document there, with that part marked,
+  even after the outline has been reordered.
+- **Figures, tables and equations listed.** Beneath the outline, a document lists its figures, tables
+  and equations with their numbers and captions, each a link to where it is placed. Move anything and
+  the numbers change at once. A number that would depend on a component you may not read is left off.
+  Nothing in the editor adds a figure, table or equation yet, so the lists show only those made
+  through the API.
+- **A time limit for large documents.** On a document of five hundred sections and components, the
+  service now has to open, number and restructure it within a quarter of a second for 95 requests in
+  100, and never take more than half a second in a test run. Every test run checks it.
+
 ## 0.28.2 - 2026-09-19 (PR #141)
 
 ### Fixed

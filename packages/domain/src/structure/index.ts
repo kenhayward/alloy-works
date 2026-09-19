@@ -48,3 +48,6 @@ export {
   REQUIRED_SEQUENCES,
 } from './scheme.js';
 export type { NumberFormat, NumberingRule, NumberingScheme } from './scheme.js';
+
+export { contents, listOf } from './lists.js';
+export type { ContentsEntry, ListEntry } from './lists.js';

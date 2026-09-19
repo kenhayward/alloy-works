@@ -5,13 +5,16 @@ import type { InlineNode } from '../content/model/inline.js';
 /**
  * What one caption-bearing block (CNT-081) or one footnote contributes to the sequences: its
  * identifier, the sequence it takes from, and whether it takes a number at all - only a block equation
- * can say no (CNT-047). A small projection of content, and nothing else: no caption text, no position,
- * so the numbering table carries nothing a component holds but the identifiers it already exposes.
+ * can say no (CNT-047). A small projection of content: no position, and no text but a figure's or a
+ * table's caption, which a generated list shows beside its number. The numbering table copies none of
+ * it, so the table still carries nothing a component holds but the identifiers it already exposes.
  */
 export interface Contribution {
   readonly block: string;
   readonly sequence: string;
   readonly numbered: boolean;
+  /** A figure's or a table's caption, for a generated list to show beside its number. */
+  readonly caption?: string;
 }
 
 /**
@@ -40,14 +43,14 @@ function blockContributions(block: BlockNode): Contribution[] {
       // The table takes its number before anything inside it, and its note - rendered below the body -
       // after its cells.
       return [
-        { block: block.id, sequence: 'table', numbered: true },
+        { block: block.id, sequence: 'table', numbered: true, caption: block.caption },
         ...block.rows.flatMap((row) =>
           row.cells.flatMap((cell) => cell.content.flatMap(blockContributions)),
         ),
         ...inlineContributions(block.note ?? []),
       ];
     case 'figure':
-      return [{ block: block.id, sequence: 'figure', numbered: true }];
+      return [{ block: block.id, sequence: 'figure', numbered: true, caption: block.caption }];
     case 'equation':
       return [{ block: block.id, sequence: 'equation', numbered: block.numbered }];
     case 'preformatted':

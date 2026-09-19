@@ -10108,13 +10108,22 @@
       "line": 189
     },
     {
+      "id": "STR-063",
+      "area": "STR",
+      "statement": "A document of five hundred outline nodes, four hundred of them component references, must be opened, numbered and restructured by the service within the interactive budget - at or under 250 ms at p95, and no measured sample above 500 ms - measured by the test suite, which records the configuration it ran on beside the result",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 190
+    },
+    {
       "id": "STR-040",
       "area": "STR",
       "statement": "A table of contents must be generatable to a declared depth (**PUB** renders it; the structure comes from here)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "STR-041",
@@ -10123,7 +10132,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "STR-042",
@@ -10132,7 +10141,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "STR-043",
@@ -10141,7 +10150,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "STR-044",
@@ -10150,7 +10159,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "STR-045",
@@ -10159,7 +10168,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "STR-046",
@@ -10168,7 +10177,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "STR-047",
@@ -10177,7 +10186,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "STR-048",
@@ -10186,7 +10195,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "STR-049",
@@ -10195,7 +10204,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "STR-050",
@@ -10204,7 +10213,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "STY-001",
@@ -12888,31 +12897,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "STY-N01",
@@ -13814,28 +13823,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 241
+      "line": 242
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "STY-Q01",
@@ -15106,10 +15115,6 @@
           "howItIsMet": "Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first"
         },
         {
-          "id": "STR-034",
-          "howItIsMet": "The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind"
-        },
-        {
           "id": "STR-036",
           "howItIsMet": "The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function"
         },
@@ -15118,12 +15123,16 @@
           "howItIsMet": "Reordering in the panel is the move operation, from the panel's own drag and from its keymap"
         },
         {
+          "id": "STR-063",
+          "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result"
+        },
+        {
           "id": "STR-040",
-          "howItIsMet": "`contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it"
+          "howItIsMet": "`contents(conditioned, numbering, depth)` lists every node to the depth, numbered or not, a reference's title left to its caller"
         },
         {
           "id": "STR-041",
-          "howItIsMet": "`listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one"
+          "howItIsMet": "`listOf(conditioned, numbering, sequence)` lists one sequence's entries with their captions"
         },
         {
           "id": "STR-044",
@@ -15493,7 +15502,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 325,
+      "line": 326,
       "kind": "title"
     },
     {
@@ -15569,6 +15578,12 @@
       "kind": "title"
     },
     {
+      "id": "STR-063",
+      "file": "apps/service/src/navigation-budget.test.ts",
+      "line": 111,
+      "kind": "title"
+    },
+    {
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
       "line": 238,
@@ -15617,15 +15632,39 @@
       "kind": "title"
     },
     {
+      "id": "IAM-073",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2288,
+      "kind": "title"
+    },
+    {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 275,
+      "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "STR-037",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2328,
+      "kind": "title"
+    },
+    {
+      "id": "STR-044",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2098,
+      "kind": "title"
+    },
+    {
+      "id": "STR-046",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2144,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 592,
+      "line": 658,
       "kind": "title"
     },
     {
@@ -16087,7 +16126,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 110,
+      "line": 114,
       "kind": "title"
     },
     {
@@ -16340,6 +16379,18 @@
       "id": "CNT-012",
       "file": "packages/domain/src/stored/migrate.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "STR-040",
+      "file": "packages/domain/src/structure/lists.test.ts",
+      "line": 79,
+      "kind": "title"
+    },
+    {
+      "id": "STR-041",
+      "file": "packages/domain/src/structure/lists.test.ts",
+      "line": 172,
       "kind": "title"
     },
     {

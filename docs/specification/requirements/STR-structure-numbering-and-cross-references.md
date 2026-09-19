@@ -179,14 +179,15 @@ conditions have to be resolved before references rather than after.
 
 ## 7. Navigation on screen
 
-| ID          | Requirement                                                                                                                                                                      | Tranche | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **STR-034** | A navigable table of contents must reflect the live outline, and must update as the outline changes                                                                              | T1      | Specified |
-| **STR-035** | The table of contents must track the reader's position as they scroll, and must let them jump to any node                                                                        | T1      | Specified |
-| **STR-036** | The table of contents must show numbering as it will publish, so that an author is never guessing what a section will be called                                                  | T1      | Specified |
-| **STR-037** | An author must be able to reorder the outline from the table of contents directly                                                                                                | T1      | Specified |
-| **STR-038** | The table of contents must surface state that matters to an author: which components are locked (**COL**), which references are unresolved, which bindings (**DAT**) have failed | T3      | Specified |
-| **STR-039** | Navigation must remain usable on a document of several hundred nodes, against the budget in scope §11                                                                            | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                            | Tranche | Status    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **STR-034** | A navigable table of contents must reflect the live outline, and must update as the outline changes                                                                                                                                                                                                                                    | T1      | Specified |
+| **STR-035** | The table of contents must track the reader's position as they scroll, and must let them jump to any node                                                                                                                                                                                                                              | T1      | Specified |
+| **STR-036** | The table of contents must show numbering as it will publish, so that an author is never guessing what a section will be called                                                                                                                                                                                                        | T1      | Specified |
+| **STR-037** | An author must be able to reorder the outline from the table of contents directly                                                                                                                                                                                                                                                      | T1      | Specified |
+| **STR-038** | The table of contents must surface state that matters to an author: which components are locked (**COL**), which references are unresolved, which bindings (**DAT**) have failed                                                                                                                                                       | T3      | Specified |
+| **STR-039** | Navigation must remain usable on a document of several hundred nodes, against the budget in scope §11                                                                                                                                                                                                                                  | T1      | Specified |
+| **STR-063** | A document of five hundred outline nodes, four hundred of them component references, must be opened, numbered and restructured by the service within the interactive budget - at or under 250 ms at p95, and no measured sample above 500 ms - measured by the test suite, which records the configuration it ran on beside the result | T1      | Specified |
 
 ## 8. Generated lists in published output
 
@@ -340,5 +341,22 @@ reworded.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 61, of which 3 superseded | 62, of which 3 superseded |
+| Non-requirements | 5                         | 5                         |
+| Open questions   | 4                         | 4                         |
+
+### From planning navigation
+
+Not a review. [Issue #119](https://github.com/kenhayward/alloy-works/issues/119), filed while designing
+documents and outlines, was landed by
+[the third structure plan](../../plans/2026-09-18-structure-03-navigation.md), narrowed.
+
+| What was found                                                                                                                                           | Change                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STR-039 cites "the budget in scope §11", which names opening a 300-page document as a quantity and gives no number, so nothing could ever demonstrate it | **STR-063**: the service's share, at a stated size - five hundred nodes, four hundred of them references - opened, numbered and restructured at or under 250 ms at p95, with no measured sample above 500 ms, measured by the suite and recorded beside its configuration                 |
+| The issue asked that opening and _navigating_ never exceed 500 ms                                                                                        | Narrowed: _navigating_ named no act, so the row names three; _never_ is no measurement's to prove, so the row says no measured sample; and the interface's share has no browser suite to measure it, so it is filed as issue #134, to land with that suite. STR-039 stays open until then |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 62, of which 3 superseded | 63, of which 3 superseded |
 | Non-requirements | 5                         | 5                         |
 | Open questions   | 4                         | 4                         |

@@ -11,10 +11,11 @@ import {
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
+import { documentAddress } from './links.js';
 import { NewDocument } from './NewDocument.js';
 import { OutlinePanel } from './OutlinePanel.js';
 
@@ -108,6 +109,11 @@ function service(
     components?: unknown;
     /** Whether the caller may read a component: one they may not is withheld, as the service does. */
     mayRead?: (component: string) => boolean;
+    /** What each component's head contributes, by component; nothing where it is not named. */
+    holds?: Record<
+      string,
+      { block: string; sequence: string; numbered: boolean; caption: string | null }[]
+    >;
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -121,6 +127,11 @@ function service(
   const numbered = new Map<number, number>();
   let outlineRequests = 0;
   let unchangedNext = false;
+  // The next contributions request, once held, waits on this; the answer is what stood when it arrived.
+  let contributionsGate: Promise<void> | null = null;
+  let contributionsAnswered = 0;
+  // How many contributions answers the page has read the body of, counted once the body resolves.
+  let contributionsRead = 0;
   const chain: { id: string; number: string; outline: OutlineDocument }[] = [
     { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start },
   ];
@@ -178,6 +189,48 @@ function service(
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
+    if (url === `/v1/documents/${DOCUMENT}/contributions`) {
+      // As `getContributions` answers: every reference of the latest version, in outline order, and
+      // a version the caller may read named once with what it holds - never one they may not.
+      const occurrences: { node: string; version: string | null }[] = [];
+      const versions = new Map<string, unknown>();
+      const walk = (nodes: readonly OutlineNode[]) => {
+        for (const node of nodes) {
+          if (node.type === 'reference') {
+            const readable = (options.mayRead ?? (() => true))(node.component);
+            const version = readable ? `vvvvvvvv${node.component.slice(8)}` : null;
+            occurrences.push({ node: node.id, version });
+            if (version !== null) {
+              versions.set(version, {
+                id: version,
+                contributions: options.holds?.[node.component] ?? [],
+              });
+            }
+          }
+          walk(node.children);
+        }
+      };
+      walk(latest().outline.nodes);
+      const answer = {
+        document: DOCUMENT,
+        version: { id: latest().id, number: latest().number },
+        occurrences,
+        versions: [...versions.values()],
+      };
+      const held = contributionsGate;
+      contributionsGate = null;
+      if (held !== null) await held;
+      contributionsAnswered += 1;
+      // The client reads a body without a length as text, so that is what is counted.
+      const response = json(200, answer);
+      const body = response.text.bind(response);
+      response.text = async () => {
+        const read = await body();
+        contributionsRead += 1;
+        return read;
+      };
+      return response;
+    }
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
       if (unchangedNext) {
         unchangedNext = false;
@@ -227,6 +280,19 @@ function service(
     latest: () => view(),
     restore: (url: string) => refusals.delete(url),
     /** Holds every outline answer until the returned function is called. */
+    /**
+     * Holds the next contributions request - only that one - until the returned function is called,
+     * and answers it then with what stood when it arrived.
+     */
+    holdContributions: () => {
+      let release = () => {};
+      contributionsGate = new Promise((resolve) => (release = resolve));
+      return release;
+    },
+    /** How many contributions requests have been answered so far. */
+    contributionsAnswered: () => contributionsAnswered,
+    /** How many contributions answers have had their body read, once each body has resolved. */
+    contributionsRead: () => contributionsRead,
     hold: () => {
       let release = () => {};
       gate = new Promise((resolve) => (release = resolve));
@@ -1999,5 +2065,423 @@ describe('undo from the node details', () => {
       operation: { operation: 'set', node: METHOD, pageBreak: 'none' },
     });
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Undone\./));
+  });
+});
+
+/** The page at an address naming one of its nodes, as `Workspace` opens it. */
+function openAt(fetch: typeof globalThis.fetch, node: string, arrival = 0) {
+  const page = (linked: string, at: number) => (
+    <StrictMode>
+      <DocumentPage client={client(fetch)} id={DOCUMENT} linked={{ node: linked, arrival: at }} />
+    </StrictMode>
+  );
+  const rendered = render(page(node, arrival));
+  return {
+    ...rendered,
+    arriveAgain: (linked: string, at: number) => rendered.rerender(page(linked, at)),
+  };
+}
+
+/** The node an address the page showed names, read the way the workspace reads its own address. */
+function nodeIn(shown: string): string {
+  const address = documentAddress(new URL(shown).hash);
+  if (address?.kind !== 'document' || address.node === null) {
+    throw new Error(`${shown} names no node`);
+  }
+  return address.node;
+}
+
+describe('the address of every node', () => {
+  // Choosing a node rewrites the address; put it back so no later test starts somewhere else.
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  it('STR-044 gives every node an address naming its document and itself, which opens the document at that node', async () => {
+    // Every kind of node: sections at the top level and nested, and a component reference.
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [reference(RESULTS, 'latest')]),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    const first = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Install the printer, latest' });
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    let copied = '';
+    for (const [id, choice, name] of [
+      [INTRODUCTION, 'Introduction', 'Introduction'],
+      [RESULTS, 'Install the printer, latest', 'Install the printer'],
+      [METHOD, 'Method', 'Method'],
+      [SCOPE, 'Scope', 'Scope'],
+    ] as const) {
+      await userEvent.click(item(choice));
+      const field = screen.getByRole('textbox', { name: `Link to ${name}` }) as HTMLInputElement;
+      expect(field.value).toBe(
+        `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${id}`,
+      );
+      // The address follows what is chosen, so a reload or a copy of it comes back here.
+      expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${id}`);
+      copied = field.value;
+    }
+    first.unmount();
+
+    // Somebody else, given Scope's address as it was shown: it names this document and Scope, and
+    // the document opens there with Scope chosen, focused and marked.
+    expect(documentAddress(new URL(copied).hash)).toEqual({
+      kind: 'document',
+      document: DOCUMENT,
+      node: SCOPE,
+    });
+    openAt(fake.fetch, nodeIn(copied));
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
+    // And shows them the same address for it.
+    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
+      copied,
+    );
+  });
+
+  it('STR-046 keeps a node at its address when the outline is reordered around it', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    const page = openAt(fake.fetch, SCOPE);
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    const before = (screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement)
+      .value;
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+
+    // Method, and Scope with it, moves to the front: Scope's number and position both change.
+    await userEvent.click(item('Method'));
+    // Choosing another node ends the mark the link left.
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).toBeNull();
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Scope')).toHaveAccessibleDescription('1.1'));
+    await settled();
+    // The arrival was taken once: the act that came back does not pull the reader back to Scope.
+    expect(item('Method')).toHaveAttribute('aria-selected', 'true');
+
+    // The same address, arriving again, still finds Scope; and Scope's address has not changed.
+    page.arriveAgain(nodeIn(before), 1);
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
+      before,
+    );
+  });
+
+  it('follows the selection to the first node when the chosen one is gone, rather than naming a node that is not there', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+    expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${METHOD}`);
+
+    // Grace removes Method; Ada's next act is refused, and the page shows Grace's outline.
+    fake.theirs({ operation: 'remove', node: METHOD });
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    expect(screen.queryByRole('treeitem', { name: 'Method' })).toBeNull();
+    expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() =>
+      expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`),
+    );
+  });
+
+  it('says so when the address names nothing this document holds, and keeps the first node chosen', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    openAt(fake.fetch, SCOPE);
+    expect(await screen.findByText('The linked part is not in this document.')).toBeInTheDocument();
+    expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it("copies the chosen node's address, and says it did", async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    await user.click(await screen.findByRole('treeitem', { name: 'Introduction' }));
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await screen.findByText('Copied the link to Introduction.')).toBeInTheDocument();
+    expect(await navigator.clipboard.readText()).toBe(
+      `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`,
+    );
+  });
+});
+
+const SECRET = 'cccccccc-0000-4000-8000-000000000002';
+const AGAIN = 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
+const HIDDEN = 'hhhhhhhhhhhhhhhhhhhhhhhhhh';
+
+/** A reference to a named component, at latest. */
+function referenceTo(id: string, component: string): OutlineNode {
+  return { ...reference(id, 'latest'), component } as OutlineNode;
+}
+
+const tray = { block: 'f1', sequence: 'figure', numbered: true, caption: 'The paper tray' };
+const parts = { block: 't1', sequence: 'table', numbered: true, caption: 'Parts' };
+const sum = { block: 'e1', sequence: 'equation', numbered: true, caption: null };
+const aside = { block: 'e2', sequence: 'equation', numbered: false, caption: null };
+
+const listed = (heading: string) =>
+  within(screen.getByRole('region', { name: heading }))
+    .getAllByRole('link')
+    .map((link) => [link.textContent, link.getAttribute('href')]);
+
+describe('the lists of figures, tables and equations', () => {
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  it('lists what each occurrence holds, numbered in the page, and renumbers a move without asking for a number', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method', [referenceTo(AGAIN, PRINTER)]),
+      ]),
+      { holds: { [PRINTER]: [tray, parts, sum, aside] } },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    const at = (node: string) => `#/documents/${DOCUMENT}/nodes/${node}`;
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(RESULTS)],
+      ['Figure 2.1 The paper tray', at(AGAIN)],
+    ]);
+    expect(listed('Tables')).toEqual([
+      ['Table 1.1 Parts', at(RESULTS)],
+      ['Table 2.1 Parts', at(AGAIN)],
+    ]);
+    // An unnumbered equation takes no number, so it is no entry.
+    expect(listed('Equations')).toEqual([
+      ['Equation 1', at(RESULTS)],
+      ['Equation 2', at(AGAIN)],
+    ]);
+
+    // The version the move makes is asked about again; that answer is held, so what renumbers the
+    // lists is the page, from the answer it already has - at once, not when the next one lands.
+    const release = fake.holdContributions();
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
+    await waitFor(() =>
+      expect(fake.sent.filter((request) => request.url.endsWith('/contributions'))).toHaveLength(2),
+    );
+    expect(fake.contributionsAnswered()).toBe(1);
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(AGAIN)],
+      ['Figure 2.1 The paper tray', at(RESULTS)],
+    ]);
+    release();
+    await waitFor(() => expect(fake.contributionsAnswered()).toBe(2));
+    await settled();
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(AGAIN)],
+      ['Figure 2.1 The paper tray', at(RESULTS)],
+    ]);
+    expect(fake.sent.some((request) => request.url.endsWith('/numbering'))).toBe(false);
+  });
+
+  it('IAM-073 shows a reader no number a component they may not read could have moved, and nothing it holds', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [
+          referenceTo(RESULTS, PRINTER),
+          referenceTo(HIDDEN, SECRET),
+          referenceTo(AGAIN, PRINTER),
+        ]),
+        section(METHOD, 'Method', [referenceTo(SCOPE, PRINTER)]),
+      ]),
+      {
+        mayRead: (component) => component !== SECRET,
+        holds: {
+          [PRINTER]: [tray, sum],
+          [SECRET]: [{ block: 's1', sequence: 'figure', numbered: true, caption: 'The bench' }],
+        },
+      },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    // The figure after the component they may not read has no number, and the next chapter's, which
+    // restarts, has its own; nothing of what the unreadable component holds is shown at all.
+    expect(listed('Figures').map(([text]) => text)).toEqual([
+      'Figure 1.1 The paper tray',
+      'Figure The paper tray',
+      'Figure 2.1 The paper tray',
+    ]);
+    // Equations never restart in the default scheme, so every one after it is withheld, the next
+    // chapter's too: withheld until the counter restarts, not only once.
+    expect(listed('Equations').map(([text]) => text)).toEqual([
+      'Equation 1',
+      'Equation',
+      'Equation',
+    ]);
+    expect(screen.queryByText(/The bench/)).toBeNull();
+    expect(document.body.textContent).not.toContain('Figure 1.2');
+    expect(document.body.textContent).not.toContain('Equation 2');
+    expect(document.body.textContent).not.toContain('Equation 3');
+  });
+
+  it('STR-037 reorders the outline from the contents, by key and by pointer, and every number follows at once', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method', [referenceTo(AGAIN, PRINTER)]),
+        section(SCOPE, 'Scope'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    const figures = () => listed('Figures').map(([text, href]) => [text, href?.slice(-26)]);
+
+    // By key: Method goes up, taking its component with it.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
+    expect(item('Introduction')).toHaveAccessibleDescription('2');
+    expect(figures()).toEqual([
+      ['Figure 1.1 The paper tray', AGAIN],
+      ['Figure 2.1 The paper tray', RESULTS],
+    ]);
+    await settled();
+
+    // By pointer: Method dropped at the end of the document.
+    fireEvent.dragStart(item('Method'));
+    const end = await screen.findByText('Move to the end of the document');
+    fireEvent.dragOver(end);
+    fireEvent.drop(end);
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('3'));
+    expect(item('Introduction')).toHaveAccessibleDescription('1');
+    expect(item('Scope')).toHaveAccessibleDescription('2');
+    expect(figures()).toEqual([
+      ['Figure 1.1 The paper tray', RESULTS],
+      ['Figure 3.1 The paper tray', AGAIN],
+    ]);
+    expect(
+      fake.edits().map((request) => (request.body as { operation: unknown }).operation),
+    ).toEqual([
+      { operation: 'move', node: METHOD, parent: null, position: 0 },
+      { operation: 'move', node: METHOD, parent: null, position: 2 },
+    ]);
+  });
+
+  it('asks for the contributions again whenever the version it holds changes, and numbers what somebody else added', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    const asked = () =>
+      fake.sent.filter((request) => request.url.endsWith('/contributions')).length;
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    expect(asked()).toBe(1);
+
+    // Ada's own act is a new version: asked again.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(asked()).toBe(2));
+    await settled();
+
+    // Grace places the component under Method; Ada's next act is refused and carries Grace's
+    // version, which is asked about too, so the occurrence Grace added is listed and numbered.
+    fake.theirs({
+      operation: 'insert',
+      parent: METHOD,
+      position: 0,
+      node: { type: 'reference', component: PRINTER, mode: { kind: 'latest' } },
+    });
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    const added = fake.latest().outline.nodes[0]?.children[0]?.id;
+    expect(added).toBeDefined();
+    await waitFor(() =>
+      expect(listed('Figures')).toEqual([
+        ['Figure 1.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${added}`],
+        ['Figure 2.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${RESULTS}`],
+      ]),
+    );
+    expect(asked()).toBe(3);
+  });
+
+  it('never numbers with an answer for a version the page no longer holds', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    // The first answer - for the version the page opens at - is held until after the next one.
+    const release = fake.holdContributions();
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    expect(screen.getByText('Reading the figures, tables and equations...')).toBeInTheDocument();
+
+    // Grace places the component under Method; Ada's act is refused and carries Grace's version,
+    // whose answer arrives while the first is still held.
+    fake.theirs({
+      operation: 'insert',
+      parent: METHOD,
+      position: 0,
+      node: { type: 'reference', component: PRINTER, mode: { kind: 'latest' } },
+    });
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    await screen.findByRole('region', { name: 'Figures' });
+    const added = fake.latest().outline.nodes[1]?.children[0]?.id;
+    expect(added).toBeDefined();
+    const expected = [
+      ['Figure 1.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${RESULTS}`],
+      ['Figure 2.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${added}`],
+    ];
+    await waitFor(() => expect(listed('Figures')).toEqual(expected));
+    expect(fake.contributionsAnswered()).toBe(1);
+
+    // The first answer lands last, knowing nothing of Grace's occurrence: it is not used.
+    release();
+    // Once its body has been read, the page has had the stale answer in hand.
+    await waitFor(() => expect(fake.contributionsRead()).toBe(2));
+    expect(listed('Figures')).toEqual(expected);
+  });
+
+  it('says a document holds no figures, tables or equations, and says so when they could not be read', async () => {
+    const contributions = `/v1/documents/${DOCUMENT}/contributions`;
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    fake.refuse(contributions, 500);
+    open(fake.fetch);
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(
+      screen.getByText('The figures, tables and equations could not be read.'),
+    ).toBeInTheDocument();
+
+    // The outline works all the same: an act lands and the section numbers move.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
+    expect(item('Introduction')).toHaveAccessibleDescription('2');
+    expect(fake.edits()).toHaveLength(1);
+    await settled();
+    // The act's version is asked about too, and refused the same way: Try again still stands.
+    await waitFor(() =>
+      expect(fake.sent.filter((request) => request.url === contributions)).toHaveLength(2),
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+
+    fake.restore(contributions);
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByText('This document has no figures, tables or equations.'),
+    ).toBeInTheDocument();
   });
 });

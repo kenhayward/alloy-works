@@ -72,6 +72,7 @@ const OTHER_TENANT_IDS: Readonly<
   getDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getNumbering: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getContributions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),

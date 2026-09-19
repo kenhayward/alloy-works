@@ -1,10 +1,11 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
+import { documentAddress, documentLink } from '../structure/links.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
 
@@ -14,8 +15,6 @@ export interface WorkspaceProps {
 }
 
 const OPEN = /^#\/components\/([0-9a-f-]{36})(\/access)?$/;
-/** The documents, or one document open (structure 01): the same hash routing, beside `OPEN`. */
-const DOCUMENTS = /^#\/documents(?:\/([0-9a-f-]{36}))?$/;
 
 /** What sits above either listing: the two kinds of thing a person can open, each a plain link. */
 function Places() {
@@ -68,15 +67,32 @@ function ManageAccessLink({ client, componentId }: { client: Client; componentId
   );
 }
 
-/** The address after `#`, followed as it changes: a hash never reaches the service or a reload's path. */
-function useHash(): string {
-  const [hash, setHash] = useState(() => window.location.hash);
+/**
+ * The address after `#`, followed as it changes: a hash never reaches the service or a reload's path.
+ * `arrivals` counts every change, so an address that arrives again - a link to the node already named,
+ * after the document page rewrote the address to another without a `hashchange` - is still news.
+ * `again` counts one more for a link to the address already shown, which a browser follows without a
+ * `hashchange`.
+ */
+function useHash(): {
+  readonly hash: string;
+  readonly arrivals: number;
+  readonly again: () => void;
+} {
+  const [followed, setFollowed] = useState(() => ({ hash: window.location.hash, arrivals: 0 }));
+  const again = useCallback(
+    () =>
+      setFollowed((previous) => ({
+        hash: window.location.hash,
+        arrivals: previous.arrivals + 1,
+      })),
+    [],
+  );
   useEffect(() => {
-    const follow = () => setHash(window.location.hash);
-    window.addEventListener('hashchange', follow);
-    return () => window.removeEventListener('hashchange', follow);
-  }, []);
-  return hash;
+    window.addEventListener('hashchange', again);
+    return () => window.removeEventListener('hashchange', again);
+  }, [again]);
+  return { ...followed, again };
 }
 
 /**
@@ -90,7 +106,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     () => createApiClient({ baseUrl: origin, ...(given ? { fetch: given } : {}) }),
     [origin, given],
   );
-  const hash = useHash();
+  const { hash, arrivals, again } = useHash();
   const [me, setMe] = useState<string | null>(null);
   // Asking who is signed in failed for a reason other than nobody being signed in (final review,
   // finding 5): a server error or no answer, which Try again asks about once more.
@@ -155,14 +171,20 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       </>
     );
   }
-  const documents = DOCUMENTS.exec(hash);
-  if (documents?.[1]) {
+  const documents = documentAddress(hash);
+  if (documents?.kind === 'document') {
     return (
       <>
         <p>
           <a href="#/documents">Back to documents</a>
         </p>
-        <DocumentPage key={documents[1]} client={client} id={documents[1]} />
+        <DocumentPage
+          key={documents.document}
+          client={client}
+          id={documents.document}
+          linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
+          onArriveAgain={again}
+        />
       </>
     );
   }
@@ -173,7 +195,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         <DocumentList
           client={client}
           onOpen={(id) => {
-            window.location.hash = `#/documents/${id}`;
+            window.location.hash = documentLink(id);
           }}
         />
       </>

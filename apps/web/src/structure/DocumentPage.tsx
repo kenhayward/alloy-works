@@ -1,8 +1,15 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { readOutlineView, type OutlineView, type OutlineOperation } from '@alloy-works/domain';
+import {
+  readOutlineView,
+  type Contribution,
+  type OutlineView,
+  type OutlineOperation,
+} from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import { GeneratedLists, type Known } from './GeneratedLists.js';
+import { nodeLink } from './links.js';
 import {
   OutlinePanel,
   type Answered,
@@ -61,6 +68,48 @@ function documentIn(data: unknown): Read {
     outline: read.outline,
     mayEdit,
   };
+}
+
+/**
+ * What each occurrence contributes, from a `ContributionsView` checked member by member: an occurrence
+ * whose version is null, or names a version the answer does not hold, is left out - not known, so
+ * every number it could have moved is withheld rather than guessed. `undefined` is a body that is not
+ * one at all.
+ */
+function contributionsIn(data: unknown): ReadonlyMap<string, readonly Contribution[]> | undefined {
+  if (!isRecord(data) || !Array.isArray(data.occurrences) || !Array.isArray(data.versions)) {
+    return undefined;
+  }
+  const versions = new Map<string, Contribution[]>();
+  for (const version of data.versions as unknown[]) {
+    if (!isRecord(version) || typeof version.id !== 'string') return undefined;
+    if (!Array.isArray(version.contributions)) return undefined;
+    const list: Contribution[] = [];
+    for (const each of version.contributions as unknown[]) {
+      if (
+        !isRecord(each) ||
+        typeof each.block !== 'string' ||
+        typeof each.sequence !== 'string' ||
+        typeof each.numbered !== 'boolean'
+      ) {
+        return undefined;
+      }
+      list.push({
+        block: each.block,
+        sequence: each.sequence,
+        numbered: each.numbered,
+        ...(typeof each.caption === 'string' ? { caption: each.caption } : {}),
+      });
+    }
+    versions.set(version.id, list);
+  }
+  const known = new Map<string, readonly Contribution[]>();
+  for (const occurrence of data.occurrences as unknown[]) {
+    if (!isRecord(occurrence) || typeof occurrence.node !== 'string') return undefined;
+    const list = typeof occurrence.version === 'string' ? versions.get(occurrence.version) : null;
+    if (list) known.set(occurrence.node, list);
+  }
+  return known;
 }
 
 /** The components a listing held, each checked rather than trusted: the client's bodies are `any`. */
@@ -175,6 +224,13 @@ function announce(
 export interface DocumentPageProps {
   readonly client: Client;
   readonly id: string;
+  /**
+   * The node the address names, and which arrival of an address this is: a link followed a second
+   * time to the same node is a new arrival, and is taken to it again.
+   */
+  readonly linked?: { readonly node: string; readonly arrival: number } | null;
+  /** A link to the address already shown was followed, which no `hashchange` announces. */
+  readonly onArriveAgain?: () => void;
 }
 
 /**
@@ -192,7 +248,7 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-export function DocumentPage({ client, id }: DocumentPageProps) {
+export function DocumentPage({ client, id, linked = null, onArriveAgain }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
@@ -259,6 +315,35 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
       current = false;
     };
   }, [client, componentsAttempt]);
+
+  // What each occurrence contributes, asked again whenever the version the page holds changes - an
+  // act of the author's, a refusal carrying somebody else's - so a component's new head is heard about
+  // no later than the next act. Until the answer arrives the page numbers with the last one, keyed by
+  // occurrence, so a move renumbers at once; an occurrence it has not heard about is not known.
+  const [known, setKnown] = useState<Known>({ state: 'loading' });
+  const [knownAttempt, setKnownAttempt] = useState(0);
+  const heldVersion = loaded.state === 'open' ? loaded.document.version.id : null;
+  useEffect(() => {
+    if (heldVersion === null) return;
+    let current = true;
+    client
+      .GET('/v1/documents/{id}/contributions', { params: { path: { id } } })
+      .then(({ data, response }) => {
+        if (!current) return;
+        const read = contributionsIn(data);
+        setKnown(
+          read === undefined
+            ? { state: 'failed', signedOut: response.status === 401 }
+            : { state: 'loaded', contributions: read },
+        );
+      })
+      .catch(() => {
+        if (current) setKnown({ state: 'failed', signedOut: false });
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, id, heldVersion, knownAttempt]);
 
   const names: Names = useMemo(
     () =>
@@ -438,6 +523,23 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         names={names}
         components={components}
         onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
+        linked={linked}
+        linkOf={(node) =>
+          `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
+        }
+        onSelected={(node) => {
+          // The address follows what is chosen, without a history entry per arrow key and without a
+          // `hashchange`, so a reload or a copy of the address comes back to it.
+          window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+        }}
+      />
+      <GeneratedLists
+        document={document.id}
+        outline={document.outline}
+        known={known}
+        names={names}
+        onRetry={() => setKnownAttempt((count) => count + 1)}
+        onArriveAgain={onArriveAgain}
       />
     </article>
   );

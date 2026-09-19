@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -108,7 +109,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         <ul>
           {items.map((item) => (
             <li key={item.id}>
-              <a href={`#/documents/${item.id}`}>{item.title}</a> - version {item.version} in{' '}
+              <a href={documentLink(item.id)}>{item.title}</a> - version {item.version} in{' '}
               {item.space}
             </li>
           ))}

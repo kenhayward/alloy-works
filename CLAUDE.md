@@ -15,11 +15,13 @@ a web application and a desktop application**.
 > in `packages/db`; its title, base language and base direction are edited above the surface. A
 > document can be created in a space and its outline - a tree of sections and component references -
 > restructured a version at a time, through `packages/domain/src/structure/`, the same chain and the
-> documents page in `apps/web`, which numbers its sections with the same function the service uses -
-> and nothing else authors content: no lists, tables, marks or equations, no paste, no metadata
-> panel, no making a component type, no cross-references resolved, no document view, and no
-> publishing. The single `Component` in `packages/domain` is the scaffolding's, and nothing renders
-> it any more. [`docs/features.md`](docs/features.md) lists what does and does not exist.
+> documents page in `apps/web`, which numbers its sections with the same function the service uses,
+> gives every node an address, and lists the document's figures, tables and equations beneath the
+> outline - and nothing else authors content: no list, table, mark or equation can be written, no
+> paste, no metadata panel, no making a component type, no cross-references resolved, no document
+> view, and no publishing. The single `Component` in `packages/domain` is the scaffolding's, and
+> nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
+> exist.
 
 ## Architecture & data flow
 
@@ -59,7 +61,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,368 requirements in 22 documents under
+There are 1,369 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements

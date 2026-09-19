@@ -103,6 +103,10 @@ describe('the domain package', () => {
         'conditions',
         'number',
         'sectionNumbers',
+        // Generated lists, promoted in the plan that builds them
+        // (docs/plans/2026-09-18-structure-03-navigation.md).
+        'contents',
+        'listOf',
       ].sort(),
     );
   });

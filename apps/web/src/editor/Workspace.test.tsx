@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace.js';
@@ -434,5 +435,211 @@ describe('the workspace', () => {
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
     ).toBeInTheDocument();
+  });
+
+  it('answers a link into a document the caller may not read as nothing there, saying nothing of the node', async () => {
+    window.location.hash =
+      '#/documents/eeeeeeee-0000-4000-8000-000000000001/nodes/iiiiiiiiiiiiiiiiiiiiiiiiii';
+    render(
+      <StrictMode>
+        <Workspace fetch={serviceThat({})} />
+      </StrictMode>,
+    );
+    expect(
+      await screen.findByText('There is nothing here, or nothing you may read.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('The linked part is not in this document.')).toBeNull();
+  });
+
+  it('opens a document at the node its address names, and again when that address arrives again', async () => {
+    const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
+    const node = (id: string, title: string) => ({
+      type: 'section',
+      id,
+      title: [{ type: 'text', value: title, marks: [] }],
+      numbered: true,
+      matter: 'body',
+      pageBreak: 'none',
+      values: {},
+      children: [],
+    });
+    const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
+    const METHOD = 'mmmmmmmmmmmmmmmmmmmmmmmmmm';
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
+      if (url.pathname === `/v1/documents/${DOCUMENT}`) {
+        return json(200, {
+          id: DOCUMENT,
+          space: { id: 's1', name: 'General' },
+          version: {
+            id: 'dddddddd-0000-4000-8000-000000000001',
+            number: '0.2',
+            author: 'p1',
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          outline: {
+            schemaVersion: 1,
+            title: 'The dosing report',
+            language: 'en-GB',
+            direction: 'ltr',
+            nodes: [node(INTRODUCTION, 'Introduction'), node(METHOD, 'Method')],
+          },
+          mayEdit: false,
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    window.location.hash = `#/documents/${DOCUMENT}/nodes/${METHOD}`;
+    render(
+      <StrictMode>
+        <Workspace fetch={fetching} />
+      </StrictMode>,
+    );
+    const method = await screen.findByRole('treeitem', { name: 'Method' });
+    await waitFor(() => expect(method).toHaveFocus());
+
+    // Choosing Introduction rewrites the address without a `hashchange` or a history entry...
+    const entries = window.history.length;
+    const heard = vi.fn();
+    window.addEventListener('hashchange', heard);
+    await userEvent.click(screen.getByRole('treeitem', { name: 'Introduction' }));
+    expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`);
+    // A `hashchange` jsdom would fire is queued as a task, so one is let through before looking.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    window.removeEventListener('hashchange', heard);
+    expect(heard).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(entries);
+    // ...so a link to Method, followed again, is still news, and takes the reader back to it.
+    window.location.hash = `#/documents/${DOCUMENT}/nodes/${METHOD}`;
+    fireEvent(window, new HashChangeEvent('hashchange'));
+    await waitFor(() =>
+      expect(screen.getByRole('treeitem', { name: 'Method' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    expect(screen.getByRole('treeitem', { name: 'Method' })).toHaveFocus();
+  });
+
+  it('takes the reader to a listed figure whose link is the address already shown', async () => {
+    const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
+    const PRINTER = 'cccccccc-0000-4000-8000-000000000001';
+    const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
+    const RESULTS = 'rrrrrrrrrrrrrrrrrrrrrrrrrr';
+    const VERSION = 'dddddddd-0000-4000-8000-000000000001';
+    const placing = {
+      numbered: true,
+      matter: 'body',
+      pageBreak: 'none',
+      values: {},
+    };
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/components') {
+        return json(200, {
+          items: [
+            {
+              id: PRINTER,
+              title: 'Install the printer',
+              space: { id: 's1', name: 'General' },
+              version: '0.3',
+            },
+          ],
+          next: null,
+        });
+      }
+      if (url.pathname === `/v1/documents/${DOCUMENT}`) {
+        return json(200, {
+          id: DOCUMENT,
+          space: { id: 's1', name: 'General' },
+          version: {
+            id: VERSION,
+            number: '0.2',
+            author: 'p1',
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          outline: {
+            schemaVersion: 1,
+            title: 'The dosing report',
+            language: 'en-GB',
+            direction: 'ltr',
+            nodes: [
+              {
+                type: 'section',
+                id: INTRODUCTION,
+                title: [{ type: 'text', value: 'Introduction', marks: [] }],
+                ...placing,
+                children: [
+                  {
+                    type: 'reference',
+                    id: RESULTS,
+                    component: PRINTER,
+                    mode: { kind: 'latest' },
+                    ...placing,
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          mayEdit: false,
+        });
+      }
+      if (url.pathname === `/v1/documents/${DOCUMENT}/contributions`) {
+        const held = 'vvvvvvvv-0000-4000-8000-000000000001';
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: VERSION, number: '0.2' },
+          occurrences: [{ node: RESULTS, version: held }],
+          versions: [
+            {
+              id: held,
+              contributions: [
+                { block: 'f1', sequence: 'figure', numbered: true, caption: 'The paper tray' },
+                { block: 'f2', sequence: 'figure', numbered: true, caption: 'The toner' },
+              ],
+            },
+          ],
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    window.location.hash = `#/documents/${DOCUMENT}`;
+    render(
+      <StrictMode>
+        <Workspace fetch={fetching} />
+      </StrictMode>,
+    );
+    const placed = await screen.findByRole('treeitem', { name: 'Install the printer, latest' });
+    const first = await screen.findByRole('link', { name: 'Figure 1.1 The paper tray' });
+
+    // Choosing the component rewrites the address to its own, which is the link its figures list.
+    await userEvent.click(placed);
+    expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${RESULTS}`);
+    expect(first).toHaveAttribute('href', window.location.hash);
+    expect(placed.querySelector('mark')).toBeNull();
+
+    // Following that link changes no address, and still takes the reader to the component.
+    await userEvent.click(first);
+    await waitFor(() =>
+      expect(screen.getByRole('treeitem', { name: 'Install the printer, latest' })).toHaveFocus(),
+    );
+    const marked = screen.getByRole('treeitem', { name: 'Install the printer, latest' });
+    expect(marked.querySelector('mark')).not.toBeNull();
+
+    // As does the second figure the same component holds.
+    await userEvent.click(screen.getByRole('link', { name: 'Figure 1.2 The toner' }));
+    await waitFor(() =>
+      expect(screen.getByRole('treeitem', { name: 'Install the printer, latest' })).toHaveFocus(),
+    );
   });
 });

@@ -118,8 +118,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   chapter, equations and footnotes straight through, and each appendix on its own - and the
   service answers every number with where it came from - but the editor does not yet write a figure,
   so you only see those through the API. A number that depends on a component you may not read is
-  left out rather than guessed. Nothing resolves a cross-reference yet, and there is no table of
-  contents.
+  left out rather than guessed.
+
+  **Every part of a document has a link.** Choose a section or a component in the outline and its link
+  is shown beneath it, with **Copy link**; the address in the browser follows too. Opening the link
+  opens the document with that part chosen and marked, however the outline has been reordered since.
+  Beneath the outline, the document lists its **figures, tables and equations**, each with its number
+  and caption and a link to where it is placed, renumbered at once when you move anything. A number
+  that would depend on a component you may not read is left off. Nothing resolves a cross-reference
+  yet, and nothing tracks where you are as you read - there is no reading view.
 
   **This is structure, not the document.** There is no document view:
   the outline is a tree you build, and you still open a component on its own to edit it. A section's
@@ -137,8 +144,8 @@ Named explicitly so nobody has to read the source to find out:
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view: a document's outline is a tree you build, and a component still opens on its own
-  to be edited. No cross-references resolved, no table of contents, no list of figures, no reuse or
-  transclusion. No way to make a figure or a table unnumbered: every one takes a number.
+  to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
+  make a figure or a table unnumbered: every one takes a number.
 - No publishing or output formats.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.

@@ -21,6 +21,7 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number an outline produces revealing nothing about a component the
     // reader may not read (issue #130), landed by the numbering plan and narrowed from the issue's "a
     // number, count or order", which asked more than structure.md answers.
@@ -37,9 +38,14 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1368);
+    expect(model.requirements).toHaveLength(1369);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-034, which the panel answers for the author's
+    // own acts and not for another person's - named in prose beside the table (the navigation plan,
+    // decision I).
+    // 361, from 360: structure.md claims STR-063, which the navigation plan measures in the service
+    // suite.
     // 360, from 361: structure.md stopped claiming STR-023 when the build gave a caption met in
     // appendix matter before any numbered appendix no number - an exception STR-017 does not cover,
     // so the row answered it only in part. The gap is named in prose beside the table, and issue #129
@@ -199,8 +205,21 @@ describe('the citations in the committed model', () => {
   // component's content changes.
   // 173, from 174: STR-023's identifier left the title of its test in numbering.test.ts when
   // structure.md stopped claiming it; the test stays, citing nothing.
+  // 175, from 173: the navigation plan (docs/plans/2026-09-18-structure-03-navigation.md) cites
+  // STR-040 and STR-041 in packages/domain/src/structure/lists.test.ts: a contents generated to a
+  // declared depth, and a list of figures, of tables and of equations.
+  // 176, from 175: the same plan cites STR-063, landed by it, in
+  // apps/service/src/navigation-budget.test.ts, which measures the service's routes over a document
+  // of five hundred nodes.
+  // 178, from 176: the same plan cites STR-044 and STR-046 in
+  // apps/web/src/structure/DocumentPage.test.tsx: every node's address names its document and itself
+  // and opens the document there, and the same address finds the same node after a reorder.
+  // 180, from 178: the same plan cites IAM-073 a second time, in
+  // apps/web/src/structure/DocumentPage.test.tsx, where the page now numbers captions itself and shows a
+  // reader none a component they may not read could have moved; and STR-037, reordering from the
+  // contents by key and by pointer.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(173);
+    expect(model.citations).toHaveLength(180);
   });
 
   it('cites no identifier the corpus does not hold', () => {

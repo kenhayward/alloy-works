@@ -28,11 +28,13 @@ is edited with), [relationships.md](relationships.md) (the reference index the c
 > [the second structure plan](../plans/2026-09-18-structure-02-numbering.md): the scheme and the
 > product's default, what a component's content contributes, `resolve`, `conditions` and `number`,
 > the numbering route, which resolves each occurrence to a component version, and section numbers in
-> the outline panel. What is still design here: caption numbers shown in the renderer, resolving a
-> cross-reference, the contents panel, generated lists, deep links, the cycle check, a component
-> version resolved for each occurrence on `GET /v1/documents/{id}`, and a title edited as inline
-> content rather than as plain text. A cross-reference's stored shape - its identifier, its target
-> and `withoutPages` - is built, by
+> the outline panel. **Navigation is built too**, by
+> [the third structure plan](../plans/2026-09-18-structure-03-navigation.md): the contents panel with
+> its lists, `contents` and `listOf`, a node's address, and the contributions route. What is still
+> design here: caption numbers shown in the renderer, resolving a cross-reference, the cycle check, a
+> component version resolved for each occurrence on `GET /v1/documents/{id}`, and a title edited as
+> inline content rather than as plain text. A cross-reference's stored shape - its identifier, its
+> target and `withoutPages` - is built, by
 > [the third content-model plan](../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md).
 > The content model spike's flat `OutlineSection`, in
 > `packages/domain/src/content/outline.ts`, still stands beside the tree for the OOXML reader and
@@ -81,11 +83,11 @@ current outline rather than silently overwriting it.
 | **STR-032** | A `block` target reaches a block or footnote of the reference's own component; a `component` target reaches a block or footnote of another component of the same document                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **STR-056** | A `block` target carries no occurrence, and resolution binds it to the occurrence being read, so one stored reference resolves once per occurrence                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | **STR-062** | Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first                                                                                                                                                                                                                                                                                                                                                                   |
-| **STR-034** | The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **STR-036** | The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **STR-037** | Reordering in the panel is the move operation, from the panel's own drag and from its keymap                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **STR-040** | `contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **STR-041** | `listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **STR-063** | The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result                                                                                                                                                                                                                                                                        |
+| **STR-040** | `contents(conditioned, numbering, depth)` lists every node to the depth, numbered or not, a reference's title left to its caller                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **STR-041** | `listOf(conditioned, numbering, sequence)` lists one sequence's entries with their captions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **STR-044** | A node's URL is the document's path and the node's identifier, both identifiers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **STR-046** | The URL holds no depth, no number and no position, so there is nothing in it for a reorder to invalidate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **STR-048** | A node carries `pageBreak`: none, a new page, or a new recto page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -143,10 +145,11 @@ cross-reference. Neither design answers STR-029, STR-030 or STR-055 alone, so ne
 | STR-029, STR-030, STR-055 | The named failures, above. STR-030 also needs REU's condition evaluation; STR-055's member exists (`withoutPages`), and rendering it is the publisher's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | STR-020, STR-042          | Condition evaluation is **REU**'s, and T4. The pipeline's second stage is shaped for it and is the identity function until then                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | STR-033                   | What references a node is the reference index read backwards, which [relationships.md](relationships.md) designs and nothing builds. T3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| STR-034                   | **Answered for the author's own acts, not another person's.** The panel renders the outline the page holds, so it updates with every act the author makes; a colleague's change reaches it only when the author next acts and is refused, or reloads. The stream carries no document version, and one would have to be withheld from every viewer who may not read the document - a design of its own                                                                                                                                                                                                                                             |
 | STR-035                   | Jumping to a node is here; tracking the reader's position as they scroll is the **document view**'s, which is the next slice of the editor and is not designed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| STR-039                   | **Scope §11 names the quantity and gives no number**, and every neighbouring budget has one. A design that invented one would be writing a requirement - see the recommendation below                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| STR-039                   | **The interface's share has no number and no suite.** STR-063 gives the service's share a number and is claimed; the time the page takes to show an answer needs a browser to measure, and is filed as [issue #134](https://github.com/kenhayward/alloy-works/issues/134), to land beside the browser suite                                                                                                                                                                                                                                                                                                                                       |
 | STR-043                   | An index needs marked entries in content, which is a CNT change. T6, and STR-Q03 asks whether it is in scope at all                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| STR-045                   | The permission is access.md's and is applied by the route below. Navigating to the node and highlighting it is the document view's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| STR-045                   | **The panel's half is built and the claim is not.** Opening a node's link opens the document with that node chosen, focused and marked in the outline, and a document the reader may not read is answered as nothing there (access.md). But a reader following a shared link expects to land on the node's content, and there is no document view to show it; claimed now, the claim would go partial the day that view exists. The document view claims it, going through the same `nodeLink`                                                                                                                                                    |
 | STR-047, STR-052          | Both need baselines, which [storage-and-versioning.md](storage-and-versioning.md) designs and nothing builds; STR-052 also needs a publication record, which is PUB's                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | STR-050                   | The declaration is here (STR-048, STR-049); an output writer ignoring it without error is that writer's - PUB's and [word-output.md](word-output.md)'s                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | STR-060                   | The node carries a title and a `values` member, and nothing may write into it yet; once something does, a value in it is validated exactly as a component's is ([metadata.md](metadata.md)). **Which** schemas apply comes from the template's section-level assignments (TPL-054), and TPL is not designed                                                                                                                                                                                                                                                                                                                                       |
@@ -178,7 +181,8 @@ would reach another component's block in one document only, and the product is f
    300-page document as a quantity and gives no number. CNT-136, PUB-064, SCH-033 and REL-031 each
    carry one; this does not, so the requirement cannot be verified. The obvious candidate is the
    interactive budget REL-031 and SCH-033 already use - p95 250 ms, never above 500 ms - stated
-   against a document of several hundred nodes.
+   against a document of several hundred nodes. Landed as STR-063 (issue #119), narrowed to the
+   service's share.
 3. **A statement of what a document is.** TPL-001 says a template is "a named, versioned artifact
    belonging to a space". Nothing says the same of a document: STR-001 presumes one, TPL instantiates
    one, VER versions one, and no requirement declares its identity, its title or its space. This
@@ -668,44 +672,67 @@ draws from the table it holds, which is the table for the outline it holds.
 ## Navigation
 
 **The contents panel is the outline, rendered.** It shows every node with the number the engine gives
-it (STR-036), it updates because it renders the outline every operation returns rather than a copy of
-one (STR-034), and clicking a node takes the reader to it (STR-035's second half). Reordering from the
-panel is the move operation (STR-037).
+it (STR-036), and clicking a node takes the reader to it (STR-035's second half). It updates with
+every act the author makes, because it renders the outline every operation returns rather than a copy
+of one; so STR-034 is answered only for the author's own acts, as "What this document does not own"
+says. Reordering from the panel is the move operation (STR-037). **The panel goes to a linked node,
+chooses it, focuses it and marks it**, following a deep link (below).
 
 **Tracking the reader's position as they scroll is the document view's**, and the document view is
 the next slice of the editor. The panel's half of STR-035 is here and the claim is not, for that
 reason.
 
-**Several hundred nodes** (STR-039) is what the panel is built for: the outline is one value the
-renderer already holds, rendering is windowed over the visible depth, and a move is a splice rather
-than a re-fetch. What is missing is the number the requirement is measured against, and that is named
-above rather than assumed.
+**Measured, not assumed.** Every node is rendered - nothing is windowed over the visible depth - and a
+move is a round trip answering the whole outline rather than a splice. At 500 nodes, opening a document
+measured 110 ms p95 and a move in the page measured 91 ms p95; the service's own share is held to
+STR-063 in the suite.
 
 ## Generated lists
 
 Two functions over the numbering table, because every generated list is the same question asked of a
 different sequence:
 
-- `contents(numbering, depth)` - the section sequence's entries to a depth, each with its node,
-  number, title and depth (STR-040). **PUB** renders it, and PUB-037 declares the depth.
-- `listOf(numbering, sequence)` - one sequence's entries in order (STR-041). Figures, tables and
-  equations are three calls; a sequence the layout adds is a fourth, with no new function.
+- `contents(conditioned, numbering, depth)` - every node to a depth, in document order, numbered or
+  not: a preface is in the contents with no number, as it is in the outline. A section's title is its
+  own; a reference's is left to its caller, because a reference's heading is its component's title
+  (STR-040). **PUB** renders it, and PUB-037 declares the depth.
+- `listOf(conditioned, numbering, sequence)` - one sequence's entries in order, each with the caption
+  its component holds (STR-041). Figures, tables and equations are three calls; a sequence the layout
+  adds is a fourth, with no new function.
 
 Both read the table produced after `conditions`, so STR-042 falls out of the pipeline's order once
 conditions exist rather than needing a rule of its own.
+
+**The document page lists its figures, tables and equations beneath the outline**, numbered in the
+page by the same pipeline: the outline the page holds, run through `resolve`, `conditions` and
+`number` over each occurrence's contributions as `GET /v1/documents/{id}/contributions` last answered
+them, so a move renumbers every entry before the page hears back from the service. Each entry is a
+caption and a link to the occurrence that holds it (below); an occurrence the page has heard nothing
+about withholds every number it could have moved, exactly as the numbering route does (IAM-073).
 
 ## Deep links
 
 **A node's URL names the document and the node, both by identifier.** Nothing in it is positional, so
 a reorder cannot invalidate it (STR-046), and the document's presence is what makes the node findable
-without a tenant-wide node index.
+without a tenant-wide node index. The address is `#/documents/{document}/nodes/{node}`, the same hash
+routing the rest of the workspace uses.
 
 Opening one is `read` on the **document** artifact, decided by the route helper as any other route's
 is, and answered 404 when the caller may not read it - indistinguishable from a document that does not
 exist, which is access.md's rule and not a new one. **A node pointing at a component the recipient may
 not read still resolves**: access.md is explicit that a document's grants do not reach its components,
-so the link opens the document at the node's place with that component withheld. Navigating to the node
-and highlighting it in the body is the document view's, which is why STR-045 is not claimed.
+so the link opens the document at the node's place with that component withheld.
+
+**The address follows what is chosen in the panel, without a history entry per choice and without a
+hash change**, so a reload or a copy of the address returns to the same node; choosing another node
+replaces it again. Beneath the tree, **Link to** the chosen node's name shows the whole address in a
+field, with **Copy link** beside it, which says **Copied the link to** the node's name. Arriving at a
+document by a node's link **chooses it, focuses it and marks it** in the outline (STR-045's panel
+half) - navigating to the node's content and tracking the reader's position there is the document
+view's, which is why the claim stays with it. A link followed a second time to the same node is a new
+arrival, and is taken to it again. **A node the address names that is no longer in the document** - one
+a colleague removed, or one from another document entirely - says **The linked part is not in this
+document.**, and the address keeps what was followed, so a reload shows the same message again.
 
 ## Who is shown what
 
@@ -732,6 +759,10 @@ counter next restarts, whatever the component holds, and each number it would ha
 restarts - the default scheme's equations and footnotes - stays unknown to the end of the matter.
 Section numbers depend on the outline alone and are always shown. So everybody shown a number is
 shown the same one, and a missing number says nothing about what the component contains.
+`GET /v1/documents/{id}/contributions` answers what the numbering route reads, so a reader is sent no
+caption, block or version of a component they may not read, and the page numbers from nothing else.
+What the page was sent while the reader could read a component stays on the page until the version it
+holds next changes, as the outline does (finding 12).
 
 **Only the view is withheld.** The stored outline is unchanged, and its digests, its versions and
 every operation's result are computed on it, never on a view; the domain's `readOutlineView` reads a
@@ -777,19 +808,21 @@ target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 | `GET /v1/documents/{id}`               | Read, artifact | -                               | The latest version: the outline and its version, as the caller is shown it                                             |
 | `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The latest version's numbering table, as the caller is shown it, and the component version each occurrence resolved to |
 | `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version                                      |
-| `GET /v1/documents/{id}/contributions` | Read, artifact | `occurrences`                   | What each named occurrence's component contributes to the sequences. Not built                                         |
+| `GET /v1/documents/{id}/contributions` | Read, artifact | -                               | What each occurrence of the latest version contributes to the sequences, as the caller is shown it                     |
 
-**Five of the six are built, and one of those short of this table.** `GET /v1/documents` carries
-neither `cursor` nor `limit` and answers everything the caller may read at once, which is correct
-and linear in the number of documents. `GET /v1/documents/{id}` answers each reference node as the
-caller is shown it ([Who is shown what](#who-is-shown-what)), naming its mode; it resolves no
-component version, and **the numbering route does instead**, beside the numbers that version produced:
-each occurrence's version, or `null` where the caller may not read the component, where it is
-`approved` and waits on revisions, or where its content does not read. The numbering route numbers
-the latest version alone: numbering an earlier one waits for baselines (STR-052). The contributions
-route is not built, and waits for the renderer to show a caption's number. Creating answers `200`
-rather than `201`, for the reason component-editor.md gives: a permission-checked handler cannot set
-a status.
+**All six are built.** `GET /v1/documents` carries neither `cursor` nor `limit` and answers everything
+the caller may read at once, which is correct and linear in the number of documents. `GET
+/v1/documents/{id}` answers each reference node as the caller is shown it
+([Who is shown what](#who-is-shown-what)), naming its mode; it resolves no component version, and
+**the numbering route does instead**, beside the numbers that version produced: each occurrence's
+version, or `null` where the caller may not read the component, where it is `approved` and waits on
+revisions, or where its content does not read. The numbering route numbers the latest version alone:
+numbering an earlier one waits for baselines (STR-052). **The contributions route takes no
+parameter**: it resolves each occurrence itself, as the numbering route does, and names each version
+an occurrence resolved to once - however many occurrences name it - rather than once per occurrence,
+so a component used many times is not sent many times. It is what the renderer numbers a caption with
+(above). Creating answers `200` rather than `201`, for the reason component-editor.md gives: a
+permission-checked handler cannot set a status.
 
 **One route for five operations, not five routes.** Each is one act against one outline at one
 version, they share every refusal, and a sixth operation should be a member of a closed union rather
@@ -813,14 +846,14 @@ them nothing they could not already read; the component routes order it the same
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                                                                                                                                                 |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - and `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers`. Not built: `contents`, `listOf` and reference resolution |
-| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                             |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                     |
-| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                      |
-| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                          |
-| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render, and offers **Numbered** and **Appendix** beside each node                                                                                                |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf`. Not built: reference resolution                                                                                                  |
+| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                            |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                                                                                                                                         |
+| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render, and offers **Numbered** and **Appendix** beside each node; `links.ts`, a node's address and the `#/documents/{id}/nodes/{node}` route; the panel's **Link to** field and **Copy link**; and `GeneratedLists.tsx`, the figures, tables and equations beneath the outline |
 
 **The operations are pure functions over a tree, and the service applies them.** `packages/domain` is
 where a tree operation can be property-tested without a database, and where determinism is provable.
@@ -855,8 +888,11 @@ cycle once there is an index to walk, and record - never rebasing one person's a
 - **Accessibility**, which needs a browser: the panel's keymap, its announcements and its focus
   handling, in the suite component-editor.md's build plan introduces. **No release claims STR-006
   without it.**
-- **Navigation at several hundred nodes**: measured, on a declared reference configuration, and
-  recorded beside the budget the corpus does not yet have.
+- **Navigation at several hundred nodes**: the service's share, STR-063, is measured in
+  `apps/service/src/navigation-budget.test.ts`, at a declared reference configuration of 500 nodes and
+  400 occurrences, against p95 250 ms and a maximum of 500 ms, in every `pnpm test`. **The interface's
+  share** waits for the browser suite, and is filed as
+  [issue #134](https://github.com/kenhayward/alloy-works/issues/134).
 
 ## What was ruled out
 
@@ -982,3 +1018,26 @@ kind of reason: no layout and no conditions exist to change.
 | **Built: a drag started before the outline panel's first effects ran was cancelled** (issue #131) - structure 1's code, found by this plan's tests under load                          | Under `<StrictMode>`, the simulated unmount cleared the drag's timer; that cleanup is gone, and a test starts a drag before the effects run                                                                              |
 | **Built: the property test numbered almost nothing**: its generator lost precision after two calls, so two hundred runs made two nodes                                                 | An exact generator, a floor on what the runs contain, and an independent oracle for every section number and figure label                                                                                                |
 | **Built: `Ctrl+Z` did nothing while Numbered, Appendix or Starts on had the focus**, straight after the act made from it, because the panel left the key to every `input` and `select` | Only a text field keeps `Ctrl+Z` as its own undo; from a checkbox or a select it undoes the last act                                                                                                                     |
+
+[The third structure plan](../plans/2026-09-18-structure-03-navigation.md) built the contents panel,
+the generated lists, a node's address and the contributions route. It found twelve things. One
+requirement is new and claimed, STR-063 (issue #119), narrowed to the service's share of the
+navigation budget. One claim is dropped, STR-034, answered for the author's own acts and not for
+another person's. STR-036 stays claimed and cited by nothing, as the plan's decision J says - not with
+STR-034 and STR-037, as structure 2 expected: the panel is now the contents, but nothing publishes to
+compare it with.
+
+| Found                                                                         | Change                                                                                                                     |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **STR-034 is answered only for the author's own acts**                        | The claim is dropped and the gap named: another person's change needs document versions on the stream, withheld per viewer |
+| **Issue #119 as filed could not be demonstrated**                             | Landed as STR-063, the service's share, measured in the suite; the interface's share is filed as issue #134                |
+| **`contents` read from the table would drop every unnumbered node**           | It walks the outline and numbers from the table; a reference's title is its caller's                                       |
+| **`listOf` had no caption to list**                                           | A figure's and a table's contribution carries its caption; the numbering table carries none                                |
+| **"A move is a splice" was not what was built**                               | Every act answers the whole outline; measured, and fast enough                                                             |
+| **"Windowed over the visible depth" was never built**                         | Not needed at 500 nodes; the prose is gone                                                                                 |
+| **The contributions route's `occurrences` parameter cannot carry an outline** | The route answers every occurrence of the latest version and takes no parameter                                            |
+| **An answer per occurrence repeated a reused component**                      | Each version's contributions are answered once: 232 KB rather than 542 KB at 500 nodes                                     |
+| **The desktop app has no address bar to share a link from**                   | The chosen node's address in a field, and **Copy link**                                                                    |
+| **The hash router could not hear the same address twice**                     | It counts arrivals                                                                                                         |
+| **The page now numbers captions itself**                                      | IAM-073 is cited in the renderer too                                                                                       |
+| **A `latest` component's new head reaches the lists at the next act**         | Named: the page asks again whenever its version changes, and no sooner                                                     |
