@@ -105,13 +105,15 @@ describe('a table of contents', () => {
       },
     ]);
     const two = contents(conditioned, numbering, 2);
-    expect(two.map((entry) => [entry.node, entry.depth, entry.number])).toEqual([
-      [id('preface'), 1, null],
-      [id('method'), 1, '1'],
-      [id('scope'), 2, '1.1'],
-      [id('printer'), 2, '1.2'],
-      [id('glossary'), 1, 'A'],
-      [id('terms'), 2, 'A.1'],
+    expect(two.map((entry) => [entry.node, entry.depth, entry.number, entry.matter])).toEqual([
+      [id('preface'), 1, null, 'body'],
+      [id('method'), 1, '1', 'body'],
+      [id('scope'), 2, '1.1', 'body'],
+      [id('printer'), 2, '1.2', 'body'],
+      [id('glossary'), 1, 'A', 'appendix'],
+      // 'terms' takes the appendix's own matter, not the 'body' its own node carries by default -
+      // a child of an appendix section is in the appendix.
+      [id('terms'), 2, 'A.1', 'appendix'],
     ]);
     // A reference's heading is its component's title, which the domain does not read.
     expect(two.find((entry) => entry.node === id('printer'))).toMatchObject({
@@ -149,15 +151,39 @@ describe('a list of figures, of tables or of equations', () => {
     figure('f2', ''),
   );
 
+  // A second occurrence's own content, its figure's block id ('f1') the same as printer's but its
+  // caption different - so a lookup keyed by block alone, rather than by occurrence and block, would
+  // show one occurrence's caption on the other's row.
+  const printerAgain = holding(
+    figure('f1', 'The paper tray'),
+    {
+      type: 'table',
+      id: 't1',
+      caption: 'Parts',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [{ type: 'paragraph', id: 'c1', content: [] }] }] }],
+    },
+    { type: 'equation', id: 'e1', mathml: MATHML, numbered: true },
+    { type: 'equation', id: 'e2', mathml: MATHML, numbered: false },
+    figure('f2', ''),
+  );
+
   it('STR-041 generates a list of figures, a list of tables and a list of equations', () => {
     const { conditioned, numbering } = pipeline(
       [section('one', [reference('first')]), section('two', [reference('again')])],
-      { first: printer, again: printer },
+      { first: printer, again: printerAgain },
     );
     expect(listOf(conditioned, numbering, 'figure')).toEqual([
       { node: id('first'), block: 'f1', number: '1.1', label: 'Figure 1.1', caption: 'The tray' },
       { node: id('first'), block: 'f2', number: '1.2', label: 'Figure 1.2', caption: '' },
-      { node: id('again'), block: 'f1', number: '2.1', label: 'Figure 2.1', caption: 'The tray' },
+      {
+        node: id('again'),
+        block: 'f1',
+        number: '2.1',
+        label: 'Figure 2.1',
+        caption: 'The paper tray',
+      },
       { node: id('again'), block: 'f2', number: '2.2', label: 'Figure 2.2', caption: '' },
     ]);
     expect(listOf(conditioned, numbering, 'table')).toEqual([
