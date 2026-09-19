@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.28.2 - 2026-09-19 (PR #141)
+
+### Fixed
+
+- Two of the checks that run on every change could fail now and then for no reason other than a busy
+  build machine, blocking a change that was fine. They check that document numbering and outline
+  editing give the right answers, and now have the time they need to do it.
+
 ## 0.28.1 - 2026-09-19 (PR #139)
 
 ### Fixed

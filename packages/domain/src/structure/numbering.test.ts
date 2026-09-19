@@ -20,6 +20,9 @@ import {
   type NumberingScheme,
 } from './scheme.js';
 
+/** A minute: the randomised tests below take a quarter of a second on a desktop and seconds on CI. */
+const RANDOMISED_TEST_TIMEOUT_MS = 60_000;
+
 const MATHML =
   '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>';
 
@@ -585,221 +588,227 @@ describe('numbering an outline', () => {
     expect(labels(numbered.entries, 'figure')).toEqual(['Figure 1.1']);
   });
 
-  it('numbers every shape of outline the parse accepts, one section entry per numbered node', () => {
-    // A Lehmer / Park-Miller generator over the Mersenne prime 2^31 - 1: every intermediate product
-    // (seed, at most ~2^31, times the 48271 multiplier) stays well under 2^53, so - unlike
-    // `seed * 1103515245`, which overflows a double's exact integer range after two calls and then
-    // returns 0 forever - this one keeps its full period and gives the same two hundred outlines on
-    // every run, on every platform.
-    let seed = 7;
-    const next = (below: number) => {
-      seed = (seed * 48271) % 2147483647;
-      return seed % below;
-    };
-    let count = 0;
-    // Non-triviality, measured across all two hundred runs (the review's readability bits, drawn
-    // in the same loop as each occurrence's content below, shift these from an earlier count):
-    // 6,425 nodes in all, a maximum recursion depth of 7 (the walk stops generating children past
-    // depth 6, so 7 is the deepest call that finds nothing to add), 4,808 numbered and 1,617
-    // unnumbered nodes, 3,218 references against 3,207 sections, 208 body and 90 appendix
-    // top-level nodes, and 72 of the 200 runs place at least one appendix. Two occurrences of one
-    // component - STR-021's own shape - is covered on its own terms by the dedicated test above:
-    // this generator gives every occurrence its own identifier, so it demonstrates depth, breadth
-    // and every switch instead.
-    let totalNodes = 0;
-    let maxDepth = 0;
-    let numberedNodes = 0;
-    let unnumberedNodes = 0;
-    let referenceNodes = 0;
-    let sectionNodes = 0;
-    let bodyTopLevel = 0;
-    let appendixTopLevel = 0;
-    let runsWithAppendix = 0;
-    const grow = (depth: number): NumberableNode[] => {
-      maxDepth = Math.max(maxDepth, depth);
-      return Array.from({ length: depth > 6 ? 0 : next(4) }, () => {
-        count += 1;
-        totalNodes += 1;
-        const name = `n${count}`;
-        const over = { numbered: next(4) !== 0 };
-        if (over.numbered) numberedNodes += 1;
-        else unnumberedNodes += 1;
-        const isSection = next(2) === 0;
-        if (isSection) sectionNodes += 1;
-        else referenceNodes += 1;
-        return isSection
-          ? section(name, grow(depth + 1), over)
-          : reference(name, grow(depth + 1), over);
-      });
-    };
-    /**
-     * An oracle for the default scheme, written afresh rather than by calling
-     * `resolve`/`conditions`/`number`, so it can catch a bug in any of them instead of only
-     * confirming whichever answer they already happen to agree on. `readable` decides which
-     * occurrences this reader may see at all - a section number never depends on it (decision C):
-     * only which figure labels are shown does.
-     */
-    const expectedOutcome = (
-      outlineNodes: readonly NumberableNode[],
-      figureCountOf: (occurrence: string) => number,
-      readable: (occurrence: string) => boolean,
-    ) => {
-      const sectionRule = defaultNumberingScheme.sequences['section']!;
-      const sections: Record<'body' | 'appendix', number[]> = { body: [], appendix: [] };
-      const figureCounter: Record<'body' | 'appendix', number> = { body: 0, appendix: 0 };
-      // True once an occurrence nobody here can read has stood in this matter since the figure
-      // counter last restarted - the same window CNT-047's neighbour, Important #2, and the
-      // withholding tests each exercise by hand; here it is derived, not asserted.
-      const hiddenSince: Record<'body' | 'appendix', boolean> = { body: false, appendix: false };
-      const expectedSections = new Map<string, string>();
-      const expectedFigures = new Map<string, string | null>();
-
-      // `matter` is a top-level node's own, inherited by its whole subtree - a child's own
-      // `matter` field (always 'body', from the fixture helpers) is never consulted, matching
-      // `number`'s own `visit`, which threads `matter` through the recursion rather than reading
-      // `node.matter` below the top level.
-      const walk = (
-        list: readonly NumberableNode[],
-        depth: number,
-        matter: 'body' | 'appendix',
-        numberedAbove: boolean,
+  // Checks what the code answers, never how fast: its limit is generous so a busy CI runner, where
+  // this takes twenty times as long as on a desktop, cannot fail it (#140).
+  it(
+    'numbers every shape of outline the parse accepts, one section entry per numbered node',
+    () => {
+      // A Lehmer / Park-Miller generator over the Mersenne prime 2^31 - 1: every intermediate product
+      // (seed, at most ~2^31, times the 48271 multiplier) stays well under 2^53, so - unlike
+      // `seed * 1103515245`, which overflows a double's exact integer range after two calls and then
+      // returns 0 forever - this one keeps its full period and gives the same two hundred outlines on
+      // every run, on every platform.
+      let seed = 7;
+      const next = (below: number) => {
+        seed = (seed * 48271) % 2147483647;
+        return seed % below;
+      };
+      let count = 0;
+      // Non-triviality, measured across all two hundred runs (the review's readability bits, drawn
+      // in the same loop as each occurrence's content below, shift these from an earlier count):
+      // 6,425 nodes in all, a maximum recursion depth of 7 (the walk stops generating children past
+      // depth 6, so 7 is the deepest call that finds nothing to add), 4,808 numbered and 1,617
+      // unnumbered nodes, 3,218 references against 3,207 sections, 208 body and 90 appendix
+      // top-level nodes, and 72 of the 200 runs place at least one appendix. Two occurrences of one
+      // component - STR-021's own shape - is covered on its own terms by the dedicated test above:
+      // this generator gives every occurrence its own identifier, so it demonstrates depth, breadth
+      // and every switch instead.
+      let totalNodes = 0;
+      let maxDepth = 0;
+      let numberedNodes = 0;
+      let unnumberedNodes = 0;
+      let referenceNodes = 0;
+      let sectionNodes = 0;
+      let bodyTopLevel = 0;
+      let appendixTopLevel = 0;
+      let runsWithAppendix = 0;
+      const grow = (depth: number): NumberableNode[] => {
+        maxDepth = Math.max(maxDepth, depth);
+        return Array.from({ length: depth > 6 ? 0 : next(4) }, () => {
+          count += 1;
+          totalNodes += 1;
+          const name = `n${count}`;
+          const over = { numbered: next(4) !== 0 };
+          if (over.numbered) numberedNodes += 1;
+          else unnumberedNodes += 1;
+          const isSection = next(2) === 0;
+          if (isSection) sectionNodes += 1;
+          else referenceNodes += 1;
+          return isSection
+            ? section(name, grow(depth + 1), over)
+            : reference(name, grow(depth + 1), over);
+        });
+      };
+      /**
+       * An oracle for the default scheme, written afresh rather than by calling
+       * `resolve`/`conditions`/`number`, so it can catch a bug in any of them instead of only
+       * confirming whichever answer they already happen to agree on. `readable` decides which
+       * occurrences this reader may see at all - a section number never depends on it (decision C):
+       * only which figure labels are shown does.
+       */
+      const expectedOutcome = (
+        outlineNodes: readonly NumberableNode[],
+        figureCountOf: (occurrence: string) => number,
+        readable: (occurrence: string) => boolean,
       ) => {
-        for (const node of list) {
-          const takesNumber = numberedAbove && node.numbered;
-          if (takesNumber) {
-            const stack = sections[matter];
-            // Keep this level's own running count (index depth - 1); drop only what is deeper.
-            stack.length = depth;
-            stack[depth - 1] = (stack[depth - 1] ?? 0) + 1;
-            expectedSections.set(
-              node.id,
-              formatParts(stack, sectionRule[matter]).join(sectionRule[matter].separator),
-            );
-            // The default scheme restarts figure at depth 1 in both matters, and only there.
-            if (depth === 1) {
-              figureCounter[matter] = 0;
-              hiddenSince[matter] = false;
+        const sectionRule = defaultNumberingScheme.sequences['section']!;
+        const sections: Record<'body' | 'appendix', number[]> = { body: [], appendix: [] };
+        const figureCounter: Record<'body' | 'appendix', number> = { body: 0, appendix: 0 };
+        // True once an occurrence nobody here can read has stood in this matter since the figure
+        // counter last restarted - the same window CNT-047's neighbour, Important #2, and the
+        // withholding tests each exercise by hand; here it is derived, not asserted.
+        const hiddenSince: Record<'body' | 'appendix', boolean> = { body: false, appendix: false };
+        const expectedSections = new Map<string, string>();
+        const expectedFigures = new Map<string, string | null>();
+
+        // `matter` is a top-level node's own, inherited by its whole subtree - a child's own
+        // `matter` field (always 'body', from the fixture helpers) is never consulted, matching
+        // `number`'s own `visit`, which threads `matter` through the recursion rather than reading
+        // `node.matter` below the top level.
+        const walk = (
+          list: readonly NumberableNode[],
+          depth: number,
+          matter: 'body' | 'appendix',
+          numberedAbove: boolean,
+        ) => {
+          for (const node of list) {
+            const takesNumber = numberedAbove && node.numbered;
+            if (takesNumber) {
+              const stack = sections[matter];
+              // Keep this level's own running count (index depth - 1); drop only what is deeper.
+              stack.length = depth;
+              stack[depth - 1] = (stack[depth - 1] ?? 0) + 1;
+              expectedSections.set(
+                node.id,
+                formatParts(stack, sectionRule[matter]).join(sectionRule[matter].separator),
+              );
+              // The default scheme restarts figure at depth 1 in both matters, and only there.
+              if (depth === 1) {
+                figureCounter[matter] = 0;
+                hiddenSince[matter] = false;
+              }
             }
-          }
-          if (node.type === 'reference') {
-            if (!readable(node.id)) {
-              hiddenSince[matter] = true;
-            } else {
-              const count = figureCountOf(node.id);
-              for (let index = 0; index < count; index += 1) {
-                figureCounter[matter] += 1;
-                if (hiddenSince[matter]) {
-                  expectedFigures.set(node.id, null);
-                } else {
-                  const chapter = sections[matter][0] ?? 0;
-                  const own = formatCounter(figureCounter[matter], 'decimal');
-                  if (chapter > 0) {
-                    const chapterFormat = matter === 'appendix' ? 'upperAlpha' : 'decimal';
-                    expectedFigures.set(
-                      node.id,
-                      `Figure ${formatCounter(chapter, chapterFormat)}.${own}`,
-                    );
-                  } else if (matter === 'appendix') {
-                    // No numbered appendix has started: no count to continue (Important #2).
+            if (node.type === 'reference') {
+              if (!readable(node.id)) {
+                hiddenSince[matter] = true;
+              } else {
+                const count = figureCountOf(node.id);
+                for (let index = 0; index < count; index += 1) {
+                  figureCounter[matter] += 1;
+                  if (hiddenSince[matter]) {
                     expectedFigures.set(node.id, null);
                   } else {
-                    expectedFigures.set(node.id, `Figure ${own}`);
+                    const chapter = sections[matter][0] ?? 0;
+                    const own = formatCounter(figureCounter[matter], 'decimal');
+                    if (chapter > 0) {
+                      const chapterFormat = matter === 'appendix' ? 'upperAlpha' : 'decimal';
+                      expectedFigures.set(
+                        node.id,
+                        `Figure ${formatCounter(chapter, chapterFormat)}.${own}`,
+                      );
+                    } else if (matter === 'appendix') {
+                      // No numbered appendix has started: no count to continue (Important #2).
+                      expectedFigures.set(node.id, null);
+                    } else {
+                      expectedFigures.set(node.id, `Figure ${own}`);
+                    }
                   }
                 }
               }
             }
+            walk(node.children, depth + 1, matter, takesNumber);
           }
-          walk(node.children, depth + 1, matter, takesNumber);
-        }
+        };
+        for (const node of outlineNodes) walk([node], 1, node.matter, true);
+        return { sections: expectedSections, figures: expectedFigures };
       };
-      for (const node of outlineNodes) walk([node], 1, node.matter, true);
-      return { sections: expectedSections, figures: expectedFigures };
-    };
 
-    for (let run = 0; run < 200; run += 1) {
-      let appendixHere = false;
-      const nodes = grow(1).map((node) => {
-        const matter = next(3) === 0 ? ('appendix' as const) : ('body' as const);
-        if (matter === 'appendix') {
-          appendixTopLevel += 1;
-          appendixHere = true;
-        } else bodyTopLevel += 1;
-        return { ...node, matter };
-      });
-      if (appendixHere) runsWithAppendix += 1;
+      for (let run = 0; run < 200; run += 1) {
+        let appendixHere = false;
+        const nodes = grow(1).map((node) => {
+          const matter = next(3) === 0 ? ('appendix' as const) : ('body' as const);
+          if (matter === 'appendix') {
+            appendixTopLevel += 1;
+            appendixHere = true;
+          } else bodyTopLevel += 1;
+          return { ...node, matter };
+        });
+        if (appendixHere) runsWithAppendix += 1;
 
-      // Two readers over the same content: the full reader sees every occurrence (with real
-      // content or none); the restricted reader is missing some of them entirely, independent of
-      // whether they hold anything (decision C).
-      const knownFull = new Map<string, readonly Contribution[]>();
-      const knownRestricted = new Map<string, readonly Contribution[]>();
-      const hasFigure = new Map<string, boolean>();
-      const restrictedCanRead = new Map<string, boolean>();
-      for (let index = 1; index <= count; index += 1) {
-        const occurrence = id(`n${index}`);
-        const holdsFigure = next(3) !== 0;
-        const readableHere = next(2) !== 0;
-        hasFigure.set(occurrence, holdsFigure);
-        restrictedCanRead.set(occurrence, readableHere);
-        const content = holdsFigure ? figures(`f${index}`) : [];
-        knownFull.set(occurrence, content);
-        if (readableHere) knownRestricted.set(occurrence, content);
+        // Two readers over the same content: the full reader sees every occurrence (with real
+        // content or none); the restricted reader is missing some of them entirely, independent of
+        // whether they hold anything (decision C).
+        const knownFull = new Map<string, readonly Contribution[]>();
+        const knownRestricted = new Map<string, readonly Contribution[]>();
+        const hasFigure = new Map<string, boolean>();
+        const restrictedCanRead = new Map<string, boolean>();
+        for (let index = 1; index <= count; index += 1) {
+          const occurrence = id(`n${index}`);
+          const holdsFigure = next(3) !== 0;
+          const readableHere = next(2) !== 0;
+          hasFigure.set(occurrence, holdsFigure);
+          restrictedCanRead.set(occurrence, readableHere);
+          const content = holdsFigure ? figures(`f${index}`) : [];
+          knownFull.set(occurrence, content);
+          if (readableHere) knownRestricted.set(occurrence, content);
+        }
+        const figureCountOf = (occurrence: string) => (hasFigure.get(occurrence) ? 1 : 0);
+
+        const { sections: expectedSections, figures: expectedFull } = expectedOutcome(
+          nodes,
+          figureCountOf,
+          () => true,
+        );
+        const { figures: expectedRestricted } = expectedOutcome(
+          nodes,
+          figureCountOf,
+          (occurrence) => restrictedCanRead.get(occurrence) === true,
+        );
+
+        const fullTable = number(conditions(resolve({ nodes }, knownFull)), defaultNumberingScheme);
+        const restrictedTable = number(
+          conditions(resolve({ nodes }, knownRestricted)),
+          defaultNumberingScheme,
+        );
+
+        // Section numbers: computed independently, checked against both readers - neither depends
+        // on what any occurrence holds or who may read it (decision C).
+        expect([...sectionNumbers(fullTable).entries()]).toEqual([...expectedSections.entries()]);
+        expect([...sectionNumbers(restrictedTable).entries()]).toEqual([
+          ...expectedSections.entries(),
+        ]);
+
+        // Figure labels: the full reader's, checked against the independent oracle.
+        const actualFull = new Map(
+          fullTable.entries
+            .filter((entry) => entry.sequence === 'figure')
+            .map((entry) => [entry.node, entry.label]),
+        );
+        expect(actualFull).toEqual(expectedFull);
+
+        // The restricted reader's, checked against the same oracle run with its own visibility -
+        // and, wherever it shows a number at all, that number equals the full reader's (never a
+        // different, guessed one).
+        const actualRestricted = new Map(
+          restrictedTable.entries
+            .filter((entry) => entry.sequence === 'figure')
+            .map((entry) => [entry.node, entry.label]),
+        );
+        expect(actualRestricted).toEqual(expectedRestricted);
+        for (const [occurrence, label] of expectedRestricted) {
+          if (label !== null) expect(label).toBe(expectedFull.get(occurrence) ?? null);
+        }
       }
-      const figureCountOf = (occurrence: string) => (hasFigure.get(occurrence) ? 1 : 0);
-
-      const { sections: expectedSections, figures: expectedFull } = expectedOutcome(
-        nodes,
-        figureCountOf,
-        () => true,
-      );
-      const { figures: expectedRestricted } = expectedOutcome(
-        nodes,
-        figureCountOf,
-        (occurrence) => restrictedCanRead.get(occurrence) === true,
-      );
-
-      const fullTable = number(conditions(resolve({ nodes }, knownFull)), defaultNumberingScheme);
-      const restrictedTable = number(
-        conditions(resolve({ nodes }, knownRestricted)),
-        defaultNumberingScheme,
-      );
-
-      // Section numbers: computed independently, checked against both readers - neither depends
-      // on what any occurrence holds or who may read it (decision C).
-      expect([...sectionNumbers(fullTable).entries()]).toEqual([...expectedSections.entries()]);
-      expect([...sectionNumbers(restrictedTable).entries()]).toEqual([
-        ...expectedSections.entries(),
-      ]);
-
-      // Figure labels: the full reader's, checked against the independent oracle.
-      const actualFull = new Map(
-        fullTable.entries
-          .filter((entry) => entry.sequence === 'figure')
-          .map((entry) => [entry.node, entry.label]),
-      );
-      expect(actualFull).toEqual(expectedFull);
-
-      // The restricted reader's, checked against the same oracle run with its own visibility -
-      // and, wherever it shows a number at all, that number equals the full reader's (never a
-      // different, guessed one).
-      const actualRestricted = new Map(
-        restrictedTable.entries
-          .filter((entry) => entry.sequence === 'figure')
-          .map((entry) => [entry.node, entry.label]),
-      );
-      expect(actualRestricted).toEqual(expectedRestricted);
-      for (const [occurrence, label] of expectedRestricted) {
-        if (label !== null) expect(label).toBe(expectedFull.get(occurrence) ?? null);
-      }
-    }
-    expect(totalNodes).toBeGreaterThan(1000);
-    expect(maxDepth).toBeGreaterThanOrEqual(6);
-    expect(numberedNodes).toBeGreaterThan(0);
-    expect(unnumberedNodes).toBeGreaterThan(0);
-    expect(referenceNodes).toBeGreaterThan(0);
-    expect(sectionNodes).toBeGreaterThan(0);
-    expect(bodyTopLevel).toBeGreaterThan(0);
-    expect(appendixTopLevel).toBeGreaterThan(0);
-    expect(runsWithAppendix).toBeGreaterThan(0);
-  });
+      expect(totalNodes).toBeGreaterThan(1000);
+      expect(maxDepth).toBeGreaterThanOrEqual(6);
+      expect(numberedNodes).toBeGreaterThan(0);
+      expect(unnumberedNodes).toBeGreaterThan(0);
+      expect(referenceNodes).toBeGreaterThan(0);
+      expect(sectionNodes).toBeGreaterThan(0);
+      expect(bodyTopLevel).toBeGreaterThan(0);
+      expect(appendixTopLevel).toBeGreaterThan(0);
+      expect(runsWithAppendix).toBeGreaterThan(0);
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
 });
