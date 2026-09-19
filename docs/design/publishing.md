@@ -60,10 +60,9 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-014** | A format is supported where the layout has a member for it; a request naming another is refused `format_unsupported` before anything is queued                                                                                                                                                    |
 | **PUB-016** | A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases                                                                                                       |
 | **PUB-021** | Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers                                                                                                                                                                                |
-| **PUB-030** | Every publication is compiled as PDF/UA-1 and passes veraPDF's PDF/UA-1 rules before it is recorded; the Matterhorn checkpoints only a person can judge are reviewed on the regression corpus whenever the engine or template changes                                                             |
 | **PUB-033** | Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block                                                                                        |
 | **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                  |
-| **PUB-036** | veraPDF checks every PDF in the worker; its report is stored as an object and referenced from the publication's output row                                                                                                                                                                        |
+| **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row                                                                                                                                           |
 | **PUB-037** | The layout's `contents.depth` is passed to `contents`; the template sets each entry as a link with its page from Typst                                                                                                                                                                            |
 | **PUB-038** | The layout's `lists` names sequences; each is one `listOf` call, set like the contents                                                                                                                                                                                                            |
 | **PUB-042** | `contents` and `listOf` take the numbering table made after `conditions`, and the checks and projection read only the conditioned document                                                                                                                                                        |
@@ -73,7 +72,11 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-052** | Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse                                                                             |
 | **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing and swept                                                                               |
 | **PUB-063** | The publication records the engine and its version, the template's name and version, and the pipeline's version                                                                                                                                                                                   |
-| **PUB-064** | Measured in the worker suite: a generated 300-page reference document from request to recorded publication, p95 under 30 seconds on a declared configuration recorded beside the result                                                                                                           |
+| **PUB-085** | Measured in the worker suite: a generated 300-page reference document of prose, figures, tables, equations and footnotes, from request to recorded publication, p95 at or under ten seconds with no sample above thirty, on a declared configuration recorded beside the result                   |
+| **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                |
+| **PUB-087** | The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))                                             |
+| **PUB-088** | A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))                                                                                                                                                                           |
+| **IAM-074** | Decision C: every occurrence is resolved at the request, restricted to what the publisher may read, and one the publisher may not read refuses the publish, whoever placed the reference                                                                                                          |
 | **PUB-073** | A request names one source and a non-empty set of formats; the publication records the set, and publishing the same source to another format is another request and another publication                                                                                                           |
 | **PUB-074** | A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited                                                                                |
 | **PUB-079** | Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`                                                                                                                                       |
@@ -89,31 +92,39 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **CNT-054** | A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component                                                                                                              |
 | **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                          |
 
+**PUB-090 is not claimed, and the reason is one measurement nobody has made yet.** It asks that every
+publication pass veraPDF's PDF/UA-1 profile and that the checkpoints only a person can judge pass on
+the regression corpus. The design compiles every publication as PDF/UA-1 and runs veraPDF on each
+(PUB-091) - but STR-007 lets an outline nest nine levels, PDF/UA-1's standard heading types stop at
+H6, and whether the pinned Typst's headings at levels seven to nine pass veraPDF, and how assistive
+technology is told they are headings, is not known ([Open questions](#open-questions)). Until it is,
+claiming PUB-090 would claim it for documents the design may not be able to publish accessibly. **The
+first task of the first publishing plan settles it**, by running veraPDF over a nine-level document in
+the worker's suite; the claim follows only if the answer holds for every depth STR-007 allows.
+
 ## What this document does not own
 
-Forty-three claims. What is left out is either answered only in part, answered with another design,
+Forty-six claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
-| Left unclaimed                       | Why                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PUB-001                              | Typst lays out and writes the PDF in one run, and Word paginates for itself, so "paginate" and "render" are not two stages this pipeline can fail separately. Every failure names a stage - `resolve`, `compose`, `engine` or `store` - which is the requirement's purpose, not its wording. Challenged below |
-| PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                                                                               |
-| PUB-010                              | Cover, contents, lists and appendices are declared. An **approval page** has nothing to show until LIF records approvals, so the claim waits for it                                                                                                                                                           |
-| PUB-015                              | "Indistinguishable from what the organisation produces today" has no measure. The regression corpus is this design's answer; the requirement is challenged below                                                                                                                                              |
-| PUB-017, PUB-032                     | The template repeats a table's header rows and sets the continuation label from the table style; but TAB is not designed, and whether Typst tags a **header column** as row headers is not known                                                                                                              |
-| PUB-018                              | Keep-with-next and keep-together are hard in Typst. Widow and orphan control is a **cost**, not a rule, in Typst as in Word, so "honoured" holds where the page allows and nowhere is that stated. Challenged below                                                                                           |
-| PUB-022                              | Cross-references are internal links. Citations cannot be until LIB gives them entries to link to                                                                                                                                                                                                              |
-| PUB-031                              | Blocks are emitted in document order. Whether Typst tags a floated figure at its logical place rather than where it lands is not verified; the accessible-output slice verifies it and claims it                                                                                                              |
-| PUB-069                              | Typst hyphenates by each passage's `lang`, which the published document carries; which of the languages LOC admits Typst has patterns for is not known                                                                                                                                                        |
-| PUB-043, PUB-046, PUB-075 to PUB-077 | Same inputs give the same bytes (decision K, measured). But the image carries **one** Typst, so a publication made on an earlier engine cannot be made again once it is replaced. Keeping every recorded engine runnable is VER-041's and T3's                                                                |
-| PUB-044, PUB-045, PUB-082            | T3's records. The creation time is already the only varying value and the only time the layout can print                                                                                                                                                                                                      |
-| PUB-068, PUB-070 to PUB-072          | Typst overflows an unbreakable block silently. Detecting what cannot be laid out needs the template to measure and refuse, which is designed as a rule ([Failure](#failure-retry-and-what-an-author-sees)) and not as checks                                                                                  |
-| PUB-020                              | PDF/A is a layout member away, and not T1                                                                                                                                                                                                                                                                     |
-| CNT-095, CNT-096, CNT-136            | The warm range preview is shaped here; its budget contradicts the editor's two-second save cadence (finding 11), and Word cannot be previewed faithfully by anything we run                                                                                                                                   |
-| CNT-128                              | A hyperlink is a PDF link here; word-output.md does not design Word's                                                                                                                                                                                                                                         |
-| IAM-017                              | T4, and ambiguous about whose permission is re-checked. This design re-checks the **publisher's** on every occurrence at every publish (decision C)                                                                                                                                                           |
-| TPL-013, TPL-030, TPL-055            | A required section and document-level fields need TPL's link from a document to its template, which does not exist (finding 5)                                                                                                                                                                                |
-| STR-030                              | REU's, T4                                                                                                                                                                                                                                                                                                     |
+| Left unclaimed                       | Why                                                                                                                                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PUB-090                              | Beside the table above: whether headings at levels seven to nine pass veraPDF and reach assistive technology as headings is the first publishing plan's first task                                                                                |
+| PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                   |
+| PUB-089                              | An **approval page** has nothing to show until LIF records approvals; it is T3's since Ken's answer, and waits for them                                                                                                                           |
+| PUB-017, PUB-032                     | The template repeats a table's header rows and sets the continuation label from the table style; but TAB is not designed, and whether Typst tags a **header column** as row headers is not known                                                  |
+| PUB-092                              | Keep-with-next and keep-together are hard in Typst, and widow and orphan control is a cost there. How each style property reaches the engine is themes.md's projection, and which cases the regression corpus holds for them is not designed here |
+| PUB-022                              | Cross-references are internal links. Citations cannot be until LIB gives them entries to link to                                                                                                                                                  |
+| PUB-031                              | Blocks are emitted in document order. Whether Typst tags a floated figure at its logical place rather than where it lands is not verified; the accessible-output slice verifies it and claims it                                                  |
+| PUB-069                              | Typst hyphenates by each passage's `lang`, which the published document carries; which of the languages LOC admits Typst has patterns for is not known                                                                                            |
+| PUB-043, PUB-046, PUB-075 to PUB-077 | Same inputs give the same bytes (decision K, measured). But the image carries **one** Typst, so a publication made on an earlier engine cannot be made again once it is replaced. Keeping every recorded engine runnable is VER-041's and T3's    |
+| PUB-044, PUB-045, PUB-082            | T3's records. The creation time is already the only varying value and the only time the layout can print                                                                                                                                          |
+| PUB-068, PUB-070 to PUB-072          | Typst overflows an unbreakable block silently. Detecting what cannot be laid out needs the template to measure and refuse, which is designed as a rule ([Failure](#failure-retry-and-what-an-author-sees)) and not as checks                      |
+| PUB-020                              | PDF/A is a layout member away, and not T1                                                                                                                                                                                                         |
+| CNT-150, CNT-096, CNT-151            | The warm range preview is shaped here and designed by its own slice. CNT-151 now measures from the save (finding 11), and CNT-150 asks for PDF alone                                                                                              |
+| CNT-128                              | A hyperlink is a PDF link here; word-output.md does not design Word's                                                                                                                                                                             |
+| TPL-013, TPL-055                     | A required section and document-level fields need TPL's link from a document to its template, which does not exist (finding 5). TPL-030 repeated TPL-013 and is withdrawn                                                                         |
+| STR-030                              | REU's, T4                                                                                                                                                                                                                                         |
 
 ## Three kinds of output, and why T1 makes only two
 
@@ -131,8 +142,9 @@ preview, which PUB-047 and PUB-048 forbid by requiring publications to be kept a
 a real publication, kept and addressable, that cannot be mistaken for an approved one: **the template
 prints its status on every page in a place no layout can remove, and once as tagged text at the start**,
 because a running foot is a pagination artifact assistive technology does not read. The record says
-`approval: 'none'`; T3 widens it. The corpus has no row saying a draft must say so, and it should
-(proposed below).
+`approval: 'none'`; T3 widens it. The corpus had no row saying a draft must say so; Ken filed one as
+[issue #142](https://github.com/kenhayward/alloy-works/issues/142), and it lands as a row, claimed
+here, with the first publishing build.
 
 ## The order
 
@@ -187,7 +199,9 @@ runs, so compose adds its failures for what the publisher can read and the autho
 alternatives were worse. **Publishing with the component withheld** makes a document with a hole in it
 and, by IAM-073, `null` where every number it could move should be - a publication nobody should send.
 **Publishing it anyway** lets anybody with `publish` release what they cannot read, which is the
-laundering IAM-017 exists to stop. The corpus has no row saying this; one is proposed below.
+laundering IAM-074 (formerly IAM-017) exists to stop. The corpus had no row saying this of every
+component; Ken filed one as [issue #143](https://github.com/kenhayward/alloy-works/issues/143), and it
+lands as a row, claimed here, with the first publishing build.
 
 **Who starts able to publish: nobody.** access.md's eight starter roles hold `publish` in none, and
 `packages/domain/src/access/role.test.ts` asserts it "because nothing publishes in T1" - but T1 is
@@ -273,13 +287,13 @@ version it was (finding 5).
 **The stored shape is closed at its first version**, because versions are insert-only and a layout
 that accepts a member nothing reads becomes a migration of every tenant's layouts. Version 1:
 
-| Member     | Holds                                                                                                                                                                                                                                                             |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `language` | The one language its words are in (BCP 47). A document whose primary language differs is refused `layout_language`, rather than printing "Figure" in a French report                                                                                              |
-| `words`    | Contents, list titles, "above", "below", "continued", **Not approved**, **Preview - not approved**                                                                                                                                                                |
-| `scheme`   | A numbering scheme in structure.md's shape, labels included (PUB-011, STR-013, STR-024). The default layout's is structure's default scheme, exactly                                                                                                              |
-| `matter`   | `cover`, `contents` with a `depth`, `lists` naming sequences, and whether appendices start on a new page. No approval page: PUB-010's is LIF's                                                                                                                    |
-| `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: `paged: true`, page size, orientation, margins and gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter (PUB-009) |
+| Member     | Holds                                                                                                                                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language` | The one language its words are in (BCP 47). A document whose primary language differs is refused `layout_language`, rather than printing "Figure" in a French report. [Issue #144](https://github.com/kenhayward/alloy-works/issues/144) asks for it, and lands with the layout slice |
+| `words`    | Contents, list titles, "above", "below", "continued", **Not approved**, **Preview - not approved**                                                                                                                                                                                    |
+| `scheme`   | A numbering scheme in structure.md's shape, labels included (PUB-011, STR-013, STR-024). The default layout's is structure's default scheme, exactly                                                                                                                                  |
+| `matter`   | `cover`, `contents` with a `depth`, `lists` naming sequences, and whether appendices start on a new page. No approval page: PUB-089's is LIF's and T3's                                                                                                                               |
+| `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: `paged: true`, page size, orientation, margins and gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter (PUB-009)                     |
 
 `docx` is absent from the default layout until the Word slice, so asking for Word is refused
 `format_unsupported` until it can be answered.
@@ -351,8 +365,8 @@ and fail it three times (finding 4).
 | The platform's | The store unreachable, Typst timing out or refusing, the database gone                   | The handler throws; the queue retries with back-off; after the last attempt `failed()` marks the request `failed` with `engine` or `store` |
 
 **Every failure names its stage** - `resolve`, `compose`, `engine`, `store` - its code, and the node,
-block, reference or definition it concerns. That is PUB-001's purpose; its wording asks for four
-stages Typst does not have (challenged below).
+block, reference or definition it concerns. That is PUB-086, which replaced PUB-001's four stages
+Typst does not have.
 
 **Everything Typst would refuse is checked before Typst runs - decision G.** Under PDF/UA-1 the pinned
 Typst refuses a missing document title, a skipped heading level, an image with no alternative text and
@@ -417,7 +431,7 @@ baselines, and is left there rather than half-built here.
 - nothing is recorded as a publication; the PDF is kept for an hour, reachable only by its asker, and
   then swept with its request.
 
-**The warm range preview** - ADR-0013's `typst watch` per open document, for CNT-136's budget - is its
+**The warm range preview** - ADR-0013's `typst watch` per open document, for CNT-151's budget - is its
 own slice, and two things decided here shape it. **Its pages are images**, because `--pages` makes Typst
 drop tagging and PDF/UA-1 then refuses the compile (measured below): an untagged PDF in the page would be
 hostile to assistive technology in silence. Each page image's alternative text says it is an untagged
@@ -502,7 +516,7 @@ publication when they list the document's.
 - **The regression corpus**: the spike's nine cases, grown by every defect, compiled on every change
   to the template, the engine or `assemble`, and checked by veraPDF; a person reviews the Matterhorn
   checkpoints on it when the engine or template changes.
-- **The budget** (PUB-064): a generated 300-page reference document of prose, figures, tables,
+- **The budget** (PUB-085): a generated 300-page reference document of prose, figures, tables,
   equations and footnotes, from request to publication, measured in the worker suite.
 
 ## What was ruled out
@@ -518,12 +532,12 @@ publication when they list the document's.
 
 ## Open questions
 
-| ID  | Question                                                                                                                                                                                                                                                                                                                                                         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New | Whether Typst's heading levels seven to nine pass veraPDF. They compile under PDF/UA-1, and PDF/UA-1's standard heading types stop at H6. If they fail, a document deeper than six levels cannot be published as PDF/UA-1 by this engine, which STR-007 and PUB-030 together forbid - so the first plan runs veraPDF on the nine-level case before anything else |
-| New | Which faces the default theme ships, and the mathematics face with them: settled by the first plan, open-licence (ADR-0010)                                                                                                                                                                                                                                      |
-| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way                                                                                                                                                                                                                                            |
-| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                                                                                                                           |
+| ID  | Question                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New | Whether Typst's heading levels seven to nine pass veraPDF. They compile under PDF/UA-1, and PDF/UA-1's standard heading types stop at H6. If they fail, a document deeper than six levels cannot be published as PDF/UA-1 by this engine, which STR-007 and PUB-090 together forbid - so the first plan runs veraPDF on the nine-level case before anything else, and PUB-090 is claimed only once it is answered |
+| New | Which faces the default theme ships, and the mathematics face with them: settled by the first plan, open-licence (ADR-0010)                                                                                                                                                                                                                                                                                       |
+| New | Whether veraPDF's Java runtime belongs in the worker image or a sidecar. The image grows by roughly 200 MB either way                                                                                                                                                                                                                                                                                             |
+| New | How long a finished request is kept. A week is a guess                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Findings against what exists
 
@@ -536,15 +550,19 @@ Most serious first. None is fixed here.
    Worse, measured: with no fonts at all, Typst 0.15.1 compiles, exits 0 and warns about nothing.
    ADR-0013's backstop - treat the missing-face warning as a failure - catches only a family the
    template names, which is why the published document names every one and the worker refuses an empty
-   font directory.
+   font directory. Filed as [issue #145](https://github.com/kenhayward/alloy-works/issues/145); the
+   first publishing build fixes it.
 3. **Contributions are computed before conditions.** structure.md's `Resolved` carries contributions
    projected from unconditioned content, so once REU exists a hidden figure is numbered and listed.
    Harmless while `conditions` is the identity, and a change to a built type now rather than a bug
-   later.
+   later. Filed as [issue #148](https://github.com/kenhayward/alloy-works/issues/148); not the first
+   build's.
 4. **The queue retries everything**, including a document's own failures. A handler must complete a
-   job whose verdict is a failure.
+   job whose verdict is a failure. Filed as
+   [issue #146](https://github.com/kenhayward/alloy-works/issues/146); the first publishing build fixes
+   it.
 5. **A document knows nothing of its template.** STY-025 and TPL-052 say it takes its template's theme
-   and layout, and the outline holds no reference to one; TPL-013 and TPL-030 also need to know which
+   and layout, and the outline holds no reference to one; TPL-013 also needs to know which
    of a document's sections came from which template section. Until TPL designs it, the default layout
    and theme; adding an optional member later is a widening.
 6. **system.md's publishing flow decides nothing.** It has the worker resolve "as the tenant's role",
@@ -552,26 +570,46 @@ Most serious first. None is fixed here.
    system.md is corrected.
 7. **The stream filters nothing per viewer.** realtime.md says each viewer hears only what they may
    see; the built stream sends every event to every viewer. Publication events go to the requester
-   alone until it does.
+   alone until it does. Filed as [issue #147](https://github.com/kenhayward/alloy-works/issues/147);
+   the first publishing build must at least not make it worse.
 8. **The outline has no front matter**, which PUB-009 needs. Decision M.
 9. **ADR-0013 and themes.md are out of date about glyphs.** Both say no engine reports a face that
    lacks a character. Under PDF/UA-1, Typst 0.15.1 fails the compile, quoting the character. The
    pipeline's own check (STY-049) is still needed - to report every glyph at once and name the style and
    face - and the engine's error is a backstop whose text must never be logged.
-10. **access.md never says publishing declassifies**, and it does (decision D).
+10. **access.md never says publishing declassifies**, and it does (decision D). access.md now says so,
+    under "Permissions".
 11. **CNT-136 cannot be met through the save path.** The editor sends an iteration after two seconds
     idle (component-editor.md), so a preview fed from saved state trails an edit by two seconds before
     Typst starts; the budget is one. Either the warm preview is fed the editor's unsaved content for
-    its own author, or the budget is measured from the save.
+    its own author, or the budget is measured from the save. CNT-151 now measures it from the save.
 12. **A warm preview costs half a gigabyte per open 300-page document** (ADR-0013's 1.7 MB a page);
     system.md's "one warm compilation per open document" needs a cap.
 13. **The sample's patterns are not a publication's.** Its 30-second Typst timeout is the whole of
-    PUB-064's budget, and `GET /v1/samples/{id}` answers any signed-in caller - right for a sample,
+    PUB-085's ceiling, and `GET /v1/samples/{id}` answers any signed-in caller - right for a sample,
     wrong for a publication.
 
 ## Requirements challenged
 
-Ken asked for these to be challenged; each is a proposal, not a change made here.
+Ken asked for these to be challenged. **Ken's answer (2026-09-19): every challenge below accepted**,
+and decisions A to M with it. The corpus now says:
+
+| Challenge           | Now                                                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PUB-001             | Superseded by **PUB-086**: every failure names its stage and what it concerns. Claimed                                                                           |
+| PUB-015             | Superseded by **PUB-087**: PDF output passes the publishing regression corpus. Claimed                                                                           |
+| PUB-010             | Superseded by **PUB-088** (cover, contents, appendices; T1, claimed) and **PUB-089** (the approval page; T3, unclaimed)                                          |
+| PUB-064             | Superseded by **PUB-085**: p95 ten seconds on a declared 300-page reference document. Claimed                                                                    |
+| PUB-030 and PUB-036 | Superseded by **PUB-090** (PDF/UA-1, veraPDF, and the person-judged checkpoints on the regression corpus; unclaimed, beside the table) and **PUB-091** (claimed) |
+| PUB-018             | Superseded by **PUB-092**, which defines "honoured"; unclaimed, since the style projection is themes.md's                                                        |
+| PUB-004 against T1  | Unchanged; drafts accepted, and #142 lands with the first build                                                                                                  |
+| TPL-030             | Withdrawn, as TPL-013's duplicate                                                                                                                                |
+| CNT-095             | Superseded by **CNT-150**, PDF alone; unclaimed with preview                                                                                                     |
+| CNT-136             | Superseded by **CNT-151**, measured from the save being recorded; unclaimed with preview                                                                         |
+| IAM-017             | Superseded by **IAM-074**, the publisher's permission, decided at the publication. Claimed                                                                       |
+| Citations in T1     | Not answered yet: every citation fails the publish until LIB (CNT-054)                                                                                           |
+
+What was proposed, as it was written:
 
 - **PUB-001: reword.** Typst paginates and renders in one run and Word paginates for itself, so four
   separately failing stages is a prescription the engine cannot honour. Proposed: "Every publishing
@@ -605,7 +643,12 @@ Ken asked for these to be challenged; each is a proposal, not a change made here
 - **Citations in T1.** With no bibliography until T6, every citation fails the publish (CNT-054).
   Either accept that, or refuse inserting a citation in T1, so an author is not surprised at the end.
 
-**Requirements the design needs and the corpus lacks**, proposed for the issue form and not filed:
+**Requirements the design needs and the corpus lacks.** Ken filed all three through the issue form:
+the first as [#142](https://github.com/kenhayward/alloy-works/issues/142) and the second as
+[#143](https://github.com/kenhayward/alloy-works/issues/143), both PUB and both landing as rows, drafted
+with `pnpm trace draft`, in the first publishing build, whose behaviour they are; the third as
+[#144](https://github.com/kenhayward/alloy-works/issues/144), in TPL, landing with the layout slice.
+As proposed:
 
 1. **PUB**: "A publication not produced from a baseline must say that it is not approved, visibly on
    every page and once where assistive technology reads it, and its record must say so."
@@ -627,7 +670,7 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    nine-level case; the publication, its inputs and output; the listing,
    the page and the download; the requester's event. Every other block fails `block_not_publishable`,
    all of them at once. Cites PUB-003, PUB-021, PUB-047, PUB-048, PUB-050, PUB-052, PUB-053,
-   PUB-061, PUB-062, PUB-063 and PUB-073.
+   PUB-061, PUB-062, PUB-063 and PUB-073. Lands #142 and #143 as rows, and fixes #145 and #146.
 2. **The layout.** The layout artifact and its default version; running heads and feet; page
    numbering per matter and outline `front` matter; the cover; the contents and lists; the layout's
    scheme to the numbering route and the panel. Cites PUB-007 to PUB-009, PUB-011, PUB-012, PUB-014,
@@ -639,7 +682,8 @@ Each slice is a plan, lands into something that runs, and cites only what its te
 4. **Themes and typefaces.** themes.md's typeface and theme artifacts replace the image's faces, and
    the coverage check reads theirs. Its claims are themes.md's.
 5. **Accessible output, checked.** veraPDF per publication and its report kept; reading order of floats
-   verified; the budget measured. Cites PUB-030, PUB-036, PUB-064; claims PUB-031 once verified.
+   verified; the budget measured. Cites PUB-091 and PUB-085, and PUB-090 if slice 1 lets it be
+   claimed; claims PUB-031 once verified.
 6. **Preview.** The whole-document preview (PUB-005, PUB-006), then the warm range preview as images
    (PUB-080), once the cadence question is answered.
 7. **Word.** word-output.md's writer in the job, `docx` in the default layout. Cites PUB-034, CNT-084

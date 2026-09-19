@@ -78,7 +78,7 @@ enforcing it cannot disagree.
 | PUB-084                   | A publication share can be exactly the grant IAM-049 and IAM-071 describe, and it appears in IAM-051's listing. Proving identity before first access and recording every access are PUB's and not designed                                                                                                                                                     |
 | IAM-056                   | Provider groups are re-read at sign-in and at no other time, so a removal at the provider takes effect at the next sign-in. That is not the stated, tested bound IAM-056 asks for                                                                                                                                                                              |
 | IAM-015, IAM-028          | Moving an artifact is T2. Because nothing is copied down, a move is an update of `space_id` and the next decision is already right - but the act of moving is not designed                                                                                                                                                                                     |
-| IAM-016, IAM-017          | Referencing across spaces, and re-checking at publish, are T4; `readableSet` below is what both will call                                                                                                                                                                                                                                                      |
+| IAM-016                   | Referencing across spaces is T4; `readableSet` below is what it will call. Re-checking at publish, IAM-017's, is now IAM-074, and [publishing.md](publishing.md) claims it: the publisher's permission is decided at the publication (decision C)                                                                                                              |
 | IAM-020, IAM-070          | A data connection's results and the named high-risk acts are T2. Each arrives as a new permission in the closed set, which is a code change with a migration of the check constraint and nothing more                                                                                                                                                          |
 | IAM-032                   | Evaluating as another user is T2. `explain` already takes the principal as a parameter, so it is a route and a permission, not a new model                                                                                                                                                                                                                     |
 | IAM-005, IAM-010, IAM-033 | Tenant-scoping of derived data is each derived store's; a disabled user losing access is the session check's; service identities are the token design's                                                                                                                                                                                                        |
@@ -118,6 +118,19 @@ template and writing a document are different jobs, and MET-024 names designing 
 something managing definitions must be separate from. Had a template been edited with `edit`, an
 author with that permission on a space could change every template in it, and "permissioned
 separately" would mean only that somebody could add a denial.
+
+**Publishing releases content.** A publication is an artifact in its document's space, and who may
+read it is decided on the publication, on its own grants - never on the document or on the components
+it was made from ([publishing.md](publishing.md), decision D). So a reader of a publication reads every
+component in it, including components they may not read in the editor, and a recipient outside the
+tenant reads it without being able to read any component at all. That is what publishing is for, and
+it is safe only because of what `publish` requires: **the publisher must be able to read every
+component the published document contains**, decided at the publication rather than when each
+reference was made, and a publish holding one they may not read is refused, naming the place in the
+outline and never the component (publishing.md, decision C; IAM-074, and issue #143 for every
+component in T1). A publication therefore never releases anything its publisher could not already
+read. A grant on a document does not reach its publications, and a grant on a publication reaches
+nothing else.
 
 **`administer` confers no content permission.** An administrator who wants to edit a component grants
 themselves a role that allows it, and that grant is visible in every explanation afterwards. It is
@@ -727,3 +740,12 @@ against this document in turn, and found one; building it found a second. No req
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **"Spaces" listed a document and an outline as two content kinds**, which [structure.md](structure.md) makes one                                                                    | One kind, a document, which holds its own outline ("Spaces")                                                                                                                                                                                                       |
 | **Built: a second listing of content would have been a second copy of the readable-set predicate**, where a fix to how the set is applied could reach one listing and not the other | Not a change to this document: the predicate in "The readable set" is written once in `packages/db` and every listing of content - components and documents - filters through it. A listing of definitions, which live in no space, still needs its third disjunct |
+
+[The publishing design](publishing.md) was written against this document, and Ken's answer to it
+(2026-09-19) changed two things here. The one claim change is outside this document: IAM-017 was
+superseded by IAM-074, which publishing.md claims.
+
+| Found                                                                                                                                                                | Change                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **access.md never said publishing releases content** (publishing.md, finding 10): a publication is read on its own grants, so its readers read every component in it | Said, with what makes it safe - the publisher must read every component, decided at the publication ("Permissions") |
+| **IAM-017 was listed here as T4 and unclaimed**, and ambiguous about whose permission is re-checked                                                                  | Its replacement, IAM-074, names the publisher's; the unclaimed row now says publishing.md claims it                 |

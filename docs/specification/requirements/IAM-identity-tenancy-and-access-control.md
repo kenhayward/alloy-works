@@ -148,14 +148,15 @@ verification. See [ADR-0009](../../decisions/0009-federation-and-google-accounts
 
 ## 5. Spaces
 
-| ID          | Requirement                                                                                                                                                        | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **IAM-014** | A space must belong to exactly one tenant, and must be the primary unit of access control below it                                                                 | T1      | Specified |
-| **IAM-015** | Content must be movable between spaces within a tenant, and moving it must re-evaluate its permissions rather than carrying the old ones                           | T2      | Specified |
-| **IAM-016** | A component in one space must be referenceable from a document in another only where the referring user may read it                                                | T4      | Specified |
-| **IAM-017** | That permission must be re-checked when the document is published, not only when the reference was created, because access changes and publication is what escapes | T4      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                          | Tranche | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **IAM-014** | A space must belong to exactly one tenant, and must be the primary unit of access control below it                                                                                                                                                   | T1      | Specified             |
+| **IAM-015** | Content must be movable between spaces within a tenant, and moving it must re-evaluate its permissions rather than carrying the old ones                                                                                                             | T2      | Specified             |
+| **IAM-016** | A component in one space must be referenceable from a document in another only where the referring user may read it                                                                                                                                  | T4      | Specified             |
+| **IAM-017** | That permission must be re-checked when the document is published, not only when the reference was created, because access changes and publication is what escapes                                                                                   | T4      | Superseded by IAM-074 |
+| **IAM-074** | Whether the publisher may read each component a document references must be decided when the document is published, whoever created the reference and whatever they could read when they did, because access changes and publication is what escapes | T4      | Specified             |
 
-**IAM-017 is the quiet one.** A reference created while somebody had access outlives their access. If
+**IAM-017 is the quiet one**, and IAM-074 now carries it, saying whose permission is decided. A reference created while somebody had access outlives their access. If
 permission is checked only at insert, a document silently keeps publishing content its readers were
 later forbidden - and nothing in the interface would ever say so.
 
@@ -417,3 +418,18 @@ It was landed by that plan, narrowed.
 | Requirements     | 72     | 73    |
 | Non-requirements | 6      | 6     |
 | Open questions   | 9      | 9     |
+
+### Ken's answer to the publishing design, 2026-09-19
+
+Not a review. [The publishing design](../../design/publishing.md) found IAM-017 ambiguous about whose
+permission is re-checked, and Ken accepted the challenge.
+
+| What was found                                                                                                                                                                                         | Change                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IAM-017's "that permission" is IAM-016's, the referring user's - but the referrer may have left, and the person whose act releases the content is the publisher. Either reading passed the row's words | **IAM-017 superseded by IAM-074** - the publisher's permission to read each referenced component, decided at the publication. It stays T4 with IAM-016; issue [#143](https://github.com/kenhayward/alloy-works/issues/143), landing with the first publishing build, asks the same of every component in T1 |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 73, of which 1 superseded | 74, of which 2 superseded |
+| Non-requirements | 6                         | 6                         |
+| Open questions   | 9                         | 9                         |

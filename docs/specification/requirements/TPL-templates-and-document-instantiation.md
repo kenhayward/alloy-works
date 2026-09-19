@@ -140,8 +140,13 @@ not have the section every other report from this template has" is worth somebod
 | **TPL-027** | A document must own its outline after instantiation, and must be able to depart from the template's starting shape                                                                                                                    | T1      | Specified |
 | **TPL-028** | Departures must be listable: what this document has that the template does not, and what it lacks                                                                                                                                     | T3      | Specified |
 | **TPL-029** | A section the template marked required must not be removable without a stated reason, recorded on the document                                                                                                                        | T3      | Specified |
-| **TPL-030** | Publishing must fail where a required section is absent                                                                                                                                                                               | T1      | Specified |
+| **TPL-030** | Publishing must fail where a required section is absent                                                                                                                                                                               | T1      | Withdrawn |
 | **TPL-044** | A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-030 give a required section | T4      | Specified |
+
+**TPL-030 is withdrawn: TPL-013 already says a document may not be published without a required
+section.** Two rows saying one thing would be claimed and cited twice, and would drift the first time
+either was reworded. TPL-044's "the treatment TPL-029 and TPL-030 give" now reads as TPL-029's and
+TPL-013's.
 
 **TPL-044 gives required components the enforcement required sections already had.** A template can
 declare that every document carries the standard methodology statement, and until now an author could
@@ -309,3 +314,20 @@ build from.
 | Requirements     | 51     | 58, of which 11 superseded |
 | Non-requirements | 4      | 4                          |
 | Open questions   | 4      | 4                          |
+
+### Ken's answer to the publishing design, 2026-09-19
+
+Not a review. [The publishing design](../../design/publishing.md) found two rows saying one thing, and
+Ken accepted cutting one. It also proposed that a layout declare the language of its words, filed as
+issue [#144](https://github.com/kenhayward/alloy-works/issues/144); it lands as a row with the layout
+slice that builds it, not here.
+
+| What was found                                                                                                                     | Change                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| TPL-030, "publishing must fail where a required section is absent", repeats TPL-013's "a document may not be published without it" | **TPL-030 withdrawn**, keeping its row. TPL-013 is the one to claim and cite; the prose beside TPL-044 says so |
+
+| Counts           | Before                     | After                                      |
+| ---------------- | -------------------------- | ------------------------------------------ |
+| Requirements     | 58, of which 11 superseded | 58, of which 11 superseded and 1 withdrawn |
+| Non-requirements | 4                          | 4                                          |
+| Open questions   | 4                          | 4                                          |
