@@ -305,6 +305,7 @@ describe('scanning the repository for test files', () => {
     expect(files).toContain('apps/web/src/App.test.tsx');
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
     // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(8);
+    // 10, from 8: publishing/Publishing.test.tsx and publishing/PublicationPage.test.tsx, which cite nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(10);
   });
 });
