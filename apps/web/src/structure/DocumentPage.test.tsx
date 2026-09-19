@@ -109,6 +109,11 @@ function service(
     components?: unknown;
     /** Whether the caller may read a component: one they may not is withheld, as the service does. */
     mayRead?: (component: string) => boolean;
+    /** What each component's head contributes, by component; nothing where it is not named. */
+    holds?: Record<
+      string,
+      { block: string; sequence: string; numbered: boolean; caption: string | null }[]
+    >;
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -179,6 +184,35 @@ function service(
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
+    if (url === `/v1/documents/${DOCUMENT}/contributions`) {
+      // As `getContributions` answers: every reference of the latest version, in outline order, and
+      // a version the caller may read named once with what it holds - never one they may not.
+      const occurrences: { node: string; version: string | null }[] = [];
+      const versions = new Map<string, unknown>();
+      const walk = (nodes: readonly OutlineNode[]) => {
+        for (const node of nodes) {
+          if (node.type === 'reference') {
+            const readable = (options.mayRead ?? (() => true))(node.component);
+            const version = readable ? `vvvvvvvv${node.component.slice(8)}` : null;
+            occurrences.push({ node: node.id, version });
+            if (version !== null) {
+              versions.set(version, {
+                id: version,
+                contributions: options.holds?.[node.component] ?? [],
+              });
+            }
+          }
+          walk(node.children);
+        }
+      };
+      walk(latest().outline.nodes);
+      return json(200, {
+        document: DOCUMENT,
+        version: { id: latest().id, number: latest().number },
+        occurrences,
+        versions: [...versions.values()],
+      });
+    }
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
       if (unchangedNext) {
         unchangedNext = false;
@@ -2146,5 +2180,200 @@ describe('the address of every node', () => {
     expect(await navigator.clipboard.readText()).toBe(
       `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`,
     );
+  });
+});
+
+const SECRET = 'cccccccc-0000-4000-8000-000000000002';
+const AGAIN = 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
+const HIDDEN = 'hhhhhhhhhhhhhhhhhhhhhhhhhh';
+
+/** A reference to a named component, at latest. */
+function referenceTo(id: string, component: string): OutlineNode {
+  return { ...reference(id, 'latest'), component } as OutlineNode;
+}
+
+const tray = { block: 'f1', sequence: 'figure', numbered: true, caption: 'The paper tray' };
+const parts = { block: 't1', sequence: 'table', numbered: true, caption: 'Parts' };
+const sum = { block: 'e1', sequence: 'equation', numbered: true, caption: null };
+const aside = { block: 'e2', sequence: 'equation', numbered: false, caption: null };
+
+const listed = (heading: string) =>
+  within(screen.getByRole('region', { name: heading }))
+    .getAllByRole('link')
+    .map((link) => [link.textContent, link.getAttribute('href')]);
+
+describe('the lists of figures, tables and equations', () => {
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  it('lists what each occurrence holds, numbered in the page, and renumbers a move without asking for a number', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method', [referenceTo(AGAIN, PRINTER)]),
+      ]),
+      { holds: { [PRINTER]: [tray, parts, sum, aside] } },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    const at = (node: string) => `#/documents/${DOCUMENT}/nodes/${node}`;
+    expect(listed('Figures')).toEqual([
+      ['Figure 1.1 The paper tray', at(RESULTS)],
+      ['Figure 2.1 The paper tray', at(AGAIN)],
+    ]);
+    expect(listed('Tables')).toEqual([
+      ['Table 1.1 Parts', at(RESULTS)],
+      ['Table 2.1 Parts', at(AGAIN)],
+    ]);
+    // An unnumbered equation takes no number, so it is no entry.
+    expect(listed('Equations')).toEqual([
+      ['Equation 1', at(RESULTS)],
+      ['Equation 2', at(AGAIN)],
+    ]);
+
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() =>
+      expect(listed('Figures')).toEqual([
+        ['Figure 1.1 The paper tray', at(AGAIN)],
+        ['Figure 2.1 The paper tray', at(RESULTS)],
+      ]),
+    );
+    expect(fake.sent.some((request) => request.url.endsWith('/numbering'))).toBe(false);
+  });
+
+  it('IAM-073 shows a reader no number a component they may not read could have moved, and nothing it holds', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [
+          referenceTo(RESULTS, PRINTER),
+          referenceTo(HIDDEN, SECRET),
+          referenceTo(AGAIN, PRINTER),
+        ]),
+        section(METHOD, 'Method', [referenceTo(SCOPE, PRINTER)]),
+      ]),
+      {
+        mayRead: (component) => component !== SECRET,
+        holds: {
+          [PRINTER]: [tray, sum],
+          [SECRET]: [{ block: 's1', sequence: 'figure', numbered: true, caption: 'The bench' }],
+        },
+      },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    // The figure after the component they may not read has no number, and the next chapter's, which
+    // restarts, has its own; nothing of what the unreadable component holds is shown at all.
+    expect(listed('Figures').map(([text]) => text)).toEqual([
+      'Figure 1.1 The paper tray',
+      'Figure The paper tray',
+      'Figure 2.1 The paper tray',
+    ]);
+    // Equations never restart in the default scheme, so every one after it is withheld, the next
+    // chapter's too: withheld until the counter restarts, not only once.
+    expect(listed('Equations').map(([text]) => text)).toEqual([
+      'Equation 1',
+      'Equation',
+      'Equation',
+    ]);
+    expect(screen.queryByText(/The bench/)).toBeNull();
+    expect(document.body.textContent).not.toContain('Figure 1.2');
+    expect(document.body.textContent).not.toContain('Equation 2');
+    expect(document.body.textContent).not.toContain('Equation 3');
+  });
+
+  it('STR-037 reorders the outline from the contents, by key and by pointer, and every number follows at once', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method', [referenceTo(AGAIN, PRINTER)]),
+        section(SCOPE, 'Scope'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    const figures = () => listed('Figures').map(([text, href]) => [text, href?.slice(-26)]);
+
+    // By key: Method goes up, taking its component with it.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('1'));
+    expect(item('Introduction')).toHaveAccessibleDescription('2');
+    expect(figures()).toEqual([
+      ['Figure 1.1 The paper tray', AGAIN],
+      ['Figure 2.1 The paper tray', RESULTS],
+    ]);
+    await settled();
+
+    // By pointer: Method dropped at the end of the document.
+    fireEvent.dragStart(item('Method'));
+    const end = await screen.findByText('Move to the end of the document');
+    fireEvent.dragOver(end);
+    fireEvent.drop(end);
+    await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('3'));
+    expect(item('Introduction')).toHaveAccessibleDescription('1');
+    expect(item('Scope')).toHaveAccessibleDescription('2');
+    expect(figures()).toEqual([
+      ['Figure 1.1 The paper tray', RESULTS],
+      ['Figure 3.1 The paper tray', AGAIN],
+    ]);
+    expect(
+      fake.edits().map((request) => (request.body as { operation: unknown }).operation),
+    ).toEqual([
+      { operation: 'move', node: METHOD, parent: null, position: 0 },
+      { operation: 'move', node: METHOD, parent: null, position: 2 },
+    ]);
+  });
+
+  it('asks for the contributions again whenever the version it holds changes, and numbers what somebody else added', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method'),
+      ]),
+      { holds: { [PRINTER]: [tray] } },
+    );
+    const asked = () =>
+      fake.sent.filter((request) => request.url.endsWith('/contributions')).length;
+    open(fake.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    expect(asked()).toBe(1);
+
+    // Ada's own act is a new version: asked again.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(asked()).toBe(2));
+    await settled();
+
+    // Grace places the component under Method; Ada's next act is refused and carries Grace's
+    // version, which is asked about too, so the occurrence Grace added is listed and numbered.
+    fake.theirs({
+      operation: 'insert',
+      parent: METHOD,
+      position: 0,
+      node: { type: 'reference', component: PRINTER, mode: { kind: 'latest' } },
+    });
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    const added = fake.latest().outline.nodes[0]?.children[0]?.id;
+    expect(added).toBeDefined();
+    await waitFor(() =>
+      expect(listed('Figures')).toEqual([
+        ['Figure 1.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${added}`],
+        ['Figure 2.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${RESULTS}`],
+      ]),
+    );
+    expect(asked()).toBe(3);
+  });
+
+  it('says a document holds no figures, tables or equations, and says so when they could not be read', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    fake.refuseNext(`/v1/documents/${DOCUMENT}/contributions`, 500);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByText('This document has no figures, tables or equations.'),
+    ).toBeInTheDocument();
   });
 });

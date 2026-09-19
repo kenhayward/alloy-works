@@ -1,8 +1,14 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { readOutlineView, type OutlineView, type OutlineOperation } from '@alloy-works/domain';
+import {
+  readOutlineView,
+  type Contribution,
+  type OutlineView,
+  type OutlineOperation,
+} from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import {
   OutlinePanel,
@@ -62,6 +68,48 @@ function documentIn(data: unknown): Read {
     outline: read.outline,
     mayEdit,
   };
+}
+
+/**
+ * What each occurrence contributes, from a `ContributionsView` checked member by member: an occurrence
+ * whose version is null, or names a version the answer does not hold, is left out - not known, so
+ * every number it could have moved is withheld rather than guessed. `undefined` is a body that is not
+ * one at all.
+ */
+function contributionsIn(data: unknown): ReadonlyMap<string, readonly Contribution[]> | undefined {
+  if (!isRecord(data) || !Array.isArray(data.occurrences) || !Array.isArray(data.versions)) {
+    return undefined;
+  }
+  const versions = new Map<string, Contribution[]>();
+  for (const version of data.versions as unknown[]) {
+    if (!isRecord(version) || typeof version.id !== 'string') return undefined;
+    if (!Array.isArray(version.contributions)) return undefined;
+    const list: Contribution[] = [];
+    for (const each of version.contributions as unknown[]) {
+      if (
+        !isRecord(each) ||
+        typeof each.block !== 'string' ||
+        typeof each.sequence !== 'string' ||
+        typeof each.numbered !== 'boolean'
+      ) {
+        return undefined;
+      }
+      list.push({
+        block: each.block,
+        sequence: each.sequence,
+        numbered: each.numbered,
+        ...(typeof each.caption === 'string' ? { caption: each.caption } : {}),
+      });
+    }
+    versions.set(version.id, list);
+  }
+  const known = new Map<string, readonly Contribution[]>();
+  for (const occurrence of data.occurrences as unknown[]) {
+    if (!isRecord(occurrence) || typeof occurrence.node !== 'string') return undefined;
+    const list = typeof occurrence.version === 'string' ? versions.get(occurrence.version) : null;
+    if (list) known.set(occurrence.node, list);
+  }
+  return known;
 }
 
 /** The components a listing held, each checked rather than trusted: the client's bodies are `any`. */
@@ -266,6 +314,35 @@ export function DocumentPage({ client, id, linked = null }: DocumentPageProps) {
     };
   }, [client, componentsAttempt]);
 
+  // What each occurrence contributes, asked again whenever the version the page holds changes - an
+  // act of the author's, a refusal carrying somebody else's - so a component's new head is heard about
+  // no later than the next act. Until the answer arrives the page numbers with the last one, keyed by
+  // occurrence, so a move renumbers at once; an occurrence it has not heard about is not known.
+  const [known, setKnown] = useState<Known>({ state: 'loading' });
+  const [knownAttempt, setKnownAttempt] = useState(0);
+  const heldVersion = loaded.state === 'open' ? loaded.document.version.id : null;
+  useEffect(() => {
+    if (heldVersion === null) return;
+    let current = true;
+    client
+      .GET('/v1/documents/{id}/contributions', { params: { path: { id } } })
+      .then(({ data, response }) => {
+        if (!current) return;
+        const read = contributionsIn(data);
+        setKnown(
+          read === undefined
+            ? { state: 'failed', signedOut: response.status === 401 }
+            : { state: 'loaded', contributions: read },
+        );
+      })
+      .catch(() => {
+        if (current) setKnown({ state: 'failed', signedOut: false });
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, id, heldVersion, knownAttempt]);
+
   const names: Names = useMemo(
     () =>
       components.state === 'loaded'
@@ -453,6 +530,13 @@ export function DocumentPage({ client, id, linked = null }: DocumentPageProps) {
           // `hashchange`, so a reload or a copy of the address comes back to it.
           window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
         }}
+      />
+      <GeneratedLists
+        document={document.id}
+        outline={document.outline}
+        known={known}
+        names={names}
+        onRetry={() => setKnownAttempt((count) => count + 1)}
       />
     </article>
   );

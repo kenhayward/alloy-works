@@ -211,8 +211,12 @@ describe('the citations in the committed model', () => {
   // 178, from 176: the same plan cites STR-044 and STR-046 in
   // apps/web/src/structure/DocumentPage.test.tsx: every node's address names its document and itself
   // and opens the document there, and the same address finds the same node after a reorder.
+  // 180, from 178: the same plan cites IAM-073 a second time, in
+  // apps/web/src/structure/DocumentPage.test.tsx, where the page now numbers captions itself and shows a
+  // reader none a component they may not read could have moved; and STR-037, reordering from the
+  // contents by key and by pointer.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(178);
+    expect(model.citations).toHaveLength(180);
   });
 
   it('cites no identifier the corpus does not hold', () => {
