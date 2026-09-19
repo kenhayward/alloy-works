@@ -36,6 +36,8 @@ export interface GeneratedListsProps {
   readonly known: Known;
   readonly names: Names;
   readonly onRetry: () => void;
+  /** An entry's link names the address already shown, so following it announces nothing. */
+  readonly onArriveAgain?: (() => void) | undefined;
 }
 
 /**
@@ -46,7 +48,14 @@ export interface GeneratedListsProps {
  * have moved is shown as none rather than guessed (IAM-073), exactly as the numbering route withholds
  * it. Each entry is a link to the occurrence that holds it.
  */
-export function GeneratedLists({ document, outline, known, names, onRetry }: GeneratedListsProps) {
+export function GeneratedLists({
+  document,
+  outline,
+  known,
+  names,
+  onRetry,
+  onArriveAgain,
+}: GeneratedListsProps) {
   const prefix = useId();
   const contributions = known.state === 'loaded' ? known.contributions : NOTHING;
   const lists = useMemo(() => {
@@ -87,9 +96,19 @@ export function GeneratedLists({ document, outline, known, names, onRetry }: Gen
                 const shown = [entry.label ?? list.word, entry.caption]
                   .filter((part) => part !== null && part !== '')
                   .join(' ');
+                const href = nodeLink(document, entry.node);
                 return (
                   <li key={`${entry.node} ${entry.block}`}>
-                    <a href={nodeLink(document, entry.node)}>{shown}</a>
+                    <a
+                      href={href}
+                      onClick={() => {
+                        // The node already chosen, or another entry of the same occurrence: the
+                        // browser changes nothing and says nothing, so the arrival is asked for.
+                        if (window.location.hash === href) onArriveAgain?.();
+                      }}
+                    >
+                      {shown}
+                    </a>
                     {holder && <> in {nodeName(holder, names)}</>}
                   </li>
                 );

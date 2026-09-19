@@ -229,6 +229,8 @@ export interface DocumentPageProps {
    * time to the same node is a new arrival, and is taken to it again.
    */
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
+  /** A link to the address already shown was followed, which no `hashchange` announces. */
+  readonly onArriveAgain?: () => void;
 }
 
 /**
@@ -246,7 +248,7 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-export function DocumentPage({ client, id, linked = null }: DocumentPageProps) {
+export function DocumentPage({ client, id, linked = null, onArriveAgain }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
@@ -537,6 +539,7 @@ export function DocumentPage({ client, id, linked = null }: DocumentPageProps) {
         known={known}
         names={names}
         onRetry={() => setKnownAttempt((count) => count + 1)}
+        onArriveAgain={onArriveAgain}
       />
     </article>
   );

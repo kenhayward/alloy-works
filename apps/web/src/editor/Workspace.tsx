@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
@@ -71,19 +71,28 @@ function ManageAccessLink({ client, componentId }: { client: Client; componentId
  * The address after `#`, followed as it changes: a hash never reaches the service or a reload's path.
  * `arrivals` counts every change, so an address that arrives again - a link to the node already named,
  * after the document page rewrote the address to another without a `hashchange` - is still news.
+ * `again` counts one more for a link to the address already shown, which a browser follows without a
+ * `hashchange`.
  */
-function useHash(): { readonly hash: string; readonly arrivals: number } {
+function useHash(): {
+  readonly hash: string;
+  readonly arrivals: number;
+  readonly again: () => void;
+} {
   const [followed, setFollowed] = useState(() => ({ hash: window.location.hash, arrivals: 0 }));
-  useEffect(() => {
-    const follow = () =>
+  const again = useCallback(
+    () =>
       setFollowed((previous) => ({
         hash: window.location.hash,
         arrivals: previous.arrivals + 1,
-      }));
-    window.addEventListener('hashchange', follow);
-    return () => window.removeEventListener('hashchange', follow);
-  }, []);
-  return followed;
+      })),
+    [],
+  );
+  useEffect(() => {
+    window.addEventListener('hashchange', again);
+    return () => window.removeEventListener('hashchange', again);
+  }, [again]);
+  return { ...followed, again };
 }
 
 /**
@@ -97,7 +106,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     () => createApiClient({ baseUrl: origin, ...(given ? { fetch: given } : {}) }),
     [origin, given],
   );
-  const { hash, arrivals } = useHash();
+  const { hash, arrivals, again } = useHash();
   const [me, setMe] = useState<string | null>(null);
   // Asking who is signed in failed for a reason other than nobody being signed in (final review,
   // finding 5): a server error or no answer, which Try again asks about once more.
@@ -174,6 +183,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           client={client}
           id={documents.document}
           linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
+          onArriveAgain={again}
         />
       </>
     );
