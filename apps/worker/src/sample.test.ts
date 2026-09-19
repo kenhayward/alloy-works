@@ -14,11 +14,12 @@ import {
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
+import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts, type PinnedFonts } from './fonts.js';
 import { sampleJob } from './jobs/sample.js';
 import { JobRefused } from './refusal.js';
-import { createTypst, SAMPLE_TEMPLATE, typstBinaryPath, type Typst } from './typst.js';
+import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
@@ -200,13 +201,21 @@ describe('the sample job, from the queue to the store', () => {
     };
     // Typst's diagnostic for this names the character it could not set and the line that holds it.
     const refused = JSON.stringify({ environment: 'Grace \u{e000}', requestedAt: 'now' });
+    // The sample job as it runs, with the real Typst handed content it refuses in place of the name.
+    const real = sampleJob({
+      db: worker,
+      stores,
+      typst: {
+        version: () => typst.version(),
+        compile: (template, _data, createdAt) => typst.compile(template, refused, createdAt),
+      },
+    });
     const refusing: Record<string, JobHandler> = {
       sample_pdf: {
-        run: async () => {
-          await typst.compile(SAMPLE_TEMPLATE, refused, new Date('2026-09-11T00:00:00.000Z'));
-        },
-        failed: async (_tenant, _job, cause) => {
+        run: (tenant, job) => real.run(tenant, job),
+        failed: async (tenant, job, cause) => {
           told.push(cause);
+          await real.failed(tenant, job, cause);
         },
       },
     };
@@ -223,7 +232,8 @@ describe('the sample job, from the queue to the store', () => {
       message: 'Typst refused the document.',
     });
     expect((told[0] as Error).cause).toBeUndefined();
-    const everything = JSON.stringify([heard, rows, { ...(told[0] as object) }]);
+    expect(await sample(id)).toMatchObject({ state: 'failed', object_key: null });
+    const everything = JSON.stringify([heard, rows, pino.stdSerializers.err(told[0] as Error)]);
     for (const quoted of ['e000', '\u{e000}', 'Grace', 'displayed', 'PDF/UA', 'main.typ']) {
       expect(everything).not.toContain(quoted);
     }

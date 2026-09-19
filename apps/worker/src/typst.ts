@@ -40,6 +40,29 @@ export function typstOutcome(error: unknown): 'refused' | 'failed' {
   return ended.code === 1 && ended.killed !== true ? 'refused' : 'failed';
 }
 
+/**
+ * What a failed run can say about how it ended, and nothing more: the error `execFile` throws carries
+ * Typst's stderr and stdout, which quote content, and a message naming the command, and a logger that
+ * prints causes would print them all.
+ */
+export function howItEnded(error: unknown): {
+  readonly code: number | string | null;
+  readonly signal: string | null;
+  readonly killed: boolean;
+} {
+  const ended = (error ?? {}) as { code?: unknown; signal?: unknown; killed?: unknown };
+  const code =
+    typeof ended.code === 'number' ||
+    (typeof ended.code === 'string' && /^[A-Z][A-Z0-9_]{0,31}$/.test(ended.code))
+      ? ended.code
+      : null;
+  const signal =
+    typeof ended.signal === 'string' && /^SIG[A-Z0-9]{1,16}$/.test(ended.signal)
+      ? ended.signal
+      : null;
+  return { code, signal, killed: ended.killed === true };
+}
+
 /** The one template. Publishing proper adds its own; the data is always data. */
 export const SAMPLE_TEMPLATE = fileURLToPath(new URL('../templates/sample.typ', import.meta.url));
 
@@ -97,7 +120,7 @@ export function createTypst(options: {
         return await readFile(join(root, 'out.pdf'));
       } catch (error) {
         if (typstOutcome(error) === 'refused') throw new TypstRefused();
-        throw new TypstFailed('Typst did not render the document.', { cause: error });
+        throw new TypstFailed('Typst did not render the document.', { cause: howItEnded(error) });
       } finally {
         await rm(root, { recursive: true, force: true });
       }

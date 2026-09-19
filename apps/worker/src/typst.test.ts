@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import pino from 'pino';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, FontsUnavailable, loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { JobRefused } from './refusal.js';
@@ -112,8 +113,21 @@ describe('the pinned Typst', () => {
     // A timeout might not happen twice, so it is never a refusal, whatever the run had done by then.
     const hurried = createTypst({ binary: typstBinaryPath(), fonts, timeoutMs: 1 });
     const failure = hurried.compile(SAMPLE_TEMPLATE, data, at);
-    await expect(failure).rejects.toMatchObject({ code: 'typst_failed' });
+    await expect(failure).rejects.toMatchObject({ code: 'typst_failed', cause: { killed: true } });
     await expect(failure).rejects.not.toBeInstanceOf(JobRefused);
+  });
+
+  it('carries no word of what Typst printed, or of the command, into a logged failure', async () => {
+    // A handler's `failed` is handed this error, and pino's `err` serializer prints every cause's
+    // message: Node's own is "Command failed: <the command>" and then Typst's stderr, which quotes
+    // content.
+    const hurried = createTypst({ binary: typstBinaryPath(), fonts, timeoutMs: 1 });
+    const failure: unknown = await hurried.compile(SAMPLE_TEMPLATE, data, at).catch((e) => e);
+    expect(failure).toBeInstanceOf(TypstFailed);
+    const logged = JSON.stringify(pino.stdSerializers.err(failure as Error));
+    for (const quoted of ['Command failed', 'aw-render-', 'main.typ', 'stderr', 'stdout']) {
+      expect(logged).not.toContain(quoted);
+    }
   });
 });
 
