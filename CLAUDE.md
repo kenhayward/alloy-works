@@ -292,6 +292,7 @@ pnpm trace tranche <Tn> [XXX]                     # a tranche by area, or one ar
 pnpm trace next <XXX>                             # the next free identifier in an area
 pnpm trace stats                                  # the corpus by tranche and state; `pnpm trace` for the rest
 pnpm trace check                                  # every problem in the corpus: holes, double claims, citations naming nothing
+pnpm trace pins                                   # each count the trace tests pin, against what the working tree compiles to now
 pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
 pnpm trace gate                                   # pass or fail a baseline; the CI step of the same name
 pnpm trace pack 0.13.0                            # write that baseline's evidence pack to docs/trace/0.13.0/
