@@ -412,7 +412,7 @@ the wire (decision F) rather than waiting for one; and retiring the scaffolding'
 A document version to a PDF somebody can download, cite and keep, designed in
 [publishing.md](../design/publishing.md) as Ken's answer of 2026-09-19 amended it. It comes after
 structure, because a publication is an outline numbered by `number` with each component's content
-beneath its reference, and both had to exist first. The design claims forty-six requirements and is
+beneath its reference, and both had to exist first. The design claims forty-five requirements and is
 built in seven slices: a document to PDF first, then the layout, the rest of the content, themes and
 typefaces, accessible output checked on every publication, preview, and Word.
 
