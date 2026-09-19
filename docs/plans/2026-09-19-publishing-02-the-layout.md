@@ -58,6 +58,25 @@ No fourth question: nothing else open could change a decision below.
 
 Each is the plan's recommendation; the rejected alternative follows it.
 
+**Ken's answers (2026-09-19):** every recommendation accepted, except as follows.
+
+- **F: no trigger is disabled.** Migration 0018 does not backfill a layout onto requests queued before
+  it: `publication_request.layout_version_id` is null for a request made before 0018, as it is for a
+  template-1 publication, and the job treats a null layout as template 1's. Migration 0017's triggers
+  stay enabled throughout.
+- **#144 lands in PUB, not TPL**, beside PUB-007 to PUB-014, with the wording: "A layout must declare,
+  as a BCP 47 tag, the language its generated words are in; publishing a document whose language that
+  tag does not match as a language range must be refused, naming both." Drafted with
+  `pnpm trace draft --area PUB --statement "..." --issue 144` (the issue's own area says TPL, which was
+  the controller's filing error; the issue carries a comment saying so).
+- **PUB-008 and PUB-079 are reworded for clarity** (edits keeping their identifiers, each with a
+  change-history row): PUB-008's "total pages" becomes "the physical page count"; PUB-079's "no body
+  content" becomes "no outline node survives conditions". Each is edited in the task that cites it.
+- **Front matter first is a requirement**: filed as issue #152, it lands as an STR row via
+  `pnpm trace draft 152` in task 1, which enforces it, and task 1's test cites it.
+- D's cost is accepted knowingly: the first no-op edit of each existing document records one extra
+  version, because the canonical form carries the schema version.
+
 **A. Lists (PUB-038) and caption labels (STR-024) move to slice 3.** Slice 2 publishes paragraphs only:
 a figure, table or equation fails `block_not_publishable`, so every list of figures would be empty and
 no caption is ever printed. The layout's version 1 therefore holds **no `lists` member** - the design's
