@@ -295,7 +295,8 @@ export async function publicationInputs(
     },
     outline: read.outline,
     occurrences,
-    // Written only by requestPublication, from the closed vocabulary (the stored-shape check, row 4).
+    // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each
+    // of the resolve stage, naming a node and nothing else - so they are read back without a parse.
     refused: request.failures as PublishFailure[],
   };
 }
@@ -308,7 +309,7 @@ export async function failPublicationRequest(
 ): Promise<void> {
   await trx
     .updateTable('publication_request')
-    .set({ state: 'failed', failures: JSON.stringify(failures), finished_at: new Date() })
+    .set({ state: 'failed', failures: JSON.stringify(failures), finished_at: sql<Date>`now()` })
     .where('id', '=', requestId)
     .where('state', '=', 'queued')
     .execute();
@@ -363,6 +364,35 @@ export async function recordPublication(
       `The request ${request.id} carries failures, so it has no publication to record: fail it instead`,
     );
   }
+  // All or nothing within the caller's transaction too: a failure part way - a refused row, or a lost
+  // connection after a statement ran - rolls back to here before it is re-thrown, so a caller that
+  // catches it and carries on (to fail the request) keeps no part of the publication. 0017's
+  // `publication_recorded_whole` refuses at commit whatever a caller that skipped this left.
+  await sql`savepoint record_publication`.execute(trx);
+  try {
+    const id = await insertPublication(trx, request, input);
+    await sql`release savepoint record_publication`.execute(trx);
+    return id;
+  } catch (error) {
+    // The failure that brought it here is the one reported. Where rolling back fails as well - the
+    // connection is gone - the transaction cannot commit, and the check at commit stands regardless.
+    await sql`rollback to savepoint record_publication`.execute(trx).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function insertPublication(
+  trx: TenantTransaction,
+  request: {
+    readonly id: string;
+    readonly document_id: string;
+    readonly document_version_id: string;
+    readonly requested_by: string;
+    readonly requested_at: Date;
+    readonly space_id: string | null;
+  },
+  input: NewPublication,
+): Promise<string> {
   const artifact = await trx
     .insertInto('artifact')
     .values({ kind: 'publication', space_id: request.space_id })

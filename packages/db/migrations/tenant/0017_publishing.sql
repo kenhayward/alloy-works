@@ -184,3 +184,93 @@ $$;
 create trigger publication_request_occurrence_while_queued
   before insert on publication_request_occurrence
   for each row execute function publication_request_occurrence_while_queued();
+
+-- PUB-050 at the insert: a publication's versions and output are recorded in the transaction that
+-- makes it, while its request is still queued. One added afterwards would say a publication read a
+-- version it never read, or is bytes it never was; the grants above refuse only the change. An output
+-- is keyed in its own tenant's store - the schema's name is the tenant's role, which is the prefix
+-- `packages/objects` gives every key - and the table's check holds the rest of the key to its digest.
+-- Checked here rather than in that check, because a check reading the session's schema would refuse
+-- every row a restore with an empty search path copied back.
+create function publication_part_while_queued() returns trigger
+language plpgsql as $$
+declare
+  queued boolean;
+begin
+  execute format(
+    'select exists (select 1 from %1$I.publication p join %1$I.publication_request r on r.id = p.request_id '
+    'where p.id = $1 and r.state = %2$L)',
+    tg_table_schema,
+    'queued'
+  ) into queued using new.publication_id;
+  if not queued then
+    raise exception
+      '%: a part of a publication is recorded only while its publication''s request is queued',
+      tg_table_name;
+  end if;
+  -- Nested, not joined by `and`: an input's row has no key, and plpgsql does not short-circuit.
+  if tg_table_name = 'publication_output' then
+    if split_part(new.object_key, '/', 1) <> tg_table_schema then
+      raise exception 'publication_output: an output is keyed in its own tenant''s store';
+    end if;
+  end if;
+  return new;
+end
+$$;
+
+create trigger publication_input_while_queued before insert on publication_input
+  for each row execute function publication_part_while_queued();
+create trigger publication_output_while_queued before insert on publication_output
+  for each row execute function publication_part_while_queued();
+
+-- A publication is recorded whole, and only as its request was made, or its transaction does not
+-- commit. Checked at commit, once every part is in: its request is done and names the same document
+-- version, publisher and time; its artifact is in the document's space, whose grants it is read on; it
+-- has exactly one output; and its inputs are exactly the document's version and each version the
+-- request recorded, at its place. So a caller that catches a failure part way through recording and
+-- commits anyway commits nothing of the publication, and no publication is inserted beside its request.
+create function publication_recorded_whole() returns trigger
+language plpgsql as $$
+declare
+  whole boolean;
+begin
+  execute format(
+    $check$
+    select
+      exists (
+        select 1 from %1$I.publication_request r
+        where r.id = $2 and r.state = 'done' and r.document_id = $3
+          and r.document_version_id = $4 and r.requested_by = $5 and r.requested_at = $6
+      )
+      and (select a.space_id from %1$I.artifact a where a.id = $1)
+        = (select d.space_id from %1$I.artifact d where d.id = $3)
+      and (select count(*) from %1$I.publication_output o where o.publication_id = $1) = 1
+      and exists (
+        select 1 from %1$I.publication_input i
+        where i.publication_id = $1 and i.node is null and i.version_id = $4
+      )
+      and (select count(*) from %1$I.publication_input i where i.publication_id = $1 and i.node is not null)
+        = (select count(*) from %1$I.publication_request_occurrence o where o.request_id = $2)
+      and not exists (
+        select 1 from %1$I.publication_request_occurrence o
+        where o.request_id = $2 and not exists (
+          select 1 from %1$I.publication_input i
+          where i.publication_id = $1 and i.node = o.node and i.version_id = o.version_id
+        )
+      )
+    $check$,
+    tg_table_schema
+  ) into whole
+  using new.id, new.request_id, new.document_id, new.document_version_id, new.publisher,
+    new.published_at;
+  if whole is not true then
+    raise exception
+      'publication: a publication is recorded whole, by its request, as its request was made';
+  end if;
+  return null;
+end
+$$;
+
+create constraint trigger publication_recorded_whole after insert on publication
+  deferrable initially deferred
+  for each row execute function publication_recorded_whole();

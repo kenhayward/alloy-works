@@ -71,6 +71,26 @@ function deferred<T>() {
 }
 
 /**
+ * Fails after an insert into `table` has run, as a lost connection or a driver's fault would: the
+ * statement took effect, and its caller is told it failed.
+ */
+function failingAfterInsertInto(table: string): KyselyPlugin {
+  const marked = new WeakSet<object>();
+  return {
+    transformQuery: (args) => {
+      if (args.node.kind === 'InsertQueryNode' && args.node.into?.table.identifier.name === table) {
+        marked.add(args.queryId);
+      }
+      return args.node;
+    },
+    transformResult: async (args) => {
+      if (marked.has(args.queryId)) throw new Error('The connection was lost');
+      return args.result;
+    },
+  };
+}
+
+/**
  * Every row any query returned, as Postgres returned it, so a test can say what was never selected -
  * not only what was left out of an answer after it was read.
  */
@@ -588,19 +608,18 @@ describe('requesting and recording a publication', () => {
   });
 
   it('PUB-050 records a publication the runtime role can insert and read and never change', async () => {
-    const [first, again] = await service.withTenant(production, async (trx) => {
+    const rowOf = (trx: TenantTransaction, id: string) =>
+      trx.selectFrom('publication').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+    const { first, again, version, queued } = await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, []);
       const one = await recordPublication(trx, recording(await requested(trx, version, ada)));
+      const recorded = await rowOf(trx, one!);
       // A second worker racing an expired lease finds the request done and records nothing.
-      const request = await trx
-        .selectFrom('publication')
-        .select('request_id')
-        .where('id', '=', one!)
-        .executeTakeFirstOrThrow();
-      expect(await recordPublication(trx, recording(request.request_id))).toBeUndefined();
+      expect(await recordPublication(trx, recording(recorded.request_id))).toBeUndefined();
       // Correcting it is publishing again: another request, another publication, the first unchanged.
       const two = await recordPublication(trx, recording(await requested(trx, version, ada)));
-      return [one!, two!];
+      expect(await rowOf(trx, one!)).toEqual(recorded);
+      return { first: one!, again: two!, version, queued: await requested(trx, version, ada) };
     });
     expect(again).not.toBe(first);
     for (const statement of [
@@ -613,6 +632,81 @@ describe('requesting and recording a publication', () => {
         /permission denied/,
       );
     }
+
+    // Nothing is added to a publication once made: not a version it did not read, nor another output.
+    const other = 'e'.repeat(64);
+    for (const statement of [
+      sql`insert into publication_input (publication_id, version_id, node)
+          values (${first}, ${version.id}, ${nodeId()})`,
+      sql`insert into publication_output (publication_id, format, object_key, sha256, bytes, standard)
+          values (${first}, 'pdf', ${`${production.role}/sha256/${other}`}, ${other}, 1, 'ua-1')`,
+    ]) {
+      await expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        /only while its publication's request is queued/,
+      );
+    }
+
+    // Nor is a publication made except as its request was made: one inserted beside a queued request
+    // is refused when its transaction commits - bare, or whole and its request marked done, in
+    // another publisher's name and back-dated.
+    const forged = async (trx: TenantTransaction) => {
+      const artifact = await trx
+        .insertInto('artifact')
+        .values({ kind: 'publication', space_id: general })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const made = recording(queued);
+      await trx
+        .insertInto('publication')
+        .values({
+          id: artifact.id,
+          request_id: queued,
+          document_id: version.artifactId,
+          document_version_id: version.id,
+          publisher: grace,
+          published_at: new Date('2020-01-01T00:00:00Z'),
+          approval: 'none',
+          formats: ['pdf'],
+          engine: 'typst',
+          engine_version: made.engineVersion,
+          template: 'publication',
+          template_version: made.templateVersion,
+          pipeline_version: made.pipelineVersion,
+          fonts: JSON.stringify(made.fonts),
+          data_sha256: made.dataSha256,
+          numbering: JSON.stringify(made.numbering),
+        })
+        .execute();
+      return artifact.id;
+    };
+    await expect(service.withTenant(production, forged)).rejects.toThrow(/recorded whole/);
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const id = await forged(trx);
+        await trx
+          .insertInto('publication_input')
+          .values({ publication_id: id, version_id: version.id, node: null })
+          .execute();
+        await trx
+          .insertInto('publication_output')
+          .values({
+            publication_id: id,
+            format: 'pdf',
+            object_key: `${production.role}/sha256/${other}`,
+            sha256: other,
+            bytes: 1,
+            standard: 'ua-1',
+          })
+          .execute();
+        await sql`update publication_request set state = 'done', finished_at = now()
+                  where id = ${queued}`.execute(trx);
+      }),
+    ).rejects.toThrow(/recorded whole/);
+    // Its request is untouched by either, and publishes as it was made.
+    expect(await stateOf(queued)).toEqual({ state: 'queued', failures: [], finished_at: null });
+    expect(
+      await service.withTenant(production, (trx) => recordPublication(trx, recording(queued))),
+    ).toBeDefined();
   });
 
   it('records every version a publication read, what made it, and its output by its own digest', async () => {
@@ -722,12 +816,43 @@ describe('requesting and recording a publication', () => {
     await expect(
       service.withTenant(production, (trx) => recordPublication(trx, elsewhere)),
     ).rejects.toThrow(/publication_output_check/);
+    const anotherTenants = {
+      ...recording(id),
+      output: { key: `t_another/sha256/${'c'.repeat(64)}`, sha256: 'c'.repeat(64), bytes: 1000 },
+    };
+    await expect(
+      service.withTenant(production, (trx) => recordPublication(trx, anotherTenants)),
+    ).rejects.toThrow(/keyed in its own tenant's store/);
     expect(await publications()).toEqual(before);
     expect(await stateOf(id)).toEqual({ state: 'queued', failures: [], finished_at: null });
     // Nothing of the refused record was kept, so the request can still be recorded whole.
     expect(
       await service.withTenant(production, (trx) => recordPublication(trx, recording(id))),
     ).toBeDefined();
+  });
+
+  it('keeps nothing of a record that fails part way, where its caller catches the failure and carries on', async () => {
+    const id = await service.withTenant(production, async (trx) =>
+      requested(trx, await documentWith(trx, []), ada),
+    );
+    const before = await publications();
+    await service.withTenant(production, async (trx) => {
+      await expect(
+        recordPublication(
+          trx.withPlugin(failingAfterInsertInto('publication_input')),
+          recording(id),
+        ),
+      ).rejects.toThrow(/connection was lost/);
+      // The caller carries on in the same transaction and fails the request, which commits.
+      await failPublicationRequest(trx, id, [
+        { stage: 'store', code: 'store_failed', node: null, block: null, detail: null },
+      ]);
+    });
+    expect(await publications()).toEqual(before);
+    expect(await stateOf(id)).toMatchObject({
+      state: 'failed',
+      failures: [{ stage: 'store', code: 'store_failed', node: null, block: null, detail: null }],
+    });
   });
 
   it('refuses loudly to record a request carrying failures, and leaves no row of it', async () => {
@@ -807,6 +932,14 @@ describe('requesting and recording a publication', () => {
       await failPublicationRequest(trx, id, [
         { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
       ]);
+      // Finished at the database's time, as a recorded publication's request is, not the worker's.
+      const { rows } = await sql<{ now: Date }>`select now() as now`.execute(trx);
+      const finished = await trx
+        .selectFrom('publication_request')
+        .select('finished_at')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      expect(finished.finished_at).toEqual(rows[0]!.now);
       expect(await publicationInputs(trx, id)).toBeUndefined();
       expect(await recordPublication(trx, recording(id))).toBeUndefined();
       // Only finishing it: nothing else about a request can be changed.
