@@ -343,9 +343,10 @@ longer in the document says **The linked part is not in this document.** Beneath
 document lists its figures, tables and equations, each with its number and caption, renumbered at
 once when anything moves; `GET /v1/documents/{id}/contributions` answers what the numbering route
 reads, so the page numbers no caption from a component the reader may not read. Beyond the plan's
-twelve, building it found the guard that takes an arrival once, the mark's clearing and the address
-written with `replaceState` all unpinned until review, and a list entry that did nothing when it
-named the address already shown, now taken as an arrival again. What it leaves is listed at the end
+twelve, building it found a list entry that did nothing when it named the address already shown,
+now taken as an arrival again, and each task's review found behaviour the tests did not yet pin -
+among them the guard that takes an arrival once, the literal size STR-063 states, and the lists
+renumbering before the service answers - each pinned before the task was accepted. What it leaves is listed at the end
 of the plan: resolving a cross-reference and a component's reference to a section, structure 4's;
 another person's outline change reaching an open page, the plan that puts document versions on the
 stream; the interface's share of the navigation budget, issue #134 and the browser suite; tracking

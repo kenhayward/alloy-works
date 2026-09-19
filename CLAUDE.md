@@ -19,8 +19,9 @@ a web application and a desktop application**.
 > gives every node an address, and lists the document's figures, tables and equations beneath the
 > outline - and nothing else authors content: no list, table, mark or equation can be written, no
 > paste, no metadata panel, no making a component type, no cross-references resolved, no document
-> view, and no publishing. The single `Component` in `packages/domain` is the scaffolding's, and nothing renders
-> it any more. [`docs/features.md`](docs/features.md) lists what does and does not exist.
+> view, and no publishing. The single `Component` in `packages/domain` is the scaffolding's, and
+> nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
+> exist.
 
 ## Architecture & data flow
 

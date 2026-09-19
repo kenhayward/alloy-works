@@ -675,8 +675,8 @@ draws from the table it holds, which is the table for the outline it holds.
 it (STR-036), and clicking a node takes the reader to it (STR-035's second half). It updates with
 every act the author makes, because it renders the outline every operation returns rather than a copy
 of one; so STR-034 is answered only for the author's own acts, as "What this document does not own"
-says. Reordering from the panel is the move operation (STR-037). **The panel goes to a linked node, chooses it, focuses it and
-marks it**, following a deep link (below).
+says. Reordering from the panel is the move operation (STR-037). **The panel goes to a linked node,
+chooses it, focuses it and marks it**, following a deep link (below).
 
 **Tracking the reader's position as they scroll is the document view's**, and the document view is
 the next slice of the editor. The panel's half of STR-035 is here and the claim is not, for that
