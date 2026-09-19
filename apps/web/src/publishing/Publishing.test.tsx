@@ -191,6 +191,19 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('The publication could not be made');
   });
 
+  it('says there is nothing to publish, rather than asking for another attempt that cannot succeed', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'nothing_to_publish', node: null, block: null, detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'There is nothing to publish: no part of the outline is left, and the layout sets no cover.',
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('says a failure of the engine or the store is nothing in the document, and to publish again', async () => {
     for (const [stage, code, words] of [
       ['engine', 'engine_failed', 'The publication could not be made. Publish again.'],

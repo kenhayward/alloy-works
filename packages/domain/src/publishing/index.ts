@@ -14,12 +14,16 @@ export {
   unsupportedFormats,
 } from './layout.js';
 export type { Layout, LayoutField, LayoutReadOutcome, PdfFormat, SlotPart } from './layout.js';
-export { DRAFT_NOTICE, PUBLISHING_SCHEMA } from './published.js';
+export { DRAFT_NOTICE, PUBLISHING_SCHEMA, PUBLISHING_SCHEMA_1 } from './published.js';
 export type {
   PublishedBlock,
   PublishedDocument,
+  PublishedDocument1,
   PublishedLanguage,
   PublishedNode,
+  PublishedNode1,
   PublishedParagraph,
+  PublishedPattern,
+  PublishedPdfFormat,
   PublishedRun,
 } from './published.js';

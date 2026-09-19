@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import {
   assemble,
-  defaultNumberingScheme,
   DRAFT_NOTICE,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
@@ -34,7 +33,9 @@ describe('the publication template', () => {
  * One fixed input touching each part of `assemble` the published document carries: a section, a
  * reference inside it, a paragraph, and a component in another language than its document's.
  */
-const fixed = (covers: (codePoint: number) => boolean): AssembleInput => ({
+const fixed = (
+  covers: (codePoint: number) => boolean,
+): AssembleInput & { readonly layout: null } => ({
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
@@ -79,7 +80,9 @@ const fixed = (covers: (codePoint: number) => boolean): AssembleInput => ({
     ],
   ]),
   refused: [],
-  scheme: defaultNumberingScheme,
+  // No layout: what a request made before layouts is assembled from, which is slice 1's input.
+  layout: null,
+  revision: '0.1',
   covers,
 });
 

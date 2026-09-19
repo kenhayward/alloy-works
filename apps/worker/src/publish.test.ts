@@ -26,7 +26,6 @@ import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@allo
 import {
   assemble,
   blockIdentifierFrom,
-  defaultNumberingScheme,
   DRAFT_NOTICE,
   type ContentDocument,
   type OutlineDocument,
@@ -593,7 +592,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
       outline: inputs!.outline,
       occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
       refused: inputs!.refused,
-      scheme: defaultNumberingScheme,
+      // As the job assembles it until template 2 is chosen for a request made under a layout.
+      layout: null,
+      revision: inputs!.revision,
       covers: fonts.covers,
     });
     if (!again.ok) throw new Error('did not assemble');

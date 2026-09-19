@@ -8292,7 +8292,7 @@
     {
       "id": "PUB-079",
       "area": "PUB",
-      "statement": "A resolved document with no body content must publish the front and back matter its layout declares, and must fail with a named error only where the layout declares none - never produce an empty artifact",
+      "statement": "A resolved document in which no outline node survives conditions must publish the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and must fail with a named error otherwise - never produce an empty artifact",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -14850,7 +14850,7 @@
         },
         {
           "id": "PUB-079",
-          "howItIsMet": "Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`"
+          "howItIsMet": "Where no node survives conditions, the document publishes the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and otherwise fails `nothing_to_publish`"
         },
         {
           "id": "STR-013",
@@ -16014,49 +16014,49 @@
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 333,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 485,
+      "line": 484,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 360,
+      "line": 359,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 376,
+      "line": 375,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 381,
+      "line": 380,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 503,
+      "line": 502,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 347,
+      "line": 346,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 430,
+      "line": 429,
       "kind": "title"
     },
     {
@@ -16536,7 +16536,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 134,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -16764,13 +16764,25 @@
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 214,
+      "line": 235,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-079",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 424,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 287,
+      "line": 308,
+      "kind": "title"
+    },
+    {
+      "id": "STR-013",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 397,
       "kind": "title"
     },
     {

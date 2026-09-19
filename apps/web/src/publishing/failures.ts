@@ -43,6 +43,9 @@ export function failureWords(failure: Failure): string {
       return `The character ${failure.detail ?? ''} is in no typeface this publication can use.`;
     case 'character_disallowed':
       return `An invisible character, ${failure.detail ?? ''}, cannot be published. Delete it and publish again.`;
+    // Another attempt would make the same nothing, so this never says to publish again (PUB-079).
+    case 'nothing_to_publish':
+      return 'There is nothing to publish: no part of the outline is left, and the layout sets no cover.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

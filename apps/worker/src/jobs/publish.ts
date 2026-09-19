@@ -5,7 +5,7 @@ import {
   recordPublication,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { assemble, defaultNumberingScheme, type PublishFailure } from '@alloy-works/domain';
+import { assemble, type PublishFailure } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
@@ -70,13 +70,16 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused } = read.inputs;
+      const { request, outline, occurrences, refused, revision } = read.inputs;
 
       const assembled = assemble({
         outline,
         occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
         refused,
-        scheme: defaultNumberingScheme,
+        // `publishing/1`, for template 1, whatever layout the request recorded: choosing template 2
+        // for a request made under a layout, and `publishing/2` with it, is the next step's.
+        layout: null,
+        revision,
         covers: deps.fonts.covers,
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);

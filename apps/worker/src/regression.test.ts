@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import {
   assemble,
-  defaultNumberingScheme,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseOutlineDocument,
@@ -76,7 +75,8 @@ const holding = (text: string): AssembleInput => ({
     ],
   ]),
   refused: [],
-  scheme: defaultNumberingScheme,
+  layout: null,
+  revision: '0.1',
   covers: fonts.covers,
 });
 
@@ -89,7 +89,8 @@ describe('the publishing regression corpus', () => {
       outline: outline([nested(1)]),
       occurrences: new Map(),
       refused: [],
-      scheme: defaultNumberingScheme,
+      layout: null,
+      revision: '0.1',
       covers: fonts.covers,
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));

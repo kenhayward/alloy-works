@@ -114,6 +114,8 @@ describe('the domain package', () => {
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',
+        // The first slice's shape, still made for a request made before layouts (publishing 02).
+        'PUBLISHING_SCHEMA_1',
         'assemble',
         'publishFailureCodes',
         // The layout, promoted in the plan that adds it

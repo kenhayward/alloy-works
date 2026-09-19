@@ -275,8 +275,12 @@ describe('the citations in the committed model', () => {
   // 197, from 195: the same plan cites PUB-014 and PUB-095 in packages/db/src/publishing.test.ts: a
   // format the layout does not make is refused naming it, and a document in another language than the
   // layout's words is refused naming both, while one its tag matches as a range is taken.
+  // 199, from 197: the same plan cites STR-013 and PUB-079 in
+  // packages/domain/src/publishing/assemble.test.ts: `assemble` numbers with the scheme its layout
+  // declares, and an empty document publishes its cover or is refused `nothing_to_publish` where the
+  // layout declares nothing with something to show.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(197);
+    expect(model.citations).toHaveLength(199);
   });
 
   it('cites no identifier the corpus does not hold', () => {
