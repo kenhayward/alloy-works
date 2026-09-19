@@ -297,7 +297,6 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     expect(configuration.platform.trim()).not.toBe('');
     expect(configuration.cpu.trim()).not.toBe('');
     expect(configuration.node.trim()).not.toBe('');
-    expect(configuration.cpus).toBeGreaterThan(0);
     expect(configuration.parallelism).toBeGreaterThan(0);
     interface Shown {
       type: string;

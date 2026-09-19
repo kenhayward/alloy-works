@@ -109,6 +109,24 @@ async function latestView(viewer: Viewer, id: string) {
 }
 
 /**
+ * The document and its latest version's outline, for the routes that number it. A document that is
+ * missing or unreadable is not found; a stored outline that does not read is a broken store, thrown as
+ * the outline route throws it.
+ */
+async function latestOutline(trx: TenantTransaction, id: string) {
+  const document = await readDocument(trx, id);
+  if (!document) throw notFound();
+  const read = readOutline(document.version.content, {
+    artifact: id,
+    version: document.version.id,
+  });
+  if (!read.ok) {
+    throw new Error(`The document ${id} at ${document.version.id} does not read: ${read.failure}`);
+  }
+  return { document, outline: read.outline };
+}
+
+/**
  * The handlers that create, find, open and restructure documents. Each permission-checked one runs in
  * the transaction its permission was decided in; none changes a fact a decision reads - creating an
  * artifact fires no epoch trigger, and a version is not a grant - so none declares `changesAccess`.
@@ -186,18 +204,8 @@ export function documentHandlers(
      */
     getContributions: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
-      const document = await readDocument(trx, id);
-      if (!document) throw notFound();
-      const read = readOutline(document.version.content, {
-        artifact: id,
-        version: document.version.id,
-      });
-      if (!read.ok) {
-        throw new Error(
-          `The document ${id} at ${document.version.id} does not read: ${read.failure}`,
-        );
-      }
-      const inputs = await numberingInputs(trx, read.outline, principalId);
+      const { document, outline } = await latestOutline(trx, id);
+      const inputs = await numberingInputs(trx, outline, principalId);
       // Each version once, however many occurrences resolved to it: a known occurrence's version and
       // its contributions are both there, and an unknown one's version is null.
       const versions = new Map<string, readonly Contribution[]>();
@@ -232,20 +240,10 @@ export function documentHandlers(
      */
     getNumbering: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
-      const document = await readDocument(trx, id);
-      if (!document) throw notFound();
-      const read = readOutline(document.version.content, {
-        artifact: id,
-        version: document.version.id,
-      });
-      if (!read.ok) {
-        throw new Error(
-          `The document ${id} at ${document.version.id} does not read: ${read.failure}`,
-        );
-      }
-      const inputs = await numberingInputs(trx, read.outline, principalId);
+      const { document, outline } = await latestOutline(trx, id);
+      const inputs = await numberingInputs(trx, outline, principalId);
       const table = number(
-        conditions(resolve(read.outline, inputs.contributions)),
+        conditions(resolve(outline, inputs.contributions)),
         defaultNumberingScheme,
       );
       return {
