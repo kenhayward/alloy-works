@@ -188,22 +188,25 @@ export function breaksFrontFirst(
 }
 
 /**
- * Whether a top-level node may stop being front matter (STR-064): only where no front node follows
- * it, since a front node after one that is not is what the outline's parse refuses. A node that is
- * not front matter has nothing to leave, so it is always true of one - the caller asks this of the
- * node it is offering choices for, and only front matter has a choice to lose.
+ * The first front node after this top-level one, if there is one: while there is, the node cannot
+ * stop being front matter, since a front node after one that is not is what the outline's parse
+ * refuses (STR-064). A node that is not front matter has nothing to leave, so it never has one, and
+ * the panel names the node this returns as the reason its Matter cannot change.
  */
-export function mayLeaveFront(nodes: readonly OutlineViewNode[], id: string): boolean {
+export function frontAfter(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+): OutlineViewNode | undefined {
   let found = false;
   for (const node of nodes) {
     if (found) {
-      if (node.matter === 'front') return false;
+      if (node.matter === 'front') return node;
     } else if (node.id === id) {
-      if (node.matter !== 'front') return true;
+      if (node.matter !== 'front') return undefined;
       found = true;
     }
   }
-  return true;
+  return undefined;
 }
 
 /**
