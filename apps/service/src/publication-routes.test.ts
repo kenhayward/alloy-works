@@ -102,11 +102,11 @@ describe('publishing a document through the service', () => {
   };
 
   /** A document in General referencing these components, made by Grace through the routes. */
-  const documentReferencing = async (components: string[]) => {
+  const documentReferencing = async (components: string[], language = 'en-GB') => {
     const made = (
       await call('grace', 'POST', `/v1/spaces/${general}/documents`, {
         title: 'The dosing report',
-        language: 'en-GB',
+        language,
         direction: 'ltr',
       })
     ).json<{ id: string; version: { id: string } }>();
@@ -129,6 +129,12 @@ describe('publishing a document through the service', () => {
     }>();
     return { id: made.id, version, nodes: body.outline.nodes.map((node) => node.id) };
   };
+
+  /** Every publication request recorded so far, in the tenant. */
+  const requestIds = () =>
+    tenantDb
+      .withTenant(tenant, (trx) => trx.selectFrom('publication_request').select('id').execute())
+      .then((rows) => rows.map((row) => row.id));
 
   /** Asks for a publication as this caller, and answers the request's id. */
   const requested = async (as: string, document: { id: string; version: string }) => {
@@ -326,6 +332,33 @@ describe('publishing a document through the service', () => {
     expect(twice.json<{ message: string }>().message).toContain('formats');
     const unknown = { id: '11111111-1111-4111-8111-111111111111', version: other.version };
     expect((await publish('grace', unknown)).statusCode).toBe(404);
+  });
+
+  it('refuses at the door a document in another language than its layout, naming both, and queues nothing', async () => {
+    const french = await documentReferencing([], 'fr');
+    const before = await requestIds();
+    const answer = await publish('grace', french);
+    expect(answer.statusCode, answer.body).toBe(400);
+    expect(answer.json()).toEqual({
+      code: 'layout_language',
+      message:
+        'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
+      traceId: expect.any(String),
+    });
+    expect(await requestIds()).toEqual(before);
+  });
+
+  it('refuses at the door a format the layout does not make', async () => {
+    const document = await documentReferencing([]);
+    const before = await requestIds();
+    const answer = await publish('grace', document, ['docx']);
+    expect(answer.statusCode, answer.body).toBe(400);
+    expect(answer.json()).toEqual({
+      code: 'format_unsupported',
+      message: 'The layout this document is published under does not make docx.',
+      traceId: expect.any(String),
+    });
+    expect(await requestIds()).toEqual(before);
   });
 
   it('answers a request to its requester alone', async () => {

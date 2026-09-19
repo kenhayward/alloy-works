@@ -365,6 +365,28 @@ describe('publishing from the document page', () => {
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
   });
 
+  it("says why a publish was refused at the door, in the service's words", async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        new Status(400, {
+          code: 'layout_language',
+          message:
+            'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(
+      await screen.findByText(
+        'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+  });
+
   it('says a publish could not be asked for, whether the service failed or never answered', async () => {
     for (const answer of [new Status(500), DROPPED]) {
       const fake = service({

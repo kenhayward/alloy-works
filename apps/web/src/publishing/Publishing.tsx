@@ -190,7 +190,7 @@ export function Publishing({
   const start = async () => {
     setPublish({ state: 'working' });
     try {
-      const { data, response } = await client.POST('/v1/documents/{id}/publications', {
+      const { data, error, response } = await client.POST('/v1/documents/{id}/publications', {
         params: { path: { id: document } },
         body: { version, formats: ['pdf'] },
       });
@@ -199,6 +199,12 @@ export function Publishing({
         follow(data.id, followMs);
         return;
       }
+      // A refusal at the door (400) carries its own words - what format the layout does not make, or
+      // what language it and the document are in - which say more than a fixed sentence could.
+      const atTheDoor =
+        response.status === 400 && isRecord(error) && typeof error.message === 'string'
+          ? error.message
+          : undefined;
       setPublish({
         state: 'refused',
         words:
@@ -206,7 +212,7 @@ export function Publishing({
             ? 'This document has changed since the page opened. Reload it and publish again.'
             : response.status === 403
               ? 'You may read this document but not publish it.'
-              : 'The publish could not be asked for. Try again.',
+              : (atTheDoor ?? 'The publish could not be asked for. Try again.'),
       });
     } catch {
       if (mounted.current) {

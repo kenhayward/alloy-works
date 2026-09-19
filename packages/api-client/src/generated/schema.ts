@@ -2902,7 +2902,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the template cannot make */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language */
             400: {
                 headers: {
                     [name: string]: unknown;
