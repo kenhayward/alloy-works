@@ -5,6 +5,7 @@ import { createObjectStores } from '@alloy-works/objects';
 import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
+import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { sampleJob } from './jobs/sample.js';
 import { sweepExpiredSignIns } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -12,10 +13,12 @@ import { processNext, type JobHandler } from './worker.js';
 
 const config = loadWorkerConfig(process.env);
 const log = pino({ level: config.logLevel });
+// The pinned faces, checked before anything else: with none, Typst would compile blank pages (#145).
+const fonts = await loadPinnedFonts();
 const db = createTenantDatabase(config.databaseUrl);
 const queue = createJobQueue(config.databaseUrl);
 const stores = createObjectStores(config.objectStore, config.objectStoreKey);
-const typst = createTypst({ binary: config.typstBinary });
+const typst = createTypst({ binary: config.typstBinary, fonts });
 const handlers: Record<string, JobHandler> = { sample_pdf: sampleJob({ db, stores, typst }) };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -44,7 +47,14 @@ const stop = async (signal: string) => {
 process.once('SIGINT', () => void stop('SIGINT'));
 process.once('SIGTERM', () => void stop('SIGTERM'));
 
-log.info({ config: describeWorkerConfig(config), typst: await typst.version() }, 'starting');
+log.info(
+  {
+    config: describeWorkerConfig(config),
+    typst: await typst.version(),
+    fonts: PINNED_FONT_FILES.map((each) => each.file),
+  },
+  'starting',
+);
 while (running) {
   const outcome = await processNext({
     queue,

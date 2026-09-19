@@ -1,6 +1,6 @@
 import { notifyTenant, type TenantDatabase } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
-import type { Typst } from '../typst.js';
+import { SAMPLE_TEMPLATE, type Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
 /**
@@ -28,8 +28,12 @@ export function sampleJob(deps: {
       // Nothing to do: the sample was withdrawn, or another attempt already finished it.
       if (!found.sample || found.sample.state !== 'queued') return;
 
-      const pdf = await deps.typst.render(
-        { environment: found.environment, requestedAt: found.sample.requested_at.toISOString() },
+      const pdf = await deps.typst.compile(
+        SAMPLE_TEMPLATE,
+        JSON.stringify({
+          environment: found.environment,
+          requestedAt: found.sample.requested_at.toISOString(),
+        }),
         found.sample.requested_at,
       );
       const stored = await found.store.put(pdf, 'application/pdf');

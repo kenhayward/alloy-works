@@ -4,8 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { readPdf, type Bookmark } from './testing/pdf.js';
+import { loadPinnedFonts, type PinnedFonts } from './fonts.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -18,9 +19,15 @@ const depthOf = (bookmarks: readonly Bookmark[]): number =>
   bookmarks.length === 0 ? 0 : 1 + Math.max(...bookmarks.map((each) => depthOf(each.items)));
 
 describe('the publishing regression corpus', () => {
+  let fonts: PinnedFonts;
+  beforeAll(async () => {
+    fonts = await loadPinnedFonts();
+  });
+
   it('passes veraPDF with nine heading levels, bookmarked nine deep, six of them tagged as headings', async () => {
-    const pdf = await createTypst({ binary: typstBinaryPath(), template: NINE_LEVELS }).render(
-      {},
+    const pdf = await createTypst({ binary: typstBinaryPath(), fonts }).compile(
+      NINE_LEVELS,
+      '{}',
       at,
     );
 

@@ -1,9 +1,42 @@
+import { createHash } from 'node:crypto';
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createTypst, TypstFailed, typstBinaryPath, TYPST_RELEASE } from './typst.js';
+import { FONT_DIRECTORY, FontsUnavailable, loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import {
+  createTypst,
+  SAMPLE_TEMPLATE,
+  TypstFailed,
+  typstArguments,
+  typstBinaryPath,
+  TYPST_RELEASE,
+} from './typst.js';
 
-const typst = createTypst({ binary: typstBinaryPath() });
-const data = { environment: 'Development', requestedAt: '2026-09-11T00:00:00.000Z' };
+const fonts = await loadPinnedFonts();
+const typst = createTypst({ binary: typstBinaryPath(), fonts });
+const data = JSON.stringify({
+  environment: 'Development',
+  requestedAt: '2026-09-11T00:00:00.000Z',
+});
 const at = new Date('2026-09-11T00:00:00.000Z');
+
+/** The families a PDF embeds, as its font dictionaries name them, without the subset prefix. */
+const families = (pdf: Buffer) =>
+  [
+    ...new Set(
+      [...pdf.toString('latin1').matchAll(/\/BaseFont\s*\/(?:[A-Z]{6}\+)?([A-Za-z-]+)/g)].map(
+        (match) => match[1],
+      ),
+    ),
+  ].sort();
+
+/** The pinned faces copied somewhere a test may break them. */
+const copyOfTheFaces = async (prefix: string) => {
+  const directory = await mkdtemp(join(tmpdir(), prefix));
+  await cp(FONT_DIRECTORY, directory, { recursive: true });
+  return directory;
+};
 
 describe('the pinned Typst', () => {
   it('is the version this worker was built against', async () => {
@@ -11,7 +44,7 @@ describe('the pinned Typst', () => {
   });
 
   it('renders the sample as a PDF', async () => {
-    const pdf = await typst.render(data, at);
+    const pdf = await typst.compile(SAMPLE_TEMPLATE, data, at);
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(pdf.byteLength).toBeGreaterThan(1000);
     expect(pdf.toString('latin1')).toContain('Development');
@@ -19,17 +52,90 @@ describe('the pinned Typst', () => {
 
   it('treats the data as data, whatever it looks like (ADR-0013)', async () => {
     // As Typst source this would stop the render; as data it is a name with odd punctuation.
-    const pdf = await typst.render({ ...data, environment: '#panic("injected") *bold*' }, at);
+    const odd = JSON.stringify({ environment: '#panic("injected") *bold*', requestedAt: 'now' });
+    const pdf = await typst.compile(SAMPLE_TEMPLATE, odd, at);
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
   });
 
   it('renders the same bytes for the same input', async () => {
-    const [once, again] = [await typst.render(data, at), await typst.render(data, at)];
+    const once = await typst.compile(SAMPLE_TEMPLATE, data, at);
+    const again = await typst.compile(SAMPLE_TEMPLATE, data, at);
     expect(once.equals(again)).toBe(true);
   });
 
   it('says plainly when the binary is not there', async () => {
-    const missing = createTypst({ binary: 'typst-that-is-not-installed' });
-    await expect(missing.render(data, at)).rejects.toThrow(TypstFailed);
+    const missing = createTypst({ binary: 'typst-that-is-not-installed', fonts });
+    await expect(missing.compile(SAMPLE_TEMPLATE, data, at)).rejects.toThrow(TypstFailed);
+  });
+});
+
+describe('the pinned fonts (issue #145)', () => {
+  it('ships the faces as pinned, with their licence beside them', async () => {
+    // Hashed here rather than through `loadPinnedFonts`, so a checkout that rewrote a face's bytes
+    // (a line-ending filter, say) fails a test and not only a worker's start.
+    for (const pinned of PINNED_FONT_FILES) {
+      const bytes = await readFile(join(FONT_DIRECTORY, pinned.file));
+      expect(createHash('sha256').update(bytes).digest('hex'), pinned.file).toBe(pinned.sha256);
+    }
+    const licence = await readFile(join(FONT_DIRECTORY, 'LICENSE-Liberation.txt'), 'latin1');
+    expect(licence).toContain('SIL OPEN FONT LICENSE Version 1.1');
+  });
+
+  it('sets every PDF in the pinned faces and in nothing Typst carries itself', async () => {
+    const pdf = await typst.compile(SAMPLE_TEMPLATE, data, at);
+    expect(families(pdf)).toEqual(['LiberationSerif', 'LiberationSerif-Bold']);
+  });
+
+  it('hands Typst the pinned directory alone, with its own and the system fonts ignored', () => {
+    const flags = typstArguments('/root', fonts.directory, at);
+    expect(flags).toContain('--ignore-system-fonts');
+    expect(flags).toContain('--ignore-embedded-fonts');
+    const path = flags.indexOf('--font-path');
+    expect(flags.slice(path, path + 2)).toEqual(['--font-path', FONT_DIRECTORY]);
+  });
+
+  it('refuses to start with no fonts, where Typst would print blank pages and exit 0', async () => {
+    const empty = await mkdtemp(join(tmpdir(), 'aw-no-fonts-'));
+    try {
+      await expect(loadPinnedFonts(empty)).rejects.toThrow(FontsUnavailable);
+    } finally {
+      await rm(empty, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a face that is not the file pinned', async () => {
+    const altered = await copyOfTheFaces('aw-altered-fonts-');
+    try {
+      const [face] = (await readdir(altered)).filter((name) => name.endsWith('.ttf'));
+      await writeFile(join(altered, face!), 'not a font');
+      await expect(loadPinnedFonts(altered)).rejects.toThrow(FontsUnavailable);
+    } finally {
+      await rm(altered, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to compile once a face has changed or gone, and returns no PDF', async () => {
+    const directory = await copyOfTheFaces('aw-changed-fonts-');
+    try {
+      const loaded = await loadPinnedFonts(directory);
+      const later = createTypst({ binary: typstBinaryPath(), fonts: loaded });
+      // Checked before Typst starts: a compile that ran would have answered with a PDF or TypstFailed.
+      await writeFile(join(directory, 'LiberationSerif-Bold.ttf'), 'not a font');
+      await expect(later.compile(SAMPLE_TEMPLATE, data, at)).rejects.toBeInstanceOf(
+        FontsUnavailable,
+      );
+      await rm(join(directory, 'LiberationSerif-Bold.ttf'));
+      await expect(later.compile(SAMPLE_TEMPLATE, data, at)).rejects.toBeInstanceOf(
+        FontsUnavailable,
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('knows which characters every face can set', () => {
+    expect(fonts.covers('A'.codePointAt(0)!)).toBe(true);
+    expect(fonts.covers(0x05d0)).toBe(true); // Hebrew alef
+    expect(fonts.covers(0x0627)).toBe(false); // Arabic alef
   });
 });

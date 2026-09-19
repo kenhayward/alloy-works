@@ -15,8 +15,9 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { loadPinnedFonts, type PinnedFonts } from './fonts.js';
 import { sampleJob } from './jobs/sample.js';
-import { createTypst, typstBinaryPath } from './typst.js';
+import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
@@ -31,10 +32,12 @@ describe('the sample job, from the queue to the store', () => {
   let tenant: Tenant;
   let handlers: Record<string, JobHandler>;
   let principal: string;
-
-  const typst = createTypst({ binary: typstBinaryPath() });
+  let fonts: PinnedFonts;
+  let typst: Typst;
 
   beforeAll(async () => {
+    fonts = await loadPinnedFonts();
+    typst = createTypst({ binary: typstBinaryPath(), fonts });
     db = await freshDatabase();
     store = await testObjectStore();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
@@ -139,7 +142,7 @@ describe('the sample job, from the queue to the store', () => {
       sample_pdf: sampleJob({
         db: worker,
         stores,
-        typst: createTypst({ binary: 'no-typst-here' }),
+        typst: createTypst({ binary: 'no-typst-here', fonts }),
       }),
     };
     // Retried at once, rather than after the seconds a worker waits in earnest.
