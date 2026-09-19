@@ -188,6 +188,25 @@ export function breaksFrontFirst(
 }
 
 /**
+ * Whether a top-level node may stop being front matter (STR-064): only where no front node follows
+ * it, since a front node after one that is not is what the outline's parse refuses. A node that is
+ * not front matter has nothing to leave, so it is always true of one - the caller asks this of the
+ * node it is offering choices for, and only front matter has a choice to lose.
+ */
+export function mayLeaveFront(nodes: readonly OutlineViewNode[], id: string): boolean {
+  let found = false;
+  for (const node of nodes) {
+    if (found) {
+      if (node.matter === 'front') return false;
+    } else if (node.id === id) {
+      if (node.matter !== 'front') return true;
+      found = true;
+    }
+  }
+  return true;
+}
+
+/**
  * Where the pointer let go: before a node (among that node's siblings), onto a node (as its last
  * child), or at the end of a parent's children (`null` for the top level).
  */

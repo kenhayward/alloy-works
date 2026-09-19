@@ -932,6 +932,19 @@ Every task of this plan was built. What it leaves:
 - **The panel's own language is not checked against the layout's.** `DocumentView.layout.language`
   reaches the renderer and nothing reads it: a publish that the layout cannot speak for is refused at
   the service's door, so the page finds out by asking rather than by knowing beforehand.
+- **A layout's scheme labels are not glyph-checked as the layout's.** A label that reaches a number
+  is checked against the pinned faces as part of the document's node, so a layout whose scheme
+  declares a label no face can set is found where the label is printed and blamed on the node that
+  carries it, not on the layout that wrote it. For the layout-editing plan, with the bounds above.
+- **A layout could change the draft mark's words, not only fail to remove them.** The notice and its
+  sentence are the layout's words, and nothing checks that they still say a publication is a draft:
+  the rule enforced is that they are set on every page, not what they say. For the layout-editing
+  plan, which is where a person could first write them.
+- **The Word slice will meet `0017`'s `formats = array['pdf']` check as a raw constraint error.** A
+  request naming a second format is refused by name before it is queued, but the check constraint
+  behind it names only itself, so the day the layout has a `docx` member the constraint must be
+  widened in the same migration that adds it - otherwise a request that ought to succeed fails with
+  a Postgres constraint violation rather than a refusal anybody can read.
 - **Nothing drives a front-matter drag at the pointer level in the rendered page.** `dropMove` is
   covered as a unit and the existing appendix drag tests exercise the same generalised code, so a
   front duplicate of each would test the framework rather than the rule.

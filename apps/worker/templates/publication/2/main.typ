@@ -123,9 +123,10 @@
 }
 
 // The cover, where the layout declares one: the title and the notice's sentence alone on the first
-// page, which has no number (decision J). `assemble` publishes nothing with neither a cover nor a node
-// (decision K), so the title is set once whichever opens the document.
-#if doc.front.cover or doc.nodes.len() == 0 {
+// page, which has no number (decision J). Where the layout declares none, the first node opens the
+// document instead; `assemble` publishes nothing with neither a cover nor a node (decision K), so
+// this is the only place the title is set and no node-less document reaches here without a cover.
+#if doc.front.cover {
   opening
 }
 

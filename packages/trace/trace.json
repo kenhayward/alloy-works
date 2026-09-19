@@ -14750,7 +14750,7 @@
         },
         {
           "id": "PUB-012",
-          "howItIsMet": "A layout holds one member per format, each its own declaration; `paged` is a property of a format"
+          "howItIsMet": "A layout holds one member per format, each its own declaration, so everything a page means is the `pdf` member's and nothing above it. `paged` belongs to a format rather than to the layout, and is not stored until a format without pages exists to read it (decision B of the second slice): the shape lets a layout differ per format today, and the Word slice is what cites it"
         },
         {
           "id": "PUB-013",
@@ -15978,7 +15978,7 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2475,
+      "line": 2515,
       "kind": "title"
     },
     {
@@ -15990,25 +15990,25 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2679,
+      "line": 2719,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2515,
+      "line": 2555,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2285,
+      "line": 2325,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2331,
+      "line": 2371,
       "kind": "title"
     },
     {

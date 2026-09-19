@@ -29,6 +29,7 @@ import {
   dropMove,
   keyMove,
   leavesTheTopLevel,
+  mayLeaveFront,
   nodeLabel,
   nodeName,
   placeOf,
@@ -798,6 +799,7 @@ export function OutlinePanel({
           node={selected}
           topLevel={placeOf(nodes, selected.id)?.parent === null}
           frontOffered={mayBeFront(nodes, selected.id)}
+          leavingFrontOffered={mayLeaveFront(nodes, selected.id)}
           unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
           names={names}
           busy={busy}
@@ -992,6 +994,7 @@ function NodeDetails({
   node,
   topLevel,
   frontOffered,
+  leavingFrontOffered,
   unnumberedAbove,
   names,
   busy,
@@ -1006,6 +1009,11 @@ function NodeDetails({
   topLevel: boolean;
   /** Whether **Front matter** is one of the node's choices: what `mayBeFront` says (STR-064). */
   frontOffered: boolean;
+  /**
+   * Whether **Body** and **Appendix** are among a front node's choices: what `mayLeaveFront` says
+   * (STR-064). They are always among the rest's.
+   */
+  leavingFrontOffered: boolean;
   /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
   unnumberedAbove: OutlineViewNode | undefined;
   names: Names;
@@ -1063,10 +1071,12 @@ function NodeDetails({
       </label>
       {hint !== null && <span id={hintId}>{hint}</span>}
       {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
-          the outline's parse refuses one set anywhere else. **Front matter** is left out where the
-          parse would refuse it, so only what can be chosen is offered - a node already in front
-          matter keeps it whatever `mayBeFront` says, or the select would show a value it has no
-          option for. Left enabled while an act is in flight, as the select above is. */}
+          the outline's parse refuses one set anywhere else. Only what can be chosen is offered, in
+          both directions: **Front matter** is left out where the parse would refuse it, and **Body**
+          and **Appendix** are left out of a front node that another front node follows, since taking
+          this one out of front matter would strand that one after it. A node already in front matter
+          keeps **Front matter** whatever `mayBeFront` says, or the select would show a value it has
+          no option for. Left enabled while an act is in flight, as the select above is. */}
       {topLevel && (
         <label>
           Matter
@@ -1078,8 +1088,10 @@ function NodeDetails({
               void onOperation({ operation: 'set', node: node.id, matter });
             }}
           >
-            {MATTERS.filter(
-              (each) => each.value !== 'front' || frontOffered || node.matter === 'front',
+            {MATTERS.filter((each) =>
+              each.value === 'front'
+                ? frontOffered || node.matter === 'front'
+                : node.matter !== 'front' || leavingFrontOffered,
             ).map((each) => (
               <option key={each.value} value={each.value}>
                 {each.label}

@@ -203,13 +203,15 @@ the binary is the thing being pinned.
 grown by a case for every publishing defect found (PUB-087). **Every publishing defect gets a case
 here, in the pull request that fixes it**, holding the outline that showed it and the outcome that is
 now right, so the corpus is the record of what has gone wrong and cannot again. A case is an outline,
-not Typst source: it goes through `assemble` and the publication template
-(`apps/worker/templates/publication/1/`), so what is checked is what ships. Each PDF is read back by
+not Typst source: it goes through `assemble`, under the default layout, and the publication template
+(`apps/worker/templates/publication/2/`), so what is checked is what ships. Each PDF is read back by
 pdf.js, not by our own parser, through `apps/worker/src/testing/pdf.ts`: the bookmarks; per page, the
 text in artifacts, such as the draft notice at the top of each page, which a screen reader skips, and
 the text in tagged content, which it reads; the structure roles after the role map, which is what a
-screen reader is told a thing is; whether it is marked tagged; its PDF/UA part, title and language.
-It holds three cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and
+screen reader is told a thing is; whether it is marked tagged; its PDF/UA part, title and language;
+and the page as it is set - each page's label as a reader's page box shows it, each page's width and
+height in points, and the least x and the extreme baselines of each page's tagged text, which is
+where its margins are. It holds three cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and
 sixteen character probes, each refused by `assemble` exactly where the pinned Typst would refuse it
 (the byte-order mark aside, which Typst refuses between some letters and not others, and `assemble`
 refuses everywhere). The spike's other cases arrive with what they exercise.
@@ -226,6 +228,15 @@ slice's, warmed differently. Of the corpus's three cases, veraPDF checks two aga
 heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The sixteen
 character probes are not checked against PDF/UA-1 at all - each is compared only to what the pinned
 Typst itself would refuse, character by character.
+
+`apps/worker/src/layout.test.ts` is where template 2 is measured against the layout it was given: one
+fixture of several pages compiled under the product's default layout and under a test layout that
+differs in every member the template reads, then read back through the same `testing/pdf.ts` - the
+page box as it is turned, the margins the text sits inside, each matter's page labels, the cover, the
+running heads and feet, the contents, and the draft notice on every page and once to assistive
+technology. It checks both layouts with veraPDF as well, because a layout is what sets the page and a
+page that no longer passes PDF/UA-1 is the layout's fault, not the engine's. It is the branch's
+slowest suite for the same reason the publish job's is: two cold veraPDF runs.
 
 What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
 checks - tagging, a document title, alternative text present - are part of what a screen reader is told
@@ -256,9 +267,16 @@ Besides a sample, **it publishes a document and downloads it.** The development 
 lets Ada publish, so the check makes a document holding the seeded component, asks for a PDF, follows
 the request until it is done, finds the publication in the document's list, and downloads it: the bytes
 must be a PDF, hash to the digest the record holds, and name the pinned face - which is what catches an
-image built without its fonts, since Typst with no fonts at all compiles and warns about nothing. What it
-makes stays in the database the stack serves, as a sample does - locally, the development database;
-in CI, a fresh volume removed afterwards.
+image built without its fonts, since Typst with no fonts at all compiles and warns about nothing. Then
+it reads the publication back: `tests/e2e/src/pdf.ts` opens the downloaded bytes with pdf.js - the
+suite's only dependency beyond the client and the sign-in provider, `pdfjs-dist` in
+`tests/e2e/package.json` - and checks that the whole stack laid the document out under its layout:
+each page's label, set per matter, the running heads over the front matter and the body, the draft
+notice on every page, and a contents naming the front section. It is a second, smaller reader rather
+than `apps/worker/src/testing/pdf.ts` reused, because `tests/e2e` cannot import an app's internal
+source; it reads only the four things this suite asserts, and leaves the bookmarks, the structure
+roles and the margins to the worker's own. What it makes stays in the database the stack serves, as a
+sample does - locally, the development database; in CI, a fresh volume removed afterwards.
 
 Two things it deliberately does not ask of the machine running it:
 

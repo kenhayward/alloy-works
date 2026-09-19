@@ -2013,6 +2013,46 @@ describe('section numbers in the outline panel', () => {
     ).toEqual(['Body', 'Appendix']);
   });
 
+  it('offers a front node nothing else while another front node follows it', async () => {
+    const fake = service(
+      outline([
+        { ...section(PREFACE, 'Preface'), matter: 'front' },
+        { ...section(INTRODUCTION, 'Introduction'), matter: 'front' },
+        section(METHOD, 'Method'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+
+    // Making the Preface body matter would leave the Introduction, still front matter, after it -
+    // which the outline's parse refuses - so neither Body nor Appendix is offered on it at all.
+    await userEvent.click(item('Preface'));
+    expect(
+      within(screen.getByRole('combobox', { name: 'Matter' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter']);
+
+    // The Introduction is the last front node, so it may leave front matter freely.
+    await userEvent.click(item('Introduction'));
+    const matter = screen.getByRole('combobox', { name: 'Matter' });
+    expect(
+      within(matter)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter', 'Body', 'Appendix']);
+    await userEvent.selectOptions(matter, 'Body');
+    await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('1'));
+
+    // And now the Preface is the last front node, so it may leave too.
+    await userEvent.click(item('Preface'));
+    expect(
+      within(screen.getByRole('combobox', { name: 'Matter' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter', 'Body', 'Appendix']);
+  });
+
   it('says front matter stays at the top level and comes first, and sends nothing', async () => {
     const fake = service(
       outline([
