@@ -9,7 +9,8 @@
     "test": "vitest run",
     "dev": "tsx watch --env-file-if-exists=../../deploy/worker.env src/main.ts",
     "start": "node dist/main.js",
-    "fetch-typst": "tsx scripts/fetch-typst.ts"
+    "fetch-typst": "tsx scripts/fetch-typst.ts",
+    "fetch-verapdf": "tsx scripts/fetch-verapdf.ts"
   },
   "dependencies": {
     "@alloy-works/db": "workspace:^",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^24.5.2",
     "@types/pg": "^8.23.1",
+    "pdfjs-dist": "^6.3.289",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"
