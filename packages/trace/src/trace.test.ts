@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1383, from 1382: STR-064, front matter only at the top level and before the rest of the outline
+    // (issue #152), landed by the second publishing plan.
     // 1382, from 1381: PUB-094, publishing never containing what its publisher could not read (issue
     // #143), landed by the first publishing plan. IAM-074 is withdrawn for it and keeps its row, so it
     // still counts.
@@ -49,9 +51,10 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1382);
+    expect(model.requirements).toHaveLength(1383);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 407, from 406: structure.md claims STR-064, front matter first, met by the outline parse.
     // 406, unchanged: publishing.md claims PUB-094 (#143) and no longer IAM-074, which Ken withdrew for it.
     // 406, from 405: publishing.md claims PUB-093, decision A as a requirement.
     // 405, from 406: publishing.md stopped claiming PUB-085 (1a's final review). A cold veraPDF takes
@@ -119,7 +122,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(406);
+    ).toBe(407);
   });
 });
 
@@ -260,8 +263,11 @@ describe('the citations in the committed model', () => {
   // 193, from 191: the same plan cites PUB-047 and PUB-048 in
   // apps/service/src/publication-routes.test.ts: a publication kept at its own address, read on its
   // own grants and never deleted, and listed with its document, newest first, with who and when.
+  // 194, from 193: the second publishing plan cites STR-064 in
+  // packages/domain/src/structure/outline.test.ts: the parse takes front matter first and refuses it
+  // below the top level, after the body and after an appendix, naming the node.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(193);
+    expect(model.citations).toHaveLength(194);
   });
 
   it('cites no identifier the corpus does not hold', () => {

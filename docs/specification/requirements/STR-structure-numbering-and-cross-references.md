@@ -61,6 +61,7 @@ are separable precisely because a section is never reused.
 | **STR-053** | An outline node's identifier must be unique within the tenant rather than within its document, so that a reference across documents cannot collide (**STR-Q02** may widen what references one, never what identity means)                                                                                                                                                                                                                   | Constraint | Specified             |
 | **STR-054** | An outline must have an implicit root - the document itself - which carries the document's own identity and deep link (STR-044), and must be allowed to hold no nodes at all. An empty outline is a valid document (**PUB-079**), not an error                                                                                                                                                                                              | T1         | Specified             |
 | **STR-061** | A document must be a named, versioned artifact belonging to exactly one space, carrying its own title and identity.                                                                                                                                                                                                                                                                                                                         | T1         | Specified             |
+| **STR-064** | Front matter must precede the body and appendices in an outline: a node in front matter may appear only at the top level, before every node that is not                                                                                                                                                                                                                                                                                     | T1         | Specified             |
 
 **STR-059 answers a question that was delegated to a document which does not own it.** The boundary
 table sent concurrent outline edits to **COL**, and COL holds locks per component and explicitly
@@ -358,5 +359,20 @@ documents and outlines, was landed by
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 62, of which 3 superseded | 63, of which 3 superseded |
+| Non-requirements | 5                         | 5                         |
+| Open questions   | 4                         | 4                         |
+
+### From building the second publishing slice
+
+Not a review. [Issue #152](https://github.com/kenhayward/alloy-works/issues/152), filed while planning
+[the second publishing plan](../../plans/2026-09-19-publishing-02-the-layout.md), was landed by it.
+
+| What was found                                                                                                                                                 | Change                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| The outline gains front matter, and nothing said where it may go, so an outline could store a preface after the body, with no page numbering or contents place | **STR-064**: front matter only at the top level, before every node that is not front matter |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 63, of which 3 superseded | 64, of which 3 superseded |
 | Non-requirements | 5                         | 5                         |
 | Open questions   | 4                         | 4                         |

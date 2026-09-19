@@ -1,6 +1,7 @@
 import type { InlineNode } from '../content/model/inline.js';
 
 import { inlineContributions, type Contribution } from './contributions.js';
+import type { OutlineMatter } from './outline.js';
 import { formatCounter, formatParts, type NumberingRule, type NumberingScheme } from './scheme.js';
 
 /**
@@ -12,7 +13,7 @@ export interface NumberableNode {
   readonly type: 'section' | 'reference';
   readonly id: string;
   readonly numbered: boolean;
-  readonly matter: 'body' | 'appendix';
+  readonly matter: OutlineMatter;
   readonly title?: readonly InlineNode[];
   readonly children: readonly NumberableNode[];
 }
@@ -231,7 +232,11 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
     }
   };
 
-  for (const node of outline.nodes) visit(node, 1, node.matter, null, true);
+  for (const node of outline.nodes) {
+    // Front matter numbers nothing while the scheme declares no rule for it - as a sequence the scheme
+    // does not declare numbers nothing - and its subtree is front matter with it (STR-016).
+    if (node.matter !== 'front') visit(node, 1, node.matter, null, true);
+  }
   return { scheme: scheme.id, entries };
 }
 

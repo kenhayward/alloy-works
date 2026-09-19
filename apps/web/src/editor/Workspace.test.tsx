@@ -1,3 +1,4 @@
+import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
@@ -520,7 +521,7 @@ describe('the workspace', () => {
             note: null,
           },
           outline: {
-            schemaVersion: 1,
+            schemaVersion: OUTLINE_SCHEMA_VERSION,
             title: 'The dosing report',
             language: 'en-GB',
             direction: 'ltr',
@@ -609,7 +610,7 @@ describe('the workspace', () => {
             note: null,
           },
           outline: {
-            schemaVersion: 1,
+            schemaVersion: OUTLINE_SCHEMA_VERSION,
             title: 'The dosing report',
             language: 'en-GB',
             direction: 'ltr',

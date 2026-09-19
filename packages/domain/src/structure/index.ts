@@ -13,10 +13,13 @@ export {
   withholdComponents,
   canonicaliseOutline,
   walkOutline,
+  outlineMatterSchema,
+  mayBeFront,
 } from './outline.js';
 export type {
   OutlineDocument,
   OutlineNode,
+  OutlineMatter,
   SectionNode,
   ReferenceNode,
   OutlineReadOutcome,

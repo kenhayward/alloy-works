@@ -91,6 +91,10 @@ describe('the domain package', () => {
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',
+        // Front matter, promoted in the plan that adds it
+        // (docs/plans/2026-09-19-publishing-02-the-layout.md).
+        'outlineMatterSchema',
+        'mayBeFront',
         // Numbering, promoted in the plan that builds it
         // (docs/plans/2026-09-18-structure-02-numbering.md).
         'REQUIRED_SEQUENCES',

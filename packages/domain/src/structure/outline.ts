@@ -12,7 +12,20 @@ import { canonicalJson } from '../stored/canonical.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 
-export const OUTLINE_SCHEMA_VERSION = 1;
+/**
+ * Schema 2 adds `front` to `matter` (publishing.md, decision M; STR-064). Nothing else changed, so a
+ * schema 1 outline reads as schema 2 member for member: schema 1 could not hold `front`, so the
+ * front-first rule holds of every one vacuously.
+ */
+export const OUTLINE_SCHEMA_VERSION = 2;
+
+/**
+ * Where a top-level node sits in a published document, inherited by its subtree (STR-016): front
+ * matter - a preface, acknowledgements - then the body, then appendices. Front matter comes first
+ * (STR-064); the body and appendices may interleave, as they always could.
+ */
+export const outlineMatterSchema = z.enum(['front', 'body', 'appendix']);
+export type OutlineMatter = z.infer<typeof outlineMatterSchema>;
 
 /** STR-058: the three REU and LIF name, closed, and absent is not a fourth. */
 export const referenceModeSchema = z.discriminatedUnion('kind', [
@@ -29,7 +42,7 @@ export const referenceModeSchema = z.discriminatedUnion('kind', [
 const positional = {
   id: nodeIdentifier,
   numbered: z.boolean(),
-  matter: z.enum(['body', 'appendix']),
+  matter: outlineMatterSchema,
   pageBreak: z.enum(['none', 'page', 'recto']),
   /** A section's own field values (STR-060). Which schemas apply is TPL-054's, so nothing validates them. */
   values: z.record(z.string(), z.unknown()),
@@ -41,7 +54,7 @@ export type SectionNode = {
   /** Inline content, not a string: CNT-046 puts an equation in a heading, and a heading is a node. */
   readonly title: readonly InlineNode[];
   readonly numbered: boolean;
-  readonly matter: 'body' | 'appendix';
+  readonly matter: OutlineMatter;
   readonly pageBreak: 'none' | 'page' | 'recto';
   readonly values: Record<string, unknown>;
   readonly children: readonly OutlineNode[];
@@ -53,7 +66,7 @@ export type ReferenceNode = {
   readonly component: string;
   readonly mode: z.infer<typeof referenceModeSchema>;
   readonly numbered: boolean;
-  readonly matter: 'body' | 'appendix';
+  readonly matter: OutlineMatter;
   readonly pageBreak: 'none' | 'page' | 'recto';
   readonly values: Record<string, unknown>;
   readonly children: readonly OutlineNode[];
@@ -201,7 +214,7 @@ function refuseTooDeep(value: unknown): void {
 }
 
 /**
- * The one entry point. Three rules the schema cannot express on its own, because each is about a
+ * The one entry point. Four rules the schema cannot express on its own, because each is about a
  * document rather than a node:
  *
  * - an identifier is unique within its outline (STR-003), the way a block identifier is unique within
@@ -211,6 +224,8 @@ function refuseTooDeep(value: unknown): void {
  *   it (STR-016), so a node below the top level is `body` and never says otherwise. One rule here,
  *   rather than a refusal in `set`, another in `insert` and a third in `move`, covers every path that
  *   could put an appendix at a depth - an operation's result comes back through this parse.
+ * - **front matter comes first** (STR-064): a top-level `front` node follows only other front matter,
+ *   so a document reads its front matter, then the rest. Named by the node, as the rule above is.
  */
 export function parseOutlineDocument(value: unknown): OutlineDocument {
   refuseTooDeep(value);
@@ -219,7 +234,20 @@ export function parseOutlineDocument(value: unknown): OutlineDocument {
   return outline;
 }
 
-/** The two rules about the whole tree, for a stored outline and a view alike. */
+/**
+ * A top-level node that no non-front top-level node precedes: where Front matter may be set. The same
+ * rule `refuseAcrossTheTree` holds a whole outline to, asked of one node, so the panel can offer only
+ * what the parse would take. A node below the top level, or not in `nodes` at all, is never one.
+ */
+export function mayBeFront(nodes: readonly { id: string; matter: string }[], id: string): boolean {
+  for (const node of nodes) {
+    if (node.id === id) return true;
+    if (node.matter !== 'front') return false;
+  }
+  return false;
+}
+
+/** The three rules about the whole tree, for a stored outline and a view alike. */
 function refuseAcrossTheTree(
   nodes: readonly {
     readonly id: string;
@@ -237,6 +265,15 @@ function refuseAcrossTheTree(
       throw new Error(`Outline node ${node.id} sets its matter below the top level`);
     }
   });
+  let begun = false;
+  for (const node of nodes) {
+    if (node.matter !== 'front') begun = true;
+    else if (begun) {
+      throw new Error(
+        `Outline node ${node.id} is front matter after the rest of the outline has begun`,
+      );
+    }
+  }
 }
 
 /**
@@ -340,12 +377,16 @@ export function readOutlineView(
   }
 }
 
-// Created now rather than at the first schema change, because a chain nobody built is discovered to
-// be missing on the day it is needed.
+// Created before the first schema change, because a chain nobody built is discovered to be missing on
+// the day it is needed - and that day was schema 2.
 export const outlineMigrationChain: MigrationChain = {
   subject: 'outline',
   current: OUTLINE_SCHEMA_VERSION,
-  migrations: {},
+  migrations: {
+    // Schema 2 only widened `matter`, so every schema 1 outline is a schema 2 outline as it stands;
+    // `migrateStored` restamps the version. A read-time projection: the stored bytes never change.
+    1: (value) => value,
+  },
 };
 
 export function migrateOutline(value: unknown): unknown {

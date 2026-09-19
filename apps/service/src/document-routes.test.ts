@@ -13,6 +13,7 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -697,7 +698,7 @@ describe('documents through the service', () => {
           version_no: 2,
           author_id: ids.ada!,
           note: null,
-          schema_version: 1,
+          schema_version: OUTLINE_SCHEMA_VERSION,
           content: JSON.stringify({ ...doc.outline, title: '' }),
           content_hash: 'a'.repeat(64),
           metadata_values: '{}',

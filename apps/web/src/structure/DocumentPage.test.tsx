@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import {
   applyOutlineOperation,
   canonicaliseOutline,
+  OUTLINE_SCHEMA_VERSION,
   outlineOperationSchema,
   withholdComponents,
   type OutlineDocument,
@@ -77,7 +78,7 @@ function reference(id: string, mode: 'latest' | 'approved'): OutlineNode {
 
 function outline(nodes: OutlineNode[]): OutlineDocument {
   return {
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language: 'en-GB',
     direction: 'ltr',
@@ -1530,7 +1531,7 @@ describe('the outline panel, answered', () => {
     await screen.findByRole('treeitem', { name: 'Introduction' });
     fake.refuse(OUTLINE_URL, 200, {
       ...fake.latest(),
-      outline: { schemaVersion: 1, nodes: 'none' },
+      outline: { schemaVersion: OUTLINE_SCHEMA_VERSION, nodes: 'none' },
     });
     await userEvent.click(item('Introduction'));
     await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
@@ -1650,7 +1651,7 @@ describe('New document', () => {
       note: null,
     },
     outline: {
-      schemaVersion: 1,
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The dosing report',
       language: 'fr-CA',
       direction: 'rtl',

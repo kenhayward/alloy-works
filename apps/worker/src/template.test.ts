@@ -4,6 +4,7 @@ import {
   assemble,
   defaultNumberingScheme,
   DRAFT_NOTICE,
+  OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseOutlineDocument,
   type AssembleInput,
@@ -35,7 +36,7 @@ describe('the publication template', () => {
  */
 const fixed = (covers: (codePoint: number) => boolean): AssembleInput => ({
   outline: parseOutlineDocument({
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language: 'en-GB',
     direction: 'ltr',

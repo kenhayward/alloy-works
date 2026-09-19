@@ -2521,7 +2521,7 @@ export interface operations {
                         node: string;
                         numbered?: boolean;
                         /** @enum {string} */
-                        matter?: "body" | "appendix";
+                        matter?: "front" | "body" | "appendix";
                         /** @enum {string} */
                         pageBreak?: "none" | "page" | "recto";
                         mode?: {

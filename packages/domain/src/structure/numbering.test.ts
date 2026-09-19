@@ -719,7 +719,11 @@ describe('numbering an outline', () => {
             walk(node.children, depth + 1, matter, takesNumber);
           }
         };
-        for (const node of outlineNodes) walk([node], 1, node.matter, true);
+        // The generator below makes no front matter, which `number` numbers nothing in until the
+        // scheme declares rules for it; the model skips it the same way, so it cannot disagree.
+        for (const node of outlineNodes) {
+          if (node.matter !== 'front') walk([node], 1, node.matter, true);
+        }
         return { sections: expectedSections, figures: expectedFigures };
       };
 

@@ -6,6 +6,7 @@ import {
   type OutlineOperation,
 } from './operations.js';
 import {
+  OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
   walkOutline,
   type OutlineDocument,
@@ -20,7 +21,7 @@ const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 const OTHER_COMPONENT = '11111111-1111-4111-8111-111111111111';
 
 const empty: OutlineDocument = parseOutlineDocument({
-  schemaVersion: 1,
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
   title: 'The dosing report',
   language: 'en-GB',
   direction: 'ltr',
@@ -621,5 +622,44 @@ describe('what an operation cannot build, because the parse refuses it', () => {
       allocate,
     );
     expect(outline.nodes[0]).toMatchObject({ id: glossary, matter: 'appendix' });
+  });
+
+  it('sets front matter on the first top-level node, and refuses it once the body has begun', () => {
+    // The rule's own words, never the parse's: a refusal's reason is carried to the wire verbatim.
+    const FRONT_FIRST = {
+      applied: false,
+      reason: 'Front matter comes before the rest of the outline',
+    };
+    const { allocate } = identifiers();
+    let outline = run(empty, addSection(null, 0, 'Preface'), allocate);
+    const preface = outline.nodes[0]!.id;
+    outline = run(outline, addSection(null, 1, 'Method'), allocate);
+    const method = outline.nodes[1]!.id;
+
+    expect(
+      applyOutlineOperation(outline, { operation: 'set', node: method, matter: 'front' }, allocate),
+    ).toEqual(FRONT_FIRST);
+    const fronted = run(outline, { operation: 'set', node: preface, matter: 'front' }, allocate);
+    expect(fronted.nodes.map((node) => node.matter)).toEqual(['front', 'body']);
+    // One check covers every operation: front matter moved after the body, or a section inserted
+    // before it, is refused in the same words.
+    expect(
+      applyOutlineOperation(
+        fronted,
+        { operation: 'move', node: preface, parent: null, position: 1 },
+        allocate,
+      ),
+    ).toEqual(FRONT_FIRST);
+    expect(applyOutlineOperation(fronted, addSection(null, 0, 'Scope'), allocate)).toEqual(
+      FRONT_FIRST,
+    );
+    // Below the top level it is the depth rule's refusal, as for an appendix.
+    expect(
+      applyOutlineOperation(
+        fronted,
+        { operation: 'move', node: preface, parent: method, position: 0 },
+        allocate,
+      ),
+    ).toEqual(UNSTORABLE);
   });
 });

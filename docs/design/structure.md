@@ -73,6 +73,7 @@ current outline rather than silently overwriting it.
 | **STR-014** | `sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **STR-015** | A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **STR-016** | A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **STR-064** | The outline parse refuses a `front` node below the top level, or after any top-level node that is not front matter, naming the node; every operation's result goes back through that parse, and an operation that would break the order is refused in words of its own                                                                                                                                                                                                                                                                                                                                    |
 | **STR-017** | A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **STR-018** | `number(conditioned, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **STR-019** | No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -125,7 +126,7 @@ history); until then there is one scheme and no condition, and the claim holds i
 
 ## What this document does not own
 
-Forty-one claims above. The requirements deliberately left out are where this design's edges are, and
+Forty-two claims above. The requirements deliberately left out are where this design's edges are, and
 each one is a design that does not exist yet rather than a detail.
 
 **The named failure is produced here; failing the publish is PUB's.** This is the split
@@ -244,7 +245,7 @@ documents' prose was corrected by the pull request that built this.
 
 ```
 OutlineDocument = {
-  schemaVersion: 1,
+  schemaVersion: 2,              // 2 added `front` to `matter`; a schema 1 outline reads as 2 unchanged
   title: string,                 // the document's title, inside the versioned content, as a component's is
   language: BCP 47,
   direction: 'ltr' | 'rtl',
@@ -299,6 +300,18 @@ mistake.
 (STR-016), so a node below the top level is `body` and never says otherwise. The parse refuses any
 other, which covers `set`, `insert` and `move` in one rule: an operation's result comes back through
 the same parse.
+
+**Front matter comes first** (STR-064). `matter` is `front`, `body` or `appendix` since schema 2
+(publishing.md, decision M), and a `front` node follows only other front matter at the top level: the
+parse refuses one after any top-level node that is not front matter, naming the node, as it refuses
+one below the top level. The body and appendices interleave as they always could. An operation that
+would break the order - a section inserted above the preface, the preface moved down, `front` set on a
+node the body precedes - is refused before the parse with `Front matter comes before the rest of the
+outline`, because an author meets it in the ordinary course of editing and the constant an unstorable
+result is answered with would tell them nothing. Schema 1 could not hold `front`, so its migration is
+the identity and every schema 1 outline holds the rule already; the one cost is that the first
+operation on a schema 1 document that changes nothing records a version, once, because its digest
+is taken over schema 2.
 
 **The depth is bounded at 64.** STR-007 asks for nine levels. A recursive parse of an unbounded tree
 overflows the stack - between 500 and 800 levels in Node, and fewer in a browser - so a stored

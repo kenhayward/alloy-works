@@ -17,7 +17,12 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
-import { blockIdentifierFrom, type OutlineDocument, type OutlineNode } from '@alloy-works/domain';
+import {
+  blockIdentifierFrom,
+  OUTLINE_SCHEMA_VERSION,
+  type OutlineDocument,
+  type OutlineNode,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -250,7 +255,7 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
         })),
       }));
       const outline: OutlineDocument = {
-        schemaVersion: 1,
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
         title: 'The dosing report',
         language: 'en-GB',
         direction: 'ltr',

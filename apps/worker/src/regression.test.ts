@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import {
   assemble,
   defaultNumberingScheme,
+  OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseOutlineDocument,
   type AssembleInput,
@@ -36,7 +37,7 @@ const nested = (depth: number): OutlineNode => ({
 
 const outline = (nodes: unknown[]) =>
   parseOutlineDocument({
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language: 'en-GB',
     direction: 'ltr',

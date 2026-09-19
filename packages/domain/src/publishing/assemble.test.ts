@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
-import { parseOutlineDocument, type OutlineDocument } from '../structure/outline.js';
+import {
+  OUTLINE_SCHEMA_VERSION,
+  parseOutlineDocument,
+  type OutlineDocument,
+} from '../structure/outline.js';
 import { defaultNumberingScheme } from '../structure/scheme.js';
 
 import { assemble, type AssembleInput } from './assemble.js';
@@ -37,7 +41,7 @@ const reference = (name: string, component = COMPONENT, children: unknown[] = []
 
 const outline = (nodes: unknown[], language = 'en-GB'): OutlineDocument =>
   parseOutlineDocument({
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language,
     direction: 'ltr',

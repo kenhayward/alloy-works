@@ -5079,6 +5079,7 @@
                           "matter": {
                             "type": "string",
                             "enum": [
+                              "front",
                               "body",
                               "appendix"
                             ]

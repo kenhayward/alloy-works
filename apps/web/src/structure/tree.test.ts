@@ -1,5 +1,6 @@
 import {
   applyOutlineOperation,
+  OUTLINE_SCHEMA_VERSION,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
@@ -37,7 +38,7 @@ function section(id: string, title: string, children: OutlineNode[] = []): Outli
 
 function outline(nodes: OutlineNode[]): OutlineDocument {
   return {
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language: 'en-GB',
     direction: 'ltr',

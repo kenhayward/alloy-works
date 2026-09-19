@@ -114,7 +114,20 @@ function refuse(reason: string): OutlineApplied {
  */
 const UNSTORABLE_RESULT = 'This operation would produce an outline that cannot be stored';
 
+/**
+ * STR-064's refusal, in words a person can act on, because an author meets this one in the ordinary
+ * course of editing - inserting a section above a preface, or moving the preface down - where the
+ * generic constant above would say nothing useful. Checked over the resulting top level before the
+ * parse, which holds the same rule and would otherwise answer first with its own (unshown) message:
+ * one check, so insert, move and set are refused alike.
+ */
+const FRONT_FIRST = 'Front matter comes before the rest of the outline';
+
 function applyNodes(outline: OutlineDocument, nodes: readonly OutlineNode[]): OutlineApplied {
+  const firstNotFront = nodes.findIndex((node) => node.matter !== 'front');
+  if (firstNotFront >= 0 && nodes.slice(firstNotFront).some((node) => node.matter === 'front')) {
+    return refuse(FRONT_FIRST);
+  }
   try {
     return { applied: true, outline: parseOutlineDocument({ ...outline, nodes }) };
   } catch {
