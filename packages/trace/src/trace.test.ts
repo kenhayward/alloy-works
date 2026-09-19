@@ -279,8 +279,11 @@ describe('the citations in the committed model', () => {
   // packages/domain/src/publishing/assemble.test.ts: `assemble` numbers with the scheme its layout
   // declares, and an empty document publishes its cover or is refused `nothing_to_publish` where the
   // layout declares nothing with something to show.
+  // 201, from 199: the same plan cites PUB-007 and PUB-009 in apps/worker/src/layout.test.ts: template
+  // 2 sets the page size, orientation, margins and gutter the layout declares, and numbers each
+  // matter's pages in its own format, restarting where the layout says.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(199);
+    expect(model.citations).toHaveLength(201);
   });
 
   it('cites no identifier the corpus does not hold', () => {

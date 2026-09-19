@@ -10,7 +10,11 @@ export interface Bookmark {
  * A PDF as a reader and assistive technology meet it, read by pdf.js rather than by our own code: its
  * bookmarks; per page, the text inside artifacts (running heads and feet, which assistive technology
  * skips) and the text in tagged content; the structure roles in document order after the role map,
- * which is what a screen reader is told; whether it is marked tagged; and its PDF/UA part.
+ * which is what a screen reader is told; whether it is marked tagged; and its PDF/UA part. And the
+ * page as it is set: each page's label, as a reader's page box shows it (null where the PDF declares
+ * none); each page's width and height in points, as it is turned; and the least x of each page's
+ * tagged text, in points from the page's left edge (null on a page with none), which is where its
+ * left margin ends.
  */
 export interface ReadPdf {
   readonly pages: number;
@@ -22,6 +26,9 @@ export interface ReadPdf {
   readonly pdfuaPart: string | null;
   readonly title: string | null;
   readonly language: string | null;
+  readonly pageLabels: readonly string[] | null;
+  readonly pageSizes: readonly (readonly [number, number])[];
+  readonly textLeft: readonly (number | null)[];
 }
 
 interface StructNode {
@@ -42,12 +49,15 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     const artifactText: string[][] = [];
     const taggedText: string[][] = [];
     const roles: string[] = [];
+    const pageSizes: (readonly [number, number])[] = [];
+    const textLeft: (number | null)[] = [];
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const page = await pdf.getPage(number);
       const content = await page.getTextContent({ includeMarkedContent: true });
       const open: string[] = [];
       const artifacts: string[] = [];
       const tagged: string[] = [];
+      let left: number | null = null;
       for (const item of content.items) {
         if ('type' in item) {
           if (item.type === 'beginMarkedContent' || item.type === 'beginMarkedContentProps') {
@@ -57,11 +67,22 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
             open.pop();
           }
         } else if (item.str.trim() !== '') {
-          (open.includes('Artifact') ? artifacts : tagged).push(item.str);
+          if (open.includes('Artifact')) {
+            artifacts.push(item.str);
+          } else {
+            tagged.push(item.str);
+            // The text matrix's horizontal translation: where the run starts, from the left edge.
+            const x = item.transform[4] as number;
+            left = left === null ? x : Math.min(left, x);
+          }
         }
       }
       artifactText.push(artifacts);
       taggedText.push(tagged);
+      textLeft.push(left);
+      // The page box as [x1, y1, x2, y2], already turned where the page is landscape.
+      const [x1, y1, x2, y2] = page.view as [number, number, number, number];
+      pageSizes.push([x2 - x1, y2 - y1]);
       const visit = (node: StructNode) => {
         if (node.role !== undefined && node.role !== 'Root') roles.push(node.role);
         for (const child of node.children ?? []) visit(child);
@@ -69,6 +90,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       const tree = (await page.getStructTree()) as StructNode | null;
       if (tree) visit(tree);
     }
+    const pageLabels = (await pdf.getPageLabels()) as string[] | null;
     const metadata = await pdf.getMetadata();
     const info = metadata.info as { Title?: string; Language?: string };
     // pdf.js answers the MarkInfo dictionary as a Map.
@@ -83,6 +105,9 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
       title: info.Title ?? null,
       language: info.Language ?? null,
+      pageLabels,
+      pageSizes,
+      textLeft,
     };
   } finally {
     // The loading task, not the document: in pdf.js 6 it is the task that owns the worker.
