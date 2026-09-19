@@ -503,9 +503,17 @@ describe('the workspace', () => {
     const method = await screen.findByRole('treeitem', { name: 'Method' });
     await waitFor(() => expect(method).toHaveFocus());
 
-    // Choosing Introduction rewrites the address without a `hashchange`...
+    // Choosing Introduction rewrites the address without a `hashchange` or a history entry...
+    const entries = window.history.length;
+    const heard = vi.fn();
+    window.addEventListener('hashchange', heard);
     await userEvent.click(screen.getByRole('treeitem', { name: 'Introduction' }));
     expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`);
+    // A `hashchange` jsdom would fire is queued as a task, so one is let through before looking.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    window.removeEventListener('hashchange', heard);
+    expect(heard).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(entries);
     // ...so a link to Method, followed again, is still news, and takes the reader back to it.
     window.location.hash = `#/documents/${DOCUMENT}/nodes/${METHOD}`;
     fireEvent(window, new HashChangeEvent('hashchange'));

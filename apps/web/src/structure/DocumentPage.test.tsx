@@ -2031,21 +2031,24 @@ describe('the address of every node', () => {
   afterEach(() => window.history.replaceState(null, '', '#'));
 
   it('STR-044 gives every node an address naming its document and itself, which opens the document at that node', async () => {
+    // Every kind of node: sections at the top level and nested, and a component reference.
     const fake = service(
       outline([
-        section(INTRODUCTION, 'Introduction'),
+        section(INTRODUCTION, 'Introduction', [reference(RESULTS, 'latest')]),
         section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
       ]),
     );
     const first = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Install the printer, latest' });
     await screen.findByRole('treeitem', { name: 'Scope' });
     let copied = '';
-    for (const [id, name] of [
-      [INTRODUCTION, 'Introduction'],
-      [METHOD, 'Method'],
-      [SCOPE, 'Scope'],
+    for (const [id, choice, name] of [
+      [INTRODUCTION, 'Introduction', 'Introduction'],
+      [RESULTS, 'Install the printer, latest', 'Install the printer'],
+      [METHOD, 'Method', 'Method'],
+      [SCOPE, 'Scope', 'Scope'],
     ] as const) {
-      await userEvent.click(item(name));
+      await userEvent.click(item(choice));
       const field = screen.getByRole('textbox', { name: `Link to ${name}` }) as HTMLInputElement;
       expect(field.value).toBe(
         `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${id}`,
@@ -2088,9 +2091,13 @@ describe('the address of every node', () => {
 
     // Method, and Scope with it, moves to the front: Scope's number and position both change.
     await userEvent.click(item('Method'));
+    // Choosing another node ends the mark the link left.
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).toBeNull();
     await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
     await waitFor(() => expect(item('Scope')).toHaveAccessibleDescription('1.1'));
     await settled();
+    // The arrival was taken once: the act that came back does not pull the reader back to Scope.
+    expect(item('Method')).toHaveAttribute('aria-selected', 'true');
 
     // The same address, arriving again, still finds Scope; and Scope's address has not changed.
     page.arriveAgain(nodeIn(before), 1);
@@ -2099,6 +2106,26 @@ describe('the address of every node', () => {
     expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
     expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
       before,
+    );
+  });
+
+  it('follows the selection to the first node when the chosen one is gone, rather than naming a node that is not there', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Method'));
+    expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${METHOD}`);
+
+    // Grace removes Method; Ada's next act is refused, and the page shows Grace's outline.
+    fake.theirs({ operation: 'remove', node: METHOD });
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(SOMEBODY_ELSE));
+    expect(screen.queryByRole('treeitem', { name: 'Method' })).toBeNull();
+    expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() =>
+      expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`),
     );
   });
 

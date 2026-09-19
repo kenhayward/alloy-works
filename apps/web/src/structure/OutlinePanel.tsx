@@ -308,6 +308,16 @@ export function OutlinePanel({
   // tree without its one tab stop.
   const current = active !== null && placeOf(nodes, active) ? active : (nodes[0]?.id ?? null);
   const selected = current === null ? undefined : placeOf(nodes, current)?.node;
+  // The chosen node gone - removed by somebody else, or by an act this page answered - selection has
+  // fallen back to the first node, so the choice is made that one and the address follows it there,
+  // rather than naming a node the document no longer holds. A link that named nothing here chose
+  // nothing, so it never reaches this, and the address keeps what the reader followed.
+  useEffect(() => {
+    if (active === null || placeOf(nodes, active)) return;
+    const fallback = nodes[0]?.id ?? null;
+    setActive(fallback);
+    if (fallback !== null) onSelected(fallback);
+  }, [active, nodes, onSelected]);
   const may = editable && !busy;
   // The one numbering function, over the outline this render shows: recomputed whenever the outline
   // is, so there is no number to fall behind it, and the same function the service numbers with, so
