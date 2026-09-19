@@ -15,7 +15,12 @@ import { createDocument } from './documents.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
-import { failPublicationRequest, recordPublication, requestPublication } from './publishing.js';
+import {
+  failPublicationRequest,
+  publicationInputs,
+  recordPublication,
+  requestPublication,
+} from './publishing.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
@@ -251,6 +256,11 @@ describe('migration 0018, which gives every environment its default layout', () 
 
     // The job can still finish a request queued before layouts, both ways, as the runtime role.
     await service.withTenant(tenant, (trx) => failPublicationRequest(trx, made.toFail, [FAILED]));
+    // The job is handed no layout for it - it publishes as the first slice did - and the revision.
+    const inputs = await service.withTenant(tenant, (trx) =>
+      publicationInputs(trx, made.toPublish),
+    );
+    expect(inputs).toMatchObject({ layout: null, revision: '0.1' });
     const publication = await service.withTenant(tenant, (trx) =>
       recordPublication(trx, recording(tenant, made.toPublish)),
     );

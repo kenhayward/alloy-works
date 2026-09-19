@@ -262,7 +262,7 @@ describe('requesting and recording a publication', () => {
     });
   });
 
-  it('refuses a version that is not the latest, and a format the template cannot make, recording nothing', async () => {
+  it('refuses a version that is not the latest, and a format the layout does not make, recording nothing', async () => {
     await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, [section('Scope', [])]);
       const older = await trx
