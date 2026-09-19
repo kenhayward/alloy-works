@@ -11,6 +11,7 @@
     "@alloy-works/api-client": "workspace:^",
     "@alloy-works/stand-in-idp": "workspace:^",
     "@types/node": "^24.5.2",
+    "pdfjs-dist": "^6.3.289",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"
   }
