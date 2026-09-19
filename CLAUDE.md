@@ -15,9 +15,10 @@ a web application and a desktop application**.
 > in `packages/db`; its title, base language and base direction are edited above the surface. A
 > document can be created in a space and its outline - a tree of sections and component references -
 > restructured a version at a time, through `packages/domain/src/structure/`, the same chain and the
-> documents page in `apps/web`, which numbers its sections with the same function the service uses -
-> and nothing else authors content: no lists, tables, marks or equations, no paste, no metadata
-> panel, no making a component type, no cross-references resolved, no document view, and no
+> documents page in `apps/web`, which numbers its sections with the same function the service uses,
+> gives every node an address, and lists the document's figures, tables and equations beneath the
+> outline - and nothing else authors content: no lists, tables, marks or equations, no paste, no
+> metadata panel, no making a component type, no cross-references resolved, no document view, and no
 > publishing. The single `Component` in `packages/domain` is the scaffolding's, and nothing renders
 > it any more. [`docs/features.md`](docs/features.md) lists what does and does not exist.
 
