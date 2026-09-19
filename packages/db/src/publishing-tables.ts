@@ -1,11 +1,11 @@
 import type { ColumnType } from 'kysely';
 
 /**
- * Operational: a request is finished by the one update its grant allows, once, from `queued` to
- * `done` or `failed` (0017's `publication_request_finish_once`).
+ * Operational: inserted by what was asked alone, and finished by the one update its grant allows,
+ * once, from `queued` to `done` or `failed` (0017's `publication_request_finish_once`).
  */
 export interface PublicationRequestTable {
-  id: ColumnType<string, string | undefined, never>;
+  id: ColumnType<string, never, never>;
   document_id: ColumnType<string, string, never>;
   document_version_id: ColumnType<string, string, never>;
   document_kind: ColumnType<'document', never, never>;

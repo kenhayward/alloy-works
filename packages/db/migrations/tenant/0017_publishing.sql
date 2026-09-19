@@ -29,6 +29,9 @@ create table publication_request (
   finished_at timestamptz,
   check ((state = 'queued') = (finished_at is null)),
   check (state <> 'failed' or jsonb_array_length(failures) > 0),
+  -- Done is a publication made: a request carrying a refusal can only fail.
+  constraint publication_request_done_without_failures
+    check (state <> 'done' or jsonb_array_length(failures) = 0),
   foreign key (document_version_id, document_id, document_kind)
     references artifact_version (id, artifact_id, kind) on delete restrict
 );
@@ -98,7 +101,10 @@ create table publication_output (
 );
 
 -- PUB-050 as a grant: the runtime role inserts and reads what a publication is made of and nothing
--- else, and changes a request only by finishing it.
+-- else, and changes a request only by finishing it. It inserts a request by what was asked alone - the
+-- document, its version, the formats, who asked and what resolving found - so every request starts
+-- queued, unfinished, under its own id and at the time it was made, which is compiled into the PDF and
+-- so is never the caller's to name.
 do $$
 begin
   execute format(
@@ -106,7 +112,15 @@ begin
     'publication_request_occurrence from %I',
     current_schema()
   );
-  execute format('revoke update, delete, truncate on publication_request from %I', current_schema());
+  execute format(
+    'revoke insert, update, delete, truncate on publication_request from %I',
+    current_schema()
+  );
+  execute format(
+    'grant insert (document_id, document_version_id, formats, requested_by, failures) '
+    'on publication_request to %I',
+    current_schema()
+  );
   execute format(
     'grant update (state, failures, finished_at) on publication_request to %I',
     current_schema()
@@ -115,9 +129,12 @@ end
 $$;
 
 -- A request is finished once: the only update it ever takes is the one move from queued to done or
--- failed, with what was asked, by whom and when untouched. The column grant above would otherwise be
--- enough, on its own, to move a finished request back to queued - so a job would publish it again - or
--- to rewrite the failures an author was told, so this holds whatever columns a role may write, as
+-- failed, with what was asked, by whom and when untouched. Only the move to failed may write the
+-- failures - `assemble`'s list, or a platform failure's after the last attempt, replacing what the
+-- request was made with; the move to done keeps them, and publication_request_done_without_failures
+-- holds them empty. The column grant above would otherwise be enough, on its own, to move a finished
+-- request back to queued - so a job would publish it again - or to finish a request carrying a refusal
+-- as done with its failures cleared, so this holds whatever columns a role may write, as
 -- first_administrator_claim_once (0011) does for a naming.
 create function publication_request_finish_once() returns trigger
 language plpgsql as $$
@@ -131,6 +148,7 @@ begin
     and old.formats is not distinct from new.formats
     and old.requested_by is not distinct from new.requested_by
     and old.requested_at is not distinct from new.requested_at
+    and (new.state = 'failed' or new.failures = old.failures)
   ) then
     raise exception
       'publication_request: a request is finished once, from queued to done or failed, and nothing else of it changes';
@@ -141,3 +159,28 @@ $$;
 
 create trigger publication_request_finish_once before update on publication_request
   for each row execute function publication_request_finish_once();
+
+-- An occurrence is recorded in the transaction that asks for its request, while the request is queued;
+-- one added to a finished request would say a publication read a version it never read. Qualified by
+-- the table's own schema, as access_changed (0010) is, so it holds whatever the session's search path.
+create function publication_request_occurrence_while_queued() returns trigger
+language plpgsql as $$
+declare
+  queued boolean;
+begin
+  execute format(
+    'select exists (select 1 from %I.publication_request where id = $1 and state = %L)',
+    tg_table_schema,
+    'queued'
+  ) into queued using new.request_id;
+  if not queued then
+    raise exception
+      'publication_request_occurrence: an occurrence is recorded only while its request is queued';
+  end if;
+  return new;
+end
+$$;
+
+create trigger publication_request_occurrence_while_queued
+  before insert on publication_request_occurrence
+  for each row execute function publication_request_occurrence_while_queued();

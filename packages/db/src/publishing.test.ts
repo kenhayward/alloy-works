@@ -228,7 +228,11 @@ describe('requesting and recording a publication', () => {
           formats,
           requester: ada,
         });
-      expect((await asked(older.id, ['pdf'])).answer).toBe('version.precondition');
+      // The current version by its id alone: its outline names components the caller may not read.
+      expect(await asked(older.id, ['pdf'])).toEqual({
+        answer: 'version.precondition',
+        current: version.id,
+      });
       expect((await asked(version.id, ['docx'])).answer).toBe('format.unsupported');
       expect((await asked(version.id, ['pdf', 'docx'])).answer).toBe('format.unsupported');
       const requests = await trx
@@ -378,5 +382,100 @@ describe('requesting and recording a publication', () => {
     }));
     expect(row).toEqual({ state: 'done', failures: [], requested_by: ada });
     expect(occurrences).toEqual([{ node }]);
+  });
+
+  it('finishes a request carrying a refusal only as failed, and lets only failed replace its failures', async () => {
+    const { id, hidden } = await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const hidden = reference(secret.artifactId);
+      const version = await documentWith(trx, [
+        section('Method', [reference(shared.artifactId), hidden]),
+      ]);
+      return { id: await requested(trx, version, ada), hidden: hidden.id };
+    });
+    const refused = async (statement: ReturnType<typeof sql>, why: RegExp) =>
+      expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(why);
+
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now() where id = ${id}`,
+      /publication_request_done_without_failures/,
+    );
+    await refused(
+      sql`update publication_request set state = 'done', finished_at = now(), failures = '[]'
+          where id = ${id}`,
+      /finished once/,
+    );
+    const failures = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select('failures')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(failures.failures).toEqual([
+      { stage: 'resolve', code: 'occurrence_unreadable', node: hidden, block: null, detail: null },
+    ]);
+
+    // A platform failure after the last attempt replaces the list with its own.
+    const store = [{ stage: 'store', code: 'store_failed', node: null, block: null, detail: null }];
+    await service.withTenant(production, (trx) =>
+      sql`update publication_request
+            set state = 'failed', finished_at = now(), failures = ${JSON.stringify(store)}::jsonb
+          where id = ${id}`.execute(trx),
+    );
+    const row = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select(['state', 'failures'])
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ state: 'failed', failures: store });
+  });
+
+  it('lets the runtime role insert a request only as queued and now, and an occurrence only into a queued one', async () => {
+    const { version, shared, finished } = await service.withTenant(production, async (trx) => {
+      const shared = await component(trx, general, ada, 'Install the printer');
+      const version = await documentWith(trx, [section('Scope', [reference(shared.artifactId)])]);
+      const finished = await requested(trx, version, ada);
+      await sql`update publication_request set state = 'done', finished_at = now()
+                where id = ${finished}`.execute(trx);
+      return { version, shared, finished };
+    });
+    const refused = async (statement: ReturnType<typeof sql>, why: RegExp) =>
+      expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(why);
+
+    await refused(
+      sql`insert into publication_request
+            (document_id, document_version_id, formats, requested_by, state, finished_at)
+          values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, 'done', now())`,
+      /permission denied/,
+    );
+    await refused(
+      sql`insert into publication_request
+            (document_id, document_version_id, formats, requested_by, requested_at)
+          values (${version.artifactId}, ${version.id}, array['pdf'], ${ada}, now() - interval '1 year')`,
+      /permission denied/,
+    );
+    await refused(
+      sql`insert into publication_request (id, document_id, document_version_id, formats, requested_by)
+          values (${randomUUID()}, ${version.artifactId}, ${version.id}, array['pdf'], ${ada})`,
+      /permission denied/,
+    );
+    await refused(
+      sql`insert into publication_request_occurrence (request_id, node, component_id, version_id)
+          values (${finished}, ${nodeId()}, ${shared.artifactId}, ${shared.id})`,
+      /only while its request is queued/,
+    );
+
+    const occurrences = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication_request_occurrence')
+        .select('node')
+        .where('request_id', '=', finished)
+        .execute(),
+    );
+    expect(occurrences).toHaveLength(1);
   });
 });

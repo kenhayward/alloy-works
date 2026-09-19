@@ -7,7 +7,7 @@ import {
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
-import { latestVersion, type StoredVersion } from './versions.js';
+import { latestVersion } from './versions.js';
 
 /** What resolving one occurrence came to, as its publisher: the version it takes, or why none. */
 export type OccurrenceOutcome =
@@ -124,8 +124,12 @@ export type PublicationRequestAnswer =
       readonly answer: 'requested';
       readonly request: { readonly id: string; readonly state: 'queued' };
     }
-  /** The document is not at the version the caller named: they would publish what they have not seen. */
-  | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
+  /**
+   * The document is not at the version the caller named: they would publish what they have not seen.
+   * The current version by its id alone - its outline names components and pinned versions the
+   * caller may not read, so it is never handed back from here (IAM-073).
+   */
+  | { readonly answer: 'version.precondition'; readonly current: string }
   /** A format the fixed template cannot make (PUB-014): only `pdf` until the layout slice. */
   | { readonly answer: 'format.unsupported' }
   | { readonly answer: 'document.missing' };
@@ -150,7 +154,7 @@ export async function requestPublication(
 ): Promise<PublicationRequestAnswer> {
   const latest = await latestVersion(trx, input.documentId);
   if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
-  if (latest.id !== input.version) return { answer: 'version.precondition', current: latest };
+  if (latest.id !== input.version) return { answer: 'version.precondition', current: latest.id };
   if (input.formats.length !== 1 || input.formats[0] !== 'pdf') {
     return { answer: 'format.unsupported' };
   }
