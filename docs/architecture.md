@@ -658,8 +658,9 @@ streams it holds. A stream registers with the fan-out and waits for its subscrip
 database has acknowledged the `LISTEN` covering its channel - before its snapshot is read, and holds
 what arrives until the snapshot has gone, so nothing committed in between is lost or overtaken by
 older state. `ready` rejects rather than waits when the `LISTEN` cannot be made or the listener is
-closed, and the stream then ends for the browser to come back. Nothing in the renderer calls it: that arrives with the scaffolding's last plan (see
-[`plans/`](plans/)). The rest of the proposed system is [`design/system.md`](design/system.md).
+closed, and the stream then ends for the browser to come back. Nothing in the renderer calls it:
+that arrives with the scaffolding's last plan (see [`plans/`](plans/)). The rest of the proposed
+system is [`design/system.md`](design/system.md).
 
 ## Containers and images
 

@@ -44,7 +44,10 @@ export async function streamToViewer(options: {
     else held.push(event);
   });
   const beat = setInterval(() => raw.write(': alive\n\n'), HEARTBEAT_MS);
+  // Set once the viewer has gone, so nothing is read or written for nobody.
+  let gone = false;
   const stop = () => {
+    gone = true;
     clearInterval(beat);
     subscription.stop();
   };
@@ -52,6 +55,7 @@ export async function streamToViewer(options: {
 
   try {
     await subscription.ready;
+    if (gone) return;
     const samples = await db.withTenant(tenant, (trx) =>
       trx
         .selectFrom('sample')
@@ -60,13 +64,16 @@ export async function streamToViewer(options: {
         .limit(SNAPSHOT_SAMPLES)
         .execute(),
     );
+    if (gone) return;
     send('snapshot', { samples });
     sent = true;
     for (const event of held) send('sample', event);
     held.length = 0;
   } catch (error) {
+    // A viewer who has already left is not a stream that could not start.
+    const left = gone;
     stop();
     raw.end();
-    request.log.error({ err: error }, 'a stream could not start');
+    if (!left) request.log.error({ err: error }, 'a stream could not start');
   }
 }

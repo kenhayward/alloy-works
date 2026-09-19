@@ -246,6 +246,31 @@ describe('what an environment says has happened', () => {
     }
   });
 
+  it('asks again for a channel whose LISTEN failed, rather than hand every later watcher the failure (#137)', async () => {
+    let cutOff = () => {};
+    const lost = new Promise<void>((resolve) => {
+      cutOff = resolve;
+    });
+    const held = listenToTenants(hold.url, { onError: () => cutOff() });
+    try {
+      // Somebody is watching another environment throughout, so the listener stays in use.
+      await held.subscribe(b.id, () => {}).ready;
+      // The database goes away, and stays away while the next watcher arrives.
+      hold.refuse(true);
+      hold.cut();
+      await lost;
+      // This watcher stays, never told it is heard. Its failure must not become everyone's.
+      const unlucky = held.subscribe(a.id, () => {});
+      await expect(unlucky.ready).rejects.toThrow();
+      hold.refuse(false);
+      // The database is back: a watcher from now on asks again, and is heard.
+      await expect(held.subscribe(a.id, () => {}).ready).resolves.toBeUndefined();
+    } finally {
+      hold.refuse(false);
+      await held.close();
+    }
+  });
+
   it('hears again after its connection is lost', async () => {
     let cutOff = () => {};
     const lost = new Promise<void>((resolve) => {

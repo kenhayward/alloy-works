@@ -416,6 +416,7 @@ describe('what an environment is doing, as it happens', () => {
     });
     const unheardAddress = await unheardApp.listen({ port: 0, host: '127.0.0.1' });
     const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const response = await fetch(`${unheardAddress}/v1/stream`, {
         headers: { cookie, accept: 'text/event-stream' },
@@ -423,13 +424,80 @@ describe('what an environment is doing, as it happens', () => {
       });
       const ended = await Promise.race([
         response.text(),
-        new Promise<'still open'>((resolve) => setTimeout(() => resolve('still open'), 10_000)),
+        new Promise<'still open'>((resolve) => {
+          timer = setTimeout(() => resolve('still open'), 10_000);
+        }),
       ]);
       // It says when to come back, and nothing that would stand still.
       expect(ended).toBe(`retry: ${STREAM_RETRY_MS}\n\n`);
     } finally {
+      clearTimeout(timer);
       controller.abort();
       await unheardApp.close();
+    }
+  });
+
+  it('reads nothing for a viewer who left before it was heard', async () => {
+    let openGate = () => {};
+    const opened = new Promise<void>((resolve) => {
+      openGate = resolve;
+    });
+    let subscribed = () => {};
+    const wasSubscribed = new Promise<void>((resolve) => {
+      subscribed = resolve;
+    });
+    let leave = () => {};
+    const left = new Promise<void>((resolve) => {
+      leave = resolve;
+    });
+    let underneath: Promise<void> = Promise.resolve();
+    let gone = false;
+    const gated: TenantListener = {
+      ...events,
+      subscribe(tenantId, handler) {
+        const real = events.subscribe(tenantId, handler);
+        underneath = real.ready;
+        subscribed();
+        return {
+          stop() {
+            gone = true;
+            leave();
+            real.stop();
+          },
+          ready: Promise.all([real.ready, opened]).then(() => undefined),
+        };
+      },
+    };
+    let readsAfterLeaving = 0;
+    const counting: TenantDatabase = {
+      ...tenantDb,
+      withTenant(tenant, work) {
+        if (gone) readsAfterLeaving += 1;
+        return tenantDb.withTenant(tenant, work);
+      },
+    };
+    const gatedApp = buildApp({
+      db: counting,
+      logLevel: 'silent',
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      events: gated,
+    });
+    const gatedAddress = await gatedApp.listen({ port: 0, host: '127.0.0.1' });
+    const stream = openStream(`${gatedAddress}/v1/stream`, cookie);
+    try {
+      await wasSubscribed;
+      await underneath;
+      stream.close();
+      await left;
+      // Heard only now, with nobody there. From here to a snapshot read is nothing but promises
+      // settling, so once everything already due has run, a read would have begun.
+      openGate();
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(readsAfterLeaving).toBe(0);
+    } finally {
+      stream.close();
+      await gatedApp.close();
     }
   });
 
