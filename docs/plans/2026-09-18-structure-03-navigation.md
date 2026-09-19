@@ -167,6 +167,13 @@ sequence)` looks it up by occurrence and block. The numbering table and the numb
 Each is a choice this plan makes provisionally so that it can be built, with a recommendation. Reject
 one and the plan changes where the decision says.
 
+**Ken's answers (2026-09-19):** every recommendation accepted, with three additions. **K**: the
+interface's share is filed now, as issue #134, rather than left as a recommendation. **E**: accepted
+knowing its cost - every act fetches every contribution again (232 KB at 500 nodes) even when, as with
+a move, no contribution changed; nothing caches it yet. **H**: task 6 rewrites STR-045's row in "What
+this document does not own" to say the panel's half is built and why the claim waits. The pinned
+reference's title (the scope table's last row) is filed as issue #135.
+
 - **A. The outline panel is the contents panel; no second contents is rendered.** It already shows
   every node and its number; this plan adds going to a node, its address, and the lists beneath it.
   `contents()` is built in the domain for PUB, which renders a published contents to PUB-037's depth,
@@ -300,7 +307,7 @@ dev:setup` against the development database, never stop or restart a running con
 - **One pull request, one version bump (0.29.0) and one changelog entry**, in task 6, headed
   `## 0.29.0 - YYYY-MM-DD (PR #n)` and filled with the date and the number once the pull request
   exists - `apps/desktop/src/version.test.ts` fails on a heading without both. Its body carries
-  `Fixes #119` on a line of its own. Never commit to `main`.
+  `Closes #119` on a line of its own. Never commit to `main`.
 
 ---
 
@@ -449,9 +456,11 @@ shows it does not.
 | STR-054          | The root's own address, `#/documents/{id}`, is structure 1's and already cited                                                                          |
 | STR-031          | About cross-references; finding 12 is its spirit and is named, not cited                                                                                |
 
-### Requirements to file, not filed here
+### Requirements filed for later, not landed here
 
-1. **The interface's share of STR-039**, beside STR-063 once a browser suite exists: "Opening a
+1. **The interface's share of STR-039**, filed as
+   [issue #134](https://github.com/kenhayward/alloy-works/issues/134) before this build (Ken's
+   answer to decision K), to land beside STR-063 once a browser suite exists: "Opening a
    document of five hundred outline nodes, four hundred of them component references, and showing the
    result of each structural act on it, must take the interface at or under 250 ms at p95 from the
    request leaving it, with no measured sample above 500 ms, measured in a browser against the running
@@ -1310,10 +1319,10 @@ Not a review. [Issue #119](https://github.com/kenhayward/alloy-works/issues/119)
 documents and outlines, was landed by
 [the third structure plan](../../plans/2026-09-18-structure-03-navigation.md), narrowed.
 
-| What was found                                                                                                                                           | Change                                                                                                                                                                                                                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| STR-039 cites "the budget in scope §11", which names opening a 300-page document as a quantity and gives no number, so nothing could ever demonstrate it | **STR-063**: the service's share, at a stated size - five hundred nodes, four hundred of them references - opened, numbered and restructured at or under 250 ms at p95, with no measured sample above 500 ms, measured by the suite and recorded beside its configuration        |
-| The issue asked that opening and _navigating_ never exceed 500 ms                                                                                        | Narrowed: _navigating_ named no act, so the row names three; _never_ is no measurement's to prove, so the row says no measured sample; and the interface's share has no browser suite to measure it, so it is left to a row filed with that suite. STR-039 stays open until then |
+| What was found                                                                                                                                            | Change                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STR-039 cites "the budget in scope Â§11", which names opening a 300-page document as a quantity and gives no number, so nothing could ever demonstrate it | **STR-063**: the service's share, at a stated size - five hundred nodes, four hundred of them references - opened, numbered and restructured at or under 250 ms at p95, with no measured sample above 500 ms, measured by the suite and recorded beside its configuration        |
+| The issue asked that opening and _navigating_ never exceed 500 ms                                                                                         | Narrowed: _navigating_ named no act, so the row names three; _never_ is no measurement's to prove, so the row says no measured sample; and the interface's share has no browser suite to measure it, so it is left to a row filed with that suite. STR-039 stays open until then |
 
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
@@ -2734,6 +2743,12 @@ does not own" gains:
 | STR-034 | **Answered for the author's own acts, not another person's.** The panel renders the outline the page holds, so it updates with every act the author makes; a colleague's change reaches it only when the author next acts and is refused, or reloads. The stream carries no document version, and one would have to be withheld from every viewer who may not read the document - a design of its own |
 ```
 
+and STR-045's row in the same table (decision H, as Ken accepted it) becomes:
+
+```markdown
+| STR-045 | **The panel's half is built and the claim is not.** Opening a node's link opens the document with that node chosen, focused and marked in the outline, and a document the reader may not read is answered as nothing there (access.md). But a reader following a shared link expects to land on the node's content, and there is no document view to show it; claimed now, the claim would go partial the day that view exists. The document view claims it, going through the same `nodeLink` |
+```
+
 The claims pin in `packages/trace/src/trace.test.ts` becomes `360`: `// 360, from 361: structure.md
 stopped claiming STR-034, which the panel answers for the author's own acts and not for another
 person's - named in prose beside the table (the navigation plan, decision I).`
@@ -2881,7 +2896,8 @@ gh pr create --base main --title "Navigation: a link to every node, and the list
 
 The pull request body says what changed for a person, names the seven citations, says STR-034's claim
 was dropped and why (decision I), that STR-036 stays uncited (decision J), and that STR-063 lands
-narrowed (decision K), recommends the interface's row, and carries `Fixes #119` on a line of its own.
+narrowed (decision K), names issue #134 for the interface's share, and carries `Closes #119` on a
+line of its own.
 Then fill the changelog heading's `YYYY-MM-DD (PR #n)` and the plans index's `Built (PR #n)`, commit,
 and push. After the merge, check that issue #119 closed.
 
@@ -2958,7 +2974,8 @@ Named here so the next plan starts from a list rather than from a reading of the
   shows a reader needs it.
 - **A pinned reference named by its pinned version's title.** The panel and the lists name every
   reference by its component's head title, from the listing the page already reads, so a reference
-  pinned to an older version under an older title shows the new one. **Whichever plan resolves a
+  pinned to an older version under an older title shows the new one. Filed as
+  [issue #135](https://github.com/kenhayward/alloy-works/issues/135). **Whichever plan resolves a
   component version for each reference on the document route.**
 - **Keeping the lists fresh between acts** (finding 12): a `latest` component's new head reaches them
   at the next act. **The same stream plan.**
