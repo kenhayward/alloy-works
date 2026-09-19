@@ -36,7 +36,7 @@ import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { editingHandlers } from './editing.js';
-import { AppError } from './errors.js';
+import { AppError, storageUnavailable } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
 import { invitationHandlers } from './invitations.js';
@@ -171,13 +171,6 @@ const routeClosed = () =>
     'sign_in_route_closed',
     'This environment does not permit signing in this way.',
     'IAM-043',
-  );
-
-const storageUnavailable = () =>
-  new AppError(
-    503,
-    'storage_unavailable',
-    'This environment has nowhere to keep documents yet. Try again later.',
   );
 
 /**

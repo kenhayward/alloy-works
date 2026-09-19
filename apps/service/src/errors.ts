@@ -26,6 +26,14 @@ export class AppError extends Error {
   }
 }
 
+/** An environment with no object store yet: said once, wherever an object is wanted. */
+export const storageUnavailable = () =>
+  new AppError(
+    503,
+    'storage_unavailable',
+    'This environment has nowhere to keep documents yet. Try again later.',
+  );
+
 interface FastifyErrorLike {
   code?: string;
   statusCode?: number;

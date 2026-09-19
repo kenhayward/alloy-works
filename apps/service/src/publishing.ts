@@ -22,7 +22,7 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { AppError } from './errors.js';
+import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { wireCode } from './wire-codes.js';
 
@@ -153,13 +153,7 @@ export function publishingHandlers(
       const { id } = request.params as PublicationParams;
       const publication = await readPublication(trx, id);
       if (!publication) throw notFound();
-      if (!objects) {
-        throw new AppError(
-          503,
-          'storage_unavailable',
-          'This environment has nowhere to keep documents yet. Try again later.',
-        );
-      }
+      if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
       return {
         ...summaryView(publication),

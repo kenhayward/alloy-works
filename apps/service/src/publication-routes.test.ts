@@ -49,13 +49,13 @@ describe('publishing a document through the service', () => {
   const ids: Record<string, string> = {};
   const grants: Record<string, string> = {};
 
-  const appOver = (database: TenantDatabase) =>
+  const appOver = (database: TenantDatabase, withObjects = true) =>
     buildApp({
       db: database,
       logLevel: 'silent',
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
-      objects: stores,
+      ...(withObjects ? { objects: stores } : {}),
     });
 
   const call = (
@@ -521,6 +521,23 @@ describe('publishing a document through the service', () => {
       const answer = await call('alice', 'GET', `/v1/documents/${id}/publications`);
       expect(answer.statusCode, id).toBe(404);
       expect(refusal(answer)).toEqual(refusal(missing));
+    }
+  });
+  it('answers a publication as unavailable where the environment has nowhere to keep its output', async () => {
+    const id = await published(await requested('grace', await documentReferencing([])));
+    const storeless = appOver(tenantDb, false);
+    try {
+      const answer = await call('alice', 'GET', `/v1/publications/${id}`, undefined, storeless);
+      expect(answer.statusCode, answer.body).toBe(503);
+      expect(answer.json()).toEqual({
+        code: 'storage_unavailable',
+        message: 'This environment has nowhere to keep documents yet. Try again later.',
+        traceId: expect.any(String),
+      });
+      // Refused before anything is said of it: no id of its own, no record, no link.
+      expect(answer.body).not.toContain(id);
+    } finally {
+      await storeless.close();
     }
   });
 });
