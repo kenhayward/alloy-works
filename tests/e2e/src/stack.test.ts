@@ -99,8 +99,13 @@ describe('the whole system', () => {
     cookie = await signIn();
   }, 180_000);
 
-  const asTheSignedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) =>
-    fetch(input, { ...init, headers: { ...init?.headers, cookie } })) as typeof fetch;
+  // The client hands fetch a whole Request, whose headers - a JSON body's content type among them -
+  // an `init.headers` would replace outright. So the cookie is added to the request, never swapped in.
+  const asTheSignedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const request = new Request(input, init);
+    request.headers.set('cookie', cookie);
+    return fetch(request);
+  }) as typeof fetch;
 
   const client = () => createApiClient({ baseUrl: SERVICE, fetch: asTheSignedIn });
 
