@@ -140,6 +140,12 @@ export interface OutlinePanelProps {
   readonly names?: Names;
   readonly components?: ComponentChoices;
   readonly onReloadComponents?: () => void;
+  /** The node a link names, and which arrival of it this is: each arrival is taken to the node. */
+  readonly linked?: { readonly node: string; readonly arrival: number } | null;
+  /** A node's shareable address (STR-044), shown for the selected node. */
+  readonly linkOf?: (node: string) => string;
+  /** Told whenever the author chooses a node, so the page's address can follow. */
+  readonly onSelected?: (node: string) => void;
 }
 
 /**
@@ -232,6 +238,9 @@ export function OutlinePanel({
   names = null,
   components = { state: 'loading' },
   onReloadComponents = () => {},
+  linked = null,
+  linkOf,
+  onSelected = () => {},
 }: OutlinePanelProps) {
   const prefix = useId();
   const nodes = outline.nodes;
@@ -276,6 +285,23 @@ export function OutlinePanel({
   // The section whose title field is open, written by that field's own effect: a retitle that was not
   // saved after its field closed has nowhere left to keep its text, so the notice names it instead.
   const openField = useRef<string | null>(null);
+  // The node a link took the reader to, marked until they choose another (STR-045's panel half).
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  // The arrival of a link already taken to its node: under `<StrictMode>` the effect below runs twice
+  // on mount, and a ref survives the simulated unmount between, so one arrival is taken once.
+  const taken = useRef<number | null>(null);
+  useEffect(() => {
+    if (linked === null || taken.current === linked.arrival) return;
+    taken.current = linked.arrival;
+    if (placeOf(nodes, linked.node)) {
+      setActive(linked.node);
+      setHighlighted(linked.node);
+      // Focus, which in a browser scrolls the node into view: the reader asked to be taken here.
+      setFocusTarget(linked.node);
+    } else {
+      onNotice('The linked part is not in this document.');
+    }
+  }, [linked, nodes, onNotice]);
 
   // The selected node, derived rather than stored: the one chosen if it is still in the outline, the
   // first node otherwise - so a node removed, or an outline somebody else changed, never leaves the
@@ -393,6 +419,8 @@ export function OutlinePanel({
 
   const choose = (id: string, focus: boolean) => {
     setActive(id);
+    setHighlighted(null);
+    onSelected(id);
     if (focus) items.current.get(id)?.focus();
   };
 
@@ -422,6 +450,8 @@ export function OutlinePanel({
     setAdding(undefined);
     if (added !== undefined) {
       setActive(added);
+      setHighlighted(null);
+      onSelected(added);
       setFocusTarget(added);
     }
   };
@@ -446,6 +476,8 @@ export function OutlinePanel({
     const focus = typeof after === 'string' ? id : neighbour;
     if (focus !== null) {
       setActive(focus);
+      setHighlighted(null);
+      onSelected(focus);
       setFocusTarget(focus);
     }
   };
@@ -600,7 +632,11 @@ export function OutlinePanel({
             </>
           )}
           <span id={labelId} data-drop={`into:${node.id}`}>
-            {nodeLabel(node, names)}
+            {node.id === highlighted ? (
+              <mark>{nodeLabel(node, names)}</mark>
+            ) : (
+              nodeLabel(node, names)
+            )}
           </span>
           {node.children.length > 0 && (
             <ul role="group">{renderNodes(node.children, level + 1)}</ul>
@@ -746,8 +782,55 @@ export function OutlinePanel({
           }}
         />
       )}
+      {selected && linkOf && confirming === null && (
+        <NodeLink
+          address={linkOf(selected.id)}
+          name={nodeName(selected, names)}
+          onNotice={onNotice}
+        />
+      )}
       <p role="status">{notice}</p>
     </div>
+  );
+}
+
+/**
+ * The selected node's shareable address (STR-044), for everybody who may read the document: in a field
+ * that can be selected and copied by hand, and a button that copies it - the one way to share it from
+ * the desktop app, which has no address bar.
+ */
+function NodeLink({
+  address,
+  name,
+  onNotice,
+}: {
+  address: string;
+  name: string;
+  onNotice: (message: string | null) => void;
+}) {
+  return (
+    <p>
+      <label>
+        Link to {name}
+        <input readOnly value={address} onFocus={(event) => event.target.select()} />
+      </label>{' '}
+      <button
+        type="button"
+        onClick={() => {
+          const copying = navigator.clipboard?.writeText(address);
+          if (!copying) {
+            onNotice('The link could not be copied. Select it and copy it instead.');
+            return;
+          }
+          copying.then(
+            () => onNotice(`Copied the link to ${name}.`),
+            () => onNotice('The link could not be copied. Select it and copy it instead.'),
+          );
+        }}
+      >
+        Copy link
+      </button>
+    </p>
   );
 }
 

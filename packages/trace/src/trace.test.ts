@@ -208,8 +208,11 @@ describe('the citations in the committed model', () => {
   // 176, from 175: the same plan cites STR-063, landed by it, in
   // apps/service/src/navigation-budget.test.ts, which measures the service's routes over a document
   // of five hundred nodes.
+  // 178, from 176: the same plan cites STR-044 and STR-046 in
+  // apps/web/src/structure/DocumentPage.test.tsx: every node's address names its document and itself
+  // and opens the document there, and the same address finds the same node after a reorder.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(176);
+    expect(model.citations).toHaveLength(178);
   });
 
   it('cites no identifier the corpus does not hold', () => {

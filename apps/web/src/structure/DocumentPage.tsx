@@ -3,6 +3,7 @@ import { readOutlineView, type OutlineView, type OutlineOperation } from '@alloy
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import { nodeLink } from './links.js';
 import {
   OutlinePanel,
   type Answered,
@@ -175,6 +176,11 @@ function announce(
 export interface DocumentPageProps {
   readonly client: Client;
   readonly id: string;
+  /**
+   * The node the address names, and which arrival of an address this is: a link followed a second
+   * time to the same node is a new arrival, and is taken to it again.
+   */
+  readonly linked?: { readonly node: string; readonly arrival: number } | null;
 }
 
 /**
@@ -192,7 +198,7 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-export function DocumentPage({ client, id }: DocumentPageProps) {
+export function DocumentPage({ client, id, linked = null }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
@@ -438,6 +444,15 @@ export function DocumentPage({ client, id }: DocumentPageProps) {
         names={names}
         components={components}
         onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
+        linked={linked}
+        linkOf={(node) =>
+          `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
+        }
+        onSelected={(node) => {
+          // The address follows what is chosen, without a history entry per arrow key and without a
+          // `hashchange`, so a reload or a copy of the address comes back to it.
+          window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+        }}
       />
     </article>
   );

@@ -11,10 +11,11 @@ import {
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
+import { documentAddress } from './links.js';
 import { NewDocument } from './NewDocument.js';
 import { OutlinePanel } from './OutlinePanel.js';
 
@@ -1999,5 +2000,124 @@ describe('undo from the node details', () => {
       operation: { operation: 'set', node: METHOD, pageBreak: 'none' },
     });
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Undone\./));
+  });
+});
+
+/** The page at an address naming one of its nodes, as `Workspace` opens it. */
+function openAt(fetch: typeof globalThis.fetch, node: string, arrival = 0) {
+  const page = (linked: string, at: number) => (
+    <StrictMode>
+      <DocumentPage client={client(fetch)} id={DOCUMENT} linked={{ node: linked, arrival: at }} />
+    </StrictMode>
+  );
+  const rendered = render(page(node, arrival));
+  return {
+    ...rendered,
+    arriveAgain: (linked: string, at: number) => rendered.rerender(page(linked, at)),
+  };
+}
+
+/** The node an address the page showed names, read the way the workspace reads its own address. */
+function nodeIn(shown: string): string {
+  const address = documentAddress(new URL(shown).hash);
+  if (address?.kind !== 'document' || address.node === null) {
+    throw new Error(`${shown} names no node`);
+  }
+  return address.node;
+}
+
+describe('the address of every node', () => {
+  // Choosing a node rewrites the address; put it back so no later test starts somewhere else.
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  it('STR-044 gives every node an address naming its document and itself, which opens the document at that node', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    const first = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    let copied = '';
+    for (const [id, name] of [
+      [INTRODUCTION, 'Introduction'],
+      [METHOD, 'Method'],
+      [SCOPE, 'Scope'],
+    ] as const) {
+      await userEvent.click(item(name));
+      const field = screen.getByRole('textbox', { name: `Link to ${name}` }) as HTMLInputElement;
+      expect(field.value).toBe(
+        `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${id}`,
+      );
+      // The address follows what is chosen, so a reload or a copy of it comes back here.
+      expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/nodes/${id}`);
+      copied = field.value;
+    }
+    first.unmount();
+
+    // Somebody else, given Scope's address as it was shown: it names this document and Scope, and
+    // the document opens there with Scope chosen, focused and marked.
+    expect(documentAddress(new URL(copied).hash)).toEqual({
+      kind: 'document',
+      document: DOCUMENT,
+      node: SCOPE,
+    });
+    openAt(fake.fetch, nodeIn(copied));
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
+    // And shows them the same address for it.
+    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
+      copied,
+    );
+  });
+
+  it('STR-046 keeps a node at its address when the outline is reordered around it', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+      ]),
+    );
+    const page = openAt(fake.fetch, SCOPE);
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    const before = (screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement)
+      .value;
+    expect(item('Scope')).toHaveAccessibleDescription('2.1');
+
+    // Method, and Scope with it, moves to the front: Scope's number and position both change.
+    await userEvent.click(item('Method'));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(item('Scope')).toHaveAccessibleDescription('1.1'));
+    await settled();
+
+    // The same address, arriving again, still finds Scope; and Scope's address has not changed.
+    page.arriveAgain(nodeIn(before), 1);
+    await waitFor(() => expect(item('Scope')).toHaveFocus());
+    expect(item('Scope')).toHaveAttribute('aria-selected', 'true');
+    expect(within(item('Scope')).getByText('Scope').closest('mark')).not.toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Link to Scope' }) as HTMLInputElement).value).toBe(
+      before,
+    );
+  });
+
+  it('says so when the address names nothing this document holds, and keeps the first node chosen', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    openAt(fake.fetch, SCOPE);
+    expect(await screen.findByText('The linked part is not in this document.')).toBeInTheDocument();
+    expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it("copies the chosen node's address, and says it did", async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    await user.click(await screen.findByRole('treeitem', { name: 'Introduction' }));
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await screen.findByText('Copied the link to Introduction.')).toBeInTheDocument();
+    expect(await navigator.clipboard.readText()).toBe(
+      `${window.location.origin}${window.location.pathname}#/documents/${DOCUMENT}/nodes/${INTRODUCTION}`,
+    );
   });
 });
