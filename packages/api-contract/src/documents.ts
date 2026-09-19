@@ -57,6 +57,19 @@ export const DocumentView = z.object({
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
   mayPublish: z.boolean().describe('Whether the caller may publish the document'),
+  layout: z
+    .object({
+      id: z.string(),
+      version: z.object({ id: z.string(), number: z.string() }),
+      language: z.string(),
+      scheme: z
+        .record(z.string(), z.unknown())
+        .describe('The numbering scheme this document is numbered and published with'),
+    })
+    .describe(
+      "The environment's layout at its latest version, which is the version a publish requested " +
+        'now would be made under (publishing.md, "The layout")',
+    ),
 });
 export type DocumentView = z.infer<typeof DocumentView>;
 
@@ -72,14 +85,16 @@ export type OutlineRefusal = z.infer<typeof OutlineRefusal>;
 
 /**
  * A document's numbering (structure.md, "Numbering"), as the caller is shown it: the version it
- * numbers, the scheme, which component version each occurrence resolved to, and the numbering table.
+ * numbers, the scheme and the layout version it came from, which component version each occurrence
+ * resolved to, and the numbering table.
  */
 export const NumberingView = z.object({
   document: z.string(),
   version: z.object({ id: z.string(), number: z.string() }),
-  scheme: z
-    .string()
-    .describe('The scheme numbered against, by its id: `default/1` until layouts exist'),
+  scheme: z.string().describe("The scheme numbered against, by its id: the layout's"),
+  layout: z
+    .object({ id: z.string(), version: z.object({ id: z.string(), number: z.string() }) })
+    .describe('The layout whose scheme these numbers were taken from, at the version read'),
   occurrences: z
     .array(z.object({ node: z.string(), version: z.string().nullable() }))
     .describe(

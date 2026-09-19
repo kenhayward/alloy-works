@@ -2767,6 +2767,47 @@
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The numbering scheme this document is numbered and published with"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "language",
+                        "scheme"
+                      ],
+                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
                   },
                   "required": [
@@ -2775,7 +2816,8 @@
                     "version",
                     "outline",
                     "mayEdit",
-                    "mayPublish"
+                    "mayPublish",
+                    "layout"
                   ]
                 }
               }
@@ -3238,7 +3280,35 @@
                     },
                     "scheme": {
                       "type": "string",
-                      "description": "The scheme numbered against, by its id: `default/1` until layouts exist"
+                      "description": "The scheme numbered against, by its id: the layout's"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version"
+                      ],
+                      "description": "The layout whose scheme these numbers were taken from, at the version read"
                     },
                     "occurrences": {
                       "type": "array",
@@ -3349,6 +3419,7 @@
                     "document",
                     "version",
                     "scheme",
+                    "layout",
                     "occurrences",
                     "entries"
                   ]
@@ -5242,6 +5313,47 @@
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The numbering scheme this document is numbered and published with"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "language",
+                        "scheme"
+                      ],
+                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
                   },
                   "required": [
@@ -5250,7 +5362,8 @@
                     "version",
                     "outline",
                     "mayEdit",
-                    "mayPublish"
+                    "mayPublish",
+                    "layout"
                   ]
                 }
               }
@@ -5351,6 +5464,47 @@
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme"
+                          ],
+                          "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
                       },
                       "required": [
@@ -5359,7 +5513,8 @@
                         "version",
                         "outline",
                         "mayEdit",
-                        "mayPublish"
+                        "mayPublish",
+                        "layout"
                       ]
                     },
                     "reason": {
@@ -5570,6 +5725,47 @@
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme"
+                          ],
+                          "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                         }
                       },
                       "required": [
@@ -5578,7 +5774,8 @@
                         "version",
                         "outline",
                         "mayEdit",
-                        "mayPublish"
+                        "mayPublish",
+                        "layout"
                       ]
                     },
                     "reason": {
@@ -11041,6 +11238,47 @@
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The numbering scheme this document is numbered and published with"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "language",
+                        "scheme"
+                      ],
+                      "description": "The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, \"The layout\")"
                     }
                   },
                   "required": [
@@ -11049,7 +11287,8 @@
                     "version",
                     "outline",
                     "mayEdit",
-                    "mayPublish"
+                    "mayPublish",
+                    "layout"
                   ]
                 }
               }

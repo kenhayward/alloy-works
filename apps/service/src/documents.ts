@@ -7,6 +7,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   createDocument,
+  defaultLayout,
   editOutline,
   listReadableDocuments,
   numberingInputs,
@@ -21,7 +22,6 @@ import {
 import {
   conditions,
   decide,
-  defaultNumberingScheme,
   number,
   readOutline,
   resolve,
@@ -70,15 +70,27 @@ async function outlineView(
 }
 
 /**
- * A document as the API shows it: at one version, with whether the caller may restructure it. Every
- * answer that carries an outline is built here - the page, an act's answer, and a refusal's
- * `current` - so none can carry an outline that has not been through `outlineView`.
+ * A document as the API shows it: at one version, with whether the caller may restructure it and the
+ * layout it is numbered and published under. Every answer that carries an outline is built here - the
+ * page, an act's answer, and a refusal's `current` - so none can carry an outline that has not been
+ * through `outlineView`, and none is shown beside numbers taken from a different scheme.
+ *
+ * The layout is the environment's, read fresh in this transaction, which is the version a publish
+ * requested now would be made under (`requestPublication`). It belongs to the environment, not to any
+ * component, so nothing here is derived from something the viewer may not read. An environment that
+ * declares none, or one whose layout does not read, throws: 0018 declares one everywhere, so either is
+ * a broken store rather than an answer.
+ *
+ * The read costs one small query and a parse on every document answer. It is not cached: a layout may
+ * be revised between two requests, and a page showing numbers from a scheme that has since moved would
+ * be showing numbers that will not publish.
  */
 async function documentView(
   viewer: Viewer,
   document: Pick<StoredDocument, 'id' | 'space'>,
   version: StoredVersion,
 ): Promise<DocumentView> {
+  const layout = await defaultLayout(viewer.trx);
   return {
     id: document.id,
     space: document.space,
@@ -86,6 +98,12 @@ async function documentView(
     outline: await outlineView(viewer, document.id, version),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
+    layout: {
+      id: layout.artifactId,
+      version: { id: layout.versionId, number: layout.number },
+      language: layout.layout.language,
+      scheme: { ...layout.layout.scheme },
+    },
   };
 }
 
@@ -249,19 +267,29 @@ export function documentHandlers(
      * here was computed from one, and every number such an occurrence could have moved is null rather
      * than guessed. A stored outline that does not read is a broken store, thrown as the outline route
      * throws it.
+     *
+     * Numbered with the **environment's layout's** scheme, not the product's default: the numbers a
+     * reader is shown are the numbers that would publish (STR-036), since a request made now is made
+     * under this same layout version. The layout is named beside them, so a caller can tell which
+     * scheme produced them.
      */
     getNumbering: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentParams;
       const { document, outline } = await latestOutline(trx, id);
+      const layout = await defaultLayout(trx);
       const inputs = await numberingInputs(trx, outline, principalId);
       const table = number(
         conditions(resolve(outline, inputs.contributions)),
-        defaultNumberingScheme,
+        layout.layout.scheme,
       );
       return {
         document: id,
         version: { id: document.version.id, number: versionView(document.version).number },
         scheme: table.scheme,
+        layout: {
+          id: layout.artifactId,
+          version: { id: layout.versionId, number: layout.number },
+        },
         // Copied, because the domain's answers are read-only and the wire's types are not.
         occurrences: inputs.occurrences.map((occurrence) => ({ ...occurrence })),
         entries: table.entries.map((entry) => ({ ...entry, sections: [...entry.sections] })),

@@ -1854,6 +1854,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };
@@ -2070,8 +2083,16 @@ export interface operations {
                             id: string;
                             number: string;
                         };
-                        /** @description The scheme numbered against, by its id: `default/1` until layouts exist */
+                        /** @description The scheme numbered against, by its id: the layout's */
                         scheme: string;
+                        /** @description The layout whose scheme these numbers were taken from, at the version read */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        };
                         /** @description Each component reference, in outline order, and the component version it resolved to: null where the caller may not read the component, where it waits on revisions, or where its content does not read. Its contributions are then not counted, and every number it could have moved is null */
                         occurrences: {
                             node: string;
@@ -2571,6 +2592,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };
@@ -2613,6 +2647,19 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
@@ -2712,6 +2759,19 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
@@ -5272,6 +5332,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };

@@ -5,9 +5,12 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  defaultLayout,
   findRole,
   grant,
   migrate,
+  publicationInputs,
+  requestPublication,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
@@ -39,6 +42,12 @@ interface DocumentBody {
     nodes: { id: string; type: string; title?: { value: string }[]; children: unknown[] }[];
   };
   mayEdit: boolean;
+  layout: {
+    id: string;
+    version: { id: string; number: string };
+    language: string;
+    scheme: Record<string, unknown>;
+  };
 }
 
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
@@ -231,6 +240,37 @@ describe('documents through the service', () => {
         .json<{ items: { id: string }[] }>()
         .items.map((i) => i.id),
     ).toContain(body.id);
+  });
+
+  it("answers the document's layout beside its outline, the version a publish would record", async () => {
+    const made = await create('ada', general, 'Published under a layout');
+    const document = made.json<DocumentBody>();
+    const declared = await tenantDb.withTenant(tenant, (trx) => defaultLayout(trx));
+    const expected = {
+      id: declared.artifactId,
+      version: { id: declared.versionId, number: declared.number },
+      language: declared.layout.language,
+      scheme: declared.layout.scheme,
+    };
+    expect(document.layout).toEqual(expected);
+    // Every answer carrying the outline carries it, so the page never has to ask a second route.
+    const opened = await call('ada', 'GET', `/v1/documents/${document.id}`);
+    expect(opened.statusCode, opened.body).toBe(200);
+    expect(opened.json<DocumentBody>().layout).toEqual(expected);
+
+    // The version a publish would record: a request made next is made under exactly this one, so
+    // the numbers the page shows are the numbers that would publish.
+    const inputs = await tenantDb.withTenant(tenant, async (trx) => {
+      const requested = await requestPublication(trx, {
+        documentId: document.id,
+        version: document.version.id,
+        formats: ['pdf'],
+        requester: ids.ada!,
+      });
+      if (requested.answer !== 'requested') throw new Error(requested.answer);
+      return publicationInputs(trx, requested.request.id);
+    });
+    expect(document.layout.version.id).toBe(inputs!.layout!.versionId);
   });
 
   it('keeps a section inside the document that declares it, with no identity to reach it by alone', async () => {
