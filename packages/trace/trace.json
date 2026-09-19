@@ -15128,7 +15128,7 @@
         },
         {
           "id": "STR-063",
-          "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, with the configuration recorded beside the result"
+          "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result"
         },
         {
           "id": "STR-040",
@@ -15584,7 +15584,7 @@
     {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
-      "line": 114,
+      "line": 111,
       "kind": "title"
     },
     {

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { arch, cpus, loadavg, platform } from 'node:os';
+import { arch, availableParallelism, cpus, loadavg, platform } from 'node:os';
 import {
   bootstrapCluster,
   configureOrganisationSignIn,
@@ -35,9 +35,6 @@ const SECTIONS_PER_CHAPTER = 4;
 const REFERENCES_PER_SECTION = 5;
 const COMPONENTS = 150;
 const BLOCKS_PER_COMPONENT = 40;
-/** What each component contributes: a tenth each of figures, tables, equations and footnotes. */
-const CONTRIBUTIONS_PER_COMPONENT = 16;
-const OCCURRENCES = CHAPTERS * SECTIONS_PER_CHAPTER * REFERENCES_PER_SECTION;
 const WARM_UP = 5;
 const SAMPLES = 40;
 const BUDGET = { p95: 250, max: 500 };
@@ -125,7 +122,10 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
   const configuration = {
     platform: `${platform()} ${arch()}`,
     cpu: cpus()[0]?.model ?? 'unknown',
+    // The logical CPUs the machine has, whatever a container or runner lets this process use.
     cpus: cpus().length,
+    // How many of them this process may run on at once: a container's or a runner's limit, where set.
+    parallelism: availableParallelism(),
     node: process.version,
     // Always [0, 0, 0] on Windows, which is still a value.
     loadavg: loadavg().map((load) => Number(load.toFixed(2))),
@@ -298,13 +298,22 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     expect(configuration.cpu.trim()).not.toBe('');
     expect(configuration.node.trim()).not.toBe('');
     expect(configuration.cpus).toBeGreaterThan(0);
+    expect(configuration.parallelism).toBeGreaterThan(0);
+    interface Shown {
+      type: string;
+      children: Shown[];
+    }
     const opened = (await call('GET', `/v1/documents/${document}`)).json<{
-      outline: { nodes: unknown[] };
+      outline: { nodes: Shown[] };
     }>();
-    const count = (list: { children?: unknown[] }[]): number =>
-      list.reduce((total, node) => total + 1 + count((node.children ?? []) as never), 0);
-    report.nodes = count(opened.outline.nodes as never);
+    const every = (list: Shown[]): Shown[] =>
+      list.flatMap((node) => [node, ...every(node.children)]);
+    const shown = every(opened.outline.nodes);
+    report.nodes = shown.length;
+    report.references = shown.filter((node) => node.type === 'reference').length;
+    // The size STR-063 states, read off what the route answered rather than off how it was built.
     expect(report.nodes).toBe(500);
+    expect(report.references).toBe(400);
     report.bytes = (await call('GET', `/v1/documents/${document}`)).body.length;
     await measure('document', task.meta, () =>
       timed(() => call('GET', `/v1/documents/${document}`)),
@@ -316,7 +325,7 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
   it('answers what every occurrence contributes within the budget', async ({ task }) => {
     const answered = await call('GET', `/v1/documents/${document}/contributions`);
     const contributions = answered.json<Contributions>();
-    expect(contributions.occurrences).toHaveLength(OCCURRENCES);
+    expect(contributions.occurrences).toHaveLength(400);
     expect(contributions.occurrences.filter((each) => each.version === null)).toEqual([]);
     expect(contributions.versions).toHaveLength(COMPONENTS);
     for (const each of contributions.versions) {
@@ -333,9 +342,8 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
   it('numbers the document within the budget', async ({ task }) => {
     const numbering = (await call('GET', `/v1/documents/${document}/numbering`)).json<Numbering>();
     expect(numbering.entries.filter((entry) => entry.number === null)).toEqual([]);
-    expect(numbering.entries.filter((entry) => entry.sequence !== 'section')).toHaveLength(
-      OCCURRENCES * CONTRIBUTIONS_PER_COMPONENT,
-    );
+    // Four hundred occurrences of sixteen numbered contributions each.
+    expect(numbering.entries.filter((entry) => entry.sequence !== 'section')).toHaveLength(6400);
     await measure('numbering', task.meta, () =>
       timed(() => call('GET', `/v1/documents/${document}/numbering`)),
     );
