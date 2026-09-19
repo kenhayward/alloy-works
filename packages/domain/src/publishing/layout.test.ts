@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { canonicalJson } from '../stored/canonical.js';
+import { MAXIMUM_OUTLINE_DEPTH } from '../structure/outline.js';
 import { defaultNumberingScheme } from '../structure/scheme.js';
 import { canonicaliseVersionContent } from '../version/substance.js';
 
@@ -98,19 +99,63 @@ describe('a layout', () => {
 
   it('refuses every member it does not declare, at every depth', () => {
     const lists = { ...copy(), lists: [] };
-    expect(() => parseLayout(lists)).toThrow();
+    expect(() => parseLayout(lists)).toThrow(/Unrecognized key/);
 
     const docx = copy();
     Object.assign(docx.formats, { docx: {} });
-    expect(() => parseLayout(docx)).toThrow();
+    expect(() => parseLayout(docx)).toThrow(/Unrecognized key/);
 
     const paged = copy();
     Object.assign(pdfOf(paged), { paged: true });
-    expect(() => parseLayout(paged)).toThrow();
+    expect(() => parseLayout(paged)).toThrow(/Unrecognized key/);
 
     const colour = copy();
     Object.assign(pdfOf(colour).head[0][0]!, { colour: 'red' });
-    expect(() => parseLayout(colour)).toThrow();
+    expect(() => parseLayout(colour)).toThrow(/Unrecognized key/);
+
+    // Every object in the shape, each given one member it does not declare.
+    const objects: readonly (readonly [string, (layout: Layout) => object])[] = [
+      ['the root', (layout) => layout],
+      ['words', (layout) => layout.words],
+      ['the scheme', (layout) => layout.scheme],
+      ['a sequence', (layout) => layout.scheme.sequences['figure']!],
+      ['a rule', (layout) => layout.scheme.sequences['figure']!.body],
+      ['matter', (layout) => layout.matter],
+      ['the contents', (layout) => layout.matter.contents!],
+      ['appendices', (layout) => layout.matter.appendices],
+      ['formats', (layout) => layout.formats],
+      ['pdf', (layout) => pdfOf(layout)],
+      ['the page', (layout) => pdfOf(layout).page],
+      ['the margins', (layout) => pdfOf(layout).margins],
+      ['a field part', (layout) => pdfOf(layout).head[0][0]!],
+      ['a words part', (layout) => pdfOf(layout).foot[0][0]!],
+      ['page numbering', (layout) => pdfOf(layout).pageNumbering],
+      ['front page numbering', (layout) => pdfOf(layout).pageNumbering.front],
+      ['body page numbering', (layout) => pdfOf(layout).pageNumbering.body],
+      ['appendix page numbering', (layout) => pdfOf(layout).pageNumbering.appendix],
+    ];
+    for (const [name, object] of objects) {
+      const extended = copy();
+      Object.assign(object(extended), { undeclared: true });
+      expect(() => parseLayout(extended), name).toThrow(/Unrecognized key.*undeclared/);
+    }
+  });
+
+  it('holds the contents to the depths an outline can have', () => {
+    const at = (depth: number) => {
+      const layout = copy();
+      layout.matter.contents = { depth };
+      return layout;
+    };
+    expect(parseLayout(at(1)).matter.contents).toEqual({ depth: 1 });
+    expect(parseLayout(at(MAXIMUM_OUTLINE_DEPTH)).matter.contents).toEqual({
+      depth: MAXIMUM_OUTLINE_DEPTH,
+    });
+    expect(() => parseLayout(at(0))).toThrow(/expected number to be >=1/);
+    expect(() => parseLayout(at(MAXIMUM_OUTLINE_DEPTH + 1))).toThrow(
+      new RegExp(`expected number to be <=${MAXIMUM_OUTLINE_DEPTH}`),
+    );
+    expect(() => parseLayout(at(2.5))).toThrow(/expected int/);
   });
 
   it('refuses words and labels that cannot be stored', () => {
@@ -129,6 +174,26 @@ describe('a layout', () => {
     const blank = copy();
     blank.words.notice = '   ';
     expect(() => parseLayout(blank)).toThrow(/say something/);
+
+    // Set without a glyph: the engine draws nothing for either, so the draft's mark would vanish.
+    for (const invisible of ['\u{200B}', '\u{2060}', ' \u{200B}\u{00AD} ']) {
+      const unseen = copy();
+      unseen.words.notice = invisible;
+      expect(() => parseLayout(unseen), invisible).toThrow(/say something/);
+    }
+    const marked = copy();
+    marked.words.notice = '\u{200B}Draft';
+    expect(parseLayout(marked).words.notice).toBe('\u{200B}Draft');
+
+    // Refused by the engine whatever the face holds, as `assemble` refuses them in a component.
+    for (const disallowed of ['\u{FEFF}', '\u{FFFE}', '\u{FFFF}']) {
+      const words = copy();
+      words.words.noticeSentence = `Not approved.${disallowed}`;
+      expect(() => parseLayout(words), disallowed).toThrow(/engine refuses/);
+      const slot = copy();
+      pdfOf(slot).foot[2][0] = { kind: 'words', text: `Page${disallowed} ` };
+      expect(() => parseLayout(slot), disallowed).toThrow(/engine refuses/);
+    }
 
     const empty = copy();
     pdfOf(empty).foot[0][0] = { kind: 'words', text: '' };
@@ -164,7 +229,7 @@ describe('a layout', () => {
     expect(() => parseLayout(gutter)).toThrow(/an inch/);
   });
 
-  it('refuses a page given in landscape sense, and a gutter or margin below nothing', () => {
+  it('refuses a page given in landscape sense or outside an inch to two hundred inches, and a gutter or margin below nothing', () => {
     // Landscape is the orientation's to say, never swapped dimensions (preflight I6).
     const swapped = copy();
     pdfOf(swapped).page = { width: 841.89, height: 595.28 };
@@ -184,11 +249,20 @@ describe('a layout', () => {
 
     const tiny = copy();
     pdfOf(tiny).page = { width: 71, height: 841.89 };
-    expect(() => parseLayout(tiny)).toThrow();
+    expect(() => parseLayout(tiny)).toThrow(/expected number to be >=72/);
 
     const huge = copy();
     pdfOf(huge).page = { width: 595.28, height: 14401 };
-    expect(() => parseLayout(huge)).toThrow();
+    expect(() => parseLayout(huge)).toThrow(/expected number to be <=14400/);
+
+    const smallest = copy();
+    pdfOf(smallest).page = { width: 72, height: 72 };
+    pdfOf(smallest).margins = { top: 0, bottom: 0, inside: 0, outside: 0 };
+    expect(parseLayout(smallest).formats.pdf.page).toEqual({ width: 72, height: 72 });
+
+    const largest = copy();
+    pdfOf(largest).page = { width: 14400, height: 14400 };
+    expect(parseLayout(largest).formats.pdf.page).toEqual({ width: 14400, height: 14400 });
   });
 
   it('refuses a language the engine cannot carry', () => {

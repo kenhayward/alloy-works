@@ -173,6 +173,11 @@ describe('creating and reading versions', () => {
     await expect(
       create(production, { author, substance: { kind: 'layout', content: defaultLayout } }),
     ).rejects.toThrow('A layout is created by its migration, not by createArtifact');
+    // Refused by its parse before the guard: a layout that could never be stored says why.
+    const malformed = { ...defaultLayout, lists: [] };
+    await expect(
+      create(production, { author, substance: { kind: 'layout', content: malformed } }),
+    ).rejects.toThrow(/Unrecognized key/);
   });
 
   it('VER-007 records who cut a version, when, and the note when there is one', async () => {

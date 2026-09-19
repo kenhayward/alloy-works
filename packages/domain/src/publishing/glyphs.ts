@@ -31,7 +31,8 @@ const SET_WITHOUT_A_GLYPH: readonly (readonly [number, number])[] = [
   [0xe0000, 0xe0fff],
 ];
 
-const setWithoutAGlyph = (codePoint: number) =>
+/** Whether the engine sets this character without drawing a glyph of its own. */
+export const setWithoutAGlyph = (codePoint: number) =>
   SET_WITHOUT_A_GLYPH.some(([first, last]) => codePoint >= first && codePoint <= last);
 
 /**
@@ -42,6 +43,9 @@ const setWithoutAGlyph = (codePoint: number) =>
  * are wrong", its third point).
  */
 const DISALLOWED = new Set([0xfeff, 0xfffe, 0xffff]);
+
+/** Whether PDF/UA-1, and so the engine, refuses this character whatever the face holds. */
+export const disallowed = (codePoint: number) => DISALLOWED.has(codePoint);
 
 export type CharacterProblem = 'glyph_missing' | 'character_disallowed';
 
@@ -63,7 +67,7 @@ export function characterProblems(
     const codePoint = character.codePointAt(0)!;
     if (seen.has(codePoint)) continue;
     seen.add(codePoint);
-    if (DISALLOWED.has(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
+    if (disallowed(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
     else if (!setWithoutAGlyph(codePoint) && !covers(codePoint)) {
       found.push({ problem: 'glyph_missing', codePoint });
     }

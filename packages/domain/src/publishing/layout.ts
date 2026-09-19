@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { hasText } from '../content/model/text.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 import { MAXIMUM_OUTLINE_DEPTH, type OutlineMatter } from '../structure/outline.js';
@@ -12,6 +11,7 @@ import {
   type NumberingScheme,
 } from '../structure/scheme.js';
 
+import { disallowed, setWithoutAGlyph } from './glyphs.js';
 import { publishedLanguage } from './language.js';
 import { DRAFT_NOTICE } from './published.js';
 
@@ -70,19 +70,38 @@ const MAXIMUM_WORDS = 200;
 const LEAST_TEXT = 72;
 
 const CANNOT_BE_STORED = 'The layout holds a character that cannot be stored';
+const ENGINE_REFUSES = 'The layout holds a character the engine refuses whatever the face';
+
+const codePoints = (text: string) => Array.from(text, (character) => character.codePointAt(0)!);
+
+/** Whether the engine would draw something: a character that is neither space nor set unseen. */
+const visible = (text: string) =>
+  codePoints(text).some(
+    (codePoint) => !/\s/u.test(String.fromCodePoint(codePoint)) && !setWithoutAGlyph(codePoint),
+  );
+
+/** No character PDF/UA-1 refuses, which `assemble` would refuse in a component's words too. */
+const settable = (text: string) => !codePoints(text).some(disallowed);
 
 /**
- * Words the product sets as the layout's: the contents' title and the draft notice. Each must say
- * something - a blank notice would remove the draft's mark from every page, which no layout may do.
+ * Words the product sets as the layout's: the contents' title and the draft notice. Each must show
+ * something - a blank notice, or one of only zero-width characters, would remove the draft's mark from
+ * every page, which no layout may do.
  */
 const words = z
   .string()
   .max(MAXIMUM_WORDS)
-  .refine(hasText, 'A layout sets words that say something')
-  .refine(storableText, CANNOT_BE_STORED);
+  .refine(storableText, CANNOT_BE_STORED)
+  .refine(settable, ENGINE_REFUSES)
+  .refine(visible, 'A layout sets words that say something');
 
 /** A slot's words may be only spacing - `Page ` before a field - but never nothing. */
-const slotWords = z.string().min(1).max(MAXIMUM_WORDS).refine(storableText, CANNOT_BE_STORED);
+const slotWords = z
+  .string()
+  .min(1)
+  .max(MAXIMUM_WORDS)
+  .refine(storableText, CANNOT_BE_STORED)
+  .refine(settable, ENGINE_REFUSES);
 
 const slotPartSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('words'), text: slotWords }),
