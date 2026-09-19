@@ -16,7 +16,8 @@ import type { JobHandler } from '../worker.js';
 /**
  * The pipeline's own version (PUB-063): `assemble` and this job, as one, and the draft notice
  * `assemble` carries into every page - words the template's hash does not cover, because they are
- * the data's. Raised with any of them; `template.test.ts` holds the notice each version sets.
+ * the data's. Raised with any of them; `template.test.ts` holds what each version's `assemble` makes
+ * of one fixed input, notice included.
  */
 export const PIPELINE_VERSION = '1';
 
@@ -27,7 +28,7 @@ export class PublishRefused extends JobRefused {
   }
 }
 
-/** The store would not take the output. Worth another attempt. */
+/** The store would not take the output, or the database its record. Worth another attempt. */
 class StoreFailed extends Error {
   readonly code = 'store_failed';
 }
@@ -89,19 +90,25 @@ export function publishJob(deps: {
       }
       // Its own transaction: a record that fails ends it, rolled back whole, and the request is failed
       // - after the last attempt - in a fresh one by `failed`, never in the one that caught the error.
-      await deps.db.withTenant(tenant, (trx) =>
-        recordPublication(trx, {
-          requestId: request.id,
-          engineVersion,
-          templateVersion: PUBLICATION_TEMPLATE.version,
-          pipelineVersion: PIPELINE_VERSION,
-          // `compile` re-hashed the faces against these very pins before Typst ran.
-          fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
-          dataSha256: createHash('sha256').update(data).digest('hex'),
-          numbering: assembled.numbering,
-          output: { key: stored.key, sha256: stored.sha256, bytes: stored.size },
-        }),
-      );
+      // The PDF was made, so a record the database refuses is the store stage's, like a refused put:
+      // the object stays behind, keyed by its hash, and nothing refers to it.
+      await deps.db
+        .withTenant(tenant, (trx) =>
+          recordPublication(trx, {
+            requestId: request.id,
+            engineVersion,
+            templateVersion: PUBLICATION_TEMPLATE.version,
+            pipelineVersion: PIPELINE_VERSION,
+            // `compile` re-hashed the faces against these very pins before Typst ran.
+            fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
+            dataSha256: createHash('sha256').update(data).digest('hex'),
+            numbering: assembled.numbering,
+            output: { key: stored.key, sha256: stored.sha256, bytes: stored.size },
+          }),
+        )
+        .catch((error: unknown) => {
+          throw new StoreFailed('The publication could not be recorded.', { cause: error });
+        });
     },
 
     /**

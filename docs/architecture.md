@@ -708,13 +708,18 @@ claims a `publish` job for it beside the one that renders the sample.
   (`publicationInputs`), runs `assemble` over it, compiles the published document through the
   publication template with the pinned Typst, puts the PDF in the tenant's store by its hash, and
   records the publication whole in a transaction of its own (`recordPublication`): the engine and its
-  version, the template's version, `PIPELINE_VERSION` - which also names the draft notice, since the
-  notice's words are the data's and the template's hash does not cover them - the pinned faces with
-  their hashes, the digest of the data Typst read and the numbering. The document's own failures
-  (`PublishRefused`, a `JobRefused`) fail the request at once with every one of them; anything else -
-  the store refusing (`store`), a face changed under the worker, a crash, a record the database refuses
-  (`engine`) - is retried, and after the last attempt fails the request in a fresh transaction with its
-  stage and no node, block or detail, so a platform fault never reads as the document's.
+  version, the template's version, `PIPELINE_VERSION` - held by `template.test.ts` to what `assemble`
+  makes of one fixed input, so it also covers the draft notice, whose words are the data's and which
+  the template's hash does not - the pinned faces with their hashes, the digest of the data Typst read
+  and the numbering. The document's own failures (`PublishRefused`) fail the request at once with every
+  one of them, and Typst's own refusal (`TypstRefused`) fails it at once too, as `engine`: both are
+  `JobRefused`, never retried. Anything else is retried, and after the last attempt fails the request
+  in a fresh transaction with its stage and no node, block or detail, so a platform fault never reads
+  as the document's: `store` where the PDF was made and could not be kept - the store refusing it, or
+  the database refusing its record - and `engine` for the rest, such as a face changed under the
+  worker, a crash, a read that failed or a worker that never came back. An object stored before a
+  record the database refuses is left behind, content-addressed and referenced by nothing, and
+  nothing sweeps it yet.
 - **The publication template.** `apps/worker/templates/publication/1/main.typ` reads `assemble`'s
   published document (`publishing/1`) from `data.json` as values and evaluates none of it. A version
   is immutable: `apps/worker/src/template.test.ts` holds its hash, an edit is `publication/2/`, and

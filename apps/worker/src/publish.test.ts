@@ -39,6 +39,7 @@ import { FONT_DIRECTORY, loadPinnedFonts, PINNED_FONT_FILES, type PinnedFonts } 
 import { publishJob } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
+import { checkPdfUa1, type VeraPdfVerdict } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
@@ -250,7 +251,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
    * One publication most tests read: two chapters, a component of eighty paragraphs - several pages -
    * and a subsection, one paragraph of which would be Typst source if it were ever evaluated.
    */
-  let first: Promise<{ request: string; read: ReadPdf; row: Record<string, unknown> }> | undefined;
+  let first:
+    | Promise<{
+        request: string;
+        read: ReadPdf;
+        row: Record<string, unknown>;
+        verdict: VeraPdfVerdict;
+      }>
+    | undefined;
   const published = () =>
     (first ??= (async () => {
       const request = await requested(async (trx) => {
@@ -265,7 +273,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
       });
       if ((await work()) !== 'done') throw new Error('The publish did not finish');
       const row = await publicationOf(request);
-      return { request, row: row!, read: await readPdf(await pdfOf(row!.object_key)) };
+      const pdf = await pdfOf(row!.object_key);
+      // veraPDF over what the job stored: several pages, a running head on each, and the notice.
+      return { request, row: row!, read: await readPdf(pdf), verdict: await checkPdfUa1(pdf) };
     })());
 
   beforeAll(async () => {
@@ -308,7 +318,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
         });
       }
     });
-  });
+    // The shared publication, made once here: veraPDF's container starts cold in about eleven seconds.
+    await published();
+  }, 120_000);
 
   afterAll(async () => {
     await queue?.close();
@@ -346,7 +358,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
   });
 
   it('PUB-061 is always tagged PDF/UA-1, in the document title and language', async () => {
-    const { read, row } = await published();
+    const { read, row, verdict } = await published();
+    expect(verdict).toMatchObject({
+      compliant: true,
+      profile: 'PDF/UA-1 validation profile',
+      failedRules: 0,
+    });
     expect(read.marked).toBe(true);
     expect(read.pdfuaPart).toBe('1');
     expect(read.roles[0]).toBe('Document');
@@ -467,7 +484,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     });
   });
 
-  it('keeps nothing of a record the database refuses, and fails the request as the platform', async () => {
+  it('keeps nothing of a record the database refuses, and fails the request at the store stage', async () => {
     const id = await requested(async (trx) => [
       reference(await component(trx, general, 'Calibration', ['Set the tray.'])),
     ]);
@@ -490,9 +507,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
     for (const outcome of ['retry', 'retry', 'failed']) {
       expect(await work({ handlers: refused, queue: eager() })).toBe(outcome);
     }
+    // The PDF was made; it could not be kept as a publication.
+    expect(await jobOf(id)).toEqual({ attempts: 3, last_error: 'store_failed' });
     expect(await requestRow(id)).toMatchObject({
       state: 'failed',
-      failures: [{ stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null }],
+      failures: [{ stage: 'store', code: 'store_failed', node: null, block: null, detail: null }],
     });
     expect(await publicationOf(id)).toBeUndefined();
     expect(await publicationCount()).toBe(before);
@@ -517,6 +536,10 @@ describe('publishing a document, from the request to the stored PDF', () => {
     // The record names the very bytes Typst read, so a reproduction can tell input from engine.
     expect(row!.data_sha256).toBe(createHash('sha256').update(data).digest('hex'));
     const bytes = await typst.compile(PUBLICATION_TEMPLATE.file, data, inputs!.request.requestedAt);
-    expect(bytes.equals(await pdfOf(row!.object_key))).toBe(true);
+    const stored = await pdfOf(row!.object_key);
+    // The output row names the bytes the store holds under its key.
+    expect(row!.sha256).toBe(createHash('sha256').update(stored).digest('hex'));
+    expect(row!.bytes).toBe(stored.length);
+    expect(bytes.equals(stored)).toBe(true);
   });
 });

@@ -1,9 +1,19 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { DRAFT_NOTICE } from '@alloy-works/domain';
+import {
+  assemble,
+  defaultNumberingScheme,
+  DRAFT_NOTICE,
+  parseContentDocument,
+  parseOutlineDocument,
+  type AssembleInput,
+} from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
+import { loadPinnedFonts } from './fonts.js';
 import { PIPELINE_VERSION } from './jobs/publish.js';
 import { PUBLICATION_TEMPLATE } from './template.js';
+
+const positional = { numbered: true, matter: 'body', pageBreak: 'none', values: {} } as const;
 
 describe('the publication template', () => {
   it('is the version its number says: an edit is a new version, never a change to this one', async () => {
@@ -19,17 +29,80 @@ describe('the publication template', () => {
   });
 });
 
+/**
+ * One fixed input touching each part of `assemble` the published document carries: a section, a
+ * reference inside it, a paragraph, and a component in another language than its document's.
+ */
+const fixed = (covers: (codePoint: number) => boolean): AssembleInput => ({
+  outline: parseOutlineDocument({
+    schemaVersion: 1,
+    title: 'The dosing report',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [
+      {
+        type: 'section',
+        id: 'introduction'.padEnd(26, 'a'),
+        title: [{ type: 'text', value: 'Introduction', marks: [] }],
+        ...positional,
+        children: [
+          {
+            type: 'reference',
+            id: 'calibration'.padEnd(26, 'a'),
+            component: '00000000-0000-4000-8000-000000000001',
+            mode: { kind: 'latest' },
+            ...positional,
+            children: [],
+          },
+        ],
+      },
+    ],
+  }),
+  occurrences: new Map([
+    [
+      'calibration'.padEnd(26, 'a'),
+      parseContentDocument({
+        schemaVersion: 1,
+        title: 'Calibration',
+        language: 'de-DE',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'p1',
+            style: 'body',
+            content: [{ type: 'text', value: 'Set the tray.', marks: [] }],
+          },
+        ],
+      }),
+    ],
+  ]),
+  refused: [],
+  scheme: defaultNumberingScheme,
+  covers,
+});
+
 describe('the pipeline version', () => {
-  it('changes whenever the draft notice does, which the template carries and its hash does not cover', () => {
-    // The notice's words come from `DRAFT_NOTICE` in packages/domain, through `assemble`, so a change
-    // to them changes no template byte. The record names them by the pipeline version instead: each
-    // version, the notice it sets. Never edit a row - new words are a new pipeline version and a new
-    // row, and a publication made before still names the words it carries.
-    const noticeByPipeline: Record<string, string> = {
-      '1': '6d8998673c9eae61090d59f3918f1801592a406b072865f6916db166de213486',
+  it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
+    const assembled = assemble(fixed((await loadPinnedFonts()).covers));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    // `assemble` and the draft notice it carries (`DRAFT_NOTICE`, whose words the template's hash
+    // does not cover) decide what every publication says, so the record names them by the pipeline
+    // version: each version, what it makes of this input. Never edit a row - a change to either is a
+    // new pipeline version and a new row, and a publication made before still names what made it.
+    const madeByPipeline: Record<string, string> = {
+      '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     };
-    expect(createHash('sha256').update(JSON.stringify(DRAFT_NOTICE)).digest('hex')).toBe(
-      noticeByPipeline[PIPELINE_VERSION],
-    );
+    expect(
+      createHash('sha256')
+        .update(JSON.stringify({ document: assembled.document, numbering: assembled.numbering }))
+        .digest('hex'),
+    ).toBe(madeByPipeline[PIPELINE_VERSION]);
+    expect(assembled.document.notice).toEqual(DRAFT_NOTICE);
+    // The override reached the published document, so the pin covers the language path too.
+    expect(assembled.document.nodes[0]?.children[0]?.language).toEqual({
+      lang: 'de',
+      region: 'DE',
+    });
   });
 });
