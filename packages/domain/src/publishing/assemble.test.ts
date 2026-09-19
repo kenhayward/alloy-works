@@ -218,19 +218,24 @@ describe('assemble', () => {
     const assembled = assemble(
       input({
         outline: outline([
-          section('intro', 'Introduction', [reference('hidden', OTHER), reference('calib')]),
+          section('intro', 'Introduction', [
+            reference('hidden', OTHER),
+            reference('calib'),
+            // Nothing resolved this reference; what is under it is still checked.
+            reference('lost', COMPONENT, [section('under', 'Under \u{4e2d}')]),
+          ]),
         ]),
         occurrences: new Map([
           [
             id('calib'),
             component([
-              paragraph('p1', {
-                type: 'text',
-                value: 'Bold',
-                marks: [{ type: 'strong', id: 'm1' }],
-              }),
+              paragraph(
+                'p1',
+                { type: 'text', value: 'Bold', marks: [{ type: 'strong', id: 'm1' }] },
+                { type: 'text', value: 'Leaning', marks: [{ type: 'emphasis', id: 'm2' }] },
+              ),
               { type: 'preformatted', id: 'pre1', text: 'x' },
-              paragraph('p2', text('Arabic \u{627} here')),
+              paragraph('p2', text('Arabic \u{627} and \u{4e2d} here')),
             ]),
           ],
         ]),
@@ -250,12 +255,28 @@ describe('assemble', () => {
       },
       {
         stage: 'compose',
+        code: 'inline_not_publishable',
+        node: id('calib'),
+        block: 'p1',
+        detail: 'emphasis',
+      },
+      {
+        stage: 'compose',
         code: 'block_not_publishable',
         node: id('calib'),
         block: 'pre1',
         detail: 'preformatted',
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+0627' },
+      { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+4E2D' },
+      {
+        stage: 'resolve',
+        code: 'occurrence_unresolved',
+        node: id('lost'),
+        block: null,
+        detail: null,
+      },
+      { stage: 'compose', code: 'glyph_missing', node: id('under'), block: null, detail: 'U+4E2D' },
     ]);
   });
 
@@ -303,6 +324,40 @@ describe('assemble', () => {
     );
     expect(!assembled.ok && assembled.failures).toEqual([
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p1', detail: 'U+4E2D' },
+    ]);
+  });
+
+  it('sets bidi isolates, the Arabic letter mark and tag characters without a glyph, and still refuses a byte-order mark', () => {
+    /** Latin and Hebrew, as the pinned faces hold both. */
+    const latinAndHebrew = (codePoint: number) =>
+      latin(codePoint) || (codePoint >= 0x590 && codePoint <= 0x5ff);
+    const assembled = assemble(
+      input({
+        outline: outline([reference('he')]),
+        covers: latinAndHebrew,
+        occurrences: new Map([
+          [
+            id('he'),
+            component(
+              [
+                paragraph('p1', text('\u{5de}\u{5d2}\u{5e9} \u{2066}Tray 4\u{2069} \u{61c}1')),
+                paragraph('p2', text('Flag \u{e0067}\u{e0062}\u{e0041}\u{e007f}')),
+                paragraph('p3', text('\u{5de}\u{feff}\u{5d2}')),
+              ],
+              { language: 'he', direction: 'rtl', title: '\u{5de}\u{5d2}\u{5e9}' },
+            ),
+          ],
+        ]),
+      }),
+    );
+    expect(!assembled.ok && assembled.failures).toEqual([
+      {
+        stage: 'compose',
+        code: 'character_disallowed',
+        node: id('he'),
+        block: 'p3',
+        detail: 'U+FEFF',
+      },
     ]);
   });
 

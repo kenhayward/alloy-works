@@ -32,9 +32,8 @@ export type PublishFailureCode = (typeof publishFailureCodes)[number];
  * within that node's component where there is one. `detail` is what the author needs to act and the
  * code does not say - the kind of block or mark that cannot be published yet, the style, the language
  * tag exactly as stored, or the character as `U+XXXX`, never the character itself - and is `null`
- * where the failure is about
- * something the publisher may not read: **an unreadable occurrence carries its node and nothing else**
- * (issue #143).
+ * where the failure is about something the publisher may not read: **an unreadable occurrence carries
+ * its node and nothing else** (issue #143).
  */
 export interface PublishFailure {
   readonly stage: PublishStage;

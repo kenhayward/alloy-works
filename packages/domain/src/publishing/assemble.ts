@@ -163,6 +163,7 @@ export function assemble(input: AssembleInput): Assembled {
   };
 
   const nodes = input.outline.nodes.map((node) => project(node, 1));
+  // A refused document language is already a failure; `language === null` only narrows the type.
   if (failures.length > 0 || language === null) return { ok: false, failures };
   return {
     ok: true,
