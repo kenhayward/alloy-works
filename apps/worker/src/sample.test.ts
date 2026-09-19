@@ -111,13 +111,17 @@ describe('the sample job, from the queue to the store', () => {
     const listener = listenToTenants(db.serviceUrl);
     try {
       const id = await request();
+      let deliver: (event: unknown) => void = () => {};
       const heard = new Promise<unknown>((resolve) => {
-        const stop = listener.subscribe(tenant.id, (event) => {
-          stop();
-          resolve(event);
-        });
+        deliver = resolve;
       });
-      // Subscribed before the work starts: what it announces must have committed by then.
+      const { stop, ready } = listener.subscribe(tenant.id, (event) => {
+        stop();
+        deliver(event);
+      });
+      // Heard before the work starts: what it announces must have committed by then, and anything
+      // committed before the LISTEN lands would reach nobody.
+      await ready;
       expect(await work()).toBe('done');
       expect(await heard).toEqual({ kind: 'sample', id, state: 'done' });
     } finally {

@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.28.1 - 2026-09-19 (PR #138)
+
+### Fixed
+
+- A sample that finished just as you opened a page could show its old state until you reloaded: the
+  page began listening for news a moment after it had already read what was there, and anything that
+  happened in that moment was never passed on. The page now reads what is there only once it is
+  sure to hear what happens next, and if it cannot listen at all it tries again a few seconds later
+  rather than sitting still.
+
 ## 0.28.0 - 2026-09-18 (PR #133)
 
 ### Added

@@ -17,6 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { STREAM_RETRY_MS } from './stream.js';
 import { signIn } from './test/sign-in.js';
 
 // Hostnames that resolve to this machine: the stream is read over a real socket, and the hostname
@@ -285,6 +286,150 @@ describe('what an environment is doing, as it happens', () => {
       });
     } finally {
       stream.close();
+    }
+  });
+
+  it('reads its snapshot only once it is heard, so a sample finishing in between is not lost', async () => {
+    // Postgres hears nothing on a channel until its LISTEN has landed. This listener stretches that
+    // moment for as long as the test likes: until the gate opens, an announcement reaches nobody,
+    // exactly as one committed before the LISTEN would reach nobody.
+    let gateOpen = false;
+    let openGate = () => {};
+    const opened = new Promise<void>((resolve) => {
+      openGate = () => {
+        gateOpen = true;
+        resolve();
+      };
+    });
+    let askedForReady = () => {};
+    const waitedOn = new Promise<'waiting'>((resolve) => {
+      askedForReady = () => resolve('waiting');
+    });
+    // An announcement that arrived while the gate was shut, and so reached nobody.
+    let lost = () => {};
+    const unheard = new Promise<void>((resolve) => {
+      lost = resolve;
+    });
+    let underneath: Promise<void> = new Promise(() => {});
+    const gated: TenantListener = {
+      ...events,
+      subscribe(tenantId, handler) {
+        const real = events.subscribe(tenantId, (event) => {
+          if (gateOpen) handler(event);
+          else lost();
+        });
+        underneath = real.ready;
+        const ready = Promise.all([real.ready, opened]).then(() => undefined);
+        return {
+          stop: real.stop,
+          get ready() {
+            askedForReady();
+            return ready;
+          },
+        };
+      },
+    };
+    // Its reads go through, but the snapshot's answer is kept back once it has been read, so the
+    // sample can finish after the snapshot was taken.
+    let reads = 0;
+    let snapshotTaken = () => {};
+    const taken = new Promise<'read'>((resolve) => {
+      snapshotTaken = () => resolve('read');
+    });
+    let sendSnapshot = () => {};
+    const sending = new Promise<void>((resolve) => {
+      sendSnapshot = resolve;
+    });
+    const reading: TenantDatabase = {
+      ...tenantDb,
+      async withTenant(tenant, work) {
+        const result = await tenantDb.withTenant(tenant, work);
+        // The session, then the snapshot.
+        if ((reads += 1) === 2) {
+          snapshotTaken();
+          await sending;
+        }
+        return result;
+      },
+    };
+    const gatedApp = buildApp({
+      db: reading,
+      logLevel: 'silent',
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      events: gated,
+    });
+    const gatedAddress = await gatedApp.listen({ port: 0, host: '127.0.0.1' });
+    const id = await sampleIn(production);
+    const stream = openStream(`${gatedAddress}/v1/stream`, cookie);
+    try {
+      // Whichever comes first: a stream that reads before it is heard, or one waiting to be heard.
+      await Promise.race([taken, waitedOn]);
+      // The real channel is heard, so the announcement is sure to arrive - and be shut out.
+      await underneath;
+      await tenantDb.withTenant(production, async (trx) => {
+        await trx
+          .updateTable('sample')
+          .set({ state: 'failed', finished_at: new Date() })
+          .where('id', '=', id)
+          .execute();
+        await notifyTenant(trx, { kind: 'sample', id, state: 'failed' });
+      });
+      await unheard;
+      openGate();
+      sendSnapshot();
+      const snapshot = await stream.next();
+      expect(snapshot.event).toBe('snapshot');
+      const told = (snapshot.data as { samples: { id: string; state: string }[] }).samples.find(
+        (sample) => sample.id === id,
+      )?.state;
+      // Told by its snapshot, or failing that by an event after it - but told.
+      if (told !== 'failed') {
+        expect(await stream.next()).toEqual({
+          event: 'sample',
+          data: { kind: 'sample', id, state: 'failed' },
+        });
+      }
+    } finally {
+      stream.close();
+      await gatedApp.close();
+    }
+  });
+
+  it('ends, for the browser to come back, when it cannot be heard', async () => {
+    const unheard: TenantListener = {
+      ...events,
+      subscribe(tenantId, handler) {
+        const real = events.subscribe(tenantId, handler);
+        const refused = Promise.reject(new Error('The database cannot be reached'));
+        // Handled here as well, so the rejection is not reported before the stream waits on it.
+        refused.catch(() => {});
+        return { stop: real.stop, ready: refused };
+      },
+    };
+    const unheardApp = buildApp({
+      db: tenantDb,
+      logLevel: 'silent',
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({ SECRET_STAND_IN: 'stand-in-secret' }),
+      events: unheard,
+    });
+    const unheardAddress = await unheardApp.listen({ port: 0, host: '127.0.0.1' });
+    const controller = new AbortController();
+    try {
+      const response = await fetch(`${unheardAddress}/v1/stream`, {
+        headers: { cookie, accept: 'text/event-stream' },
+        signal: controller.signal,
+      });
+      const ended = await Promise.race([
+        response.text(),
+        new Promise<'still open'>((resolve) => setTimeout(() => resolve('still open'), 10_000)),
+      ]);
+      // It says when to come back, and nothing that would stand still.
+      expect(ended).toBe(`retry: ${STREAM_RETRY_MS}\n\n`);
+    } finally {
+      controller.abort();
+      await unheardApp.close();
     }
   });
 

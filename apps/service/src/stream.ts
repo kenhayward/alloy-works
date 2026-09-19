@@ -8,9 +8,12 @@ const HEARTBEAT_MS = 25_000;
 const SNAPSHOT_SAMPLES = 20;
 
 /**
- * One viewer's stream. It registers with the fan-out *before* reading its snapshot and holds what
- * arrives until the snapshot has gone, because an event committed in between would otherwise reach
- * the viewer first and be undone by the older snapshot (ADR-0018).
+ * One viewer's stream. It registers with the fan-out and waits until it is heard *before* reading
+ * its snapshot, because an event committed before the database is listening reaches nobody and would
+ * leave the viewer on the snapshot's older state (issue #137). It holds what arrives until the
+ * snapshot has gone, because an event committed in between would otherwise reach the viewer first
+ * and be undone by the older snapshot (ADR-0018). A subscription that cannot be heard ends the
+ * stream, and the browser comes back after STREAM_RETRY_MS.
  */
 export async function streamToViewer(options: {
   readonly request: FastifyRequest;
@@ -36,18 +39,19 @@ export async function streamToViewer(options: {
 
   let sent = false;
   const held: TenantEvent[] = [];
-  const unsubscribe = events.subscribe(tenant.id, (event) => {
+  const subscription = events.subscribe(tenant.id, (event) => {
     if (sent) send('sample', event);
     else held.push(event);
   });
   const beat = setInterval(() => raw.write(': alive\n\n'), HEARTBEAT_MS);
   const stop = () => {
     clearInterval(beat);
-    unsubscribe();
+    subscription.stop();
   };
   request.raw.on('close', stop);
 
   try {
+    await subscription.ready;
     const samples = await db.withTenant(tenant, (trx) =>
       trx
         .selectFrom('sample')
