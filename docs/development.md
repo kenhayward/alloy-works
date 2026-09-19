@@ -324,8 +324,12 @@ Chromium against the same fake.
 next time `pnpm dev:setup` runs - in containers, the `setup` container runs it. It adds a publication as
 a kind of artifact, the tables a request and a publication are kept in, and a ninth starter role,
 Publisher, which alone may publish; the seed then gives Ada and Grace Publisher on General beside
-Author. It changes nothing you had. Without a worker, a publish says **Publishing...** and the page
-keeps asking about it, less and less often, for as long as it stays open.
+Author. **A database prepared before 0.31.0** gains migration 0018 the same way: a layout as a kind of
+artifact, the product's default layout at version 0.1, the one row that declares it, and the layout
+columns on a request and a publication. Neither changes anything you had: a publication made before
+0.31.0 was made under no layout, and is still shown as made with publication template 1.
+Without a worker, a publish says **Publishing...** and the page keeps asking about it, less and less
+often, for as long as it stays open.
 
 To publish by hand, sign in as Ada and choose **Documents**:
 
@@ -341,13 +345,28 @@ To publish by hand, sign in as Ada and choose **Documents**:
 4. Choose **Open the publication**. The address ends `#/publications/` and the publication's id, and
    the page shows **Calibration**, **Not approved. This is a draft publication, not made from an
    approved baseline.**, **Version 0.3, published by Ada on** the date and time, **Made with Typst
-   0.15.1 and publication template 1.**, **Download the PDF** with its size, and **Open the document**.
+   0.15.1 and publication template 2.**, **Download the PDF** with its size, and **Open the document**.
+   Template 2 is the one every publish uses since 0.31.0, because every request is made under a
+   layout; template 1 is shown only by a publication made before layouts existed.
 5. Choose **Download the PDF**: the browser saves the file under the publication's id, with `.pdf`,
-   never under the document's title. The PDF says **Not approved** at the top of every page, then
-   **Calibration** as a heading and the sentence once, in bold, then **1 Scope** and **2 Install the
-   printer**, the component's two paragraphs beneath it; its bookmarks are **1 Scope** and **2 Install
-   the printer**. The link is signed when the page opens and lasts five minutes: after that the store
-   refuses it, and opening the publication again signs a new one.
+   never under the document's title. The PDF is three pages, laid out by the product's default layout:
+   A4 portrait with an inch margin.
+   - **Page 1 is the cover**, and carries no page number: **Not approved** at the top right, then
+     **Calibration** as a heading and the notice's sentence once, in bold.
+   - **Page 2 is the contents**, numbered `i`. **Not approved** at the top right again, then the
+     running head - **Calibration** on the left, nothing on the right, since no section has begun -
+     then **Contents**, **1 Scope** and **2 Install the printer**, each with leader dots and the page
+     `1`, then the foot: **Revision 0.3** on the left and **Page i** on the right. The entries are
+     links, and a screen reader announces them as a table of contents.
+   - **Page 3 is the body**, numbered `1`. The head reads **Calibration** and **1 Scope**, the page
+     holds **1 Scope** and **2 Install the printer** with the component's two paragraphs beneath it,
+     and the foot reads **Revision 0.3** and **Page 1**.
+   - Its bookmarks are **1 Scope** and **2 Install the printer** alone: neither the cover's title nor
+     the contents' is bookmarked.
+
+   The link is signed when the page opens and lasts five minutes: after that the store refuses it, and
+   opening the publication again signs a new one.
+
 6. **A component the publisher may not read.** Still as Ada, open **Replace the printer toner** (made
    under **New component** above), choose **Manage access**, and give Grace **Reader** at **This
    component** with **Deny**. Open **Calibration** again, select **Install the printer**, press **Add
@@ -364,17 +383,27 @@ To publish by hand, sign in as Ada and choose **Documents**:
 8. **Somebody who may read and not publish.** Sign in as **Alice**, who has **Reader** on General from
    step 9 of the document steps, and open **Calibration**: **Publications** lists both, and there is no
    **Publish as PDF**. She can open either and download it.
-9. **The desktop app.** Run `pnpm app`, sign in as Ada, open a publication and choose **Download the
-   PDF**. The link leaves the renderer's address for the store's, and the shell has no handling of its
-   own for that; nobody has yet checked whether the window saves the file, opens it, or does nothing.
-   Note what it does - this is the step no test covers.
+9. **A document the layout does not speak for.** As Ada, choose **Documents** and **New document**,
+   type `Etalonnage` in **Title**, replace `en-GB` in **Language** with `fr`, and press **Create**.
+   Add a section, then press **Publish as PDF**: nothing is queued, and the panel says **This document
+   is in fr, and its layout is written in en. It can be published only under a layout in its own
+   language.** `Calibration` publishes because the default layout's `en` takes `en-GB` as well as
+   `en`. There is nothing to put right in the document and no other layout to choose, so this is a
+   dead end until a layout can be made in another language.
+10. **The desktop app.** Run `pnpm app`, sign in as Ada, open a publication and choose **Download the
+    PDF**. The link leaves the renderer's address for the store's, and the shell has no handling of its
+    own for that; nobody has yet checked whether the window saves the file, opens it, or does nothing.
+    Note what it does - this is the step no test covers.
 
 These publishing steps are written from the code and its tests, and were **not** followed in a browser:
 the page's tests run in jsdom over a fake service, the routes' against the service, and the whole
 publish, from the request to the stored PDF, in the worker's suite and the end-to-end check. What a
 screen reader is told - the draft notice read once, and a heading at level seven to nine read as a
 paragraph - is checked in the suite with pdf.js and by opening the PDF in a screen reader by hand;
-veraPDF's verdict only by the suite. That a refused publish is not tried again, and that nothing of an
+veraPDF's verdict only by the suite. The laid-out page is read back the same way, in
+`apps/worker/src/layout.test.ts`: the page boxes and each page's text margins, the page labels per
+matter, what each running head and foot prints on which page, and that the contents' entries are the
+ones `contents()` computes and are tagged as a table of contents. That a refused publish is not tried again, and that nothing of an
 unreadable component reaches any answer, only a test can see.
 
 The development environment also takes Google accounts, with the stand-in playing Google and

@@ -14786,7 +14786,7 @@
         },
         {
           "id": "PUB-037",
-          "howItIsMet": "The layout's `contents.depth` is passed to `contents`; the template sets each entry as a link with its page from Typst"
+          "howItIsMet": "The layout's `contents.depth` reaches Typst's `outline`, which selects the headings the template sets with `number`'s numbers, so the depth is the layout's and only the page is the engine's (decision C of the second slice); `contents(conditioned, numbering, depth)` is what a worker test measures the compiled entries against"
         },
         {
           "id": "PUB-038",

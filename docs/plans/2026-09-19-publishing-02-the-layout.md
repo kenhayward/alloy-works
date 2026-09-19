@@ -894,10 +894,38 @@ at `5f0fe31`), then `pnpm test` from the root once. Fix what breaks in the task 
 
 ## What this plan leaves undone
 
-Lists of figures, tables and equations and caption labels (PUB-038, STR-024) - slice 3, with figures;
-PUB-012's citation and any non-paged member - the Word slice; the outline's per-node `pageBreak`,
-stored since structure 1 and still ignored by the template; `recto` starts; right-to-left binding
-(inside margins follow Typst's default binding for the document's direction, unverified for `rtl`);
-choosing or editing a layout (a route, `design` at the tenant, and TPL's link from a document to its
-template); a layout in any language but English; a cover showing more than the title and the notice;
-`pages` counted within a matter; and everything plan 1 left to slices 3 to 7.
+**Tasks 9 and 10 were not built**, and are the largest thing this plan leaves: the layout's scheme
+reaching `GET /v1/documents/{id}/numbering` and the document view (task 9), and the outline panel
+numbering with it and offering **Front matter** beside **Body** and **Appendix** (task 10). So the
+publisher numbers with the layout's scheme and the panel still numbers with the product's default
+scheme, and front matter can be set only through the API. The two agree today because the one layout
+an environment has carries that scheme exactly and nothing can make a second, but STR-036 is still
+cited by nothing and structure.md's claim still names the term as unbuilt. Both move to slice 3.
+
+Also undone:
+
+- Lists of figures, tables and equations and caption labels (PUB-038, STR-024) - slice 3, with
+  figures; PUB-012's citation and any non-paged member - the Word slice.
+- The outline's per-node `pageBreak`, stored since structure 1 and still ignored by the template;
+  `recto` starts; right-to-left binding (inside margins follow Typst's default binding for the
+  document's direction, unverified for `rtl`).
+- Choosing or editing a layout (a route, `design` at the tenant, and TPL's link from a document to
+  its template); a layout in any language but English; a cover showing more than the title and the
+  notice; `pages` counted within a matter.
+- **A cover-only publication carries no page labels at all.** An empty document under a layout with a
+  cover publishes its one page, and that page is not numbered, so Typst writes no `/PageLabels` for
+  the file and a reader shows the page as `1`. Judged acceptable: no `/PageLabels` makes no claim,
+  where a wrong label would.
+- **A node's own language is not carried into the running head.** The head is furniture, set in the
+  document's language whatever the chapter it names is written in.
+- **An over-long running head runs off the top of the sheet** rather than being bounded: the widest
+  the layout schema allows (three slots of eight parts, each up to 200 characters) does not fit any
+  page the schema allows. Unreachable until layouts can be edited, and among the bounds that plan
+  must set, with the scheme's strings and repeated page labels across matters.
+- **Alphabetic page labels past twenty-six pages are unverified.** PDF's `/a` and `/A` label styles
+  repeat letters (`aa`, `bb`) where `formatCounter` is bijective (`aa`, `ab`), and whether Typst's
+  printed foot follows one or the other past `z` was never measured; nothing in the fixtures reaches
+  it, and the default layout numbers no matter alphabetically.
+- **The `n-<id>` label template 2 writes for each top-level node is untested**, because nothing reads
+  it until cross-references arrive with structure 4.
+- Everything plan 1 left to slices 3 to 7.
