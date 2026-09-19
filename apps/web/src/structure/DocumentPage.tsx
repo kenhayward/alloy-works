@@ -15,7 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
-import { Publishing } from '../publishing/Publishing.js';
+import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import {
@@ -267,6 +267,8 @@ export interface DocumentPageProps {
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
   /** A link to the address already shown was followed, which no `hashchange` announces. */
   readonly onArriveAgain?: () => void;
+  /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
+  readonly followMs?: number;
 }
 
 /**
@@ -284,7 +286,13 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-export function DocumentPage({ client, id, linked = null, onArriveAgain }: DocumentPageProps) {
+export function DocumentPage({
+  client,
+  id,
+  linked = null,
+  onArriveAgain,
+  followMs = FOLLOW_MS,
+}: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
@@ -583,6 +591,7 @@ export function DocumentPage({ client, id, linked = null, onArriveAgain }: Docum
         version={document.version.id}
         mayPublish={document.mayPublish}
         placeOf={(node) => placeInOutline(document.outline, node, names)}
+        followMs={followMs}
       />
     </article>
   );

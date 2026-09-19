@@ -2532,16 +2532,16 @@ describe('publishing from the document page', () => {
         ],
       },
     );
-    open(fake.fetch);
+    // Asked about at once, where the application waits a second.
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />
+      </StrictMode>,
+    );
     await screen.findByRole('treeitem', { name: 'Method' });
     await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
 
-    // Asked about once a second, as it is in the application.
-    const why = await screen.findByRole(
-      'list',
-      { name: 'Why it could not be published' },
-      { timeout: 3000 },
-    );
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     const said = [...why.querySelectorAll('li')].map((each) => each.textContent);
     expect(said).toEqual([
       '1.1 A component: A component you may not read is placed here. Only someone who may read every component can publish this document.',

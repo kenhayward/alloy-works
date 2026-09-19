@@ -5,8 +5,20 @@ import { failureWords, isProductsOwn, type Failure } from './failures.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** How often a waiting publish is asked about. A publish takes a second or two. */
+/** How long after asking for a publish it is first asked about. A publish takes a second or two. */
 export const FOLLOW_MS = 1000;
+
+/** The longest wait between two asks about one publish, however long it has waited. */
+export const FOLLOW_CAP_MS = 30_000;
+
+/**
+ * The wait before the next ask, after an answer that it is still queued or an ask that failed: twice
+ * the last, up to the cap - so a publish no worker takes is asked about less and less often, and never
+ * stops being asked about while the page is open (a stop is the design's open question, not built).
+ */
+export function nextFollow(wait: number): number {
+  return Math.min(wait * 2, FOLLOW_CAP_MS);
+}
 
 interface Listed {
   readonly id: string;
@@ -87,16 +99,17 @@ function failedIntro(failures: readonly Failure[]): string {
  * A document's publications, and - for somebody who may publish it - **Publish as PDF**: the version
  * on screen, asked for, then followed through its request until it is made or every failure is known,
  * each named by its place in the outline (`placeOf`). Nothing is heard from the stream (issue #147,
- * decision G): the request is asked about every second while this page is open, and only by the person
- * who asked. Its live region is polite and has no `status` role: the page around it has one already
+ * decision G): the request is asked about while this page is open - a second after it is made, then
+ * twice as long after each answer that it is still waiting, up to half a minute - and only by the
+ * person who asked. Its live region is polite and has no `status` role: the page around it has one already
  * (finding 10).
  *
  * **One ask at a time, and none once the page has closed.** Following starts from the click, never
  * from an effect, so StrictMode's simulated remount cannot start a second one; each ask is scheduled
  * only after the last has been answered; the button is disabled while a publish is followed; and
  * closing the page clears the waiting timer and drops an answer still on its way. A request no worker
- * ever takes is asked about for as long as the page stays open (named in the design as an open
- * question, not built for).
+ * ever takes is asked about, at the capped interval, for as long as the page stays open (named in the
+ * design as an open question, not built for).
  */
 export function Publishing({
   client,
@@ -145,7 +158,7 @@ export function Publishing({
   }, [client, document, listAttempt]);
 
   const follow = useCallback(
-    (request: string) => {
+    (request: string, wait: number) => {
       following.current = setTimeout(() => {
         following.current = null;
         client
@@ -163,15 +176,15 @@ export function Publishing({
             } else if (data.state === 'failed') {
               setPublish({ state: 'failed', failures: failuresIn(data.failures) });
             } else {
-              follow(request);
+              follow(request, nextFollow(wait));
             }
           })
           .catch(() => {
-            if (mounted.current) follow(request);
+            if (mounted.current) follow(request, nextFollow(wait));
           });
-      }, followMs);
+      }, wait);
     },
-    [client, followMs],
+    [client],
   );
 
   const start = async () => {
@@ -183,7 +196,7 @@ export function Publishing({
       });
       if (!mounted.current) return;
       if (isRecord(data) && typeof data.id === 'string') {
-        follow(data.id);
+        follow(data.id, followMs);
         return;
       }
       setPublish({

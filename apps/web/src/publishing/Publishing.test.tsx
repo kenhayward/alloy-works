@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { Publishing } from './Publishing.js';
+import { FOLLOW_CAP_MS, nextFollow, Publishing } from './Publishing.js';
 
 const DOCUMENT = 'aaaaaaaa-0000-4000-8000-000000000001';
 const VERSION = 'dddddddd-0000-4000-8000-000000000003';
@@ -19,10 +19,22 @@ const json = (status: number, body: unknown) =>
     headers: { 'content-type': 'application/json' },
   });
 
+/** An answer with a status other than 200. */
+class Status {
+  constructor(
+    readonly status: number,
+    readonly body: unknown = { code: 'refused', message: 'No.', traceId: 't' },
+  ) {}
+}
+
+/** No answer at all: the request fails the way a dropped connection does. */
+const DROPPED = Symbol('dropped');
+
 /**
  * Canned answers by method and path. A list is answered in turn, its last answer repeating; a function
  * answers by state - which is what a fake needs where StrictMode reads a route twice on mounting - and
- * may take its time, answering with a promise.
+ * may take its time, answering with a promise. A `Status` is answered with its status, and `DROPPED`
+ * not at all.
  */
 function service(answers: Record<string, unknown[] | (() => unknown)>) {
   const sent: { method: string; url: string; body: unknown }[] = [];
@@ -32,11 +44,18 @@ function service(answers: Record<string, unknown[] | (() => unknown)>) {
     const body = request.method === 'GET' ? undefined : await request.clone().json();
     sent.push({ method: request.method, url, body });
     const answer = answers[`${request.method} ${url}`];
-    if (typeof answer === 'function') return json(200, await answer());
-    if (!answer || answer.length === 0) {
+    if (typeof answer !== 'function' && (!answer || answer.length === 0)) {
       return json(500, { code: 'internal', message: 'x', traceId: 't' });
     }
-    return json(200, answer.length > 1 ? answer.shift() : answer[0]);
+    const given: unknown =
+      typeof answer === 'function'
+        ? await answer()
+        : answer.length > 1
+          ? answer.shift()
+          : answer[0];
+    if (given === DROPPED) throw new TypeError('Failed to fetch');
+    if (given instanceof Status) return json(given.status, given.body);
+    return json(200, given);
   }) as typeof globalThis.fetch;
   return { fetch, sent };
 }
@@ -268,11 +287,134 @@ describe('publishing from the document page', () => {
     // Asked about 200 ms after the request is made: the page closes well inside that.
     const { unmount } = open(fake.fetch, true, 200);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
-    await waitFor(() => expect(fake.sent.some((each) => each.method === 'POST')).toBe(true));
+    expect(await screen.findByText('Publishing...')).toBeInTheDocument();
+    // Long enough for the request to be answered and the next ask put off; well short of 200 ms.
     await pause(20);
     unmount();
     await pause(300);
     expect(asked).toBe(0);
+  });
+
+  it('waits twice as long after each answer that it is still queued, up to half a minute', async () => {
+    // The schedule, from the real first wait: doubling, then held at the cap.
+    const waits = [1000];
+    while (waits.length < 8) waits.push(nextFollow(waits[waits.length - 1]!));
+    expect(waits).toEqual([1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000]);
+    expect(FOLLOW_CAP_MS).toBe(30000);
+
+    // And the page keeps it: each ask comes at least twice as long after the last as the one before.
+    const at: number[] = [];
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      // Queued, then no answer at all, then queued: a failed ask is waited out the same way.
+      [`GET /v1/publication-requests/${REQUEST}`]: () => {
+        at.push(performance.now());
+        if (at.length === 2) return DROPPED;
+        return at.length >= 4 ? { ...queued(), state: 'done', publication: PUBLICATION } : queued();
+      },
+    });
+    open(fake.fetch, true, 20);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    await screen.findByRole('link', { name: 'Open the publication' });
+    const gaps = at.slice(1).map((each, index) => each - at[index]!);
+    // Timers never fire early by more than a rounding; they may fire late.
+    expect(gaps).toHaveLength(3);
+    expect(gaps[0]).toBeGreaterThanOrEqual(40 - 2);
+    expect(gaps[1]).toBeGreaterThanOrEqual(80 - 2);
+    expect(gaps[2]).toBeGreaterThanOrEqual(160 - 2);
+  });
+
+  it('says a publish refused because the author may not publish, and offers it again', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        new Status(403, {
+          code: 'forbidden',
+          message: 'This needs the publish permission.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(
+      await screen.findByText('You may read this document but not publish it.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+  });
+
+  it('says a publish refused because the document has changed, and offers it again', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        new Status(409, {
+          code: 'version_precondition',
+          message: 'This document has a newer version than the one this page opened.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(
+      await screen.findByText(
+        'This document has changed since the page opened. Reload it and publish again.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+  });
+
+  it('says a publish could not be asked for, whether the service failed or never answered', async () => {
+    for (const answer of [new Status(500), DROPPED]) {
+      const fake = service({
+        [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+        [`POST /v1/documents/${DOCUMENT}/publications`]: [answer],
+      });
+      const { unmount } = open(fake.fetch);
+      await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+      expect(
+        await screen.findByText('The publish could not be asked for. Try again.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+      unmount();
+    }
+  });
+
+  it('says a publish could not be followed when the service will not say how it stands', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        new Status(404, {
+          code: 'not_found',
+          message: 'There is nothing at this address.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(
+      await screen.findByText('The publish could not be followed. Look for it below later.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+  });
+
+  it('says the publications could not be read, and reads them again when asked', async () => {
+    let broken = true;
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () =>
+        broken ? new Status(500) : listed([publication]),
+    });
+    open(fake.fetch);
+    expect(await screen.findByText('The publications could not be read.')).toBeInTheDocument();
+    broken = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('link', { name: /Version 0\.3, published by Ada/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('The publications could not be read.')).toBeNull();
   });
 
   it('offers no Publish to somebody who may only read, and still lists what was published', async () => {
