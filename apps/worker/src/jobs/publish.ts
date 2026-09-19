@@ -61,6 +61,9 @@ export function publishJob(deps: {
 }): JobHandler {
   return {
     async run(tenant, job) {
+      // Nothing enqueues a publish job without a subject; a row that did would otherwise match no
+      // request and complete silently as `done`, with no publication and no record of the attempt.
+      if (!job.subjectId) throw new JobRefused('no_subject', 'A publish job must name a request.');
       const read = await deps.db.withTenant(tenant, async (trx) => ({
         inputs: await publicationInputs(trx, job.subjectId!),
         store: await deps.stores.forTenant(trx, tenant),

@@ -164,7 +164,10 @@ describe('the whole system', () => {
     const { data: spaces } = await api.GET('/v1/spaces');
     const general = spaces!.items.find((space) => space.name === 'General')!;
     const { data: components } = await api.GET('/v1/components');
-    const printer = components!.items[0]!;
+    const printer = components!.items.find(
+      (component) => component.title === 'Install the printer',
+    );
+    if (!printer) throw new Error('The seeded component "Install the printer" was not found.');
     const { data: made } = await api.POST('/v1/spaces/{space}/documents', {
       params: { path: { space: general.id } },
       body: { title: 'The dosing report', language: 'en-GB', direction: 'ltr' },

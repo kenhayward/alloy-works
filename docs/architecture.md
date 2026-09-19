@@ -782,9 +782,8 @@ occurrences when the record is made rather than carried from what the job compil
   the database refusing its record - and `engine` for the rest, such as a face changed under the
   worker, a crash, a read that failed or a worker that never came back. An object stored before a
   record the database refuses is left behind, content-addressed and referenced by nothing, and
-  nothing sweeps it yet. The job reads its request by the job's subject without checking there is
-  one; nothing enqueues a `publish` job without one, and such a job would fail in the database, be
-  retried and be failed with nothing recorded.
+  nothing sweeps it yet. A job with no subject - nothing enqueues one - is refused at once, as
+  `JobRefused('no_subject', ...)`, rather than matching no request and completing silently as `done`.
 - **The publication template.** `apps/worker/templates/publication/1/main.typ` reads `assemble`'s
   published document (`publishing/1`) from `data.json` as values and evaluates none of it. A version
   is immutable: `apps/worker/src/template.test.ts` holds its hash, an edit is `publication/2/`, and

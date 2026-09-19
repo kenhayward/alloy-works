@@ -8112,7 +8112,7 @@
     {
       "id": "PUB-093",
       "area": "PUB",
-      "statement": "A publication not produced from a baseline must say that it is not approved, visibly on every page and once where assistive technology reads it, and its record must say so.",
+      "statement": "A publication not produced from a baseline must say that it is not approved, visibly on every page and once where assistive technology reads it, and its record must say so",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -8274,7 +8274,7 @@
     {
       "id": "PUB-094",
       "area": "PUB",
-      "statement": "Publishing must be refused where the publisher may not read every component the resolved document contains, naming each such place in the outline and never the component; a publication must never contain what its publisher could not read.",
+      "statement": "Publishing must be refused where the publisher may not read every component the resolved document contains, naming each such place in the outline and never the component; a publication must never contain what its publisher could not read",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -15994,7 +15994,7 @@
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 475,
+      "line": 485,
       "kind": "title"
     },
     {
@@ -16018,7 +16018,7 @@
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 493,
+      "line": 503,
       "kind": "title"
     },
     {
@@ -16030,7 +16030,7 @@
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 420,
+      "line": 430,
       "kind": "title"
     },
     {

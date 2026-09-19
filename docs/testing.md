@@ -215,15 +215,17 @@ sixteen character probes, each refused by `assemble` exactly where the pinned Ty
 refuses everywhere). The spike's other cases arrive with what they exercise.
 
 The publish job's own suite, `apps/worker/src/publish.test.ts`, reads its publications the same way,
-and checks one multi-page publication with veraPDF too. Each case is also checked against PDF/UA-1 by
-veraPDF: `apps/worker/src/testing/verapdf.ts` runs the
+and checks one multi-page publication with veraPDF too. `apps/worker/src/testing/verapdf.ts` runs the
 pinned `verapdf/cli` image, fetched once by digest with `pnpm --filter @alloy-works/worker
 fetch-verapdf` (needs Docker; it retries the pull three times before failing, since Docker Hub is
 outside the repository's control - an outage or an anonymous rate limit fails the step before the
 traceability gate even runs). A cold veraPDF run costs about eleven seconds, almost all of it the
 container and the JVM starting rather than checking the page, so the suite runs it in the worker's test
 suite on every change to the template or the engine - not on every publication, which is a later
-slice's, warmed differently.
+slice's, warmed differently. Of the corpus's three cases, veraPDF checks two against PDF/UA-1: nine
+heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The sixteen
+character probes are not checked against PDF/UA-1 at all - each is compared only to what the pinned
+Typst itself would refuse, character by character.
 
 What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
 checks - tagging, a document title, alternative text present - are part of what a screen reader is told

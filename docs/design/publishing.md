@@ -517,22 +517,24 @@ made. The numbering table is recorded whole rather than re-derivable, because ST
 numbers published, and a derivation is only as good as the engine that repeats it.
 
 **As built, migration 0017 holds more than the grants.** The first slice's tables carry what slice 1
-publishes and nothing it does not: a request has no kind, no layout version and no preview object, and
-`formats` is `{pdf}` by a check that a later slice widens. The runtime role inserts a request by what
-was asked alone, so every request starts queued, under its own id and at its own time; a trigger lets
-it finish once, from queued to done or failed, and only the move to failed may write the failures;
-`done` is refused while the request carries any. An occurrence is taken only while its request is
-queued, and so are a publication's inputs and its output, whose object key must name its own digest
-in its own tenant's store. A constraint trigger checked at commit refuses a publication not recorded
-whole: its request done and matching, its artifact in the document's space, exactly one output, and
-its inputs exactly the document's version and each version the request recorded. **Three gaps are
-named rather than closed**, each reachable only by SQL written as the runtime role, never by the
-product's code: a version row can be inserted for a `publication` artifact directly, since what a
-version may be of is `VersionSubstance`'s rule, in code; a request can be moved to `done` by the column
-grant with no publication behind it, because the database suite's own request tests do exactly that;
-and a publication's inputs are read from the request's occurrences when the record is made, not
-carried from what the job compiled, so an occurrence inserted into a queued request between the two
-would be recorded as read.
+publishes and nothing it does not: a request has no kind, no layout version and no preview object,
+and `formats` is `{pdf}` by a check that a later slice widens. The runtime role inserts a request by
+what was asked alone, so every request starts queued, under its own id and at its own time; a
+trigger lets it finish once, from queued to done or failed, and only the move to failed may write
+the failures; `done` is refused while the request carries any. An occurrence is taken only while its
+request is queued, and so are a publication's inputs and its output, whose object key must name its
+own digest in its own tenant's store. `publication_output` has no column for the accessibility
+report the table above lists: nothing runs veraPDF over a publication yet, so there is no report
+object to hold (slice 5's per-publication check adds both, PUB-091). A constraint trigger checked at
+commit refuses a publication not recorded whole: its request done and matching, its artifact in the
+document's space, exactly one output, and its inputs exactly the document's version and each version
+the request recorded. **Three gaps are named rather than closed**, each reachable only by SQL
+written as the runtime role, never by the product's code: a version row can be inserted for a
+`publication` artifact directly, since what a version may be of is `VersionSubstance`'s rule, in
+code; a request can be moved to `done` by the column grant with no publication behind it, because
+the database suite's own request tests do exactly that; and a publication's inputs are read from the
+request's occurrences when the record is made, not carried from what the job compiled, so an
+occurrence inserted into a queued request between the two would be recorded as read.
 
 ## Routes
 
@@ -847,9 +849,9 @@ see. This section records what each changed against what this design said before
   answered, not the version published, so a part moved since may show another number, and one removed
   since reads **A part no longer in this document**; neither names a component. Failures of the engine
   or the store are introduced as the product's, never as something in the document to put right.
-- **A `publish` job with no subject is not guarded.** The job reads its request by `subjectId!`, so
-  such a job - which nothing enqueues - fails in the database, is retried, and is failed with nothing
-  recorded, since `failed` ignores a job without a subject.
+- **A `publish` job with no subject is refused at once.** The job checks `subjectId` before reading a
+  request; such a job - which nothing enqueues - fails at once as `no_subject`, never matching no
+  request and completing silently as `done`.
 - **What slice 1 cites.** PUB-021, PUB-047, PUB-048, PUB-050, PUB-053, PUB-061, PUB-062, PUB-063,
   PUB-093 and PUB-094, and PUB-086 again for its engine and store stages, beside PUB-052 and PUB-086
   cited by 1a - not PUB-003 or PUB-073, which need the order's swaps and a second format. It lands #142

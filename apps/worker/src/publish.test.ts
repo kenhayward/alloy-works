@@ -398,6 +398,16 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await requestRow(request)).toMatchObject({ state: 'done', failures: [] });
   });
 
+  it('refuses a publish job with no subject at once, rather than completing it silently', async () => {
+    // Nothing enqueues a publish job with no subject; this is the row such a bug would leave.
+    await queryAs(
+      db.adminUrl,
+      "insert into platform.job (tenant_id, kind, subject_id) values ($1, 'publish', null)",
+      [tenant.id],
+    );
+    expect(await work()).toBe('failed');
+  });
+
   it('fails a document with a character no face can set once, with every failure, and logs none of it', async () => {
     logged.length = 0;
     const id = await requested(async (trx) => [
