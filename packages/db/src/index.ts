@@ -63,6 +63,7 @@ export {
   listenToTenants,
   notifyTenant,
   tenantChannel,
+  type Subscription,
   type TenantEvent,
   type TenantListener,
 } from './realtime.js';

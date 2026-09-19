@@ -32,9 +32,36 @@ export async function notifyTenant(trx: TenantTransaction, event: TenantEvent): 
   );
 }
 
+/** One watcher's hold on a tenant's channel. */
+export interface Subscription {
+  /** Stop hearing this tenant's events. Calling it again does nothing. */
+  stop(): void;
+  /**
+   * Resolves once the database has acknowledged the LISTEN that covers this tenant's channel, so
+   * everything committed after it resolves is heard - whether this subscription asked for that
+   * LISTEN, joined one still on its way (even one queued behind the UNLISTEN of the last watcher to
+   * leave), or joined a channel already listened to. Read a snapshot only after it: anything
+   * committed before the LISTEN lands reaches nobody (issue #137).
+   *
+   * Rejects, and never hangs, when the LISTEN cannot be made - the database cannot be reached, the
+   * connection is lost while asking, or the listener is closed first. A watcher that cannot be heard
+   * should end and try again, rather than show a snapshot that will never move. Once resolved it
+   * stays resolved: a connection lost later is made again and every channel re-listened, but what is
+   * committed while it is down reaches nobody.
+   */
+  readonly ready: Promise<void>;
+}
+
+/** Why a subscription made after its listener closed, or queued when it closed, is not heard. */
+class ListenerClosed extends Error {
+  constructor() {
+    super('The listener is closed, so nothing on this channel will be heard');
+  }
+}
+
 export interface TenantListener {
-  /** Hear this tenant's events until the returned function is called. */
-  subscribe(tenantId: string, handler: (event: TenantEvent) => void): () => void;
+  /** Hear this tenant's events until the subscription is stopped. */
+  subscribe(tenantId: string, handler: (event: TenantEvent) => void): Subscription;
   /** The channels it is listening to now. For tests and diagnostics. */
   listening(): string[];
   close(): Promise<void>;
@@ -50,6 +77,10 @@ export function listenToTenants(
   options: { readonly onError?: (error: unknown) => void } = {},
 ): TenantListener {
   const handlers = new Map<string, Set<(event: TenantEvent) => void>>();
+  // Each watched channel's LISTEN, resolved once the database has acknowledged it. Forgotten when
+  // the last watcher goes, when the LISTEN fails, and when the connection is lost, so the next
+  // watcher asks again rather than trusting a LISTEN that no longer covers it.
+  const acknowledged = new Map<string, Promise<void>>();
   let client: pg.Client | undefined;
   let connecting: Promise<pg.Client> | undefined;
   let closed = false;
@@ -57,13 +88,25 @@ export function listenToTenants(
   // sent while another is in flight - pg 8 warns about that, and pg 9 refuses it.
   let turns: Promise<void> = Promise.resolve();
 
-  function inTurn(work: () => Promise<unknown>): void {
-    turns = turns
-      .then(() => (closed ? undefined : work()))
-      .then(
-        () => undefined,
-        (error: unknown) => options.onError?.(error),
-      );
+  function inTurn(work: () => Promise<unknown>): Promise<void> {
+    const done = turns.then(work).then(() => undefined);
+    turns = done.catch((error: unknown) => {
+      if (!(error instanceof ListenerClosed)) options.onError?.(error);
+    });
+    return done;
+  }
+
+  function listen(channel: string): Promise<void> {
+    const ack = inTurn(async () => {
+      if (closed) throw new ListenerClosed();
+      await (await connection()).query(`listen ${channel}`);
+    });
+    acknowledged.set(channel, ack);
+    // Also settles a rejection nobody waits on, which would otherwise be unhandled.
+    ack.catch(() => {
+      if (acknowledged.get(channel) === ack) acknowledged.delete(channel);
+    });
+    return ack;
   }
 
   async function connect(): Promise<pg.Client> {
@@ -76,6 +119,7 @@ export function listenToTenants(
     });
     made.on('error', (error) => {
       options.onError?.(error);
+      acknowledged.clear();
       client = undefined;
       connecting = undefined;
       if (!closed) setTimeout(() => void reconnect(), 100);
@@ -110,17 +154,25 @@ export function listenToTenants(
     subscribe(tenantId, handler) {
       const channel = tenantChannel(tenantId);
       const listeners = handlers.get(channel) ?? new Set();
-      const first = listeners.size === 0;
       listeners.add(handler);
       handlers.set(channel, listeners);
-      if (first) {
-        inTurn(async () => (await connection()).query(`listen ${channel}`));
-      }
-      return () => {
-        listeners.delete(handler);
-        if (listeners.size > 0) return;
-        handlers.delete(channel);
-        inTurn(async () => client?.query(`unlisten ${channel}`));
+      const ready = acknowledged.get(channel) ?? listen(channel);
+      let stopped = false;
+      return {
+        stop() {
+          if (stopped) return;
+          stopped = true;
+          listeners.delete(handler);
+          if (listeners.size > 0 || handlers.get(channel) !== listeners) return;
+          handlers.delete(channel);
+          acknowledged.delete(channel);
+          void inTurn(async () => {
+            if (!closed) await client?.query(`unlisten ${channel}`);
+          }).catch(() => {
+            // Said through onError, in its turn.
+          });
+        },
+        ready,
       };
     },
 
@@ -129,6 +181,7 @@ export function listenToTenants(
     async close() {
       closed = true;
       handlers.clear();
+      acknowledged.clear();
       await turns;
       const made = client;
       client = undefined;
