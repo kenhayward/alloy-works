@@ -78,7 +78,7 @@ enforcing it cannot disagree.
 | PUB-084                   | A publication share can be exactly the grant IAM-049 and IAM-071 describe, and it appears in IAM-051's listing. Proving identity before first access and recording every access are PUB's and not designed                                                                                                                                                     |
 | IAM-056                   | Provider groups are re-read at sign-in and at no other time, so a removal at the provider takes effect at the next sign-in. That is not the stated, tested bound IAM-056 asks for                                                                                                                                                                              |
 | IAM-015, IAM-028          | Moving an artifact is T2. Because nothing is copied down, a move is an update of `space_id` and the next decision is already right - but the act of moving is not designed                                                                                                                                                                                     |
-| IAM-016                   | Referencing across spaces is T4; `readableSet` below is what it will call. Re-checking at publish, IAM-017's, is now IAM-074, and [publishing.md](publishing.md) claims it: the publisher's permission is decided at the publication (decision C)                                                                                                              |
+| IAM-016                   | Referencing across spaces is T4; `readableSet` below is what it will call. Re-checking at publish, IAM-017's, is now PUB-094's for every component in T1, and [publishing.md](publishing.md) claims it: the publisher's permission is decided at the publication (decision C)                                                                                  |
 | IAM-020, IAM-070          | A data connection's results and the named high-risk acts are T2. Each arrives as a new permission in the closed set, which is a code change with a migration of the check constraint and nothing more                                                                                                                                                          |
 | IAM-032                   | Evaluating as another user is T2. `explain` already takes the principal as a parameter, so it is a route and a permission, not a new model                                                                                                                                                                                                                     |
 | IAM-005, IAM-010, IAM-033 | Tenant-scoping of derived data is each derived store's; a disabled user losing access is the session check's; service identities are the token design's                                                                                                                                                                                                        |
@@ -127,7 +127,7 @@ tenant reads it without being able to read any component at all. That is what pu
 it is safe only because of what `publish` requires: **the publisher must be able to read every
 component the published document contains**, decided at the publication rather than when each
 reference was made, and a publish holding one they may not read is refused, naming the place in the
-outline and never the component (publishing.md, decision C; IAM-074, and issue #143 for every
+outline and never the component (publishing.md, decision C; PUB-094, from issue #143, for every
 component in T1). A publication therefore never releases anything its publisher could not already
 read. A grant on a document does not reach its publications, and a grant on a publication reaches
 nothing else.
@@ -147,7 +147,7 @@ denies `read` too, as it denies everything the role holds.
 ## Roles
 
 A **role** is `id`, a `name` unique in the tenant, and its permissions - at least one, each once. A
-tenant starts with eight, which are ordinary rows it may rename, change or remove:
+tenant starts with nine, which are ordinary rows it may rename, change or remove:
 
 | Role                | Permissions                                    |
 | ------------------- | ---------------------------------------------- |
@@ -159,10 +159,13 @@ tenant starts with eight, which are ordinary rows it may rename, change or remov
 | Definitions manager | `read`, `manage_definitions`                   |
 | Administrator       | `read`, `administer`                           |
 | Editing             | `edit` - for denials; it cannot be allowed     |
+| Publisher           | `read`, `publish`                              |
 
 Editing is a starter role rather than one each tenant makes, because "read-only here" is the first
 denial anybody reaches for, and a role a tenant must think to create before it can do that is a role
-nobody finds.
+nobody finds. Publisher is the ninth, added with publishing ([publishing.md](publishing.md), decision
+L): it alone holds `publish`, because publishing is the act that releases content, and adding it to
+Author would let every contributor release a whole document.
 
 Changing a role changes the access of everybody holding it, at once, which is what a bundle is for.
 Removing a role that any grant names is refused; the grants go first, so nobody loses access as a
@@ -418,8 +421,8 @@ the grant shows in every explanation and in `readableSet`'s explicit list rather
 documents in any space, so a permission that flowed from a document would make a component's access
 depend on who happens to use it, and one grant on a report would open every component the report
 quotes. A component's chain is the component, its space and the tenant, never a document. Seeing a
-component inside a document therefore needs `read` on the component, which is the rule IAM-016 and
-IAM-074 (IAM-017's replacement) already state for T4.
+component inside a document therefore needs `read` on the component, which is the rule IAM-016
+states for T4, and PUB-094 for a published document in T1.
 
 **A definition is read through what uses it.** A field, a metadata schema and a component type live in
 no space, so an author granted only a space would otherwise be refused `read` on the very definitions
@@ -749,3 +752,11 @@ superseded by IAM-074, which publishing.md claims.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **access.md never said publishing releases content** (publishing.md, finding 10): a publication is read on its own grants, so its readers read every component in it | Said, with what makes it safe - the publisher must read every component, decided at the publication ("Permissions") |
 | **IAM-017 was listed here as T4 and unclaimed**, and ambiguous about whose permission is re-checked                                                                  | Its replacement, IAM-074, names the publisher's; the unclaimed row now says publishing.md claims it                 |
+
+[The first publishing plan](../plans/2026-09-19-publishing-01-a-document-to-pdf.md) landed issue
+#143 as PUB-094 and withdrew IAM-074 for it. No claim here changed.
+
+| Found                                                                                                                  | Change                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **IAM-074 was withdrawn for PUB-094**, which says of every component in T1 what IAM-074 said of a referenced one in T4 | "Permissions", the unclaimed IAM-016 row and "A document's grants" now name PUB-094; the row above stays as history |
+| **No starter role held `publish`**, so nobody could publish (publishing.md, finding 1)                                 | "Roles" gains Publisher, `read` and `publish`, the ninth starter role, which migration 0017 adds                    |

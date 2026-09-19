@@ -32,4 +32,8 @@ describe('wireCode', () => {
     expect(wireCode('invitation.kind_differs')).toBe('invitation_kind_differs');
     expect(wireCode('invitation.accepted')).toBe('invitation_accepted');
   });
+
+  it('spells every refusal where a publication is asked for with an underscore too', () => {
+    expect(wireCode('format.unsupported')).toBe('format_unsupported');
+  });
 });

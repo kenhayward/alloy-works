@@ -221,6 +221,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The document's publications the caller may read, newest first */
+        get: operations["listPublications"];
+        put?: never;
+        /** Publish the latest version of this document */
+        post: operations["requestPublication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grants": {
         parameters: {
             query?: never;
@@ -317,6 +335,40 @@ export interface paths {
         };
         /** The people a grant can name: everybody who has signed in or been invited */
         get: operations["listPrincipals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/publication-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A publish the caller asked for: its state, every failure, and its publication once made */
+        get: operations["getPublicationRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/publications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A publication: its record, and a link to each output */
+        get: operations["getPublication"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1800,6 +1852,8 @@ export interface operations {
                         };
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
                     };
                 };
             };
@@ -2515,6 +2569,8 @@ export interface operations {
                         };
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
                     };
                 };
             };
@@ -2555,6 +2611,8 @@ export interface operations {
                             };
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
@@ -2652,9 +2710,285 @@ export interface operations {
                             };
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listPublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The publications */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            document: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The document's title at the version published */
+                            title: string;
+                            publisher: {
+                                id: string;
+                                displayName: string | null;
+                            };
+                            publishedAt: string;
+                            /**
+                             * @description `none`: a draft. Nothing in T1 can approve a publication
+                             * @constant
+                             */
+                            approval: "none";
+                            formats: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one whose listing they may read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    requestPublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The document version the caller is publishing, which must be the latest */
+                    version: string & (unknown & unknown);
+                    /** @description The formats to publish, each once; `pdf` is the only one until a layout declares another */
+                    formats: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Asked for, and queued; follow the request for its outcome */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        document: string;
+                        /** @enum {string} */
+                        state: "queued" | "done" | "failed";
+                        failures: {
+                            /** @enum {string} */
+                            stage: "resolve" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                        /** @description The publication it made, once done */
+                        publication: string | null;
+                    };
+                };
+            };
+            /** @description `format_unsupported`: a format the template cannot make */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not publish it */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the document has a newer version than the one named */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -3603,6 +3937,254 @@ export interface operations {
             };
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPublicationRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        document: string;
+                        /** @enum {string} */
+                        state: "queued" | "done" | "failed";
+                        failures: {
+                            /** @enum {string} */
+                            stage: "resolve" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                        /** @description The publication it made, once done */
+                        publication: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such request, or one somebody else asked for */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The publication */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        document: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The document's title at the version published */
+                        title: string;
+                        publisher: {
+                            id: string;
+                            displayName: string | null;
+                        };
+                        publishedAt: string;
+                        /**
+                         * @description `none`: a draft. Nothing in T1 can approve a publication
+                         * @constant
+                         */
+                        approval: "none";
+                        formats: string[];
+                        engine: {
+                            /** @constant */
+                            name: "typst";
+                            version: string;
+                        };
+                        template: {
+                            /** @constant */
+                            name: "publication";
+                            version: number;
+                        };
+                        pipeline: string;
+                        outputs: {
+                            /** @constant */
+                            format: "pdf";
+                            bytes: number;
+                            sha256: string;
+                            /** @constant */
+                            standard: "ua-1";
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id */
+                            download: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a publication the caller may read is one they may open */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such publication in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description This environment has nowhere to keep documents yet */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4688,6 +5270,8 @@ export interface operations {
                         };
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
                     };
                 };
             };

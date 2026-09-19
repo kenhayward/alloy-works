@@ -21,6 +21,11 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1382, from 1381: PUB-094, publishing never containing what its publisher could not read (issue
+    // #143), landed by the first publishing plan. IAM-074 is withdrawn for it and keeps its row, so it
+    // still counts.
+    // 1381, from 1380: PUB-093, a publication not made from a baseline saying it is not approved
+    // (issue #142), landed by the first publishing plan.
     // 1380, from 1369: Ken's answer to the publishing design (2026-09-19) - eleven new rows, each
     // superseding one: PUB-085 (PUB-064's budget, p95 ten seconds), PUB-086 (PUB-001), PUB-087
     // (PUB-015, the regression corpus), PUB-088 and PUB-089 (PUB-010 split, the approval page to T3),
@@ -44,9 +49,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1380);
+    expect(model.requirements).toHaveLength(1382);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 406, unchanged: publishing.md claims PUB-094 (#143) and no longer IAM-074, which Ken withdrew for it.
+    // 406, from 405: publishing.md claims PUB-093, decision A as a requirement.
     // 405, from 406: publishing.md stopped claiming PUB-085 (1a's final review). A cold veraPDF takes
     // 11.2 s a page, so the ten-second p95 cannot hold alongside PUB-091's report on every
     // publication, and Ken deferred the choice - a warm checker or changing the requirement - to
@@ -112,7 +119,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(405);
+    ).toBe(406);
   });
 });
 
@@ -242,8 +249,19 @@ describe('the citations in the committed model', () => {
   // 182, from 180: the first publishing plan (docs/plans/2026-09-19-publishing-01-a-document-to-pdf.md)
   // cites PUB-052 and PUB-086 in packages/domain/src/publishing/assemble.test.ts: every failure at
   // once, each naming its stage and its place.
+  // 183, from 182: the same plan cites PUB-050 in packages/db/src/publishing.test.ts: the runtime role
+  // inserts and reads a publication and can change none of it, and correcting one is another.
+  // 190, from 183: the same plan cites PUB-021, PUB-053, PUB-061, PUB-062, PUB-063 and PUB-093 in
+  // apps/worker/src/publish.test.ts, over one publish through the queue, the store and Typst, and
+  // PUB-086 again there, for the engine and store stages assemble.test.ts cannot reach.
+  // 191, from 190: the same plan cites PUB-094 in apps/worker/src/publish.test.ts: a publish holding a
+  // component its publisher may not read fails naming the node alone, makes no publication, and leaves
+  // the component's id, versions and title in no row and no log line.
+  // 193, from 191: the same plan cites PUB-047 and PUB-048 in
+  // apps/service/src/publication-routes.test.ts: a publication kept at its own address, read on its
+  // own grants and never deleted, and listed with its document, newest first, with who and when.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(182);
+    expect(model.citations).toHaveLength(193);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -287,6 +305,7 @@ describe('scanning the repository for test files', () => {
     expect(files).toContain('apps/web/src/App.test.tsx');
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
     // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(8);
+    // 10, from 8: publishing/Publishing.test.tsx and publishing/PublicationPage.test.tsx, which cite nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(10);
   });
 });

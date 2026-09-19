@@ -5,8 +5,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 **both change in the same PR**.
 
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
-> versioned, and documents made, their outlines restructured and their sections numbered, but nothing
-> is formatted beyond plain paragraphs, cross-referenced or published. What follows describes what actually exists today, so that
+> versioned, and documents made, their outlines restructured, their sections numbered and their
+> paragraphs published as a PDF, but nothing is formatted beyond plain paragraphs or cross-referenced.
+> What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
 
@@ -51,12 +52,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is set aside and reported rather than quietly repaired. Every construct has a checked route into Word
   and into tagged PDF. It is pure TypeScript: no React, no Electron, no filesystem.
 
-  **This is the shape, not the product.** Nothing authors this content, imports it from another format
-  or publishes it yet, and the store below holds it only when a test puts it there.
+  **This is the shape, not the product.** Nothing authors most of this content, imports it from
+  another format or publishes it yet: the editor writes paragraphs of text, and publishing takes
+  paragraphs of unmarked text and refuses the rest.
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
-  denial, on the whole environment, one space, or one item. Every environment starts with eight roles and
-  a space called General. An environment's first administrator is invited, by address, by whoever sets
+  denial, on the whole environment, one space, or one item. Every environment starts with nine roles -
+  among them Publisher, the only one that may publish - and a space called General. An environment's first administrator is invited, by address, by whoever sets
   it up, and is Administrator from the first sign-in that proves that address; in development, Ada
   administers both environments from hers. On any component they may administer, **Manage access**
   lists what is granted on it, on its space and across the whole environment, gives a person a role at
@@ -133,20 +135,44 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   title is plain text for now, and a document's own title, language and direction cannot be changed
   once it is made.
 
+- **Publishing a document as a PDF.** Somebody who may publish a document - the Publisher role, which
+  Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
+  second or two later the page says it is published. The publication is a tagged PDF of the version on
+  the page: its title, its sections numbered as the outline shows them and bookmarked, and each
+  component's paragraphs beneath its heading, set in Liberation Serif. **Every publication says it is
+  not approved** - at the top of every page, and once where a screen reader reads it - because nothing
+  can approve one yet. Publications are kept and never changed: publishing again makes another. The
+  document lists its publications beneath the outline, each with the version, who published it and
+  when, and each has its own page with a download. Who may read a publication is decided on the
+  publication, so somebody given a single document does not see its publications unless given them
+  too. When a document cannot be published you are told every reason at once, each at its place in the
+  outline: a component you may not read, without saying which; formatting, a list, a table or any other
+  block that cannot be published yet; or a character no typeface can set.
+
+  **This is a PDF of paragraphs, not publishing.** Nothing formatted is published: no bold or italics,
+  links, lists, tables, figures, footnotes or equations - a document holding any of them is refused.
+  There is no layout - no running heads or page numbers, no cover, no contents - and no theme; no Word
+  file, no preview, and no way to approve a publication. The page asks how a publish is going for as
+  long as it stays open, and a download link lasts five minutes from when the publication's page was
+  opened. In the desktop app, downloading has not been checked.
+
 ## What does not exist
 
 Named explicitly so nobody has to read the source to find out:
 
 - No way to author anything but paragraphs of text: a list, a table, an equation or any formatting still
-  opens for reading only. Nothing imports content from a Word file or exports it anywhere. The one sample
-  document is a fixed template with no content of yours in it.
+  opens for reading only. Nothing imports content from a Word file, and nothing exports it but a
+  published PDF of a document's paragraphs. The one sample document is a fixed template with no content
+  of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
 - No way to delete a component or a document, including one made by mistake.
 - No document view: a document's outline is a tree you build, and a component still opens on its own
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
-- No publishing or output formats.
+- No publishing beyond a PDF of a document's outline and paragraphs: no formatting, lists, tables,
+  figures, footnotes or equations in a publication, no layout or theme, no Word, no preview, and no
+  way to approve a publication.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or

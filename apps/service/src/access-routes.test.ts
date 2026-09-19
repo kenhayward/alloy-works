@@ -13,6 +13,8 @@ import {
   findRole,
   grant,
   migrate,
+  recordPublication,
+  requestPublication,
   type NewGrant,
   type Tenant,
   type TenantDatabase,
@@ -48,6 +50,7 @@ describe('routes that check a permission', () => {
   let dosing: string;
   let audit: string;
   let report: string;
+  let reportPublication: string;
   let graceAuthors: string;
 
   const give = async (input: Omit<NewGrant, 'grantedBy' | 'roleId'> & { role: string }) => {
@@ -157,6 +160,31 @@ describe('routes that check a permission', () => {
       });
       if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
       report = made.version.artifactId;
+      // And a publication of it, recorded as a worker records one over an output that need not
+      // exist: a route reading it must refuse before it signs a link to anything.
+      const asked = await requestPublication(trx, {
+        documentId: report,
+        version: made.version.id,
+        formats: ['pdf'],
+        requester: ids.ada!,
+      });
+      if (asked.answer !== 'requested') throw new Error(`refused: ${asked.answer}`);
+      const recorded = await recordPublication(trx, {
+        requestId: asked.request.id,
+        engineVersion: '0.15.1',
+        templateVersion: 1,
+        pipelineVersion: '1',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        dataSha256: 'b'.repeat(64),
+        numbering: { scheme: 'default/1', entries: [] },
+        output: {
+          key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+          sha256: 'c'.repeat(64),
+          bytes: 1,
+        },
+      });
+      if (!recorded) throw new Error('The publication was not recorded');
+      reportPublication = recorded;
     });
     await give({
       role: 'Administrator',
@@ -526,6 +554,13 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { openedFrom: MISSING, operation: { operation: 'remove', node: 'a'.repeat(26) } },
     }),
+    requestPublication: () => ({
+      url: `/v1/documents/${report}/publications`,
+      status: 404,
+      payload: { version: MISSING, formats: ['pdf'] },
+    }),
+    listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
+    getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
     claimLock: () => ({
       url: `/v1/components/${dosing}/lock`,
       status: 404,

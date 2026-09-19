@@ -41,6 +41,7 @@ interface Viewer {
   readonly trx: TenantTransaction;
   readonly principalId: string;
   readonly mayEdit: boolean;
+  readonly mayPublish: boolean;
 }
 
 /**
@@ -84,6 +85,7 @@ async function documentView(
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
     mayEdit: viewer.mayEdit,
+    mayPublish: viewer.mayPublish,
   };
 }
 
@@ -180,7 +182,12 @@ export function documentHandlers(
       // Decided against the space, as `createComponent` decides it: the document did not exist when
       // the facts were loaded, so no denial on it can exist yet.
       return documentView(
-        { trx, principalId, mayEdit: decide('edit', facts).allowed },
+        {
+          trx,
+          principalId,
+          mayEdit: decide('edit', facts).allowed,
+          mayPublish: decide('publish', facts).allowed,
+        },
         { id: answer.version.artifactId, space: held },
         answer.version,
       );
@@ -192,7 +199,12 @@ export function documentHandlers(
       // `readDocument` answers nothing for it, and neither does this.
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
-      const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+      };
       return documentView(viewer, document, document.version);
     },
 
@@ -272,7 +284,12 @@ export function documentHandlers(
     ): Promise<DocumentView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as OutlineOperationBody;
-      const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+      };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
       const answer = await editOutline(trx, {

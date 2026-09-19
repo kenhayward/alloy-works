@@ -57,6 +57,16 @@ export {
   InvitationWithdrawn,
 } from './invitations.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
+export {
+  PublicationList,
+  PublicationParams,
+  PublicationRequestParams,
+  PublicationRequestView,
+  PublicationSummary,
+  PublicationView,
+  PublishFailureView,
+  RequestPublicationBody,
+} from './publishing.js';
 export { allRoutes, API_VERSION, routes, SESSION_COOKIE } from './routes.js';
 export {
   AccessAnswers,

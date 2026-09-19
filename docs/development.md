@@ -99,7 +99,7 @@ grant that lets anyone administer the environment.
 
 It also makes something to edit without creating one by hand: in each environment, a component called
 "Install the printer" in General, and Ada, through her invitation, and Grace, made as a principal before
-she first signs in, allowed Author on General; Grace makes the grants and the component's versions, since
+she first signs in, allowed Author and Publisher on General; Grace makes the grants and the component's versions, since
 a principal still waiting on an invitation could be withdrawn. Alice and Ivy are given nothing. Sign in as
 Ada, open "Install the printer", type, and **Save version**. To see the lock from the other side, sign in
 as Grace in a private window - the stand-in remembers who signed in last in a window - and start typing in
@@ -319,6 +319,64 @@ These navigation steps are written from the code and its tests, and were **not**
 browser either: the panel's tests run in jsdom over a fake service, and its timing in Electron's
 Chromium against the same fake.
 
+**Publishing needs the worker as well as the service and the stand-in** - start it as
+[The worker](#the-worker) below says. **A database prepared before 0.30.0** gains migration 0017 the
+next time `pnpm dev:setup` runs - in containers, the `setup` container runs it. It adds a publication as
+a kind of artifact, the tables a request and a publication are kept in, and a ninth starter role,
+Publisher, which alone may publish; the seed then gives Ada and Grace Publisher on General beside
+Author. It changes nothing you had. Without a worker, a publish says **Publishing...** and the page
+keeps asking about it, less and less often, for as long as it stays open.
+
+To publish by hand, sign in as Ada and choose **Documents**:
+
+1. **New document**: type `Calibration` in **Title** and press **Create**. Beneath the outline and its
+   lists, **Publications** says **Nothing has been published from this document.** and offers
+   **Publish as PDF**, because Ada holds Publisher.
+2. Press **Add section**, type `Scope` and press `Enter`. With **Scope** selected, press **Add
+   component**, choose **Install the printer** and press **Add**: the tree shows `1` **Scope** and `2`
+   **Install the printer, latest**, at **Version 0.3 in General**.
+3. Press **Publish as PDF**. The page says **Publishing...**, and a second or two later **Published.**
+   with a link, **Open the publication**; the list beneath now reads **Version 0.3, published by Ada
+   on** the date and time, followed by **(not approved)**.
+4. Choose **Open the publication**. The address ends `#/publications/` and the publication's id, and
+   the page shows **Calibration**, **Not approved. This is a draft publication, not made from an
+   approved baseline.**, **Version 0.3, published by Ada on** the date and time, **Made with Typst
+   0.15.1 and publication template 1.**, **Download the PDF** with its size, and **Open the document**.
+5. Choose **Download the PDF**: the browser saves the file under the publication's id, with `.pdf`,
+   never under the document's title. The PDF says **Not approved** at the top of every page, then
+   **Calibration** as a heading and the sentence once, in bold, then **1 Scope** and **2 Install the
+   printer**, the component's two paragraphs beneath it; its bookmarks are **1 Scope** and **2 Install
+   the printer**. The link is signed when the page opens and lasts five minutes: after that the store
+   refuses it, and opening the publication again signs a new one.
+6. **A component the publisher may not read.** Still as Ada, open **Replace the printer toner** (made
+   under **New component** above), choose **Manage access**, and give Grace **Reader** at **This
+   component** with **Deny**. Open **Calibration** again, select **Install the printer**, press **Add
+   component**, choose **Replace the printer toner** and press **Add**: it is `3`. In a private window,
+   sign in as **Grace** and open **Calibration**: row `3` is **A component**. Press **Publish as PDF**:
+   **The document could not be published. Put these right and publish again:**, then **3 A component: A
+   component you may not read is placed here. Only someone who may read every component can publish
+   this document.** - and nothing else of it, not even the figures below.
+7. **Every reason at once.** Back in Ada's window, press **Publish as PDF**. Ada may read **Replace the
+   printer toner**, and it holds the two figures step 7 of the numbering steps gave it, which cannot be
+   published yet: the page lists **3 Replace the printer toner: A figure cannot be published yet.**
+   twice, once for each. Select row `3`, press **Remove component** and then **Remove**, and press
+   **Publish as PDF** again: **Published.**, and the list shows two publications, the newer first.
+8. **Somebody who may read and not publish.** Sign in as **Alice**, who has **Reader** on General from
+   step 9 of the document steps, and open **Calibration**: **Publications** lists both, and there is no
+   **Publish as PDF**. She can open either and download it.
+9. **The desktop app.** Run `pnpm app`, sign in as Ada, open a publication and choose **Download the
+   PDF**. The link leaves the renderer's address for the store's, and the shell has no handling of its
+   own for that; nobody has yet checked whether the window saves the file, opens it, or does nothing.
+   Note what it does - this is the step no test covers.
+
+These publishing steps are written from the code and its tests, and were **not** followed in a browser:
+the page's tests run in jsdom over a fake service, the routes' against the service, and the whole
+publish, from the request to the stored PDF, in the worker's suite and the end-to-end check. What a
+screen reader is told - the draft notice read once, and a heading at level seven to nine read as a
+paragraph - is checked in the suite with pdf.js and by opening the PDF in a screen reader by hand;
+veraPDF's verdict only by the suite. That a refused publish is not tried again, and that nothing of an
+unreadable component reaches any answer, only a test can see.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8088` as the one address it returns to. Opening
 `http://dev.acme.localhost:8088/v1/sign-in/google` and choosing Ada accepts her invitation through that
@@ -364,15 +422,18 @@ cp deploy/worker.env.example deploy/worker.env
 pnpm --filter @alloy-works/worker dev
 ```
 
-The worker's own test suite also fetches and runs the pinned veraPDF checker in Docker, once per
-machine:
+The worker's own test suite needs Docker running as well as Postgres and the object store: it runs
+the pinned veraPDF checker in a container over every case of the regression corpus and over a
+publication, and the image is fetched once per machine:
 
 ```bash
 pnpm --filter @alloy-works/worker fetch-verapdf   # verapdf/cli, pulled by digest, needs Docker running
 ```
 
-With the service signed in to (above), ask for a sample and follow it. The worker picks the job up
-within a second or two, and the answer then carries a link that fetches the PDF:
+The worker runs every publish, too: with it stopped, a document asked to publish stays queued (see the
+publishing steps under [The service](#the-service)). With the service signed in to (above), ask for a
+sample and follow it. The worker picks the job up within a second or two, and the answer then carries
+a link that fetches the PDF:
 
 ```bash
 curl -X POST -H "Host: dev.acme.localhost" -H "Cookie: __Host-aw_session=<from the browser>"   http://127.0.0.1:8088/v1/samples

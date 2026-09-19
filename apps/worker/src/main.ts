@@ -6,6 +6,7 @@ import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
 import { sweepExpiredSignIns } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -19,7 +20,10 @@ const db = createTenantDatabase(config.databaseUrl);
 const queue = createJobQueue(config.databaseUrl);
 const stores = createObjectStores(config.objectStore, config.objectStoreKey);
 const typst = createTypst({ binary: config.typstBinary, fonts });
-const handlers: Record<string, JobHandler> = { sample_pdf: sampleJob({ db, stores, typst }) };
+const handlers: Record<string, JobHandler> = {
+  sample_pdf: sampleJob({ db, stores, typst }),
+  publish: publishJob({ db, stores, typst, fonts }),
+};
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
 const listener = new pg.Client({ connectionString: config.databaseUrl });

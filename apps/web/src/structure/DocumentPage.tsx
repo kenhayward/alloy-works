@@ -1,13 +1,21 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
+  conditions,
+  defaultNumberingScheme,
+  number,
   readOutlineView,
+  resolve,
+  sectionNumbers,
+  walkOutline,
   type Contribution,
   type OutlineView,
+  type OutlineViewNode,
   type OutlineOperation,
 } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import {
@@ -36,6 +44,7 @@ interface Opened {
   readonly version: { readonly id: string; readonly number: string };
   readonly outline: OutlineView;
   readonly mayEdit: boolean;
+  readonly mayPublish: boolean;
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -51,8 +60,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function documentIn(data: unknown): Read {
   if (!isRecord(data)) return undefined;
-  const { id, space, version, outline, mayEdit } = data;
-  if (typeof id !== 'string' || typeof mayEdit !== 'boolean') return undefined;
+  const { id, space, version, outline, mayEdit, mayPublish } = data;
+  if (typeof id !== 'string' || typeof mayEdit !== 'boolean' || typeof mayPublish !== 'boolean') {
+    return undefined;
+  }
   if (!isRecord(space) || typeof space.id !== 'string' || typeof space.name !== 'string') {
     return undefined;
   }
@@ -67,7 +78,32 @@ function documentIn(data: unknown): Read {
     version: { id: version.id, number: version.number },
     outline: read.outline,
     mayEdit,
+    mayPublish,
   };
+}
+
+const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
+
+/**
+ * Where a node is, in words a failure can be read by: its section number, if it has one, and its
+ * name - a section's title, or for a reference its component's, and **A component** wherever the
+ * reader may not read it. Section numbers depend on the outline alone, so none is withheld; the node
+ * is looked for in the outline the page holds, so nothing of a component the service withheld can be
+ * named. A node the outline no longer holds is said to be gone.
+ */
+function placeInOutline(outline: OutlineView, node: string, names: Names): string {
+  // Collected rather than assigned from the callback, which TypeScript's narrowing cannot follow.
+  const held: OutlineViewNode[] = [];
+  walkOutline(outline.nodes, (each) => {
+    if (each.id === node) held.push(each);
+  });
+  const [found] = held;
+  if (found === undefined) return 'A part no longer in this document';
+  const numbers = sectionNumbers(
+    number(conditions(resolve(outline, NOTHING_KNOWN)), defaultNumberingScheme),
+  );
+  const numbered = numbers.get(node);
+  return numbered === undefined ? nodeName(found, names) : `${numbered} ${nodeName(found, names)}`;
 }
 
 /**
@@ -231,6 +267,8 @@ export interface DocumentPageProps {
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
   /** A link to the address already shown was followed, which no `hashchange` announces. */
   readonly onArriveAgain?: () => void;
+  /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
+  readonly followMs?: number;
 }
 
 /**
@@ -248,7 +286,13 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-export function DocumentPage({ client, id, linked = null, onArriveAgain }: DocumentPageProps) {
+export function DocumentPage({
+  client,
+  id,
+  linked = null,
+  onArriveAgain,
+  followMs = FOLLOW_MS,
+}: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
@@ -540,6 +584,14 @@ export function DocumentPage({ client, id, linked = null, onArriveAgain }: Docum
         names={names}
         onRetry={() => setKnownAttempt((count) => count + 1)}
         onArriveAgain={onArriveAgain}
+      />
+      <Publishing
+        client={client}
+        document={document.id}
+        version={document.version.id}
+        mayPublish={document.mayPublish}
+        placeOf={(node) => placeInOutline(document.outline, node, names)}
+        followMs={followMs}
       />
     </article>
   );

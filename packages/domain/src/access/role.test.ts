@@ -17,7 +17,7 @@ describe('a role', () => {
     expect(allowable(['read', 'edit'])).toBe(true);
   });
 
-  it('starts a tenant with eight, each of which passes the same check', () => {
+  it('starts a tenant with nine, each of which passes the same check', () => {
     expect(starterRoles.map((role) => role.name)).toEqual([
       'Reader',
       'Reviewer',
@@ -27,6 +27,7 @@ describe('a role', () => {
       'Definitions manager',
       'Administrator',
       'Editing',
+      'Publisher',
     ]);
     for (const role of starterRoles) {
       expect(checkRole(role.permissions), role.name).toBeUndefined();
@@ -39,8 +40,11 @@ describe('a role', () => {
     ).toEqual(['Editing']);
   });
 
-  it('leaves publish to no starter role, because nothing publishes in T1', () => {
+  it('gives publish to Publisher alone, because publishing releases content (decision L)', () => {
+    expect(
+      starterRoles.filter((role) => role.permissions.includes('publish')).map((role) => role.name),
+    ).toEqual(['Publisher']);
     const held = new Set(starterRoles.flatMap((role) => role.permissions));
-    expect(permissions.filter((permission) => !held.has(permission))).toEqual(['publish']);
+    expect(permissions.filter((permission) => !held.has(permission))).toEqual([]);
   });
 });

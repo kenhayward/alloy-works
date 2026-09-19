@@ -10,8 +10,12 @@ export interface TenantStore {
   /** Keeps the bytes under their own hash, and says where. The caller never chooses a key. */
   put(body: Uint8Array, contentType: string): Promise<StoredObject>;
   get(key: string): Promise<Buffer>;
-  /** A link anyone may follow until it expires, and nobody may follow after. */
-  signedLink(key: string, seconds: number): Promise<string>;
+  /**
+   * A link anyone may follow until it expires, and nobody may follow after. Given a file name, the
+   * bytes are saved under it. The name is an identifier, never a title: the link's query string
+   * reaches the store's logs, and a title is content.
+   */
+  signedLink(key: string, seconds: number, fileName?: string): Promise<string>;
 }
 
 export interface ObjectStores {
@@ -20,6 +24,16 @@ export interface ObjectStores {
 }
 
 const KEY = /^t_[0-9a-z]{1,40}\/sha256\/[0-9a-f]{64}$/;
+
+/** An identifier and an extension, in lowercase: nothing a header could be split on. */
+const FILE_NAME = /^[0-9a-z][0-9a-z-]*\.[0-9a-z]+$/;
+
+function assertFileName(fileName: string): string {
+  if (!FILE_NAME.test(fileName)) {
+    throw new Error(`That is not a file name a download may take: ${JSON.stringify(fileName)}`);
+  }
+  return fileName;
+}
 
 function assertTenantKey(tenant: Tenant, key: string): string {
   if (!KEY.test(key) || !key.startsWith(tenantPrefix(tenant))) {
@@ -84,10 +98,18 @@ export function createObjectStores(settings: StoreSettings, sealingKey: Buffer):
           return Buffer.from(await answer.Body!.transformToByteArray());
         },
 
-        async signedLink(key, seconds) {
+        async signedLink(key, seconds, fileName) {
           return getSignedUrl(
             client,
-            new GetObjectCommand({ Bucket: bucket, Key: assertTenantKey(tenant, key) }),
+            new GetObjectCommand({
+              Bucket: bucket,
+              Key: assertTenantKey(tenant, key),
+              ...(fileName === undefined
+                ? {}
+                : {
+                    ResponseContentDisposition: `attachment; filename="${assertFileName(fileName)}"`,
+                  }),
+            }),
             { expiresIn: seconds },
           );
         },

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
+import { PublicationPage } from '../publishing/PublicationPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
@@ -15,6 +16,9 @@ export interface WorkspaceProps {
 }
 
 const OPEN = /^#\/components\/([0-9a-f-]{36})(\/access)?$/;
+
+/** A publication's own address (PUB-047). */
+const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
 
 /** What sits above either listing: the two kinds of thing a person can open, each a plain link. */
 function Places() {
@@ -96,9 +100,10 @@ function useHash(): {
 }
 
 /**
- * The list of components, one component open, the list of documents or one document open, chosen by
- * the address's hash - so opening one is a link, a reload reopens it, and the renderer's relative
- * asset paths (built for the desktop shell's `file://` fallback) are never put under a deep path.
+ * The list of components, one component open, the list of documents, one document open or one
+ * publication, chosen by the address's hash - so opening one is a link, a reload reopens it, and the
+ * renderer's relative asset paths (built for the desktop shell's `file://` fallback) are never put
+ * under a deep path.
  */
 export function Workspace({ fetch: given }: WorkspaceProps) {
   const origin = window.location.origin;
@@ -168,6 +173,15 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           <ManageAccessLink client={client} componentId={opened} />
         </p>
         <ComponentEditor key={opened} componentId={opened} client={client} principalId={me} />
+      </>
+    );
+  }
+  const publication = PUBLICATION.exec(hash)?.[1];
+  if (publication) {
+    return (
+      <>
+        <Places />
+        <PublicationPage key={publication} client={client} id={publication} />
       </>
     );
   }

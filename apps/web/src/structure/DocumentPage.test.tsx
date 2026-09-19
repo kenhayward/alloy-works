@@ -90,6 +90,16 @@ const json = (status: number, body: unknown) =>
 
 const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
 
+const PUBLISH_REQUEST = '99999999-0000-4000-8000-000000000001';
+/** A publish asked for from the page, as `GET /v1/publication-requests/{id}` answers it once failed. */
+const publishRequest = {
+  id: PUBLISH_REQUEST,
+  document: DOCUMENT,
+  state: 'failed',
+  failures: [],
+  publication: null,
+};
+
 /**
  * The service, as a model rather than a table of canned answers (pre-flight S23): it keeps the
  * document's version chain and applies each operation with the domain's own `applyOutlineOperation`,
@@ -106,6 +116,9 @@ function service(
   start: OutlineDocument,
   options: {
     mayEdit?: boolean;
+    mayPublish?: boolean;
+    /** What a publish asked for from this page is answered with, once the job has run: it failed. */
+    publishFailures?: unknown[];
     components?: unknown;
     /** Whether the caller may read a component: one they may not is withheld, as the service does. */
     mayRead?: (component: string) => boolean;
@@ -154,6 +167,7 @@ function service(
     // As the service shows it: the stored outline, with what the caller may not read withheld.
     outline: withholdComponents(version.outline, options.mayRead ?? (() => true)),
     mayEdit: options.mayEdit ?? true,
+    mayPublish: options.mayPublish ?? false,
   });
   const record = (next: OutlineDocument) => {
     const count = chain.length + 1;
@@ -188,6 +202,13 @@ function service(
       );
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
+    if (url === `/v1/documents/${DOCUMENT}/publications`) {
+      if (request.method === 'GET') return json(200, { items: [] });
+      return json(200, { ...publishRequest, state: 'queued' });
+    }
+    if (url === `/v1/publication-requests/${PUBLISH_REQUEST}`) {
+      return json(200, { ...publishRequest, failures: options.publishFailures ?? [] });
+    }
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
     if (url === `/v1/documents/${DOCUMENT}/contributions`) {
       // As `getContributions` answers: every reference of the latest version, in outline order, and
@@ -1636,6 +1657,7 @@ describe('New document', () => {
       nodes: [],
     },
     mayEdit: true,
+    mayPublish: false,
   };
 
   function spaces(answers: Record<string, unknown>, status: Record<string, number> = {}) {
@@ -2483,5 +2505,53 @@ describe('the lists of figures, tables and equations', () => {
     expect(
       await screen.findByText('This document has no figures, tables or equations.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('publishing from the document page', () => {
+  it('names a refused place by where it is in the outline, and nothing of a component the author may not read', async () => {
+    const GONE = 'gggggggggggggggggggggggggg';
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [reference(RESULTS, 'latest')]),
+        section(METHOD, 'Method'),
+      ]),
+      {
+        mayPublish: true,
+        mayRead: () => false,
+        publishFailures: [
+          {
+            stage: 'resolve',
+            code: 'occurrence_unreadable',
+            node: RESULTS,
+            block: null,
+            detail: null,
+          },
+          { stage: 'compose', code: 'style_missing', node: METHOD, block: 'b1', detail: 'note' },
+          { stage: 'compose', code: 'style_missing', node: GONE, block: 'b1', detail: 'note' },
+        ],
+      },
+    );
+    // Asked about at once, where the application waits a second.
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />
+      </StrictMode>,
+    );
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    const said = [...why.querySelectorAll('li')].map((each) => each.textContent);
+    expect(said).toEqual([
+      '1.1 A component: A component you may not read is placed here. Only someone who may read every component can publish this document.',
+      '2 Method: This paragraph uses a style the publication template does not set.',
+      'A part no longer in this document: This paragraph uses a style the publication template does not set.',
+    ]);
+    expect(why).not.toHaveTextContent('Install the printer');
+    expect(why).not.toHaveTextContent(PRINTER);
+    expect(fake.sent.find((each) => each.url.endsWith('/publications') && each.body)?.body).toEqual(
+      { version: 'dddddddd-0000-4000-8000-000000000001', formats: ['pdf'] },
+    );
   });
 });

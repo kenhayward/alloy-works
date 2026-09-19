@@ -163,6 +163,9 @@ importers:
       '@alloy-works/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@alloy-works/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
       '@alloy-works/objects':
         specifier: workspace:^
         version: link:../../packages/objects

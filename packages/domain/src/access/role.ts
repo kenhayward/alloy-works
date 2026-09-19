@@ -31,9 +31,11 @@ export interface StarterRole {
 
 /**
  * The roles a tenant starts with. They are ordinary rows once written, which the tenant may rename,
- * change or remove; the tenant migration writes the same eight, and a test holds the two together.
- * Editing holds `edit` alone: it cannot be allowed, and denied on one artifact to somebody who
- * authors its space it leaves them reading, commenting and suggesting there.
+ * change or remove; the tenant migrations write the same nine - 0009 the first eight, 0017 Publisher -
+ * and a test holds the two together. Editing holds `edit` alone: it cannot be allowed, and denied on
+ * one artifact to somebody who authors its space it leaves them reading, commenting and suggesting
+ * there. Publisher is the only role holding `publish`, because publishing releases content to whoever
+ * may read the publication (the first publishing plan, decision L).
  */
 export const starterRoles: readonly StarterRole[] = [
   { name: 'Reader', permissions: ['read'] },
@@ -44,4 +46,5 @@ export const starterRoles: readonly StarterRole[] = [
   { name: 'Definitions manager', permissions: ['read', 'manage_definitions'] },
   { name: 'Administrator', permissions: ['read', 'administer'] },
   { name: 'Editing', permissions: ['edit'] },
+  { name: 'Publisher', permissions: ['read', 'publish'] },
 ];

@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.30.0 - 2026-09-19 (PR #151)
+
+### Added
+
+- **Publish a document as a PDF.** A document's page has **Publish as PDF** for anybody who may
+  publish it. A second or two later the publication is ready: a tagged PDF of the version on the page,
+  its sections numbered as the outline shows them and bookmarked, each component's paragraphs beneath
+  its heading, set in Liberation Serif. Only plain paragraphs are published so far: a document holding
+  formatting, a list, a table, a figure, a footnote or an equation is refused, and there is no layout,
+  theme, Word file or preview yet.
+- **Every publication says it is not approved**, at the top of every page and once where a screen
+  reader reads it, because nothing can approve one yet. Publications are kept and never changed:
+  publishing again makes another.
+- **The document's publications are listed beneath its outline**, each with who published which
+  version and when, and each has its own page with a download. Who may read a publication is decided on
+  the publication, so somebody given a single document does not see its publications unless given them
+  too.
+- **A Publisher role**, holding read and publish. In the development environment, Ada and Grace hold it
+  on General.
+- **When a document cannot be published, you are told every reason at once**, each at its place in the
+  outline: a component you may not read (never which one), a block or formatting that cannot be
+  published yet, or a character no typeface can set.
+
+### Changed
+
+- The requirements now number 1,382: a publication that is not approved must say so (#142), and
+  publishing must be refused where the publisher may not read every component (#143). The second
+  replaces a narrower requirement, which is withdrawn.
+
 ## 0.29.2 - 2026-09-19 (PR #150)
 
 ### Changed

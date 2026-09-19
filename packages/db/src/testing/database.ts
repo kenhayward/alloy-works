@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import pg from 'pg';
 import type { Tenant } from '../provision.js';
+import type { TenantTransaction } from '../tables.js';
 import type { TenantDatabase } from '../tenant-database.js';
 
 /**
@@ -18,6 +19,29 @@ export async function whileAccessIsDecided<T>(
     await sql`select singleton from access_epoch for share`.execute(trx);
     return work();
   });
+}
+
+/**
+ * What the transaction `trx` has done so far, asked from inside it: whether this backend holds a lock
+ * on the tenant's access epoch - which a decision takes FOR SHARE and keeps to the transaction's end -
+ * and how many publication requests this transaction wrote, by their `xmin`. For a test showing that a
+ * route decided and wrote in one transaction; call it after the work and before the commit.
+ */
+export async function insideTransaction(
+  trx: TenantTransaction,
+): Promise<{ readonly holdsAccessEpoch: boolean; readonly requestsWritten: number }> {
+  const { rows } = await sql<{ holds: boolean; written: string }>`
+    select
+      exists (
+        select 1 from pg_locks l join pg_class c on c.oid = l.relation
+        where c.relname = 'access_epoch' and l.pid = pg_backend_pid() and l.granted
+      ) as holds,
+      (
+        select count(*) from publication_request
+        where xmin = xid(pg_current_xact_id_if_assigned())
+      ) as written
+  `.execute(trx);
+  return { holdsAccessEpoch: rows[0]!.holds, requestsWritten: Number(rows[0]!.written) };
 }
 
 /**

@@ -17,9 +17,12 @@ a web application and a desktop application**.
 > restructured a version at a time, through `packages/domain/src/structure/`, the same chain and the
 > documents page in `apps/web`, which numbers its sections with the same function the service uses,
 > gives every node an address, and lists the document's figures, tables and equations beneath the
-> outline - and nothing else authors content: no list, table, mark or equation can be written, no
-> paste, no metadata panel, no making a component type, no cross-references resolved, no document
-> view, and no publishing. The single `Component` in `packages/domain` is the scaffolding's, and
+> outline. Its latest version can be published from that page to a tagged PDF of its outline and
+> its components' paragraphs, marked **Not approved** on every page, through the `publish` job in
+> `apps/worker` and the routes in `apps/service/src/publishing.ts` - and nothing else authors or
+> publishes content: no list, table, mark or equation can be written, no paste, no metadata panel,
+> no making a component type, no cross-references resolved, no document view, and no layout, theme,
+> preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
 > exist.
 
@@ -43,7 +46,7 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer                              | `apps/service`          |
 | Stand-in identity provider     | TypeScript + oidc-provider - invented users; development and tests only                                      | `packages/stand-in-idp` |
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash                                   | `packages/objects`      |
-| Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them                                     | `apps/worker`           |
+| Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them, publishing among them              | `apps/worker`           |
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader                                      | `packages/api-client`   |
 | Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
 | End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                                                | `tests/e2e`             |
@@ -61,7 +64,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,380 requirements in 22 documents under
+There are 1,382 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements

@@ -101,6 +101,18 @@ describe('the pinned Typst', () => {
     await expect(missing.compile(SAMPLE_TEMPLATE, data, at)).rejects.toThrow(TypstFailed);
   });
 
+  it('says only how the run ended when the binary will not tell its version', async () => {
+    // A handler's `failed` is handed this error as it is `compile`'s, so its cause is stripped the
+    // same way: Node's own error names the command line, which names the binary's path.
+    const missing = createTypst({ binary: join(tmpdir(), 'aw-no-typst', 'typst'), fonts });
+    const failure: unknown = await missing.version().catch((e) => e);
+    expect(failure).toBeInstanceOf(TypstFailed);
+    const cause = (failure as TypstFailed).cause;
+    expect(Object.keys(cause as object).sort()).toEqual(['code', 'killed', 'signal']);
+    expect(cause).toMatchObject({ code: 'ENOENT', killed: false });
+    expect(JSON.stringify(pino.stdSerializers.err(failure as Error))).not.toContain('aw-no-typst');
+  });
+
   it('refuses, once and for all, a document the engine will not set', async () => {
     // A private-use character no pinned face holds: PDF/UA-1 refuses it every time.
     const refused = JSON.stringify({ environment: '\u{e000}', requestedAt: 'now' });

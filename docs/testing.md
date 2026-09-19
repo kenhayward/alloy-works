@@ -199,26 +199,41 @@ the binary is the thing being pinned.
 
 ## The regression corpus and veraPDF
 
-`apps/worker/regression/` holds one Typst source file per case - meant to be the publishing spike's
-cases, grown by a case for every publishing defect found (PUB-087) - each compiled by the pinned Typst
-and read back with `apps/worker/src/testing/pdf.ts` (bookmarks, roles, marked structure, language and
-title) to check against its expected outcome. It holds one case today, `nine-heading-levels.typ`; the
-spike's other cases arrive with the publication template.
+`apps/worker/src/regression.test.ts` holds the corpus - meant to be the publishing spike's cases,
+grown by a case for every publishing defect found (PUB-087). **Every publishing defect gets a case
+here, in the pull request that fixes it**, holding the outline that showed it and the outcome that is
+now right, so the corpus is the record of what has gone wrong and cannot again. A case is an outline,
+not Typst source: it goes through `assemble` and the publication template
+(`apps/worker/templates/publication/1/`), so what is checked is what ships. Each PDF is read back by
+pdf.js, not by our own parser, through `apps/worker/src/testing/pdf.ts`: the bookmarks; per page, the
+text in artifacts, such as the draft notice at the top of each page, which a screen reader skips, and
+the text in tagged content, which it reads; the structure roles after the role map, which is what a
+screen reader is told a thing is; whether it is marked tagged; its PDF/UA part, title and language.
+It holds three cases today: nine heading levels; a PDF not made to PDF/UA-1, which proves the checker can say no; and
+sixteen character probes, each refused by `assemble` exactly where the pinned Typst would refuse it
+(the byte-order mark aside, which Typst refuses between some letters and not others, and `assemble`
+refuses everywhere). The spike's other cases arrive with what they exercise.
 
-Each case is also checked against PDF/UA-1 by veraPDF: `apps/worker/src/testing/verapdf.ts` runs the
+The publish job's own suite, `apps/worker/src/publish.test.ts`, reads its publications the same way,
+and checks one multi-page publication with veraPDF too. `apps/worker/src/testing/verapdf.ts` runs the
 pinned `verapdf/cli` image, fetched once by digest with `pnpm --filter @alloy-works/worker
 fetch-verapdf` (needs Docker; it retries the pull three times before failing, since Docker Hub is
 outside the repository's control - an outage or an anonymous rate limit fails the step before the
 traceability gate even runs). A cold veraPDF run costs about eleven seconds, almost all of it the
 container and the JVM starting rather than checking the page, so the suite runs it in the worker's test
 suite on every change to the template or the engine - not on every publication, which is a later
-slice's, warmed differently. Nothing in the corpus exercises `assemble` yet.
+slice's, warmed differently. Of the corpus's three cases, veraPDF checks two against PDF/UA-1: nine
+heading levels, which it must pass, and the PDF not made to PDF/UA-1, which it must fail. The sixteen
+character probes are not checked against PDF/UA-1 at all - each is compared only to what the pinned
+Typst itself would refuse, character by character.
 
 What a case demonstrates is what a person cannot verify by reading a PDF: the machine rules veraPDF
 checks - tagging, a document title, alternative text present - are part of what a screen reader is told
 when it reads the structure tree. Passing them is necessary but not sufficient: the nine-level case
 passes every one, and its headings at levels seven to nine still reach a screen reader as paragraphs,
-because the pinned Typst tags them `P`. Reading order, and the other Matterhorn checkpoints only a
+because the pinned Typst tags them `H7` to `H9` and role-maps each to `P`. The document's title is set
+as a level-one heading for the same reason: Typst's own title is role-mapped to `P`, and the case pins
+the whole role tree, so an engine that changed either would be caught. Reading order, and the other Matterhorn checkpoints only a
 person can judge - whether a heading sounds like a heading, whether a table's structure matches what it
 shows - are read from the same cases by hand when the engine or the template changes; they are not run
 by any suite.
@@ -236,6 +251,14 @@ pnpm test:e2e
 It is **left out of `pnpm test` on purpose**, because a suite that needs the whole stack up first
 would otherwise fail on every machine that has not run it. CI runs it as its own job, which is also
 where the stack's logs are kept when it fails.
+
+Besides a sample, **it publishes a document and downloads it.** The development environment's seed
+lets Ada publish, so the check makes a document holding the seeded component, asks for a PDF, follows
+the request until it is done, finds the publication in the document's list, and downloads it: the bytes
+must be a PDF, hash to the digest the record holds, and name the pinned face - which is what catches an
+image built without its fonts, since Typst with no fonts at all compiles and warns about nothing. What it
+makes stays in the database the stack serves, as a sample does - locally, the development database;
+in CI, a fresh volume removed afterwards.
 
 Two things it deliberately does not ask of the machine running it:
 

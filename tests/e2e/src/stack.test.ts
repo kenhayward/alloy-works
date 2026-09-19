@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
 import { createApiClient, followStream } from '@alloy-works/api-client';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
@@ -98,8 +99,13 @@ describe('the whole system', () => {
     cookie = await signIn();
   }, 180_000);
 
-  const asTheSignedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) =>
-    fetch(input, { ...init, headers: { ...init?.headers, cookie } })) as typeof fetch;
+  // The client hands fetch a whole Request, whose headers - a JSON body's content type among them -
+  // an `init.headers` would replace outright. So the cookie is added to the request, never swapped in.
+  const asTheSignedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const request = new Request(input, init);
+    request.headers.set('cookie', cookie);
+    return fetch(request);
+  }) as typeof fetch;
 
   const client = () => createApiClient({ baseUrl: SERVICE, fetch: asTheSignedIn });
 
@@ -157,4 +163,68 @@ describe('the whole system', () => {
     unsigned.search = '';
     expect((await followSignedLink(unsigned)).status).toBe(403);
   });
+
+  it('publishes a document to a PDF set in the pinned face, and keeps it', async () => {
+    const api = client();
+    const { data: spaces } = await api.GET('/v1/spaces');
+    const general = spaces!.items.find((space) => space.name === 'General')!;
+    const { data: components } = await api.GET('/v1/components');
+    const printer = components!.items.find(
+      (component) => component.title === 'Install the printer',
+    );
+    if (!printer) throw new Error('The seeded component "Install the printer" was not found.');
+    const { data: made } = await api.POST('/v1/spaces/{space}/documents', {
+      params: { path: { space: general.id } },
+      body: { title: 'The dosing report', language: 'en-GB', direction: 'ltr' },
+    });
+    const { data: placed } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: made!.id } },
+      body: {
+        openedFrom: made!.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'reference', component: printer.id, mode: { kind: 'latest' } },
+        },
+      },
+    });
+    expect(placed?.mayPublish).toBe(true);
+
+    const { data: asked } = await api.POST('/v1/documents/{id}/publications', {
+      params: { path: { id: made!.id } },
+      body: { version: placed!.version.id, formats: ['pdf'] },
+    });
+    let publication: string | null = null;
+    // The job takes seconds; this bounds the wait rather than asserting a particular duration - the
+    // veraPDF check that would take longer is not part of the job, only of the worker's own suite.
+    await vi.waitFor(
+      async () => {
+        const { data } = await api.GET('/v1/publication-requests/{id}', {
+          params: { path: { id: asked!.id } },
+        });
+        expect(data?.failures).toEqual([]);
+        expect(data?.state).toBe('done');
+        publication = data!.publication;
+      },
+      { timeout: 60_000, interval: 250 },
+    );
+
+    const { data: listed } = await api.GET('/v1/documents/{id}/publications', {
+      params: { path: { id: made!.id } },
+    });
+    expect(listed?.items.map((item) => item.id)).toContain(publication);
+
+    const { data: kept } = await api.GET('/v1/publications/{id}', {
+      params: { path: { id: publication! } },
+    });
+    expect(kept).toMatchObject({ approval: 'none', engine: { name: 'typst', version: '0.15.1' } });
+    const pdf = await followSignedLink(new URL(kept!.outputs[0]!.download));
+    expect(pdf.status).toBe(200);
+    expect(pdf.body.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(createHash('sha256').update(pdf.body).digest('hex')).toBe(kept!.outputs[0]!.sha256);
+    // The image carries the pinned faces and the template: a publication set in anything else, or
+    // in nothing, is the failure this test exists for (#145).
+    expect(pdf.body.toString('latin1')).toContain('LiberationSerif');
+  }, 120_000);
 });

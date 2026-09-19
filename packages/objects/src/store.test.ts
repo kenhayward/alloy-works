@@ -124,6 +124,23 @@ describe("a tenant's own corner of the object store", () => {
     ).toBe(403);
   });
 
+  it('signs a link that saves the object under the name it is given, and under none when not', async () => {
+    const stored = await forA.put(bytes('named'), 'application/pdf');
+    const named = await fetch(await forA.signedLink(stored.key, 60, 'a-name.pdf'));
+    expect(named.status).toBe(200);
+    expect(named.headers.get('content-disposition')).toBe('attachment; filename="a-name.pdf"');
+    expect(await named.text()).toBe('named');
+    const unnamed = await fetch(await forA.signedLink(stored.key, 60));
+    expect(unnamed.headers.get('content-disposition')).toBeNull();
+  });
+
+  it('refuses to name a download with anything but an identifier', async () => {
+    const stored = await forA.put(bytes('not named'), 'application/pdf');
+    for (const name of ['The dosing report.pdf', 'a"; b.pdf', '../a.pdf', '']) {
+      await expect(forA.signedLink(stored.key, 60, name), name).rejects.toThrow(/file name/);
+    }
+  });
+
   it('can be given a new credential without losing what it has', async () => {
     const stored = await forA.put(bytes('kept across a new credential'), 'application/pdf');
     await store.setUp(db.adminUrl, a);

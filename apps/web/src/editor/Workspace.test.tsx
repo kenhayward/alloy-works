@@ -451,6 +451,41 @@ describe('the workspace', () => {
     expect(screen.queryByText('The linked part is not in this document.')).toBeNull();
   });
 
+  it('opens a publication at its own address', async () => {
+    const PUBLICATION = 'ffffffff-0000-4000-8000-000000000001';
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === `/v1/publications/${PUBLICATION}`) {
+        return json(200, {
+          id: PUBLICATION,
+          document: 'eeeeeeee-0000-4000-8000-000000000001',
+          version: { id: 'v', number: '0.3' },
+          title: 'The dosing report',
+          publisher: { id: 'p1', displayName: 'Ada' },
+          publishedAt: '2026-09-19T09:00:00.000Z',
+          approval: 'none',
+          formats: ['pdf'],
+          engine: { name: 'typst', version: '0.15.1' },
+          template: { name: 'publication', version: 1 },
+          pipeline: '1',
+          outputs: [],
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+
+    window.location.hash = `#/publications/${PUBLICATION}`;
+    render(
+      <StrictMode>
+        <Workspace fetch={fetching} />
+      </StrictMode>,
+    );
+    expect(await screen.findByRole('heading', { name: 'The dosing report' })).toBeInTheDocument();
+    expect(screen.getByText(/^Not approved\./)).toBeInTheDocument();
+  });
+
   it('opens a document at the node its address names, and again when that address arrives again', async () => {
     const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
     const node = (id: string, title: string) => ({
@@ -470,6 +505,9 @@ describe('the workspace', () => {
       const url = new URL(request.url);
       if (url.pathname === '/v1/me') return json(200, me);
       if (url.pathname === '/v1/components') return json(200, { items: [], next: null });
+      if (url.pathname === `/v1/documents/${DOCUMENT}/publications`) {
+        return json(200, { items: [] });
+      }
       if (url.pathname === `/v1/documents/${DOCUMENT}`) {
         return json(200, {
           id: DOCUMENT,
@@ -489,6 +527,7 @@ describe('the workspace', () => {
             nodes: [node(INTRODUCTION, 'Introduction'), node(METHOD, 'Method')],
           },
           mayEdit: false,
+          mayPublish: false,
         });
       }
       return json(404, { code: 'not_found', message: 'none', traceId: 't' });
@@ -555,6 +594,9 @@ describe('the workspace', () => {
           next: null,
         });
       }
+      if (url.pathname === `/v1/documents/${DOCUMENT}/publications`) {
+        return json(200, { items: [] });
+      }
       if (url.pathname === `/v1/documents/${DOCUMENT}`) {
         return json(200, {
           id: DOCUMENT,
@@ -591,6 +633,7 @@ describe('the workspace', () => {
             ],
           },
           mayEdit: false,
+          mayPublish: false,
         });
       }
       if (url.pathname === `/v1/documents/${DOCUMENT}/contributions`) {

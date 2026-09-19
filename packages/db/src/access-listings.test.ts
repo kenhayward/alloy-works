@@ -234,6 +234,7 @@ describe('listing grants, roles and people, for managing access', () => {
       'Definitions manager',
       'Designer',
       'Editing',
+      'Publisher',
       'Reader',
       'Reviewer',
     ]);

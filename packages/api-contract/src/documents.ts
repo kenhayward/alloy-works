@@ -56,6 +56,7 @@ export const DocumentView = z.object({
         '`mode.version: null`; everything else is as stored. Empty when the stored outline does not read',
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
+  mayPublish: z.boolean().describe('Whether the caller may publish the document'),
 });
 export type DocumentView = z.infer<typeof DocumentView>;
 

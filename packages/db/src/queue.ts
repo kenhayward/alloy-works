@@ -3,7 +3,7 @@ import pg from 'pg';
 import type { PlatformTables, TenantTransaction } from './tables.js';
 
 /** The kinds of work there are. A worker refuses a kind it does not know. */
-export type JobKind = 'sample_pdf';
+export type JobKind = 'sample_pdf' | 'publish';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

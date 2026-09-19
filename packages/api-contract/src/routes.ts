@@ -4,6 +4,7 @@ import { documentRoutes } from './documents.js';
 import { editingRoutes } from './editing.js';
 import { invitationRoutes } from './invitations.js';
 import { managingAccessRoutes } from './managing-access.js';
+import { publishingRoutes } from './publishing.js';
 import {
   AccessAnswers,
   AccessExplanation,
@@ -243,6 +244,7 @@ export const routes = {
   // Finding, opening and editing components and documents, each declared beside its schemas.
   ...componentRoutes,
   ...documentRoutes,
+  ...publishingRoutes,
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,
