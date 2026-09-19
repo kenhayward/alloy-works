@@ -130,6 +130,8 @@ function service(
   // The next contributions request, once held, waits on this; the answer is what stood when it arrived.
   let contributionsGate: Promise<void> | null = null;
   let contributionsAnswered = 0;
+  // How many contributions answers the page has read the body of, counted once the body resolves.
+  let contributionsRead = 0;
   const chain: { id: string; number: string; outline: OutlineDocument }[] = [
     { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start },
   ];
@@ -219,7 +221,15 @@ function service(
       contributionsGate = null;
       if (held !== null) await held;
       contributionsAnswered += 1;
-      return json(200, answer);
+      // The client reads a body without a length as text, so that is what is counted.
+      const response = json(200, answer);
+      const body = response.text.bind(response);
+      response.text = async () => {
+        const read = await body();
+        contributionsRead += 1;
+        return read;
+      };
+      return response;
     }
     if (url === `/v1/documents/${DOCUMENT}/outline`) {
       if (unchangedNext) {
@@ -281,6 +291,8 @@ function service(
     },
     /** How many contributions requests have been answered so far. */
     contributionsAnswered: () => contributionsAnswered,
+    /** How many contributions answers have had their body read, once each body has resolved. */
+    contributionsRead: () => contributionsRead,
     hold: () => {
       let release = () => {};
       gate = new Promise((resolve) => (release = resolve));
@@ -2436,9 +2448,8 @@ describe('the lists of figures, tables and equations', () => {
 
     // The first answer lands last, knowing nothing of Grace's occurrence: it is not used.
     release();
-    await waitFor(() => expect(fake.contributionsAnswered()).toBe(2));
-    // Time for the stale answer to have been read, had it been going to be.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Once its body has been read, the page has had the stale answer in hand.
+    await waitFor(() => expect(fake.contributionsRead()).toBe(2));
     expect(listed('Figures')).toEqual(expected);
   });
 
