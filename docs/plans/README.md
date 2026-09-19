@@ -276,7 +276,7 @@ over a tree that has to exist before any of them can be written.
 | --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | 1   | [The document and its outline](2026-09-18-structure-01-the-document-and-its-outline.md) | In `packages/domain`, `src/structure/`: the outline document's schema - one tree of sections and component references, each identified, each carrying its positional switches, a section title being inline content - its parse, its migration chain, its own canonical form where marks are a set, and the five operations as pure functions over a tree; a third arm in `VersionSubstance`. In `packages/db`, migration 0016 widening `artifact.kind`, `artifact_space_by_kind` and the author check, `document` as a content kind, the version chain branching three ways, and `createDocument`, `readDocument`, `listReadableDocuments` and `editOutline`. Four routes; in `apps/web`, the documents page and the outline panel with its keymap and undo stack. And STR-061, what a document is. No numbering, captions, cross-references, generated lists, deep links or cycle check | Built (PR #121) |
 | 2   | [Numbering](2026-09-18-structure-02-numbering.md)                                       | In `packages/domain`, `src/structure/`: the numbering scheme and the product's default, the projection from a component's content to what it contributes, and `resolve`, `conditions` and `number` - one pure function over occurrences, a counter stack per matter, restarts, appendices and excluded nodes, and a numbering table whose every entry names what produced it. In `packages/db`, `numberingInputs`, resolving each occurrence with two reads of component versions and never reading a component the reader may not read. `GET /v1/documents/{id}/numbering`, withholding every number such a component could move. In `apps/web`, section numbers in the outline panel, and Numbered and Appendix beside each node. Nothing stored, no migration. No cross-reference resolved                                                                                             | Built (PR #133) |
-| 3   | [Navigation](2026-09-18-structure-03-navigation.md)                                     | In `packages/domain`, `src/structure/lists.ts`: `contents` to a declared depth, every node numbered or not, and `listOf`, one sequence's entries with the caption a contribution now carries. `GET /v1/documents/{id}/contributions`, each occurrence's version and each version's contributions once, through `numberingInputs`, so nothing of a component the reader may not read is sent. STR-063, issue #119 narrowed to the service's share of the navigation budget, measured in the service suite at five hundred nodes. In `apps/web`, an address for every node, `#/documents/{id}/nodes/{node}`, that opens the document there, marks the node, survives a reorder and is copied by Copy link; and the lists of figures, tables and equations beneath the outline, numbered in the page. Nothing stored, no migration. No cross-reference resolved                              | Planned         |
+| 3   | [Navigation](2026-09-18-structure-03-navigation.md)                                     | In `packages/domain`, `src/structure/lists.ts`: `contents` to a declared depth, every node numbered or not, and `listOf`, one sequence's entries with the caption a contribution now carries. `GET /v1/documents/{id}/contributions`, each occurrence's version and each version's contributions once, through `numberingInputs`, so nothing of a component the reader may not read is sent. STR-063, issue #119 narrowed to the service's share of the navigation budget, measured in the service suite at five hundred nodes. In `apps/web`, an address for every node, `#/documents/{id}/nodes/{node}`, that opens the document there, marks the node, survives a reorder and is copied by Copy link; and the lists of figures, tables and equations beneath the outline, numbered in the page. Nothing stored, no migration. No cross-reference resolved                              | Built (PR #136) |
 
 Plan 1 leads with ten findings - the most serious that the version chain assumes every artifact that
 is not a component is a definition, and that migration 0016 cannot alter `artifact_version` on a
@@ -329,11 +329,29 @@ claimed and answered only for the author's own acts, since another person's chan
 page only when the author next acts or reloads, and that issue #119 as filed cannot be demonstrated,
 because most of the time it budgets is the interface's and no suite here can measure an interface -
 and thirteen decisions for Ken. It drops STR-034's claim, lands #119 as STR-063 narrowed to the
-service's share, and recommends a row for the interface's share beside the browser suite. It stores
+service's share, and files the interface's share as [issue #134](https://github.com/kenhayward/alloy-works/issues/134),
+to land beside the browser suite. It stores
 nothing; its code was run against the compose Postgres, where the service answered a document of five
 hundred nodes at p95 17 ms, its contributions at 39 ms, its numbering at 45 ms and a move at 32 ms,
 and, bundled into Electron's Chromium over a fake service, the page opened it at p95 110 ms and
 answered a move at 91 ms.
+
+**Plan 3 is built.** Every node in a document's outline has a link, `#/documents/{document}/nodes/{node}`,
+that opens the document with that node chosen, focused and marked, survives a reorder, and is copied
+with **Copy link**; a node the address names that is no longer in the document says **The linked part
+is not in this document.** Beneath the outline, the document lists its figures, tables and equations,
+each with its number and caption, renumbered at once when anything moves; `GET
+/v1/documents/{id}/contributions` answers what the numbering route reads, so the page numbers no
+caption from a component the reader may not read. Building it found twelve more: the most serious that
+STR-034 is claimed and answered only for the author's own acts, so the claim is dropped and the gap
+named in prose, and that an answer per occurrence would have repeated a reused component's
+contributions - now answered once per version, 232 KB rather than 542 KB at 500 nodes. What it leaves
+is listed at the end of the plan: resolving a cross-reference and a component's reference to a
+section, structure 4's; another person's outline change reaching an open page, the plan that puts
+document versions on the stream; the interface's share of the navigation budget, issue #134 and the
+browser suite; tracking the reader's position as they scroll and a link into the body, the document
+view's; a published contents and lists, PUB's; expanding and collapsing the tree, the accessibility
+plan; and a pinned reference named by its pinned version's title, issue #135.
 
 ## The editor
 

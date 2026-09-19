@@ -291,6 +291,34 @@ These numbering steps are written from the code and its tests, and were **not** 
 browser: the renderer's tests run in jsdom and the route's on the wire. What only a person can check
 is that the numbers, the two boxes, the hint and the appendix's refusal look and read right.
 
+**Navigation changes nothing stored either**, so a document from before 0.29.0 has addresses and lists
+the moment it opens. To see it by hand, sign in as Ada and open **The dosing report** again from
+**Documents**, as step 8 above left it.
+
+1. Select **Install the printer**. Beneath the tree, **Link to Install the printer** shows an address
+   ending `#/documents/<the document's id>/nodes/<its id>`, matching the browser's own address bar.
+   Press **Copy link**: the page says **Copied the link to Install the printer.**
+2. Select **Introduction** and press `Alt+Down`: it moves after **Method and materials**, which
+   becomes `1`; **Install the printer**, still its first child, becomes `1.1`. Paste the address
+   copied in step 1 into a new tab, signed in to the same environment: the document opens with
+   **Install the printer** chosen, focused and marked, now at `1.1` - the address named the node, not
+   the position it held.
+3. Change one letter of the pasted address's last part and press Enter: the page says **The linked
+   part is not in this document.** Reload the tab: the same message shows again, because the address
+   keeps what was followed.
+4. Beneath the outline, **Figures** lists `Figure 1.1 A caption in Replace the printer toner`,
+   `Figure 1.2 A caption in Replace the printer toner`, `Figure 1.3 A caption in Replace the printer
+toner` and `Figure 1.4 A caption in Replace the printer toner` - the chapter prefix followed
+   **Method and materials** from `2` to `1` at once, before the page heard back from the service.
+   Choose a figure's link: the occurrence that holds it is chosen and marked in the tree.
+5. Signed in as Alice, denied **Replace the printer toner** in step 8 above, the same document lists
+   no figures at all: neither occurrence's caption nor number is hers to see, and nothing says the
+   component behind them holds any.
+
+These navigation steps are written from the code and its tests, and were **not** followed in a
+browser either: the panel's tests run in jsdom over a fake service, and its timing in Electron's
+Chromium against the same fake.
+
 The development environment also takes Google accounts, with the stand-in playing Google and
 `signin.localhost:8088` as the one address it returns to. Opening
 `http://dev.acme.localhost:8088/v1/sign-in/google` and choosing Ada accepts her invitation through that

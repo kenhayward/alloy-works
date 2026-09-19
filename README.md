@@ -80,7 +80,7 @@ bar needs themes, templates, assets and tables as well as an editor. **The first
 | Access                       | Who may do what, decided through roles and grants, which an administrator gives and takes away on a component's Manage access page - to people invited by address before they first sign in, too - with why for each answer |
 | Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                                                                                              |
 | Making a component           | Create one in a space you may create in, with a title, a base language and a direction, and change them afterwards above the surface                                                                                        |
-| Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time. Sections are numbered as you go                                                                       |
+| Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time. Sections are numbered as you go, every part has a link, and figures, tables and equations are listed  |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                                                                                            |
 
 Full prose list: [`docs/features.md`](docs/features.md).

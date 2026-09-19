@@ -41,6 +41,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1369);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 360, from 361: structure.md stopped claiming STR-034, which the panel answers for the author's
+    // own acts and not for another person's - named in prose beside the table (the navigation plan,
+    // decision I).
     // 361, from 360: structure.md claims STR-063, which the navigation plan measures in the service
     // suite.
     // 360, from 361: structure.md stopped claiming STR-023 when the build gave a caption met in
@@ -88,7 +91,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(361);
+    ).toBe(360);
   });
 });
 

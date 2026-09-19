@@ -15115,10 +15115,6 @@
           "howItIsMet": "Resolution binds a `block` target to the occurrence being read and a `component` target to that component's one occurrence, and returns a failure naming the reference and its target where there are none or several - never the first"
         },
         {
-          "id": "STR-034",
-          "howItIsMet": "The panel renders the outline the renderer holds, which is the outline every operation returns. There is no second source to fall behind"
-        },
-        {
           "id": "STR-036",
           "howItIsMet": "The panel calls the same `number` the publisher calls, with the same scheme, so the two cannot disagree - not by agreement, but by being one function"
         },
@@ -15132,11 +15128,11 @@
         },
         {
           "id": "STR-040",
-          "howItIsMet": "`contents(numbering, depth)` returns entries to a depth: node, number, title and depth. **PUB** renders it"
+          "howItIsMet": "`contents(conditioned, numbering, depth)` lists every node to the depth, numbered or not, a reference's title left to its caller"
         },
         {
           "id": "STR-041",
-          "howItIsMet": "`listOf(numbering, sequence)` returns the entries of one sequence, so figures, tables and equations are three calls to one function and a fourth sequence needs no new one"
+          "howItIsMet": "`listOf(conditioned, numbering, sequence)` lists one sequence's entries with their captions"
         },
         {
           "id": "STR-044",
