@@ -48,7 +48,7 @@ import {
   type ProviderSettings,
   type SignInStart,
 } from './oidc.js';
-import { publishingHandlers } from './publishing.js';
+import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
 import { rendererFallback, serveRenderer } from './renderer.js';
 import type { SecretStore } from './secrets.js';
 import {
@@ -97,8 +97,6 @@ const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
 /** How long a hand-off code lives: one redirect's worth. */
 const HANDOFF_MS = 60 * 1000;
 const COOKIE = { path: '/', httpOnly: true, secure: true, sameSite: 'lax' } as const;
-/** Long enough to follow a link, short enough that a copied one is worth little. */
-const DOWNLOAD_SECONDS = 300;
 
 type Success<R extends RouteContract> = R['responses'] extends {
   200: { schema: infer S extends z.ZodType };
@@ -300,7 +298,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
-    ...publishingHandlers(db, tenantOf, principalOf),
+    ...publishingHandlers(db, tenantOf, principalOf, options.objects),
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),

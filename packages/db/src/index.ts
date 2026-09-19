@@ -17,7 +17,9 @@ export {
 } from './artifact-kind.js';
 export {
   failPublicationRequest,
+  listPublications,
   publicationInputs,
+  readPublication,
   readPublicationRequest,
   recordPublication,
   requestPublication,
@@ -26,6 +28,8 @@ export {
   type OccurrenceOutcome,
   type PublicationInputs,
   type PublicationRequestAnswer,
+  type PublicationSummary,
+  type StoredPublication,
   type StoredPublicationRequest,
 } from './publishing.js';
 export type {

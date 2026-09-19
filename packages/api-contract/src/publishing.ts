@@ -26,6 +26,9 @@ export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
 export const PublicationRequestParams = z.object({ id: LowercaseUuid });
 export type PublicationRequestParams = z.infer<typeof PublicationRequestParams>;
 
+export const PublicationParams = z.object({ id: LowercaseUuid });
+export type PublicationParams = z.infer<typeof PublicationParams>;
+
 /** One failure, naming its stage and its place (PUB-086). An unreadable place carries its node alone. */
 export const PublishFailureView = z.object({
   stage: z.enum(['resolve', 'compose', 'engine', 'store']),
@@ -50,12 +53,46 @@ export const PublicationRequestView = z.object({
 });
 export type PublicationRequestView = z.infer<typeof PublicationRequestView>;
 
+/** A publication as a listing shows it: what was published, from which version, by whom and when. */
+export const PublicationSummary = z.object({
+  id: z.string(),
+  document: z.string(),
+  version: z.object({ id: z.string(), number: z.string() }),
+  title: z.string().describe("The document's title at the version published"),
+  publisher: z.object({ id: z.string(), displayName: z.string().nullable() }),
+  publishedAt: z.string(),
+  approval: z.literal('none').describe('`none`: a draft. Nothing in T1 can approve a publication'),
+  formats: z.array(z.string()),
+});
+export type PublicationSummary = z.infer<typeof PublicationSummary>;
+
+export const PublicationList = z.object({ items: z.array(PublicationSummary) });
+export type PublicationList = z.infer<typeof PublicationList>;
+
+export const PublicationView = PublicationSummary.extend({
+  engine: z.object({ name: z.literal('typst'), version: z.string() }),
+  template: z.object({ name: z.literal('publication'), version: z.number().int() }),
+  pipeline: z.string(),
+  outputs: z.array(
+    z.object({
+      format: z.literal('pdf'),
+      bytes: z.number().int(),
+      sha256: z.string(),
+      standard: z.literal('ua-1'),
+      download: z
+        .string()
+        .describe('A link to the bytes, valid for five minutes, named by the publication id'),
+    }),
+  ),
+});
+export type PublicationView = z.infer<typeof PublicationView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
 } as const;
 
-/** Publishing a document, and following the request (publishing.md, "Routes"). */
+/** Publishing a document, following the request, and reading what was published (publishing.md). */
 export const publishingRoutes = {
   requestPublication: {
     operationId: 'requestPublication',
@@ -104,6 +141,53 @@ export const publishingRoutes = {
       200: { description: 'The request', schema: PublicationRequestView },
       401: unauthenticated,
       404: { description: 'No such request, or one somebody else asked for', schema: ErrorBody },
+    },
+  },
+  listPublications: {
+    operationId: 'listPublications',
+    method: 'GET',
+    path: '/v1/documents/{id}/publications',
+    summary: "The document's publications the caller may read, newest first",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    responses: {
+      200: { description: 'The publications', schema: PublicationList },
+      401: unauthenticated,
+      403: {
+        description:
+          'Never answered: a document the caller may read is one whose listing they may read',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such document in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getPublication: {
+    operationId: 'getPublication',
+    method: 'GET',
+    path: '/v1/publications/{id}',
+    summary: 'A publication: its record, and a link to each output',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: PublicationParams,
+    responses: {
+      200: { description: 'The publication', schema: PublicationView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a publication the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such publication in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+      503: {
+        description: 'This environment has nowhere to keep documents yet',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

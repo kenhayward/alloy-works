@@ -58,8 +58,12 @@ export {
 } from './invitations.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export {
+  PublicationList,
+  PublicationParams,
   PublicationRequestParams,
   PublicationRequestView,
+  PublicationSummary,
+  PublicationView,
   PublishFailureView,
   RequestPublicationBody,
 } from './publishing.js';

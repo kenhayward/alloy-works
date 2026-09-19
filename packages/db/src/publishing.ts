@@ -8,8 +8,10 @@ import {
   type PublishFailure,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
+import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion } from './versions.js';
 
@@ -501,4 +503,145 @@ export async function readPublicationRequest(
       publication: row.publication,
     }
   );
+}
+
+/** A publication as a reader is shown it: its record, and its outputs by key. */
+export interface StoredPublication {
+  readonly id: string;
+  readonly documentId: string;
+  readonly documentVersion: { readonly id: string; readonly number: string };
+  readonly title: string;
+  readonly publisher: { readonly id: string; readonly displayName: string | null };
+  readonly publishedAt: Date;
+  readonly approval: 'none';
+  readonly formats: readonly string[];
+  readonly engine: { readonly name: 'typst'; readonly version: string };
+  readonly template: { readonly name: 'publication'; readonly version: number };
+  readonly pipelineVersion: string;
+  readonly outputs: readonly {
+    readonly format: 'pdf';
+    readonly key: string;
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly standard: 'ua-1';
+  }[];
+}
+
+/** A publication as a listing shows it: its record without its outputs. */
+export type PublicationSummary = Omit<StoredPublication, 'outputs'>;
+
+const publicationColumns = [
+  'p.id',
+  'p.document_id',
+  'p.document_version_id',
+  'p.published_at',
+  'p.approval',
+  'p.formats',
+  'p.engine_version',
+  'p.template_version',
+  'p.pipeline_version',
+  'pr.id as publisher_id',
+  'pr.display_name as publisher_name',
+  'v.revision_no',
+  'v.version_no',
+] as const;
+
+/**
+ * One publication, or undefined where this environment holds no publication of that id - a
+ * document's or a component's id among them. It decides nothing: `read` on the publication artifact
+ * is the caller's to decide, before it asks (decision D).
+ */
+export async function readPublication(
+  trx: TenantTransaction,
+  id: string,
+): Promise<StoredPublication | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const row = await trx
+    .selectFrom('publication as p')
+    .innerJoin('principal as pr', 'pr.id', 'p.publisher')
+    .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
+    .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
+    .where('p.id', '=', id)
+    .executeTakeFirst();
+  if (!row) return undefined;
+  const outputs = await trx
+    .selectFrom('publication_output')
+    .select(['format', 'object_key', 'sha256', 'bytes', 'standard'])
+    .where('publication_id', '=', id)
+    .orderBy('format')
+    .execute();
+  return {
+    ...summaryOf(row),
+    outputs: outputs.map((each) => ({
+      format: each.format,
+      key: each.object_key,
+      sha256: each.sha256,
+      bytes: each.bytes,
+      standard: each.standard,
+    })),
+  };
+}
+
+/**
+ * A document's publications the principal may read, newest first (PUB-048). Filtered in the query by
+ * the one readable-set predicate every listing uses, over the **publication** artifacts, so a grant
+ * on the document alone reaches none of them (decision D), and one the principal may not read leaves
+ * no count, place or gap behind. A publication's time is to the second, so ties are broken by when
+ * each was recorded. It does not ask whether the id is a document's: a component's lists nothing,
+ * which the caller must answer as no such document. Undefined when the tenant holds no such principal.
+ */
+export async function listPublications(
+  trx: TenantTransaction,
+  documentId: string,
+  principalId: string,
+): Promise<readonly PublicationSummary[] | undefined> {
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return undefined;
+  const rows = await trx
+    .selectFrom('publication as p')
+    .innerJoin('artifact as a', 'a.id', 'p.id')
+    .innerJoin('principal as pr', 'pr.id', 'p.publisher')
+    .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
+    .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
+    .where('p.document_id', '=', documentId)
+    .where((eb) => readableArtifacts(eb, readable))
+    .orderBy('p.published_at', 'desc')
+    .orderBy('a.created_at', 'desc')
+    .orderBy('p.id')
+    .execute();
+  return rows.map(summaryOf);
+}
+
+function summaryOf(row: {
+  id: string;
+  document_id: string;
+  document_version_id: string;
+  title: string;
+  published_at: Date;
+  approval: 'none';
+  formats: string[];
+  engine_version: string;
+  template_version: number;
+  pipeline_version: string;
+  publisher_id: string;
+  publisher_name: string | null;
+  revision_no: number;
+  version_no: number;
+}): PublicationSummary {
+  return {
+    id: row.id,
+    documentId: row.document_id,
+    documentVersion: {
+      id: row.document_version_id,
+      number: `${row.revision_no}.${row.version_no}`,
+    },
+    title: row.title,
+    publisher: { id: row.publisher_id, displayName: row.publisher_name },
+    publishedAt: row.published_at,
+    approval: row.approval,
+    formats: row.formats,
+    engine: { name: 'typst', version: row.engine_version },
+    template: { name: 'publication', version: row.template_version },
+    pipelineVersion: row.pipeline_version,
+  };
 }

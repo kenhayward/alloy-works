@@ -1,21 +1,33 @@
 import type {
   DocumentParams,
+  PublicationList,
+  PublicationParams,
   PublicationRequestParams,
   PublicationRequestView,
+  PublicationSummary as PublicationSummaryView,
+  PublicationView,
   RequestPublicationBody,
 } from '@alloy-works/api-contract';
 import {
+  listPublications,
+  readDocument,
+  readPublication,
   readPublicationRequest,
   requestPublication,
+  type PublicationSummary,
   type StoredPublicationRequest,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
+import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { wireCode } from './wire-codes.js';
+
+/** Five minutes: long enough to follow a link, short enough that a copy is worth little. */
+export const DOWNLOAD_SECONDS = 300;
 
 /** A request as the API shows it, copied, because the store's answers are read-only. */
 const requestView = (request: StoredPublicationRequest): PublicationRequestView => ({
@@ -26,16 +38,29 @@ const requestView = (request: StoredPublicationRequest): PublicationRequestView 
   publication: request.publication,
 });
 
+/** A publication as a listing shows it, copied for the same reason. */
+const summaryView = (publication: PublicationSummary): PublicationSummaryView => ({
+  id: publication.id,
+  document: publication.documentId,
+  version: { ...publication.documentVersion },
+  title: publication.title,
+  publisher: { ...publication.publisher },
+  publishedAt: publication.publishedAt.toISOString(),
+  approval: publication.approval,
+  formats: [...publication.formats],
+});
+
 /**
- * Publishing a document, and following the request (docs/design/publishing.md, "Routes"). Nothing here
- * is put on the stream: a request is followed by its requester through
- * `GET /v1/publication-requests/{id}`, so no event about a document reaches a viewer who may not read
- * it (issue #147, decision G).
+ * Publishing a document, following the request, and reading what was published
+ * (docs/design/publishing.md, "Routes"). Nothing here is put on the stream: a request is followed by
+ * its requester through `GET /v1/publication-requests/{id}`, so no event about a document reaches a
+ * viewer who may not read it (issue #147, decision G).
  */
 export function publishingHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
+  objects: ObjectStores | undefined,
 ) {
   return {
     /**
@@ -97,6 +122,64 @@ export function publishingHandlers(
       );
       if (!found || found.requestedBy !== principal.principalId) throw notFound();
       return requestView(found);
+    },
+
+    /**
+     * `read` was decided on the document; each publication is then listed only where it may be read
+     * itself, in the query (decision D). A component's or a publication's id authorises cleanly -
+     * `authorise` never looks at the kind - and is then no document, answered as none (finding 16).
+     */
+    listPublications: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<PublicationList> => {
+      const { id } = request.params as DocumentParams;
+      if (!(await readDocument(trx, id))) throw notFound();
+      const listed = await listPublications(trx, id, principalId);
+      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      return { items: listed.map(summaryView) };
+    },
+
+    /**
+     * `read` was decided on the publication artifact itself, so a grant on its document reaches none
+     * of it (decision D). A document's or a component's id authorises, and is then no publication. Each
+     * output's link is signed for five minutes and saves the bytes as `{id}.pdf`: never the title,
+     * because the link's query string reaches the store's logs.
+     */
+    getPublication: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<PublicationView> => {
+      const { id } = request.params as PublicationParams;
+      const publication = await readPublication(trx, id);
+      if (!publication) throw notFound();
+      if (!objects) {
+        throw new AppError(
+          503,
+          'storage_unavailable',
+          'This environment has nowhere to keep documents yet. Try again later.',
+        );
+      }
+      const store = await objects.forTenant(trx, tenantOf(request));
+      return {
+        ...summaryView(publication),
+        engine: { ...publication.engine },
+        template: { ...publication.template },
+        pipeline: publication.pipelineVersion,
+        outputs: await Promise.all(
+          publication.outputs.map(async (output) => ({
+            format: output.format,
+            bytes: output.bytes,
+            sha256: output.sha256,
+            standard: output.standard,
+            download: await store.signedLink(
+              output.key,
+              DOWNLOAD_SECONDS,
+              `${publication.id}.${output.format}`,
+            ),
+          })),
+        ),
+      };
     },
   };
 }

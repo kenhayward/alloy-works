@@ -257,8 +257,11 @@ describe('the citations in the committed model', () => {
   // 191, from 190: the same plan cites PUB-094 in apps/worker/src/publish.test.ts: a publish holding a
   // component its publisher may not read fails naming the node alone, makes no publication, and leaves
   // the component's id, versions and title in no row and no log line.
+  // 193, from 191: the same plan cites PUB-047 and PUB-048 in
+  // apps/service/src/publication-routes.test.ts: a publication kept at its own address, read on its
+  // own grants and never deleted, and listed with its document, newest first, with who and when.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(191);
+    expect(model.citations).toHaveLength(193);
   });
 
   it('cites no identifier the corpus does not hold', () => {
