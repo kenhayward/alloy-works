@@ -62,6 +62,8 @@ describe('the development content', () => {
           .executeTakeFirstOrThrow();
         const facts = await loadFacts(trx, principal.id, target);
         expect(decide('edit', facts!).allowed, subject).toBe(true);
+        // Decision N: somebody in a development environment may publish what they author.
+        expect(decide('publish', facts!).allowed, subject).toBe(true);
       }
       const alice = await trx
         .insertInto('principal')
@@ -72,7 +74,8 @@ describe('the development content', () => {
       expect(decide('read', facts!).allowed).toBe(false);
 
       const grants = await trx.selectFrom('access_grant').select('id').execute();
-      expect(grants).toHaveLength(2);
+      // Author and Publisher on General, for each of Ada and Grace.
+      expect(grants).toHaveLength(4);
     });
   });
 

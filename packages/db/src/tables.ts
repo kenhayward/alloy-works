@@ -1,6 +1,13 @@
 import type { DefinitionKind, Permission, PrincipalKind } from '@alloy-works/domain';
 import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import type {
+  PublicationInputTable,
+  PublicationOutputTable,
+  PublicationRequestOccurrenceTable,
+  PublicationRequestTable,
+  PublicationTable,
+} from './publishing-tables.js';
 
 // Written by hand while there are two tenant tables; generated from a migrated template schema once
 // there are enough that keeping them in step by hand is a risk (service-foundations.md).
@@ -308,6 +315,11 @@ export interface TenantTables {
   access_grant: AccessGrantTable;
   first_administrator: FirstAdministratorTable;
   component_type_default: ComponentTypeDefaultTable;
+  publication_request: PublicationRequestTable;
+  publication_request_occurrence: PublicationRequestOccurrenceTable;
+  publication: PublicationTable;
+  publication_input: PublicationInputTable;
+  publication_output: PublicationOutputTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

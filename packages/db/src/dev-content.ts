@@ -70,7 +70,8 @@ async function person(
  *
  * - the component "Install the printer", at 0.1, over the environment's default component type;
  * - Ada, through her invitation where one waits, and Grace, as a principal by the identity the stand-in
- *   gives her, each allowed Author on General, so either can edit and each can see the other's lock.
+ *   gives her, each allowed Author and Publisher on General, so either can edit and publish and each
+ *   can see the other's lock.
  *   Grace authors the component: a principal still waiting on an invitation must be able to go when
  *   the invitation is withdrawn, which one that authored a version cannot.
  *
@@ -87,18 +88,22 @@ export async function seedDevelopmentContent(
     .select('id')
     .where('name', '=', 'General')
     .executeTakeFirstOrThrow();
-  const author = await findRole(trx, 'Author');
-  if (!author) throw new Error('This environment has no Author role to grant');
-  for (const principal of [ada, grace]) {
-    const answer = await grant(trx, {
-      roleId: author.id,
-      subject: { principal },
-      level: { kind: 'space', id: general.id },
-      effect: 'allow',
-      grantedBy: grace,
-    });
-    if ('refused' in answer && answer.refused !== 'grant.duplicate') {
-      throw new Error(`Author on General was refused: ${answer.refused}`);
+  // Author, and Publisher: an environment granting nobody a role that holds `publish` is one where
+  // nothing can be published (the first publishing plan, decision N).
+  for (const name of ['Author', 'Publisher']) {
+    const role = await findRole(trx, name);
+    if (!role) throw new Error(`This environment has no ${name} role to grant`);
+    for (const principal of [ada, grace]) {
+      const answer = await grant(trx, {
+        roleId: role.id,
+        subject: { principal },
+        level: { kind: 'space', id: general.id },
+        effect: 'allow',
+        grantedBy: grace,
+      });
+      if ('refused' in answer && answer.refused !== 'grant.duplicate') {
+        throw new Error(`${name} on General was refused: ${answer.refused}`);
+      }
     }
   }
 

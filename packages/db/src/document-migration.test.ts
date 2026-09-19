@@ -17,11 +17,15 @@ describe('migration 0016, which makes a document an artifact', () => {
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
-    // Every migration up to 0015 and not 0016, so a tenant can stand where every environment stood.
+    // Every tenant migration up to 0015 and none after, so a tenant can stand where every environment
+    // stood - whatever has been added since 0016.
     before = await mkdtemp(join(tmpdir(), 'aw-before-0016-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      filter: (source) => !source.endsWith('0016_documents.sql'),
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 16;
+      },
     });
   });
 
@@ -77,7 +81,10 @@ describe('migration 0016, which makes a document an artifact', () => {
       queryAs(db.adminUrl, `insert into ${schema}.artifact (kind) values ('document')`),
     ).rejects.toThrow(/artifact_kind_check/);
 
-    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual(['0016_documents']);
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0016_documents',
+      '0017_publishing',
+    ]);
 
     // The component and its version are as they were.
     const { rows: held } = await queryAs(
@@ -137,5 +144,33 @@ describe('migration 0016, which makes a document an artifact', () => {
        values ('document', (select id from ${schema}.space where name = 'General')) returning kind`,
     );
     expect(rows).toEqual([{ kind: 'document' }]);
+  });
+
+  // 0017's starter role, on an environment that already made a role of the same name: its own stays,
+  // holding what it held, and no second one arrives beside it.
+  it('keeps a Publisher role an environment made itself when 0017 adds the starter one', async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Own roles' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    await queryAs(
+      db.adminUrl,
+      `insert into ${tenant.schema}.role (name, permissions) values ('Publisher', array['read'])`,
+    );
+
+    expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
+      '0016_documents',
+      '0017_publishing',
+    ]);
+
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select permissions from ${tenant.schema}.role where name = 'Publisher'`,
+    );
+    expect(rows).toEqual([{ permissions: ['read'] }]);
   });
 });

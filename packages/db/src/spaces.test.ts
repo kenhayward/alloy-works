@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { artifactKinds, contentKinds } from './artifact-kind.js';
+import { artifactKinds, spacedKinds } from './artifact-kind.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
@@ -60,7 +60,7 @@ describe('spaces and artifacts', () => {
     }
   });
 
-  it('puts a content artifact in exactly one space, and a definition in none', async () => {
+  it('puts a content artifact and a publication in exactly one space, and a definition in none', async () => {
     const space = await service.withTenant(production, (trx) => createSpace(trx, 'Clinical'));
     const insert = (kind: (typeof artifactKinds)[number], spaceId: string | null) =>
       service.withTenant(production, (trx) =>
@@ -72,9 +72,10 @@ describe('spaces and artifacts', () => {
       );
 
     for (const kind of artifactKinds) {
-      const content = (contentKinds as readonly string[]).includes(kind);
-      await expect(insert(kind, content ? space.id : null)).resolves.toEqual({ kind });
-      await expect(insert(kind, content ? null : space.id)).rejects.toThrow(
+      // A publication lives in its document's space, as content does (0017, finding 9).
+      const spaced = (spacedKinds as readonly string[]).includes(kind);
+      await expect(insert(kind, spaced ? space.id : null)).resolves.toEqual({ kind });
+      await expect(insert(kind, spaced ? null : space.id)).rejects.toThrow(
         /artifact_space_by_kind/,
       );
     }

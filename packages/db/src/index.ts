@@ -11,9 +11,23 @@ export {
 export {
   artifactKinds,
   contentKinds,
+  spacedKinds,
   type ArtifactKind,
   type ContentKind,
 } from './artifact-kind.js';
+export {
+  requestPublication,
+  resolveOccurrences,
+  type OccurrenceOutcome,
+  type PublicationRequestAnswer,
+} from './publishing.js';
+export type {
+  PublicationInputTable,
+  PublicationOutputTable,
+  PublicationRequestOccurrenceTable,
+  PublicationRequestTable,
+  PublicationTable,
+} from './publishing-tables.js';
 export type {
   AccessGrantTable,
   AccessGroupTable,
