@@ -74,7 +74,7 @@ export function publishingHandlers(
         case 'format.unsupported':
           throw new AppError(
             400,
-            'format_unsupported',
+            wireCode('format.unsupported'),
             'This document can be published as PDF only.',
           );
         case 'requested': {

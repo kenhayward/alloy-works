@@ -2734,7 +2734,7 @@ export interface operations {
                 "application/json": {
                     /** @description The document version the caller is publishing, which must be the latest */
                     version: string & (unknown & unknown);
-                    /** @description The formats to publish; `pdf` is the only one until a layout declares another */
+                    /** @description The formats to publish, each once; `pdf` is the only one until a layout declares another */
                     formats: string[];
                 };
             };

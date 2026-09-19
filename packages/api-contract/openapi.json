@@ -5682,7 +5682,7 @@
                       "type": "string",
                       "minLength": 1
                     },
-                    "description": "The formats to publish; `pdf` is the only one until a layout declares another"
+                    "description": "The formats to publish, each once; `pdf` is the only one until a layout declares another"
                   }
                 },
                 "required": [

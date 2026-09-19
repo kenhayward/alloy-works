@@ -419,39 +419,42 @@ describe('publishing a document, from the request to the stored PDF', () => {
 
   it('PUB-094 refuses a publish holding a component the publisher may not read, naming its node and nothing of it, and makes no publication', async () => {
     logged.length = 0;
-    let hidden = '';
-    let unreadable = '';
+    const hidden: string[] = [];
+    const unreadable: string[] = [];
     const id = await requested(async (trx) => {
       const readable = reference(await component(trx, general, 'Scope', ['Set the tray.']));
-      hidden = await component(trx, quality, 'Calibration', ['Never read']);
-      const refused = reference(hidden);
-      unreadable = refused.id;
-      return [readable, refused];
+      hidden.push(await component(trx, quality, 'Calibration', ['Never read']));
+      hidden.push(await component(trx, quality, 'Install the printer', ['Never read either']));
+      const [first, nested] = hidden.map(reference);
+      unreadable.push(first!.id, nested!.id);
+      // Two places: one at the top of the outline, and one inside a section.
+      return [readable, first!, section('Method', [nested!])];
     });
     const versions = await service.withTenant(tenant, (trx) =>
       trx
         .selectFrom('artifact_version')
         .select('id')
-        .where('artifact_id', '=', hidden)
+        .where('artifact_id', 'in', hidden)
         .execute()
         .then((rows) => rows.map((row) => row.id)),
     );
-    expect(versions).toHaveLength(2);
+    expect(versions).toHaveLength(4);
     const before = await publicationCount();
     expect(await work()).toBe('failed');
     // After the job, not only at the request: the job writes the request's failures again, from
     // `assemble`'s list, and that list must still say nothing of the component.
     const row = await requestRow(id);
     expect(row.state).toBe('failed');
-    expect(row.failures).toEqual([
-      {
+    // Each place, in outline order, and nothing of either component.
+    expect(row.failures).toEqual(
+      unreadable.map((node) => ({
         stage: 'resolve',
         code: 'occurrence_unreadable',
-        node: unreadable,
+        node,
         block: null,
         detail: null,
-      },
-    ]);
+      })),
+    );
     expect(await publicationOf(id)).toBeUndefined();
     expect(await publicationCount()).toBe(before);
     const occurrences = await service.withTenant(tenant, (trx) =>
@@ -464,7 +467,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     // The readable one alone was recorded; the other was never resolved, so never read.
     expect(occurrences).toHaveLength(1);
     const everything = JSON.stringify({ row, occurrences, logged });
-    for (const withheld of [hidden, ...versions, 'Calibration']) {
+    for (const withheld of [...hidden, ...versions, 'Calibration', 'Install the printer']) {
       expect(everything).not.toContain(withheld);
     }
   });

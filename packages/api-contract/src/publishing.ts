@@ -12,7 +12,14 @@ export const RequestPublicationBody = z.strictObject({
   formats: z
     .array(z.string().min(1))
     .min(1)
-    .describe('The formats to publish; `pdf` is the only one until a layout declares another'),
+    // A format named twice is a malformed request, refused here rather than by the store, which would
+    // answer it as a format the template cannot make.
+    .refine((formats) => new Set(formats).size === formats.length, {
+      message: 'Name each format once',
+    })
+    .describe(
+      'The formats to publish, each once; `pdf` is the only one until a layout declares another',
+    ),
 });
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
 

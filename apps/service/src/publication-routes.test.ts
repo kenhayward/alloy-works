@@ -13,7 +13,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  insideTransaction,
+  TEST_PASSWORDS,
+  type TestDatabase,
+} from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -251,6 +256,11 @@ describe('publishing a document through the service', () => {
     const docx = await publish('grace', other, ['docx']);
     expect(docx.statusCode).toBe(400);
     expect(docx.json()).toMatchObject({ code: 'format_unsupported' });
+    // A format named twice is a malformed request, not one the template cannot make.
+    const twice = await publish('grace', other, ['pdf', 'pdf']);
+    expect(twice.statusCode).toBe(400);
+    expect(twice.json()).toMatchObject({ code: 'invalid_request' });
+    expect(twice.json<{ message: string }>().message).toContain('formats');
     const unknown = { id: '11111111-1111-4111-8111-111111111111', version: other.version };
     expect((await publish('grace', unknown)).statusCode).toBe(404);
   });
@@ -282,23 +292,26 @@ describe('publishing a document through the service', () => {
 
   it('decides publish and records the request in the one transaction it was decided in', async () => {
     const document = await documentReferencing([]);
-    // Every transaction the service opens, counted: the session's lookup, and then one more, in
-    // which `publish` is decided under the access epoch's shared lock and the occurrences resolved
-    // and the request recorded. A handler that resolved in a transaction of its own would open a
-    // third, and a grant removed between the two would not be seen by the decision.
-    let opened = 0;
-    const counting: TenantDatabase = {
+    // Every transaction the service opens, asked before it commits what it holds and what it wrote.
+    // `publish` is decided under the access epoch's shared lock, held to the transaction's end, so the
+    // transaction that wrote the request must be one holding it: a handler that resolved and recorded
+    // in a transaction of its own would decide the read after a grant could have changed.
+    const seen: { holdsAccessEpoch: boolean; requestsWritten: number }[] = [];
+    const watched: TenantDatabase = {
       ...tenantDb,
-      withTenant: (owner, work) => {
-        opened += 1;
-        return tenantDb.withTenant(owner, work);
-      },
+      withTenant: (owner, work) =>
+        tenantDb.withTenant(owner, async (trx) => {
+          const result = await work(trx);
+          seen.push(await insideTransaction(trx));
+          return result;
+        }),
     };
-    const counted = appOver(counting);
+    const counted = appOver(watched);
     try {
       const answer = await publish('grace', document, ['pdf'], counted);
       expect(answer.statusCode, answer.body).toBe(200);
-      expect(opened).toBe(2);
+      const writers = seen.filter((each) => each.requestsWritten > 0);
+      expect(writers).toEqual([{ holdsAccessEpoch: true, requestsWritten: 1 }]);
     } finally {
       await counted.close();
     }

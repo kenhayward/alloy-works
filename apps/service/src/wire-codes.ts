@@ -28,6 +28,7 @@ const WIRE_CODES = {
   'invitation.signed_in': 'invitation_signed_in',
   'invitation.kind_differs': 'invitation_kind_differs',
   'invitation.accepted': 'invitation_accepted',
+  'format.unsupported': 'format_unsupported',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
