@@ -27,8 +27,9 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > template, the immutable record, four routes, the publishing panel on the document page and a
 > publication's own page. The second plan built **the layout**: the artifact and the one version every
 > environment starts with, outline `front` matter, a request made under a layout and refused outside
-> its language or for a format it does not make, and template `publication/2` with the page, the
-> cover, running heads and feet, page numbering per matter and a contents tagged as one. Every block
+> its language or for a format it does not make, template `publication/2` with the page, the cover,
+> running heads and feet, page numbering per matter and a contents tagged as one, and the layout's
+> scheme reaching the routes, the outline panel and its lists. Every block
 > but a paragraph, every mark, the lists of figures and tables, the theme, veraPDF on every
 > publication, preview and Word are later slices' ([Build order](#build-order)), and nothing chooses
 > or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -377,14 +378,37 @@ version 2 reads every version 1 outline unchanged, and nothing stored changes; i
 nothing else is stored in its place. Inferring front matter from position - everything before the first
 numbered node - was rejected, because an unnumbered interlude in the body would become front matter.
 
-**The panel is given the layout's scheme - designed, and not built.** structure.md claims STR-036 on
-the term that PUB brings its scheme to the panel. The numbering route and the document route answer
-the document's layout version, and the page numbers with that version's scheme; while every document
-takes the default, nothing the panel shows changes. **The second slice stopped short of it**: the
-publisher numbers with the layout's scheme, but the document and numbering routes still answer none,
-and the panel still numbers with the product's default scheme. The two agree today only because the
-one layout an environment has carries that scheme exactly, and nothing can make a second; the term is
-named again beside structure.md's claim, and it is the first thing the next publishing slice owes.
+**The panel is given the layout's scheme - built.** structure.md claims STR-036 on the term that PUB
+brings its scheme to the panel. `DocumentView` carries the document's layout - its id, its version,
+its language and its scheme - built by the one `documentView` that every document answer goes
+through, so a create, a get, an act's answer and a `409`'s `current` all carry it; the numbering
+route numbers with that scheme and names the version beside its table; and the page parses the scheme
+once per view and gives it to the panel, to the generated lists and to the words that name a publish
+failure's place. Nothing in the renderer reaches for the product's default any more, and STR-036 is
+cited by the panel's own test, which compares every number the panel shows with `assemble`'s under a
+second layout version.
+
+**A layout that will not read is a 500, never a fallback.** If the environment declares no layout, or
+its content does not parse, `GET /v1/documents/{id}` and `GET /v1/documents/{id}/numbering` fail
+rather than numbering with the product's default; in the page, a scheme that will not parse numbers
+nothing and says **This document's numbering could not be read.** A fallback was rejected because it
+would show numbers no publish under that layout could produce, which is the one thing STR-036 exists
+to prevent - a wrong number that looks right is worse than no number. The blast radius is wider than
+publishing, and named here for it: before this, a broken layout stopped a publish; now it stops the
+document page too. Migration 0018 declares a layout in every environment and nothing removes it, so
+this is reachable only by a broken store. **If a fallback is ever wanted it is to the last layout
+version that reads**, which is at least a scheme something could have published under, never to the
+product's default.
+
+**The layout is read afresh for every view, and not cached.** Four small reads, one to two
+milliseconds. A cache would serve a scheme that has since moved, and a page showing numbers that will
+not publish is exactly what STR-036 forbids; if the cost ever shows, the right answer is one memo per
+request, not one per process.
+
+**Nothing in the product makes or edits a layout.** The store can hold a second version - that is
+what `recordVersion` with a `layout` substance is for, and it is how the tests vary the scheme - but
+no route, no page and no permission reaches it, so every environment has the one version its
+migration seeded until a layout-editing plan builds the rest.
 
 ## The request and the job
 
@@ -630,9 +654,9 @@ not `202`: a permission-checked handler cannot set its status.
 | `packages/domain`       | `src/publishing/`: `layout.ts` (the layout schema closed at its first version, the product's default, `readLayout`, `speaksFor` and `unsupportedFormats`), `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection |
 | `packages/db`           | The two migrations, the Publisher role, `src/layouts.ts` (`defaultLayout`, the environment's declared layout at its latest version), `requestPublication` (decide, resolve, record under the layout, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                     |
 | `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                        |
-| `apps/service`          | The handlers; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                                                                                                                        |
+| `apps/service`          | The handlers; the document and numbering routes answering the document's layout and numbering with its scheme; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                       |
 | `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/` and `2/`, chosen by the published document's schema                                                                                                                                           |
-| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, and the failure list naming each place in the outline                                                                                                                                 |
+| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, the failure list naming each place in the outline, and the outline panel and its lists numbering with the layout's scheme                                                             |
 
 ## Verification
 
@@ -653,6 +677,11 @@ not `202`: a permission-checked handler cannot set its status.
 - **The budget** (PUB-085, unclaimed until slice 5): a generated 300-page reference document of
   prose, figures, tables, equations and footnotes, from request to publication, measured in the worker
   suite.
+- **The panel and the publisher number alike** (STR-036): the outline panel is numbered under a
+  layout version whose scheme is not the product's default, and every number it shows is compared
+  with `assemble`'s over the same outline and the same layout - the one function the `publish` job
+  composes with. Asserted, not assumed, because "as it will publish" is the whole of the
+  requirement.
 
 ## What was ruled out
 
@@ -998,14 +1027,20 @@ because the canonical form carries the schema version.
   today it must accept for ever.
 - **`assemble` counts conditioned nodes, not input nodes,** when deciding `nothing_to_publish` -
   untestable until conditions are anything but the identity, and commented where it is written.
-- **The slice stopped two tasks short.** The layout's scheme does not reach the numbering route, the
-  document view or the panel, so STR-036 is still cited by nothing and front matter can be set only
-  through the API. Named in [The layout](#the-layout), in structure.md's claim, and at the end of the
-  plan; both move to slice 3.
+- **A layout that will not read fails the page, and does not fall back.** The ruling and its cost are
+  under [The layout](#the-layout). It is the one change in this slice that widened a failure's blast
+  radius, so it is stated rather than discovered.
+- **The panel's refusals are the outline's, in the panel's own words.** A key move or a drop that
+  would take front matter or an appendix below the top level, or put a front node after one that is
+  not, is refused by the panel before anything is sent - **Front matter and appendices stay at the
+  top level.** and **Front matter comes before the rest of the outline.** An insert or a **Matter**
+  change is left to the service, whose refusal carries the same sentence, so an author meets one
+  wording whichever path refused them.
 - **What slice 2 cites.** PUB-007, PUB-008, PUB-009, PUB-011, PUB-014, PUB-037, PUB-079, PUB-088,
-  PUB-095 and STR-013 - not PUB-012, PUB-038 or STR-024, which decisions A and B move to later slices,
-  and not STR-036. It lands #144 as PUB-095 and #152 as STR-064, so the corpus now holds **1,384**
-  requirements, the designs claim **408** of them, and the tests cite **204** across every area.
+  PUB-095, STR-013 and STR-036 (in structure.md's name) - not PUB-012, PUB-038 or STR-024, which
+  decisions A and B move to later slices. It lands #144 as PUB-095 and #152 as STR-064, so the corpus
+  now holds **1,384** requirements, the designs claim **408** of them, and the tests cite **205**
+  across every area.
 
 ## Build order
 
@@ -1026,20 +1061,18 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    the door for a format it does not make or a language it does not speak for; `assemble` making
    `publishing/2` under a layout and slice 1's `publishing/1` without one; template `publication/2`
    with the page, the cover, page numbering per matter in chains, running heads and feet, the contents
-   as Typst's `outline` and appendices on their own pages. Landed #144 as PUB-095 and #152 as STR-064.
-   Cites PUB-007, PUB-008, PUB-009, PUB-011, PUB-014, PUB-037, PUB-079, PUB-088, PUB-095 and STR-013.
-   **Two things the plan named and the slice did not build**: the layout's scheme reaching the
-   numbering route and the document view, and the panel numbering with it and offering front matter.
-   Both move to slice 3, and STR-036 is still cited by nothing.
+   as Typst's `outline` and appendices on their own pages; and the layout's scheme reaching the
+   document view, the numbering route, the outline panel and the generated lists, with **Matter** -
+   Front matter, Body or Appendix - beside a top-level node. Landed #144 as PUB-095 and #152 as
+   STR-064. Cites PUB-007, PUB-008, PUB-009, PUB-011, PUB-014, PUB-037, PUB-079, PUB-088, PUB-095,
+   STR-013 and STR-036 in structure.md's name.
 3. **The rest of the content.** Marks, hyperlinks and language marks; lists, quotations, preformatted
    text, tables with captions and header rows, footnotes, equations through the maths tree, figures
    with assets, citations failing, and cross-references once structure 4 has built `references`. With
    figures come the layout's `lists` - by layout schema 2 and a second version of the default layout -
    and caption labels, which slice 2 deliberately left out because every list of a document of
-   paragraphs would be empty (decision A). It also owes what slice 2 did not finish: the layout's
-   scheme to the numbering route, the document view and the panel, and front matter offered in the
-   panel. Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042, CNT-049, CNT-054, STR-024, STR-027,
-   STR-029 and STR-036 in structure.md's name.
+   paragraphs would be empty (decision A). Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042,
+   CNT-049, CNT-054, STR-024, STR-027 and STR-029.
 4. **Themes and typefaces.** The default theme's Typst projection; themes.md's typeface and theme
    artifacts replace the image's faces, and the coverage check reads theirs. Its claims are
    themes.md's.

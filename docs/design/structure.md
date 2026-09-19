@@ -117,19 +117,26 @@ alone, and a figure in an unnumbered body preface is still `Figure 1` - so the c
 "every caption-bearing block" in part. Issue #129 reopens STR-023: its superseding row answers both
 this case and a figure or table explicitly unnumbered, and this design claims that row once it does.
 
-**STR-036 is claimed on two terms that are not built yet.** The panel numbers with the same function
-the service does, over the default scheme, so it shows numbering as it will publish only while the
-publisher uses that scheme too, and only while no condition hides a node. When PUB brings a layout's
-scheme, the panel must be given it; when REU brings conditions and profiles, the panel must number
-under the profile being published. Both are named where they land ("Numbering", and the change
-history); until then there is one scheme and no condition, and the claim holds in full.
+**STR-036 was claimed on two terms that were not built. The first is now built; one stands.** The
+panel numbers with the same function the service does, so it shows numbering as it will publish only
+while it is given the scheme the publisher uses, and only while no condition hides a node. The first
+term was PUB's: when PUB brings a layout's scheme, the panel must be given it. **Publishing's second
+slice brought it.** The document view answers the document's layout - its version, its language and
+its scheme - the numbering route numbers with that scheme and names the version, and the panel and
+the generated lists parse it and number with it, never with the product's default. A scheme the page
+cannot read numbers nothing and says so, because a fallback to the default would show numbers no
+publish could produce.
 
-**PUB's layout now exists, and the first term is still not built.** Publishing's second slice gave
-the layout a scheme and had the publisher number with it, and stopped before the numbering route, the
-document view and the panel: the panel still numbers with the product's default scheme. The claim
-holds for the same reason it held before - the one layout an environment starts with carries that
-scheme exactly, and nothing can make or change a layout - but the term is now one build away rather
-than one design away, and publishing's third slice owes it. STR-036 is cited by nothing.
+So **STR-036 is cited**, by `apps/web/src/structure/DocumentPage.test.tsx`: the panel is numbered
+under a second layout version whose scheme is not the default's, and every number it shows is
+compared with what `assemble` - the function the `publish` job composes with - makes of the same
+outline under the same layout. The numbers are the same function's, over the same scheme, shown to
+be so rather than assumed.
+
+**The second term stands.** When REU brings conditions and profiles, the panel must number under the
+profile being published; until then `conditions` is the identity, the panel and the publisher see
+the same nodes, and the claim holds in full. It is named where it lands ("Numbering", and the change
+history).
 
 ## What this document does not own
 
@@ -564,10 +571,10 @@ exactly as it did.
 
 Naming it as a default rather than leaving numbering undefined is what lets STR-036 be true before PUB
 is designed - **provided PUB brings the layout's scheme to the panel too**, since the panel's numbers
-are otherwise the default's while the publication's are the layout's. **PUB's layout is built and that
-term is not**: the publisher numbers with the layout's scheme, and the panel still numbers with this
-default. They agree only because the one layout an environment has carries this scheme exactly and
-nothing can make a second - see the claim above.
+are otherwise the default's while the publication's are the layout's. **PUB brought it**: publishing's
+second slice has the document view answer the document's layout and the panel number with that
+layout's scheme, so this default is now what the seeded layout carries rather than what the panel
+reaches for. Nothing in the renderer falls back to it - see the claim above.
 
 **The counter stack.** The engine walks the outline depth-first in document order, and **each of the
 three matters keeps its own counters**: a preface is `i` whatever follows it, the first appendix is
@@ -883,14 +890,14 @@ them nothing they could not already read; the component routes order it the same
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf`. Not built: reference resolution                                                                                                  |
-| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                            |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                                                                                                                                         |
-| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render, and offers **Numbered** and **Appendix** beside each node; `links.ts`, a node's address and the `#/documents/{id}/nodes/{node}` route; the panel's **Link to** field and **Copy link**; and `GeneratedLists.tsx`, the figures, tables and equations beneath the outline |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf`. Not built: reference resolution                                                                                                                                                                                                        |
+| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                                                                                                                                  |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render over the scheme the document's layout carries, and offers **Numbered** beside each node and **Matter** - Front matter, Body or Appendix - beside a top-level one; `links.ts`, a node's address and the `#/documents/{id}/nodes/{node}` route; the panel's **Link to** field and **Copy link**; and `GeneratedLists.tsx`, the figures, tables and equations beneath the outline |
 
 **The operations are pure functions over a tree, and the service applies them.** `packages/domain` is
 where a tree operation can be property-tested without a database, and where determinism is provable.

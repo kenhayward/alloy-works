@@ -204,7 +204,16 @@ PUB-012 (decision B, slice 7). Their claims stand: the design answers them.
 | scanned .tsx test files, `trace.test.ts:309`                          | 10   | none: STR-036's test goes in the existing `DocumentPage.test.tsx` | 10    |
 
 If main has moved when a task runs, set each pin to what `pnpm trace pins` reports and say so in the
-pin's comment.
+pin's comment. **As built**, the pre-flight's sequence superseded this table: the corpus ends at
+1,384 requirements (#152 landed as STR-064 in task 1 as well as #144 as PUB-095 in task 5), 408
+design claims and 205 citations.
+
+**And `pnpm --filter @alloy-works/trace generate` runs after `pnpm exec prettier --write`, never
+before.** Prettier reformatting a test file shifts every citation line below it, and the model
+records line numbers, so generating first commits a `trace.json` that no longer matches the tree.
+`pnpm trace pins` does not catch it - the counts are right and only the lines are wrong - and the one
+CI step that is not `continue-on-error` is the gate, which fails outright when the run it reads has
+failed. Task 10 lost an hour to it.
 
 ## Files
 
@@ -894,15 +903,7 @@ at `5f0fe31`), then `pnpm test` from the root once. Fix what breaks in the task 
 
 ## What this plan leaves undone
 
-**Tasks 9 and 10 were not built**, and are the largest thing this plan leaves: the layout's scheme
-reaching `GET /v1/documents/{id}/numbering` and the document view (task 9), and the outline panel
-numbering with it and offering **Front matter** beside **Body** and **Appendix** (task 10). So the
-publisher numbers with the layout's scheme and the panel still numbers with the product's default
-scheme, and front matter can be set only through the API. The two agree today because the one layout
-an environment has carries that scheme exactly and nothing can make a second, but STR-036 is still
-cited by nothing and structure.md's claim still names the term as unbuilt. Both move to slice 3.
-
-Also undone:
+Every task of this plan was built. What it leaves:
 
 - Lists of figures, tables and equations and caption labels (PUB-038, STR-024) - slice 3, with
   figures; PUB-012's citation and any non-paged member - the Word slice.
@@ -928,4 +929,10 @@ Also undone:
   it, and the default layout numbers no matter alphabetically.
 - **The `n-<id>` label template 2 writes for each top-level node is untested**, because nothing reads
   it until cross-references arrive with structure 4.
+- **The panel's own language is not checked against the layout's.** `DocumentView.layout.language`
+  reaches the renderer and nothing reads it: a publish that the layout cannot speak for is refused at
+  the service's door, so the page finds out by asking rather than by knowing beforehand.
+- **Nothing drives a front-matter drag at the pointer level in the rendered page.** `dropMove` is
+  covered as a unit and the existing appendix drag tests exercise the same generalised code, so a
+  front duplicate of each would test the framework rather than the rule.
 - Everything plan 1 left to slices 3 to 7.

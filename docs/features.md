@@ -116,19 +116,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **Sections are numbered.** Each section and each component in the outline shows its number - `1`,
   `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
-  under it out of the section numbering; tick **Appendix** on a top-level node to number it `A`, `B`
-  and so on. Figures, tables, equations and footnotes are numbered too - figures and tables per
-  chapter, equations and footnotes straight through, and each appendix on its own - and the
-  service answers every number with where it came from - but the editor does not yet write a figure,
-  so you only see those through the API. A number that depends on a component you may not read is
-  left out rather than guessed.
+  under it out of the section numbering. Figures, tables, equations and footnotes are numbered too -
+  figures and tables per chapter, equations and footnotes straight through, and each appendix on its
+  own - and the service answers every number with where it came from - but the editor does not yet
+  write a figure, so you only see those through the API. A number that depends on a component you may
+  not read is left out rather than guessed. **The numbers are the ones the document will publish
+  with**: the panel numbers with the very scheme its layout carries, not with a scheme of the page's
+  own, so what you see in the outline is what comes out of the PDF.
 
-  **An outline can also hold front matter** - a preface, say - at its start: a top-level part that
-  comes before the body, numbered `i`, `i.1` in a scheme of its own and paged on its own when the
-  document is published. The outline panel does not offer it yet: it is set through the API, and the
-  panel still shows **Numbered** and **Appendix** alone. Front matter has to come first, so moving a
-  section above it, or marking one front matter after the body has begun, is refused with **Front
-  matter comes before the rest of the outline.**
+  **A top-level part is front matter, the body or an appendix.** **Matter** beside the selected node
+  offers all three: **Front matter** for a preface, numbered `i`, `i.1` in a scheme of its own and
+  paged on its own; **Body**; and **Appendix**, numbered `A`, `B`. Only a top-level part has the
+  choice, because everything under one takes its matter. Front matter has to come first, so **Front
+  matter** is not offered once the body has begun, and a move that would take a part out of the top
+  level or put front matter after anything else is refused rather than done: the page says **Front
+  matter and appendices stay at the top level.** or **Front matter comes before the rest of the
+  outline.** `Ctrl+Z` takes a **Matter** change back like any other.
 
   **Every part of a document has a link.** Choose a section or a component in the outline and its link
   is shown beneath it, with **Copy link**; the address in the browser follows too. Opening the link

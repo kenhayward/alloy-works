@@ -205,15 +205,23 @@ Paste the row into the section it belongs in, and put `Fixes #<issue>` in the pu
 If the filer gave no tranche, the row carries `T?`, which **the parser refuses** - so a missing
 tranche cannot be forgotten into the corpus.
 
-### After changing a requirement or a design
+### After changing a requirement, a design or a test title
 
 ```bash
+pnpm exec prettier --write .      # first
 pnpm --filter @alloy-works/trace generate
 ```
 
 `packages/trace/trace.json` is generated from the documents and committed, the same way
 `openapi.json` is, and a test fails when the two drift apart. Regenerate it in the same commit as the
 change.
+
+**Run `generate` after `prettier --write`, never before.** The model records the file and **line**
+each citation was found at, so prettier reformatting a test file moves every citation below the
+reformatting and leaves a `trace.json` that no longer matches the tree. `pnpm trace pins` will not
+warn you: the counts are still right, and only the line numbers are wrong. What catches it is the
+drift test - "trace.json is exactly what the documents compile to" - and by then it has failed
+`pnpm test`, which fails `pnpm trace gate`, which is the one check in CI that is not allowed to fail.
 
 ## For an auditor
 

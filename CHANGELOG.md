@@ -12,9 +12,17 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   the cover carries a running head with the title and the part you are in, and a foot with the
   revision and the page number. Pages are numbered per part: roman numerals through the front matter,
   from 1 again in the body, and appendices carrying on from the body.
-- **An outline can hold front matter** - a preface, say - at its start: a part that comes before the
-  body, numbered in a scheme of its own (`i`, `i.1`) and paged on its own. It can be set through the
-  API; the outline panel does not offer it yet, and still offers **Numbered** and **Appendix** alone.
+- **A top-level part of an outline is front matter, the body or an appendix.** **Matter** beside the
+  selected part replaces the **Appendix** tick box and offers all three, so an outline can now open
+  with front matter - a preface, say - numbered `i`, `i.1` in a scheme of its own and paged on its
+  own. Front matter has to come first, so it is not offered once the body has begun, and a move that
+  would break the order is refused with a sentence saying why rather than done. `Ctrl+Z` takes a
+  **Matter** change back like any other.
+- **The outline panel numbers with the scheme the document publishes with**, not with a scheme of the
+  page's own, so the numbers you see while you work are the numbers that come out of the PDF. So do
+  the figures, tables and equations listed beneath the outline. If the scheme cannot be read the page
+  says so and numbers nothing, rather than showing numbers no publish would produce; the outline is
+  still fully editable.
 - **Every environment starts with a layout**, the product's default: English words, A4 with an inch
   margin, the cover and a contents three deep, and each appendix starting a new page. Every
   publication records the exact version of the layout it was made under, beside the document version
