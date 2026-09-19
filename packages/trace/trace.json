@@ -16345,73 +16345,73 @@
     {
       "id": "CNT-041",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 426,
+      "line": 429,
       "kind": "title"
     },
     {
       "id": "CNT-047",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 149,
+      "line": 152,
       "kind": "title"
     },
     {
       "id": "STR-014",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 179,
+      "line": 182,
       "kind": "title"
     },
     {
       "id": "STR-015",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 201,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "STR-016",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 226,
+      "line": 229,
       "kind": "title"
     },
     {
       "id": "STR-017",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 382,
+      "line": 385,
       "kind": "title"
     },
     {
       "id": "STR-018",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 481,
+      "line": 484,
       "kind": "title"
     },
     {
       "id": "STR-021",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 413,
+      "line": 416,
       "kind": "title"
     },
     {
       "id": "STR-022",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 452,
+      "line": 455,
       "kind": "title"
     },
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 217,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 266,
+      "line": 269,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 285,
+      "line": 288,
       "kind": "title"
     },
     {

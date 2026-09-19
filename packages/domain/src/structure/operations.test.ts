@@ -12,6 +12,9 @@ import {
   type OutlineNode,
 } from './outline.js';
 
+/** A minute: the randomised tests below take a quarter of a second on a desktop and seconds on CI. */
+const RANDOMISED_TEST_TIMEOUT_MS = 60_000;
+
 const NODE = 'a'.repeat(26);
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 const OTHER_COMPONENT = '11111111-1111-4111-8111-111111111111';
@@ -438,113 +441,123 @@ describe('the five operations over an outline', () => {
     expect(outline.nodes).toEqual([]);
   });
 
-  it('keeps every invariant after any sequence of operations, on a tree that actually grows', () => {
-    const { allocate } = identifiers();
-    let outline = empty;
-    let appliedCount = 0;
-    let maxDepth = 0;
-    let maxNodes = 0;
-    let moveAttempts = 0;
-    let subtreeContainmentRefusals = 0;
-    let multiChildReorders = 0;
-    const STEPS = 300;
-    for (let step = 0; step < STEPS; step += 1) {
-      const ids: string[] = [];
-      walkOutline(outline.nodes, (node) => ids.push(node.id));
-      maxNodes = Math.max(maxNodes, ids.length);
-      let depthHere = 0;
-      walkOutline(outline.nodes, (_node, depth) => {
-        depthHere = Math.max(depthHere, depth);
-      });
-      maxDepth = Math.max(maxDepth, depthHere);
+  // Checks what the code answers, never how fast: its limit is generous so a busy CI runner, where
+  // this takes twenty times as long as on a desktop, cannot fail it (#140).
+  it(
+    'keeps every invariant after any sequence of operations, on a tree that actually grows',
+    () => {
+      const { allocate } = identifiers();
+      let outline = empty;
+      let appliedCount = 0;
+      let maxDepth = 0;
+      let maxNodes = 0;
+      let moveAttempts = 0;
+      let subtreeContainmentRefusals = 0;
+      let multiChildReorders = 0;
+      const STEPS = 300;
+      for (let step = 0; step < STEPS; step += 1) {
+        const ids: string[] = [];
+        walkOutline(outline.nodes, (node) => ids.push(node.id));
+        maxNodes = Math.max(maxNodes, ids.length);
+        let depthHere = 0;
+        walkOutline(outline.nodes, (_node, depth) => {
+          depthHere = Math.max(depthHere, depth);
+        });
+        maxDepth = Math.max(maxDepth, depthHere);
 
-      const target = ids.length > 0 ? ids[step % ids.length] : undefined;
-      // The parent (for insert and move) and the position both come from the full id list and the
-      // full id count, not fixed to the root or to index 0.
-      const parentCandidate = ids.length > 0 ? (ids[(step * 7) % ids.length] ?? null) : null;
+        const target = ids.length > 0 ? ids[step % ids.length] : undefined;
+        // The parent (for insert and move) and the position both come from the full id list and the
+        // full id count, not fixed to the root or to index 0.
+        const parentCandidate = ids.length > 0 ? (ids[(step * 7) % ids.length] ?? null) : null;
 
-      // Three of every five steps insert, one removes, one is shared by move/set/retitle - biased
-      // towards growth (round 2 review: the previous even split of five arms let insert and remove
-      // cancel out, so the tree oscillated between empty and one node for the whole run, and every
-      // move was refused as past the end because there was never more than one node to move among).
-      // Nesting under a random existing node three times out of four, rather than mostly at the
-      // root, is what actually builds the depth: growth alone does not, a flat tree of 70 root
-      // siblings would grow just as fast and prove nothing about nesting.
-      const bucket = step % 5;
-      let operation: OutlineOperation;
-      if (bucket <= 2 || target === undefined) {
-        const nestUnder = ids.length > 0 && step % 4 !== 0 ? parentCandidate : null;
-        operation = addSection(nestUnder, 0, `Section ${step}`);
-      } else if (bucket === 3) {
-        operation = { operation: 'remove', node: target };
-      } else {
-        const sub = step % 3;
-        if (sub === 0) {
-          moveAttempts += 1;
-          operation = {
-            operation: 'move',
-            node: target,
-            // A third of move attempts deliberately move a node into itself, guaranteed to be inside
-            // its own subtree - the pseudo-random parent above almost never lands inside the node
-            // being moved on its own (a bare 300-step run of this exact generator hit it zero times
-            // before this was added), so the containment refusal is forced on purpose here rather
-            // than left to chance.
-            parent:
-              moveAttempts % 3 === 0 ? target : parentCandidate === target ? null : parentCandidate,
-            position: step % 3,
-          };
-        } else if (sub === 1) {
-          operation = { operation: 'set', node: target, numbered: step % 8 === 2 };
+        // Three of every five steps insert, one removes, one is shared by move/set/retitle - biased
+        // towards growth (round 2 review: the previous even split of five arms let insert and remove
+        // cancel out, so the tree oscillated between empty and one node for the whole run, and every
+        // move was refused as past the end because there was never more than one node to move among).
+        // Nesting under a random existing node three times out of four, rather than mostly at the
+        // root, is what actually builds the depth: growth alone does not, a flat tree of 70 root
+        // siblings would grow just as fast and prove nothing about nesting.
+        const bucket = step % 5;
+        let operation: OutlineOperation;
+        if (bucket <= 2 || target === undefined) {
+          const nestUnder = ids.length > 0 && step % 4 !== 0 ? parentCandidate : null;
+          operation = addSection(nestUnder, 0, `Section ${step}`);
+        } else if (bucket === 3) {
+          operation = { operation: 'remove', node: target };
         } else {
-          operation = {
-            operation: 'retitle',
-            node: target,
-            title: [{ type: 'text', value: `T${step}`, marks: [] }],
-          };
+          const sub = step % 3;
+          if (sub === 0) {
+            moveAttempts += 1;
+            operation = {
+              operation: 'move',
+              node: target,
+              // A third of move attempts deliberately move a node into itself, guaranteed to be inside
+              // its own subtree - the pseudo-random parent above almost never lands inside the node
+              // being moved on its own (a bare 300-step run of this exact generator hit it zero times
+              // before this was added), so the containment refusal is forced on purpose here rather
+              // than left to chance.
+              parent:
+                moveAttempts % 3 === 0
+                  ? target
+                  : parentCandidate === target
+                    ? null
+                    : parentCandidate,
+              position: step % 3,
+            };
+          } else if (sub === 1) {
+            operation = { operation: 'set', node: target, numbered: step % 8 === 2 };
+          } else {
+            operation = {
+              operation: 'retitle',
+              node: target,
+              title: [{ type: 'text', value: `T${step}`, marks: [] }],
+            };
+          }
         }
+
+        // A genuine reorder, not just an append to an empty or single-child array: the move's target
+        // parent already holds at least one child other than the one being moved.
+        const preExistingSiblings =
+          operation.operation === 'move' ? childrenCountOf(outline.nodes, operation.parent) : -1;
+
+        const answer = applyOutlineOperation(outline, operation, allocate);
+        if (answer.applied) {
+          appliedCount += 1;
+          if (operation.operation === 'move' && preExistingSiblings > 0) multiChildReorders += 1;
+          outline = answer.outline;
+        } else if (
+          operation.operation === 'move' &&
+          answer.reason === 'A node cannot be moved inside its own subtree'
+        ) {
+          subtreeContainmentRefusals += 1;
+        }
+
+        const seen = new Set<string>();
+        walkOutline(outline.nodes, (node) => {
+          expect(node.id).toMatch(/^[a-z2-7]{26}$/);
+          expect(seen.has(node.id)).toBe(false);
+          seen.add(node.id);
+        });
+        // Every outline an operation returns is one the parse accepts, which is what makes a store
+        // that records them able to record anything the panel can produce.
+        expect(parseOutlineDocument(outline)).toEqual(outline);
       }
-
-      // A genuine reorder, not just an append to an empty or single-child array: the move's target
-      // parent already holds at least one child other than the one being moved.
-      const preExistingSiblings =
-        operation.operation === 'move' ? childrenCountOf(outline.nodes, operation.parent) : -1;
-
-      const answer = applyOutlineOperation(outline, operation, allocate);
-      if (answer.applied) {
-        appliedCount += 1;
-        if (operation.operation === 'move' && preExistingSiblings > 0) multiChildReorders += 1;
-        outline = answer.outline;
-      } else if (
-        operation.operation === 'move' &&
-        answer.reason === 'A node cannot be moved inside its own subtree'
-      ) {
-        subtreeContainmentRefusals += 1;
-      }
-
-      const seen = new Set<string>();
-      walkOutline(outline.nodes, (node) => {
-        expect(node.id).toMatch(/^[a-z2-7]{26}$/);
-        expect(seen.has(node.id)).toBe(false);
-        seen.add(node.id);
-      });
-      // Every outline an operation returns is one the parse accepts, which is what makes a store
-      // that records them able to record anything the panel can produce.
-      expect(parseOutlineDocument(outline)).toEqual(outline);
-    }
-    // Measured against this exact deterministic sequence (the allocator is a counter, not
-    // randomness, so these numbers never move between runs): 294 of 300 steps applied, maxDepth 11,
-    // maxNodes 76, 6 subtree-containment refusals, 6 genuine multi-child reorders. Every floor below
-    // is set well under its measured figure, to catch a regression - a tree stuck at depth 1 or a
-    // single node, or a guard that silently refuses everything - rather than to track the figure.
-    expect(appliedCount).toBeGreaterThan(STEPS / 2);
-    expect(maxDepth).toBeGreaterThanOrEqual(4);
-    expect(maxNodes).toBeGreaterThanOrEqual(10);
-    // A count alone cannot tell a deep, many-node tree from a single node reached over and over -
-    // these two are what actually distinguish them, and what a floor on appliedCount alone let
-    // through uncaught before (round 2 review).
-    expect(subtreeContainmentRefusals).toBeGreaterThan(0);
-    expect(multiChildReorders).toBeGreaterThan(0);
-  });
+      // Measured against this exact deterministic sequence (the allocator is a counter, not
+      // randomness, so these numbers never move between runs): 294 of 300 steps applied, maxDepth 11,
+      // maxNodes 76, 6 subtree-containment refusals, 6 genuine multi-child reorders. Every floor below
+      // is set well under its measured figure, to catch a regression - a tree stuck at depth 1 or a
+      // single node, or a guard that silently refuses everything - rather than to track the figure.
+      expect(appliedCount).toBeGreaterThan(STEPS / 2);
+      expect(maxDepth).toBeGreaterThanOrEqual(4);
+      expect(maxNodes).toBeGreaterThanOrEqual(10);
+      // A count alone cannot tell a deep, many-node tree from a single node reached over and over -
+      // these two are what actually distinguish them, and what a floor on appliedCount alone let
+      // through uncaught before (round 2 review).
+      expect(subtreeContainmentRefusals).toBeGreaterThan(0);
+      expect(multiChildReorders).toBeGreaterThan(0);
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
 });
 
 describe('what an operation cannot build, because the parse refuses it', () => {
