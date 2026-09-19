@@ -5,18 +5,20 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  DEFAULT_LAYOUT_ID,
   defaultLayout,
   findRole,
   grant,
   migrate,
   publicationInputs,
+  recordVersion,
   requestPublication,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
-import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
+import { OUTLINE_SCHEMA_VERSION, type Layout } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -271,6 +273,38 @@ describe('documents through the service', () => {
       return publicationInputs(trx, requested.request.id);
     });
     expect(document.layout.version.id).toBe(inputs!.layout!.versionId);
+
+    /** A new version of the environment's layout, by its id and its `revision.version`. */
+    const record = (content: Layout, openedFrom: string) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const recorded = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom,
+          author: ids.ada!,
+          substance: { kind: 'layout', content },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        const { id, revision, version } = recorded.version;
+        return { id, number: `${revision}.${version}` };
+      });
+
+    // The scheme answered is the **layout's own**, which the seeded layout happens to hold byte for
+    // byte from the product's default: a version naming its scheme apart moves the answer, so
+    // nothing here could be the default standing in.
+    const apart: Layout = {
+      ...declared.layout,
+      scheme: { ...declared.layout.scheme, id: 'apart/1' },
+    };
+    const next = await record(apart, declared.versionId);
+    expect(next.number).not.toBe(declared.number);
+    try {
+      const again = (await call('ada', 'GET', `/v1/documents/${document.id}`)).json<DocumentBody>();
+      expect(again.layout.scheme['id']).toBe('apart/1');
+      expect(again.layout.version).toEqual(next);
+    } finally {
+      // The environment's layout goes back to what the rest of this suite is answered.
+      await record(declared.layout, next.id);
+    }
   });
 
   it('keeps a section inside the document that declares it, with no identity to reach it by alone', async () => {

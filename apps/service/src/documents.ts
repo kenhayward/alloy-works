@@ -79,11 +79,13 @@ async function outlineView(
  * requested now would be made under (`requestPublication`). It belongs to the environment, not to any
  * component, so nothing here is derived from something the viewer may not read. An environment that
  * declares none, or one whose layout does not read, throws: 0018 declares one everywhere, so either is
- * a broken store rather than an answer.
+ * a broken store rather than an answer. **Never a fallback to the product's default scheme** - that
+ * would show numbers no publish could produce, which is the one thing this is here to prevent.
  *
- * The read costs one small query and a parse on every document answer. It is not cached: a layout may
- * be revised between two requests, and a page showing numbers from a scheme that has since moved would
- * be showing numbers that will not publish.
+ * The read costs four indexed reads and a parse on every document answer - the declaration, the
+ * latest version's id, its row, and its definitions - measured at one to two milliseconds. It is not
+ * cached: a layout may be revised between two requests, and a page showing numbers from a scheme that
+ * has since moved would be showing numbers that will not publish.
  */
 async function documentView(
   viewer: Viewer,

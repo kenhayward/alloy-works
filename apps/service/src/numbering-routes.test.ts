@@ -18,6 +18,7 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import type { Layout } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -542,23 +543,25 @@ describe('a document numbered through the service', () => {
   });
 
   it('numbers with the scheme of the layout the document is published under, and names it', async () => {
-    const record = (content: unknown, openedFrom: string) =>
+    /** A new version of the environment's layout, by its id and its `revision.version`. */
+    const record = (content: Layout, openedFrom: string) =>
       tenantDb.withTenant(tenant, async (trx) => {
         const recorded = await recordVersion(trx, {
           artifactId: DEFAULT_LAYOUT_ID,
           openedFrom,
           author: ids.grace!,
-          substance: { kind: 'layout', content } as never,
+          substance: { kind: 'layout', content },
         });
         if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
-        return recorded.version;
+        const { id, revision, version } = recorded.version;
+        return { id, number: `${revision}.${version}` };
       });
 
     const declared = await tenantDb.withTenant(tenant, (trx) => defaultLayout(trx));
     const section = declared.layout.scheme.sequences['section']!;
-    // Version 0.2 of the environment's layout, numbering the body's sections in upper roman. Its
+    // A new version of the environment's layout, numbering the body's sections in upper roman. Its
     // scheme is named apart from the default's, because STR-031 keys a numbering by that id.
-    const upperRoman = {
+    const upperRoman: Layout = {
       ...declared.layout,
       scheme: {
         id: 'upper-roman/1',
@@ -569,6 +572,7 @@ describe('a document numbered through the service', () => {
       },
     };
     const next = await record(upperRoman, declared.versionId);
+    expect(next.number).not.toBe(declared.number);
     try {
       let doc = await create('The dosing report');
       const act = async (operation: Json) => {
@@ -600,10 +604,7 @@ describe('a document numbered through the service', () => {
       // The scheme numbered against is the layout's, named by its own id, and the layout is named
       // beside it at the version the numbers were taken from.
       expect(body.scheme).toBe('upper-roman/1');
-      expect(body.layout).toEqual({
-        id: DEFAULT_LAYOUT_ID,
-        version: { id: next.id, number: '0.2' },
-      });
+      expect(body.layout).toEqual({ id: DEFAULT_LAYOUT_ID, version: next });
       expect(
         body.entries
           .filter((entry) => entry.sequence === 'section')
