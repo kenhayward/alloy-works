@@ -11,13 +11,14 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts, type PinnedFonts } from './fonts.js';
 import { sampleJob } from './jobs/sample.js';
-import { createTypst, typstBinaryPath, type Typst } from './typst.js';
+import { JobRefused } from './refusal.js';
+import { createTypst, SAMPLE_TEMPLATE, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
@@ -154,6 +155,78 @@ describe('the sample job, from the queue to the store', () => {
     expect(await work({ handlers: broken, queue: eager })).toBe('retry');
     expect(await work({ handlers: broken, queue: eager })).toBe('failed');
     expect(await sample(id)).toMatchObject({ state: 'failed', object_key: null });
+  });
+
+  it('finishes a job refused on its merits at once, never trying the same input again (issue #146)', async () => {
+    const id = await request();
+    const told: unknown[] = [];
+    const refusing: Record<string, JobHandler> = {
+      sample_pdf: {
+        run: async () => {
+          throw new JobRefused('sample_refused', 'The sample cannot be made from this.');
+        },
+        failed: async (_tenant, _job, cause) => {
+          told.push(cause);
+        },
+      },
+    };
+    const eager = {
+      ...queue,
+      fail: (job: Job, reason: string) => queue.fail(job, reason, { retryInMs: 0 }),
+    };
+    expect(await work({ handlers: refusing, queue: eager })).toBe('failed');
+    // Nothing is left to claim: the job is failed, with its reason, after one attempt.
+    expect(await work({ handlers: refusing, queue: eager })).toBe('idle');
+    const [job] = (
+      await queryAs(
+        db.adminUrl,
+        'select attempts, last_error, failed_at is not null as failed from platform.job where subject_id = $1',
+        [id],
+      )
+    ).rows;
+    expect(job).toEqual({ attempts: 1, last_error: 'sample_refused', failed: true });
+    expect(told).toHaveLength(1);
+    expect(told[0]).toBeInstanceOf(JobRefused);
+  });
+
+  it("records a refusal by Typst as its code, and nowhere the engine's diagnostic, which quotes content", async () => {
+    const id = await request();
+    const told: unknown[] = [];
+    const heard: unknown[] = [];
+    const listening: WorkerLog = {
+      info: (...entry) => heard.push(entry),
+      warn: (...entry) => heard.push(entry),
+      error: (...entry) => heard.push(entry),
+    };
+    // Typst's diagnostic for this names the character it could not set and the line that holds it.
+    const refused = JSON.stringify({ environment: 'Grace \u{e000}', requestedAt: 'now' });
+    const refusing: Record<string, JobHandler> = {
+      sample_pdf: {
+        run: async () => {
+          await typst.compile(SAMPLE_TEMPLATE, refused, new Date('2026-09-11T00:00:00.000Z'));
+        },
+        failed: async (_tenant, _job, cause) => {
+          told.push(cause);
+        },
+      },
+    };
+    expect(await work({ handlers: refusing, log: listening })).toBe('failed');
+    const { rows } = await queryAs(
+      db.adminUrl,
+      'select attempts, last_error from platform.job where subject_id = $1',
+      [id],
+    );
+    expect(rows).toEqual([{ attempts: 1, last_error: 'typst_refused' }]);
+    expect(told).toHaveLength(1);
+    expect(told[0]).toMatchObject({
+      code: 'typst_refused',
+      message: 'Typst refused the document.',
+    });
+    expect((told[0] as Error).cause).toBeUndefined();
+    const everything = JSON.stringify([heard, rows, { ...(told[0] as object) }]);
+    for (const quoted of ['e000', '\u{e000}', 'Grace', 'displayed', 'PDF/UA', 'main.typ']) {
+      expect(everything).not.toContain(quoted);
+    }
   });
 
   it('refuses a kind it does not know rather than guessing', async () => {

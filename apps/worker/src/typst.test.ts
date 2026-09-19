@@ -4,12 +4,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, FontsUnavailable, loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import { JobRefused } from './refusal.js';
 import {
   createTypst,
   SAMPLE_TEMPLATE,
   TypstFailed,
   typstArguments,
   typstBinaryPath,
+  typstOutcome,
   TYPST_RELEASE,
 } from './typst.js';
 
@@ -97,6 +99,52 @@ describe('the pinned Typst', () => {
     const missing = createTypst({ binary: 'typst-that-is-not-installed', fonts });
     await expect(missing.compile(SAMPLE_TEMPLATE, data, at)).rejects.toThrow(TypstFailed);
   });
+
+  it('refuses, once and for all, a document the engine will not set', async () => {
+    // A private-use character no pinned face holds: PDF/UA-1 refuses it every time.
+    const refused = JSON.stringify({ environment: '\u{e000}', requestedAt: 'now' });
+    const refusal = typst.compile(SAMPLE_TEMPLATE, refused, at);
+    await expect(refusal).rejects.toMatchObject({ code: 'typst_refused' });
+    await expect(refusal).rejects.toBeInstanceOf(JobRefused);
+  });
+
+  it('fails, to be tried again, a compile killed at its time limit', async () => {
+    // A timeout might not happen twice, so it is never a refusal, whatever the run had done by then.
+    const hurried = createTypst({ binary: typstBinaryPath(), fonts, timeoutMs: 1 });
+    const failure = hurried.compile(SAMPLE_TEMPLATE, data, at);
+    await expect(failure).rejects.toMatchObject({ code: 'typst_failed' });
+    await expect(failure).rejects.not.toBeInstanceOf(JobRefused);
+  });
+});
+
+describe('how a Typst run ended', () => {
+  it('is a refusal when Typst exits 1 of its own accord', () => {
+    expect(typstOutcome({ code: 1, killed: false, signal: null })).toBe('refused');
+  });
+
+  it('is a failure when Typst panics, which exits 101', () => {
+    expect(typstOutcome({ code: 101, killed: false, signal: null })).toBe('failed');
+  });
+
+  it('is a failure when Typst crashes on Windows, exiting with a status code', () => {
+    expect(typstOutcome({ code: 3221225477, killed: false, signal: null })).toBe('failed');
+  });
+
+  it('is a failure when Typst is stopped by a signal', () => {
+    expect(typstOutcome({ code: null, killed: false, signal: 'SIGSEGV' })).toBe('failed');
+  });
+
+  it('is a failure when Typst is killed at its time limit', () => {
+    expect(typstOutcome({ code: null, killed: true, signal: 'SIGTERM' })).toBe('failed');
+    // Killed as it exited 1 of its own accord: still the time limit's doing.
+    expect(typstOutcome({ code: 1, killed: true, signal: 'SIGTERM' })).toBe('failed');
+  });
+
+  it('is a failure when Typst could not be started at all', () => {
+    expect(typstOutcome({ code: 'ENOENT' })).toBe('failed');
+    expect(typstOutcome(new Error('no code'))).toBe('failed');
+    expect(typstOutcome(undefined)).toBe('failed');
+  });
 });
 
 describe('the pinned fonts (issue #145)', () => {
@@ -181,9 +229,10 @@ describe('the pinned fonts (issue #145)', () => {
       const later = createTypst({ binary: typstBinaryPath(), fonts: loaded });
       // Checked before Typst starts: a compile that ran would have answered with a PDF or TypstFailed.
       await writeFile(join(directory, 'LiberationSerif-Bold.ttf'), 'not a font');
-      await expect(later.compile(SAMPLE_TEMPLATE, data, at)).rejects.toBeInstanceOf(
-        FontsUnavailable,
-      );
+      const changed = later.compile(SAMPLE_TEMPLATE, data, at);
+      await expect(changed).rejects.toBeInstanceOf(FontsUnavailable);
+      // The worker's fault, not the document's: tried again, never finished as a refusal (#146).
+      await expect(changed).rejects.not.toBeInstanceOf(JobRefused);
       await rm(join(directory, 'LiberationSerif-Bold.ttf'));
       await expect(later.compile(SAMPLE_TEMPLATE, data, at)).rejects.toBeInstanceOf(
         FontsUnavailable,

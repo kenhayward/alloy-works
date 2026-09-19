@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { readPinnedFaces, type PinnedFonts } from './fonts.js';
+import { JobRefused } from './refusal.js';
 import { fetchedBinary, TYPST_RELEASE } from './typst-release.js';
 
 export { TYPST_RELEASE } from './typst-release.js';
@@ -14,6 +15,29 @@ const run = promisify(execFile);
 /** Anything that stops a render. Its code is what a failed job records - never the output. */
 export class TypstFailed extends Error {
   readonly code = 'typst_failed';
+}
+
+/**
+ * Typst ran and refused the document. The same input is refused the same way every time, so it is not
+ * tried again (issue #146). On a document `assemble` passed, it is a defect in the pipeline, and its
+ * diagnostic - which quotes content - is never read, and never carried as a cause. Typst also exits 1
+ * when it cannot write its output (a full disk, say), which is then finished rather than retried.
+ */
+export class TypstRefused extends JobRefused {
+  constructor() {
+    super('typst_refused', 'Typst refused the document.');
+  }
+}
+
+/**
+ * How a run of Typst ended, from what `execFile` threw. Typst refuses a document by exiting 1 of its
+ * own accord. Anything else - a panic (101), a crash (a signal, or a status code on Windows), a kill at
+ * the time limit, or a binary that never started - might not happen twice, and is a failure to be
+ * tried again. A kill reports no exit code, but a run killed as it exited 1 is still a timeout.
+ */
+export function typstOutcome(error: unknown): 'refused' | 'failed' {
+  const ended = (error ?? {}) as { code?: unknown; killed?: unknown };
+  return ended.code === 1 && ended.killed !== true ? 'refused' : 'failed';
 }
 
 /** The one template. Publishing proper adds its own; the data is always data. */
@@ -72,6 +96,7 @@ export function createTypst(options: {
         });
         return await readFile(join(root, 'out.pdf'));
       } catch (error) {
+        if (typstOutcome(error) === 'refused') throw new TypstRefused();
         throw new TypstFailed('Typst did not render the document.', { cause: error });
       } finally {
         await rm(root, { recursive: true, force: true });
