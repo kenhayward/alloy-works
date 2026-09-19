@@ -27,6 +27,7 @@ import {
   resolve,
   walkOutline,
   withholdComponents,
+  type Contribution,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -175,6 +176,51 @@ export function documentHandlers(
       if (!document) throw notFound();
       const viewer = { trx, principalId, mayEdit: decide('edit', facts).allowed };
       return documentView(viewer, document, document.version);
+    },
+
+    /**
+     * What each occurrence of the latest version contributes, as this caller is shown it: the same
+     * `numberingInputs` the numbering route reads, so a component they may not read is never read and
+     * its occurrence answers `null` twice - no version, and no contributions. The renderer numbers
+     * with these and the same `number`, so its numbers are the numbering route's.
+     */
+    getContributions: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as DocumentParams;
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const read = readOutline(document.version.content, {
+        artifact: id,
+        version: document.version.id,
+      });
+      if (!read.ok) {
+        throw new Error(
+          `The document ${id} at ${document.version.id} does not read: ${read.failure}`,
+        );
+      }
+      const inputs = await numberingInputs(trx, read.outline, principalId);
+      // Each version once, however many occurrences resolved to it: a known occurrence's version and
+      // its contributions are both there, and an unknown one's version is null.
+      const versions = new Map<string, readonly Contribution[]>();
+      for (const occurrence of inputs.occurrences) {
+        const known = inputs.contributions.get(occurrence.node);
+        if (occurrence.version !== null && known !== undefined) {
+          versions.set(occurrence.version, known);
+        }
+      }
+      return {
+        document: id,
+        version: { id: document.version.id, number: versionView(document.version).number },
+        occurrences: inputs.occurrences.map((occurrence) => ({ ...occurrence })),
+        versions: [...versions].map(([version, contributions]) => ({
+          id: version,
+          contributions: contributions.map((each) => ({
+            block: each.block,
+            sequence: each.sequence,
+            numbered: each.numbered,
+            caption: each.caption ?? null,
+          })),
+        })),
+      };
     },
 
     /**
