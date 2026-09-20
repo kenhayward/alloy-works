@@ -2,12 +2,14 @@ import { joinBackward, splitBlock } from 'prosemirror-commands';
 import { redo, undo } from 'prosemirror-history';
 import { Slice, type Node } from 'prosemirror-model';
 import { Selection, type EditorState, type Transaction } from 'prosemirror-state';
+import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
 
+import { setLanguage } from './header.js';
 import { newBlockIdentifier } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
-import { createEditorState, enterWithoutEmpties } from './state.js';
+import { createEditorState, enterWithoutEmpties, spellcheckDecorations } from './state.js';
 
 const counter = () => {
   let next = 0;
@@ -208,5 +210,62 @@ describe('what the editor always holds', () => {
       if (operation === 5) state = run(placed, undo);
       expect(() => fromEditor(state.doc), `step ${step}`).not.toThrow();
     }
+  });
+});
+
+/**
+ * Whether a run is spell checked depends on the component's base language, which a mark cannot see,
+ * so the rule is a decoration recomputed from the document rather than an attribute rendered once.
+ */
+describe('spelling, over a run in another language', () => {
+  /** One paragraph of runs, each either plain or carrying a language mark. */
+  const componentIn = (base: string, runs: readonly (readonly [string, string | null])[]) =>
+    editorSchema.node('doc', { title: 'Install the printer', language: base, direction: 'ltr' }, [
+      editorSchema.node(
+        'paragraph',
+        { id: 'p1', style: 'body' },
+        runs.map(([text, tag], index) =>
+          editorSchema.text(
+            text,
+            tag === null ? [] : [editorSchema.mark('language', { id: `m${index}`, tag })],
+          ),
+        ),
+      ),
+    ]);
+
+  const runs = [
+    ['Unbox it. ', null],
+    ['Deballez-le. ', 'fr-CA'],
+    ['Check the colour.', 'en-GB'],
+  ] as const;
+
+  /** The text of every run the decorations turn the checker off over. */
+  const unchecked = (doc: Node, set = spellcheckDecorations(doc)) =>
+    set.find().map((decoration) => doc.textBetween(decoration.from, decoration.to));
+
+  it("CNT-147 does not check a run whose language differs from the component's base language", () => {
+    const doc = componentIn('en-GB', runs);
+    // The French run is left alone; the English one is checked like the unmarked text around it.
+    expect(unchecked(doc)).toEqual(['Deballez-le. ']);
+    // The attribute the decoration carries has no public accessor, and asserting the range alone
+    // would pass with any attribute at all - including one that turns the checker *on*. This reads
+    // the same field `Decoration.inline` writes, in the test only.
+    const attributesOf = (decoration: Decoration) =>
+      (decoration as unknown as { type: { attrs: Record<string, string> } }).type.attrs;
+    expect(spellcheckDecorations(doc).find().map(attributesOf)).toEqual([{ spellcheck: 'false' }]);
+  });
+
+  it('recomputes the rule for every run when the base language changes', () => {
+    let state = createEditorState({ doc: componentIn('en-GB', runs), newIdentifier: counter() });
+    const throughThePlugin = (of: EditorState) => {
+      const sets = of.plugins
+        .map((plugin) => plugin.props.decorations?.call(plugin, of))
+        .filter((set): set is DecorationSet => set instanceof DecorationSet);
+      expect(sets).toHaveLength(1);
+      return unchecked(of.doc, sets[0]!);
+    };
+    expect(throughThePlugin(state)).toEqual(['Deballez-le. ']);
+    state = run(state, setLanguage('fr-CA'));
+    expect(throughThePlugin(state)).toEqual(['Check the colour.']);
   });
 });

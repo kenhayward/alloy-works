@@ -26,7 +26,8 @@ function markSpec(
     readonly attrs?: Record<string, { default?: null }>;
     readonly inclusive?: false;
     readonly toAttributes?: (attrs: Attrs) => Record<string, string>;
-    readonly fromElement?: (node: HTMLElement) => Attrs;
+    /** The mark's own attributes, or `false` where one it cannot do without is missing. */
+    readonly fromElement?: (node: HTMLElement) => Attrs | false;
     readonly selector?: string;
   } = {},
 ): MarkSpec {
@@ -35,7 +36,9 @@ function markSpec(
     getAttrs: (node) => {
       const id = node.getAttribute('data-mark-id');
       if (id === null || id === '') return false;
-      return { id, ...options.fromElement?.(node) };
+      const rest = options.fromElement?.(node);
+      if (rest === false) return false;
+      return { id, ...rest };
     },
   };
   return {
@@ -95,7 +98,10 @@ export const editorSchema = new Schema({
     definedTerm: markSpec('dfn', {
       attrs: { term: {} },
       toAttributes: (attrs) => ({ 'data-term': attrs.term as string }),
-      fromElement: (node) => ({ term: node.getAttribute('data-term') }),
+      fromElement: (node) => {
+        const term = node.getAttribute('data-term');
+        return term === null || term === '' ? false : { term };
+      },
     }),
     quotedPhrase: markSpec('q'),
     // Not inclusive: typing at the end of a link or a language run makes ordinary text, because the
@@ -108,25 +114,25 @@ export const editorSchema = new Schema({
         href: attrs.href as string,
         ...(typeof attrs.title === 'string' ? { title: attrs.title } : {}),
       }),
-      fromElement: (node) => ({
-        href: node.getAttribute('href'),
-        title: node.getAttribute('title'),
-      }),
+      fromElement: (node) => {
+        const href = node.getAttribute('href');
+        return href === null || href === '' ? false : { href, title: node.getAttribute('title') };
+      },
     }),
-    // CNT-147: a run in another language is not spell checked, so that a French phrase inside an
-    // English component is never flagged as misspelt. A mark's `toDOM` is handed the mark and never
-    // the component, so it cannot compare the tag with the base language (CNT-140) and turns the
-    // checker off for every language run - stricter than CNT-147 asks, and never wrong in kind.
+    // The mark carries the run's language and nothing about spelling. CNT-147 turns the checker off
+    // only over a run whose language *differs* from the component's base language (CNT-140), and a
+    // mark's `toDOM` is handed the mark and never the component, so it cannot tell. That rule is a
+    // decoration recomputed from the document in `state.ts`, which is also what makes it follow a
+    // change of base language (component-editor.md, "Title, base language and base direction").
     language: markSpec('span', {
       selector: 'span.aw-language',
       attrs: { tag: {} },
       inclusive: false,
-      toAttributes: (attrs) => ({
-        lang: attrs.tag as string,
-        spellcheck: 'false',
-        class: 'aw-language',
-      }),
-      fromElement: (node) => ({ tag: node.getAttribute('lang') }),
+      toAttributes: (attrs) => ({ lang: attrs.tag as string, class: 'aw-language' }),
+      fromElement: (node) => {
+        const tag = node.getAttribute('lang');
+        return tag === null || tag === '' ? false : { tag };
+      },
     }),
   },
 });

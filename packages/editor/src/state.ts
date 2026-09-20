@@ -3,6 +3,7 @@ import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import type { Node } from 'prosemirror-model';
 import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
+import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { identityPlugin } from './identity.js';
 
@@ -32,6 +33,33 @@ export function noAdjacentEmptyParagraphs(): Plugin {
       return tr;
     },
   });
+}
+
+/**
+ * CNT-147: the surface checks spelling (CNT-098), except over a run whose language mark names a
+ * language that **differs** from the component's base language, so a passage in another language is
+ * never flagged as misspelt and one in the base language is still checked.
+ *
+ * It is a decoration rather than an attribute of the mark for two reasons, and both are requirements
+ * rather than taste. A mark's `toDOM` is handed the mark and never the document, so it cannot see the
+ * base language to compare with; and the base language is editable in the component header, at which
+ * point every run's answer changes at once (component-editor.md, "Title, base language and base
+ * direction"). A decoration is recomputed from the document, so it follows that change; an attribute
+ * rendered into the mark could not.
+ *
+ * The comparison is exact. `fr` and `fr-CA` are different languages here, which is what CNT-140's
+ * "carrying a region wherever the region changes the content" asks for.
+ */
+export function spellcheckDecorations(doc: Node): DecorationSet {
+  const base: unknown = doc.attrs.language;
+  const decorations: Decoration[] = [];
+  doc.descendants((node, pos) => {
+    if (!node.isText) return;
+    const language = node.marks.find((mark) => mark.type.name === 'language');
+    if (language !== undefined && language.attrs.tag !== base)
+      decorations.push(Decoration.inline(pos, pos + node.nodeSize, { spellcheck: 'false' }));
+  });
+  return DecorationSet.create(doc, decorations);
 }
 
 /** `Enter`: nothing in an empty paragraph, which would otherwise make a second; a split elsewhere. */
@@ -69,6 +97,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       keymap(baseKeymap),
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
+      new Plugin({ props: { decorations: (state) => spellcheckDecorations(state.doc) } }),
     ],
   });
 }

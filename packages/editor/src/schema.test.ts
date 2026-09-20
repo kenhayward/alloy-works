@@ -1,7 +1,16 @@
+import { markTypes } from '@alloy-works/domain';
 import { Mark, type ParseRule, type TagParseRule } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
 
 import { editorSchema } from './schema.js';
+
+/**
+ * The marks the editor holds: the content model's own list, in its own order, minus the three
+ * annotations nothing in T1 can create. Derived rather than written out a second time, so that
+ * reordering the content model's list, or adding a kind to it, fails here rather than drifting.
+ */
+const annotations: readonly string[] = ['condition', 'suggestion', 'comment'];
+const editorMarks = markTypes.filter((name) => !annotations.includes(name));
 
 /**
  * A stand-in for the element a parse rule is handed. `packages/editor` runs in Node, so there is no
@@ -13,48 +22,28 @@ const element = (attributes: Readonly<Record<string, string>>): HTMLElement =>
 const isTagRule = (rule: ParseRule): rule is TagParseRule => 'tag' in rule;
 
 /** The single tag rule a mark is given, with the gate this slice requires it to carry. */
-function gate(name: string): (node: HTMLElement) => unknown {
+function ruleFor(name: string): TagParseRule & { getAttrs: (node: HTMLElement) => unknown } {
   const rules = editorSchema.marks[name]?.spec.parseDOM;
   const rule = rules?.[0];
   if (rules?.length !== 1 || !rule || !isTagRule(rule) || !rule.getAttrs)
     throw new Error(`${name} has no single gated tag rule`);
-  return rule.getAttrs;
+  return { ...rule, getAttrs: rule.getAttrs };
 }
+
+const gate = (name: string) => ruleFor(name).getAttrs;
 
 describe('the editor schema', () => {
   it('holds the ten marks an author or the mapping needs', () => {
-    expect(Object.keys(editorSchema.marks).sort()).toEqual([
-      'definedTerm',
-      'emphasis',
-      'hyperlink',
-      'inlineCode',
-      'language',
-      'quotedPhrase',
-      'strong',
-      'subscript',
-      'superscript',
-      'underline',
-    ]);
+    expect(Object.keys(editorSchema.marks).sort()).toEqual([...editorMarks].sort());
+    expect(editorMarks).toHaveLength(10);
   });
 
   it('does not hold a mark nothing in T1 can create', () => {
-    for (const name of ['condition', 'suggestion', 'comment'])
-      expect(editorSchema.marks[name]).toBeUndefined();
+    for (const name of annotations) expect(editorSchema.marks[name]).toBeUndefined();
   });
 
   it("holds its marks in the content model's own order, so a round trip keeps a run's mark order", () => {
-    expect(Object.keys(editorSchema.marks)).toEqual([
-      'emphasis',
-      'strong',
-      'underline',
-      'subscript',
-      'superscript',
-      'inlineCode',
-      'definedTerm',
-      'quotedPhrase',
-      'hyperlink',
-      'language',
-    ]);
+    expect(Object.keys(editorSchema.marks)).toEqual(editorMarks);
     // Why the order above is load-bearing rather than tidy: `Mark.setFrom` sorts by the rank a mark
     // was declared with, so the editor cannot preserve the order a stored run was written in, and a
     // mapping fixture written in declaration order passes whether or not the mapping works.
@@ -78,11 +67,13 @@ describe('the editor schema', () => {
     expect(editorSchema.marks.emphasis!.spec.inclusive ?? true).toBe(true);
   });
 
-  it('CNT-147 renders a language mark with its tag and asks that it is not spell checked', () => {
+  it('renders a language mark with its tag, and says nothing about spelling', () => {
     const mark = editorSchema.mark('language', { id: 'm1', tag: 'fr-CA' });
+    // Whether the run is spell checked depends on the component's base language, which a mark's
+    // `toDOM` cannot see. It is a decoration recomputed from the document (CNT-147, `state.ts`).
     expect(editorSchema.marks.language!.spec.toDOM!(mark, true)).toEqual([
       'span',
-      { lang: 'fr-CA', spellcheck: 'false', class: 'aw-language', 'data-mark-id': 'm1' },
+      { lang: 'fr-CA', class: 'aw-language', 'data-mark-id': 'm1' },
       0,
     ]);
   });
@@ -127,6 +118,25 @@ describe('the editor schema', () => {
     ]);
   });
 
+  it('matches only the elements it renders itself, by a selector it cannot widen unnoticed', () => {
+    // `a[href]` rather than `a` is the one that matters: widening it would let a read-back make a
+    // hyperlink with no target, which the content model refuses - an unsaveable document.
+    const selectors: Readonly<Record<string, string>> = {
+      emphasis: 'em',
+      strong: 'strong',
+      underline: 'u',
+      subscript: 'sub',
+      superscript: 'sup',
+      inlineCode: 'code',
+      definedTerm: 'dfn',
+      quotedPhrase: 'q',
+      hyperlink: 'a[href]',
+      language: 'span.aw-language',
+    };
+    for (const name of Object.keys(editorSchema.marks))
+      expect(ruleFor(name).tag, name).toBe(selectors[name]);
+  });
+
   it('reads back a mark it rendered itself, and never one without an identifier', () => {
     // prosemirror-view reads typed input out of the DOM through the schema's own parser, so a mark
     // with no rule is invisible to it and the diff can drop it as the author types. The rule exists
@@ -136,6 +146,7 @@ describe('the editor schema', () => {
       expect(gate(name)(element({ lang: 'fr-CA', href: 'https://example.test/' })), name).toBe(
         false,
       );
+      expect(gate(name)(element({ 'data-mark-id': '' })), name).toBe(false);
     }
     expect(gate('emphasis')(element({ 'data-mark-id': 'm1' }))).toEqual({ id: 'm1' });
     expect(gate('definedTerm')(element({ 'data-mark-id': 'm2', 'data-term': 'toner' }))).toEqual({
@@ -154,6 +165,16 @@ describe('the editor schema', () => {
       id: 'm5',
       tag: 'fr-CA',
     });
+  });
+
+  it('refuses a read-back whose required value is missing, which the content model would refuse', () => {
+    // An identifier alone is not a mark. `<dfn data-mark-id="d1">` with no term, a language span
+    // with no `lang` and a link with no `href` are each refused by the content model, so admitting
+    // one here would make a document the author could not save.
+    expect(gate('definedTerm')(element({ 'data-mark-id': 'd1' }))).toBe(false);
+    expect(gate('language')(element({ 'data-mark-id': 'd2' }))).toBe(false);
+    expect(gate('hyperlink')(element({ 'data-mark-id': 'd3' }))).toBe(false);
+    expect(gate('definedTerm')(element({ 'data-mark-id': 'd4', 'data-term': '' }))).toBe(false);
   });
 
   it('holds one mark of a type on a character, and cannot see two positions at once', () => {
