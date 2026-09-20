@@ -51,14 +51,13 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         marksWithNoType(block.content, found);
         break;
       case 'list':
-        // The stored shape puts `start` and `format` on a list of any kind, and the editor's
-        // `definitionList` has nowhere to keep either - a definition list is numbered by nothing.
-        // Named rather than dropped, in the spelling `mark:` already uses, because opening one and
-        // saving it would take the author's numbering off a list they never touched.
-        if (block.kind === 'definition') {
-          if (block.start !== undefined) found.add('list:start');
-          if (block.format !== undefined) found.add('list:format');
-        }
+        // The editor's `definitionList` holds no `start` and no `format`, and loses neither: the
+        // stored shape puts both on a list of any kind, and `checkBlock` refuses them on a list
+        // that is not ordered, so no document reaching here can carry one. That rule is in the walk
+        // rather than here on purpose - this path is for what the editor cannot **hold**, like a
+        // table or a comment mark, and a definition list with a start number is not that. It is
+        // content that should never have been storable, which is a different sentence to say to an
+        // author and belongs where every producer meets it.
         for (const item of block.items) {
           // A term is inline content and is walked for the same reason a paragraph's is. Where a
           // term stands at all is the content model's rule, held in `checkBlock`, so a document

@@ -503,6 +503,80 @@ describe("a definition list's term, and the rules the walk holds that the schema
     expect(() => parseContentDocument(doc([ordered({ start: 0 })]))).not.toThrow();
     expect(() => parseContentDocument(doc([ordered({ start: 1, format: 'roman' })]))).not.toThrow();
   });
+
+  const listOf = (kind: string, id: string, attrs: Record<string, unknown>) => ({
+    type: 'list',
+    id,
+    kind,
+    ...attrs,
+    items:
+      kind === 'definition'
+        ? [{ term: [run('Tensile strength')], content: [paragraph(`${id}p1`, 'alpha')] }]
+        : [{ content: [paragraph(`${id}p1`, 'alpha')] }],
+  });
+
+  it('refuses a start or a numbering on a list that is not an ordered list, naming the list', () => {
+    // The fourth narrowing, and symmetric with the term rule above: a term belongs to a definition
+    // list and to nothing else, a start and a numbering belong to an ordered list and to nothing
+    // else. Held here rather than by opening such a component read-only in the editor, for three
+    // reasons worth writing down.
+    //
+    // It closes the hole for **every producer**. Read-only tells the one author who happens to open
+    // the component; a rule in the walk refuses an import, a paste and a future API client too,
+    // which is the same argument that put the start rule above here rather than in `assemble`.
+    //
+    // A narrowing in the walk is safe now and would not be later. Nothing has stored a list, and
+    // this is the last slice in which that sentence is true - exactly as it was for the term.
+    //
+    // And read-only is for what the **editor** cannot hold, like a table or a comment mark. A
+    // definition list carrying a start number is not something the editor lacks a counterpart for;
+    // it is content that should never have been storable. Using that path for it would blur the
+    // difference between "not built yet" and "not allowed", which is the one thing that path says.
+    expect(() => parseContentDocument(doc([listOf('unordered', 'L1', { start: 3 })]))).toThrow(
+      'List L1 carries a start or a numbering, which only an ordered list may',
+    );
+    expect(() =>
+      parseContentDocument(doc([listOf('unordered', 'L1', { format: 'roman' })])),
+    ).toThrow('List L1 carries a start or a numbering, which only an ordered list may');
+    expect(() => parseContentDocument(doc([listOf('definition', 'D1', { start: 3 })]))).toThrow(
+      'List D1 carries a start or a numbering, which only an ordered list may',
+    );
+    expect(() =>
+      parseContentDocument(doc([listOf('definition', 'D1', { format: 'alphabetic' })])),
+    ).toThrow('List D1 carries a start or a numbering, which only an ordered list may');
+
+    // Judged on what the walk RETURNED: an ordered list still carries both members afterwards, so
+    // the rule refuses rather than quietly dropping what an author set, and what comes back out is
+    // what a re-parse accepts - the invariant every caller relies on.
+    const kept = parseContentDocument(
+      doc([listOf('ordered', 'L1', { start: 5, format: 'alphabetic' })]),
+    );
+    expect(listIn(kept)).toMatchObject({ start: 5, format: 'alphabetic' });
+    expect(parseContentDocument(kept)).toEqual(kept);
+    // Neither member is required of any kind, so nothing stored before this rule becomes invalid.
+    expect(() => parseContentDocument(doc([listOf('unordered', 'L1', {})]))).not.toThrow();
+    expect(() => parseContentDocument(doc([listOf('definition', 'D1', {})]))).not.toThrow();
+  });
+
+  it('refuses one wherever the list stands, not only at the top level', () => {
+    // A list item holds block content, so a list carrying a start it may not have can stand below a
+    // definition item's term as easily as at the top - and `checkBlocks` reaches it there by
+    // recursion rather than by being told where to look.
+    const deep = doc([
+      definitionList([
+        {
+          term: [run('Tensile strength')],
+          content: [
+            paragraph('d1', 'The stress a material bears.'),
+            listOf('unordered', 'L2', { start: 2 }),
+          ],
+        },
+      ]),
+    ]);
+    expect(() => parseContentDocument(deep)).toThrow(
+      'List L2 carries a start or a numbering, which only an ordered list may',
+    );
+  });
 });
 
 describe('a cross-reference, where a component holds one', () => {

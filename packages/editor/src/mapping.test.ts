@@ -1,4 +1,9 @@
-import type { BlockNode, ContentDocument, Mark } from '@alloy-works/domain';
+import {
+  parseContentDocument,
+  type BlockNode,
+  type ContentDocument,
+  type Mark,
+} from '@alloy-works/domain';
 import { Fragment, type Node } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
 
@@ -487,24 +492,25 @@ describe('the mapping carries a list, both ways', () => {
     expect(toEditor(stored)).toEqual({ editable: false, unsupported: ['footnote'] });
   });
 
-  it('opens read-only for a definition list carrying a start or a numbering, naming what it found', () => {
-    // The stored shape puts `start` and `format` on a list of any kind and the editor's definition
-    // list has nowhere to keep them, so opening one would lose them on the next save. Named rather
-    // than dropped, in the spelling `mark:` already uses for what the schema has no counterpart for.
-    const stored = document([
-      {
-        type: 'list',
-        id: 'D1',
-        kind: 'definition',
-        start: 3,
-        format: 'roman',
-        items: [{ content: [paragraph('b1', 'The greatest stress a material bears.')] }],
-      },
-    ]);
-    expect(toEditor(stored)).toEqual({
-      editable: false,
-      unsupported: ['list:start', 'list:format'],
-    });
+  it('never meets a definition list carrying a start or a numbering, because nothing can store one', () => {
+    // The editor's `definitionList` holds neither, and loses neither: the rule that keeps a start
+    // and a numbering on an ordered list is `checkBlock`'s, where every producer meets it, so a
+    // document that has been parsed cannot carry one here. Pinned from this side too, because the
+    // day that rule is relaxed this mapping starts dropping an author's numbering in silence.
+    expect(() =>
+      parseContentDocument(
+        document([
+          {
+            type: 'list',
+            id: 'D1',
+            kind: 'definition',
+            start: 3,
+            format: 'roman',
+            items: [{ content: [paragraph('b1', 'The greatest stress a material bears.')] }],
+          },
+        ]),
+      ),
+    ).toThrow(/List D1 carries a start or a numbering/);
   });
 
   it('refuses to store a node the editor has no stored block for, naming it and where it stands', () => {

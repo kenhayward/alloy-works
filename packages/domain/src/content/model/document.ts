@@ -396,13 +396,27 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
     case 'paragraph':
       return { ...block, content: checkInlineContent(block.content, 'component', claimed) };
     case 'list':
-      // Three narrowings the schema deliberately does not hold, because `listNodeSchema` is an
+      // Four narrowings the schema deliberately does not hold, because `listNodeSchema` is an
       // insert-only stored shape and a rule in the walk can be added while nothing has stored a
       // list, where a tightening of the shape could never be taken back.
       //
       // **A term belongs to a definition list and to nothing else.** The shape puts `term` on every
       // item, because it is one item type; a term on an ordered or unordered item means nothing,
       // and the published half would have nowhere to print it.
+      //
+      // **A start and a numbering belong to an ordered list and to nothing else**, which is the
+      // same rule reaching the other way: the shape puts `start` and `format` on every list,
+      // because it is one node type, and neither means anything on a bulleted or a definition list.
+      // Held here rather than by opening such a component read-only in the editor, for three
+      // reasons. It closes the hole for **every producer** - read-only tells the one author who
+      // happens to open the component, while a rule here refuses an import, a paste and a future
+      // API client too, which is the argument that put the start rule below here rather than in
+      // `assemble` alone. It is safe now and would not be later: nothing has stored a list, and
+      // this is the last slice in which that sentence is true, exactly as it was for the term. And
+      // the editor's read-only path is for what the editor cannot **hold** - a table, a comment
+      // mark - rather than for content that should never have been storable; using it here would
+      // blur the difference between "not built yet" and "not allowed", which is the one thing that
+      // path tells an author.
       //
       // **A definition item need not have one yet.** An author who presses Enter in a definition
       // body and writes the definition before its term is mid-edit, not in error, and
@@ -423,6 +437,11 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
       // it, and any producer that is not the editor's own panel - an import, a paste, a future API
       // client - would otherwise store content publishing declines without the author ever being
       // told at the time.
+      if (block.kind !== 'ordered' && (block.start !== undefined || block.format !== undefined)) {
+        throw new Error(
+          `List ${block.id} carries a start or a numbering, which only an ordered list may`,
+        );
+      }
       if (block.start === 0 && (block.format === 'alphabetic' || block.format === 'roman')) {
         throw new Error(`List ${block.id} starts at 0, which only decimal numbering permits`);
       }
@@ -496,14 +515,15 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Ten rules the schema cannot express on its own, because each is about a document rather than a
+ * Eleven rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
  * cross-reference in a component never targets an outline node, a mark identifier carries one value
  * (CNT-004) over one contiguous range of runs, a sequence of inline content comes back with its
  * runs merged (issue #154), a term stands only on a definition list's item, a term that is there
- * holds visible text, and a list starts at 0 only where its numbering is decimal (CNT-153).
- * One walk holds all ten: the block
+ * holds visible text, a start and a numbering stand only on an ordered list, and a list starts at 0
+ * only where its numbering is decimal (CNT-153).
+ * One walk holds all eleven: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
  * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,
