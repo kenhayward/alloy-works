@@ -50,9 +50,11 @@ function markSpec(
 }
 
 /**
- * The editor's schema for this slice: the content root, paragraphs, text, and the ten marks a T1
- * author or the mapping needs (docs/plans/2026-09-16-editor-01-open-edit-and-save.md, decision 5;
- * docs/plans/2026-09-20-editor-03-marks-and-links.md). Every other node in content-model.md arrives
+ * The editor's schema for this slice: the content root, paragraphs, text, lists in three kinds, and
+ * the ten marks a T1 author or the mapping needs
+ * (docs/plans/2026-09-16-editor-01-open-edit-and-save.md, decision 5;
+ * docs/plans/2026-09-20-editor-03-marks-and-links.md;
+ * docs/plans/2026-09-21-editor-04-lists-and-quotations.md). Every other node in content-model.md arrives
  * with the plan that makes it editable; until then `toEditor` refuses to open a component holding one
  * for editing, so the mapping is never lossy.
  *
@@ -74,10 +76,15 @@ function markSpec(
 export const editorSchema = new Schema({
   nodes: {
     doc: {
-      content: 'paragraph+',
+      content: 'block+',
       attrs: { title: {}, language: {}, direction: {} },
     },
+    // **Declared first among the block group, and that order is load-bearing.** ProseMirror fills an
+    // empty document from the first type in the group that its content expression admits, so a
+    // component opened with nothing in it gets a paragraph for the cursor to stand in and never a
+    // list (CNT-124, held by the content model).
     paragraph: {
+      group: 'block',
       content: 'text*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
@@ -87,6 +94,97 @@ export const editorSchema = new Schema({
       toDOM: () => ['p', 0],
     },
     text: {},
+    /**
+     * A counted list - numbered or bulleted. The stored model holds one `list` node carrying a
+     * `kind` of `'ordered' | 'unordered' | 'definition'`; the editor holds two node types, because a
+     * ProseMirror content expression is fixed per type and a definition item must open with its term
+     * (ADR, "the editor schema is not the stored model one for one"). `kind` here is therefore two
+     * of the stored three, and the mapping widens it back.
+     *
+     * `start` and `format` reach the rendered element. They are not decoration: the stylesheet takes
+     * an `ol`'s marker from `data-format` and the browser takes its first number from `start`, so
+     * without them an author who sets **Start at 5, a b c** would see `1.` on the surface and `e.`
+     * in the published PDF. The parse rule reads both back for the same reason the mark rules exist
+     * (see `markSpec`) - `prosemirror-view` reads typed input out of the DOM, and a rule that
+     * dropped them would reset the author's numbering as they typed.
+     */
+    list: {
+      group: 'block',
+      content: 'listItem+',
+      attrs: {
+        id: { default: null },
+        kind: { default: 'unordered' },
+        start: { default: null },
+        format: { default: null },
+      },
+      parseDOM: [
+        { tag: 'ul' },
+        {
+          tag: 'ol',
+          getAttrs: (node: HTMLElement) => ({
+            kind: 'ordered',
+            start: node.hasAttribute('start') ? Number(node.getAttribute('start')) : null,
+            format: node.getAttribute('data-format'),
+          }),
+        },
+      ],
+      toDOM: (node) => [
+        node.attrs.kind === 'ordered' ? 'ol' : 'ul',
+        {
+          ...(node.attrs.start === null ? {} : { start: String(node.attrs.start) }),
+          ...(node.attrs.format === null ? {} : { 'data-format': node.attrs.format as string }),
+        },
+        0,
+      ],
+    },
+    /**
+     * No attributes at all: the stored model's item is `{ term?, content }` and carries no
+     * identifier, so there is nothing for one to hold and nothing for the identity plugin to
+     * allocate. The blocks inside it carry their own.
+     *
+     * `block+` is what makes a list the first family that nests: an item holds paragraphs and lists
+     * of either kind, to whatever depth the content model's admission limit allows.
+     */
+    listItem: {
+      content: 'block+',
+      defining: true,
+      parseDOM: [{ tag: 'li' }],
+      toDOM: () => ['li', 0],
+    },
+    definitionList: {
+      group: 'block',
+      content: 'definitionItem+',
+      attrs: { id: { default: null } },
+      parseDOM: [{ tag: 'dl' }],
+      toDOM: () => ['dl', 0],
+    },
+    /**
+     * `term block+`, not `block+`: a definition item's first child is the term it defines, and that
+     * is the whole reason a definition list is its own node type here rather than a third `kind` of
+     * `list`. Relaxing this to `block+` or `term? block+` would make the item representable without
+     * its term and is the one change this shape exists to forbid.
+     *
+     * A term that has not been typed yet is still a `term` node, empty - an author who writes the
+     * definition before the word must be able to. What is optional is what reaches the store: the
+     * stored item omits `term` entirely when it is empty (`checkBlock` in `packages/domain`), which
+     * is the same bargain the content model strikes for an empty paragraph under CNT-124.
+     *
+     * `div` rather than `dt`+`dd` siblings, because an item is one node and `dl` admits no wrapper
+     * in HTML that carries both - the surface is styled, and the published structure is the
+     * template's business, not this schema's.
+     */
+    definitionItem: { content: 'term block+', defining: true, toDOM: () => ['div', 0] },
+    /**
+     * The term is a textblock, so it is an editable region of its own carrying its own marks - which
+     * is what makes a term inline content rather than a string.
+     */
+    term: {
+      content: 'text*',
+      marks: '_',
+      defining: true,
+      parseDOM: [{ tag: 'dt' }],
+      toDOM: () => ['dt', 0],
+    },
   },
   marks: {
     emphasis: markSpec('em'),

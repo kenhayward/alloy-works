@@ -14,7 +14,11 @@ const isEmptyParagraph = (node: Node | null | undefined) =>
 /**
  * CNT-023's invariant, held on every transaction: the second of two adjacent empty paragraphs is
  * removed, however the pair arose - a join, a deletion, an undo (component-editor.md, "Invariants the
- * editor holds"). The document keeps at least one paragraph because its content is `paragraph+`.
+ * editor holds"). The document keeps at least one block because its content is `block+`, and an
+ * empty one is filled with a paragraph because `paragraph` is declared first in that group.
+ *
+ * This walks the top level only. A list item holds blocks too, so the pair can arise at depth, and
+ * descending is the next task's.
  */
 export function noAdjacentEmptyParagraphs(): Plugin {
   return new Plugin({

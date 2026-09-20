@@ -18,7 +18,10 @@ const editorMarks = markTypes.filter((name) => !annotations.includes(name));
  * `document` here; a hand-written fake is enough, because a rule only ever asks for attributes.
  */
 const element = (attributes: Readonly<Record<string, string>>): HTMLElement =>
-  ({ getAttribute: (name: string) => attributes[name] ?? null }) as unknown as HTMLElement;
+  ({
+    getAttribute: (name: string) => attributes[name] ?? null,
+    hasAttribute: (name: string) => name in attributes,
+  }) as unknown as HTMLElement;
 
 const isTagRule = (rule: ParseRule): rule is TagParseRule => 'tag' in rule;
 
@@ -189,6 +192,112 @@ describe('the editor schema', () => {
     // `parseContentDocument`, which `fromEditor` ends in - so a command that re-used an identifier
     // for a changed value would be refused on the way to storage rather than silently stored.
     expect(french.eq(german)).toBe(false);
+  });
+});
+
+describe('the lists in the editor schema', () => {
+  /**
+   * The five node types, named once. The tuples are `as const` because `Schema.nodes` is a mapped
+   * type over the names the schema was built with: a `string` index would not typecheck, and a
+   * misspelling here should fail the compiler rather than the assertion.
+   */
+  const items = ['listItem', 'definitionItem'] as const;
+  const lists = ['list', 'definitionList'] as const;
+
+  /**
+   * The content match an item offers **once its required opening has been matched**. `contentMatch`
+   * is the match at position zero, and a definition item opens with its term (decision C: a
+   * ProseMirror content expression is fixed per type, so one item type cannot be `block+` for two
+   * kinds and `term block+` for the third). Do not "simplify" this by relaxing `definitionItem` to
+   * `block+` or `term? block+` - that is the one change decision C exists to forbid.
+   */
+  const opens = (item: (typeof items)[number]) =>
+    item === 'definitionItem'
+      ? editorSchema.nodes.definitionItem.contentMatch.matchType(editorSchema.nodes.term)!
+      : editorSchema.nodes.listItem.contentMatch;
+
+  it('holds a list and an item shaped as the stored model holds them', () => {
+    expect(editorSchema.nodes.list.spec.content).toBe('listItem+');
+    expect(editorSchema.nodes.listItem.spec.content).toBe('block+');
+    // The item carries nothing: the stored item has no identifier, so neither has this.
+    expect(editorSchema.nodes.listItem.spec.attrs).toBeUndefined();
+    expect(editorSchema.nodes.listItem.spec.defining).toBe(true);
+  });
+
+  // Uncited on purpose. CNT-117 asks for lists in three kinds - ordered, unordered and definition -
+  // and this body is about the definition kind alone, which is a third of the statement and not the
+  // statement. The citation belongs on a body that makes all three and round-trips them.
+  it('holds a definition list whose item opens with the term it defines', () => {
+    expect(editorSchema.nodes.definitionList.spec.content).toBe('definitionItem+');
+    expect(editorSchema.nodes.definitionItem.spec.content).toBe('term block+');
+    // A term takes marks, because a term is inline content and not a string.
+    expect(editorSchema.nodes.term.spec.marks).toBe('_');
+  });
+
+  // Uncited on purpose. CNT-124 - "a component must always hold at least one block ... a newly
+  // created component must hold exactly one empty paragraph" - is a rule of the content model and is
+  // already `Covered` where the model holds it. This body shows only that widening `doc` to `block+`
+  // did not change what ProseMirror puts in an empty document, which is a regression guard on the
+  // change this task makes.
+  it('still fills an empty document with a paragraph, not a list', () => {
+    expect(editorSchema.nodes.doc.spec.content).toBe('block+');
+    // `paragraph` is declared first among the block group, and that order is what ProseMirror fills
+    // from. `Schema.node` would throw here rather than fill: `createAndFill` is the API that answers
+    // what an empty document becomes.
+    expect(editorSchema.nodes.paragraph.spec.group).toBe('block');
+    const doc = editorSchema.nodes.doc.createAndFill({
+      title: 'T',
+      language: 'en-GB',
+      direction: 'ltr',
+    })!;
+    expect(doc.childCount).toBe(1);
+    expect(doc.firstChild!.type.name).toBe('paragraph');
+  });
+
+  it('renders a numbered list as an ordered list and a bulleted one as unordered', () => {
+    const item = () =>
+      editorSchema.node('listItem', null, [editorSchema.node('paragraph', { id: 'b1' })]);
+    const ordered = editorSchema.node(
+      'list',
+      { id: 'L1', kind: 'ordered', start: 5, format: 'alphabetic' },
+      [item()],
+    );
+    // The start and the numbering reach the element, because a stylesheet can only style what the
+    // element carries: without them the surface shows `1.` where the PDF shows `e.`.
+    expect(editorSchema.nodes.list.spec.toDOM!(ordered)).toEqual([
+      'ol',
+      { start: '5', 'data-format': 'alphabetic' },
+      0,
+    ]);
+    const bulleted = editorSchema.node('list', { id: 'L2' }, [item()]);
+    expect(editorSchema.nodes.list.spec.toDOM!(bulleted)).toEqual(['ul', {}, 0]);
+  });
+
+  it('reads a numbered list back with the start and the numbering it was rendered with', () => {
+    // `parseDOM` is not decoration here either (see `markSpec`): prosemirror-view reads typed input
+    // back out of the DOM, so a rule that dropped `start` and `format` would reset an author's
+    // numbering as they typed in the list.
+    const rule = editorSchema.nodes.list.spec
+      .parseDOM!.filter(isTagRule)
+      .find((r) => r.tag === 'ol');
+    expect(rule?.getAttrs?.(element({ start: '5', 'data-format': 'alphabetic' }))).toEqual({
+      kind: 'ordered',
+      start: 5,
+      format: 'alphabetic',
+    });
+    expect(rule?.getAttrs?.(element({}))).toEqual({ kind: 'ordered', start: null, format: null });
+  });
+
+  it('lets every kind of item hold every kind of list, so any mixture nests', () => {
+    // Uncited on purpose. CNT-118 asks that a list nests to at least six levels in every kind and in
+    // any mixture of kinds; this body asserts content expressions and makes no levels at all. It
+    // shows the schema permits the mixture, which is a precondition and not the requirement.
+    for (const item of items)
+      for (const list of lists)
+        expect(
+          opens(item).matchType(editorSchema.nodes[list]),
+          `${item} -> ${list}`,
+        ).not.toBeNull();
   });
 });
 
