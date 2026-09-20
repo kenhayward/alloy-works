@@ -121,11 +121,27 @@ export const editorSchema = new Schema({
         { tag: 'ul' },
         {
           tag: 'ol',
-          getAttrs: (node: HTMLElement) => ({
-            kind: 'ordered',
-            start: node.hasAttribute('start') ? Number(node.getAttribute('start')) : null,
-            format: node.getAttribute('data-format'),
-          }),
+          // **Both are judged, not read.** `Number('')` is 0 and `Number('five')` is `NaN`, and a
+          // `data-format` of anything at all would come straight through - so an element the editor
+          // did not render, which is what a command that writes these attributes and any future
+          // paste path both make reachable, could put a `NaN` start or an unknown numbering into the
+          // document. `listNodeSchema` refuses both, and the author meets that refusal as
+          // `saveIteration`'s fixed message, which names nothing. Anything the schema would refuse
+          // reads as absent instead, which is a list with no numbering of its own and is always
+          // storable.
+          getAttrs: (node: HTMLElement) => {
+            const start = Number(node.getAttribute('start'));
+            const format = node.getAttribute('data-format');
+            return {
+              kind: 'ordered',
+              start:
+                node.hasAttribute('start') && Number.isInteger(start) && start >= 0 ? start : null,
+              format:
+                format === 'decimal' || format === 'alphabetic' || format === 'roman'
+                  ? format
+                  : null,
+            };
+          },
         },
       ],
       toDOM: (node) => [

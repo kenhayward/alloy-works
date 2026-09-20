@@ -1,3 +1,10 @@
+export {
+  blockCommand,
+  listAt,
+  listAwareEnter,
+  setListAttributes,
+  type BlockAction,
+} from './blocks.js';
 export { editorSchema } from './schema.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';

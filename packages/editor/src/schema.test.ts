@@ -308,6 +308,38 @@ describe('the lists in the editor schema', () => {
     expect(rule?.getAttrs?.(element({}))).toEqual({ kind: 'ordered', start: null, format: null });
   });
 
+  it('reads back no start and no numbering from an element carrying neither', () => {
+    // `Number('five')` is `NaN` and `Number('')` is 0, and `data-format` would otherwise come
+    // through whatever it said. `listNodeSchema` refuses both, and a document that reaches
+    // `saveIteration` carrying one is answered with a fixed message that names nothing - so
+    // anything the store would refuse reads as absent here, which is always storable.
+    const rule = editorSchema.nodes.list.spec
+      .parseDOM!.filter(isTagRule)
+      .find((r) => r.tag === 'ol');
+    expect(rule?.getAttrs?.(element({ start: 'five', 'data-format': 'bullets' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    expect(rule?.getAttrs?.(element({ start: '2.5' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    expect(rule?.getAttrs?.(element({ start: '-1' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    // A start of 0 is one a decimal list may have, so it is read rather than dropped (CNT-119's
+    // replacement, held in `checkBlock` and in `setListAttributes`).
+    expect(rule?.getAttrs?.(element({ start: '0' }))).toEqual({
+      kind: 'ordered',
+      start: 0,
+      format: null,
+    });
+  });
+
   it('lets every kind of item hold every kind of list, so any mixture nests', () => {
     // Uncited on purpose. CNT-118 asks that a list nests to at least six levels in every kind and in
     // any mixture of kinds; this body asserts content expressions and makes no levels at all. It

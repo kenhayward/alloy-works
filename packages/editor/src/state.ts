@@ -1,10 +1,11 @@
-import { baseKeymap, splitBlock } from 'prosemirror-commands';
+import { baseKeymap, chainCommands, splitBlock } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import type { MarkType, Node } from 'prosemirror-model';
 import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
+import { blockCommand, listAwareEnter } from './blocks.js';
 import { identityPlugin } from './identity.js';
 import { markKeymap, spansOf } from './marks.js';
 
@@ -255,7 +256,25 @@ export function createEditorState(options: EditorStateOptions): EditorState {
     ...(options.selection ? { selection: options.selection } : {}),
     plugins: [
       history(),
-      keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo, Enter: enterWithoutEmpties }),
+      keymap({
+        'Mod-z': undo,
+        'Mod-y': redo,
+        'Shift-Mod-z': redo,
+        // **The order is the whole of it, and `enterWithoutEmpties` is last.** It returns true and
+        // does nothing in an empty paragraph, so ahead of the list-aware links it would shadow every
+        // one of them and an author who pressed Enter in an empty list item would be trapped in the
+        // list with no key that leaves it. Every command in `listAwareEnter` returns false outside a
+        // list, so the order is safe in both directions. `blocks.test.ts` presses the key through
+        // this keymap rather than reasoning about which binding wins.
+        Enter: chainCommands(listAwareEnter(options.newIdentifier), enterWithoutEmpties),
+        // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
+        // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
+        // the named shortcut, and a shortcut written in two places is the drift the registry exists
+        // to prevent. Both return false outside a list, so Tab still moves focus everywhere else,
+        // which CNT-077 needs: a Tab that is always swallowed is a keyboard trap.
+        Tab: blockCommand('nestItem', options.newIdentifier),
+        'Shift-Tab': blockCommand('liftItem', options.newIdentifier),
+      }),
       // Every mark the toolbar offers, from the one registry, so the two cannot drift (CNT-077).
       // A mark's identifier is drawn from the same source a block's is: both are allocated by the
       // editor, and both have to be unique within the component (ADR-0023, CNT-004).
