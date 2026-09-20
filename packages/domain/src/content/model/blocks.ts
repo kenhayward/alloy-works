@@ -100,6 +100,24 @@ export const listNodeSchema = z.strictObject({
     .min(1),
 });
 
+/** One stored list, in all three of CNT-117's kinds, as the repository spells such a narrowing. */
+export type ListNode = Extract<BlockNode, { type: 'list' }>;
+
+/**
+ * Whether a list's start number is one its numbering cannot express: a zeroth item is a convention
+ * decimal has and letters and roman numerals do not (the start rule CNT-119 was superseded for).
+ *
+ * **One predicate, asked in two places, deliberately.** `checkBlock` asks it on the way in, so that
+ * no producer - an author, an import, a paste, a future API client - can store the shape and be told
+ * weeks later; `assemble` asks it again as a publish-time backstop, so that content assembled by any
+ * path is refused by name rather than numbered from something nobody wrote. Both are required, and
+ * two spellings of one rule would let a change to either side pass silently - which is why there is
+ * one spelling, here, and neither side carries a copy of it.
+ */
+export function startsOutsideItsNumbering(list: ListNode): boolean {
+  return list.start === 0 && (list.format === 'alphabetic' || list.format === 'roman');
+}
+
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),
   ...identified,

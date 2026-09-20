@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { exceedsLimits } from '../admission/limits.js';
 import { canonicalJson } from '../../stored/canonical.js';
 
-import { blockNodeSchema, footnoteContentSchema, type BlockNode } from './blocks.js';
+import {
+  blockNodeSchema,
+  footnoteContentSchema,
+  startsOutsideItsNumbering,
+  type BlockNode,
+} from './blocks.js';
 import { marksAsASet } from './canonical.js';
 import type { InlineNode } from './inline.js';
 import type { Mark } from './marks.js';
@@ -442,7 +447,9 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
           `List ${block.id} carries a start or a numbering, which only an ordered list may`,
         );
       }
-      if (block.start === 0 && (block.format === 'alphabetic' || block.format === 'roman')) {
+      // Asked of `startsOutsideItsNumbering`, which `assemble` asks too: the rule is held here and
+      // backstopped at publish time, and one spelling is what keeps the two from drifting apart.
+      if (startsOutsideItsNumbering(block)) {
         throw new Error(`List ${block.id} starts at 0, which only decimal numbering permits`);
       }
       return {

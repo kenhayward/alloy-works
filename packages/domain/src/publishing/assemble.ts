@@ -1,4 +1,4 @@
-import type { BlockNode } from '../content/model/blocks.js';
+import { startsOutsideItsNumbering, type BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
@@ -197,11 +197,12 @@ export function assemble(input: AssembleInput): Assembled {
   };
 
   /**
-   * A block the template can set, or a failure naming what it is. **A branch per stored block kind
-   * and no `default:`**, so an eighth kind added to `BlockNode` without a branch here fails to
-   * compile rather than reaching a reader as nothing at all: a block silently skipped is a document
-   * published under the author's name with a piece of it missing, and the same rule guards a mark
-   * in `publishedMark` below.
+   * A block the template can set, or a failure naming what it is. **A branch per stored block kind,
+   * and a `default:` that refuses what it cannot name**, so an eighth kind added to `BlockNode`
+   * fails to compile and, if one ever arrived anyway, is thrown on rather than skipped: a block
+   * silently dropped is a document published under the author's name with a piece of it missing.
+   * `withoutMarks` and `publishedMark` below are closed the same way, and none of the three has a
+   * branch that returns without saying what it saw.
    *
    * **It descends.** A list item holds block content, so this calls itself, and the style check and
    * the glyph check reach a paragraph at any depth because both are asked in the paragraph branch
@@ -225,13 +226,14 @@ export function assemble(input: AssembleInput): Assembled {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
           return [];
         }
-        // A zeroth item is a convention decimal numbering has and letters and roman numerals do
-        // not (the start rule CNT-119 was superseded for). **This is a backstop, not the rule**:
-        // `checkBlock` refuses the shape on the way in, and every occurrence reaches `assemble`
-        // through `parseContentDocument`, so nothing an author, an import or a paste can store
-        // arrives here. It is kept for the reason the frozen shapes keep theirs - content
-        // assembled by any path is refused by name, never numbered from something nobody wrote.
-        if (block.start === 0 && (block.format === 'alphabetic' || block.format === 'roman')) {
+        // **A backstop, not the rule.** `checkBlock` asks this same predicate on the way in, and
+        // every occurrence reaches `assemble` through `parseContentDocument`, so nothing an author,
+        // an import or a paste can store arrives here. It is kept for the reason the frozen shapes
+        // keep theirs - content assembled by any path is refused by name, never numbered from
+        // something nobody wrote - and it asks `startsOutsideItsNumbering` rather than spelling the
+        // condition a second time, so that a change to what the model permits cannot leave this
+        // refusing in silence.
+        if (startsOutsideItsNumbering(block)) {
           failures.push(failure('compose', 'block_not_publishable', node, block.id, 'list:start'));
           return [];
         }
@@ -269,6 +271,18 @@ export function assemble(input: AssembleInput): Assembled {
       case 'equation':
         failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
         return [];
+      default: {
+        // **Unreachable, and named rather than left to fall through.** The assignment is what makes
+        // an eighth `BlockNode` kind fail to compile - every kind above is accounted for, so what
+        // reaches here is `never` - and the throw is what happens if one arrives anyway, from a
+        // build reading content a newer schema wrote. Falling through instead would return
+        // `undefined`, which the caller's `flatMap` folds straight into the blocks a reader is
+        // shown: a hole in the published document rather than a refusal naming what made it.
+        const unreachable: never = block;
+        throw new Error(
+          `No published shape for a block of kind ${(unreachable as BlockNode).type}`,
+        );
+      }
     }
   };
 
@@ -413,8 +427,9 @@ function withoutMatter(node: PublishedNode): PublishedNode1 {
  * carries no mark, because `assemble` refuses a marked inline outright where there is no layout, so
  * this drops an always-empty member rather than a mark - which is what keeps the frozen bytes frozen.
  *
- * **A branch per published block kind and no `default:`**, so a third kind cannot be added without
- * this failing to compile. The `list` branch throws and is **unreachable by construction**: where
+ * **A branch per published block kind, and a `default:` that refuses what it cannot name**, so a
+ * third kind cannot be added without this failing to compile and cannot arrive at run time without
+ * being thrown on. The `list` branch throws and is **unreachable by construction**: where
  * there is no layout `publishable` refuses a list before it can become one (decision E), and a
  * document with a failure never reaches `withoutMatter` at all. It is here to stay unreachable - the
  * cheap way to make a union compile is a branch that returns nothing, and that would drop a list
@@ -430,6 +445,14 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
       };
     case 'list':
       throw new Error(`publishing/1 holds paragraphs alone, and block ${block.id} is a list`);
+    default: {
+      // As in `publishable`: the assignment keeps the compile failure and the throw names what
+      // arrived, so a third published kind can never be folded into the frozen shape as `undefined`.
+      const unreachable: never = block;
+      throw new Error(
+        `publishing/1 holds paragraphs alone, not a ${(unreachable as PublishedBlock).type}`,
+      );
+    }
   }
 }
 
@@ -533,9 +556,10 @@ function publishedMarks(marks: readonly Mark[], carriesMarks: boolean): MarksOut
 }
 
 /**
- * One carried mark as the template reads it. A branch per kind and no `default:`, so a tenth kind
- * added to `PUBLISHED_MARK_ORDER` without a branch here fails to compile rather than reaching a
- * reader as an unmarked run.
+ * One carried mark as the template reads it. A branch per kind, and a `default:` that refuses what
+ * it cannot name, so a tenth kind added to `PUBLISHED_MARK_ORDER` without a branch here fails to
+ * compile, and one arriving at run time is thrown on rather than pushed into a run's marks as
+ * `undefined` - which would reach a reader as an unmarked run.
  */
 function publishedMark(mark: Exclude<CarriedMark, { type: 'language' }>): PublishedMark {
   switch (mark.type) {
@@ -551,6 +575,12 @@ function publishedMark(mark: Exclude<CarriedMark, { type: 'language' }>): Publis
     case 'inlineCode':
     case 'quotedPhrase':
       return { kind: mark.type };
+    default: {
+      // As in `publishable`: the assignment keeps the compile failure and the throw names what
+      // arrived, rather than returning `undefined` for the caller to push into a run's marks.
+      const unreachable: never = mark;
+      throw new Error(`No published shape for a mark of kind ${(unreachable as Mark).type}`);
+    }
   }
 }
 

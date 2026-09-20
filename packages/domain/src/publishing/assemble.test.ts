@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { BlockNode } from '../content/model/blocks.js';
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { markTypes } from '../content/model/marks.js';
 import {
@@ -1146,6 +1147,20 @@ describe('assemble', () => {
       format: 'decimal',
     });
 
+    // The same start with **no** numbering at all, which is equally storable because decimal is the
+    // default. It publishes as a falsy 0 beside a null format, and a template has to read both at
+    // once - a 0 as a start the author set, and a null as decimal - so the pair is pinned here
+    // rather than left for the template to discover one of them.
+    const unstated = component([
+      storedList('L1', 'ordered', [{ content: [paragraph('b1', text('Check the readings'))] }], {
+        start: 0,
+      }),
+    ]);
+    expect(blocksOf(assemble(oneOccurrence(unstated)))[0]).toMatchObject({
+      start: 0,
+      format: null,
+    });
+
     for (const format of ['alphabetic', 'roman'] as const) {
       const lettered: ContentDocument = {
         ...decimal,
@@ -1205,6 +1220,27 @@ describe('assemble', () => {
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b2', detail: 'U+4E2D' },
     ]);
+  });
+
+  it('names a block kind it has no shape for, rather than leaving a hole among the blocks', () => {
+    // Unreachable by construction - `parseContentDocument` refuses the kind, and every occurrence
+    // reaches `assemble` through it - so this fixture is built past that door, as the start-rule one
+    // above is. What it demonstrates is the shape of the answer: a kind nothing here knows is
+    // **named**, at the first gate that meets it. Left to fall through, each of the two switches it
+    // passes returns `undefined`, and the caller's `flatMap` folds that straight into the blocks a
+    // reader is shown - a hole in the published document that no failure accounts for.
+    //
+    // `contributionsOf` runs before the projection, so it answers first; `publishable`'s own branch
+    // stands behind it and says the same thing in its own words.
+    const stored = component([paragraph('b1', text('Check the readings'))]);
+    const newerSchema: ContentDocument = {
+      ...stored,
+      content: [{ type: 'callout', id: 'b1' } as unknown as BlockNode],
+    };
+
+    expect(() => assemble(oneOccurrence(newerSchema))).toThrow(
+      /No contribution rule for a block of kind callout/,
+    );
   });
 
   it('keeps an item that came out empty, and publishes nothing for a list where every one did', () => {
