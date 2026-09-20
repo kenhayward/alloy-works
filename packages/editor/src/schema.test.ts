@@ -202,21 +202,26 @@ describe('the editor stylesheet', () => {
     const ruleSelectors = [...withoutComments.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((match) =>
       match[1]!.split(',').map((selector) => selector.trim()),
     );
-    // The eight tag selectors task 1's schema renders, `a[href]` for the hyperlink (not the bare
-    // `a`, which would style an anchor with no target) and `.aw-language` for the language mark,
-    // whose own element carries no tag of its own (F19).
-    const expected = [
-      '.ProseMirror em',
-      '.ProseMirror strong',
-      '.ProseMirror u',
-      '.ProseMirror sub',
-      '.ProseMirror sup',
-      '.ProseMirror code',
-      '.ProseMirror q',
-      '.ProseMirror dfn',
-      '.ProseMirror a[href]',
-      '.ProseMirror .aw-language',
-    ];
-    for (const selector of expected) expect(ruleSelectors, selector).toContain(selector);
+    // Each mark's own selector, read from what its `toDOM` actually renders rather than written out
+    // by hand: `a[href]` for the hyperlink, because its rendered element carries an `href` (never
+    // the bare `a`, which would style an anchor with no target), and `.aw-language` for the language
+    // mark, because its rendered element carries a `class` and no tag of its own (F19). Deriving the
+    // list this way, rather than spelling out the ten strings, means a mark added later with no rule
+    // of its own fails here on the day it is added, not on the day someone remembers to extend a
+    // hand-written list.
+    const selectorOf = (name: string): string => {
+      const type = editorSchema.marks[name]!;
+      const attrs = Object.fromEntries(Object.keys(type.spec.attrs ?? {}).map((key) => [key, 'x']));
+      const mark = type.create(attrs);
+      const [tag, domAttrs] = type.spec.toDOM!(mark, true) as [string, Record<string, string>, 0];
+      if (typeof domAttrs.class === 'string') return `.${domAttrs.class}`;
+      if ('href' in domAttrs) return `${tag}[href]`;
+      return tag;
+    };
+
+    for (const name of Object.keys(editorSchema.marks)) {
+      const selector = `.ProseMirror ${selectorOf(name)}`;
+      expect(ruleSelectors, selector).toContain(selector);
+    }
   });
 });
