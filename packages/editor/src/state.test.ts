@@ -1,8 +1,8 @@
 import { parseContentDocument } from '@alloy-works/domain';
 import { joinBackward, splitBlock } from 'prosemirror-commands';
 import { redo, undo } from 'prosemirror-history';
-import { Slice, type Node } from 'prosemirror-model';
-import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
+import { Schema, Slice, type Node } from 'prosemirror-model';
+import { EditorState, Selection, TextSelection, type Transaction } from 'prosemirror-state';
 import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
 
@@ -11,7 +11,12 @@ import { newBlockIdentifier } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { removeMarkCommand, toggleMarkCommand } from './marks.js';
 import { editorSchema } from './schema.js';
-import { createEditorState, enterWithoutEmpties, spellcheckDecorations } from './state.js';
+import {
+  createEditorState,
+  enterWithoutEmpties,
+  noAdjacentEmptyParagraphs,
+  spellcheckDecorations,
+} from './state.js';
 
 const counter = () => {
   let next = 0;
@@ -295,6 +300,28 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
   });
 
+  it('deletes a pair after a deeper pair without moving the position of either', () => {
+    // The ordering case, and it is the whole of it: a pair **inside** a list, and a second pair
+    // **after** that list at the top level. The walk collects a node's own removal and then descends
+    // into that node, so the deeper position is collected before the later one and reversing the
+    // list deletes back to front. Collect a sequence before descending into it - the obvious
+    // rearrangement, and one the rest of this block cannot catch, because every other fixture here
+    // puts its top-level pair first - and the two removals come back out of order: the shallow
+    // deletion runs first, moves everything after it, and the deeper one then addresses a position
+    // that no longer exists. That is a `RangeError` thrown out of `appendTransaction`, which in a
+    // browser is an uncaught exception on a keystroke rather than a wrong document.
+    const state = componentOf([
+      listOf(emptyParagraph(), emptyParagraph()),
+      textParagraph('keep me'),
+      emptyParagraph(),
+      emptyParagraph(),
+    ]);
+    // Any transaction will do; this one renames the list's kind, which no assertion below reads.
+    const after = state.apply(state.tr.setNodeAttribute(0, 'kind', 'ordered'));
+    expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+    expect(texts(after.doc)).toEqual(['', 'keep me', '']);
+  });
+
   it('removes the second of two adjacent empty paragraphs inside one list item', () => {
     const state = componentOf([textParagraph('Unbox'), listOf(emptyParagraph())]);
     // A second empty paragraph arriving beside the one already in the item, by a transaction:
@@ -332,6 +359,39 @@ describe('two adjacent empty paragraphs, at any depth', () => {
     const after = typed(state);
     expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
     expect(find(after.doc, 'term').node.textContent).toBe('');
+  });
+
+  it('takes a child that is not a block out of the sequence, rather than reading it as a member', () => {
+    // The group filter itself. **No document the editor's own schema can make reaches it**: the one
+    // non-block child it has is a `definitionItem`'s term, `definitionItem` is `term block+`, so a
+    // term can only stand first and never between two paragraphs - and the emptiness test keys on
+    // the type name `paragraph`, so a term pairs with nothing whatever group it is in. So this
+    // builds a schema of its own to put a node that is not a block **between** two empty paragraphs,
+    // which is the case the filter decides and the case the next family that nests may bring.
+    //
+    // The answer it pins: a child outside the group is not a member of the sequence, so it neither
+    // pairs with a paragraph nor separates two. That is how the stored model composes a sequence -
+    // from block content alone, an item's term being a field beside it rather than a member of it -
+    // and agreeing with that is the whole reason the walk asks the schema instead of naming types.
+    const schema = new Schema({
+      nodes: {
+        doc: { content: 'holder+' },
+        holder: { content: '(block | aside)+' },
+        paragraph: { group: 'block', content: 'text*' },
+        aside: {},
+        text: {},
+      },
+    });
+    const doc = schema.node('doc', null, [
+      schema.node('holder', null, [schema.node('paragraph'), schema.node('aside')]),
+    ]);
+    const state = EditorState.create({ doc, plugins: [noAdjacentEmptyParagraphs()] });
+    // An empty paragraph arriving at the end of the holder, with an `aside` between it and the
+    // empty paragraph already there. It is still the second of a pair.
+    const after = state.apply(state.tr.insert(4, schema.node('paragraph')));
+    const holder = after.doc.firstChild!;
+    expect(holder.childCount).toBe(2);
+    expect([holder.child(0).type.name, holder.child(1).type.name]).toEqual(['paragraph', 'aside']);
   });
 
   it('never leaves inside an item what the stored model refuses in one', () => {

@@ -25,6 +25,14 @@ const isEmptyParagraph = (node: Node | null | undefined) =>
  * called `paragraph`. It also means a blockquote, a table cell and a footnote are walked the day
  * they are declared, without being remembered here.
  *
+ * Two things hold that, because **no shape this schema can make reaches the filter today**: a
+ * `definitionItem` is `term block+`, so its one non-block child can only stand first, and the
+ * emptiness test below never pairs with a term anyway. `schema.test.ts` pins that `term` is outside
+ * the group, which is what keeps the emptiness test's answer the stored model's answer; and
+ * `state.test.ts` reaches the filter itself through a schema of its own, which is where the rule it
+ * applies - a child outside the group is no member of the sequence, so it neither pairs nor
+ * separates - is written down.
+ *
  * **Emptiness is still the paragraph's own type and size**, because that is what CNT-023 is about
  * and what `refuseAdjacentEmpties` compares: a list is in the `block` group and is no empty
  * paragraph, and an empty `term` is no paragraph either. A text node cannot be empty in
@@ -34,8 +42,11 @@ const isEmptyParagraph = (node: Node | null | undefined) =>
  * **The walk pushes a node's removal and then descends into that node**, which is what keeps the
  * collected positions ascending: finishing a sequence before descending into its members would
  * collect a later sibling's position before a deeper one, and reversing that list would then delete
- * front to back at depth. Every range collected is one empty paragraph, which holds nothing, so no
- * two overlap and deleting them back to front is enough.
+ * the shallow range first, move everything after it, and address the deeper one at a position that
+ * no longer exists - a `RangeError` out of `appendTransaction`, which is an uncaught exception on a
+ * keystroke. `state.test.ts` drives the shape that proves it: a pair inside a list, and a second
+ * pair after that list. Every range collected is one empty paragraph, which holds nothing, so no two
+ * overlap and deleting them back to front is enough.
  */
 function adjacentEmpties(parent: Node, start: number, removals: [number, number][]): void {
   let previous: Node | null = null;
@@ -250,12 +261,14 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // editor, and both have to be unique within the component (ADR-0023, CNT-004).
       keymap(markKeymap(options.newIdentifier, options.onPrompt)),
       keymap(baseKeymap),
-      // **Identity before adjacency, and the order is load-bearing now that both descend.**
-      // Adjacency deletes, which moves every position after what it deleted; identity reads
-      // positions out of the document and writes attributes back at them. A paragraph named and then
-      // removed in the same cycle is harmless - the name goes with it. The other way round, the
-      // deletion would happen between identity's read and its write. ProseMirror re-runs both over
-      // whatever either appends, so each still sees the document the other left.
+      // **Identity before adjacency, and it is a preference rather than a rule.** ProseMirror
+      // re-runs every `appendTransaction` over whatever any of them appends, so each of these two
+      // sees the document the other left however they are ordered, and swapping them changes no
+      // outcome. What this order buys is that a paragraph about to be removed is named and then
+      // removed - one wasted identifier - rather than the document being cut about between the pass
+      // identity reads its positions in and the one it writes them back in. Both descend now, so
+      // both are walking the same nested positions, and keeping a deletion out of that round is
+      // worth the line it takes to say so.
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.

@@ -234,6 +234,26 @@ describe('the lists in the editor schema', () => {
     expect(editorSchema.nodes.term.spec.marks).toBe('_');
   });
 
+  it('keeps a term out of the block group, which the adjacency walk depends on', () => {
+    // `noAdjacentEmptyParagraphs` in `state.ts` builds each sequence from the children in the
+    // `block` group, because that is the sequence the stored model holds CNT-023 over: an item's
+    // term belongs to the item and its blocks are a sequence of their own (`checkBlock` in
+    // `packages/domain`). Give `term` this group and the editor's sequence stops being the stored
+    // model's.
+    //
+    // Worth recording plainly: **no shape this schema can make distinguishes the two readings
+    // today.** `definitionItem` is `term block+`, so a term can only stand first, and the walk's
+    // emptiness test keys on the type name `paragraph`, so a term pairs with nothing whatever group
+    // it is in. That is what makes this assertion the guard rather than a document-level test - and
+    // what makes it worth having, because the day a family puts a node that is not a block between
+    // two that are, the group is the only thing standing between the two write paths.
+    expect(editorSchema.nodes.term.isInGroup('block')).toBe(false);
+    expect(editorSchema.nodes.listItem.isInGroup('block')).toBe(false);
+    for (const name of ['paragraph', 'list', 'definitionList'] as const) {
+      expect(editorSchema.nodes[name].isInGroup('block')).toBe(true);
+    }
+  });
+
   // Uncited on purpose. CNT-124 - "a component must always hold at least one block ... a newly
   // created component must hold exactly one empty paragraph" - is a rule of the content model and is
   // already `Covered` where the model holds it. This body shows only that widening `doc` to `block+`
