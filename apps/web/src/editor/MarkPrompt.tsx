@@ -16,6 +16,8 @@ interface Shape {
   readonly refusal: string;
   /** What they are told instead where they typed nothing at all, which is not the same thing. */
   readonly empty: string;
+  /** And where Remove found no mark of this kind left to take off, which is a third thing. */
+  readonly absent: string;
   /** What Remove does, said before they press it rather than after. */
   readonly removes: string;
 }
@@ -42,6 +44,7 @@ const SHAPES: Record<string, Shape> = {
     ],
     refusal: 'That address must begin http:, https: or mailto:.',
     empty: 'Type an address, or press Cancel to leave the text as it is.',
+    absent: 'There is no link here any more, so there is nothing to take off.',
     removes: 'Remove takes this link off and leaves the text it was on.',
   },
   language: {
@@ -51,19 +54,28 @@ const SHAPES: Record<string, Shape> = {
     ],
     refusal: 'That is not a language tag. Try one like fr or pt-BR.',
     empty: 'Type a language tag, or press Cancel to leave the text as it is.',
+    absent: 'There is no language tag here any more, so there is nothing to take off.',
     removes: 'Remove takes this language tag off and leaves the text it was on.',
   },
 };
 
 /**
- * Said where the command answered no for a reason that is not the value at all: the text the dialog
- * was opened over is not where it was by the time the author pressed a button. One sentence for both
- * marks, and for applying and removing alike, because it is one thing that happened.
+ * Said where the command answered no because the text the dialog was opened over is not where it
+ * was by the time the author pressed a button. One sentence for both marks, because it is one thing
+ * that happened, and it names the remedy: select some text again.
  */
 const GONE = 'That text is not there any more. Press Cancel, select some text, and try again.';
 
-/** Why a press came back with nothing done: the value, or the text it was to go on. */
-export type Refused = 'value' | 'gone';
+/**
+ * Why a press came back with nothing done: the value the author typed, the text it was to go on, or
+ * the mark it was to come off.
+ *
+ * The last two are not one case, and telling them apart is not pedantry. Selecting the text again
+ * is the remedy for the text having gone and is no remedy at all for the mark having gone, and
+ * saying the text is not there while the author is looking straight at it is the editor telling
+ * them something they can see is untrue.
+ */
+export type Refused = 'value' | 'gone' | 'noMark';
 
 export interface MarkPromptProps {
   readonly command: EditorCommand;
@@ -138,9 +150,11 @@ export function MarkPrompt({
       ? null
       : refused === 'gone'
         ? GONE
-        : nothingTyped
-          ? shape.empty
-          : shape.refusal;
+        : refused === 'noMark'
+          ? shape.absent
+          : nothingTyped
+            ? shape.empty
+            : shape.refusal;
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {

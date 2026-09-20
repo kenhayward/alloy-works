@@ -1875,4 +1875,78 @@ describe('the link and language prompts', () => {
 
     expect(article).not.toHaveAttribute('inert');
   });
+
+  it('goes on saying what happened while a dialog stands over the page', async () => {
+    // What makes the page behind inert also takes it out of the accessibility tree, and the status
+    // region is in there: a notice that arrives while a dialog is open - newer text saved from
+    // another window, signed out, the lock lost - would be announced to nobody at all. It is not
+    // polish; it is the sentence that says the author's work is in danger.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    view.someProp('handlePaste', (handle) =>
+      handle(view, new Event('paste') as ClipboardEvent, view.state.doc.slice(1, 6)),
+    );
+    await screen.findByText('Pasting is not available yet. Type the text instead.');
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Pasting is not available yet. Type the text instead.');
+    expect(status.closest('[inert]')).toBeNull();
+  });
+
+  it('says a mark has gone rather than the text, and offers nobody else the address', async () => {
+    // Two mistakes that compounded: the remove path asserted that the text had gone, when what had
+    // gone was the mark; and the boxes were refilled from a ref written only by Apply and never
+    // cleared, so a refused Remove came back holding an address typed into a different dialog - one
+    // that Apply would then have stored on text the author never meant.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                { type: 'text', value: 'Unbox ', marks: [] },
+                {
+                  type: 'text',
+                  value: 'the printer',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    // One address, typed and applied to the first run.
+    selectRange(view, 1, 7);
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/first');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // A dialog over the other run's link, whose mark then goes while the dialog stands over it.
+    selectRange(view, 7, 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(await screen.findByLabelText('Address')).toHaveValue('https://example.test/old');
+    act(() => view.dispatch(view.state.tr.removeMark(7, 18, view.state.schema.marks.hyperlink!)));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    // The text is plainly still there, so saying it has gone would be telling the author something
+    // they can see is untrue.
+    expect(
+      await screen.findByText('There is no link here any more, so there is nothing to take off.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/is not there any more/)).toBeNull();
+    expect(screen.getByLabelText('Address')).toHaveValue('');
+  });
 });

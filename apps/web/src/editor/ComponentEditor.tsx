@@ -144,9 +144,15 @@ export function ComponentEditor({
   // focus on the surface, so that the selection the command acts on survives, and a shortcut is
   // pressed in the surface to begin with.
   const opener = useRef<HTMLElement | null>(null);
-  // What the author last typed into a dialog, kept only long enough to put it back in the boxes if
-  // the stored model refuses it: a refusal must not also take away what it refused.
-  const typed = useRef<Record<string, unknown>>({});
+  // What the dialog that closed last answered with, and nothing longer lived than that: it is put
+  // back in the boxes where that very answer was then refused, so a refusal does not also take away
+  // what it refused. Written by every close, so a dialog that answered nothing - cancelled, or a
+  // Remove that found nothing to take off - leaves null here rather than somebody else's address.
+  const answered = useRef<Record<string, unknown> | null>(null);
+  // The press a dialog now standing is waiting on, so that a second dialog displacing the first
+  // answers it rather than leaving it pending for ever. `inert` bars the author's own routes to a
+  // second one; whether this is right should not depend on that.
+  const pending = useRef<((answer: Record<string, unknown> | null) => void) | null>(null);
   // A refusal standing over the next opening of this mark's dialog, set the moment one arrives and
   // consumed by the dialog that carries it. It names the mark as well as the reason, so that a
   // refusal of a link can never surface in the language dialog.
@@ -166,6 +172,8 @@ export function ComponentEditor({
     new Promise((settle) => {
       const standing = refusal.current?.mark === command.mark ? refusal.current : null;
       refusal.current = null;
+      pending.current?.(null);
+      pending.current = settle;
       // Only where none is held: a dialog that comes straight back carrying a complaint must send
       // the author to what opened the first one, not to a button it is about to take away.
       opener.current ??=
@@ -173,7 +181,7 @@ export function ComponentEditor({
       openings.current += 1;
       setAsking({
         command,
-        values: standing ? typed.current : current,
+        values: standing ? (answered.current ?? current) : current,
         refused: standing?.because ?? null,
         // What can be taken off is what is there now, never what was typed and refused.
         removable: current !== null,
@@ -238,6 +246,8 @@ export function ComponentEditor({
   const closeAsking = (answer: Record<string, unknown> | null) => {
     if (!asking) return;
     setAsking(null);
+    answered.current = answer;
+    pending.current = null;
     asking.settle(answer);
   };
 
@@ -615,8 +625,13 @@ export function ComponentEditor({
             )}
           </>
         )}
-        <p role="status">{notice}</p>
       </article>
+      {/* Beside the article, never inside it, and always there rather than moved when a dialog
+          opens: `inert` takes the article out of the accessibility tree, so a notice that arrived
+          while a dialog stood over the page - newer text saved from another window, signed out,
+          the lock lost - would be announced to nobody. A live region that moved between parents
+          would be a live region that lost the announcement instead, so it stays put out here. */}
+      <p role="status">{notice}</p>
       {asking &&
         // Beside the article rather than inside it, because the article is what it makes inert:
         // a dialog within an inert subtree is a dialog nothing can reach. Keyed by which opening
@@ -629,10 +644,7 @@ export function ComponentEditor({
             values={asking.values}
             refused={asking.refused}
             removable={asking.removable}
-            onApply={(values) => {
-              typed.current = values;
-              closeAsking(values);
-            }}
+            onApply={(values) => closeAsking(values)}
             onRemove={() => {
               const { command } = asking;
               // Taking a mark off needs no value, so it never goes back to the press waiting on
@@ -645,7 +657,17 @@ export function ComponentEditor({
                 removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
               // Answered either way, so the press waiting on this dialog is never left pending.
               closeAsking(null);
-              if (!removed && surface !== null) askAgain(surface, command, 'gone');
+              // Asked, never asserted. A removal answers no when there is no mark of that type in
+              // the range, which is not the same as the text having gone - and telling the author
+              // the text has gone while it is on the screen in front of them is worse than saying
+              // nothing at all.
+              if (!removed && surface !== null) {
+                askAgain(
+                  surface,
+                  command,
+                  whyRefused(surface, command) === 'gone' ? 'gone' : 'noMark',
+                );
+              }
             }}
             onCancel={() => closeAsking(null)}
           />,
