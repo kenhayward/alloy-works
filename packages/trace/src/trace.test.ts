@@ -297,8 +297,12 @@ describe('the citations in the committed model', () => {
   // packages/editor/src/mapping.test.ts: the mapping carries all eight character marks there and
   // back unchanged, keeps two overlapping annotations whole across three runs under two identifiers,
   // and carries a hyperlink over a range with an absolute target and the title it has or has not.
+  // 213, from 210: the same plan cites CNT-077, CNT-004 and CNT-127 in
+  // packages/editor/src/marks.test.ts: one registry gives every mark command a label and a shortcut
+  // no other command uses, an edit that splits a marked run leaves one annotation under one
+  // identifier, and a link target whose scheme is not allowlisted is refused before it is applied.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(210);
+    expect(model.citations).toHaveLength(213);
   });
 
   it('cites no identifier the corpus does not hold', () => {

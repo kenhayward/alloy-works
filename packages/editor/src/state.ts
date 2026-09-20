@@ -6,6 +6,7 @@ import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-s
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { identityPlugin } from './identity.js';
+import { markKeymap } from './marks.js';
 
 const isEmptyParagraph = (node: Node | null | undefined) =>
   node?.type.name === 'paragraph' && node.content.size === 0;
@@ -80,6 +81,13 @@ export interface EditorStateOptions {
    * side effect the cut never asked for. Defaults to the document's own default selection.
    */
   readonly selection?: Selection;
+  /**
+   * Called when a shortcut for a mark whose value the author has to supply is pressed - a link, a
+   * language - and answering whether the renderer took it. A value can only be typed into something
+   * this package does not own, so the editor's part is to carry the key out to whatever is asking
+   * for it; with nothing listening the key does nothing, rather than being swallowed (CNT-077).
+   */
+  readonly onPrompt?: (mark: string) => boolean;
 }
 
 /**
@@ -94,6 +102,10 @@ export function createEditorState(options: EditorStateOptions): EditorState {
     plugins: [
       history(),
       keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo, Enter: enterWithoutEmpties }),
+      // Every mark the toolbar offers, from the one registry, so the two cannot drift (CNT-077).
+      // A mark's identifier is drawn from the same source a block's is: both are allocated by the
+      // editor, and both have to be unique within the component (ADR-0023, CNT-004).
+      keymap(markKeymap(options.newIdentifier, options.onPrompt)),
       keymap(baseKeymap),
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
