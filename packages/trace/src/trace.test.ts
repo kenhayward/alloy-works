@@ -293,8 +293,12 @@ describe('the citations in the committed model', () => {
   // schema holds a hyperlink as a mark carrying an absolute target and an optional title - and
   // CNT-147 in packages/editor/src/state.test.ts: the spelling checker is turned off over a run whose
   // language mark differs from the component's base language, and over no other run.
+  // 210, from 207: the same plan cites CNT-031, CNT-003 and CNT-126 in
+  // packages/editor/src/mapping.test.ts: the mapping carries all eight character marks there and
+  // back unchanged, keeps two overlapping annotations whole across three runs under two identifiers,
+  // and carries a hyperlink over a range with an absolute target and the title it has or has not.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(207);
+    expect(model.citations).toHaveLength(210);
   });
 
   it('cites no identifier the corpus does not hold', () => {

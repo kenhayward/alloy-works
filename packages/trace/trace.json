@@ -17044,6 +17044,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-003",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-031",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-126",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 116,
+      "kind": "title"
+    },
+    {
       "id": "CNT-126",
       "file": "packages/editor/src/schema.test.ts",
       "line": 81,
