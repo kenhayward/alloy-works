@@ -385,4 +385,74 @@ describe('the editor stylesheet', () => {
       expect(ruleSelectors, selector).toContain(selector);
     }
   });
+
+  it('styles a list at every level it can nest', () => {
+    // Read from disk and parsed the same way as the mark test above, and for the same reason: this
+    // also proves the file still parses as CSS once the list rules are added, not merely that some
+    // text occurs in it.
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
+    const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const ruleSelectors = [...withoutComments.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((match) =>
+      match[1]!.split(',').map((selector) => selector.trim()),
+    );
+    const expectSelector = (selector: string) =>
+      expect(ruleSelectors, selector).toContain(selector);
+
+    // The tag a rendered node carries, read from its own `toDOM` output rather than typed as a
+    // literal string: a selector below is built out of this, so a tag `toDOM` stops rendering fails
+    // here first, on the selector it changes, rather than leaving a rule silently unreachable.
+    const tagOf = (domOutput: unknown): string => (domOutput as [string, ...unknown[]])[0];
+    const formatOf = (domOutput: unknown): string | undefined => {
+      const [, attrs] = domOutput as [string, Record<string, string>, 0];
+      return attrs['data-format'];
+    };
+
+    const paragraph = (id: string) => editorSchema.node('paragraph', { id });
+    const listItem = (id: string) => editorSchema.node('listItem', null, [paragraph(id)]);
+    const list = (attrs: Record<string, unknown>, child: ReturnType<typeof listItem>) =>
+      editorSchema.node('list', attrs, [child]);
+
+    const ulTag = tagOf(editorSchema.nodes.list.spec.toDOM!(list({ id: 'L1' }, listItem('b1'))));
+    const liTag = tagOf(editorSchema.nodes.listItem.spec.toDOM!(listItem('b2')));
+
+    // The template pins three depths of marker - disc, circle, square - and cycles past them
+    // (docs/plans/2026-09-21-editor-04-lists-and-quotations.md; the marker set belongs in a theme
+    // and not a template, which is issue #158 and not this task's fix). A list nested inside itself
+    // is that many copies of its own tag, chained by descendant combinators, because that is what a
+    // real nested list looks like in the DOM.
+    for (let depth = 1; depth <= 3; depth += 1) {
+      expectSelector(`.ProseMirror ${Array(depth).fill(ulTag).join(' ')}`);
+    }
+
+    // A list item holding another list is `li` inside `li` in the DOM: the selector a nested list's
+    // indentation step needs.
+    expectSelector(`.ProseMirror ${liTag}`);
+    expectSelector(`.ProseMirror ${liTag} ${liTag}`);
+
+    // An ordered list takes its marker from the node's own `format`, not from the browser's default
+    // numbering, so the surface and the PDF agree on what an author set in the panel.
+    const orderedList = (format: string | null) =>
+      list({ id: 'L2', kind: 'ordered', format }, listItem('b3'));
+    const olTag = tagOf(editorSchema.nodes.list.spec.toDOM!(orderedList(null)));
+    expectSelector(`.ProseMirror ${olTag}`);
+    for (const format of ['alphabetic', 'roman'] as const) {
+      const value = formatOf(editorSchema.nodes.list.spec.toDOM!(orderedList(format)));
+      expectSelector(`.ProseMirror ${olTag}[data-format='${value}']`);
+    }
+
+    // The term: set apart from its own definition without colour alone.
+    const dlTag = tagOf(
+      editorSchema.nodes.definitionList.spec.toDOM!(
+        editorSchema.node('definitionList', { id: 'D1' }, [
+          editorSchema.node('definitionItem', null, [
+            editorSchema.node('term', null),
+            paragraph('b4'),
+          ]),
+        ]),
+      ),
+    );
+    expectSelector(`.ProseMirror ${dlTag}`);
+    const dtTag = tagOf(editorSchema.nodes.term.spec.toDOM!(editorSchema.node('term', null)));
+    expectSelector(`.ProseMirror ${dtTag}`);
+  });
 });
