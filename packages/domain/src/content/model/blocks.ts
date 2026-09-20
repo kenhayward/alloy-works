@@ -67,7 +67,7 @@ export const listNodeSchema = z.strictObject({
   type: z.literal('list'),
   ...identified,
   kind: z.enum(['ordered', 'unordered', 'definition']),
-  // CNT-119: local to this list and independent of the outline's numbering.
+  // CNT-153: local to this list and independent of the outline's numbering.
   start: z.number().int().min(0).optional(),
   format: z.enum(['decimal', 'alphabetic', 'roman']).optional(),
   // A list item holds block content, so nesting is unbounded by construction and CNT-118's six
@@ -105,7 +105,7 @@ export type ListNode = Extract<BlockNode, { type: 'list' }>;
 
 /**
  * Whether a list's start number is one its numbering cannot express: a zeroth item is a convention
- * decimal has and letters and roman numerals do not (the start rule CNT-119 was superseded for).
+ * decimal has and letters and roman numerals do not (CNT-153, which superseded CNT-119 for it).
  *
  * **One predicate, asked in two places, deliberately.** `checkBlock` asks it on the way in, so that
  * no producer - an author, an import, a paste, a future API client - can store the shape and be told

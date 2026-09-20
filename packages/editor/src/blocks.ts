@@ -12,7 +12,7 @@ const definitionListNode = editorSchema.nodes.definitionList;
 const definitionItemNode = editorSchema.nodes.definitionItem;
 const termNode = editorSchema.nodes.term;
 
-/** What the stored model's `format` may say, and nothing else (CNT-119, and the start rule below). */
+/** What the stored model's `format` may say, and nothing else (CNT-153, and the start rule below). */
 const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
 
 /**
@@ -161,7 +161,7 @@ export function setListAttributes(attrs: Record<string, unknown>): Command {
 
     if (start !== null && (!Number.isInteger(start) || start < 0)) return false;
     if (format !== null && !NUMBERINGS.has(format)) return false;
-    // CNT-119's replacement: a zeroth item is a convention decimal has and letters and roman
+    // CNT-153: a zeroth item is a convention decimal has and letters and roman
     // numerals do not. `checkBlock` holds the same rule, so this is defence in depth rather than
     // the only defence - but it is the one an author meets at the moment they ask for it.
     if (start === 0 && (format === 'alphabetic' || format === 'roman')) return false;

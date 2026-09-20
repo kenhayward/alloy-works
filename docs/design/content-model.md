@@ -61,7 +61,7 @@ on read, because versions are immutable and `content_hash` is the hash of what w
 | **CNT-014** | `paragraph`, the default block                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **CNT-117** | `list` carries `kind`: ordered, unordered or definition                                                                                                                                                                                                                                                                                                                                                                                         |
 | **CNT-118** | A list item holds block content, so a list nests by construction and six levels is a floor rather than a limit, in any mixture of kinds                                                                                                                                                                                                                                                                                                         |
-| **CNT-119** | An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering                                                                                                                                                                                                                                                                                                       |
+| **CNT-153** | An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering. `start` is an integer of 0 or more in the shape, and a start of 0 under a lettered or roman numbering is refused by the walk - see "Where a list's start number is held"                                                                                                                             |
 | **CNT-016** | `table` declares header rows and header columns, carries cell spans, and carries a caption                                                                                                                                                                                                                                                                                                                                                      |
 | **CNT-017** | `figure` carries an asset reference and a caption, and never asset bytes                                                                                                                                                                                                                                                                                                                                                                        |
 | **CNT-018** | `preformatted` holds text with whitespace significant and an optional language label                                                                                                                                                                                                                                                                                                                                                            |
@@ -305,6 +305,20 @@ paragraphs are refused** by validation and collapsed by the pipeline's normalise
 is about is a block whose only purpose is the gap after it, and a lone empty paragraph is not that.
 Both hold it in every sequence of blocks the model has - the top level, a list item, a blockquote, a
 table cell and a footnote - because a rule the two write paths disagree on is one of them breaking it.
+
+**Where a list's start number is held.** CNT-153 requires a start of 1 or more, and 0 only where the
+numbering is decimal, and this design answers it in **two places rather than one**, deliberately.
+`listNodeSchema` keeps `start` at 0 or more; it is not narrowed to 1, because a stored shape is
+insert-only and a tightening of it can never be taken back - it would refuse a document somebody has
+stored, in a version nobody can rewrite. The other half - that 0 is decimal's alone - is a rule in
+the walk `parseContentDocument` runs, beside the rule that a start and a numbering belong to an
+ordered list and to nothing else. A narrowing in the walk is the same shape of answer the definition
+list's `term` takes, and for the same reason: it is safe to add while nothing has stored a list, and
+it refuses every producer rather than only the author in front of the editor - an import, a paste and
+a future API client included. The publisher asks the **same predicate**, exported rather than copied,
+as a publish-time backstop, so content assembled by any path is refused by name rather than numbered
+from something nobody wrote. Two spellings of one rule would be two rules; there is one, and each
+side's comment points at the other.
 
 ## Inlines and marks
 

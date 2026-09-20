@@ -44,7 +44,7 @@ export interface ListPanelProps {
 
 /**
  * What a counted list carries beside its items: which kind it is, where it starts counting and what
- * its markers look like (component-editor.md; CNT-119's replacement for the start rule).
+ * its markers look like (component-editor.md; CNT-153, which carries the start rule).
  *
  * **It is rendered only while the cursor stands in a counted list, and never for a definition one.**
  * A definition list carries no start and no numbering - the editor holds it as its own node type,

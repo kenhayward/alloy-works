@@ -151,7 +151,10 @@ describe('the content document', () => {
     );
   });
 
-  it('CNT-117 supports three list kinds, and CNT-119 puts start and format on an ordered one', () => {
+  // Not CNT-119 any more: it is `Superseded by CNT-153`, which carries its sentence and adds what a
+  // start number may be, and a superseded row is claimed by no design. The replacement's
+  // demonstration is its own test below, whose body shows the start rule as well as the carrying.
+  it('CNT-117 supports three list kinds, and a start and a numbering sit on an ordered one', () => {
     const list = {
       type: 'list',
       id: 'b2',
@@ -480,9 +483,17 @@ describe("a definition list's term, and the rules the walk holds that the schema
     expect(() => parseContentDocument(split)).toThrow(/m1/);
   });
 
-  it('refuses a start of 0 where the numbering is letters or roman numerals, naming the list', () => {
-    // CNT-153's rule, held in the walk rather than in `listNodeSchema`, which keeps `min(0)`: an
-    // insert-only stored shape may not be tightened, and a narrowing in the walk is safe while
+  it('CNT-153 carries a start and one of three numberings on an ordered list, 1 or more except in decimal', () => {
+    // The whole statement in one body, because an identifier is worth what its body shows and no
+    // more. Its two sentences are asserted in two halves below.
+    //
+    // **Carried on the list, and local to it.** `start` and `format` are members of the list node,
+    // so a list's numbering is its own. There is no outline in this model at all - STR owns that -
+    // so there is nothing for an outline's numbering to reach a list from, which is the strongest
+    // form the independence clause can take in this layer.
+    //
+    // **The start rule** is held in the walk rather than in `listNodeSchema`, which keeps `min(0)`:
+    // an insert-only stored shape may not be tightened, and a narrowing in the walk is safe while
     // nothing has stored a list. Without it a producer that is not the editor's own panel could
     // store `{start: 0, format: 'roman'}`, which publishing then refuses at a publish weeks later.
     const ordered = (attrs: Record<string, unknown>) => ({
@@ -492,6 +503,19 @@ describe("a definition list's term, and the rules the walk holds that the schema
       ...attrs,
       items: [{ content: [paragraph('L1p1', 'alpha')] }],
     });
+    for (const format of ['decimal', 'alphabetic', 'roman']) {
+      expect(parseContentDocument(doc([ordered({ start: 4, format })])).content[0]).toMatchObject({
+        kind: 'ordered',
+        start: 4,
+        format,
+      });
+    }
+    // Those three and no fourth, so a numbering the statement does not name cannot be stored.
+    expect(() =>
+      contentDocumentSchema.parse(doc([ordered({ start: 4, format: 'greek' })])),
+    ).toThrow();
+    // Below 0 there is no start number at all, which is the half the shape holds.
+    expect(() => contentDocumentSchema.parse(doc([ordered({ start: -1 })]))).toThrow();
     expect(() => parseContentDocument(doc([ordered({ start: 0, format: 'alphabetic' })]))).toThrow(
       /L1/,
     );

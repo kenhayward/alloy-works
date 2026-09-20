@@ -331,8 +331,8 @@ describe('the lists in the editor schema', () => {
       start: null,
       format: null,
     });
-    // A start of 0 is one a decimal list may have, so it is read rather than dropped (CNT-119's
-    // replacement, held in `checkBlock` and in `setListAttributes`).
+    // A start of 0 is one a decimal list may have, so it is read rather than dropped (CNT-153,
+    // held in `checkBlock` and in `setListAttributes`).
     expect(rule?.getAttrs?.(element({ start: '0' }))).toEqual({
       kind: 'ordered',
       start: 0,

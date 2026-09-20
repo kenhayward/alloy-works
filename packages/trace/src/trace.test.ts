@@ -21,6 +21,9 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1386, from 1385: CNT-153, an ordered list's start number of 1 or more except in decimal,
+    // superseding CNT-119, which permitted the roman zero the engine sets as `n.`, landed by the
+    // lists plan. CNT-119 keeps its row as `Superseded by CNT-153`, so the count rises by one.
     // 1385, from 1384: CNT-152, a language tag the model takes and no output can carry named to the
     // author at the time, before the mark is applied (issue #155), landed by the marks plan.
     // 1384, from 1383: PUB-095, a layout's words in one declared language, and a document in another
@@ -55,7 +58,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1385);
+    expect(model.requirements).toHaveLength(1386);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
     // 409, from 408: component-editor.md claims CNT-152, met by the mark prompt naming the tag before
