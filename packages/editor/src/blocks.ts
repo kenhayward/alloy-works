@@ -72,13 +72,29 @@ function itemTypeAt(state: EditorState): NodeType | null {
 }
 
 /**
- * The item the cursor stands in, where an author has written nothing more in it - which is what
- * `Enter` means by "an empty item" and the only place Enter leaves a list.
+ * The item the cursor stands in, where **the cursor's own block is the only thing in it** - which is
+ * what Enter means by "an empty item" and the only place Enter leaves a list.
  *
- * For a counted item that is the cursor's own block being empty and last, which is exactly the
- * condition `splitListItem` declines on, so the two meet rather than overlap. For a definition item
- * the **term must be empty too**: an item whose word is written and whose definition is not is an
- * item being typed, and Enter there makes the next item rather than leaving the list.
+ * **It asks about the item, not about the block.** `outOfDefinitionList` rebuilds the item's place
+ * from the cursor's block alone, and `liftListItem` takes the whole item out of the list; a rule
+ * that only asked whether the cursor's block was empty would answer yes for an item holding a
+ * written paragraph and an empty one after it, and Enter would then destroy a paragraph the author
+ * wrote - which `fromEditor` accepts, so the loss would be what the next version records. Declining
+ * is the conservative direction: the block falls through to `splitListItem` and then to
+ * `enterWithoutEmpties`, which is what it did before this chain existed, and a command that declines
+ * leaves the author where they were.
+ *
+ * So the item holds the cursor's block and nothing else, except that a definition item also holds
+ * its term and **the term must be empty too**: an item whose word is written and whose definition is
+ * not is an item being typed, and Enter there makes the next item rather than leaving the list - and
+ * leaving it would discard the word, because a term has no home outside a definition list.
+ *
+ * The index check is what keeps a cursor in an empty **term** out: a term is a textblock too, and
+ * the item's last child is its body. **Deleting it fails no test, and that is the claim rather than
+ * a hole**: the count above already forces the index for every shape this schema can make, and the
+ * only way to reach it from a term is a chain that answers the term later than this one -
+ * `splitDefinitionItem` answers it first. It is here so that such a chain fails loudly rather than
+ * lifting an item out from under a written body.
  */
 function emptyItemAt(state: EditorState): Node | null {
   const { $from, empty } = state.selection;
@@ -86,8 +102,10 @@ function emptyItemAt(state: EditorState): Node | null {
   if (!$from.parent.isTextblock || $from.parent.content.size !== 0) return null;
   const item = $from.node(-1);
   if (item.type !== listItemNode && item.type !== definitionItemNode) return null;
+  const definition = item.type === definitionItemNode;
+  if (item.childCount !== (definition ? 2 : 1)) return null;
   if ($from.index(-1) !== item.childCount - 1) return null;
-  if (item.type === definitionItemNode && item.firstChild!.content.size !== 0) return null;
+  if (definition && item.firstChild!.content.size !== 0) return null;
   return item;
 }
 
@@ -138,7 +156,14 @@ export function setListAttributes(attrs: Record<string, unknown>): Command {
     // the only defence - but it is the one an author meets at the moment they ask for it.
     if (start === 0 && (format === 'alphabetic' || format === 'roman')) return false;
 
-    if (dispatch) {
+    // Asking for what the list already says is a thing the panel does - a select left alone, a
+    // field re-committed - and it is not a change. A transaction for it would put a step on the
+    // history that an author's next press of Undo would appear to spend on nothing.
+    const same =
+      kind === inside.node.attrs.kind &&
+      start === (inside.node.attrs.start ?? null) &&
+      format === (inside.node.attrs.format ?? null);
+    if (dispatch && !same) {
       dispatch(
         state.tr
           .setNodeMarkup(inside.pos, undefined, { ...inside.node.attrs, kind, start, format })
@@ -396,9 +421,13 @@ export function listAwareEnter(newIdentifier: () => string): Command {
  * A definition list carries none of the three, so the question does not arise there - the sublist is
  * a definition list because the item is a definition item, and there is nothing else to carry.
  *
- * **A sublist that was already there is left alone**, and the way to tell is its identifier: the one
- * `sinkListItem` makes carries none, because `create(null, ...)` takes the attribute's default,
- * while every list already in the document has been named by the identity plugin.
+ * **A sublist that was already there is left alone**, and the question that tells the two apart is
+ * asked of the document the command was handed: does the item above this one already end with a
+ * sublist? That is `sinkListItem`'s own precondition, read from the same place it reads it, and it
+ * is the one discriminator that cannot go wrong. Telling them apart by the new list's identifier
+ * being null would hold only while every list in a live document carries one, which nothing pins -
+ * and a document carrying a list with none would have its kind, start and numbering silently reset
+ * by a press of Tab.
  */
 function nestItem(newIdentifier: () => string): Command {
   return (state, dispatch) => {
@@ -406,21 +435,28 @@ function nestItem(newIdentifier: () => string): Command {
     if (itemType === null) return false;
     const sink = sinkListItem(itemType);
     if (dispatch === undefined) return sink(state, undefined);
-    const outer = innermostList(state);
+
+    const { $from } = state.selection;
+    let itemDepth = $from.depth;
+    while (itemDepth > 0 && $from.node(itemDepth).type !== itemType) itemDepth -= 1;
+    const outer = itemDepth > 0 ? $from.node(itemDepth - 1) : null;
+    const index = itemDepth > 0 ? $from.index(itemDepth - 1) : 0;
+    const joins =
+      outer !== null && index > 0 && outer.child(index - 1).lastChild?.type === outer.type;
+    if (joins) return sink(state, dispatch);
+
     return sink(state, (tr) => {
       const $at = tr.doc.resolve(tr.mapping.map(state.selection.from));
       for (let depth = $at.depth; depth > 0; depth -= 1) {
         const made = $at.node(depth);
         if (made.type !== listNode && made.type !== definitionListNode) continue;
-        if (made.attrs.id === null) {
-          tr.setNodeMarkup($at.before(depth), undefined, {
-            ...made.attrs,
-            id: newIdentifier(),
-            ...(made.type === listNode && outer?.node.type === listNode
-              ? { kind: outer.node.attrs.kind, format: outer.node.attrs.format, start: null }
-              : {}),
-          });
-        }
+        tr.setNodeMarkup($at.before(depth), undefined, {
+          ...made.attrs,
+          id: newIdentifier(),
+          ...(made.type === listNode && outer?.type === listNode
+            ? { kind: outer.attrs.kind, format: outer.attrs.format, start: null }
+            : {}),
+        });
         break;
       }
       dispatch(tr);
@@ -447,10 +483,25 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
       return makeDefinitionList(newIdentifier);
     case 'nestItem':
       return nestItem(newIdentifier);
+    /**
+     * **A definition item at the top level of its list does not lift, and that is a limit rather
+     * than an oversight.** Lifting an item hands its whole content to the list's parent, and an item
+     * opens with a term, which is inline content no block sequence will hold - so there is nowhere
+     * for the item to go and taking it out would mean discarding the word the author wrote. Enter in
+     * an item with nothing written in it still leaves the list, because there is then nothing to
+     * discard (`outOfDefinitionList`). A nested definition item lifts a level like any other.
+     *
+     * **The query runs the lift rather than asking whether one is possible.** `liftListItem` returns
+     * true for any item as soon as it is asked without a dispatch, before it knows whether the lift
+     * can be made, so a toolbar reading it that way would offer **Lift item** where pressing it does
+     * nothing. A dispatch that throws the transaction away costs one unapplied transaction and makes
+     * the answer the same one the press gives.
+     */
     case 'liftItem':
       return (state, dispatch) => {
         const itemType = itemTypeAt(state);
-        return itemType === null ? false : liftListItem(itemType)(state, dispatch);
+        if (itemType === null) return false;
+        return liftListItem(itemType)(state, dispatch ?? (() => undefined));
       };
   }
 }

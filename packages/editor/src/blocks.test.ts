@@ -2,7 +2,7 @@ import type { Node } from 'prosemirror-model';
 import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
-import { blockCommand, listAt, setListAttributes } from './blocks.js';
+import { blockCommand, listAt, listAwareEnter, setListAttributes } from './blocks.js';
 import { fromEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
@@ -181,6 +181,24 @@ function pressShiftTab(state: EditorState): { handled: boolean; next: EditorStat
  */
 const stored = (doc: Node) => fromEditor(doc);
 
+/**
+ * The transaction a command produced, **unapplied**. What a command hands its caller is what a
+ * caller without the identity plugin would get, so a claim that the command names what it makes is
+ * a claim about this document and not about the state that comes back from `state.apply`, where the
+ * plugin has already repaired anything left unnamed.
+ */
+function transactionOf(
+  state: EditorState,
+  command: (s: EditorState, d?: (tr: Transaction) => void) => boolean,
+): Transaction {
+  let kept: Transaction | null = null;
+  command(state, (tr) => {
+    kept = tr;
+  });
+  if (kept === null) throw new Error('the command dispatched nothing');
+  return kept;
+}
+
 describe('making a list of a paragraph, and taking one back out', () => {
   it('makes a bulleted list of the paragraph the cursor is in, and the paragraph keeps its identifier', () => {
     const state = stateOf(documentOf(paragraph('b1', 'Unbox the printer.')), 'b1');
@@ -244,6 +262,11 @@ describe('making a list of a paragraph, and taking one back out', () => {
     // The term is what an author types first, so that is where the cursor goes.
     expect(next.selection.$from.parent.type.name).toBe('term');
     expect(identifiers(next.doc)).toEqual([expect.any(String), 'b1']);
+    // Named in the command's own transaction, before the identity plugin has seen it.
+    expect(identifiers(transactionOf(state, blockCommand('definitionList', ids())).doc)).toEqual([
+      expect.any(String),
+      'b1',
+    ]);
     // A term nobody has typed into is no term at all, and the store takes the item without one.
     expect(() => stored(next.doc)).not.toThrow();
   });
@@ -422,6 +445,99 @@ describe('the Enter chain', () => {
     expect(() => stored(next.doc)).not.toThrow();
   });
 
+  it('keeps what the author wrote in an item when Enter is pressed in the empty block after it', () => {
+    // The whole reason `emptyItemAt` asks about the **item** and not about the cursor's own block.
+    // `outOfDefinitionList` rebuilds the item's place from the cursor's block alone, so an item
+    // holding a written paragraph and an empty one after it would have left the written one behind -
+    // and `fromEditor` accepts the result, so the loss is what the next version records.
+    // A selection spanning two definition items plus Enter makes exactly this shape - an item with
+    // no term and two body blocks - so it is reachable by gesture alone.
+    const doc = documentOf(
+      definitionList(
+        'D1',
+        definitionItem('', paragraph('b1', 'Slow strain.'), paragraph('b2', '')),
+      ),
+    );
+    const { next } = press(stateOf(doc, 'b2'), 'Enter');
+    expect(next.doc.textContent).toContain('Slow strain.');
+    expect(shapeOf(next.doc)).toEqual([
+      'doc',
+      [
+        'definitionList',
+        ['definitionItem', 'term', ['paragraph', 'Slow strain.'], 'paragraph'],
+        ['definitionItem', 'term', 'paragraph'],
+      ],
+    ]);
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('keeps a paragraph in a counted item when Enter is pressed in the empty block after it', () => {
+    // Milder than the definition half and wrong in the same way: an unguarded lift takes the
+    // **whole** item out of the list, so a written paragraph leaves the list without being asked.
+    // Declining is the conservative direction - it leaves the author where they were.
+    const doc = documentOf(
+      list('L1', 'unordered', [item(paragraph('b1', 'One'), paragraph('b2', ''))]),
+    );
+    const state = stateOf(doc, 'b2');
+    const { next } = press(state, 'Enter');
+    expect(shapeOf(next.doc)).toEqual([
+      'doc',
+      ['list', ['listItem', ['paragraph', 'One'], 'paragraph']],
+    ]);
+    expect(listAt(next)).toEqual({ kind: 'unordered', start: null, format: null });
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('makes the next item on Enter in an empty body under a term the author wrote', () => {
+    // The term is what says whether this item is being typed or is finished with. With a term
+    // written, an empty body is where the definition goes, so Enter makes the next item; with the
+    // term empty as well, nothing in the item has been written and Enter leaves the list. Without
+    // that distinction the term is silently discarded.
+    const doc = documentOf(
+      definitionList(
+        'D1',
+        definitionItem('Creep', paragraph('b1', 'Slow strain.')),
+        definitionItem('Yield', paragraph('b2', '')),
+      ),
+    );
+    const { handled, next } = press(stateOf(doc, 'b2'), 'Enter');
+    expect(handled).toBe(true);
+    expect(termsIn(next.doc)).toEqual(['Creep', 'Yield', '']);
+    expect(next.doc.firstChild!.type.name).toBe('definitionList');
+    expect(next.selection.$from.parent.type.name).toBe('term');
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('names every block it makes in its own transaction, before any plugin has run', () => {
+    const doc = documentOf(
+      definitionList('D1', definitionItem('Creep', paragraph('b1', 'Slow strain.'))),
+    );
+    const state = stateOf(doc, 'b1');
+    const atEnd = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, state.selection.$from.end())),
+    );
+    // `tr.doc`, not the applied state: the identity plugin repairs an unnamed or duplicated
+    // identifier on the way through, so a state that came back through `apply` cannot tell whether
+    // the command named anything at all.
+    const made = transactionOf(atEnd, listAwareEnter(ids())).doc;
+    expect(identifiers(made)).toEqual(['D1', 'b1', expect.any(String)]);
+    expect(new Set(identifiers(made)).size).toBe(3);
+
+    // The list left behind when Enter takes an item out of the middle of one is a second list, and
+    // two lists in a component may not carry one identifier (CNT-002).
+    const between = documentOf(
+      definitionList(
+        'D1',
+        definitionItem('Creep', paragraph('b1', 'Slow strain.')),
+        definitionItem('', paragraph('b2', '')),
+        definitionItem('Yield', paragraph('b3', 'The greatest stress.')),
+      ),
+    );
+    const split = transactionOf(stateOf(between, 'b2'), listAwareEnter(ids())).doc;
+    expect(identifiers(split)).toEqual(['D1', 'b1', 'b2', expect.any(String), 'b3']);
+    expect(new Set(identifiers(split)).size).toBe(5);
+  });
+
   it('still creates no second empty paragraph on Enter outside a list', () => {
     // Uncited on purpose. CNT-023 - "empty blocks used for vertical spacing must not be
     // representable" - is held by the content model and demonstrated where the rule lives; this
@@ -561,6 +677,51 @@ describe('nesting an item and lifting it back', () => {
     expect(identifiers(next.doc)).toEqual(['L1', 'b1', 'L2', 'b2', 'b3']);
   });
 
+  it('leaves a sublist that was already there alone, even one carrying no identifier yet', () => {
+    // Telling the new sublist from one that was already there by its identifier being null is sound
+    // only while every list in a live document carries one, which nothing pins. The question the
+    // command asks is about the document it was handed: does the item above this one already end
+    // with a sublist?
+    const doc = documentOf(
+      list('L1', 'unordered', [
+        item(
+          paragraph('b1', 'One'),
+          editorSchema.node('list', { id: null, kind: 'ordered', start: 4, format: 'alphabetic' }, [
+            item(paragraph('b2', 'Two')),
+          ]),
+        ),
+        item(paragraph('b3', 'Three')),
+      ]),
+    );
+    const { handled, next } = run(stateOf(doc, 'b3'), blockCommand('nestItem', ids()));
+    expect(handled).toBe(true);
+    expect(listAt(next)).toEqual({ kind: 'ordered', start: 4, format: 'alphabetic' });
+  });
+
+  it('names the sublist it makes in its own transaction, before any plugin has run', () => {
+    const doc = documentOf(
+      list('L1', 'ordered', [item(paragraph('b1', 'One')), item(paragraph('b2', 'Two'))], {
+        start: 7,
+        format: 'roman',
+      }),
+    );
+    const made = transactionOf(stateOf(doc, 'b2'), blockCommand('nestItem', ids())).doc;
+    expect(identifiers(made)).toEqual(['L1', 'b1', expect.any(String), 'b2']);
+    expect(new Set(identifiers(made)).size).toBe(4);
+  });
+
+  it('declines to lift a definition item that is already at the top level of its list', () => {
+    // A counted item lifts out of its list because its blocks are blocks wherever they stand. An
+    // item of a definition list opens with a term, which is inline content no block sequence holds,
+    // so there is nowhere for the item to go and lifting it would discard the word the author
+    // wrote. Enter in an item with nothing written in it still leaves the list, because there is
+    // then nothing to discard.
+    const doc = documentOf(
+      definitionList('D1', definitionItem('Creep', paragraph('b1', 'Slow strain.'))),
+    );
+    expect(blockCommand('liftItem', ids())(stateOf(doc, 'b1'), undefined)).toBe(false);
+  });
+
   it('lets Tab move focus on when the cursor is not in a list', () => {
     // A Tab that is always swallowed is a keyboard trap, so the command declines outside a list and
     // the key reaches the browser (CNT-077).
@@ -633,6 +794,25 @@ describe('what a list panel reads and changes', () => {
     expect(handled).toBe(true);
     expect(listAt(next)).toEqual({ kind: 'unordered', start: null, format: null });
     expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('changes nothing, and leaves no undo step, when nothing in fact changes', () => {
+    const state = stateOf(
+      documentOf(list('L1', 'ordered', [item(paragraph('b1', 'One'))], { start: 3 })),
+      'b1',
+    );
+    let dispatched = 0;
+    const count = () => {
+      dispatched += 1;
+    };
+    expect(setListAttributes({})(state, count)).toBe(true);
+    expect(setListAttributes({ kind: 'ordered' })(state, count)).toBe(true);
+    expect(setListAttributes({ start: 3 })(state, count)).toBe(true);
+    // An undo step for a field the author set to what it already said is a press of Undo that
+    // appears to do nothing.
+    expect(dispatched).toBe(0);
+    expect(setListAttributes({ start: 4 })(state, count)).toBe(true);
+    expect(dispatched).toBe(1);
   });
 
   it('refuses a start that is not a whole number at all, and a numbering nobody has heard of', () => {
