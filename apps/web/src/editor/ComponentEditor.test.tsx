@@ -1689,4 +1689,190 @@ describe('the link and language prompts', () => {
     // Minted by the editor, in the one spelling a block identifier takes (ADR-0023).
     expect(mark!.id).toMatch(/^[a-z2-7]{26}$/);
   });
+
+  it('carries the title the author gave the link as well as its target', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.type(
+      await screen.findByLabelText('Title (optional)'),
+      'Setting the printer up',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [
+          {
+            type: 'hyperlink',
+            href: 'https://example.test/setup',
+            title: 'Setting the printer up',
+          },
+        ],
+      }),
+    );
+  });
+
+  it('applies what the author typed when they press Enter in a box', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(
+      await screen.findByLabelText('Address'),
+      'https://example.test/setup{Enter}',
+    );
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'hyperlink', href: 'https://example.test/setup' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says nothing was typed rather than complaining about a scheme', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('Type an address, or press Cancel to leave the text as it is.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('That address must begin http:, https: or mailto:.')).toBeNull();
+    // The box that was refused says so, and says it before the hint rather than after it.
+    const address = screen.getByLabelText('Address');
+    expect(address).toHaveAttribute('aria-invalid', 'true');
+    expect(address.getAttribute('aria-describedby')?.split(' ')).toEqual([
+      'mark-prompt-hyperlink-complaint',
+      'mark-prompt-hyperlink-hint-href',
+    ]);
+  });
+
+  it('says so when the text a dialog was opened over has gone, and does not poison the next press', async () => {
+    // The range gate is the first press's job. Re-asking it when a value comes back refused made a
+    // moved selection close the dialog with nothing applied and nothing said - and left the refusal
+    // standing, so the next ordinary press opened pre-filled and complaining about nobody's value.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    // A transaction from outside the dialog puts the cursor in unmarked text, so by the time the
+    // command runs there is nowhere to put the mark.
+    selectRange(view, 8, 8);
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText(
+        'That text is not there any more. Press Cancel, select some text, and try again.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    selectRange(view, 1, 6);
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    expect(await screen.findByLabelText('Address')).toHaveValue('');
+    expect(screen.queryByText(/is not there any more/)).toBeNull();
+    expect(screen.queryByText(/must begin http:/)).toBeNull();
+  });
+
+  it('says so when the mark a dialog offered to take off has gone', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                {
+                  type: 'text',
+                  value: 'Unbox',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+                { type: 'text', value: ' the printer.', marks: [] },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 3, 3);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    // The linked text goes while the dialog stands over it, so there is nothing left to take off.
+    act(() => view.dispatch(view.state.tr.delete(1, 6)));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(
+      await screen.findByText(
+        'That text is not there any more. Press Cancel, select some text, and try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('leaves the page behind the dialog inert while it is open', async () => {
+    // jsdom implements none of what `inert` does - focus still moves in and clicks still arrive -
+    // so what can be pinned here is the attribute. What it buys in a browser is the reason the
+    // dialog may say `aria-modal`: the surface behind cannot be clicked into, so the selection the
+    // command is about to act on cannot move out from under the author while they type.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    const article = screen.getByRole('article');
+    expect(article).not.toHaveAttribute('inert');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+
+    expect(article).toHaveAttribute('inert');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(article).not.toHaveAttribute('inert');
+  });
 });

@@ -54,6 +54,27 @@ export function pressCommand({
     return toggleMarkCommand(command.mark, newIdentifier)(view.state, view.dispatch.bind(view));
   }
   if (!somewhereToPutMark(view.state, command.mark)) return false;
+  askAndApply({ view, command, newIdentifier, prompt, onRefused });
+  return true;
+}
+
+/**
+ * The asking half of a press, without the range gate: ask for a value, put it on, and say so where
+ * nothing came of it.
+ *
+ * Separate from `pressCommand` because **the gate is the first press's job and only the first
+ * press's**. Asking it again when a value comes back refused answers about the state as it is now
+ * rather than the state the dialog was opened over, so a selection that moved while the author was
+ * typing would close the dialog with nothing applied, nothing said, and the author's value gone.
+ * Whoever asks again has already been through the gate once; what they need is the dialog back.
+ */
+export function askAndApply({
+  view,
+  command,
+  newIdentifier,
+  prompt,
+  onRefused,
+}: PressOptions): void {
   prompt(command, markAt(view.state, command.mark))
     .then((answer) => {
       if (answer === null) return;
@@ -76,5 +97,4 @@ export function pressCommand({
       // instead of, and an unhandled rejection is what it reports instead of too.
       onRefused?.(command);
     });
-  return true;
 }

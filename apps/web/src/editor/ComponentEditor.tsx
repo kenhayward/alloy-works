@@ -11,6 +11,7 @@ import {
   setDirection,
   setLanguage,
   setTitle,
+  somewhereToPutMark,
   toEditor,
   type ComponentHeader as Header,
   type EditorCommand,
@@ -19,11 +20,12 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
-import { MarkPrompt } from './MarkPrompt.js';
-import { pressCommand, type AskForValue } from './press.js';
+import { MarkPrompt, type Refused } from './MarkPrompt.js';
+import { askAndApply, pressCommand, type AskForValue } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -84,7 +86,8 @@ interface Asking {
   readonly command: EditorCommand;
   /** What to put in the boxes: the mark that is there, or what was typed and then refused. */
   readonly values: Record<string, unknown> | null;
-  readonly refused: boolean;
+  /** Why the last press came back with nothing done, or null where none has. */
+  readonly refused: Refused | null;
   /** Whether there is a mark of that type there to take off. */
   readonly removable: boolean;
   /** Bumped every time one opens, so a dialog reopened over a refusal is a fresh set of boxes. */
@@ -144,8 +147,10 @@ export function ComponentEditor({
   // What the author last typed into a dialog, kept only long enough to put it back in the boxes if
   // the stored model refuses it: a refusal must not also take away what it refused.
   const typed = useRef<Record<string, unknown>>({});
-  // A refusal standing over the next opening of this mark's dialog, set the moment one arrives.
-  const refusal = useRef<string | null>(null);
+  // A refusal standing over the next opening of this mark's dialog, set the moment one arrives and
+  // consumed by the dialog that carries it. It names the mark as well as the reason, so that a
+  // refusal of a link can never surface in the language dialog.
+  const refusal = useRef<{ readonly mark: string; readonly because: Refused } | null>(null);
   // How many dialogs have opened, which is what makes a reopened one a fresh set of boxes rather
   // than the same React element updated in place.
   const openings = useRef(0);
@@ -159,15 +164,17 @@ export function ComponentEditor({
    */
   const askFor: AskForValue = (command, current) =>
     new Promise((settle) => {
-      const refused = refusal.current === command.mark;
+      const standing = refusal.current?.mark === command.mark ? refusal.current : null;
       refusal.current = null;
-      opener.current =
+      // Only where none is held: a dialog that comes straight back carrying a complaint must send
+      // the author to what opened the first one, not to a button it is about to take away.
+      opener.current ??=
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       openings.current += 1;
       setAsking({
         command,
-        values: refused ? typed.current : current,
-        refused,
+        values: standing ? typed.current : current,
+        refused: standing?.because ?? null,
         // What can be taken off is what is there now, never what was typed and refused.
         removable: current !== null,
         opened: openings.current,
@@ -187,29 +194,62 @@ export function ComponentEditor({
       command,
       newIdentifier: newBlockIdentifier,
       prompt: askFor,
-      onRefused: (refused) => askAgain(view, refused),
+      onRefused: (refused) => askAgain(view, refused, whyRefused(view, refused)),
     });
 
   /**
-   * The author gave a value and nothing came of it. Asking again is how they are told: the dialog
-   * comes back with what they typed still in it and the refusal beneath the box, which is where
-   * they are looking, rather than as a notice somewhere else on the page.
+   * Why a command answered no, as far as anything outside it can tell: the text it was to go on has
+   * moved out from under the dialog, or else it is the value the author typed. Asked of the state
+   * the command itself just read, so the answer is about the press that failed.
+   */
+  const whyRefused = (view: EditorView, command: EditorCommand): Refused =>
+    somewhereToPutMark(view.state, command.mark) ? 'value' : 'gone';
+
+  /**
+   * A press came back with nothing done. Asking again is how the author is told: the dialog comes
+   * back with what they typed still in it and the complaint beneath the box, which is where they
+   * are looking, rather than as a notice somewhere else on the page.
+   *
+   * **It goes straight back to the dialog, not back through `pressCommand`.** The range gate is the
+   * first press's job: re-running it would answer about the state as it is now, and a selection
+   * that moved while the dialog stood over it would close the dialog with nothing applied, nothing
+   * said, and a refusal left standing for the next press to inherit.
    *
    * It must not throw. The press that calls it wraps the continuation and the prompt in one
    * `catch`, so a handler that threw would be reported as a second refusal of the same value.
    */
-  function askAgain(view: EditorView, command: EditorCommand) {
-    refusal.current = command.mark;
-    if (!view.isDestroyed) runPrompting(view, command);
+  function askAgain(view: EditorView, command: EditorCommand, because: Refused) {
+    if (view.isDestroyed) {
+      // Nothing will open to carry it, so it must not be left standing over a later dialog.
+      refusal.current = null;
+      return;
+    }
+    refusal.current = { mark: command.mark, because };
+    askAndApply({
+      view,
+      command,
+      newIdentifier: newBlockIdentifier,
+      prompt: askFor,
+      onRefused: (refused) => askAgain(view, refused, whyRefused(view, refused)),
+    });
   }
 
-  /** Closes the dialog, puts the focus back where it came from, and answers the press. */
+  /** Closes the dialog and answers the press. The focus goes back once the page behind is live. */
   const closeAsking = (answer: Record<string, unknown> | null) => {
     if (!asking) return;
     setAsking(null);
-    opener.current?.focus();
     asking.settle(answer);
   };
+
+  // The focus goes back **after** the render that takes the dialog away, never in the handler that
+  // asked for it: the page behind is inert until that render, and focusing an element inside an
+  // inert subtree does nothing at all.
+  useEffect(() => {
+    if (asking !== null) return;
+    const back = opener.current;
+    opener.current = null;
+    back?.focus();
+  }, [asking]);
 
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
@@ -282,6 +322,10 @@ export function ComponentEditor({
         onPrompt: (mark) => {
           const command = EDITOR_COMMANDS.find((each) => each.mark === mark);
           if (command === undefined) return false;
+          // Restated, not a case this catches: it is the same expression `editable` below is, and
+          // ProseMirror hands a keydown to a keymap only while the view is editable - so a reader
+          // never reaches here at all. It stays because the two must agree, and a later `editable`
+          // that grew a clause of its own would leave the keyboard the one way in.
           if (!(component.mayEdit && isEditablePhase(phase))) return false;
           return runPromptingRef.current(view, command);
         },
@@ -481,116 +525,132 @@ export function ComponentEditor({
   const phase = session?.phase ?? 'reading';
 
   return (
-    <article aria-labelledby="component-title">
-      <header>
-        {header ? (
-          <ComponentHeader
-            header={header}
-            editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
-            onChange={changeHeader}
-            onRefused={setNotice}
-          />
-        ) : (
-          <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+    <>
+      {/* Inert while a dialog stands over it, which is the other half of what that dialog's
+          `aria-modal` promises: a keyboard is held inside the dialog by its own trap, and a mouse
+          by this. Without it the surface behind still takes clicks, so the selection the command
+          is about to act on moves out from under the author while they type a target for it. */}
+      <article aria-labelledby="component-title" inert={asking !== null}>
+        <header>
+          {header ? (
+            <ComponentHeader
+              header={header}
+              editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
+              onChange={changeHeader}
+              onRefused={setNotice}
+            />
+          ) : (
+            <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+          )}
+          <p>
+            Version {session?.version.number ?? shown.version.number} in {shown.space.name}
+          </p>
+        </header>
+        {loaded.state === 'unreadable' && <p>This component could not be read.</p>}
+        {loaded.state === 'readOnly' && (
+          <p>
+            This component holds content this editor cannot change yet (
+            {loaded.unsupported.join(', ')}
+            ), so it is shown for reading only.
+          </p>
         )}
-        <p>
-          Version {session?.version.number ?? shown.version.number} in {shown.space.name}
-        </p>
-      </header>
-      {loaded.state === 'unreadable' && <p>This component could not be read.</p>}
-      {loaded.state === 'readOnly' && (
-        <p>
-          This component holds content this editor cannot change yet (
-          {loaded.unsupported.join(', ')}
-          ), so it is shown for reading only.
-        </p>
-      )}
-      {loaded.state === 'open' && (
-        <>
-          {!shown.mayEdit && <p>You may read this component but not edit it.</p>}
-          {lock && !lock.yours && phase === 'reading' && !held && (
-            <p>{lock.holder.name ?? 'Someone else'} is editing this component.</p>
-          )}
-          {held?.yours && (
-            <button type="button" onClick={() => controls.current?.claimAgain(true)}>
-              Continue here
-            </button>
-          )}
-          {held && !held.yours && (
-            <button type="button" onClick={() => controls.current?.claimAgain(false)}>
-              Try again
-            </button>
-          )}
-          {phase === 'lost' && session?.recoverable && (
-            <button type="button" onClick={() => controls.current?.claimAgain(true)}>
-              Continue
-            </button>
-          )}
-          {shown.mayEdit && (
-            <div role="toolbar" aria-label="Component">
-              <button
-                type="button"
-                disabled={phase !== 'editing'}
-                onClick={() => void controls.current?.saveVersion()}
-              >
-                Save version
+        {loaded.state === 'open' && (
+          <>
+            {!shown.mayEdit && <p>You may read this component but not edit it.</p>}
+            {lock && !lock.yours && phase === 'reading' && !held && (
+              <p>{lock.holder.name ?? 'Someone else'} is editing this component.</p>
+            )}
+            {held?.yours && (
+              <button type="button" onClick={() => controls.current?.claimAgain(true)}>
+                Continue here
               </button>
-              <button
-                type="button"
-                disabled={phase !== 'editing'}
-                onClick={() => void controls.current?.doneEditing()}
-              >
-                Done editing
+            )}
+            {held && !held.yours && (
+              <button type="button" onClick={() => controls.current?.claimAgain(false)}>
+                Try again
               </button>
-            </div>
-          )}
-          {session && <SaveIndicator save={session.save} savedAt={session.savedAt} />}
-          {/* Above the surface, which is the order the regions are named in
+            )}
+            {phase === 'lost' && session?.recoverable && (
+              <button type="button" onClick={() => controls.current?.claimAgain(true)}>
+                Continue
+              </button>
+            )}
+            {shown.mayEdit && (
+              <div role="toolbar" aria-label="Component">
+                <button
+                  type="button"
+                  disabled={phase !== 'editing'}
+                  onClick={() => void controls.current?.saveVersion()}
+                >
+                  Save version
+                </button>
+                <button
+                  type="button"
+                  disabled={phase !== 'editing'}
+                  onClick={() => void controls.current?.doneEditing()}
+                >
+                  Done editing
+                </button>
+              </div>
+            )}
+            {session && <SaveIndicator save={session.save} savedAt={session.savedAt} />}
+            {/* Above the surface, which is the order the regions are named in
               (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
               than absent, so what the editor can do with the text is visible before the lock is. */}
-          <EditorToolbar
-            view={surface}
-            enabled={shown.mayEdit && isEditablePhase(phase)}
-            newIdentifier={newBlockIdentifier}
-            prompt={askFor}
-            onRefused={(command) => surface && askAgain(surface, command)}
-          />
-          <div ref={place} />
-          {asking && (
-            // Keyed by which opening this is, so a dialog that comes back carrying a refusal is a
-            // fresh set of boxes rather than the same ones updated in place - the focus starts in
-            // the first of them again, on the value that was refused.
-            <MarkPrompt
-              key={asking.opened}
-              command={asking.command}
-              values={asking.values}
-              refused={asking.refused}
-              removable={asking.removable}
-              onApply={(values) => {
-                typed.current = values;
-                closeAsking(values);
-              }}
-              onRemove={() => {
-                const { command } = asking;
-                closeAsking(null);
-                // Taking a mark off needs no value, so it never goes back to the press waiting on
-                // this dialog: `removeMarkCommand` is reached from here and nowhere else.
-                if (surface && !surface.isDestroyed) {
-                  removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
-                }
-              }}
-              onCancel={() => closeAsking(null)}
+            <EditorToolbar
+              view={surface}
+              enabled={shown.mayEdit && isEditablePhase(phase)}
+              newIdentifier={newBlockIdentifier}
+              prompt={askFor}
+              onRefused={(command) =>
+                surface && askAgain(surface, command, whyRefused(surface, command))
+              }
             />
-          )}
-          {kept !== null && (
-            <label>
-              Text that was not saved
-              <textarea readOnly value={kept} />
-            </label>
-          )}
-        </>
-      )}
-      <p role="status">{notice}</p>
-    </article>
+            <div ref={place} />
+            {kept !== null && (
+              <label>
+                Text that was not saved
+                <textarea readOnly value={kept} />
+              </label>
+            )}
+          </>
+        )}
+        <p role="status">{notice}</p>
+      </article>
+      {asking &&
+        // Beside the article rather than inside it, because the article is what it makes inert:
+        // a dialog within an inert subtree is a dialog nothing can reach. Keyed by which opening
+        // this is, so a dialog that comes back carrying a complaint is a fresh set of boxes rather
+        // than the same ones updated in place, and the focus starts in the first of them again.
+        createPortal(
+          <MarkPrompt
+            key={asking.opened}
+            command={asking.command}
+            values={asking.values}
+            refused={asking.refused}
+            removable={asking.removable}
+            onApply={(values) => {
+              typed.current = values;
+              closeAsking(values);
+            }}
+            onRemove={() => {
+              const { command } = asking;
+              // Taking a mark off needs no value, so it never goes back to the press waiting on
+              // this dialog: `removeMarkCommand` is reached from here and nowhere else. Its answer
+              // is read rather than dropped - the mark it was offered over can have gone while the
+              // dialog stood open, and closing on that would be a press that did nothing silently.
+              const removed =
+                surface !== null &&
+                !surface.isDestroyed &&
+                removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
+              // Answered either way, so the press waiting on this dialog is never left pending.
+              closeAsking(null);
+              if (!removed && surface !== null) askAgain(surface, command, 'gone');
+            }}
+            onCancel={() => closeAsking(null)}
+          />,
+          document.body,
+        )}
+    </>
   );
 }
