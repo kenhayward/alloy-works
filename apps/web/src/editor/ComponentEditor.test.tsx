@@ -350,11 +350,11 @@ describe('the component editor', () => {
     );
     expect(screen.getByText('You may read this component but not edit it.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
-    // The formatting toolbar stays in the accessibility tree and offers nothing: a reader can see
+    // The formatting toolbar stays in the accessibility tree, reachable and inert: a reader can see
     // what the editor would do with the text without being able to do it.
     const formatting = screen.getByRole('toolbar', { name: 'Formatting' });
     for (const button of within(formatting).getAllByRole('button')) {
-      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-disabled', 'true');
     }
   });
 
@@ -1231,6 +1231,45 @@ describe('the component editor', () => {
     await screen.findByRole('button', { name: 'Continue' });
 
     expect(screen.getByLabelText('Title')).toBeDisabled();
+  });
+
+  it('stops offering formatting once the surface goes read-only, such as in the lost phase', async () => {
+    // The toolbar's `enabled` must follow the surface's own `editable`, `lost` among the phases it
+    // excludes - and this one has teeth the header's does not: ProseMirror's `editable` stops what
+    // an author types and stops nothing a command dispatches, so a toolbar left enabled here would
+    // go on changing a document its author has been locked out of.
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await screen.findByRole('button', { name: 'Continue' });
+    // Something selected, so that a press which was allowed through would change the document
+    // rather than merely storing a mark for the next keystroke.
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(
+          Selection.fromJSON(view.state.doc, { type: 'text', anchor: 1, head: 6 }),
+        ),
+      ),
+    );
+    const before = view.state.doc;
+
+    const strong = screen.getByRole('button', { name: 'Strong' });
+    expect(strong).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(strong);
+
+    expect(view.state.doc.eq(before)).toBe(true);
   });
 
   it('shows the header for reading only where the caller may not edit', async () => {

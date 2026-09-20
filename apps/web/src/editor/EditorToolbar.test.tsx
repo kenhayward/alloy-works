@@ -13,7 +13,18 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { EditorToolbar } from './EditorToolbar.js';
+import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar.js';
+
+/**
+ * jsdom has no layout, and a `Range` there has neither of the two methods ProseMirror calls when it
+ * scrolls the selection into view - which every mark step asks it to do, and which it only does
+ * while the surface has the focus. Both answer nothing rather than pretending to measure, which
+ * leaves the scroll a no-op instead of an uncaught `TypeError` from inside a click. Each test file
+ * gets its own jsdom, so this reaches no other suite.
+ */
+const NOTHING = { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0 };
+Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+Range.prototype.getBoundingClientRect = () => NOTHING as DOMRect;
 
 /** One paragraph of stored content, as the service answers it and `toEditor` opens it. */
 const stored = (...inlines: unknown[]) => ({
@@ -44,11 +55,16 @@ const LABELS = [
   'Language',
 ];
 
+/** The seven that apply a mark where they stand; the other two open a dialog first. */
+const TOGGLES = LABELS.slice(0, 7);
+
 interface ToolbarOptions {
   readonly document?: unknown;
   readonly enabled?: boolean;
   /** What the prompt resolves with: null is the author cancelling. */
   readonly answer?: Record<string, unknown> | null;
+  /** The whole prompt, where a test needs one that hangs or throws rather than one that answers. */
+  readonly asks?: EditorToolbarProps['prompt'];
   /** A cursor at this position before the toolbar renders. */
   readonly caret?: number;
   /** A selection over this range before the toolbar renders. */
@@ -82,12 +98,14 @@ function renderToolbar(options: ToolbarOptions = {}) {
     document: content = stored(run('Unbox the printer.')),
     enabled = true,
     answer = null,
+    asks,
     caret,
     range,
     mounted = true,
   } = options;
   const dispatched: Transaction[] = [];
-  const prompt = vi.fn(() => Promise.resolve(answer));
+  const prompt = vi.fn(asks ?? (() => Promise.resolve(answer)));
+  const onRefused = vi.fn();
   let marks = 0;
   const newIdentifier = () => `m${(marks += 1)}`;
   if (mounted) {
@@ -120,15 +138,21 @@ function renderToolbar(options: ToolbarOptions = {}) {
   }
   render(
     <StrictMode>
-      <EditorToolbar view={view} enabled={enabled} newIdentifier={newIdentifier} prompt={prompt} />
+      <EditorToolbar
+        view={view}
+        enabled={enabled}
+        newIdentifier={newIdentifier}
+        prompt={prompt}
+        onRefused={onRefused}
+      />
     </StrictMode>,
   );
-  return { view: view as EditorView, dispatched, prompt };
+  return { view: view as EditorView, dispatched, prompt, onRefused };
 }
 
 describe('the formatting toolbar', () => {
   it('CNT-077 offers every command as a button reachable by keyboard alone', async () => {
-    renderToolbar();
+    const { view: mounted } = renderToolbar({ range: [1, 6] });
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
     const buttons = within(toolbar).getAllByRole('button');
 
@@ -143,7 +167,54 @@ describe('the formatting toolbar', () => {
     expect(document.activeElement).toBe(buttons[8]);
     await userEvent.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(buttons[0]);
+    // Both ways, and both wraps: a row a key can only be walked one way along is half a row.
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(buttons[8]);
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(buttons[7]);
+    await userEvent.keyboard('{Home}');
+    expect(document.activeElement).toBe(buttons[0]);
     expect(buttons[0]).toHaveAttribute('title', 'Ctrl or Cmd and B');
+
+    // Reachable is not the whole of it: the command has to run from the keyboard as well.
+    await userEvent.keyboard('{Enter}');
+    expect(runsOf(mounted)).toEqual([
+      { type: 'text', value: 'Unbox', marks: [{ type: 'strong', id: 'm1' }] },
+      { type: 'text', value: ' the printer.', marks: [] },
+    ]);
+  });
+
+  it('is a dialog for the two commands that ask for a value, and a toggle for the rest', async () => {
+    // A button that opens a dialog is not a toggle: pressing Link never takes a link off, so
+    // announcing it as pressed promises a second press that would undo it, and there is none.
+    renderToolbar({ range: [1, 6] });
+    const buttons = within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
+      'button',
+    );
+
+    for (const label of TOGGLES) {
+      const button = screen.getByRole('button', { name: label });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(button).not.toHaveAttribute('aria-haspopup');
+    }
+    for (const label of ['Link', 'Language']) {
+      const button = screen.getByRole('button', { name: label });
+      expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(button).not.toHaveAttribute('aria-pressed');
+    }
+    expect(buttons).toHaveLength(LABELS.length);
+  });
+
+  it('keeps the focus on the surface when a button is pressed', async () => {
+    // A press must not take the focus from the surface: a toolbar button that focused itself would
+    // collapse the selection the command is about to act on, and leave the author's place lost.
+    const { view: mounted } = renderToolbar({ range: [1, 6] });
+    mounted.focus();
+    expect(mounted.dom).toHaveFocus();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Strong' }));
+
+    expect(mounted.dom).toHaveFocus();
   });
 
   it('says which mark the selection already carries', () => {
@@ -252,13 +323,85 @@ describe('the formatting toolbar', () => {
     );
   });
 
-  it('is unavailable while the component may not be changed', () => {
-    renderToolbar({ enabled: false });
+  it('says so when the value the author gave could not be applied', async () => {
+    // A target the stored model refuses (CNT-127's allowlist) leaves the document alone, and the
+    // author typed something: a press that ends in nothing is the one case they must be told about.
+    const { view: mounted, onRefused } = renderToolbar({
+      range: [1, 6],
+      answer: { href: 'javascript:alert(1)' },
+    });
+    const before = mounted.state.doc;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    await waitFor(() =>
+      expect(onRefused).toHaveBeenCalledWith(expect.objectContaining({ mark: 'hyperlink' })),
+    );
+    expect(mounted.state.doc.eq(before)).toBe(true);
+  });
+
+  it('does not ask for a value where there is nowhere to put it', async () => {
+    // A cursor in unmarked text has nothing to link: opening a dialog there asks the author for a
+    // target the command would then drop on the floor.
+    const { prompt, onRefused } = renderToolbar({ caret: 3 });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    expect(prompt).not.toHaveBeenCalled();
+    expect(onRefused).not.toHaveBeenCalled();
+  });
+
+  it('says so when the dialog itself fails rather than leaving the rejection unhandled', async () => {
+    const { onRefused } = renderToolbar({
+      range: [1, 6],
+      asks: () => Promise.reject(new Error('the dialog fell over')),
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    await waitFor(() =>
+      expect(onRefused).toHaveBeenCalledWith(expect.objectContaining({ mark: 'hyperlink' })),
+    );
+  });
+
+  it('lets an answer arriving after the surface has gone by, rather than dispatching into it', async () => {
+    let settle: ((value: Record<string, unknown> | null) => void) | undefined;
+    const { view: mounted, onRefused } = renderToolbar({
+      range: [1, 6],
+      asks: () =>
+        new Promise((resolve) => {
+          settle = resolve;
+        }),
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+    mounted.destroy();
+    settle!({ href: 'https://example.test/report' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // A dispatch into a destroyed view throws, which the catch below would then report to the author
+    // as a refusal of a target that was perfectly good.
+    expect(onRefused).not.toHaveBeenCalled();
+  });
+
+  it('is unavailable while the component may not be changed', async () => {
+    // `aria-disabled`, not `disabled`: a disabled button is out of the tab order, so a `disabled`
+    // toolbar is one a keyboard cannot reach at all - and the region ring will need somewhere to
+    // land. It stays in the accessibility tree, reachable and inert.
+    const { view: mounted, prompt } = renderToolbar({ enabled: false, range: [1, 6] });
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+    const before = mounted.state.doc;
 
     const buttons = within(toolbar).getAllByRole('button');
     expect(buttons).toHaveLength(LABELS.length);
-    for (const button of buttons) expect(button).toBeDisabled();
+    for (const button of buttons) expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(buttons.filter((button) => button.tabIndex === 0)).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Strong' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    expect(mounted.state.doc.eq(before)).toBe(true);
+    expect(prompt).not.toHaveBeenCalled();
   });
 
   it('stands there before the surface has mounted, saying nothing is marked', async () => {
@@ -266,9 +409,12 @@ describe('the formatting toolbar', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
 
     const buttons = within(toolbar).getAllByRole('button');
-    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual(
-      LABELS.map(() => 'false'),
-    );
+    expect(buttons).toHaveLength(LABELS.length);
+    expect(
+      buttons
+        .filter((button) => button.hasAttribute('aria-pressed'))
+        .map((button) => button.getAttribute('aria-pressed')),
+    ).toEqual(TOGGLES.map(() => 'false'));
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
     expect(prompt).not.toHaveBeenCalled();
   });
