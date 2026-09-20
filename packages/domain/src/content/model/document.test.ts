@@ -403,7 +403,7 @@ describe("a definition list's term, and the rules the walk holds that the schema
     expect(() => parseContentDocument(doc([ordered]))).toThrow(/term/);
   });
 
-  it('admits a definition item whose term has not been typed yet, as CNT-124 admits an empty paragraph', () => {
+  it('admits a definition item whose term has not been typed yet, as the model admits an empty paragraph', () => {
     // A term is optional on every item, including a definition list's. An author who presses Enter
     // in a definition body and writes the definition before its term is mid-edit, not in error, and
     // `saveIteration` parses through `parseContentDocument` and answers a refusal with a fixed
@@ -427,7 +427,10 @@ describe("a definition list's term, and the rules the walk holds that the schema
     // Absent and present-but-empty are two spellings of one thing, and two spellings of one thing
     // are two digests of one document. Absent is the spelling, so `min(1)` refuses the other.
     const empty = definitionList([{ term: [], content: [paragraph('d1', 'A definition.')] }]);
-    expect(() => parseContentDocument(doc([empty]))).toThrow();
+    // Matched on `term`, as every sibling refusal is matched on what it is about: this one passed
+    // red for the wrong reason - `strictObject` refusing the key before the widening existed - and
+    // a bare `toThrow()` would go on passing if the document were refused for anything at all.
+    expect(() => parseContentDocument(doc([empty]))).toThrow(/term/);
   });
 
   it('refuses a term the walk empties, rather than storing one a read-back would refuse', () => {

@@ -143,11 +143,13 @@ describe('the re-identify stage', () => {
     ]);
   });
 
-  it("re-identifies the marks in a definition item's term, as in any other inline content", () => {
+  it("re-identifies a definition item's term, marks and cross-references alike", () => {
     // The list branch is the one place a block's inline content is reached through an item rather
-    // than through a member of the block itself, so a term left out of it would carry a pasted
-    // mark's identifier into the receiving component unchanged (CNT-132) - and that identifier may
-    // already name an annotation there.
+    // than through a member of the block itself, so a term left out of it kept BOTH halves of what
+    // this stage exists to rewrite: a pasted mark's identifier survived into the receiving
+    // component, where it may already name an annotation (CNT-132), and a pasted cross-reference
+    // kept both its own identifier and a target naming a block that no longer exists after the
+    // copy - a reference dangling the moment it arrives.
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -157,7 +159,10 @@ describe('the re-identify stage', () => {
           kind: 'definition',
           items: [
             {
-              term: [text('Tensile strength', [{ type: 'emphasis', id: 'old-mark' }])],
+              term: [
+                text('Tensile strength', [{ type: 'emphasis', id: 'old-mark' }]),
+                reference('old-x1', { kind: 'block', block: 'old-item' }),
+              ],
               content: [paragraph('old-item', [text('The stress it bears.')])],
             },
           ],
@@ -175,8 +180,13 @@ describe('the re-identify stage', () => {
             kind: 'definition',
             items: [
               {
-                term: [text('Tensile strength', [{ type: 'emphasis', id: 'n4' }])],
-                content: [paragraph('n5', [text('The stress it bears.')])],
+                term: [
+                  text('Tensile strength', [{ type: 'emphasis', id: 'n4' }]),
+                  // Its own identifier rewritten, and its target pointing at the copy of the
+                  // paragraph that travelled with it rather than at the identifier it arrived with.
+                  reference('n5', { kind: 'block', block: 'n6' }),
+                ],
+                content: [paragraph('n6', [text('The stress it bears.')])],
               },
             ],
           },
@@ -184,7 +194,9 @@ describe('the re-identify stage', () => {
       },
     });
     expect(entries).toEqual([
-      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      // Three: the list, the cross-reference in its term, and the item's paragraph.
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 3 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'crossReferenceTarget', count: 1 },
       { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 1 },
     ]);
   });

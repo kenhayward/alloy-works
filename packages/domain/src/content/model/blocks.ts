@@ -84,6 +84,12 @@ export const listNodeSchema = z.strictObject({
   // add while nothing has stored a list where tightening this insert-only shape later would not be.
   // The same reasoning keeps `start`'s `min(0)` above. `min(1)` is not a narrowing of that kind: an
   // empty term is a second spelling of an absent one, and one document may not have two digests.
+  //
+  // It reaches no further than that, and deliberately: a term holding a space, or a zero-width
+  // space, is a third spelling with a digest of its own, and it is accepted - exactly as a
+  // paragraph holding a space is accepted, and by the same rule, since a run of whitespace is a run
+  // with text in it. Refusing here and nowhere else would make the term the one inline home in the
+  // model with a notion of blankness the rest does not share.
   items: z
     .array(
       z.strictObject({
