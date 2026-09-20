@@ -77,10 +77,13 @@ export const listNodeSchema = z.strictObject({
   // string: a term is a phrase an author writes, and a plain string is what makes an equation, a
   // mark or a cross-reference unrepresentable in a caption (issue #88). Optional, and so additive -
   // every document stored under schema version 1 stays valid, the canonical form of one is
-  // unchanged, `CURRENT_SCHEMA_VERSION` stays 1 and the migration chain stays empty. WHICH items
-  // must have one is a rule in the walk (`document.ts`) rather than a shape here, because it is a
-  // narrowing, and a narrowing is safe to add while nothing has stored a list where tightening this
-  // insert-only shape later would not be. The same reasoning keeps `start`'s `min(0)` above.
+  // unchanged, `CURRENT_SCHEMA_VERSION` stays 1 and the migration chain stays empty. Optional on a
+  // definition list's item too, because an item whose term has not been typed yet is where a cursor
+  // stands, as CNT-124's empty paragraph is. WHERE a term may stand at all is a rule in the walk
+  // (`document.ts`) rather than a shape here, because it is a narrowing, and a narrowing is safe to
+  // add while nothing has stored a list where tightening this insert-only shape later would not be.
+  // The same reasoning keeps `start`'s `min(0)` above. `min(1)` is not a narrowing of that kind: an
+  // empty term is a second spelling of an absent one, and one document may not have two digests.
   items: z
     .array(
       z.strictObject({

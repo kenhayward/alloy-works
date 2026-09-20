@@ -404,8 +404,18 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
       // item, because it is one item type; a term on an ordered or unordered item means nothing,
       // and the published half would have nowhere to print it.
       //
-      // **A definition item always has one**, so nothing downstream has to decide what a definition
-      // without its term looks like - the publishing template maps over `item.term` unguarded.
+      // **A definition item need not have one yet.** An author who presses Enter in a definition
+      // body and writes the definition before its term is mid-edit, not in error, and
+      // `saveIteration` parses through this function and answers a refusal with a fixed message
+      // that names nothing - so a required term would refuse an ordinary iteration save and tell
+      // the author nothing about why. CNT-124 admits one empty paragraph for the same reason: that
+      // is where a cursor stands. The cost is that the publishing template maps over `item.term`
+      // **guarded**; an item with no term prints an empty label, which is honest about an item
+      // nobody has finished.
+      //
+      // **A term that is there holds text**, because an empty term is a second spelling of a term
+      // that is absent, and two spellings of one thing are two digests of one document. `min(1)`
+      // refuses the empty array on the way in and the rule below refuses what the walk empties.
       //
       // **A list starts at 0 only where its numbering is decimal** (CNT-153) - a zeroth item is a
       // convention decimal has and letters and roman numerals do not. Held here rather than in
@@ -423,9 +433,6 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
             throw new Error(
               `List ${block.id} has an item carrying a term, which only a definition list's item may`,
             );
-          }
-          if (item.term === undefined && block.kind === 'definition') {
-            throw new Error(`List ${block.id} is a definition list with an item carrying no term`);
           }
           // A term is inline content in the component's one scope, so a mark in one claims its
           // identifier exactly as a mark in a paragraph does - and it is walked before the item's
@@ -494,8 +501,8 @@ export type InlineHome = 'component' | 'title';
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
  * cross-reference in a component never targets an outline node, a mark identifier carries one value
  * (CNT-004) over one contiguous range of runs, a sequence of inline content comes back with its
- * runs merged (issue #154), a list item carries a term exactly where its list is a definition list,
- * a term holds visible text, and a list starts at 0 only where its numbering is decimal (CNT-153).
+ * runs merged (issue #154), a term stands only on a definition list's item, a term that is there
+ * holds visible text, and a list starts at 0 only where its numbering is decimal (CNT-153).
  * One walk holds all ten: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over

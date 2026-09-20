@@ -403,21 +403,39 @@ describe("a definition list's term, and the rules the walk holds that the schema
     expect(() => parseContentDocument(doc([ordered]))).toThrow(/term/);
   });
 
-  it('refuses an item of a definition list that has no term, naming it', () => {
-    const undefinedTerm = definitionList([{ content: [paragraph('d1', 'A definition.')] }]);
-    expect(() => parseContentDocument(doc([undefinedTerm]))).toThrow(/term/);
+  it('admits a definition item whose term has not been typed yet, as CNT-124 admits an empty paragraph', () => {
+    // A term is optional on every item, including a definition list's. An author who presses Enter
+    // in a definition body and writes the definition before its term is mid-edit, not in error, and
+    // `saveIteration` parses through `parseContentDocument` and answers a refusal with a fixed
+    // message that names nothing - so requiring a term would refuse an ordinary save and tell the
+    // author nothing about why. The same answer CNT-124 gives an empty paragraph: that is where a
+    // cursor stands. The cost is that the publishing template cannot map `item.term` unguarded; an
+    // item with no term prints an empty label, which is honest about an unfinished item.
+    const untyped = doc([definitionList([{ content: [paragraph('d1', 'A definition.')] }])]);
+    const accepted = parseContentDocument(untyped);
+    expect(listIn(accepted).items[0]?.term).toBeUndefined();
+    // And what it accepts, it accepts again unchanged - the invariant every caller relies on.
+    expect(parseContentDocument(accepted)).toEqual(accepted);
+    // Optional everywhere is not the same as meaningless everywhere: a term on an ordered list's
+    // item is still refused, because there is nowhere for one to be printed.
+    expect(() =>
+      parseContentDocument(doc([{ type: 'list', id: 'L1', kind: 'ordered', items: defined }])),
+    ).toThrow(/term/);
   });
 
   it('refuses a term with no inline content at all', () => {
+    // Absent and present-but-empty are two spellings of one thing, and two spellings of one thing
+    // are two digests of one document. Absent is the spelling, so `min(1)` refuses the other.
     const empty = definitionList([{ term: [], content: [paragraph('d1', 'A definition.')] }]);
     expect(() => parseContentDocument(doc([empty]))).toThrow();
   });
 
   it('refuses a term the walk empties, rather than storing one a read-back would refuse', () => {
-    // Judged on what the walk RETURNED, never on what arrived. A term holding one empty run passes
-    // `min(1)` on the way in and is nothing once `mergeRuns` has dropped that run - so a rule
-    // reading the input would store a term the same schema refuses on read-back, which is a 500 for
-    // an author whose work could never become a version.
+    // The same rule reaching the other way, and judged on what the walk RETURNED, never on what
+    // arrived. A term holding one empty run passes `min(1)` on the way in and is nothing once
+    // `mergeRuns` has dropped that run - so a rule reading the input would store a term the same
+    // schema refuses on read-back, which is a 500 for an author whose work could never become a
+    // version.
     const blank = definitionList([
       { term: [run('')], content: [paragraph('d1', 'A definition.')] },
     ]);
