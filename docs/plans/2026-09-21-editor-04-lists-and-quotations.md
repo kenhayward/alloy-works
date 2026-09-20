@@ -3,28 +3,31 @@
 > **For agentic workers:** execute this plan task by task, test first, one commit per task. Every task
 > names its expected RED failure; run it and see that failure before writing the code that fixes it.
 
-**Goal:** an author can make a bulleted or numbered list, nest items inside items, set a numbered
-list's start and its numbering, and publish all of it to a tagged PDF in which a reader's assistive
-technology is told `L`, `LI`, `Lbl` and `LBody` at every level. And the two write paths stop
-disagreeing about how deeply content may nest.
+**Goal:** an author can make a bulleted, a numbered or a definition list, nest items inside items, set
+a numbered list's start and its numbering, and publish all of it to a tagged PDF in which a reader's
+assistive technology is told `L`, `LI`, `Lbl` and `LBody` at every level. And the two write paths
+stop disagreeing about how deeply content may nest.
 
-**Architecture:** the stored `list` node becomes two nodes in the editor's ProseMirror schema -
-`list` and `listItem` - shaped so that `prosemirror-schema-list`'s own commands drive them unchanged;
-the identity plugin and the adjacency plugin, both of which walk the top level only today, are made
-to descend; the mapping recurses both ways; the command registry widens from marks to editing
-actions; `assemble` carries a list into a new published schema, `publishing/4`, and a new immutable
-template, `publication/4`, sets it. `parseContentDocument` gains the nesting limit that only
-admission applied, which closes [#125](https://github.com/kenhayward/alloy-works/issues/125).
+**Architecture:** the stored `list` node becomes four nodes in the editor's ProseMirror schema -
+`list` and `listItem` for the two counted kinds, `definitionList` and `definitionItem` for the third,
+with `term` as the item's own textblock - shaped so that most of `prosemirror-schema-list`'s commands
+drive them unchanged. The stored item is **widened** with an optional `term`, which is additive and
+needs no schema version. The identity plugin and the adjacency plugin, both of which walk the top
+level only today, are made to descend; the mapping recurses both ways; the command registry widens
+from marks to editing actions; `assemble` carries a list into a new published schema, `publishing/4`,
+and a new immutable template, `publication/4`, sets it. `parseContentDocument` gains the nesting
+limit that only admission applied, which closes
+[#125](https://github.com/kenhayward/alloy-works/issues/125).
 
 **Designs:** [component-editor.md](../design/component-editor.md) (the authoring matrix, the identity
 table, the invariants, CNT-077), [content-model.md](../design/content-model.md) (CNT-117, CNT-118,
-CNT-119, CNT-002, CNT-023), [publishing.md](../design/publishing.md).
+CNT-153, CNT-002, CNT-023), [publishing.md](../design/publishing.md).
 
 **Version:** 0.33.0 - a functional enhancement. Do not bump on the planning branch.
 
 **On this file's name.** It was commissioned as `editor-04-lists-and-quotations`, and the name is
-kept so the commission and the artifact match. It plans **lists only**; the reason is the first thing
-below, and block quotations and preformatted text are the plan after it.
+kept so the commission and the artifact match. It plans **lists only**, all three kinds; the reason
+is the first thing below, and block quotations and preformatted text are the plan after it.
 
 ---
 
@@ -33,24 +36,24 @@ below, and block quotations and preformatted text are the plan after it.
 **The commission - lists, block quotations and preformatted text, with their published half - is too
 much for one pull request.** The marks slice ran to thirteen tasks over one family of inline marks
 that changed no node, no plugin and no invariant. This slice changes three plugins, the doc's own
-content expression, the mapping in both directions, the command registry's shape, the published
-document's block type and the template - before any family is added. Three families on top of that is
-not a review anybody can hold in their head.
+content expression, the mapping in both directions, the command registry's shape, the stored list
+item, the published document's block type and the template - before any family is added. Three
+families on top of that is not a review anybody can hold in their head.
 
 **Recommended split:**
 
-| Pull request                                          | What it carries                                                                                                                                                                                                                                |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Editor 4 - lists** (this plan)                      | #125 on every write path; identity and adjacency at depth; the mapping's recursion; `list` and `listItem`; the three structural commands; the registry widened; the list controls and the list panel; `publishing/4`; `publication/4`; veraPDF |
-| **Editor 5 - block quotations and preformatted text** | `blockquote` and `preformatted`, their toolbar commands, `BlockQuote` and `Code` in template 5, and the monospace face (decision F)                                                                                                            |
+| Pull request                                          | What it carries                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Editor 4 - lists** (this plan)                      | #125 on every write path; identity and adjacency at depth; the mapping's recursion; the stored item widened with a term; four list nodes; the structural commands; the registry widened; the list controls and the list panel; CNT-153; `publishing/4`; `publication/4`; veraPDF |
+| **Editor 5 - block quotations and preformatted text** | `blockquote` and `preformatted`, their toolbar commands, `BlockQuote` and `Code` in template 5, and the face-aware `covers` with Liberation Mono (decision G)                                                                                                                    |
 
 **Why lists first, and not the other way round.** The engineering argument runs the other way:
 a blockquote nests one level and would prove the descent work with smaller tests, so doing it first
 de-risks the plugin rewrite. Lists win anyway for three reasons. Four T1 rows sit behind lists
-(CNT-015 superseded into CNT-117, CNT-118 and CNT-119) against one each for the other two. Lists are
-the family that stresses the descent rewrite hardest - three structural commands, unbounded depth,
-and an item that is a node carrying no identifier - and a rewrite proved on the easy case is a
-rewrite proved on the easy case. And if only one of the two lands, lists is the one a reader of the
+(CNT-015 superseded into CNT-117, CNT-118 and CNT-119, itself now superseded by CNT-153) against one
+each for the other two. Lists are the family that stresses the descent rewrite hardest - structural
+commands, unbounded depth, an item that is a node carrying no identifier, and now a third kind whose
+item has a shape of its own. And if only one of the two lands, lists is the one a reader of the
 product notices.
 
 **What the second pull request inherits, free:** every plugin, the mapping's recursion, `assemble`'s
@@ -62,7 +65,7 @@ recursive block walk, the published document's recursive shape, and #125's test.
 
 - **TDD.** No production code without a failing test that preceded it, and the failure watched.
 - **No dashes in user-facing text.** A plain hyphen in every UI string, catalogue entry and changelog
-  bullet. Code and comments are exempt. **Read decision G before writing the template**: the engine
+  bullet. Code and comments are exempt. **Read decision H before writing the template**: the engine
   inserts an em dash of its own in one place, and that place is in the next slice, not this one.
 - **Invented names only** in fixtures: Ada, Grace, Alice. No real person, address or document.
 - **The console gate.** A passing run has no `console.error` or `console.warn`. A test that provokes
@@ -86,7 +89,7 @@ recursive block walk, the published document's recursive shape, and #125's test.
 
 ## What was run before this plan was written, and what it settled
 
-Five questions, each answered by the smallest thing that answers it. Nothing was built; every spike
+Six questions, each answered by the smallest thing that answers it. Nothing was built; every spike
 file was deleted and `packages/editor/package.json` and `pnpm-lock.yaml` were reverted.
 
 ### 1. Preformatted text has no monospace face, and this time it shows
@@ -106,7 +109,7 @@ indistinguishable from a paragraph**, and worse than that:
   **`raw` is never given a language**, in this slice or the next: the label is stored, and the engine
   is never told it.
 - A grey panel behind the block (`block(fill: luma(240), inset: 6pt)`) does make it unmistakably a
-  block without a face and without colour alone, which is the mitigation decision F weighs.
+  block without a face and without colour alone, which is the mitigation decision G weighs.
 
 **Then the cost of a face was measured, and decision C of the marks plan turns out to rest on a
 mix-up.** That decision said pinning Liberation Mono "would tighten `PinnedFonts.covers` ... and so
@@ -129,7 +132,7 @@ through `SET_WITHOUT_A_GLYPH`, and the last two are not characters an author wri
 characters an author could write would become unpublishable**: the dotless j, eleven typographic
 spaces and the double vertical line. The Liberation 2.1.5 release's serif files hash byte for byte to
 the repository's pinned files, so the mono files are the same release under the same SIL OFL 1.1
-(ADR-0010).
+(ADR-0010). **Ken's answer is decision G**, and it is the next slice's to build.
 
 ### 2. Identity across the commands that create blocks at depth
 
@@ -161,40 +164,70 @@ paragraph. Editor and model see the same annotation. Pin it with a test rather t
 list items included, and refuses two adjacent empty paragraphs inside one item; the editor's plugin
 never looks there. That is task 4.
 
-### 3. `prosemirror-schema-list`, or commands of our own
+### 3. `prosemirror-schema-list`, or commands of our own - and the answer differs by kind
 
 **It is not a dependency today.** Version 1.5.1 was added, driven, and removed.
 
-**A schema shaped to the stored model works with its commands unchanged.** `list` with
-`content: 'listItem+'`, `listItem` with `content: 'block+'` and `defining: true` and **no
-attributes** - which is exactly the stored shape, `items: [{ content: BlockNode[] }]`, where an item
-carries no identifier - drove `wrapInList`, `splitListItem`, `sinkListItem` and `liftListItem` with
-no adaptation at all. Sinking made a nested list inside the item; lifting put it back; the document
-came out in the shape the stored model holds. **Take the dependency.** Writing three structural
-commands by hand to reach the same place would be a few hundred lines of position arithmetic with no
-test suite behind it.
+**For a bulleted or a numbered list, a schema shaped to the stored model works with its commands
+unchanged.** `list` with `content: 'listItem+'`, `listItem` with `content: 'block+'` and
+`defining: true` and **no attributes** - which is exactly the stored shape,
+`items: [{ content: BlockNode[] }]`, where an item carries no identifier - drove `wrapInList`,
+`splitListItem`, `sinkListItem` and `liftListItem` with no adaptation at all. Sinking made a nested
+list inside the item; lifting put it back; the document came out in the shape the stored model
+holds. **Take the dependency.** Writing three structural commands by hand to reach the same place
+would be a few hundred lines of position arithmetic with no test suite behind it.
 
-**The one trap, and it looks correct until it is run.** `splitListItem` **returns false** in an empty
-list item - it declines, expecting the keymap to fall through to `liftListItem`. Today's
-`enterWithoutEmpties` returns **true** and does nothing when the cursor is in an empty paragraph. Bind
-Enter to `enterWithoutEmpties` first and an author who presses Enter in an empty list item is trapped
-in the list with no key that leaves it. The order is fixed in task 6 and has a test of its own.
+**For a definition list, two of the four decline, and it is exactly the two that create items.**
+With `definitionItem` shaped `content: 'term block+'`:
+
+| Command                         | Verdict                                                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sinkListItem(definitionItem)`  | **works unchanged** - the nested definition list came out right                                                                                                                            |
+| `liftListItem(definitionItem)`  | **works unchanged** - and put it back                                                                                                                                                      |
+| `splitListItem(definitionItem)` | **returns false**, from the end of the term and from the end of the body alike: the remainder of a split is a paragraph, which cannot be an item's first child where that must be a `term` |
+| `wrapInList(definitionList)`    | **returns false**: it cannot make an item that needs a `term` out of a paragraph                                                                                                           |
+
+So `splitDefinitionItem` and `makeDefinitionList` are ours, and nothing else is. Both are small and
+task 6 specifies them.
+
+**The one trap in the counted kinds, and it looks correct until it is run.** `splitListItem`
+**returns false** in an empty list item - it declines, expecting the keymap to fall through to
+`liftListItem`. Today's `enterWithoutEmpties` returns **true** and does nothing when the cursor is in
+an empty paragraph. Bind Enter to `enterWithoutEmpties` first and an author who presses Enter in an
+empty list item is trapped in the list with no key that leaves it. The order is fixed in task 6 and
+has a test of its own.
 
 ### 4. What a reader gets from a list in the tagged PDF
 
-Compiled and read with pdf.js and the pinned veraPDF. **veraPDF: compliant, zero failures.** The
-roles, in document order:
+Compiled and read with pdf.js and the pinned veraPDF. **veraPDF: compliant, zero failures**, for the
+counted kinds and for definition lists alike. The roles for a nested bulleted list:
 
 ```
 L, LI, Lbl, LBody, P, L, LI, Lbl, LBody, P, L, LI, Lbl, LBody, LI, Lbl, LBody, ...
 ```
 
-**A list reaches a reader as a real list, at every level.** `L` holds `LI`; each `LI` holds `Lbl` -
-the marker or the number - and `LBody`; a nested list is an `L` inside its parent's `LBody`. That is
-the full PDF/UA list structure, and it is not the bare-`Span` disappointment the marks slice found.
-The extraction carries the labels as text: an ordered list with `start: 5` and alphabetic numbering
-gave `e.` and `f.`; an ordered list nested in an unordered one gave `•`, then `1.` and `2.`. A list
-item holding two paragraphs came out as one `LI` with both paragraphs under the one label.
+**A counted list reaches a reader as a real list, at every level.** `L` holds `LI`; each `LI` holds
+`Lbl` - the marker or the number - and `LBody`; a nested list is an `L` inside its parent's `LBody`.
+That is the full PDF/UA list structure, and it is not the bare-`Span` disappointment the marks slice
+found. The extraction carries the labels as text: an ordered list with `start: 5` and alphabetic
+numbering gave `e.` and `f.`; an ordered list nested in an unordered one gave `•`, then `1.` and `2.`.
+A list item holding two paragraphs came out as one `LI` with both paragraphs under the one label.
+
+**A definition list is weaker, and the plan says so rather than claiming the structure.** Typst
+0.15.1's `terms` element gives:
+
+```
+L, LI, Lbl, Span, LBody, LI, Lbl, Span, Span, Span, LBody, Span, ...
+```
+
+**It is a list, not a definition list.** PDF/UA has `DL > DI > (DT, DD)` for exactly this, and Typst
+0.15.1 emits none of those and offers no way to ask for another role. What a reader gets instead: the
+term in the item's `Lbl` and the definition in its `LBody`, which a screen reader announces as a
+label followed by a body. That is materially better than bare `Span`s - the term really is the
+label, and a term carrying marks keeps them, as `Span`s inside the `Lbl` - and it is materially less
+than the structure the format has. A nested definition list is an `L` inside its parent's `LBody`,
+and a definition list inside a bulleted list is too. **This goes in the changelog's Known limits and
+is why CNT-079 stays unclaimed on more than the headings argument.**
 
 **Typst's own default list markers break the compile.** They are `•`, `‣`, `–`, and **U+2023 is not
 in Liberation Serif**, so a two-level unordered list fails with
@@ -202,10 +235,10 @@ in Liberation Serif**, so a two-level unordered list fails with
 not a fallback, a refused compile. Candidates were compiled one by one: `•` U+2022, `◦` U+25E6, `▪`
 U+25AA, `–` U+2013, `·` U+00B7, `-` U+002D, `●` U+25CF and `■` U+25A0 all set; `⁃` U+2043 does not.
 The template pins `([•], [◦], [▪])`, which is the disc/circle/square convention a reader knows.
+That the template is the wrong home for it is [#158](https://github.com/kenhayward/alloy-works/issues/158).
 
-**`start: 0` on a roman list prints `n.`** - Typst's _nulla_. The stored shape allows
-`start: z.number().int().min(0)`, so an author can ask for a list that begins `n., i., ii.`, which
-means nothing to a reader. Alphabetic at zero was not measured. Decision E.
+**`start: 0` on a roman list prints `n.`** - Typst's _nulla_. An author could ask for a list that
+begins `n., i., ii.`. Ken's answer is CNT-153 and decision F.
 
 **Typst has no mutual recursion between top-level `let` bindings.** The obvious template shape -
 `block-of` calling `list-of` calling `block-of` - fails with `error: unknown variable: blocks`,
@@ -229,7 +262,9 @@ browser. One line closes every path.
 | 20, 21, 22, 30         | within                      |
 | 40                     | `nested more than 128 deep` |
 
-So the limit bites somewhere above thirty levels of list. CNT-118 asks for six.
+So the limit bites somewhere above thirty levels of list. CNT-118 asks for six. That the number is a
+JSON depth rather than a decision about content is
+[#159](https://github.com/kenhayward/alloy-works/issues/159).
 
 **What it costs, and what not having it costs.** `exceedsLimits` over a 400-paragraph component:
 **0.070 ms**, against `parseContentDocument`'s own **0.462 ms** on the same input - about a sixth
@@ -238,64 +273,99 @@ added to a parse that already runs on every iteration. What it buys: at 1,000 le
 overflow on the save route, not a named refusal. At 200 levels it simply **accepts** content
 admission would refuse. Both stop.
 
+### 6. Does a definition list force content schema version 2? No - the widening is additive
+
+**This was the question the slice turned on, and the answer is measured rather than argued.** A
+candidate item schema was built - `z.strictObject({ term: z.array(inlineNodeSchema).min(1).optional(), content: z.array(blockNodeSchema).min(1) })` -
+and run against the real `canonicalJson`, the real `parseContentDocument` and the real migration
+chain:
+
+| Asked                                                          | Answer                                                                                            |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Does today's stored item `{ content: [...] }` still parse?     | **Yes**, and the parsed object's keys are `["content"]` - no `term`                               |
+| Is the canonical form identical before and after the widening? | **Yes**, character for character, so **no version digest moves**                                  |
+| Does an inline term carrying a mark parse and canonicalise?    | **Yes**                                                                                           |
+| Does today's schema refuse a term?                             | **Yes** - so the change goes one way only, which is what makes it a widening                      |
+| Does the migration chain need an entry?                        | **No**. `contentMigrationChain.migrations` stays `{}` and `CURRENT_SCHEMA_VERSION` stays `1`      |
+| And an explicit `term: undefined`?                             | zod leaves the key present, and `canonicalJson` drops it anyway, so the digest is safe either way |
+
+**So the definition form lands here, CNT-117 is honoured in full, and #101 and #88 stay exactly where
+they are.** Those two genuinely restructure - a mark gains a member, and `caption` changes kind from
+`string` to inline content - and they still need version 2. This does not: nothing is restructured,
+no stored document changes shape, and CNT-012's fixture set does not grow.
+
 ---
 
 ## Decisions
 
-Each is a recommendation with the alternative that was rejected and why. A to D change what ships;
-E to H are rulings.
+Each is a recommendation with the alternative that was rejected and why. A to E change what ships;
+F to I are rulings.
 
 **A. Take `prosemirror-schema-list` as a dependency of `packages/editor`, and shape the schema to
 the stored model rather than the other way round.** Spike 3 drove all four commands unchanged against
-a schema that is the stored model's shape exactly. _Rejected:_ three hand-written structural commands
-with no suite behind them, to avoid a 10 kB MIT dependency from the same authors as the six
-ProseMirror packages already pinned.
+a schema that is the stored model's shape exactly, and two of the four against the definition form.
+_Rejected:_ hand-written structural commands with no suite behind them, to avoid a 10 kB MIT
+dependency from the same authors as the six ProseMirror packages already pinned.
 
-**B. Two kinds of list in the editor, not three.** `ordered` and `unordered`. **A definition list is
-not representable in the stored model** - see decision D - so a control that made one would let an
-author declare something no publication can honour. `toEditor` opens a component holding
-`kind: 'definition'` **read-only, naming it** as `list:definition`, exactly as it does a mark it has
-no counterpart for; `assemble` refuses one by the same name. _Rejected:_ shipping a third button that
-stores a kind nothing downstream can set, which is how a model acquires a member no one dares remove.
+**B. A definition list item carries an optional `term` of inline content:
+`{ term?: InlineNode[]; content: BlockNode[] }`.** Spike 6 shows the widening is additive: no schema
+version, no migration, no digest moves. The stored shape is **insert-only**, so what is written here
+is accepted for ever; these are the four shapes that were weighed and why three lost.
 
-**C. `publishing/4` and `publication/4`.** `PublishedBlock` becomes a union and a template version is
+| Shape                                                                | Why not                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `term?: string`, like `caption`                                      | **This is the #88 mistake, booked again.** A plain-string `caption` is exactly why an equation, a mark or a cross-reference cannot go in one, and fixing it needs a schema version. A term is a phrase an author writes; it will want emphasis, a defined term mark, an inline equation. Refused outright |
+| No new member: the term is the item's first block, by convention     | Nothing marks which block is which, which is the defect being fixed; and the publisher could not tell a term from a definition, so `Lbl` would get whatever came first                                                                                                                                    |
+| A discriminated union on `kind`, with a separate item shape per kind | Also additive at the data level, and arguably tidier - but it turns one exported `listNodeSchema` into a union every consumer must narrow, for a distinction one optional member already carries. Kept in reserve if a second per-kind member ever appears                                                |
+| **`term?: InlineNode[]`, optional on every item**                    | **Chosen.** One member, additive, inline from the start so the #88 debt is never booked, and `min(1)` so a term that is there is never empty                                                                                                                                                              |
+
+The cost of the chosen shape is that `term` is _structurally_ allowed on an item of any kind, where
+it means nothing on a counted one. That is closed by a **rule in the walk, not the schema**:
+`checkBlock` refuses an item carrying a term where `kind` is not `definition`, and refuses an item
+**lacking** one where it is. A rule is the right home because it is a narrowing, and a narrowing is
+safe to add now while nothing has stored a list; a schema that expressed it would be the union above.
+
+**C. Four editor node types for one stored node, and the editor's schema is not the stored model
+one-for-one here.** `list`/`listItem` for `ordered` and `unordered`, `definitionList`/`definitionItem`
+for `definition`, and `term` as the definition item's own textblock. A ProseMirror node's content
+expression is fixed per type, so one `listItem` cannot be `block+` for two kinds and `term block+`
+for the third. _Rejected:_ `listItem` as `content: 'term? block+'`, which would make
+`splitListItem` split the term instead of the body in a definition item and would put an optional
+first child in the way of every command that assumes the item opens with a block.
+
+**D. `publishing/4` and `publication/4`.** `PublishedBlock` becomes a union and a template version is
 immutable. Templates 1, 2 and 3 go on reading their own schemas, byte for byte. _Rejected:_ adding an
 optional `items` member that template 3 ignores, which would print a document's lists as nothing at
 all with nothing saying so.
 
-**D. A list is carried only under a layout, exactly as a run's marks are.** `publishing/1` and
+**E. A list is carried only under a layout, exactly as a run's marks are.** `publishing/1` and
 `publishing/2` hold paragraphs alone and are frozen; `assemble` with no layout goes on refusing a
 list with `block_not_publishable`. _Rejected:_ back-filling the frozen schemas, which would change
 what a request recorded before migration 0018 publishes as.
 
-**E. Refuse `start: 0` on an alphabetic or a roman list, by name, at the editor's control and again
-at `assemble`.** Typst sets a roman zero as `n.`, and "n., i., ii." is not a numbering any author
-asked for. Decimal keeps zero, where `0.` means something. The editor's refusal is the words in task
-7; `assemble`'s is `block_not_publishable` with detail `list:start`. _Rejected:_ letting it through
-and printing `n.`, and equally rejected: tightening `listNodeSchema`'s `min(0)`, which is an
-insert-only stored shape and would refuse a document nobody has stored. **This wants Ken's answer:
-it may be that the right fix is in the corpus, which does not say what a start of zero means.**
+**F. `start` is 1 or more, except in decimal where 0 is allowed - and the corpus says so first.**
+Typst sets a roman zero as `n.`, and "n., i., ii." is not a numbering any author asked for. Ken's
+answer: CNT-119 is **superseded by CNT-153**, which reads the rule, landed by this pull request with
+its change-history row (task 12). The editor's refusal and `assemble`'s then enforce what the corpus
+requires rather than the product being quietly stricter than its own requirement. `assemble`'s is
+`block_not_publishable` with detail `list:start`. _Rejected:_ tightening `listNodeSchema`'s `min(0)`,
+which is an insert-only stored shape and would refuse a document nobody has stored; and equally
+rejected, letting it through and printing `n.`
 
-**F. The monospace face, and with it preformatted text, belongs to the next pull request - and the
-evidence says pin it there rather than waiting for publishing 4.** Not here, because this slice sets
-no preformatted text. But decision C of the marks plan deferred it on a cost that has now been
-measured and is not what it was thought to be: **sixteen code points, thirteen of them writable**,
-not a re-derivation of 4,170. Two ways to spend it, for Ken:
+**G. The monospace face is settled and belongs to the next pull request.** Ken's answer:
+`covers(codePoint, 'body')` and `covers(codePoint, 'code')` - **two sets from one loader, one branch
+in `characterProblems`** - with Liberation Mono pinned beside Liberation Serif. `assemble` already
+knows which block it is in, so the body set does not narrow at all and the thirteen writable code
+points spike 1 measured are not lost anywhere they are used. Recorded here so editor 5 starts from a
+settled answer; nothing in this slice builds it, because nothing here sets code.
 
-- **Pin Liberation Mono and let `covers` stay one intersection.** Simplest. Costs the dotless j,
-  eleven typographic spaces and the double vertical line, in **body text as well as code**, which is
-  where a thin space before a French colon or a narrow no-break space in `5 km` actually lives.
-- **Pin it and make `covers` ask which faces the text will be set in.** `covers(codePoint, 'body')`
-  and `covers(codePoint, 'code')`, two sets from the same loader, one branch in `characterProblems`,
-  and `assemble` already knows which block it is in. Costs nothing in the body. **Recommended.**
-
-**G. The engine writes an em dash into a block quotation's attribution, and the next slice must not
+**H. The engine writes an em dash into a block quotation's attribution, and the next slice must not
 use `quote(attribution:)`.** Typst sets `— Ada Lovelace`, right-aligned, with a U+2014 the author
 never typed, and tags the whole attribution as a bare `Span` - so a reader is not told it is an
 attribution either. Recorded here because it was measured here; the slice that acts on it is the next
 one, which should set the attribution itself rather than hand it to `quote`.
 
-**H. Issue #125 is closed in this slice, in `parseContentDocument`, and its test is a list.** The
+**I. Issue #125 is closed in this slice, in `parseContentDocument`, and its test is a list.** The
 marks plan's decision H deferred it to exactly here. Task 1, and it lands **first**, because every
 other task in the plan writes through that function.
 
@@ -308,27 +378,30 @@ that claims it claims it in full:
 
 | ID          | Claimed by          | What demonstrates it                                                                                                                                                                                 |
 | ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-117** | content-model.md    | All three kinds are made in the editor, round-trip through the mapping unchanged, and reach the PDF: bulleted, numbered and definition                                                               |
+| **CNT-118** | content-model.md    | Six levels of nesting in a mixture of all three kinds, made by the commands, round-tripped, and published                                                                                            |
+| **CNT-153** | content-model.md    | A numbered list's start and numbering are set by the author and reach the PDF as `e.` and `f.`; a start of 0 is refused on a lettered or roman list, named, and allowed on a decimal one             |
 | **CNT-002** | content-model.md    | A block created at depth - by a split, a sink and an Enter at the end of a nested item - carries a freshly allocated identifier, unique within the component, and never one already in it            |
 | **CNT-023** | content-model.md    | The second of two adjacent empty paragraphs inside one list item is removed by the editor, so the editor cannot make the document the model refuses                                                  |
 | **CNT-010** | content-model.md    | Content nested past the limit is refused on creation, on change and on read-back, because all three go through `parseContentDocument`                                                                |
-| **CNT-119** | content-model.md    | A numbered list's start and numbering are set by the author, round-trip through the editor, and reach the PDF as the labels `e.` and `f.`                                                            |
 | **CNT-077** | component-editor.md | Every command in the widened `EDITOR_COMMANDS` has a shortcut in the keymap and a button in the toolbar, asserted as one invariant over the registry, and the list panel is driven by keyboard alone |
 
-**Deliberately not cited, with the reason** - this matters more than the table above, because two of
-them look citable:
+**CNT-117 and CNT-118 are citable only because Ken chose to give the definition list a real shape.**
+The first draft of this plan shipped two kinds and left both uncited, with the definition list named
+as a gap. Both statements say "three kinds", and two of three is not a demonstration.
 
-- **CNT-117** - "three kinds" includes **definition**, which decision B does not ship and decision D
-  says the stored model cannot represent. Two of three arrive here. Do not repoint the claim.
-- **CNT-118** - "in every kind and in any mixture of kinds" includes definition too. The editor test
-  nests six levels in a mixture of the two kinds it has, which is not the statement. CNT-118 stays
-  `Covered` on `document.test.ts`'s stored-model test, where all three kinds exist as data.
-- **CNT-079** - "headings, lists, tables, footnotes" as structure to assistive technology. The PDF
-  test shows `L`, `LI`, `Lbl` and `LBody`; headings are the document view's and tables and footnotes
-  are not built. component-editor.md leaves it unclaimed and it stays unclaimed. See challenge 3.
+**Deliberately not cited, with the reason:**
+
+- **CNT-079** - "headings, lists, tables, footnotes" as structure to assistive technology. Two
+  reasons now, not one: headings are the document view's and tables and footnotes are not built; and
+  spike 4 found that a definition list reaches a reader as `L`/`Lbl`/`LBody` rather than
+  `DL`/`DT`/`DD`, so even the list half is not the structure the format has. Stays unclaimed.
 - **PUB-090** - the veraPDF half passes here; the Matterhorn Protocol checkpoints "only a person can
   judge" do not, and no design claims it. Named, as the marks plan named it.
 - **CNT-094** - a block's appearance comes from a named style. A list marker is appearance and this
-  slice pins it in the template rather than in a style. themes.md owns the claim. See challenge 4.
+  slice pins it in the template rather than in a style. themes.md owns the claim; the gap is #158.
+- **CNT-119** - superseded by CNT-153 in this pull request. Its claim in content-model.md is
+  **repointed** to CNT-153, as CNT-099's was to CNT-147, not added beside it.
 - **CNT-124** - already `Covered`. The `block+` change touches it and task 2 has a regression test,
   but a regression test is not a second demonstration.
 
@@ -336,30 +409,32 @@ them look citable:
 
 ## File structure
 
-| File                                                 | Responsibility                                                                  |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `packages/domain/src/content/model/document.ts`      | Modify: `parseContentDocument` applies the nesting limit before the parse       |
-| `packages/domain/src/content/model/document.test.ts` | Modify: #125's tests                                                            |
-| `packages/editor/package.json`                       | Modify: `prosemirror-schema-list` as a dependency, pinned exactly               |
-| `packages/editor/src/schema.ts`                      | Modify: `block+`, the `list` and `listItem` nodes                               |
-| `packages/editor/src/schema.test.ts`                 | Modify                                                                          |
-| `packages/editor/src/identity.ts`                    | Modify: the descent rule at any depth                                           |
-| `packages/editor/src/identity.test.ts`               | Create                                                                          |
-| `packages/editor/src/state.ts`                       | Modify: adjacency at depth, the Enter chain, the list keymap                    |
-| `packages/editor/src/blocks.ts`                      | Create: the block commands, `listAt`, `setListAttributes`                       |
-| `packages/editor/src/blocks.test.ts`                 | Create                                                                          |
-| `packages/editor/src/marks.ts`                       | Modify: `EditorCommand` becomes a union; `EDITOR_COMMANDS` gains four rows      |
-| `packages/editor/src/mapping.ts`                     | Modify: recursive both ways; `unsupportedIn` recursive                          |
-| `packages/editor/src/index.ts`                       | Modify: the new exports                                                         |
-| `packages/editor/style.css`                          | Modify: how a list is set on the surface                                        |
-| `apps/web/src/editor/EditorToolbar.tsx`              | Modify: block commands beside the mark commands                                 |
-| `apps/web/src/editor/ListPanel.tsx`                  | Create: kind, start and numbering                                               |
-| `apps/web/src/editor/ComponentEditor.tsx`            | Modify: the panel, and `F6` reaching it                                         |
-| `packages/domain/src/publishing/published.ts`        | Modify: `PublishedList`, `PublishedBlock` a union, `publishing/4`               |
-| `packages/domain/src/publishing/assemble.ts`         | Modify: `publishable` recurses; the definition and `start` refusals             |
-| `apps/worker/templates/publication/4/main.typ`       | Create: template 3 plus one self-recursive `block-of` and the pinned marker set |
-| `apps/worker/src/template.ts`                        | Modify: version 4, its hash, and the reading map                                |
-| `apps/worker/src/lists.test.ts`                      | Create: the PDF a list makes, through veraPDF                                   |
+| File                                                           | Responsibility                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `packages/domain/src/content/model/document.ts`                | Modify: the nesting limit before the parse; the term rule in `checkBlock`                              |
+| `packages/domain/src/content/model/blocks.ts`                  | Modify: `listNodeSchema`'s item gains an optional inline `term`                                        |
+| `packages/domain/src/content/model/document.test.ts`           | Modify: #125's tests, and the term rule                                                                |
+| `packages/editor/package.json`                                 | Modify: `prosemirror-schema-list` as a dependency, pinned exactly                                      |
+| `packages/editor/src/schema.ts`                                | Modify: `block+`, and the `list`, `listItem`, `definitionList`, `definitionItem` and `term` nodes      |
+| `packages/editor/src/schema.test.ts`                           | Modify                                                                                                 |
+| `packages/editor/src/identity.ts`                              | Modify: the descent rule at any depth                                                                  |
+| `packages/editor/src/identity.test.ts`                         | Create                                                                                                 |
+| `packages/editor/src/state.ts`                                 | Modify: adjacency at depth, the Enter chain, the list keymap                                           |
+| `packages/editor/src/blocks.ts`                                | Create: the block commands, `splitDefinitionItem`, `makeDefinitionList`, `listAt`, `setListAttributes` |
+| `packages/editor/src/blocks.test.ts`                           | Create                                                                                                 |
+| `packages/editor/src/marks.ts`                                 | Modify: `EditorCommand` becomes a union; `EDITOR_COMMANDS` gains five rows                             |
+| `packages/editor/src/mapping.ts`                               | Modify: recursive both ways over all three kinds; `unsupportedIn` recursive                            |
+| `packages/editor/src/index.ts`                                 | Modify: the new exports                                                                                |
+| `packages/editor/style.css`                                    | Modify: how a list is set on the surface                                                               |
+| `apps/web/src/editor/EditorToolbar.tsx`                        | Modify: block commands beside the mark commands                                                        |
+| `apps/web/src/editor/ListPanel.tsx`                            | Create: kind, start and numbering                                                                      |
+| `apps/web/src/editor/ComponentEditor.tsx`                      | Modify: the panel, and `F6` reaching it                                                                |
+| `packages/domain/src/publishing/published.ts`                  | Modify: `PublishedList`, `PublishedBlock` a union, `publishing/4`                                      |
+| `packages/domain/src/publishing/assemble.ts`                   | Modify: `publishable` recurses; a term's runs; the `list:start` refusal                                |
+| `apps/worker/templates/publication/4/main.typ`                 | Create: template 3 plus one self-recursive `block-of` and the pinned marker set                        |
+| `apps/worker/src/template.ts`                                  | Modify: version 4, its hash, and the reading map                                                       |
+| `apps/worker/src/lists.test.ts`                                | Create: the PDF a list makes, through veraPDF                                                          |
+| `docs/specification/requirements/CNT-content-and-authoring.md` | Modify: CNT-153, CNT-119 superseded, and the change history                                            |
 
 ---
 
@@ -420,14 +495,88 @@ The pull request body carries `Fixes #125` on its own line.
 
 ---
 
-## Task 2: the editor schema holds a list and its item
+## Task 2: the stored item carries a term, and the walk holds the rule the schema cannot
+
+**Files:** modify `packages/domain/src/content/model/blocks.ts` and `document.ts`; modify
+`document.test.ts`.
+
+**Produces:** one widened member, and one rule:
+
+```ts
+// An item of a definition list carries the term it defines, as inline content rather than a string:
+// a term is a phrase an author writes, and a plain string is what makes an equation, a mark or a
+// cross-reference unrepresentable in a caption (#88). Optional, and so additive: every document
+// stored under schema version 1 stays valid, the canonical form of one is unchanged, and the
+// migration chain stays empty (the plan's spike 6). Which items must have one is a rule in the walk
+// below, not a shape here, because it is a narrowing and nothing has stored a list yet.
+items: z
+  .array(
+    z.strictObject({
+      term: z.array(inlineNodeSchema).min(1).optional(),
+      content: z.array(blockNodeSchema).min(1),
+    }),
+  )
+  .min(1),
+```
+
+and in `checkBlock`'s `list` branch: an item carrying a `term` where `kind` is not `definition` is
+refused by name; an item **lacking** one where `kind` is `definition` is refused by name. A term's
+inline content goes through `checkInlineContent` in the same scope as the rest of the component, so a
+mark in a term claims its identifier exactly as one in a paragraph does.
+
+- [ ] **Step 1: write the failing tests**
+
+```ts
+it('CNT-117 holds a definition list, each item carrying the term it defines', () => {
+  const document = parseContentDocument(documentWith([definitionList()]));
+  expect((document.content[0] as ListNode).items[0]!.term).toEqual([
+    { type: 'text', value: 'Tensile strength', marks: [] },
+  ]);
+});
+
+it('keeps a document stored before the term existed valid, and its canonical form unchanged', () => {
+  // The digest is what an unchanged version rests on: a widening that moved it would record a
+  // version for every component holding a list, for nothing (ADR-0024).
+  const stored = documentWith([unorderedList('L1', ['alpha'])]);
+  expect(canonicalise(parseContentDocument(stored))).toBe(CANONICAL_BEFORE_THE_WIDENING);
+});
+
+it('refuses a term on an item of a list that is not a definition list, naming it', () => {
+  expect(() => parseContentDocument(documentWith([orderedListWhoseItemHasATerm()]))).toThrow(
+    /term/,
+  );
+});
+
+it('refuses an item of a definition list that has no term, naming it', () => {
+  /* ... */
+});
+
+it('refuses a term with no inline content at all', () => {
+  /* min(1) */
+});
+
+it('claims a mark in a term in the same scope as one in a paragraph', () => {
+  // One mark identifier used in a term and again in a paragraph after the list is one annotation;
+  // the same identifier split by readable text is refused, exactly as it is anywhere else.
+});
+```
+
+- [ ] **Step 2: run it red.** Expected: `expected undefined to deeply equal [ { type: 'text', ... } ]` - `strictObject` is refusing `term` outright, so the first test fails on the parse.
+- [ ] **Step 3: write it.** `CURRENT_SCHEMA_VERSION` stays `1` and `contentMigrationChain.migrations`
+      stays `{}`. **If either has to change, stop and say so**: that would mean the widening is not
+      additive after all, which spike 6 says it is.
+- [ ] **Step 4: green.** **Step 5: commit.** `feat(domain): a definition list item carries its term`
+
+---
+
+## Task 3: the editor schema holds all three kinds
 
 **Files:** modify `packages/editor/src/schema.ts` and `schema.test.ts`; modify
 `packages/editor/package.json`.
 
 **Produces:** `doc`'s content goes from `paragraph+` to `block+`; `paragraph` joins the `block`
 group **and is declared first**, so it stays what ProseMirror fills an empty document with
-(CNT-124). Two nodes:
+(CNT-124). Five nodes, of which four are new:
 
 ```ts
 list: {
@@ -435,16 +584,30 @@ list: {
   content: 'listItem+',
   attrs: {
     id: { default: null },
-    kind: { default: 'unordered' },   // 'ordered' | 'unordered'; 'definition' is never made here
+    kind: { default: 'unordered' },   // 'ordered' | 'unordered'; a definition list is its own node
     start: { default: null },
     format: { default: null },        // 'decimal' | 'alphabetic' | 'roman'
   },
   parseDOM: [{ tag: 'ul' }, { tag: 'ol', getAttrs: () => ({ kind: 'ordered' }) }],
   toDOM: (node) => [node.attrs.kind === 'ordered' ? 'ol' : 'ul', 0],
 },
-// No attributes at all: the stored model's item is `{ content: BlockNode[] }` and carries no
-// identifier, so there is nothing for one to hold and nothing for identity to allocate.
+// No attributes at all: the stored model's item is `{ term?, content }` and carries no identifier,
+// so there is nothing for one to hold and nothing for identity to allocate.
 listItem: { content: 'block+', defining: true, parseDOM: [{ tag: 'li' }], toDOM: () => ['li', 0] },
+
+definitionList: {
+  group: 'block',
+  content: 'definitionItem+',
+  attrs: { id: { default: null } },
+  parseDOM: [{ tag: 'dl' }],
+  toDOM: () => ['dl', 0],
+},
+// A ProseMirror node's content expression is fixed per type, so one item type cannot be `block+`
+// for two kinds and `term block+` for the third: decision C.
+definitionItem: { content: 'term block+', defining: true, toDOM: () => ['div', 0] },
+// The term is a textblock, so it is an editable region of its own carrying its own marks - which is
+// what makes a term inline content rather than a string.
+term: { content: 'text*', marks: '_', defining: true, parseDOM: [{ tag: 'dt' }], toDOM: () => ['dt', 0] },
 ```
 
 `prosemirror-schema-list` is added to `dependencies` **at an exact version**, as the six ProseMirror
@@ -461,6 +624,13 @@ it('holds a list and an item shaped as the stored model holds them', () => {
   expect(editorSchema.nodes.listItem!.spec.defining).toBe(true);
 });
 
+it('CNT-117 holds a definition list whose item opens with the term it defines', () => {
+  expect(editorSchema.nodes.definitionList!.spec.content).toBe('definitionItem+');
+  expect(editorSchema.nodes.definitionItem!.spec.content).toBe('term block+');
+  // A term takes marks, because a term is inline content and not a string.
+  expect(editorSchema.nodes.term!.spec.marks).toBe('_');
+});
+
 it('CNT-124 still fills an empty document with a paragraph, not a list', () => {
   const doc = editorSchema.node('doc', { title: 'T', language: 'en-GB', direction: 'ltr' });
   expect(doc.childCount).toBe(1);
@@ -474,22 +644,25 @@ it('renders a numbered list as an ordered list and a bulleted one as unordered',
   expect(editorSchema.nodes.list!.spec.toDOM!(ordered)).toEqual(['ol', 0]);
 });
 
-it('lets a list item hold a list, so nesting is unbounded by construction (CNT-118)', () => {
-  expect(
-    editorSchema.nodes.listItem!.contentMatch.matchType(editorSchema.nodes.list!),
-  ).not.toBeNull();
+it('CNT-118 lets every kind of item hold every kind of list, so any mixture nests', () => {
+  for (const item of ['listItem', 'definitionItem']) {
+    for (const list of ['list', 'definitionList']) {
+      expect(
+        editorSchema.nodes[item]!.contentMatch.matchType(editorSchema.nodes[list]!),
+      ).not.toBeNull();
+    }
+  }
 });
 ```
 
 - [ ] **Step 2: run it red.** Expected: `Cannot read properties of undefined (reading 'spec')` -
       `editorSchema.nodes.list` does not exist.
-- [ ] **Step 3: write it.**
-- [ ] **Step 4: green.** Then `pnpm --filter @alloy-works/editor typecheck`.
-- [ ] **Step 5: commit.** `feat(editor): a list and its item in the editor schema`
+- [ ] **Step 3: write it.** **Step 4: green.** Then `pnpm --filter @alloy-works/editor typecheck`.
+- [ ] **Step 5: commit.** `feat(editor): three kinds of list in the editor schema`
 
 ---
 
-## Task 3: the identity plugin descends
+## Task 4: the identity plugin descends
 
 **Files:** modify `packages/editor/src/identity.ts`; create `packages/editor/src/identity.test.ts`.
 
@@ -498,8 +671,8 @@ so every block a command makes at depth comes out with `id: null`, and `fromEdit
 spike found it in five separate gestures.
 
 **Produces:** the same descent rule ADR-0023 states, applied at any depth. The walk becomes
-`doc.descendants`, and it **skips nodes whose type declares no `id` attribute**, so `listItem` is
-walked through and never named.
+`doc.descendants`, and it **skips nodes whose type declares no `id` attribute**, so `listItem`,
+`definitionItem` and `term` are walked through and never named.
 
 ```ts
 // Both walks collect (identifier, position) for every node whose type has an `id` attribute.
@@ -516,7 +689,7 @@ const identified = (doc: Node) => {
   transaction** and asserts both got identifiers and neither was written at the wrong position.
 - **Association 1 still decides the heir**, unchanged, and a nested split must be shown to choose the
   same way a top-level one does.
-- **A `listItem` is never given an identifier**, and `fromEditor` never looks for one.
+- **An item and a term are never given an identifier**, and `fromEditor` never looks for one.
 
 - [ ] **Step 1: write the failing tests**
 
@@ -540,13 +713,18 @@ it('CNT-002 gives a block made at the end of a nested item an identifier of its 
   /* ... */
 });
 
+it('CNT-002 gives a definition list made by sinking a definition item one too', () => {
+  /* ... */
+});
+
 it('names both of two blocks made at depth in one transaction, each at its own position', () => {
   // Two nested paragraphs inserted in one transaction: both named, and the text under each
   // identifier is the text that was there - the assertion that catches a position read too late.
 });
 
-it('leaves a list item unnamed, because the stored model gives an item no identifier', () => {
+it('leaves an item and a term unnamed, because the stored model gives neither an identifier', () => {
   expect(nodeAt(after.doc, ['list', 0]).attrs).toEqual({});
+  expect(nodeAt(after.doc, ['definitionList', 0, 'term']).attrs).toEqual({});
 });
 
 it('keeps the descent rule: the block at its identifier mapped forward keeps it', () => {
@@ -558,21 +736,22 @@ it('draws again rather than allocating an identifier the component already carri
 });
 ```
 
-- [ ] **Step 2: run it red.** Expected: `expected null to be any String` on the first three, because
+- [ ] **Step 2: run it red.** Expected: `expected null to be any String` on the first four, because
       the plugin never reaches those nodes.
 - [ ] **Step 3: write it.** Keep the existing comment's account of association 1 and extend it to say
-      why the walk descends and why an item is skipped. **Do not change the rule** - only its reach.
+      why the walk descends and why an item and a term are skipped. **Do not change the rule** - only
+      its reach.
 - [ ] **Step 4: green.** Run the whole editor suite: the top-level tests in `state.test.ts` are the
       regression that says the rule did not change.
 - [ ] **Step 5: commit.** `feat(editor): allocate an identifier for a block at any depth`
 
 ---
 
-## Task 4: adjacency descends too
+## Task 5: adjacency descends too
 
 **Files:** modify `packages/editor/src/state.ts`; modify `packages/editor/src/state.test.ts`.
 
-**Consumes:** task 2's schema. **Produces:** `noAdjacentEmptyParagraphs` walks every block sequence,
+**Consumes:** task 3's schema. **Produces:** `noAdjacentEmptyParagraphs` walks every block sequence,
 not the top level, because `refuseAdjacentEmpties` in `packages/domain` already does - it runs over
 the top level, a list item, a blockquote, a table cell and a footnote. The editor is the half that
 disagrees, and a rule the two write paths disagree on is a rule one of them breaks.
@@ -586,6 +765,10 @@ as it does now, so a removal never invalidates a position collected earlier.
 it('CNT-023 removes the second of two adjacent empty paragraphs inside one list item', () => {
   // A list item holding two empty paragraphs, reached by a transaction: one is left.
   expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+});
+
+it('CNT-023 does the same inside a definition item, beneath its term', () => {
+  /* ... */
 });
 
 it('does not remove an empty paragraph that is the only one in its item', () => {
@@ -604,25 +787,50 @@ it('never makes a document the stored model refuses', () => {
 
 ---
 
-## Task 5: the mapping carries a list, both ways
+## Task 6: the mapping carries all three kinds, both ways
 
 **Files:** modify `packages/editor/src/mapping.ts` and `mapping.test.ts`.
 
-**Produces:** `toEditor`, `fromEditor` and `unsupportedIn` recursive and inverse over `list`.
+**Produces:** `toEditor`, `fromEditor` and `unsupportedIn` recursive and inverse over every kind.
 `unsupportedIn` reports a block type it has no node for **wherever it is**, including inside a list
-item, and reports `list:definition` for a definition list.
+item or under a term.
+
+**`term` is omitted, never written as null**, which is the same bargain `markOf` strikes with a
+hyperlink's `title`: the stored schema takes the member's absence and refuses null, and the editor
+has no absence to spell. A `definitionItem` whose `term` node is empty is refused by name rather than
+stored as a term of nothing - `z.array(...).min(1)` would refuse it at the save, and a message
+written for a programmer is not what an author should meet.
 
 - [ ] **Step 1: write the failing tests**
 
 ```ts
-it('round-trips a list nested six levels deep, in a mixture of kinds, unchanged', () => {
-  const document = documentWith([sixLevelsMixingOrderedAndUnordered()]);
+it('CNT-118 round-trips a list nested six levels deep, mixing all three kinds, unchanged', () => {
+  const document = documentWith([sixLevelsMixingEveryKind()]);
   const opened = toEditor(document);
   expect(opened.editable).toBe(true);
   expect(fromEditor((opened as Extract<Opened, { editable: true }>).doc)).toEqual(document);
 });
 
-it('CNT-119 keeps a numbered list start and its numbering format', () => {
+it('CNT-117 round-trips a definition list, its terms and their marks unchanged', () => {
+  const document = documentWith([
+    {
+      type: 'list',
+      id: 'D1',
+      kind: 'definition',
+      items: [
+        {
+          term: [
+            { type: 'text', value: 'Tensile strength', marks: [{ type: 'emphasis', id: 'm1' }] },
+          ],
+          content: [paragraph('b1', 'The greatest stress a material bears.')],
+        },
+      ],
+    },
+  ]);
+  expect(fromEditor(openedDoc(document))).toEqual(document);
+});
+
+it('CNT-153 keeps a numbered list start and its numbering format', () => {
   const document = documentWith([
     {
       type: 'list',
@@ -636,17 +844,14 @@ it('CNT-119 keeps a numbered list start and its numbering format', () => {
   expect(fromEditor(openedDoc(document))).toEqual(document);
 });
 
-it('omits a start and a format a list does not have, rather than writing null', () => {
-  // The schema's defaults are null and `listNodeSchema` is strict: null is refused, absence is not.
+it('omits a start, a format and a term a list does not have, rather than writing null', () => {
+  // The schema's defaults are null and the stored shapes are strict: null is refused, absence is not.
   const document = documentWith([unorderedList('L1', ['alpha'])]);
   expect(fromEditor(openedDoc(document))).toEqual(document);
 });
 
-it('opens read-only for a definition list, naming it', () => {
-  expect(toEditor(documentWith([definitionList()]))).toEqual({
-    editable: false,
-    unsupported: ['list:definition'],
-  });
+it('refuses a definition item whose term is empty, by name', () => {
+  /* ... */
 });
 
 it('opens read-only for a block it cannot edit that is inside a list item, naming it', () => {
@@ -657,7 +862,7 @@ it('opens read-only for a block it cannot edit that is inside a list item, namin
   });
 });
 
-it('refuses a list item holding no block, because the stored shape requires one', () => {
+it('opens read-only for a block it cannot edit that is under a term', () => {
   /* ... */
 });
 ```
@@ -666,11 +871,11 @@ it('refuses a list item holding no block, because the stored shape requires one'
       round-trip test, because `unsupportedIn` still reports any block that is not a paragraph.
 - [ ] **Step 3: write it.** `fromEditor`'s `runsOf` keeps throwing by name on a child it cannot
       store; the block walk gains the same treatment for a node type it has no stored shape for.
-- [ ] **Step 4: green.** **Step 5: commit.** `feat(editor): map a list to and from the stored model`
+- [ ] **Step 4: green.** **Step 5: commit.** `feat(editor): map all three kinds of list to and from the stored model`
 
 ---
 
-## Task 6: the block commands, and the Enter chain
+## Task 7: the block commands, and the Enter chain
 
 **Files:** create `packages/editor/src/blocks.ts` and `blocks.test.ts`; modify
 `packages/editor/src/state.ts` and `index.ts`.
@@ -678,7 +883,8 @@ it('refuses a list item holding no block, because the stored shape requires one'
 **Produces:**
 
 ```ts
-export type BlockAction = 'bulletedList' | 'numberedList' | 'nestItem' | 'liftItem';
+export type BlockAction =
+  'bulletedList' | 'numberedList' | 'definitionList' | 'nestItem' | 'liftItem';
 export function blockCommand(action: BlockAction, newIdentifier: () => string): Command;
 /** The list the cursor is inside, innermost first, or null: what the list panel reads. */
 export function listAt(
@@ -690,28 +896,53 @@ export function setListAttributes(attrs: Record<string, unknown>): Command;
 
 `bulletedList` and `numberedList` wrap `wrapInList`; where the cursor is already in a list of that
 kind they **unwrap it** with `liftListItem`, so the button toggles, which is what every editor an
-author has used does. `nestItem` is `sinkListItem` and `liftItem` is `liftListItem`, each taking
-`editorSchema.nodes.listItem`.
+author has used does. `nestItem` and `liftItem` are `sinkListItem` and `liftListItem` over the item
+type the cursor is in - **both of which spike 3 drove unchanged against a definition item as well as
+a counted one.**
+
+**Two commands are ours, because `prosemirror-schema-list`'s decline** (spike 3):
+
+```ts
+/**
+ * `wrapInList(definitionList)` returns false: it cannot make an item that needs a term out of a
+ * paragraph. This wraps the paragraph as the item's body and opens an empty term above it, with the
+ * selection in the term, because the term is what an author types first.
+ */
+function makeDefinitionList(newIdentifier: () => string): Command;
+
+/**
+ * `splitListItem(definitionItem)` returns false from the term and from the body alike: a split's
+ * remainder is a paragraph, which cannot be an item's first child where that must be a term.
+ *
+ * From the **term**, Enter does not split at all - it moves the cursor into the body, which is what
+ * every definition list an author has used does and what they mean by pressing it.
+ * From the **body**, Enter makes a new item whose term is empty and whose body holds the remainder,
+ * and puts the selection in the new term.
+ */
+function splitDefinitionItem(newIdentifier: () => string): Command;
+```
 
 **The Enter chain, and the order is the whole of it:**
 
 ```ts
 Enter: chainCommands(
+  splitDefinitionItem(options.newIdentifier),   // the term and the body cases, both ours
   splitListItem(editorSchema.nodes.listItem!),  // declines in an empty item
   liftListItem(editorSchema.nodes.listItem!),   // which is what leaves the list
+  liftListItem(editorSchema.nodes.definitionItem!),
   enterWithoutEmpties,                          // CNT-023, outside a list
 ),
 ```
 
 > **The trap, measured.** `splitListItem` **returns false** in an empty list item rather than handling
 > it. `enterWithoutEmpties` returns **true** and does nothing in an empty paragraph. Put
-> `enterWithoutEmpties` anywhere before `liftListItem` and an author who presses Enter in an empty
-> list item is trapped in the list with no key that leaves it. `liftListItem` returns false outside a
-> list, so the order below is safe in both directions.
+> `enterWithoutEmpties` anywhere before the two `liftListItem`s and an author who presses Enter in an
+> empty list item is trapped in the list with no key that leaves it. Every command above it returns
+> false outside a list, so the order is safe in both directions.
 
 `Tab` and `Shift-Tab` are bound to `nestItem` and `liftItem` **as well as** `Mod-]` and `Mod-[`.
-Both list commands return false outside a list, so focus still leaves the surface on Tab everywhere
-else, which CNT-077 needs: a Tab that is always swallowed is a keyboard trap.
+Both return false outside a list, so focus still leaves the surface on Tab everywhere else, which
+CNT-077 needs: a Tab that is always swallowed is a keyboard trap.
 
 - [ ] **Step 1: write the failing tests**
 
@@ -724,13 +955,31 @@ it('takes a paragraph back out of a list when the same command runs again', () =
   /* ... */
 });
 
+it('CNT-117 makes a definition list with an empty term and the paragraph as its body', () => {
+  const after = run(stateWith('The greatest stress.'), blockCommand('definitionList', ids));
+  expect(shapeOf(after.doc)).toEqual(['definitionList', ['definitionItem', ['term', 'paragraph']]]);
+  expect(after.selection.$from.parent.type.name).toBe('term');
+});
+
+it('CNT-117 moves from a term into its body on Enter, rather than splitting the term', () => {
+  const after = run(inATerm('Creep'), enterCommand());
+  expect(after.selection.$from.parent.type.name).toBe('paragraph');
+  expect(termsIn(after.doc)).toEqual(['Creep']);
+});
+
+it('CNT-117 makes a new definition item on Enter in a body, with an empty term', () => {
+  const after = run(inADefinitionBody(), enterCommand());
+  expect(termsIn(after.doc)).toEqual(['Creep', '']);
+  expect(after.selection.$from.parent.type.name).toBe('term');
+});
+
 it('CNT-118 nests an item under the item above it, to six levels and past them', () => {
   let state = sixSeparateItems();
   for (let level = 0; level < 6; level += 1) state = run(state, blockCommand('nestItem', ids));
   expect(depthOfDeepestList(state.doc)).toBe(6);
 });
 
-it('lifts a nested item back to the level above', () => {
+it('CNT-118 nests a definition item and lifts it back, in a mixture of kinds', () => {
   /* ... */
 });
 
@@ -747,8 +996,11 @@ it('lets Tab move focus on when the cursor is not in a list', () => {
   expect(blockCommand('nestItem', ids)(stateWith('alpha'), () => undefined)).toBe(false);
 });
 
-it('refuses a start of zero on an alphabetic or a roman list, and allows it on a decimal one', () => {
+it('CNT-153 refuses a start of zero on a lettered or roman list, and allows it on a decimal one', () => {
   expect(setListAttributes({ format: 'roman', start: 0 })(inAList(), () => undefined)).toBe(false);
+  expect(setListAttributes({ format: 'alphabetic', start: 0 })(inAList(), () => undefined)).toBe(
+    false,
+  );
   expect(setListAttributes({ format: 'decimal', start: 0 })(inAList(), () => undefined)).toBe(true);
 });
 ```
@@ -759,7 +1011,7 @@ it('refuses a start of zero on an alphabetic or a roman list, and allows it on a
 
 ---
 
-## Task 7: the registry widens, and the toolbar shows the list commands
+## Task 8: the registry widens, and the toolbar shows the list commands
 
 **Files:** modify `packages/editor/src/marks.ts`; create `apps/web/src/editor/ListPanel.tsx`; modify
 `apps/web/src/editor/EditorToolbar.tsx`, `EditorToolbar.test.tsx` and `ComponentEditor.tsx`.
@@ -779,18 +1031,21 @@ export type EditorCommand =
   | (CommandBase & { readonly kind: 'block'; readonly action: BlockAction });
 ```
 
-Every existing row gains `kind: 'mark'`. Four rows are added, after the nine marks. **These are the
+Every existing row gains `kind: 'mark'`. Five rows are added, after the nine marks. **These are the
 exact user-facing words:**
 
-| kind    | action / mark  | label         | shortcut      | shortcutSaid                         | prompts |
-| ------- | -------------- | ------------- | ------------- | ------------------------------------ | ------- |
-| `block` | `bulletedList` | Bulleted list | `Mod-Shift-8` | Ctrl or Cmd, Shift and 8             | no      |
-| `block` | `numberedList` | Numbered list | `Mod-Shift-7` | Ctrl or Cmd, Shift and 7             | no      |
-| `block` | `nestItem`     | Nest item     | `Mod-]`       | Ctrl or Cmd and right square bracket | no      |
-| `block` | `liftItem`     | Lift item     | `Mod-[`       | Ctrl or Cmd and left square bracket  | no      |
+| kind    | action / mark    | label           | shortcut      | shortcutSaid                         | prompts |
+| ------- | ---------------- | --------------- | ------------- | ------------------------------------ | ------- |
+| `block` | `bulletedList`   | Bulleted list   | `Mod-Shift-8` | Ctrl or Cmd, Shift and 8             | no      |
+| `block` | `numberedList`   | Numbered list   | `Mod-Shift-7` | Ctrl or Cmd, Shift and 7             | no      |
+| `block` | `definitionList` | Definition list | `Mod-Shift-9` | Ctrl or Cmd, Shift and 9             | no      |
+| `block` | `nestItem`       | Nest item       | `Mod-]`       | Ctrl or Cmd and right square bracket | no      |
+| `block` | `liftItem`       | Lift item       | `Mod-[`       | Ctrl or Cmd and left square bracket  | no      |
 
-**The list panel.** It appears beside the toolbar while the cursor is inside a list, and `F6` reaches
-it in the region order **component header, toolbar, list panel, surface**. Exact words:
+**The list panel.** It appears beside the toolbar while the cursor is inside a **counted** list, and
+`F6` reaches it in the region order **component header, toolbar, list panel, surface**. A definition
+list has nothing to set - no start, no numbering, and its kind is the button that made it - so no
+panel appears for one, and that is a deliberate absence rather than an empty box. Exact words:
 
 | Where                        | Words                                                |
 | ---------------------------- | ---------------------------------------------------- |
@@ -825,6 +1080,7 @@ it('CNT-077 offers every command as a button reachable by keyboard alone', async
     'Language',
     'Bulleted list',
     'Numbered list',
+    'Definition list',
     'Nest item',
     'Lift item',
   ]);
@@ -835,18 +1091,18 @@ it('CNT-077 offers every command as a button reachable by keyboard alone', async
 
 ```ts
 it('CNT-077 gives every command a shortcut and one label, with no shortcut used twice', () => {
-  expect(EDITOR_COMMANDS).toHaveLength(13);
+  expect(EDITOR_COMMANDS).toHaveLength(14);
   for (const command of EDITOR_COMMANDS) {
     const fancy = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`);
     expect(command.label + command.shortcutSaid).not.toMatch(fancy);
     if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
   }
-  expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(13);
+  expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(14);
 });
 ```
 
 ```tsx
-it('shows the list panel only while the cursor is in a list, and sets its numbering', async () => {
+it('shows the list panel only while the cursor is in a counted list, and sets its numbering', async () => {
   // No panel with the cursor in a paragraph; Bulleted list, then the panel; set Numbered, then
   // Numbering to 'a, b, c' and Start at to 5; then:
   await waitFor(() =>
@@ -859,47 +1115,53 @@ it('shows the list panel only while the cursor is in a list, and sets its number
   );
 });
 
-it('says why a start of 0 is refused on a lettered list, and changes nothing', async () => {
+it('shows no list panel for a definition list, which has nothing to set', async () => {
+  /* ... */
+});
+
+it('CNT-153 says why a start of 0 is refused on a lettered list, and changes nothing', async () => {
   expect(
     await screen.findByText('Only a 1, 2, 3 list can start at 0. Try 1 or more.'),
   ).toBeInTheDocument();
 });
 
+it('CNT-117 writes a term the author typed into the definition list it saves', async () => {
+  // Definition list, type 'Creep', Enter, type the definition, then the PUT body's content carries
+  // a list of kind 'definition' whose item's term is that inline content.
+});
+
 it('CNT-077 moves between the header, the toolbar, the list panel and the surface with F6', async () => {
   /* ... */
 });
-
-it('saves an iteration holding the list the author made', async () => {
-  // The PUT body's content carries a list whose blocks each have an id of 26 base32 characters.
-});
 ```
 
-- [ ] **Step 2: red.** Expected: `expected length 9 to be 13`; and no element with the role `button`
+- [ ] **Step 2: red.** Expected: `expected length 9 to be 14`; and no element with the role `button`
       and the name `Bulleted list`.
 - [ ] **Step 3: write it.** **Step 4: green**, with `pnpm --filter @alloy-works/web test`.
 - [ ] **Step 5: commit.** `feat(web): list controls in the toolbar, and a list panel`
 
 ---
 
-## Task 8: how a list is set on the surface
+## Task 9: how a list is set on the surface
 
 **Files:** modify `packages/editor/style.css`; modify `packages/editor/src/schema.test.ts`.
 
-Rules for `.ProseMirror ul`, `.ProseMirror ol` and `.ProseMirror li`: the markers the template pins,
-set with `list-style-type: disc`, `circle` and `square` at the three depths so the surface and the
-PDF agree; `ol` taking its marker from the node's `format`; and a nested list indented by the
-editor's own step rather than the browser's default. No test asserts colour; one test asserts the
+Rules for `.ProseMirror ul`, `.ProseMirror ol`, `.ProseMirror li`, `.ProseMirror dl` and
+`.ProseMirror dt`: the markers the template pins, set with `list-style-type: disc`, `circle` and
+`square` at the three depths so the surface and the PDF agree; `ol` taking its marker from the node's
+`format`; a term set apart from its definition without colour alone; and a nested list indented by
+the editor's own step rather than the browser's default. No test asserts colour; one test asserts the
 stylesheet parses and names each selector.
 
 - [ ] **Step 1:** `it('styles a list at every level it can nest')`, reading `style.css` with
-      `node:fs` and asserting one selector per level.
+      `node:fs` and asserting one selector per level and one for a term.
 - [ ] **Step 2: red.** Expected: `expected '.ProseMirror li li' to be found in style.css`.
 - [ ] **Step 3:** write the rules. **Step 4: green.**
 - [ ] **Step 5: commit.** `feat(editor): set a list on the surface`
 
 ---
 
-## Task 9: a published document carries a list
+## Task 10: a published document carries a list
 
 **Files:** modify `packages/domain/src/publishing/published.ts` and `assemble.ts`; modify
 `assemble.test.ts`.
@@ -907,15 +1169,19 @@ stylesheet parses and names each selector.
 **Produces:**
 
 ```ts
+export interface PublishedItem {
+  /** The term this item defines, as runs, on a definition list's items and on no others. */
+  readonly term: readonly PublishedRun[] | null;
+  readonly blocks: readonly PublishedBlock[];
+}
+
 export interface PublishedList {
   readonly type: 'list';
   readonly id: string;
-  /** Two kinds. A definition list is refused by name: nothing can set one (decision B). */
-  readonly kind: 'ordered' | 'unordered';
+  readonly kind: 'ordered' | 'unordered' | 'definition';
   readonly start: number | null;
   readonly format: 'decimal' | 'alphabetic' | 'roman' | null;
-  /** One entry per item, each a sequence of blocks, so the template recurses as `assemble` did. */
-  readonly items: readonly (readonly PublishedBlock[])[];
+  readonly items: readonly PublishedItem[];
 }
 
 export type PublishedBlock = PublishedParagraph | PublishedList;
@@ -927,22 +1193,19 @@ export const PUBLISHING_SCHEMA = 'publishing/4';
 `publishable` becomes recursive and goes on returning `PublishedBlock[]`, so a list every one of
 whose items came out empty contributes nothing rather than an empty `L`. The glyph check and the
 `style_missing` check reach a paragraph at any depth, because they are called from the paragraph
-branch, which the recursion reaches.
+branch, which the recursion reaches. **A term's runs go through `publishedMarks` and the glyph check
+exactly as a paragraph's do**, so a mark in a term prints and a character outside the faces in one is
+named with its block.
 
-Two new refusals, both `block_not_publishable`:
-
-| detail            | When                                                                   |
-| ----------------- | ---------------------------------------------------------------------- |
-| `list:definition` | `kind` is `definition`; nothing resolves a term from a definition list |
-| `list:start`      | `start` is 0 and `format` is `alphabetic` or `roman` (decision E)      |
-
-And, unchanged, `block_not_publishable` with detail `list` when there is **no layout**: `publishing/1`
-and `publishing/2` hold paragraphs alone and are frozen (decision D).
+One new refusal, `block_not_publishable` with detail `list:start`, when `start` is 0 and `format` is
+`alphabetic` or `roman` (decision F, CNT-153). And, unchanged, `block_not_publishable` with detail
+`list` when there is **no layout**: `publishing/1` and `publishing/2` hold paragraphs alone and are
+frozen (decision E).
 
 - [ ] **Step 1: write the failing tests**
 
 ```ts
-it('CNT-119 carries a list, its start and its numbering, and its items in order', () => {
+it('CNT-153 carries a list, its start and its numbering, and its items in order', () => {
   expect(blocksOf(assembled)).toEqual([
     {
       type: 'list',
@@ -951,14 +1214,28 @@ it('CNT-119 carries a list, its start and its numbering, and its items in order'
       start: 5,
       format: 'alphabetic',
       items: [
-        [{ type: 'paragraph', id: 'b1', runs: [{ text: 'Check the readings', marks: [] }] }],
-        [{ type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] }],
+        {
+          term: null,
+          blocks: [
+            { type: 'paragraph', id: 'b1', runs: [{ text: 'Check the readings', marks: [] }] },
+          ],
+        },
+        {
+          term: null,
+          blocks: [{ type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] }],
+        },
       ],
     },
   ]);
 });
 
-it('CNT-118 carries a list nested six levels deep, in a mixture of kinds', () => {
+it('CNT-117 carries a definition list, each item with the term it defines and its marks', () => {
+  expect(itemsOf(assembled)[0]!.term).toEqual([
+    { text: 'Tensile strength', marks: [{ kind: 'emphasis' }] },
+  ]);
+});
+
+it('CNT-118 carries a list nested six levels deep, in a mixture of all three kinds', () => {
   /* ... */
 });
 
@@ -966,7 +1243,7 @@ it('carries the marks over a run inside a list item exactly as in a paragraph', 
   /* ... */
 });
 
-it('names a character outside the pinned faces inside a list item, with its block', () => {
+it('names a character outside the pinned faces in a term, with its block', () => {
   expect(failuresOf(result)).toEqual([
     expect.objectContaining({
       code: 'glyph_missing',
@@ -976,17 +1253,13 @@ it('names a character outside the pinned faces inside a list item, with its bloc
   ]);
 });
 
-it('refuses a definition list, naming it, because nothing can set one', () => {
+it('CNT-153 refuses a lettered or a roman list that starts at zero, naming it', () => {
   expect(failuresOf(result)).toEqual([
     expect.objectContaining({
       code: 'block_not_publishable',
-      detail: 'list:definition',
+      detail: 'list:start',
     }),
   ]);
-});
-
-it('refuses a lettered or a roman list that starts at zero, naming it', () => {
-  /* list:start */
 });
 
 it('refuses a list outright where there is no layout, as publishing/1 and /2 are frozen', () => {
@@ -1012,18 +1285,20 @@ it('PUB-052 reports every refusal in one pass, not the first', () => {
 
 ---
 
-## Task 10: template 4 sets it
+## Task 11: template 4 sets it
 
 **Files:** create `apps/worker/templates/publication/4/main.typ` (copied from version 3, which must
 not be edited); modify `apps/worker/src/template.ts` and `template.test.ts`.
 
-**The two places the exact Typst matters.** Both were compiled with the pinned Typst 0.15.1, the
+**The places the exact Typst matters.** All of it was compiled with the pinned Typst 0.15.1, the
 pinned faces and `--pdf-standard ua-1` while this plan was written.
 
 ```typst
 // Typst's own nested markers are • ‣ – and U+2023 IS NOT IN LIBERATION SERIF: a two-level
 // unordered list fails the compile outright under PDF/UA-1, with no fallback and no warning.
 // These three are the disc/circle/square convention and every one of them sets in the pinned faces.
+// That a marker lives here at all rather than in a style is issue #158: CNT-094 says appearance
+// comes from a named style, and a marker is appearance.
 #set list(marker: ([•], [◦], [▪]))
 
 #let numbering-of(format) = if format == "alphabetic" {
@@ -1043,15 +1318,24 @@ pinned faces and `--pdf-standard ua-1` while this plan was written.
   if b.type == "paragraph" {
     paragraph(b)
   } else if b.type == "list" {
-    let items = b.items.map(bs => bs.map(block-of).join())
-    if b.kind == "ordered" {
+    let bodies = b.items.map(i => i.blocks.map(block-of).join())
+    if b.kind == "definition" {
+      // `terms` is the closest Typst 0.15.1 has. It tags L / LI / Lbl / LBody, NOT PDF/UA's
+      // DL / DI / DT / DD, and the engine offers no way to ask for another role: the term reaches a
+      // reader as the item's label and the definition as its body. Said in the changelog's Known
+      // limits rather than claimed as the structure the format has.
+      terms(..b.items.enumerate().map(((i, item)) => terms.item(
+        item.term.map(run).join(),
+        bodies.at(i),
+      )))
+    } else if b.kind == "ordered" {
       enum(
         start: if b.start == none { 1 } else { b.start },
         numbering: numbering-of(b.format),
-        ..items.map(enum.item),
+        ..bodies.map(enum.item),
       )
     } else {
-      list(..items.map(list.item))
+      list(..bodies.map(list.item))
     }
   } else {
     panic("unknown block type: " + b.type)
@@ -1073,7 +1357,7 @@ pinned faces and `--pdf-standard ua-1` while this plan was written.
 
 ---
 
-## Task 11: the PDF a list makes
+## Task 12: the PDF a list makes
 
 **Files:** create `apps/worker/src/lists.test.ts`.
 
@@ -1094,7 +1378,7 @@ it('sets a list as a list at every level, numbers it as asked, and passes veraPD
   // Two levels means two `L`s, and the second is inside the first.
   expect(read.roles.filter((role) => role === 'L').length).toBeGreaterThanOrEqual(2);
 
-  // CNT-119, as a reader meets it: start 5 and alphabetic numbering print `e.` and `f.`.
+  // CNT-153, as a reader meets it: start 5 and alphabetic numbering print `e.` and `f.`.
   const said = spoken(read.taggedText[0]!);
   expect(said).toContain('e. Check the readings');
   expect(said).toContain('f. Note the serial');
@@ -1106,35 +1390,80 @@ it('sets a list as a list at every level, numbers it as asked, and passes veraPD
   expect(verdict.failures).toEqual([]);
   expect(verdict.compliant).toBe(true);
 }, 120_000);
+
+it('CNT-117 sets a definition term as its item label, which is all this engine gives', async () => {
+  const { read } = await compileOne(definedDocument());
+  const said = spoken(read.taggedText[0]!);
+  expect(said).toContain('Tensile strength');
+  expect(said).toContain('The greatest stress a material bears.');
+  // The honest assertion, and the reason it is worded this way: Typst 0.15.1 gives a definition
+  // list L / LI / Lbl / LBody and never PDF/UA's DL / DI / DT / DD. Asserting the absence as well
+  // as the presence means the day an engine does better, this test says so rather than passing on.
+  expect(read.roles).toContain('Lbl');
+  expect(read.roles).not.toContain('DL');
+}, 120_000);
 ```
 
 - [ ] **Step 2: red.** Expected: `expected [ 'Document', 'H1', 'P' ] to contain 'L'`.
-- [ ] **Step 3: write it.** The spike already showed this passes, with zero veraPDF failures. **If
-      the compile is refused with `TypstRefused` and nothing else, the first thing to check is the
-      marker set**: that is the one failure mode measured, and its diagnostic is suppressed by
+- [ ] **Step 3: write it.** The spike already showed both of these pass, with zero veraPDF failures.
+      **If the compile is refused with `TypstRefused` and nothing else, the first thing to check is
+      the marker set**: that is the one failure mode measured, and its diagnostic is suppressed by
       design, so run the template by hand under `.tools/typst-0.15.1/` to read it.
 - [ ] **Step 4: green.** **Step 5: commit.** `test(worker): a published list, through veraPDF`
 
 ---
 
-## Task 12: the documents, and the changelog
+## Task 13: CNT-153, and CNT-119 superseded
+
+**Files:** modify `docs/specification/requirements/CNT-content-and-authoring.md`; modify
+`docs/design/content-model.md`; modify `docs/specification/requirements/README.md`.
+
+**This is a corpus change and it follows the corpus's own rules, which
+[the index](../specification/requirements/README.md) states.** Constraining what CNT-119 permitted is
+a **material change**, so it is a new identifier and not an edit in place.
+
+- [ ] **Step 1:** `pnpm trace next CNT` to confirm the identifier - it was **CNT-153** when this plan
+      was written, and a row filed in between moves it. Take the tool's answer, never this sentence's.
+- [ ] **Step 2:** add the row, in CNT-119's place in the document's order:
+
+      > An ordered list must carry an author-settable start number and numbering format - decimal,
+          > alphabetic or roman - local to that list and independent of the outline's numbering
+          > (**STR**). The start number must be 1 or more, except where the format is decimal, where 0
+          > is also permitted.
+
+- [ ] **Step 3:** mark CNT-119 `Superseded by CNT-153`, leaving its statement untouched.
+- [ ] **Step 4:** add the change-history row at the end of the document, naming what prompted it:
+      the editor lists slice found that the engine sets a roman zero as `n.`, so a start of zero is
+      a numbering no author asked for, and the model permitted it.
+- [ ] **Step 5:** **repoint** content-model.md's `## Requirements owned` row from CNT-119 to CNT-153
+      and reword the row to state the start rule, as CNT-099's claim was repointed to CNT-147. Do not
+      add a row beside it: `design claims` should not move, and `pnpm trace check` is the arbiter -
+      if it wants something else, do what it says and record it here.
+- [ ] **Step 6:** update the counts in `docs/specification/requirements/README.md`.
+- [ ] **Step 7:** `pnpm --filter @alloy-works/trace generate`, then `pnpm trace check` and
+      `pnpm trace show CNT-153`.
+- [ ] **Step 8: commit.** `docs(spec): CNT-153, a start number of 1 or more except in decimal`
+
+---
+
+## Task 14: the documents, and the changelog
 
 **Files:** modify `docs/architecture.md`, `docs/features.md`, `README.md`,
-`docs/design/component-editor.md` (the built banner only), `docs/design/content-model.md` (the named
-gap on CNT-117), `docs/plans/README.md`, `CHANGELOG.md`, `version.json`, `package.json`,
-`apps/desktop/package.json`.
+`docs/design/component-editor.md` (the built banner only), `docs/design/content-model.md` (the list
+row, and the named limit on definition lists in output), `docs/plans/README.md`, `CHANGELOG.md`,
+`version.json`, `package.json`, `apps/desktop/package.json`.
 
-- [ ] **Step 1:** `docs/architecture.md` - the list nodes, `prosemirror-schema-list` as a dependency,
-      identity and adjacency at depth, the nesting limit in `parseContentDocument`, the widened
-      registry, the list panel, `publishing/4` and `publication/4`, each described as built.
-- [ ] **Step 2:** `docs/features.md` and the README's Features table, in lockstep: bulleted and
-      numbered lists, nesting, start and numbering, and the honest note that a definition list is not
-      offered.
-- [ ] **Step 3:** `docs/design/content-model.md` - beside the `## Requirements owned` table, the named
-      gap in prose: **the stored `list` shape cannot represent a definition list**, because an item is
-      one sequence of blocks with nothing marking a term from its definition, so CNT-117's third kind
-      is storable as a declaration and honourable by nothing. This is the single most important
-      sentence of the twelve tasks; see challenge 1.
+- [ ] **Step 1:** `docs/architecture.md` - the five list nodes, `prosemirror-schema-list` as a
+      dependency, the two commands that are ours and why, identity and adjacency at depth, the
+      nesting limit in `parseContentDocument`, the item's `term`, the widened registry, the list
+      panel, `publishing/4` and `publication/4`, each described as built.
+- [ ] **Step 2:** `docs/features.md` and the README's Features table, in lockstep: bulleted, numbered
+      and definition lists, nesting, start and numbering, and the honest note about what a definition
+      list reaches a reader as.
+- [ ] **Step 3:** `docs/design/content-model.md` - the `list` row in the vocabulary table gains the
+      item's `term`, and beside the `## Requirements owned` table, in prose: **a definition list is
+      published as a list whose item label is the term**, because Typst 0.15.1 emits no `DL`, `DI`,
+      `DT` or `DD` and offers no way to ask for them. A named limit, not a claim.
 - [ ] **Step 4:** this plan's row in `docs/plans/README.md` moves to Built with its PR number. The
       editor section's prose currently earmarks **editor 4** for recovery and undo and **editor 5**
       for paste; those become **editor 6** and **editor 7**, with **editor 5** the quotations and
@@ -1151,11 +1480,13 @@ gap on CNT-117), `docs/plans/README.md`, `CHANGELOG.md`, `version.json`, `packag
 
 ### Added
 
-- **An author can make lists.** Bulleted and numbered, from the toolbar or the keyboard, over the
-  paragraph the cursor is in. Pressing the same button again takes the list off again.
+- **An author can make lists.** Bulleted, numbered and definition lists, from the toolbar or the
+  keyboard, over the paragraph the cursor is in. Pressing the same button again takes the list off.
 - **Lists nest.** Nest item and Lift item move an item in and out, with Tab and Shift Tab as well as
-  Ctrl or Cmd and the square brackets, to six levels and well past them, mixing bulleted and
-  numbered lists freely.
+  Ctrl or Cmd and the square brackets, to six levels and well past them, mixing all three kinds
+  freely.
+- **A definition list holds the term it defines**, written as ordinary text, so it can be
+  emphasised, linked or marked as being in another language like any other phrase.
 - **A numbered list can start where you want and count how you want.** Set it to start at any number
   and to count 1, 2, 3 or a, b, c or i, ii, iii, from the List panel beside the toolbar.
 - **A publication prints all of it.** A PDF now carries lists at every level, with the numbering and
@@ -1169,13 +1500,18 @@ gap on CNT-117), `docs/plans/README.md`, `CHANGELOG.md`, `version.json`, `packag
   including an editing session. Content past it is refused by name rather than accepted, or, past a
   certain depth, failing with an error that said nothing.
 
+### Changed
+
+- A numbered list counting in letters or roman numerals now starts at 1 or more. Only a list
+  counting 1, 2, 3 can start at 0, where a zero means something.
+- A publication made from now on uses publication template 4. Publications already made are
+  unchanged and still open exactly as they were.
+
 ### Known limits
 
-- A definition list cannot be made. The stored shape has no way to tell a term from its definition,
-  so the editor offers bulleted and numbered lists only, and a component that already holds a
-  definition list opens for reading rather than being edited into something without it.
-- A numbered list that counts in letters or roman numerals starts at 1 or more. Only a list counting
-  1, 2, 3 can start at 0.
+- A definition list is published as a list whose item label is the term. A screen reader announces
+  the term and then its definition, which is the right order and the right emphasis, but PDF has a
+  definition-list structure of its own and the engine the product uses cannot yet produce it.
 - Block quotations and preformatted text are still not writable, and a document holding one still
   cannot be published.
 ```
@@ -1188,15 +1524,15 @@ Before, from `pnpm trace pins` on `main` at 0.32.0:
 `requirements 1385, non-requirements 117, questions 135, design claims 409, citations 217,
 scanned .tsx test files 11, areas 22`.
 
-**Expected moves.** `citations` rises by one for every test title naming a requirement, and the
-exact number comes from `pnpm trace pins`, never from counting by hand. `scanned .tsx test files`
-stays at **11**: `ListPanel.tsx` is new but is tested through `ComponentEditor.test.tsx` and
-`EditorToolbar.test.tsx`, both of which the corpus already scans - **if a `ListPanel.test.tsx` is
-written instead, it becomes 12 and this paragraph is wrong**. `design claims` stays at **409**: every
-requirement this slice cites is already claimed by content-model.md or component-editor.md, and no
-`## Requirements owned` table gains a row - task 12's step 3 adds **prose**, not a claim.
-`requirements`, `non-requirements`, `questions` and `areas` do not move, because this slice files no
-requirement. If Ken answers challenge 1 by amending CNT-117, they do; the task that amends it says so.
+**Expected moves.**
+
+| Pin                                      | Move               | Why                                                                                                                                                                                                   |
+| ---------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requirements`                           | **1385 to 1386**   | CNT-153 is filed. CNT-119 stays in the corpus as `Superseded by CNT-153`; nothing is removed                                                                                                          |
+| `design claims`                          | **409, unchanged** | CNT-119's row in content-model.md is **repointed** to CNT-153, not added beside. Every other requirement cited is already claimed                                                                     |
+| `citations`                              | rises              | One per test title naming a requirement. **The number comes from `pnpm trace pins`, never from counting by hand**                                                                                     |
+| `scanned .tsx test files`                | **11, unchanged**  | `ListPanel.tsx` is tested through `ComponentEditor.test.tsx` and `EditorToolbar.test.tsx`, both already scanned. **If a `ListPanel.test.tsx` is written instead it becomes 12 and this row is wrong** |
+| `non-requirements`, `questions`, `areas` | unchanged          | This slice files one requirement and nothing else                                                                                                                                                     |
 
 `pnpm --filter @alloy-works/trace generate` runs **after** prettier, or the generated JSON is
 reformatted underneath it.
@@ -1205,52 +1541,21 @@ reformatted underneath it.
 
 ## Requirement challenges, for Ken
 
-Lead item first, because it is a defect rather than an opinion.
+**Answered (2026-09-20).** Challenge 1 - the definition list - was answered by **building it**: the
+stored item is widened with an optional inline `term`, which spike 6 shows is additive, so CNT-117
+stands as written and is honoured in full. Challenge 2 was accepted with the supersede: **CNT-153**,
+task 13. Challenges 4 and 5 are filed as **#158** (the marker) and **#159** (the nesting ceiling) and
+are referenced above rather than re-argued. Challenge 3 is not pressed, consistent with Ken's ruling
+on CNT-035.
 
-1. **CNT-117's third kind cannot be built, and the stored shape does not say so.** A definition list
-   is pairs - a term, then what it means - and PDF/UA gives it `DL > DI > (DT, DD)`. The stored shape
-   is `items: [{ content: BlockNode[] }]`: one sequence of blocks per item, with nothing saying which
-   part is the term. So `kind: 'definition'` is **storable and unhonourable** - an author can declare
-   a definition list and no publication, no reader and no assistive technology can be told what it
-   is. That is worse than refusing it, because the model accepts a claim nothing keeps. Three ways
-   out, and the slice needs one of them: reword CNT-117 to two kinds and file the definition list as
-   its own requirement with its own shape; or give the stored `list` a definition form in a content
-   schema version 2 (which #101 and #88 are already waiting for, per the marks plan's decision E);
-   or leave it and accept a member of the model nobody may use. **Recommendation: the first, now, and
-   the second when schema version 2 comes.**
+**One left standing, and it is the same shape as challenge 3 rather than a new one.**
 
-2. **CNT-119 does not say what a start of zero means, and the engine answers `n.`** Typst sets roman
-   zero as _nulla_. `start: z.number().int().min(0)` lets an author ask for a list that begins
-   `n., i., ii.`. Decision E refuses it in the editor and at publish, which is a product decision
-   standing in for a requirement. Either CNT-119 should say the start is a positive number except in
-   decimal, or it should say what a zero start means in each format. **Recommendation: reword to
-   "a start number of 1 or more, and 0 where the format is decimal".**
-
-3. **CNT-079 bundles four families delivered in four slices, and so can never be claimed until the
-   last of them.** Headings are the document view's, lists are this slice's, tables and footnotes are
-   later. This PDF really does carry `L`, `LI`, `Lbl` and `LBody`, and CNT-079 gets no credit for it
-   and will read `Specified` through all of T1. **This is the same challenge Ken declined on CNT-035**
-   - "a requirement reading Designed until T6 is honest" - so it is raised once and not pressed. The
-     difference, if there is one: CNT-035 waits on one thing arriving, while CNT-079 waits on four, and
-     three of the four will be honest and invisible for a year.
-
-4. **Nothing in the corpus says a list has a marker, and the default one breaks the build.** No
-   requirement names what an unordered list's marker is, or asks that it be legible in the faces the
-   product pins. That gap is how a two-level list silently became a refused compile: Typst's own
-   default set holds U+2023, which Liberation Serif does not have. This slice pins the set in the
-   template, which is the wrong home - CNT-094 says appearance comes from a named style, and a marker
-   is appearance. **Recommendation: file a requirement that the list marker at each level is a
-   property of the presentation theme (STY), and that a theme's marker must be covered by the
-   theme's own typefaces, checked.** Until then themes.md carries a named gap.
-
-5. **CNT-118's "at least six levels" is a floor with no ceiling anywhere.** A list item holds block
-   content, so nesting is unbounded by construction; the only thing that stops it is the admission
-   limit, which bites somewhere above **thirty** levels and is a JSON depth of 128, not a decision
-   about content. So the only answer an author can ever be given is "nested more than 128 deep",
-   which means nothing to them. **Recommendation: state a maximum list nesting depth in the content
-   model, in levels, and have the editor decline the command at that depth and say so, rather than
-   letting a save be refused in the language of a JSON walk.** Low priority - nobody reaches thirty
-   levels by accident - but the number should be somebody's decision rather than an accident.
+1. **CNT-079 has a second reason to be unclaimable, now measured.** It was already four families in
+   one row. Spike 4 adds that the engine gives a definition list `L`/`Lbl`/`LBody` and not
+   `DL`/`DT`/`DD`, so even the list third of the statement reaches a reader as something weaker than
+   "exposed as structure" plainly means. Raised once and not pressed: the honest place for it is the
+   named limit in content-model.md that task 14 writes, and the accessibility suite (CNT-139) is
+   where a claim about what assistive technology actually receives belongs.
 
 ---
 
@@ -1258,25 +1563,30 @@ Lead item first, because it is a defect rather than an opinion.
 
 Named so the next plan starts from a list rather than from a reading of the diff.
 
-- **Block quotations and preformatted text**, and with them the monospace face - editor 5, the other
-  half of this commission. Decision F has the measured cost and the recommendation; decision G has
-  the em dash `quote(attribution:)` writes that the slice must avoid.
-- **Definition lists**, everywhere: the stored shape, the editor and the published document, waiting
-  on challenge 1's answer.
+- **Block quotations and preformatted text** - editor 5, the other half of this commission, and
+  **the monospace face with them**. Decision G is settled and not re-derivable: Liberation Mono
+  pinned beside Liberation Serif, `covers(codePoint, 'body')` and `covers(codePoint, 'code')` from
+  one loader, one branch in `characterProblems`, so the body set does not narrow. Decision H has the
+  em dash `quote(attribution:)` writes that the slice must avoid, and spike 1 has the grey panel that
+  makes a preformatted block legible without a face and without colour alone.
+- **`DL`, `DI`, `DT` and `DD` in the PDF**, which Typst 0.15.1 cannot emit. Worth revisiting when the
+  pinned engine moves; task 12's test asserts the absence, so it will say so.
 - **Tables** and **footnotes**, the other two nesting families, which inherit every plugin this slice
   rewrote. `prosemirror-tables` and the restricted footnote schema are component-editor.md's.
 - **Equations** and the #103 ruling; **figures**, which wait on the assets design.
 - **Paste** through the admission pipeline with its report (CNT-063), and **issue #102** with the HTML
-  readers. Nothing here admits anything: no reader, no paste.
+  readers. Nothing here admits anything: no reader, no paste. **Admission's normalise stage now has a
+  term to consider** - a pasted definition list - and this slice does not touch it.
 - **Issue #101** (a run's direction) and **issue #88** (a caption holding inline content), together,
-  as content schema version 2 with one migration and one permanent fixture - and, if challenge 1 is
-  answered that way, the definition list's shape beside them.
-- **The list marker as a theme property** (challenge 4). It is pinned in the template here, which is
-  the wrong home and is said to be.
-- **CNT-079 in full**, which needs headings, tables and footnotes as well as lists.
+  as content schema version 2 with one migration and one permanent fixture. Spike 6 confirms the
+  definition list does **not** join them: it is additive and lands here.
+- **Issue #158**, the list marker as a theme property. It is pinned in the template here, which is
+  the wrong home and is said to be, in the template's own comment and in the design.
+- **Issue #159**, a maximum nesting depth stated in levels, so an author who reaches it is told in
+  their own language rather than in the language of a JSON walk.
+- **CNT-079 in full**, which needs headings, tables and footnotes as well as lists - and an engine
+  that emits a definition list's own structure.
 - **PUB-090 in full**, which needs the Matterhorn Protocol review a person does. The veraPDF half
   passes on every publication this slice makes.
-- **A maximum nesting depth stated in levels** (challenge 5), so an author who reaches it is told in
-  their own language.
 - **`docs/plans/README.md`'s editor numbering**, which this plan displaces: recovery and undo move to
-  editor 6 and paste to editor 7, done in task 12 rather than on the planning branch.
+  editor 6 and paste to editor 7, done in task 14 rather than on the planning branch.
