@@ -13,18 +13,10 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { shimRangeMeasurement } from '../test/range.js';
 import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar.js';
 
-/**
- * jsdom has no layout, and a `Range` there has neither of the two methods ProseMirror calls when it
- * scrolls the selection into view - which every mark step asks it to do, and which it only does
- * while the surface has the focus. Both answer nothing rather than pretending to measure, which
- * leaves the scroll a no-op instead of an uncaught `TypeError` from inside a click. Each test file
- * gets its own jsdom, so this reaches no other suite.
- */
-const NOTHING = { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0 };
-Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect = () => NOTHING as DOMRect;
+shimRangeMeasurement();
 
 /** One paragraph of stored content, as the service answers it and `toEditor` opens it. */
 const stored = (...inlines: unknown[]) => ({

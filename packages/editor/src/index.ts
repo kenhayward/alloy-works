@@ -8,6 +8,7 @@ export {
   markKeymap,
   markThroughout,
   removeMarkCommand,
+  somewhereToPutMark,
   toggleMarkCommand,
   type EditorCommand,
 } from './marks.js';

@@ -70,6 +70,13 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                        |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                           |
 
+**What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
+a run whose language mark differs from the component's base language is rendered with
+`spellcheck="false"`, and a run marked with the base language is not. It never shows a checker obeying
+it, because no delivery's checker is under test here - CNT-148 is the bridge that gives the desktop
+shell one, and it is not built. Whether a checker honours the attribute is the accessibility suite's
+(CNT-139).
+
 **CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.** Native
 spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each run against
 its own language - and CNT-101 - the browser supplies the checker - could not both be met. The decision

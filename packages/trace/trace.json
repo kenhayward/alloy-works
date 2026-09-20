@@ -15952,9 +15952,21 @@
       "kind": "title"
     },
     {
+      "id": "CNT-098",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 1615,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-147",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 1625,
+      "kind": "title"
+    },
+    {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 154,
+      "line": 146,
       "kind": "title"
     },
     {
@@ -17070,19 +17082,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 159,
+      "line": 160,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 123,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 277,
+      "line": 278,
       "kind": "title"
     },
     {

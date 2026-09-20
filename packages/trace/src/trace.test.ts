@@ -304,8 +304,13 @@ describe('the citations in the committed model', () => {
   // 214, from 213: the same plan cites CNT-077 in apps/web/src/editor/EditorToolbar.test.tsx: the
   // formatting toolbar offers every command in that registry as a button, in one tab stop the arrow
   // keys, Home and End move around.
+  // 216, from 214: the same plan cites CNT-098 and CNT-147 in
+  // apps/web/src/editor/ComponentEditor.test.tsx, which is where a mark is applied through the link
+  // and language dialogs and the surface is rendered under jsdom: the surface asks the delivery to
+  // check spelling, and a run whose language mark differs from the component's base language is
+  // rendered with the checker turned off while one carrying the base language is not.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(214);
+    expect(model.citations).toHaveLength(216);
   });
 
   it('cites no identifier the corpus does not hold', () => {

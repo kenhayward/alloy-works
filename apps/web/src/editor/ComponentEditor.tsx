@@ -2,15 +2,18 @@ import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { parseContentDocument } from '@alloy-works/domain';
 import {
   createEditorState,
+  EDITOR_COMMANDS,
   fromEditor,
   headerOf,
   mountEditor,
   newBlockIdentifier,
+  removeMarkCommand,
   setDirection,
   setLanguage,
   setTitle,
   toEditor,
   type ComponentHeader as Header,
+  type EditorCommand,
   type EditorView,
   type Selection,
 } from '@alloy-works/editor';
@@ -19,6 +22,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
+import { MarkPrompt } from './MarkPrompt.js';
+import { pressCommand, type AskForValue } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -74,6 +79,19 @@ const textOf = (view: EditorView) => {
 const isEditablePhase = (phase: SessionView['phase']) =>
   phase === 'reading' || phase === 'claiming' || phase === 'editing';
 
+/** One dialog, open, and the press waiting on what the author does with it. */
+interface Asking {
+  readonly command: EditorCommand;
+  /** What to put in the boxes: the mark that is there, or what was typed and then refused. */
+  readonly values: Record<string, unknown> | null;
+  readonly refused: boolean;
+  /** Whether there is a mark of that type there to take off. */
+  readonly removable: boolean;
+  /** Bumped every time one opens, so a dialog reopened over a refusal is a fresh set of boxes. */
+  readonly opened: number;
+  readonly settle: (answer: Record<string, unknown> | null) => void;
+}
+
 /**
  * One component, open for editing (component-editor.md): its title, the surface, the save indicator,
  * Save version and Done editing, and one status region that says what happened. The surface is one
@@ -104,6 +122,9 @@ export function ComponentEditor({
   // say about the selection and changes nothing else in the page, so there is no value to compare
   // and nothing else that would ask React for a render.
   const [, setTransactions] = useState(0);
+  // The link or language dialog, while one is open. Null the rest of the time, which is almost all
+  // of it: nothing of it is rendered until a press asks for a value.
+  const [asking, setAsking] = useState<Asking | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
@@ -115,6 +136,80 @@ export function ComponentEditor({
   // a second refusal that found nothing new to lose - the reclaim from `lost` failing again, or a bare
   // Try again - would append the very same unchanged text a second time.
   const keptIsCurrent = useRef(false);
+  // What was focused when a dialog opened, so that closing it puts the author back where they were.
+  // Captured rather than assumed to be the button: a press from the toolbar deliberately leaves the
+  // focus on the surface, so that the selection the command acts on survives, and a shortcut is
+  // pressed in the surface to begin with.
+  const opener = useRef<HTMLElement | null>(null);
+  // What the author last typed into a dialog, kept only long enough to put it back in the boxes if
+  // the stored model refuses it: a refusal must not also take away what it refused.
+  const typed = useRef<Record<string, unknown>>({});
+  // A refusal standing over the next opening of this mark's dialog, set the moment one arrives.
+  const refusal = useRef<string | null>(null);
+  // How many dialogs have opened, which is what makes a reopened one a fresh set of boxes rather
+  // than the same React element updated in place.
+  const openings = useRef(0);
+
+  /**
+   * Asks the author for a link's target or a run's language, and answers with what they gave -
+   * null where they cancelled, which applies nothing (component-editor.md, "Marks").
+   *
+   * A refusal standing over this mark reopens the dialog **filled with what was refused**, so that
+   * a target the stored model would not take is corrected rather than typed again from nothing.
+   */
+  const askFor: AskForValue = (command, current) =>
+    new Promise((settle) => {
+      const refused = refusal.current === command.mark;
+      refusal.current = null;
+      opener.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      openings.current += 1;
+      setAsking({
+        command,
+        values: refused ? typed.current : current,
+        refused,
+        // What can be taken off is what is there now, never what was typed and refused.
+        removable: current !== null,
+        opened: openings.current,
+        settle,
+      });
+    });
+
+  /**
+   * One prompting command over this view, from the toolbar's press and from its shortcut alike.
+   *
+   * Answers whether the press was taken up, which is what lets a shortcut with nowhere to put its
+   * mark hand the key back rather than swallow it.
+   */
+  const runPrompting = (view: EditorView, command: EditorCommand): boolean =>
+    pressCommand({
+      view,
+      command,
+      newIdentifier: newBlockIdentifier,
+      prompt: askFor,
+      onRefused: (refused) => askAgain(view, refused),
+    });
+
+  /**
+   * The author gave a value and nothing came of it. Asking again is how they are told: the dialog
+   * comes back with what they typed still in it and the refusal beneath the box, which is where
+   * they are looking, rather than as a notice somewhere else on the page.
+   *
+   * It must not throw. The press that calls it wraps the continuation and the prompt in one
+   * `catch`, so a handler that threw would be reported as a second refusal of the same value.
+   */
+  function askAgain(view: EditorView, command: EditorCommand) {
+    refusal.current = command.mark;
+    if (!view.isDestroyed) runPrompting(view, command);
+  }
+
+  /** Closes the dialog, puts the focus back where it came from, and answers the press. */
+  const closeAsking = (answer: Record<string, unknown> | null) => {
+    if (!asking) return;
+    setAsking(null);
+    opener.current?.focus();
+    asking.settle(answer);
+  };
 
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
@@ -128,6 +223,8 @@ export function ComponentEditor({
   onViewRef.current = onView;
   const sessionIdRef = useRef(sessionId);
   sessionIdRef.current = sessionId;
+  const runPromptingRef = useRef(runPrompting);
+  runPromptingRef.current = runPrompting;
 
   useEffect(() => {
     let current = true;
@@ -177,6 +274,17 @@ export function ComponentEditor({
       createEditorState({
         doc,
         newIdentifier: newBlockIdentifier,
+        // A shortcut for a mark whose value only the author can give opens the same dialog the
+        // toolbar's button opens, and runs the same press, so the keyboard and the button cannot
+        // come to mean two different things (CNT-077). It reports the key handled only where it
+        // did something with it: a component being read, or a selection with nowhere to put the
+        // mark, hands the key back rather than swallowing it.
+        onPrompt: (mark) => {
+          const command = EDITOR_COMMANDS.find((each) => each.mark === mark);
+          if (command === undefined) return false;
+          if (!(component.mayEdit && isEditablePhase(phase))) return false;
+          return runPromptingRef.current(view, command);
+        },
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
@@ -444,12 +552,36 @@ export function ComponentEditor({
             view={surface}
             enabled={shown.mayEdit && isEditablePhase(phase)}
             newIdentifier={newBlockIdentifier}
-            // The two commands that need a value from the author have no dialog to ask in yet, and
-            // a toolbar cannot invent one: until that lands, pressing Link or Language is the
-            // author cancelling, which applies nothing rather than applying an empty target.
-            prompt={() => Promise.resolve(null)}
+            prompt={askFor}
+            onRefused={(command) => surface && askAgain(surface, command)}
           />
           <div ref={place} />
+          {asking && (
+            // Keyed by which opening this is, so a dialog that comes back carrying a refusal is a
+            // fresh set of boxes rather than the same ones updated in place - the focus starts in
+            // the first of them again, on the value that was refused.
+            <MarkPrompt
+              key={asking.opened}
+              command={asking.command}
+              values={asking.values}
+              refused={asking.refused}
+              removable={asking.removable}
+              onApply={(values) => {
+                typed.current = values;
+                closeAsking(values);
+              }}
+              onRemove={() => {
+                const { command } = asking;
+                closeAsking(null);
+                // Taking a mark off needs no value, so it never goes back to the press waiting on
+                // this dialog: `removeMarkCommand` is reached from here and nowhere else.
+                if (surface && !surface.isDestroyed) {
+                  removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
+                }
+              }}
+              onCancel={() => closeAsking(null)}
+            />
+          )}
           {kept !== null && (
             <label>
               Text that was not saved

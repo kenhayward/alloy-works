@@ -234,9 +234,8 @@ export function applyMarkCommand(
     if (type === undefined) return false;
     const members = accepted(mark, newIdentifier(), attrs);
     if (members === null) return false;
-    const { from, to, empty } = state.selection;
-    const range = empty ? annotationAt(state, type) : { from, to };
-    if (range === null || range.from === range.to) return false;
+    const range = rangeToMark(state, type);
+    if (range === null) return false;
     if (dispatch) {
       const tr = state.tr.removeMark(range.from, range.to, type);
       tr.addMark(range.from, range.to, type.create(members));
@@ -244,6 +243,43 @@ export function applyMarkCommand(
     }
     return true;
   };
+}
+
+/**
+ * The range a mark would be applied over: the selection where there is one, and otherwise the whole
+ * of the annotation of that type a cursor sits inside. Null where that comes to nothing, which is
+ * the one thing `applyMarkCommand` refuses for a reason that is not about the value.
+ */
+function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
+  const { from, to, empty } = state.selection;
+  const range = empty ? annotationAt(state, type) : { from, to };
+  return range === null || range.from === range.to ? null : range;
+}
+
+/**
+ * Whether there is anywhere to put this mark: something selected to put it over, or a cursor inside
+ * an annotation of that type, which `applyMarkCommand` expands to the whole of.
+ *
+ * This is the question a toolbar asks **before** it opens a dialog, so that an author is never asked
+ * for a target the command would then drop on the floor. Asking it by running the command with
+ * nothing in it would be the better question and cannot be asked: a `hyperlink` has no valid form
+ * without an `href` and a `language` none without a `tag`, so a dry run answers false for exactly
+ * the two commands that prompt - and it would burn an identifier from the shared sequence on every
+ * press besides.
+ *
+ * It is exported so that there is **one** copy of the range rule rather than one here and one
+ * restated in a renderer. The drift that hurts is a widening: the day `language` applies at a bare
+ * cursor as a stored mark, a toolbar holding its own rule would refuse to open a dialog for a press
+ * the command would have honoured, and that press is silent again.
+ *
+ * It says nothing about the **value**, which only `markSchema` decides (CNT-127, CNT-140): a press
+ * this admits can still be refused once the author has typed something, and that refusal is one they
+ * are told about.
+ */
+export function somewhereToPutMark(state: EditorState, mark: string): boolean {
+  const type = editorSchema.marks[mark];
+  if (type === undefined) return false;
+  return rangeToMark(state, type) !== null;
 }
 
 /**

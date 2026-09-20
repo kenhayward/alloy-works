@@ -1,13 +1,12 @@
 import {
-  applyMarkCommand,
   EDITOR_COMMANDS,
-  markAt,
   markThroughout,
-  toggleMarkCommand,
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
 import { useRef, useState, type KeyboardEvent } from 'react';
+
+import { pressCommand, type AskForValue } from './press.js';
 
 export interface EditorToolbarProps {
   /** Null until the surface has mounted, which is the page's first render. */
@@ -16,10 +15,7 @@ export interface EditorToolbarProps {
   /** Where a mark's identifier comes from; the same source the surface names blocks from. */
   readonly newIdentifier: () => string;
   /** Asked for a value before a prompting command runs; resolves null when the author cancels. */
-  readonly prompt: (
-    command: EditorCommand,
-    current: Record<string, unknown> | null,
-  ) => Promise<Record<string, unknown> | null>;
+  readonly prompt: AskForValue;
   /**
    * The author supplied a value and nothing came of it - a target the stored model refuses, or a
    * dialog that failed. Only ever called after they were asked for something, never for a press that
@@ -27,19 +23,6 @@ export interface EditorToolbarProps {
    */
   readonly onRefused?: (command: EditorCommand) => void;
 }
-
-/**
- * Whether there is anywhere to put this mark: something selected to put it over, or a cursor inside
- * a mark of that type, which `applyMarkCommand` expands to the whole of.
- *
- * Running the command itself with no attributes would be the better question to ask, and it cannot
- * be asked: a `hyperlink` has no valid form without an `href` and a `language` none without a `tag`,
- * so a dry run with nothing in it answers false for exactly the two commands that prompt. What is
- * restated here is therefore only the command's **range** rule, not its validation, which stays the
- * one thing `markSchema` decides.
- */
-const somewhereToPutIt = (view: EditorView, mark: string) =>
-  !view.state.selection.empty || markAt(view.state, mark) !== null;
 
 /**
  * The formatting toolbar above the surface: one button per command in the editor's own registry, in
@@ -119,33 +102,9 @@ export function EditorToolbar({
     // An `aria-disabled` button is still focusable and still clickable, which is the point of it
     // being that rather than `disabled`: what it must not do is act.
     if (!enabled || view === null) return;
-    if (!command.prompts) {
-      toggleMarkCommand(command.mark, newIdentifier)(view.state, view.dispatch.bind(view));
-      return;
-    }
-    if (!somewhereToPutIt(view, command.mark)) return;
-    prompt(command, markAt(view.state, command.mark))
-      .then((answer) => {
-        if (answer === null) return;
-        // The surface can be gone by the time a dialog is answered - the session torn down, the page
-        // left. Dispatching into a destroyed view throws, which the catch below would then report as
-        // a refusal of a target that was perfectly good.
-        if (view.isDestroyed) return;
-        // Read again rather than closed over: the author had the dialog open, and the state they
-        // left behind is the one the mark goes onto.
-        const applied = applyMarkCommand(
-          command.mark,
-          newIdentifier,
-          answer,
-        )(view.state, view.dispatch.bind(view));
-        if (!applied) onRefused?.(command);
-      })
-      .catch(() => {
-        // A dialog that fell over is a press that ended in nothing, which is the same thing the
-        // author needs telling about as a value the model refused. Silence is what this reports
-        // instead of, and an unhandled rejection is what it reports instead of too.
-        onRefused?.(command);
-      });
+    // What the press itself does is `press.ts`, shared with the keyboard's own route to these same
+    // commands, so a shortcut and a button cannot come to mean two different things (CNT-077).
+    pressCommand({ view, command, newIdentifier, prompt, onRefused });
   };
 
   return (

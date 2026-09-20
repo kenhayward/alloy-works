@@ -5,8 +5,11 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { shimRangeMeasurement } from '../test/range.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { designTiming } from './session.js';
+
+shimRangeMeasurement();
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 const SESSION = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
@@ -1401,5 +1404,289 @@ describe('the component editor', () => {
       'Newer text was saved from another window',
     );
     expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
+  });
+});
+
+/** The first paragraph's runs, as the stored model spells them and a save would send them. */
+const runsOf = (view: EditorView) => {
+  const [block] = fromEditor(view.state.doc).content;
+  return block?.type === 'paragraph' ? block.content : [];
+};
+
+/** A selection over the surface, as a test makes one: jsdom cannot drag across text. */
+const selectRange = (view: EditorView, anchor: number, head: number) =>
+  act(() => {
+    view.dispatch(
+      view.state.tr.setSelection(
+        Selection.fromJSON(view.state.doc, { type: 'text', anchor, head }),
+      ),
+    );
+  });
+
+/** One paragraph of stored content, given run by run rather than as plain text. */
+const runs = (...inlines: unknown[]) => ({
+  ...content(''),
+  content: [{ type: 'paragraph', id: 'b1', style: 'body', content: inlines }],
+});
+
+describe('the link and language prompts', () => {
+  it('links a selection to an address the author gives', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'hyperlink', href: 'https://example.test/setup' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('refuses an address whose scheme is not allowed, saying so, and applies nothing', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'javascript:alert(1)');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Said where the author typed it, while the dialog is still open and the value still in the
+    // box: a press that ended in nothing is the one thing they must not have to discover.
+    expect(
+      await screen.findByText('That address must begin http:, https: or mailto:.'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Address')).toHaveValue('javascript:alert(1)');
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('refuses a language tag that is not one, saying so, and applies nothing', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('takes a link off again from inside the dialog that shows it', async () => {
+    // Link opens a dialog rather than toggling, so there is no second press to take one off with.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                {
+                  type: 'text',
+                  value: 'Unbox',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+                { type: 'text', value: ' the printer.', marks: [] },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 3, 3);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+
+    // Opened filled with what is there, and saying what Remove will do before it is pressed.
+    expect(await screen.findByLabelText('Address')).toHaveValue('https://example.test/old');
+    expect(
+      screen.getByText('Remove takes this link off and leaves the text it was on.'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('opens the Link dialog from the keyboard alone', async () => {
+    // `createEditorState` takes `onPrompt` as an option, so a renderer that passed none would leave
+    // `Mod-k` doing nothing at all with no suite the wiser. This is the guard that it is passed.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    selectRange(view, 1, 6);
+
+    fireEvent.keyDown(view.dom, { key: 'k', ctrlKey: true });
+
+    expect(await screen.findByRole('dialog', { name: 'Link' })).toBeInTheDocument();
+    expect(await screen.findByLabelText('Address')).toHaveFocus();
+  });
+
+  it('opens the Language dialog from the keyboard alone', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Language' });
+    selectRange(view, 1, 6);
+
+    // What a browser sends for Ctrl and Shift and L: an upper-case `key`, and the code the
+    // keymap falls back to when the shifted spelling matches no binding.
+    fireEvent.keyDown(view.dom, { key: 'L', keyCode: 76, ctrlKey: true, shiftKey: true });
+
+    expect(await screen.findByRole('dialog', { name: 'Language' })).toBeInTheDocument();
+  });
+
+  it('does not ask for a target from the keyboard where there is nowhere to put one', async () => {
+    // A cursor in unmarked text has nothing to link. Opening a dialog there would ask the author
+    // for a target the command then drops, and the key is left to whatever else wants it.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    selectRange(view, 8, 8);
+
+    fireEvent.keyDown(view.dom, { key: 'k', ctrlKey: true });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('returns the focus to what opened it when the author cancels', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    const link = await screen.findByRole('button', { name: 'Link' });
+    link.focus();
+
+    await userEvent.keyboard('{Enter}');
+
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(await screen.findByLabelText('Address')).toHaveFocus();
+    // Nothing there to take off, so nothing offers to.
+    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(link).toHaveFocus();
+  });
+
+  it('keeps the keyboard inside the dialog while it is open', async () => {
+    // `aria-modal` says the rest of the page is not there for now, and a dialog that let Tab walk
+    // out of it into a surface it is covering would be saying something untrue.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+
+    cancel.focus();
+    await userEvent.tab();
+    expect(screen.getByLabelText('Address')).toHaveFocus();
+
+    await userEvent.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+  });
+
+  it('CNT-098 asks the delivery to check spelling as the author types', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    await surface();
+
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
+      'spellcheck',
+      'true',
+    );
+  });
+
+  it('CNT-147 does not ask the checker to check a run in another language', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'fr');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    selectRange(view, 11, 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'en-GB');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box.querySelector('span[lang="fr"]')).toHaveTextContent('Unbox');
+    expect(box.querySelector('span[lang="en-GB"]')).toHaveTextContent('printer');
+    // Only the run whose language differs from the component's own is left unchecked: a passage in
+    // the base language is still checked, mark or no mark.
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual(['Unbox']);
+  });
+
+  it('saves an iteration holding the marks the author applied', async () => {
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    const saved = asked.find((each) => each.route.startsWith('PUT'))!.body as {
+      content: {
+        content: { content: { marks: { type: string; id: string; href: string }[] }[] }[];
+      };
+    };
+    const [mark] = saved.content.content[0]!.content[0]!.marks;
+    expect(mark).toMatchObject({ type: 'hyperlink', href: 'https://example.test/setup' });
+    // Minted by the editor, in the one spelling a block identifier takes (ADR-0023).
+    expect(mark!.id).toMatch(/^[a-z2-7]{26}$/);
   });
 });

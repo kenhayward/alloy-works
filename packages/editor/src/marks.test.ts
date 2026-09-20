@@ -11,6 +11,7 @@ import {
   markKeymap,
   markThroughout,
   removeMarkCommand,
+  somewhereToPutMark,
   toggleMarkCommand,
 } from './marks.js';
 import { editorSchema } from './schema.js';
@@ -453,6 +454,52 @@ describe('what the selection already carries', () => {
     const at = (pos: number) => markThroughout(select(marked, pos), 'emphasis');
     expect(at(3)).toBe(true);
     expect(at(9)).toBe(false);
+  });
+});
+
+describe('whether there is anywhere to put a mark', () => {
+  /** `alpha` linked, ` beta` not. */
+  const linked = () =>
+    run(
+      stateWith('alpha beta'),
+      1,
+      6,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/alpha' }),
+    );
+
+  it('answers for a selection, for a cursor inside an annotation, and for neither', () => {
+    const state = linked();
+    // Something selected is somewhere to put one, marked or not.
+    expect(somewhereToPutMark(select(state, 7, 11), 'hyperlink')).toBe(true);
+    // A cursor inside a link: the whole of that link is where a new target would go.
+    expect(somewhereToPutMark(select(state, 3), 'hyperlink')).toBe(true);
+    // A cursor in text carrying no link: there is nothing to put a target on.
+    expect(somewhereToPutMark(select(state, 8), 'hyperlink')).toBe(false);
+    // A cursor inside a link is nowhere to put a language, which is a different annotation.
+    expect(somewhereToPutMark(select(state, 3), 'language')).toBe(false);
+    // A mark this editor has no counterpart for is nowhere at all.
+    expect(somewhereToPutMark(select(state, 7, 11), 'footnote')).toBe(false);
+  });
+
+  it('answers exactly as the command it is asked on behalf of would', () => {
+    // One copy of the range rule, not two. A toolbar that asked a rule of its own would open a
+    // dialog for a press the command then dropped, or refuse to open one for a press it would have
+    // honoured - and the second of those is silence, which is what this slice keeps closing.
+    const state = linked();
+    const target = { href: 'https://example.test/beta' };
+    for (const at of [
+      [1, 6],
+      [7, 11],
+      [3, 3],
+      [8, 8],
+      [11, 11],
+    ] as const) {
+      const selected = select(state, at[0], at[1]);
+      expect([at, somewhereToPutMark(selected, 'hyperlink')]).toEqual([
+        at,
+        applyMarkCommand('hyperlink', counter(), target)(selected),
+      ]);
+    }
   });
 });
 
