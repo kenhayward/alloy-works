@@ -18,16 +18,27 @@ export {
   unsupportedFormats,
 } from './layout.js';
 export type { Layout, LayoutField, LayoutReadOutcome, PdfFormat, SlotPart } from './layout.js';
-export { DRAFT_NOTICE, PUBLISHING_SCHEMA, PUBLISHING_SCHEMA_1 } from './published.js';
+export {
+  DRAFT_NOTICE,
+  PUBLISHING_SCHEMA,
+  PUBLISHING_SCHEMA_1,
+  // Frozen by the editor's marks slice, which made `publishing/3`: the schema template 2 reads, and
+  // the schema of every publication made before a run carried its marks.
+  PUBLISHING_SCHEMA_2,
+} from './published.js';
 export type {
   PublishedBlock,
+  PublishedBlock1,
   PublishedDocument,
   PublishedDocument1,
   PublishedLanguage,
+  PublishedMark,
   PublishedNode,
   PublishedNode1,
   PublishedParagraph,
+  PublishedParagraph1,
   PublishedPattern,
   PublishedPdfFormat,
   PublishedRun,
+  PublishedRun1,
 } from './published.js';

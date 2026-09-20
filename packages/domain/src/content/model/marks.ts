@@ -39,7 +39,16 @@ const bcp47 = z
   .string()
   .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/, 'not a BCP 47 tag');
 
-const plain = (type: MarkType) => z.strictObject({ type: z.literal(type), ...identified });
+/**
+ * A mark that carries nothing but its type and its identifier. The parameter is generic so that each
+ * schema infers its **own** literal type: written `(type: MarkType)` the seven share one inferred
+ * shape, `{ type: MarkType; id: string }`, and `Mark` stops being a discriminated union to the type
+ * checker even though zod still discriminates it at run time. Nothing about the parse changes; what
+ * changes is that a `switch` over a mark's type can be exhaustive, which is what lets `assemble`
+ * refuse a mark it cannot publish by failing to compile rather than by dropping it.
+ */
+const plain = <T extends MarkType>(type: T) =>
+  z.strictObject({ type: z.literal(type), ...identified });
 
 export const emphasisMarkSchema = plain('emphasis');
 export const strongMarkSchema = plain('strong');

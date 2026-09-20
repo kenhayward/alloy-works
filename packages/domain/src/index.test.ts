@@ -116,6 +116,9 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA',
         // The first slice's shape, still made for a request made before layouts (publishing 02).
         'PUBLISHING_SCHEMA_1',
+        // The document under a layout before a run carried its marks: frozen, and nothing makes one
+        // now (the editor's marks slice).
+        'PUBLISHING_SCHEMA_2',
         'assemble',
         'publishFailureCodes',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
