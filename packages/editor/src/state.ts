@@ -45,7 +45,21 @@ export function noAdjacentEmptyParagraphs(): Plugin {
  * every fragment of that identifier - two separated regions would resolve together although the
  * author sees two of them. A component that reaches that refusal through `fromEditor` is a failure
  * out of the snapshot path rather than something an author can read, so the editor must be unable to
- * produce one.
+ * produce one **within a mark type**, which is the scope of the repair below.
+ *
+ * Two things that scope leaves out, both deliberate, and neither reachable from a gesture:
+ *
+ * - **One identifier worn by two kinds of mark** - an `emphasis` here and a `strong` there - is two
+ *   spans this plugin never compares, because it tracks what it has named per type. No command can
+ *   make one: each mints a fresh identifier per call. The model refuses it by a different rule,
+ *   `claimMark`, under which one identifier cannot carry two different values. Comparing across
+ *   types would mean tracking by identifier over the whole document, and then which span kept the
+ *   identifier would follow the order the mark types happened to be walked in rather than the
+ *   document's own order - a worse answer to a case nothing produces.
+ * - **The document a state is created from.** This runs on transactions, not at
+ *   `EditorState.create`, so a `doc` handed to `createEditorState` already in two pieces stays that
+ *   way until the first edit. Nothing produces one: the stored model refuses such a document on
+ *   parse, and `toEditor` is the only thing that opens one.
  *
  * **After every transaction rather than inside each command**, for the reason
  * `noAdjacentEmptyParagraphs` is: the gestures that split an annotation are not all commands, and
@@ -89,6 +103,8 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
       const tr = newState.tr;
       let repaired = false;
       for (const type of carried) {
+        // Named per mark type, which is the scope of the rule this holds - see above for what that
+        // leaves out and why.
         const named = new Set<string>();
         for (const span of spansOf(newState.doc, type)) {
           const id = span.mark.attrs.id as string;
