@@ -249,6 +249,10 @@ describe('the PDF a marked document makes', () => {
     const { pdf } = await compileOne(data);
     const { pdf: other, read: read2 } = await compileOne(swapped);
     expect(read2.roles).toContain('Code');
+    // The roles first, and the bytes after. A mark lost inside the fold takes its structure element
+    // with it, so this names what went missing; the digests say the whole file is the same one, and
+    // would be two unreadable hex strings on their own if the engine ever stopped being repeatable.
+    expect(read2.roles).toEqual(read.roles);
     expect(digest(other)).toBe(digest(pdf));
   }, 120_000);
 
@@ -260,5 +264,24 @@ describe('the PDF a marked document makes', () => {
     const said = spoken(read.taggedText[0]!);
     expect(times(said, QUOTED)).toBe(1);
     expect(said.match(QUOTATION) ?? []).toEqual(['"', '"']);
+  }, 120_000);
+
+  it('tells a reader which run is in another language, and says nothing of any other run', async () => {
+    const { read } = await compileOne(markedDocument());
+    // A language mark is the one mark whose whole purpose is assistive technology, and it reaches a
+    // reader as a property of the run's marked content rather than as a role: nothing in `roles` or
+    // in the tagged text moves when it is dropped. What a screen reader changes voice for is this.
+    const said = read.languages
+      .flat()
+      .map((each) => ({ language: each.language, text: spoken(each.runs) }));
+    // Two languages are declared anywhere in the document and no third: the document's own, which
+    // the engine repeats on each span it writes for a mark, and the one the author set apart.
+    expect(read.language).toBe('en-GB');
+    expect([...new Set(said.map((each) => each.language))].sort()).toEqual(['en-GB', 'fr-FR']);
+    // And exactly one run is in a language other than the document's - the author's French words,
+    // and no part of the sentence around them.
+    expect(said.filter((each) => each.language !== read.language)).toEqual([
+      { language: 'fr-FR', text: 'la mesure' },
+    ]);
   }, 120_000);
 });
