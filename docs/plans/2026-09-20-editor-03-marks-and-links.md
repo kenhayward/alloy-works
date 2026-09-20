@@ -84,10 +84,17 @@ Four questions, each answered by the smallest thing that answers it. Nothing was
 
 **3. What must a language mark carry to satisfy the stored shape and the publisher?** The stored shape
 takes `fr`, `pt-BR`, `zh-Hans`, `es-419` and `sr-Latn-RS`, and refuses `FR` and `french`.
-`publishedLanguage` carries only two or three letters and a two-letter region, so `zh-Hans`,
-`es-419` and `sr-Latn-RS` are refused at publish, naming the tag, and never shortened (Ken's answer
-K). A component's **base** language already behaves that way, so this is the existing bargain, not a
-new one. See decision D.
+
+> **Corrected during the build (task 6a, two reviews).** The Language field's hint offered `zh-Hans`
+> as its example, which is one of the tags the publisher cannot carry and the tag task 6b's warning
+> is about - so the dialog would have offered as a model the thing the next sentence complains
+> about. The hint now reads `A BCP 47 tag, such as fr, pt-BR or de-AT`. Every other user-facing word
+> in the table below is Ken's, verbatim. **This overrides wording Ken gave**, which he chose before
+> the warning existed, and it is flagged for him on the pull request.
+> `publishedLanguage` carries only two or three letters and a two-letter region, so `zh-Hans`,
+> `es-419` and `sr-Latn-RS` are refused at publish, naming the tag, and never shortened (Ken's answer
+> K). A component's **base** language already behaves that way, so this is the existing bargain, not a
+> new one. See decision D.
 
 **4. What can only a browser show?** The pinned Typst 0.15.1 compiled a page carrying all seven
 character marks, a link and a French run, with the pinned faces and `--pdf-standard ua-1`, and the
@@ -663,7 +670,7 @@ to the first field, `Escape` cancels, focus returns to the button that opened it
 | Link refusal           | `That address must begin http:, https: or mailto:.`     |
 | Language dialog title  | `Language`                                              |
 | Language field label   | `Language tag`                                          |
-| Language field hint    | `A BCP 47 tag, such as fr, pt-BR or zh-Hans`            |
+| Language field hint    | `A BCP 47 tag, such as fr, pt-BR or de-AT`              |
 | Language refusal       | `That is not a language tag. Try one like fr or pt-BR.` |
 | Apply button           | `Apply`                                                 |
 | Remove button          | `Remove`                                                |
