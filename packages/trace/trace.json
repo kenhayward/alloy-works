@@ -16615,7 +16615,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 142,
+      "line": 145,
       "kind": "title"
     },
     {
@@ -16841,27 +16841,33 @@
       "kind": "title"
     },
     {
+      "id": "CNT-118",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 1047,
+      "kind": "title"
+    },
+    {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 527,
+      "line": 587,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 716,
+      "line": 776,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 600,
+      "line": 660,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 689,
+      "line": 749,
       "kind": "title"
     },
     {

@@ -8,9 +8,11 @@ import {
   parseOutlineDocument,
   PUBLISHING_SCHEMA,
   type AssembleInput,
+  type PublishedBlock,
   type PublishedDocument,
   type PublishedMark,
   type PublishedNode,
+  type PublishedRun,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
@@ -163,13 +165,28 @@ const assembled = (): PublishedDocument => {
 /** That document as the JSON text the template reads. */
 const markedDocument = () => JSON.stringify(assembled());
 
-/** Every kind of mark the document's runs carry. */
+/** Every kind of mark the document's runs carry, at any depth - a list item holds blocks too. */
 const kindsIn = (document: PublishedDocument) => {
   const kinds = new Set<string>();
-  const walk = (node: PublishedNode) => {
-    for (const block of node.blocks) {
-      for (const run of block.runs) for (const mark of run.marks) kinds.add(mark.kind);
+  const marksIn = (runs: readonly PublishedRun[]) => {
+    for (const run of runs) for (const mark of run.marks) kinds.add(mark.kind);
+  };
+  // The paragraph branch is the positive test, so a third published block kind fails to compile
+  // here rather than being read as a list and quietly contributing no marks.
+  const inBlocks = (blocks: readonly PublishedBlock[]) => {
+    for (const block of blocks) {
+      if (block.type === 'paragraph') {
+        marksIn(block.runs);
+        continue;
+      }
+      for (const item of block.items) {
+        marksIn(item.term ?? []);
+        inBlocks(item.blocks);
+      }
     }
+  };
+  const walk = (node: PublishedNode) => {
+    inBlocks(node.blocks);
     for (const child of node.children) walk(child);
   };
   for (const node of document.nodes) walk(node);

@@ -340,8 +340,14 @@ describe('the citations in the committed model', () => {
   // binds all of them, so that body presses `Mod-Shift-8`, `Mod-]` and `Mod-[` through the real
   // keymap chain and makes, nests and lifts a list without a toolbar. The registry's own string
   // assertions beside it stay deliberately uncited: they press no key.
+  // 223, from 222: the same plan's publishing task cites CNT-118 once in
+  // packages/domain/src/publishing/assemble.test.ts, whose body assembles a list nested six levels
+  // deep in a mixture of all three kinds and reads every level back off the published document.
+  // The list tests beside it keep their words and no identifier: the start rule's requirement is
+  // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
+  // already there, because a citation is kept once per identifier per kind per file.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(222);
+    expect(model.citations).toHaveLength(223);
   });
 
   it('cites no identifier the corpus does not hold', () => {

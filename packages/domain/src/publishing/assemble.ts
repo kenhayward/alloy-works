@@ -27,6 +27,7 @@ import {
   type PublishedBlock1,
   type PublishedDocument,
   type PublishedDocument1,
+  type PublishedItem,
   type PublishedMark,
   type PublishedNode,
   type PublishedNode1,
@@ -160,19 +161,22 @@ export function assemble(input: AssembleInput): Assembled {
   // is no layout; under a layout a run carries the nine of `PUBLISHED_MARK_ORDER`.
   const carriesMarks = layout !== null;
 
-  /** A block the template can set, or a failure naming what it is. */
-  const publishable = (block: BlockNode, node: string): PublishedBlock[] => {
-    if (block.type !== 'paragraph') {
-      failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
-      return [];
-    }
-    if (block.style !== BODY) {
-      failures.push(failure('compose', 'style_missing', node, block.id, block.style));
-    }
+  /**
+   * One sequence of inline content as the template reads it, or a failure naming what in it cannot
+   * be published. `block` is the identifier those failures are reported under: a paragraph's own,
+   * and for a definition item's **term the list's**, because a stored item carries no identifier of
+   * its own and the list is the nearest real thing to point an author at. `runsOf` in
+   * `packages/editor/src/mapping.ts` names the same place for the same reason.
+   */
+  const publishedRuns = (
+    content: readonly InlineNode[],
+    node: string,
+    block: string,
+  ): PublishedRun[] => {
     const runs: PublishedRun[] = [];
-    for (const inline of block.content) {
+    for (const inline of content) {
       if (inline.type !== 'text') {
-        failures.push(failure('compose', 'inline_not_publishable', node, block.id, inline.type));
+        failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
       }
       const outcome = publishedMarks(inline.marks, carriesMarks);
@@ -180,16 +184,92 @@ export function assemble(input: AssembleInput): Assembled {
         // Every reason this run cannot be published, in the order the marks are stored in, never
         // the first alone (PUB-052).
         for (const { code, detail } of outcome.refusals) {
-          failures.push(failure('compose', code, node, block.id, detail));
+          failures.push(failure('compose', code, node, block, detail));
         }
         continue;
       }
       // Only what will be set is checked against the faces, exactly as an unmarked run is: a run
       // already refused is not set, and a second complaint about it would say nothing new.
-      check(inline.value, node, block.id);
+      check(inline.value, node, block);
       runs.push({ text: inline.value, marks: outcome.marks });
     }
-    return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
+    return runs;
+  };
+
+  /**
+   * A block the template can set, or a failure naming what it is. **A branch per stored block kind
+   * and no `default:`**, so an eighth kind added to `BlockNode` without a branch here fails to
+   * compile rather than reaching a reader as nothing at all: a block silently skipped is a document
+   * published under the author's name with a piece of it missing, and the same rule guards a mark
+   * in `publishedMark` below.
+   *
+   * **It descends.** A list item holds block content, so this calls itself, and the style check and
+   * the glyph check reach a paragraph at any depth because both are asked in the paragraph branch
+   * the recursion arrives at.
+   */
+  const publishable = (block: BlockNode, node: string): PublishedBlock[] => {
+    switch (block.type) {
+      case 'paragraph': {
+        if (block.style !== BODY) {
+          failures.push(failure('compose', 'style_missing', node, block.id, block.style));
+        }
+        const runs = publishedRuns(block.content, node, block.id);
+        return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
+      }
+      case 'list': {
+        // `publishing/1` and `publishing/2` hold paragraphs alone and their bytes are frozen
+        // (decision E), so where there is no layout a list is refused by name rather than
+        // flattened into the paragraphs of its items - which would publish a document that had
+        // lost every marker, every term and every level, under the author's name.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        // A zeroth item is a convention decimal numbering has and letters and roman numerals do
+        // not (the start rule CNT-119 was superseded for). **This is a backstop, not the rule**:
+        // `checkBlock` refuses the shape on the way in, and every occurrence reaches `assemble`
+        // through `parseContentDocument`, so nothing an author, an import or a paste can store
+        // arrives here. It is kept for the reason the frozen shapes keep theirs - content
+        // assembled by any path is refused by name, never numbered from something nobody wrote.
+        if (block.start === 0 && (block.format === 'alphabetic' || block.format === 'roman')) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, 'list:start'));
+          return [];
+        }
+        const items = block.items.map((item): PublishedItem => {
+          // A term stands on a definition list's item alone, which is `checkBlock`'s rule and
+          // not restated here. Where the author has typed none, or where every run of one was
+          // refused, `null` is the one spelling, so a template has one thing to guard.
+          const term = item.term === undefined ? [] : publishedRuns(item.term, node, block.id);
+          return {
+            term: term.length === 0 ? null : term,
+            blocks: item.content.flatMap((each) => publishable(each, node)),
+          };
+        });
+        // An item that came out empty is **kept**: it is storable because that is where a cursor
+        // stands after Enter (CNT-124's reason), and an item that vanished would renumber every
+        // item below it - a reader shown numbers the author never wrote. A list with nothing at
+        // all in it is another matter: it contributes nothing rather than an empty `L`.
+        return items.every((item) => item.term === null && item.blocks.length === 0)
+          ? []
+          : [
+              {
+                type: 'list',
+                id: block.id,
+                kind: block.kind,
+                start: block.start ?? null,
+                format: block.format ?? null,
+                items,
+              },
+            ];
+      }
+      case 'table':
+      case 'figure':
+      case 'preformatted':
+      case 'blockquote':
+      case 'equation':
+        failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+        return [];
+    }
   };
 
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
@@ -332,9 +412,25 @@ function withoutMatter(node: PublishedNode): PublishedNode1 {
  * A block as `publishing/1` held it: a run of its text and nothing else. Every run that reaches here
  * carries no mark, because `assemble` refuses a marked inline outright where there is no layout, so
  * this drops an always-empty member rather than a mark - which is what keeps the frozen bytes frozen.
+ *
+ * **A branch per published block kind and no `default:`**, so a third kind cannot be added without
+ * this failing to compile. The `list` branch throws and is **unreachable by construction**: where
+ * there is no layout `publishable` refuses a list before it can become one (decision E), and a
+ * document with a failure never reaches `withoutMatter` at all. It is here to stay unreachable - the
+ * cheap way to make a union compile is a branch that returns nothing, and that would drop a list
+ * silently into the frozen shape, which is exactly what this whole file is arranged against.
  */
 function withoutMarks(block: PublishedBlock): PublishedBlock1 {
-  return { type: block.type, id: block.id, runs: block.runs.map((run) => ({ text: run.text })) };
+  switch (block.type) {
+    case 'paragraph':
+      return {
+        type: block.type,
+        id: block.id,
+        runs: block.runs.map((run) => ({ text: run.text })),
+      };
+    case 'list':
+      throw new Error(`publishing/1 holds paragraphs alone, and block ${block.id} is a list`);
+  }
 }
 
 /** The layout's PDF member as the template reads it: the page in points, numbering as patterns. */
