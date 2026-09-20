@@ -241,6 +241,17 @@ export function assemble(input: AssembleInput): Assembled {
           // A term stands on a definition list's item alone, which is `checkBlock`'s rule and
           // not restated here. Where the author has typed none, or where every run of one was
           // refused, `null` is the one spelling, so a template has one thing to guard.
+          //
+          // **And it is deliberately not backstopped, where the start above it is.** A term on an
+          // ordered list is computed here and then dropped by the template, which reads `item.term`
+          // only in its definition branch - so what a reader is shown is the list the author wrote,
+          // with one thing missing that the model says may not be there at all. A start outside its
+          // numbering is the other kind of wrong: the template reads it, and a reader is shown
+          // numbers nobody wrote, presented as the author's. A publication that is silently
+          // incomplete about content the model forbids is worth less than a refusal and more than a
+          // publication that is confidently false, and the two are not the same call. `checkBlock`
+          // refuses both on the way in, and every occurrence reaches here through
+          // `parseContentDocument`, so neither is reachable today by any producer.
           const term = item.term === undefined ? [] : publishedRuns(item.term, node, block.id);
           return {
             term: term.length === 0 ? null : term,

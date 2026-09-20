@@ -336,6 +336,15 @@ as a publish-time backstop, so content assembled by any path is refused by name 
 from something nobody wrote. Two spellings of one rule would be two rules; there is one, and each
 side's comment points at the other.
 
+**Two spellings of one visible list, chosen rather than missed.** `{kind: 'ordered'}` and
+`{kind: 'ordered', start: 1, format: 'decimal'}` publish identically, because the template defaults an
+absent start to 1 and an absent numbering to decimal - but they canonicalise to different strings, so
+they carry different version digests for a list no reader can tell apart. Folding the defaults in is
+left undone deliberately, and this is the last slice in which it could be done at all without
+rewriting a stored version: absence and a default are not the same statement, an author who chose
+`1, 2, 3` said so and a later change to what the default is would silently restyle every list that had
+only omitted it, and a digest records what was written rather than what was seen.
+
 ## Inlines and marks
 
 `text` is the only leaf. Eight inline nodes: `text`, `equation`, `footnote`, `crossReference`,

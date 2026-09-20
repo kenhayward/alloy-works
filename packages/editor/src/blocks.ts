@@ -16,6 +16,55 @@ const termNode = editorSchema.nodes.term;
 const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
 
 /**
+ * How many lists may stand inside one another before the stored model refuses the document.
+ *
+ * **Measured, not chosen.** `parseContentDocument` refuses content nested past a JSON depth of 128
+ * (issue #125), and one list level costs four of those - the list, its items, an item, its content -
+ * so a list at the thirty-first level is a document `fromEditor` throws on. `blocks.test.ts` pins
+ * both sides of this number against the real mapping, so a change to either the limit or the stored
+ * shape fails there rather than at an author's keyboard.
+ *
+ * **It is the model's limit and not the engine's**, deliberately. Typst's `json()` gives up one
+ * level earlier, so a list of exactly this many levels stores and can never publish; choosing a
+ * single stated ceiling that sits below both cliffs, and saying it in levels an author recognises,
+ * is issue #159, which carries the measurement. Refusing here at the engine's number would refuse
+ * content the store holds, which is a different and worse kind of wrong.
+ *
+ * **Three commands answer to it, because three can build a level**: `nestItem`, `makeDefinitionList`
+ * over any paragraph, and `countedList` over a paragraph inside a definition item, where it wraps
+ * rather than toggling. The toggle, the kind change and both lifts cannot make a document deeper
+ * than the one they were handed, so they do not ask.
+ */
+export const MOST_NESTED_LIST_LEVELS = 30;
+
+/** The longest chain of lists inside one another anywhere in this document, in levels. */
+function deepestNesting(node: Node, within = 0): number {
+  let deepest = within;
+  node.forEach((child) => {
+    const inside =
+      child.type === listNode || child.type === definitionListNode ? within + 1 : within;
+    const below = deepestNesting(child, inside);
+    if (below > deepest) deepest = below;
+  });
+  return deepest;
+}
+
+/** Whether a document nests lists deeper than the store will take. */
+const tooDeep = (doc: Node | undefined): boolean =>
+  doc === undefined || deepestNesting(doc) > MOST_NESTED_LIST_LEVELS;
+
+/** How many lists the cursor stands inside, itself included where it stands in one. */
+function listsAbove(state: EditorState): number {
+  const { $from } = state.selection;
+  let count = 0;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const type = $from.node(depth).type;
+    if (type === listNode || type === definitionListNode) count += 1;
+  }
+  return count;
+}
+
+/**
  * One editing action over a block, as the toolbar, the keymap and the list panel read it.
  *
  * `bulletedList` and `numberedList` toggle: in a list of that kind they take the paragraph back out,
@@ -194,7 +243,9 @@ export function setListAttributes(attrs: Record<string, unknown>): Command {
  *
  * In a **definition** list the command wraps as usual, which nests a counted list in the definition
  * being written. That is a real thing to want and it is what the author asked for; the definition
- * list itself is left alone.
+ * list itself is left alone. **That is also the one branch here that builds a level**, so it is the
+ * one that has to answer `MOST_NESTED_LIST_LEVELS`: the toggle lifts and the kind change rewrites
+ * an attribute, and neither can make a document deeper than the one it was handed.
  */
 function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string): Command {
   return (state, dispatch) => {
@@ -203,6 +254,14 @@ function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string)
       if (inside.node.attrs.kind === kind) return liftListItem(listItemNode)(state, dispatch);
       return setListAttributes({ kind })(state, dispatch);
     }
+    // Asked of the document the wrap would make, as `nestItem` asks it, because a selection can
+    // span more than the paragraph the cursor is in - and a list caught inside the range goes down
+    // a level with it. The probe carries a null identifier so that a query, which is what the
+    // toolbar asks to decide whether a button is available, still draws none.
+    const would: Node[] = [];
+    wrapInList(listNode, { id: null, kind })(state, (tr) => would.push(tr.doc));
+    if (would.length === 0) return false;
+    if (tooDeep(would[0])) return false;
     // The identifier is drawn only where the list is actually made: a query - which is what the
     // toolbar asks to decide whether a button is available - must cost nothing and change nothing.
     const id = dispatch === undefined ? null : newIdentifier();
@@ -240,6 +299,11 @@ function makeDefinitionList(newIdentifier: () => string): Command {
     if (!$from.node($from.depth - 1).canReplaceWith(index, index + 1, definitionListNode)) {
       return false;
     }
+    // One more level than the cursor already stands in, and `MOST_NESTED_LIST_LEVELS` is the most
+    // the store will take. Counting the ancestry is exact here where `nestItem` has to probe:
+    // the guards above admit one textblock and nothing else, and a textblock holds no lists, so
+    // the new list's own level is the deepest thing this can make.
+    if (listsAbove(state) + 1 > MOST_NESTED_LIST_LEVELS) return false;
     if (dispatch) {
       const term = termNode.create();
       const wrapper = definitionListNode.create(
@@ -438,13 +502,28 @@ export function listAwareEnter(newIdentifier: () => string): Command {
  * being null would hold only while every list in a live document carries one, which nothing pins -
  * and a document carrying a list with none would have its kind, start and numbering silently reset
  * by a press of Tab.
+ *
+ * **It declines when the level it would build is deeper than the stored model admits**
+ * (`MOST_NESTED_LIST_LEVELS`). Until it did, the thirty-first Tab took the key and built the level,
+ * and `fromEditor` then threw on every save for the rest of the session - so the author kept typing
+ * into a page that said it was saving and lost all of it. Asked and answered here instead, in the
+ * doctrine this family holds everywhere else: the command declines, the toolbar reads the decline
+ * and shows **Nest item** unavailable, and Tab hands the key back to the browser.
+ *
+ * **The question is asked of the document the sink would make, not of the cursor's ancestry.** A
+ * throwaway transaction costs what `liftItem`'s does, and it is the only measure that cannot be
+ * wrong about how much depth a nesting adds - or about a deep list somewhere else in the component,
+ * which must not freeze Tab in a shallow one.
  */
 function nestItem(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const itemType = itemTypeAt(state);
     if (itemType === null) return false;
     const sink = sinkListItem(itemType);
-    if (dispatch === undefined) return sink(state, undefined);
+    const would: Node[] = [];
+    if (!sink(state, (tr) => would.push(tr.doc))) return false;
+    if (tooDeep(would[0])) return false;
+    if (dispatch === undefined) return true;
 
     const { $from } = state.selection;
     let itemDepth = $from.depth;

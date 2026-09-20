@@ -154,36 +154,69 @@ describe('the content document', () => {
   // Not CNT-119 any more: it is `Superseded by CNT-153`, which carries its sentence and adds what a
   // start number may be, and a superseded row is claimed by no design. The replacement's
   // demonstration is its own test below, whose body shows the start rule as well as the carrying.
+  /** The kind of each list in the first chain of lists, outermost first, read back from a parse. */
+  const kindsDown = (blocks: ContentDocument['content']): string[] => {
+    for (const block of blocks) {
+      if (block.type !== 'list') continue;
+      return [block.kind, ...block.items.flatMap((item) => kindsDown(item.content))];
+    }
+    return [];
+  };
+
   it('CNT-117 supports three list kinds, and a start and a numbering sit on an ordered one', () => {
-    const list = {
+    // **All three kinds, in one body.** The statement names three, and a body building only one of
+    // them would pass against a model that supported that one alone - which is the over-claim this
+    // corpus's whole apparatus exists to catch, and which this test carried until the final review.
+    const listOf = (kind: string, id: string, attrs: Record<string, unknown> = {}) => ({
       type: 'list',
-      id: 'b2',
-      kind: 'ordered',
-      start: 3,
-      format: 'roman',
-      items: [{ content: [paragraph('b3')] }],
-    };
-    expect(parseContentDocument(doc([list])).content[0]).toMatchObject({
-      kind: 'ordered',
-      format: 'roman',
+      id,
+      kind,
+      ...attrs,
+      items:
+        kind === 'definition'
+          ? [
+              {
+                term: [{ type: 'text', value: 'Creep', marks: [] }],
+                content: [paragraph(`${id}p`)],
+              },
+            ]
+          : [{ content: [paragraph(`${id}p`)] }],
     });
-    expect(() => contentDocumentSchema.parse(doc([{ ...list, kind: 'checklist' }]))).toThrow();
+    const three = parseContentDocument(
+      doc([
+        listOf('ordered', 'b2', { start: 3, format: 'roman' }),
+        listOf('unordered', 'b4'),
+        listOf('definition', 'b6'),
+      ]),
+    );
+    expect(three.content.map((block) => (block.type === 'list' ? block.kind : block.type))).toEqual(
+      ['ordered', 'unordered', 'definition'],
+    );
+    expect(three.content[0]).toMatchObject({ kind: 'ordered', start: 3, format: 'roman' });
+    // A term is the definition kind's own member, and it survives the parse as inline content.
+    expect(three.content[2]).toMatchObject({
+      kind: 'definition',
+      items: [{ term: [{ type: 'text', value: 'Creep' }] }],
+    });
+    // Three, and no fourth: the kinds are closed.
+    expect(() => contentDocumentSchema.parse(doc([listOf('checklist', 'b8')]))).toThrow();
   });
 
-  it('CNT-118 nests a list to six levels in a mixture of kinds', () => {
+  it('CNT-118 nests a list to six levels in a mixture of all three kinds', () => {
+    // A mixture of **three**, not of two. Six levels below a root, each a different kind from the
+    // one above it, and the chain is read back out of the parse rather than asserted from the
+    // fixture - so the title cannot drift away from what the body shows.
+    const kindAt = (level: number) => ['ordered', 'unordered', 'definition'][level % 3]!;
     let items: unknown = [{ content: [paragraph('b-deep')] }];
     for (let level = 6; level >= 1; level -= 1) {
-      items = [
-        {
-          content: [
-            { type: 'list', id: `b-l${level}`, kind: level % 2 ? 'ordered' : 'unordered', items },
-          ],
-        },
-      ];
+      items = [{ content: [{ type: 'list', id: `b-l${level}`, kind: kindAt(level), items }] }];
     }
-    expect(() =>
-      parseContentDocument(doc([{ type: 'list', id: 'b-root', kind: 'unordered', items }])),
-    ).not.toThrow();
+    const nested = parseContentDocument(
+      doc([{ type: 'list', id: 'b-root', kind: 'definition', items }]),
+    );
+    const chain = ['definition', ...[1, 2, 3, 4, 5, 6].map(kindAt)];
+    expect(kindsDown(nested.content)).toEqual(chain);
+    expect(new Set(chain)).toEqual(new Set(['ordered', 'unordered', 'definition']));
   });
 
   it('CNT-016 and CNT-107 carry header rows, spans, a caption and key columns on a table', () => {

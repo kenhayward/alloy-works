@@ -85,27 +85,37 @@
 
 /*
  * Lists, in the three kinds the schema renders (packages/editor/src/schema.ts). The markers below
- * are the ones the publication template pins - disc, circle and square, cycling every three depths
- * (docs/plans/2026-09-21-editor-04-lists-and-quotations.md) - so the surface and the PDF agree on
- * what a reader sees. That the marker lives in the template rather than a theme is issue #158 and is
- * not this task's fix; a marker still is not cosmetic here, because a two-level list was once a
- * refused Typst compile over exactly this - the engine's own default second-level marker is a
- * character the pinned face cannot render.
+ * are the ones the publication template pins - disc, circle and square, which Typst CYCLES, so a
+ * fourth level takes the disc again (docs/plans/2026-09-21-editor-04-lists-and-quotations.md). That
+ * the marker lives in the template rather than a theme is issue #158 and is not this task's fix; a
+ * marker still is not cosmetic here, because a two-level list was once a refused Typst compile over
+ * exactly this - the engine's own default second-level marker is a character the pinned face cannot
+ * render.
+ *
+ * **CSS cannot say "every three", and a selector of three `ul`s matches three levels or more.** So
+ * the cycle is written out, and it is written out to six levels: CNT-118's floor, and the depth the
+ * template's own note says the cycling was confirmed at. Past six the surface repeats the square
+ * while a publication carries on cycling, which is the honest extent of the agreement - and the
+ * reason to move the marker into a named style rather than keep two lists of rules in step by hand.
+ * `schema.test.ts` pins every level the cycle covers, from the tag `toDOM` actually renders.
  */
 .ProseMirror ul,
 .ProseMirror ol {
   padding-inline-start: 1.5em;
 }
 
-.ProseMirror ul {
+.ProseMirror ul,
+.ProseMirror ul ul ul ul {
   list-style-type: disc;
 }
 
-.ProseMirror ul ul {
+.ProseMirror ul ul,
+.ProseMirror ul ul ul ul ul {
   list-style-type: circle;
 }
 
-.ProseMirror ul ul ul {
+.ProseMirror ul ul ul,
+.ProseMirror ul ul ul ul ul ul {
   list-style-type: square;
 }
 

@@ -2,7 +2,13 @@ import type { Node } from 'prosemirror-model';
 import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
-import { blockCommand, listAt, listAwareEnter, setListAttributes } from './blocks.js';
+import {
+  MOST_NESTED_LIST_LEVELS,
+  blockCommand,
+  listAt,
+  listAwareEnter,
+  setListAttributes,
+} from './blocks.js';
 import { fromEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
@@ -738,6 +744,116 @@ describe('nesting an item and lifting it back', () => {
   it('declines to nest the first item of a list, which has nothing to nest under', () => {
     const doc = documentOf(list('L1', 'unordered', [item(paragraph('b1', 'One'))]));
     expect(blockCommand('nestItem', ids())(stateOf(doc, 'b1'), undefined)).toBe(false);
+  });
+});
+
+describe('the depth the model admits, which Tab may not carry an item past (issue #159)', () => {
+  /**
+   * A list nested `levels` deep, whose innermost list has two items - so the cursor can stand in
+   * the second and Tab has something to nest it under.
+   */
+  const nested = (levels: number): Node => {
+    let built: Node = list(`L${levels}`, 'unordered', [
+      item(paragraph('b1', 'One')),
+      item(paragraph('b2', 'Two')),
+    ]);
+    for (let level = levels - 1; level >= 1; level -= 1) {
+      built = list(`L${level}`, 'unordered', [item(built)]);
+    }
+    return built;
+  };
+
+  it('pins the depth against the model itself, rather than trusting a number somebody chose', () => {
+    // MOST_NESTED_LIST_LEVELS is a measurement, not a preference: `fromEditor` parses through
+    // `parseContentDocument`, whose nesting limit is counted in JSON depth, and a list level costs
+    // four of those. This is the arithmetic, done by running it - so a change to either the limit or
+    // the mapping's shape fails here rather than at an author's keyboard.
+    expect(() => stored(documentOf(nested(MOST_NESTED_LIST_LEVELS)))).not.toThrow();
+    expect(() => stored(documentOf(nested(MOST_NESTED_LIST_LEVELS + 1)))).toThrow(
+      /nested more than 128 deep/,
+    );
+  });
+
+  it('declines to nest an item when the list it would make is deeper than the model admits', () => {
+    // The gesture that gets an author here is Tab, thirty times over, and until this rule the
+    // thirty-first took the key, built the level, and left the editor holding a document
+    // `fromEditor` throws on - so the save path threw instead of saving, for the rest of the
+    // session, with everything typed after it lost. Refused when it is asked, in this family's own
+    // doctrine: the command declines, the toolbar reads the decline and says **Nest item** is
+    // unavailable, and Tab hands the key back to the browser rather than swallowing it.
+    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS)), 'b2');
+    expect(blockCommand('nestItem', ids())(state, undefined)).toBe(false);
+    const { handled, next } = run(state, blockCommand('nestItem', ids()));
+    expect(handled).toBe(false);
+    expect(next).toBe(state);
+    expect(press(state, 'Tab').handled).toBe(false);
+    expect(() => stored(state.doc)).not.toThrow();
+  });
+
+  it('nests the item one level short of the limit, and what it makes is storable', () => {
+    // The other side of the boundary, so the rule is a cliff at a measured place rather than a
+    // refusal that has quietly swallowed a level of headroom.
+    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const { handled, next } = run(state, blockCommand('nestItem', ids()));
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+    expect(() => stored(state.doc)).not.toThrow();
+  });
+
+  it('declines to make a definition list of a paragraph already at the deepest level admitted', () => {
+    // Tab is not the only gesture that builds a level. **Definition list** over a paragraph inside
+    // the innermost item wraps it in a list of its own, and at the limit that is the thirty-first -
+    // measured, not reasoned: before this rule the command took the press and `fromEditor` threw on
+    // what came back. The same answer as Tab's, because it is the same mistake.
+    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS)), 'b2');
+    expect(blockCommand('definitionList', ids())(state, undefined)).toBe(false);
+    expect(run(state, blockCommand('definitionList', ids())).handled).toBe(false);
+
+    // One level short it is taken, and what it makes is storable.
+    const room = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const { handled, next } = run(room, blockCommand('definitionList', ids()));
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('declines to make a counted list of a paragraph already at the deepest level admitted', () => {
+    // **Bulleted list** and **Numbered list** toggle inside a counted list, so they build no level
+    // there - but inside a **definition** item they wrap, which is a real thing to want and one
+    // level more. The fixture is the shape that reaches it: counted lists down to the last level,
+    // and a definition list as that level.
+    const deepest = (levels: number) => {
+      let built: Node = definitionList(
+        `D${levels}`,
+        definitionItem('Creep', paragraph('b2', 'Slow strain.')),
+      );
+      for (let level = levels - 1; level >= 1; level -= 1) {
+        built = list(`L${level}`, 'unordered', [item(built)]);
+      }
+      return built;
+    };
+    expect(() => stored(documentOf(deepest(MOST_NESTED_LIST_LEVELS)))).not.toThrow();
+
+    const state = stateOf(documentOf(deepest(MOST_NESTED_LIST_LEVELS)), 'b2');
+    expect(blockCommand('bulletedList', ids())(state, undefined)).toBe(false);
+    expect(run(state, blockCommand('bulletedList', ids())).handled).toBe(false);
+
+    const room = stateOf(documentOf(deepest(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const { handled, next } = run(room, blockCommand('numberedList', ids()));
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+  });
+
+  it('nests an item elsewhere in a document that already holds a list at the limit', () => {
+    // The rule is about the document the gesture would make, so a deep list in one part of a
+    // component must not freeze Tab in another: the deepest chain is unchanged by a nesting that
+    // happens somewhere shallower.
+    const doc = documentOf(
+      nested(MOST_NESTED_LIST_LEVELS),
+      list('S1', 'unordered', [item(paragraph('s1', 'One')), item(paragraph('s2', 'Two'))]),
+    );
+    const { handled, next } = run(stateOf(doc, 's2'), blockCommand('nestItem', ids()));
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
   });
 });
 

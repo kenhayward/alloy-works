@@ -8,7 +8,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 ### Added
 
 - **An author can make lists.** Bulleted, numbered and definition lists, from the toolbar or the
-  keyboard, over the paragraph the cursor is in. Pressing the same button again takes the list off.
+  keyboard, over the paragraph the cursor is in. Pressing **Bulleted list** or **Numbered list**
+  again takes the list off, or, where the item is nested, lifts it one level.
 - **Lists nest.** Nest item and Lift item move an item in and out, with Tab and Shift Tab as well as
   Ctrl or Cmd and the square brackets, to six levels and well past them, mixing all three kinds
   freely. Enter in an item you have written nothing in leaves the list, one level at a time.
@@ -25,8 +26,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Content can no longer be saved nested more deeply than the product allows.** The limit that
   applied when content was pasted or imported now applies on every path that stores content,
-  including an editing session. Content past it is refused by name rather than accepted, or, past a
-  certain depth, failing with an error that said nothing.
+  including an editing session. Before, content nested past it was accepted, and content nested
+  deeper still failed in a way that said nothing at all; now nothing past it is stored. What an
+  author is told is still thin: from the editor, that the text cannot be saved as it stands and to
+  undo the change that caused it; from anywhere else, only that the content is not a document this
+  product can store.
 
 ### Changed
 
@@ -44,10 +48,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - The markers beside a bulleted list - a disc, then a circle, then a square - are fixed by the
   product rather than set by a style, and they repeat after three levels of nesting. They belong in
   a named style and will move there.
-- A list nested to about thirty levels is stored by the editor and can never be published: the
-  publish fails, and the only thing you are told is that it failed. Nothing warns you at the time
-  you write it. A stated limit, in levels rather than in the language of a file format, is still to
-  come.
+- A list stops nesting at thirty levels. Every control that would build a level - **Nest item**, and
+  the three list buttons where they would make a list inside one - becomes unavailable there, and
+  `Tab` moves the focus on instead, because a list deeper than that is not a document the product
+  can store. A list
+  of exactly thirty levels is stored and can never be published: the publish fails, and the only
+  thing you are told is that it failed. A single stated limit, in levels rather than in the language
+  of a file format, and below the depth a publication can carry as well as the depth the store
+  takes, is still to come.
 - A footnote written inside a definition list's term would take no number. Nothing can put one there
   today; it is named so that whatever makes it possible starts from knowing.
 - Block quotations and preformatted text are still not writable, and a document holding one still

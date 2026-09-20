@@ -149,25 +149,34 @@ function harness() {
   /** Whether each refusal had something pending when it started (fix round 2, finding 1). */
   const refusedPending: boolean[] = [];
   const versions: VersionRef[] = [];
+  /**
+   * Why `snapshot` cannot make a document of what is on screen, or null while it can. `fromEditor`
+   * parses through `parseContentDocument`, so this is a real answer and not an invented one: a list
+   * nested past the model's limit throws exactly this.
+   */
+  let unstorable: string | null = null;
   const session = createSession({
     service,
     clock,
     timing: designTiming,
     version: { id: 'v1', number: '0.1' },
-    snapshot: () => ({
-      schemaVersion: 1,
-      title: 'Install the printer',
-      language: 'en-GB',
-      direction: 'ltr',
-      content: [
-        {
-          type: 'paragraph',
-          id: 'b1',
-          style: 'body',
-          content: [{ type: 'text', value: text, marks: [] }],
-        },
-      ],
-    }),
+    snapshot: () => {
+      if (unstorable !== null) throw new Error(unstorable);
+      return {
+        schemaVersion: 1,
+        title: 'Install the printer',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [{ type: 'text', value: text, marks: [] }],
+          },
+        ],
+      };
+    },
     onChange: (view) => views.push(view),
     onRefused: (holder, hadPending) => {
       refused.push(holder);
@@ -179,7 +188,24 @@ function harness() {
     text = next;
     session.changed();
   };
-  return { clock, service, session, type, views, refused, refusedPending, versions };
+  /**
+   * What is on screen stops being, or becomes again, a document the model can hold - as a nesting
+   * past the model's limit and the undo of one do.
+   */
+  const storable = (can: boolean) => {
+    unstorable = can ? null : 'Content is nested more than 128 deep';
+  };
+  return {
+    clock,
+    service,
+    session,
+    type,
+    views,
+    refused,
+    refusedPending,
+    versions,
+    storable,
+  };
 }
 
 describe('the editing session', () => {
@@ -1243,5 +1269,97 @@ describe('the editing session', () => {
     session.dispose();
     await settle();
     expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox' }]);
+  });
+});
+
+describe('content the editor cannot make a document of (final review, critical 1)', () => {
+  // `snapshot` is `fromEditor`, which parses through `parseContentDocument` - so it throws where the
+  // model refuses what is on screen, and until this it threw from inside `send`, after `dirty` had
+  // already been cleared. The session then stuck at "Saving" for ever, never called the service
+  // again, sent nothing on dispose because `dirty` was false, and rejected every flush - so Save
+  // version and Done editing appeared to hang for ever and everything typed after it was lost. The
+  // gesture that reached it is refused now, in the editor; this is the defence behind that refusal,
+  // and what it must never do is lose the author's text in silence.
+
+  const REFUSED =
+    'This text cannot be saved as it stands, so it was not saved. Undo the change that caused it and saving starts again.';
+
+  it('keeps the change and says so, rather than reporting a save that cannot happen', async () => {
+    const { clock, service, session, type, views, storable } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    storable(false);
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    const view = session.view();
+    expect(view.dirty).toBe(true);
+    expect(view.save).toBe('stopped');
+    expect(view.phase).toBe('editing');
+    expect(view.notice).toBe(REFUSED);
+    // Nothing was sent, and nothing is left scheduled to send it again: a retry would take the same
+    // snapshot and fail the same way.
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual([]);
+    await clock.advance(60_000);
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual([]);
+    expect(views.at(-1)?.save).toBe('stopped');
+  });
+
+  it('answers Save version rather than rejecting into a button that then waits for ever', async () => {
+    const { clock, service, session, type, storable } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    storable(false);
+    type('Unbox the printer');
+    await expect(session.saveVersion()).resolves.toBeUndefined();
+    expect(service.calls.filter((call) => call.startsWith('cut'))).toEqual([]);
+    expect(session.view().phase).toBe('editing');
+    expect(session.view().dirty).toBe(true);
+    expect(session.view().notice).toBe(REFUSED);
+  });
+
+  it('answers Done editing the same way, and holds the lock rather than releasing over lost text', async () => {
+    const { clock, service, session, type, storable } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    storable(false);
+    type('Unbox the printer');
+    await expect(session.doneEditing()).resolves.toBeUndefined();
+    expect(service.calls.filter((call) => call.startsWith('release'))).toEqual([]);
+    expect(session.view().phase).toBe('editing');
+    expect(session.view().dirty).toBe(true);
+  });
+
+  it('leaves the change unsent on dispose rather than throwing out of the unmount', async () => {
+    const { clock, service, session, type, storable } = harness();
+    type('Unbox');
+    await clock.advance(2_000);
+    storable(false);
+    type('Unbox the printer');
+    expect(() => session.dispose()).not.toThrow();
+    await settle();
+    // The best-effort write on dispose is exactly that: what cannot be made into a document cannot
+    // be sent, and it must not go as the older snapshot either, which would record text the author
+    // has since changed as their latest.
+    expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+    expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox' }]);
+  });
+
+  it('saves again once the content is a document again, over the changes that were held', async () => {
+    const { clock, service, session, type, storable } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    storable(false);
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(session.view().save).toBe('stopped');
+    // The author undoes what the model refused. Nothing re-sends on its own; the next change does,
+    // which is what `refuse` does for a refusal the service itself gave.
+    storable(true);
+    type('Unbox the printer, then plug it in.');
+    await clock.advance(2_000);
+    expect(session.view().save).toBe('saved');
+    expect(session.view().dirty).toBe(false);
+    expect(service.saved.at(-1)).toMatchObject({ text: 'Unbox the printer, then plug it in.' });
+    expect(session.view().notice).toBeNull();
   });
 });

@@ -15976,7 +15976,7 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2495,
+      "line": 2505,
       "kind": "title"
     },
     {
@@ -16018,13 +16018,13 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 196,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 233,
+      "line": 259,
       "kind": "title"
     },
     {
@@ -16402,31 +16402,31 @@
     {
       "id": "CNT-016",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 189,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 202,
+      "line": 235,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 229,
+      "line": 262,
       "kind": "title"
     },
     {
       "id": "CNT-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 218,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 202,
+      "line": 235,
       "kind": "title"
     },
     {
@@ -16444,19 +16444,19 @@
     {
       "id": "CNT-107",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 189,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 157,
+      "line": 166,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 173,
+      "line": 205,
       "kind": "title"
     },
     {
@@ -16468,7 +16468,7 @@
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 236,
+      "line": 269,
       "kind": "title"
     },
     {
@@ -16492,7 +16492,7 @@
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 486,
+      "line": 519,
       "kind": "title"
     },
     {

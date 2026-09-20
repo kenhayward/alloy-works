@@ -9,7 +9,7 @@ const NUMBERINGS = [
 ];
 
 const HINT = 'list-panel-start-hint';
-const REFUSAL = 'list-panel-start-refused';
+const REFUSAL = 'list-panel-refused';
 
 /**
  * The two things that can be wrong with a start, in the author's words.
@@ -21,6 +21,20 @@ const REFUSAL = 'list-panel-start-refused';
  */
 const SHAPE = 'A start is a whole number, 0 or more.';
 const PAIR = 'Only a 1, 2, 3 list can start at 0. Try 1 or more.';
+
+/**
+ * A refusal, and **which control asked for it**.
+ *
+ * The sentence is about the pair either way, but `aria-invalid` is about a control: a refusal that
+ * arrived from the **Numbering** select is not a complaint about the number in the **Start at** box,
+ * whose own value the model took and the list still holds. Marking that box invalid would send an
+ * author to correct the one thing that is not wrong, which is the same shape of defect as a button
+ * that announces itself available and does nothing.
+ */
+interface Refusal {
+  readonly sentence: string;
+  readonly from: 'start' | 'numbering';
+}
 
 /** What the panel is about: the innermost counted list the cursor stands in, as `listAt` reads it. */
 export interface ListPanelList {
@@ -86,7 +100,9 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
   const numbered = list.kind === 'ordered';
   const held = list.start === null ? '' : String(list.start);
   const [start, setStart] = useState({ typed: held, inModel: held, of: list.id });
-  const [refused, setRefused] = useState<string | null>(null);
+  const [refused, setRefused] = useState<Refusal | null>(null);
+  /** Which control, if any, the standing refusal came from - so the invalid one is the one asked. */
+  const blamed = (control: 'start' | 'numbering') => refused?.from === control;
 
   // Adjusting state during render, the way React documents it for state derived from a prop, and by
   // value rather than by counting renders: `<StrictMode>` renders twice, and anything keeping its
@@ -133,8 +149,8 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
               step={1}
               value={start.typed}
               disabled={!enabled}
-              aria-describedby={refused === null ? HINT : `${HINT} ${REFUSAL}`}
-              aria-invalid={refused !== null}
+              aria-describedby={blamed('start') ? `${HINT} ${REFUSAL}` : HINT}
+              aria-invalid={blamed('start')}
               onChange={(event) => {
                 const typed = event.target.value;
                 setStart((previous) => ({ ...previous, typed }));
@@ -154,17 +170,17 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
                     !event.target.validity.stepMismatch &&
                     !event.target.validity.rangeUnderflow);
                 if (!wellFormed) {
-                  setRefused(SHAPE);
+                  setRefused({ sentence: SHAPE, from: 'start' });
                   return;
                 }
-                setRefused(ask({ start: value }) ? null : PAIR);
+                setRefused(ask({ start: value }) ? null : { sentence: PAIR, from: 'start' });
               }}
             />
           </label>
           <p id={HINT}>The number the first item takes</p>
           {refused !== null && (
             <p id={REFUSAL} role="alert">
-              {refused}
+              {refused.sentence}
             </p>
           )}
           <label>
@@ -172,10 +188,18 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
             <select
               value={list.format ?? 'decimal'}
               disabled={!enabled}
+              aria-describedby={blamed('numbering') ? REFUSAL : undefined}
+              aria-invalid={blamed('numbering')}
               // The start and the numbering are judged together, so this field refuses for the
               // pair's reason and never for the start's own shape: what is already in the list is
               // a number the model took.
-              onChange={(event) => setRefused(ask({ format: event.target.value }) ? null : PAIR)}
+              onChange={(event) =>
+                setRefused(
+                  ask({ format: event.target.value })
+                    ? null
+                    : { sentence: PAIR, from: 'numbering' },
+                )
+              }
             >
               {NUMBERINGS.map((numbering) => (
                 <option key={numbering.format} value={numbering.format}>

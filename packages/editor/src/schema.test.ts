@@ -415,12 +415,16 @@ describe('the editor stylesheet', () => {
     const ulTag = tagOf(editorSchema.nodes.list.spec.toDOM!(list({ id: 'L1' }, listItem('b1'))));
     const liTag = tagOf(editorSchema.nodes.listItem.spec.toDOM!(listItem('b2')));
 
-    // The template pins three depths of marker - disc, circle, square - and cycles past them
-    // (docs/plans/2026-09-21-editor-04-lists-and-quotations.md; the marker set belongs in a theme
-    // and not a template, which is issue #158 and not this task's fix). A list nested inside itself
-    // is that many copies of its own tag, chained by descendant combinators, because that is what a
-    // real nested list looks like in the DOM.
-    for (let depth = 1; depth <= 3; depth += 1) {
+    // The template pins three markers - disc, circle, square - and **cycles** them, so a fourth
+    // level takes the disc again (docs/plans/2026-09-21-editor-04-lists-and-quotations.md; the
+    // marker set belongs in a theme and not a template, which is issue #158 and not this task's
+    // fix). CSS cannot say "every three", and a selector of three `ul`s matches three levels **or
+    // more** - so left at three the surface was square from the third level down while the
+    // publication cycled, which is the opposite of what the stylesheet claimed. The cycle is written
+    // out to six levels, CNT-118's floor and the depth the template's own note confirms; a list
+    // nested inside itself is that many copies of its own tag, chained by descendant combinators,
+    // because that is what a real nested list looks like in the DOM.
+    for (let depth = 1; depth <= 6; depth += 1) {
       expectSelector(`.ProseMirror ${Array(depth).fill(ulTag).join(' ')}`);
     }
 

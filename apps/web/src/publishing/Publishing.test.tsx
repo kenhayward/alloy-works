@@ -146,6 +146,13 @@ describe('publishing from the document page', () => {
         detail: 'table',
       },
       { stage: 'compose', code: 'glyph_missing', node: CALIBRATION, block: 'b2', detail: 'U+0627' },
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: CALIBRATION,
+        block: 'D1',
+        detail: 'comment',
+      },
     ];
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
@@ -159,6 +166,12 @@ describe('publishing from the document page', () => {
     expect(why).toHaveTextContent('1.1 Calibration: A table cannot be published yet.');
     expect(why).toHaveTextContent(
       '1.1 Calibration: The character U+0627 is in no typeface this publication can use.',
+    );
+    // Not "this paragraph": `assemble` raises this code for a definition list's **term** as well as
+    // for a paragraph, naming the list, and a sentence that says paragraph then points at a list is
+    // a sentence an author cannot act on.
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: This text holds formatting or an inline item that cannot be published yet.',
     );
   });
 

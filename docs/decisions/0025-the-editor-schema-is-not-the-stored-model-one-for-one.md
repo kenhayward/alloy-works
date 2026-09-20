@@ -34,7 +34,7 @@ more node types than the store does, and the mapping widens and narrows between 
 
 For lists, concretely:
 
-- **Five editor node types for two stored ones.** `list` (`listItem+`, with `kind` restricted to
+- **Five editor node types for the model's one `list`.** `list` (`listItem+`, with `kind` restricted to
   `'ordered' | 'unordered'`, plus `start` and `format`), `listItem` (`block+`), `definitionList`
   (`definitionItem+`), `definitionItem` (`term block+`) and `term` (`text*`, marks allowed). The
   stored model keeps one `list` with three kinds and an item of `{ term?, content }`.

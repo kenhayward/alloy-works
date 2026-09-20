@@ -590,11 +590,29 @@ the real keymap rather than by reasoning about precedence. Tab and Shift-Tab are
 carry no registry row, because they are a second route to Nest item and Lift item rather than their
 named shortcut, and Tab outside a list still lets the focus leave.
 
-**Both descending plugins descend, and their order is load-bearing.** Identity walks every block at
-any depth, so a block made inside a list item is named like any other; adjacency is held in every
-sequence of blocks the editor can make, which is the top level and the two kinds of item. Identity
-runs **before** adjacency, and must: adjacency moves positions and identity reads them, so reversed it
-throws a position out of range from inside `appendTransaction` - an uncaught exception on a keystroke.
+**Every command that would build a level declines past the depth the content model admits.** Thirty
+levels, measured against `fromEditor` rather than chosen, and asked of the document the command would
+make rather than of the cursor's ancestry - so a deep list in one part of a component does not freeze
+Tab in a shallow one. Three commands can build one: **Nest item**, **Definition list** over any
+paragraph, and **Bulleted list** or **Numbered list** over a paragraph inside a definition item,
+where they wrap instead of toggling. Each then declines, Tab hands the key back to the browser, and
+the toolbar shows the control unavailable - the same shape every other control here takes: ask the
+command, show what it said. The alternative was what the editor did until the final whole-branch
+review: the thirty-first level was built, `fromEditor` threw on every save afterwards, and the author
+kept typing into a page that said it was saving.
+
+**Both descending plugins descend.** Identity walks every block at any depth, so a block made inside
+a list item is named like any other; adjacency is held in every sequence of blocks the editor can
+make, which is the top level and the two kinds of item. Identity is registered **before** adjacency,
+and that is a preference rather than a rule: ProseMirror re-runs every `appendTransaction` over
+whatever any of them appends, so each sees the document the other left however they are ordered, and
+swapping them changes no outcome. What the order buys is that a paragraph about to be removed is
+named and then removed, one wasted identifier, rather than the document being cut about between the
+pass identity reads its positions in and the one it writes them back in. **The order that is
+load-bearing is inside the adjacency walk**: it pushes a node's removal and then descends into that
+node, because collecting a later sibling's position before a deeper one and then deleting back to
+front addresses a position that no longer exists - a `RangeError` out of `appendTransaction`, which
+is an uncaught exception on a keystroke, and which `state.test.ts` drives rather than argues.
 A mid-item split can duplicate an identifier rather than leave one absent, so the repair covers both,
 and the identifiers a command mints are asserted on the command's own transaction rather than on the
 applied state, where the plugin has already repaired them.
@@ -604,6 +622,15 @@ which runs `parseContentDocument`, and the service parses it again. The identity
 empty-paragraph plugin keep that true after any sequence of edits, which a seeded test of two thousand
 operations holds them to - over a nested document as well as a flat one, with every one of its six
 operations really drawn, which it was not until the generator's own arithmetic was checked.
+
+**And the session does not trust it.** `fromEditor` is what `snapshot` calls, so a shape no gesture
+declined would throw inside the save path. The snapshot is therefore taken **before** the attempt
+moves anything - the sequence, `dirty`, the indicator - and a throw leaves the change unsaved, still
+dirty, with a sentence saying so and editing going on, exactly as a refusal from the service does;
+`dispose` does the same and sends nothing rather than throwing out of the unmount or writing an older
+snapshot as the author's latest. Clearing `dirty` first, as it did until the final whole-branch review,
+left the indicator saying "Saving" for ever, stopped the unmount saving anything, and made **Save
+version** and **Done editing** reject into a control that then waited for ever.
 
 `pnpm dev:setup` makes "Install the printer" in both development environments, over the component type
 the environment starts with rather than one of its own, and allows Ada and Grace Author on General; Alice

@@ -2343,6 +2343,12 @@ describe('the list panel', () => {
     expect(firstBlock(view)).toMatchObject({ type: 'list', kind: 'ordered', start: 0 });
     expect(firstBlock(view)).not.toHaveProperty('format');
     expect(numbering).toHaveValue('decimal');
+    // The sentence is about the pair; `aria-invalid` is about a control. It belongs on the one that
+    // was refused - the **Numbering** select here - and not on the **Start at** box, whose own value
+    // the model took and the list still holds. A box announcing itself invalid over a value the
+    // document accepted sends an author to correct the one thing that is not wrong.
+    expect(numbering).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Start at')).toHaveAttribute('aria-invalid', 'false');
 
     // And from the other side: a lettered list told to start at 0. Clearing the start first is
     // what makes the numbering acceptable, which also takes the refusal away.
@@ -2360,6 +2366,10 @@ describe('the list panel', () => {
       await screen.findByText('Only a 1, 2, 3 list can start at 0. Try 1 or more.'),
     ).toBeInTheDocument();
     expect(firstBlock(view)).not.toHaveProperty('start');
+    // And the attribute follows the control back: the box was refused this time, the select holds
+    // the numbering the model took.
+    expect(screen.getByLabelText('Start at')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Numbering')).toHaveAttribute('aria-invalid', 'false');
   });
 
   it('leaves a refused start behind when the cursor moves to another list', async () => {
