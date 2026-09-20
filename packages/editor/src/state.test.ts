@@ -196,12 +196,18 @@ describe('what the editor always holds', () => {
    * Two thousand edits from one seed, each one followed by a save, so a document the store would
    * refuse is caught at the step that made it rather than by an author weeks later.
    */
-  const storableAfterAnySequence = (start: EditorState, from: number) => {
+  const storableAfterAnySequence = (start: EditorState, firstSeed: number) => {
     // A seeded generator, so a failure names a sequence that can be replayed.
-    let seed = from;
+    //
+    // **The high bits, not the low ones.** This generator's low bit alternates deterministically,
+    // each step draws exactly twice, and 6 is even - so a plain `seed % 6` returned one parity for
+    // every step of a run, and `insertText` and `joinBackward` never ran at all. The test's own
+    // title names typing and joining; for two thousand steps it did neither. Shifting first spreads
+    // the six roughly evenly, and the shift is what makes the title true.
+    let seed = firstSeed;
     const random = (below: number) => {
       seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
-      return seed % below;
+      return (seed >>> 13) % below;
     };
     let state = start;
     for (let step = 0; step < 2000; step += 1) {
@@ -214,9 +220,9 @@ describe('what the editor always holds', () => {
       if (operation === 2) state = run(placed, joinBackward);
       if (operation === 3) state = run(placed, enterWithoutEmpties);
       if (operation === 4) {
-        const from = Math.min(pos, size - 1);
-        const to = Math.min(size - 1, from + random(8));
-        state = placed.apply(placed.tr.delete(from, to));
+        const deleteFrom = Math.min(pos, size - 1);
+        const to = Math.min(size - 1, deleteFrom + random(8));
+        state = placed.apply(placed.tr.delete(deleteFrom, to));
       }
       if (operation === 5) state = run(placed, undo);
       expect(() => fromEditor(state.doc), `step ${step}`).not.toThrow();

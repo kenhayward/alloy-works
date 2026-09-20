@@ -67,18 +67,21 @@ const listHolding = (block: BlockNode): BlockNode => ({
 });
 
 /**
- * A list six levels deep, its levels running unordered, ordered, definition and round again, so
- * every kind holds a list of every other kind somewhere in the chain (CNT-118). Each level's item
- * holds the paragraph a reader sees and then the list below it.
+ * A list seven levels deep whose levels run unordered, ordered, definition, ordered, unordered,
+ * definition, unordered - which is the shortest chain in which **every one of the six ordered pairs
+ * of kinds** occurs, so every kind holds a list of every other kind somewhere in it (CNT-118, "in
+ * any mixture of kinds"). Six levels can only realise three of the six pairs, which is what a chain
+ * that cycles does. Each level's item holds the paragraph a reader sees and then the list below it.
  */
-const sixLevelsMixingEveryKind = (): BlockNode => {
+const deeplyMixingEveryKind = (): BlockNode => {
   const kinds = [
     'unordered',
     'ordered',
     'definition',
-    'unordered',
     'ordered',
+    'unordered',
     'definition',
+    'unordered',
   ] as const;
   const at = (level: number): BlockNode => {
     const kind = kinds[level]!;
@@ -349,8 +352,20 @@ describe('the mapping carries a list, both ways', () => {
     expect(fromEditor(doc)).toEqual(stored);
   });
 
-  it('CNT-118 round-trips a list nested six levels deep, mixing all three kinds, unchanged', () => {
-    const stored = document([sixLevelsMixingEveryKind()]);
+  it('CNT-118 round-trips a list nested past six levels, in every mixture of kinds, unchanged', () => {
+    const stored = document([deeplyMixingEveryKind()]);
+    // Counted rather than trusted, so the title cannot drift from the fixture: seven lists deep,
+    // and every ordered pair of kinds - six of them, for three kinds - stands somewhere in it.
+    const chain: string[] = [];
+    for (let block = stored.content[0]; block?.type === 'list';) {
+      chain.push(block.kind);
+      block = block.items[0]?.content.find((child) => child.type === 'list');
+    }
+    expect(chain).toHaveLength(7);
+    expect(
+      new Set(chain.slice(0, -1).map((kind, level) => `${kind}>${chain[level + 1]}`)).size,
+    ).toBe(6);
+
     const opened = toEditor(stored);
     expect(opened.editable).toBe(true);
     expect(fromEditor((opened as Extract<Opened, { editable: true }>).doc)).toEqual(stored);

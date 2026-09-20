@@ -229,6 +229,14 @@ function markOf(mark: EditorMark): unknown {
  * than coerced into a run with no text. Today the schema's `paragraph` holds `text*` and nothing
  * else can get in; the day it holds an image or a footnote, this says which node has no run yet
  * instead of storing a document quietly missing it.
+ *
+ * **`id` here is an identifier, where `storedBlock`'s identically worded message carries a path.**
+ * The two cannot be merged: this one is raised from inside a block that is known to have an
+ * identifier, and that one from a node that may have none and so has nothing but its position to be
+ * named by. So `Block D1 holds a node this editor cannot store: x` is this message and
+ * `Block 0.0.0 holds ...` is that one. For a term, `id` is the **list's**, because a term has no
+ * identifier of its own and the list is the nearest real thing to point an author at - the same
+ * answer publishing gives a failure inside a term.
  */
 function runsOf(textblock: Node, id: string): unknown[] {
   const runs: unknown[] = [];
@@ -325,7 +333,9 @@ function storedBlock(node: Node, at: string): unknown {
       node.forEach((item, _offset, index) => {
         const opening = item.child(0);
         if (opening.type.name !== 'term') {
-          throw new Error(`Block ${at} has an item that does not open with its term`);
+          // The item's own path, not the list's: a list may hold many items and only one of them
+          // is wrong, and an item carries no identifier of its own to be named by.
+          throw new Error(`Item ${at}.${index} does not open with its term`);
         }
         // **Judged on what `runsOf` returned, never on what the term node holds.** A term the
         // author has not typed into is no term at all and its member is left out: `term: []` is a
