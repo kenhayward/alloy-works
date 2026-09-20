@@ -289,8 +289,12 @@ describe('the citations in the committed model', () => {
   // 205, from 204: the same plan cites STR-036 in apps/web/src/structure/DocumentPage.test.tsx: the
   // outline panel and the generated lists number with the scheme of the layout the document would be
   // published under, and the test shows those are the numbers `assemble` prints under that layout.
+  // 207, from 205: the editor's marks plan cites CNT-126 and CNT-147 in
+  // packages/editor/src/schema.test.ts: the editor's schema holds a hyperlink as a mark carrying an
+  // absolute target and an optional title, and a language mark that renders its tag and turns the
+  // spelling checker off over the run it covers.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(205);
+    expect(model.citations).toHaveLength(207);
   });
 
   it('cites no identifier the corpus does not hold', () => {
