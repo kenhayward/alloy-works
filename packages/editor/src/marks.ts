@@ -1,7 +1,7 @@
 import { markSchema } from '@alloy-works/domain';
 import { toggleMark } from 'prosemirror-commands';
-import type { Mark as EditorMark, MarkType } from 'prosemirror-model';
-import type { Command, EditorState } from 'prosemirror-state';
+import type { Mark as EditorMark, MarkType, Node } from 'prosemirror-model';
+import type { Command, EditorState, Transaction } from 'prosemirror-state';
 
 import { editorSchema } from './schema.js';
 
@@ -105,26 +105,84 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
  * schema gains later requires, and it is the same code the service runs again on the way to storage,
  * so nothing the editor applies can fail at save with a message written for a programmer.
  *
- * An attribute with no value - null, absent, or the empty string somebody left a box at - is **no
+ * An attribute with no value - null, absent, or a box left at nothing but spaces - is **no
  * attribute**, and the schema then decides whether the mark could do without it. A `hyperlink`'s
  * `title` can, so an empty title box makes a link with no title rather than a link the stored model
  * refuses; an `href` cannot, so an empty target box makes no link at all. The editor spells "no
- * title" as null, which is what the mapping writes back out as absence.
+ * title" as null, which is what the mapping writes back out as absence. A value with something in
+ * it is kept exactly as it was typed, spaces and all: a box with nothing in it is the author having
+ * said nothing, and trimming what they did say is editing it.
+ *
+ * **The type and the identifier are written last, so neither can be handed in.** A caller naming the
+ * annotation would make one identifier name two of them, which the content model refuses (CNT-004);
+ * a caller naming the type would validate one mark and create another, which reaches a keystroke
+ * handler as a thrown `RangeError` rather than as a refusal.
  */
 function accepted(
   mark: string,
   id: string,
   attrs: Record<string, unknown>,
 ): Record<string, unknown> | null {
-  const candidate: Record<string, unknown> = { type: mark, id };
+  const candidate: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(attrs)) {
-    if (value !== null && value !== undefined && value !== '') candidate[name] = value;
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    candidate[name] = value;
   }
+  candidate.type = mark;
+  candidate.id = id;
   const parsed = markSchema.safeParse(candidate);
   if (!parsed.success) return null;
   const members: Record<string, unknown> = { ...parsed.data };
   delete members.type;
   return members;
+}
+
+/**
+ * Every contiguous span of one mark type in the document, in order: the ranges over which one
+ * annotation runs without a break. Two text nodes belong to one span when they touch and carry the
+ * same mark, which is what makes a run an edit split away still part of the annotation (CNT-004).
+ */
+function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; to: number }[] {
+  const spans: { mark: EditorMark; from: number; to: number }[] = [];
+  doc.descendants((node, pos) => {
+    if (!node.isText) return;
+    const mark = node.marks.find((carried) => carried.type === type);
+    if (mark === undefined) return;
+    const last = spans[spans.length - 1];
+    if (last !== undefined && last.to === pos && last.mark.eq(mark)) last.to = pos + node.nodeSize;
+    else spans.push({ mark, from: pos, to: pos + node.nodeSize });
+  });
+  return spans;
+}
+
+/**
+ * The same transaction, with every piece of an annotation after the first given an identifier of
+ * its own.
+ *
+ * One annotation is one region of the text. Taking a mark off the middle of one, or changing what it
+ * says there, leaves the text either side under the identifier it had - two separated regions
+ * answering to one name - and CNT-005 makes accepting or rejecting an annotation one operation over
+ * every fragment of that identifier, so the two would resolve together although the author sees two
+ * of them. Nothing has stored a mark yet, so the rule is held here, where the split happens, rather
+ * than discovered at a save.
+ *
+ * `addMark` is enough to re-identify a piece: a mark type excludes its own kind, so the new mark
+ * replaces the old one over that range and leaves every other mark on the run alone. Mark steps move
+ * no positions, so the ranges read before the first of them stay right for all of them.
+ */
+function reidentified(tr: Transaction, type: MarkType, newIdentifier: () => string): Transaction {
+  if (!tr.docChanged) return tr;
+  const named = new Set<string>();
+  for (const span of spansOf(tr.doc, type)) {
+    const id = span.mark.attrs.id as string;
+    if (!named.has(id)) {
+      named.add(id);
+      continue;
+    }
+    tr.addMark(span.from, span.to, type.create({ ...span.mark.attrs, id: newIdentifier() }));
+  }
+  return tr;
 }
 
 /**
@@ -134,8 +192,12 @@ function accepted(
  * second annotation (CNT-004): `addMark` replaces an overlapping mark of the same type, so marking a
  * phrase inside a phrase leaves one annotation under the newer identifier rather than two spellings
  * of one. Only an edit that splits a run the author already marked keeps an identifier, because
- * nothing there changed. Changing a link's target is a new annotation for the same reason, and the
- * command that edits one says so by taking this route rather than reusing what it read.
+ * nothing there changed.
+ *
+ * **This is not the way to change what a mark says.** `toggleMark` decides by whether the range
+ * carries the mark at all and never reads its attributes, so running it over a range that already
+ * carries one takes that mark off and the new target is never applied. `applyMarkCommand` is the
+ * command for that.
  *
  * `removeWhenPresent: false` is deliberate: pressing Strong over a selection that is half bold makes
  * all of it bold, which is what every editor an author has used does, rather than clearing the half
@@ -151,7 +213,45 @@ export function toggleMarkCommand(
     if (type === undefined) return false;
     const members = accepted(mark, newIdentifier(), attrs);
     if (members === null) return false;
-    return toggleMark(type, members, { removeWhenPresent: false })(state, dispatch, view);
+    return toggleMark(type, members, { removeWhenPresent: false })(
+      state,
+      dispatch && ((tr) => dispatch(reidentified(tr, type, newIdentifier))),
+      view,
+    );
+  };
+}
+
+/**
+ * Changes what a mark says over the selection, or over the whole annotation a cursor sits inside -
+ * a link's target and title, a run's language - and applies it where there is none there yet.
+ *
+ * The mark that comes out is a **new annotation**: the old one is taken off the range and one with a
+ * fresh identifier put on, rather than the old one edited in place. An annotation is a thing an
+ * author accepted, commented on or conditioned; what it says is part of what it is, so a target
+ * changed under the same identifier would silently re-point somebody else's decision (CNT-004).
+ *
+ * False, and a no-op, where the value is one the stored model would refuse, and where a cursor sits
+ * in no annotation of that type and has selected nothing to put one over.
+ */
+export function applyMarkCommand(
+  mark: string,
+  newIdentifier: () => string,
+  attrs: Record<string, unknown> = {},
+): Command {
+  return (state, dispatch) => {
+    const type = editorSchema.marks[mark];
+    if (type === undefined) return false;
+    const members = accepted(mark, newIdentifier(), attrs);
+    if (members === null) return false;
+    const { from, to, empty } = state.selection;
+    const range = empty ? annotationAt(state, type) : { from, to };
+    if (range === null || range.from === range.to) return false;
+    if (dispatch) {
+      const tr = state.tr.removeMark(range.from, range.to, type);
+      tr.addMark(range.from, range.to, type.create(members));
+      dispatch(reidentified(tr, type, newIdentifier).scrollIntoView());
+    }
+    return true;
   };
 }
 
@@ -185,14 +285,20 @@ function annotationAt(state: EditorState, type: MarkType): { from: number; to: n
  * Takes a mark off: the selected text, or the whole annotation a cursor sits inside. A no-op, and
  * false, where there is nothing of that type to take off - so a toolbar can offer it without first
  * asking what is there.
+ *
+ * It takes an identifier source because taking the middle out of an annotation leaves the text
+ * either side of the hole two separated pieces of it, and the far piece becomes one of its own.
  */
-export function removeMarkCommand(mark: string): Command {
+export function removeMarkCommand(mark: string, newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const type = editorSchema.marks[mark];
     if (type === undefined) return false;
     const range = annotationAt(state, type);
     if (range === null) return false;
-    dispatch?.(state.tr.removeMark(range.from, range.to, type));
+    if (dispatch) {
+      const tr = state.tr.removeMark(range.from, range.to, type);
+      dispatch(reidentified(tr, type, newIdentifier));
+    }
     return true;
   };
 }
@@ -212,12 +318,19 @@ function markIn(state: EditorState, type: MarkType): EditorMark | undefined {
  * What a mark the selection already carries says, so a prompt opens filled with it rather than
  * empty - editing a link means seeing its target, not typing it again. Null where the selection
  * carries no mark of that type.
+ *
+ * **The identifier is not among what comes back.** Nothing needs it, and a prompt handed one would
+ * naturally send it back with the changed value, which is the one thing a change must not do
+ * (CNT-004, and `applyMarkCommand` above).
  */
 export function markAt(state: EditorState, mark: string): Record<string, unknown> | null {
   const type = editorSchema.marks[mark];
   if (type === undefined) return null;
   const found = markIn(state, type);
-  return found === undefined ? null : { ...found.attrs };
+  if (found === undefined) return null;
+  const said: Record<string, unknown> = { ...found.attrs };
+  delete said.id;
+  return said;
 }
 
 /**
@@ -226,9 +339,11 @@ export function markAt(state: EditorState, mark: string): Record<string, unknown
  *
  * Throughout, rather than anywhere: `removeWhenPresent: false` means that pressing the button over a
  * half-marked selection marks the rest of it, so a button that said it was already pressed would
- * tell a screen reader the opposite of what pressing it does.
+ * tell a screen reader the opposite of what pressing it does. It is named for the answer it gives
+ * rather than for what a toolbar does with it, so that nobody reads `markActive` as the usual
+ * `rangeHasMark` idiom and quietly makes it one.
  */
-export function markActive(state: EditorState, mark: string): boolean {
+export function markThroughout(state: EditorState, mark: string): boolean {
   const type = editorSchema.marks[mark];
   if (type === undefined) return false;
   const { $from, from, to, empty } = state.selection;

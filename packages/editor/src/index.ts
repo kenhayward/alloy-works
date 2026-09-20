@@ -2,10 +2,11 @@ export { editorSchema } from './schema.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {
+  applyMarkCommand,
   EDITOR_COMMANDS,
-  markActive,
   markAt,
   markKeymap,
+  markThroughout,
   removeMarkCommand,
   toggleMarkCommand,
   type EditorCommand,

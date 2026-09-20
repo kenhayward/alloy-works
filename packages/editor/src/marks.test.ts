@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { fromEditor, toEditor } from './mapping.js';
 import {
+  applyMarkCommand,
   EDITOR_COMMANDS,
-  markActive,
   markAt,
   markKeymap,
+  markThroughout,
   removeMarkCommand,
   toggleMarkCommand,
 } from './marks.js';
@@ -124,19 +125,59 @@ describe('applying a mark', () => {
 
   it('CNT-004 keeps one identifier when an edit splits a marked run', () => {
     let state = run(stateWith('alpha beta'), 1, 11, toggleMarkCommand('emphasis', counter()));
-    // A second mark over part of the first breaks one text node into three, and text with no mark
-    // of its own breaks it again. The emphasis is one annotation across every one of them.
+    // A second mark over part of the first breaks one text node into three. The emphasis runs
+    // straight through all three without a gap, so it is still one annotation under one identifier.
     state = run(state, 7, 10, toggleMarkCommand('strong', counter()));
-    state = state.apply(state.tr.replaceWith(6, 6, editorSchema.text('XX')));
     expect(textAndMarks(state)).toEqual([
-      { text: 'alpha', marks: ['emphasis'] },
-      { text: 'XX', marks: [] },
-      { text: ' ', marks: ['emphasis'] },
+      { text: 'alpha ', marks: ['emphasis'] },
       { text: 'bet', marks: ['emphasis', 'strong'] },
       { text: 'a', marks: ['emphasis'] },
     ]);
     expect(idsIn(state, 'emphasis')).toEqual(['id1']);
-    expect(state.doc.firstChild!.textContent).toBe('alphaXX beta');
+    expect(idsIn(state, 'strong')).toEqual(['id2']);
+    expect(state.doc.firstChild!.textContent).toBe('alpha beta');
+  });
+
+  it('leaves no annotation in two pieces with unmarked text between them', () => {
+    let state = run(stateWith('the report now'), 1, 15, toggleMarkCommand('emphasis', counter()));
+    state = run(state, 12, 15, toggleMarkCommand('strong', counter()));
+    // Pressing the button over a word in the middle takes the mark off there, which would leave
+    // the text either side one annotation in two separated pieces: accepting or rejecting it is
+    // one operation over every fragment, so two regions would change in two places at once.
+    state = run(state, 5, 11, toggleMarkCommand('emphasis', counter()));
+    expect(textAndMarks(state)).toEqual([
+      { text: 'the ', marks: ['emphasis'] },
+      { text: 'report', marks: [] },
+      { text: ' ', marks: ['emphasis'] },
+      { text: 'now', marks: ['emphasis', 'strong'] },
+    ]);
+    // The far piece is one annotation of its own, over both of the runs it spans. `id3` was drawn
+    // by the call that did the removing, before it knew it would not be applying anything.
+    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id4']);
+  });
+
+  it('ignores an identifier, or a type, handed in with the attributes', () => {
+    const state = run(
+      stateWith('the report'),
+      1,
+      11,
+      toggleMarkCommand('hyperlink', counter(), {
+        id: 'reused',
+        href: 'https://example.test/report',
+      }),
+    );
+    // A caller cannot name the annotation: the identifier is the editor's to mint (CNT-004), and
+    // the content model refuses a document where one identifier names two annotations.
+    expect(idsIn(state, 'hyperlink')).toEqual(['id1']);
+    expect(markAt(state, 'hyperlink')).toEqual({
+      href: 'https://example.test/report',
+      title: null,
+    });
+    // Nor which mark it is. Left to overwrite the type, this validates as a strong mark and then
+    // throws out of a keystroke handler for want of an href.
+    expect(
+      toggleMarkCommand('hyperlink', counter(), { type: 'strong' })(state, () => undefined),
+    ).toBe(false);
   });
 
   it('marks the whole of a selection where only part of it was marked', () => {
@@ -192,19 +233,22 @@ describe('a link target, refused before it is applied', () => {
   });
 
   it('gives a link no title at all where the author left the title empty', () => {
-    const state = run(
-      stateWith('the report'),
-      1,
-      11,
-      toggleMarkCommand('hyperlink', counter(), {
-        href: 'https://example.test/report',
-        title: '',
-      }),
-    );
     // The stored model spells "no title" as absence and refuses the empty string, so an empty box
-    // has to become absence here rather than a ZodError when the version is saved.
+    // has to become absence here rather than a ZodError when the version is saved. A box holding
+    // nothing but spaces is the same box.
+    const linked = (title: string) =>
+      run(
+        stateWith('the report'),
+        1,
+        11,
+        toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report', title }),
+      );
+    const state = linked('');
     expect(markAt(state, 'hyperlink')).toEqual({
-      id: 'id1',
+      href: 'https://example.test/report',
+      title: null,
+    });
+    expect(markAt(linked('   '), 'hyperlink')).toEqual({
       href: 'https://example.test/report',
       title: null,
     });
@@ -225,6 +269,92 @@ describe('a link target, refused before it is applied', () => {
   });
 });
 
+describe('changing what a mark says', () => {
+  it('will not change a link target by toggling it, which is why there is a second command', () => {
+    let state = run(
+      stateWith('the report'),
+      1,
+      11,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
+    );
+    // `toggleMark` decides by whether the range carries the mark at all and never looks at what it
+    // says, so this takes the link off rather than repointing it.
+    state = run(
+      state,
+      1,
+      5,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/summary' }),
+    );
+    expect(markAt(select(state, 1, 5), 'hyperlink')).toBeNull();
+  });
+
+  it('repoints a link over the selection, under an identifier of its own', () => {
+    let state = run(
+      stateWith('the report'),
+      1,
+      11,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
+    );
+    state = run(
+      state,
+      1,
+      5,
+      applyMarkCommand('hyperlink', counter(), { href: 'https://example.test/summary' }),
+    );
+    expect(markAt(select(state, 1, 5), 'hyperlink')).toEqual({
+      href: 'https://example.test/summary',
+      title: null,
+    });
+    expect(markAt(select(state, 5, 11), 'hyperlink')).toEqual({
+      href: 'https://example.test/report',
+      title: null,
+    });
+    // What it changed is a new annotation, not the old one wearing a new target.
+    expect(idsIn(state, 'hyperlink')).toEqual(['id2', 'id1']);
+  });
+
+  it('repoints the whole link a cursor sits inside, and refuses where there is none', () => {
+    const linked = run(
+      stateWith('the report'),
+      1,
+      11,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
+    );
+    const repoint = applyMarkCommand('hyperlink', counter(), {
+      href: 'https://example.test/summary',
+      title: 'The quarterly summary',
+    });
+    const state = run(linked, 4, 4, repoint);
+    expect(textAndMarks(state)).toEqual([{ text: 'the report', marks: ['hyperlink'] }]);
+    expect(markAt(state, 'hyperlink')).toEqual({
+      href: 'https://example.test/summary',
+      title: 'The quarterly summary',
+    });
+    expect(repoint(select(stateWith('the report'), 4), () => undefined)).toBe(false);
+  });
+
+  it('leaves no annotation in two pieces when a change is made in the middle of one', () => {
+    let state = run(
+      stateWith('the report now'),
+      1,
+      15,
+      toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
+    );
+    state = run(
+      state,
+      5,
+      11,
+      applyMarkCommand('hyperlink', counter(), { href: 'https://example.test/summary' }),
+    );
+    expect(idsIn(state, 'hyperlink')).toEqual(['id1', 'id2', 'id3']);
+    expect(textAndMarks(state)).toEqual([
+      { text: 'the ', marks: ['hyperlink'] },
+      { text: 'report', marks: ['hyperlink'] },
+      { text: ' now', marks: ['hyperlink'] },
+    ]);
+  });
+});
+
 describe('what the selection already carries', () => {
   it('reads back the mark under the cursor, so a prompt can be filled with what is there', () => {
     const state = run(
@@ -236,8 +366,9 @@ describe('what the selection already carries', () => {
         title: 'The quarterly report',
       }),
     );
+    // No identifier comes back. Nothing in this slice needs one, and handing it to a prompt is
+    // what would make reusing it the natural thing for the prompt to do (CNT-004).
     expect(markAt(state, 'hyperlink')).toEqual({
-      id: 'id1',
       href: 'https://example.test/report',
       title: 'The quarterly report',
     });
@@ -246,7 +377,7 @@ describe('what the selection already carries', () => {
 
   it('says a mark is carried only where the whole selection carries it', () => {
     const marked = run(stateWith('alpha beta'), 1, 6, toggleMarkCommand('emphasis', counter()));
-    const over = (from: number, to: number) => markActive(select(marked, from, to), 'emphasis');
+    const over = (from: number, to: number) => markThroughout(select(marked, from, to), 'emphasis');
     expect(over(1, 6)).toBe(true);
     expect(over(2, 5)).toBe(true);
     // Half of this selection is unmarked, and pressing the button over it marks the rest rather
@@ -257,7 +388,7 @@ describe('what the selection already carries', () => {
 
   it('says a mark is carried at a cursor inside it', () => {
     const marked = run(stateWith('alpha beta'), 1, 6, toggleMarkCommand('emphasis', counter()));
-    const at = (pos: number) => markActive(select(marked, pos), 'emphasis');
+    const at = (pos: number) => markThroughout(select(marked, pos), 'emphasis');
     expect(at(3)).toBe(true);
     expect(at(9)).toBe(false);
   });
@@ -266,11 +397,22 @@ describe('what the selection already carries', () => {
 describe('taking a mark off', () => {
   it('takes the mark off the selected text', () => {
     let state = run(stateWith('alpha beta'), 1, 11, toggleMarkCommand('emphasis', counter()));
-    state = run(state, 1, 6, removeMarkCommand('emphasis'));
+    state = run(state, 1, 6, removeMarkCommand('emphasis', counter()));
     expect(textAndMarks(state)).toEqual([
       { text: 'alpha', marks: [] },
       { text: ' beta', marks: ['emphasis'] },
     ]);
+  });
+
+  it('gives the far piece its own identifier when the middle is taken off', () => {
+    let state = run(stateWith('the report now'), 1, 15, toggleMarkCommand('emphasis', counter()));
+    state = run(state, 5, 11, removeMarkCommand('emphasis', counter()));
+    expect(textAndMarks(state)).toEqual([
+      { text: 'the ', marks: ['emphasis'] },
+      { text: 'report', marks: [] },
+      { text: ' now', marks: ['emphasis'] },
+    ]);
+    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id2']);
   });
 
   it('takes the whole annotation off from a cursor inside it, and does nothing outside one', () => {
@@ -280,8 +422,10 @@ describe('taking a mark off', () => {
       11,
       toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
     );
-    expect(removeMarkCommand('language')(select(linked, 4), () => undefined)).toBe(false);
-    expect(textAndMarks(run(linked, 4, 4, removeMarkCommand('hyperlink')))).toEqual([
+    expect(removeMarkCommand('language', counter())(select(linked, 4), () => undefined)).toBe(
+      false,
+    );
+    expect(textAndMarks(run(linked, 4, 4, removeMarkCommand('hyperlink', counter())))).toEqual([
       { text: 'the report', marks: [] },
     ]);
   });
