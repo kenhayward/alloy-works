@@ -301,8 +301,11 @@ describe('the citations in the committed model', () => {
   // packages/editor/src/marks.test.ts: one registry gives every mark command a label and a shortcut
   // no other command uses, an edit that splits a marked run leaves one annotation under one
   // identifier, and a link target whose scheme is not allowlisted is refused before it is applied.
+  // 214, from 213: the same plan cites CNT-077 in apps/web/src/editor/EditorToolbar.test.tsx: the
+  // formatting toolbar offers every command in that registry as a button, in one tab stop the arrow
+  // keys, Home and End move around.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(213);
+    expect(model.citations).toHaveLength(214);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -347,6 +350,7 @@ describe('scanning the repository for test files', () => {
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
     // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
     // 10, from 8: publishing/Publishing.test.tsx and publishing/PublicationPage.test.tsx, which cite nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(10);
+    // 11, from 10: editor/EditorToolbar.test.tsx, which cites CNT-077.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(11);
   });
 });

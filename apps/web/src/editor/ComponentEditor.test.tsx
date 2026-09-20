@@ -1,6 +1,6 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { fromEditor, Selection, type EditorView } from '@alloy-works/editor';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -303,6 +303,42 @@ describe('the component editor', () => {
     expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
   });
 
+  it('says which mark the selection already carries', async () => {
+    // Moving the caret changes every answer the formatting toolbar gives and changes nothing else,
+    // so a page that re-rendered only when the document changed would leave `aria-pressed` at
+    // whatever it was when the surface mounted - which is a toolbar telling a screen reader the
+    // wrong thing about the text the author is standing in (pre-flight F8).
+    const emphasised = {
+      ...content('Unbox the printer.'),
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Unbox', marks: [{ type: 'emphasis', id: 'm1' }] },
+            { type: 'text', value: ' the printer.', marks: [] },
+          ],
+        },
+      ],
+    };
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ content: emphasised })) },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const emphasis = await screen.findByRole('button', { name: 'Emphasis' });
+
+    act(() =>
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(10)))),
+    );
+    expect(emphasis).toHaveAttribute('aria-pressed', 'false');
+
+    act(() => view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(3)))));
+    expect(emphasis).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('shows a component to a reader without letting them change it', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })),
@@ -314,6 +350,12 @@ describe('the component editor', () => {
     );
     expect(screen.getByText('You may read this component but not edit it.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    // The formatting toolbar stays in the accessibility tree and offers nothing: a reader can see
+    // what the editor would do with the text without being able to do it.
+    const formatting = screen.getByRole('toolbar', { name: 'Formatting' });
+    for (const button of within(formatting).getAllByRole('button')) {
+      expect(button).toBeDisabled();
+    }
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {

@@ -18,6 +18,7 @@ import '@alloy-works/editor/style.css';
 import { useEffect, useRef, useState } from 'react';
 
 import { ComponentHeader } from './ComponentHeader.js';
+import { EditorToolbar } from './EditorToolbar.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -95,9 +96,16 @@ export function ComponentEditor({
   const [kept, setKept] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [header, setHeader] = useState<Header | null>(null);
+  // The surface itself, held as state rather than in a ref, because the formatting toolbar renders
+  // from it: what a mark button says about the selection is read off `view.state` during a render,
+  // and a ref set in an effect schedules none (pre-flight F8).
+  const [surface, setSurface] = useState<EditorView | null>(null);
+  // Bumped by every transaction, and read by nothing. Moving the caret changes what the toolbar must
+  // say about the selection and changes nothing else in the page, so there is no value to compare
+  // and nothing else that would ask React for a render.
+  const [, setTransactions] = useState(0);
   const place = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
-  const viewRef = useRef<EditorView | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
   // shown again for the life of this session.
@@ -268,6 +276,9 @@ export function ComponentEditor({
       editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
         target.updateState(target.state.apply(transaction));
+        // Every transaction, not only one that changed the document: a transaction that only moved
+        // the caret is exactly the one the toolbar has to hear about.
+        setTransactions((count) => count + 1);
         if (transaction.docChanged) {
           setHeader(headerOf(target.state.doc));
           // A real change invalidates whatever `kept` already captured (fix round 2, minor): the next
@@ -278,13 +289,13 @@ export function ComponentEditor({
       },
       refused: () => setNotice('Pasting is not available yet. Type the text instead.'),
     });
-    viewRef.current = view;
+    setSurface(view);
     setHeader(headerOf(view.state.doc));
     onViewRef.current?.(view);
     return () => {
       editing.dispose();
       controls.current = null;
-      viewRef.current = null;
+      setSurface(null);
       view.destroy();
     };
   }, [component, client, principalId]);
@@ -316,7 +327,7 @@ export function ComponentEditor({
    * to ask, which leaves a field showing what was typed rather than reverting it to nothing.
    */
   const changeHeader = <K extends keyof Header>(member: K, value: Header[K]): Header | null => {
-    const view = viewRef.current;
+    const view = surface;
     if (!view) return null;
     const command =
       member === 'title'
@@ -426,6 +437,18 @@ export function ComponentEditor({
             </div>
           )}
           {session && <SaveIndicator save={session.save} savedAt={session.savedAt} />}
+          {/* Above the surface, which is the order the regions are named in
+              (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
+              than absent, so what the editor can do with the text is visible before the lock is. */}
+          <EditorToolbar
+            view={surface}
+            enabled={shown.mayEdit && isEditablePhase(phase)}
+            newIdentifier={newBlockIdentifier}
+            // The two commands that need a value from the author have no dialog to ask in yet, and
+            // a toolbar cannot invent one: until that lands, pressing Link or Language is the
+            // author cancelling, which applies nothing rather than applying an empty target.
+            prompt={() => Promise.resolve(null)}
+          />
           <div ref={place} />
           {kept !== null && (
             <label>

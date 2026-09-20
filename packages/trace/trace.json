@@ -15952,6 +15952,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/EditorToolbar.test.tsx",
+      "line": 130,
+      "kind": "title"
+    },
+    {
       "id": "CNT-149",
       "file": "apps/web/src/editor/NewComponent.test.tsx",
       "line": 55,
