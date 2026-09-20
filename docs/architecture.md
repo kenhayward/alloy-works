@@ -129,7 +129,18 @@ two annotations of one type, do not. No identifier survives at another's expense
 mark sets that merge are one value; the merged run keeps the first run's array as it stands. The
 merge is in the walk rather than in `canonicalise`, which returns a string and would have left the
 stored spelling split while only the digest agreed - and would have missed a section title, whose
-canonical form the outline composes itself.
+canonical form the outline composes itself. A run's value is put in NFC on the way in and again
+after a join, because two strings each in NFC need not join into one, and a join the digest reads
+differently from what is stored would be the same defect by another door. Text is normalised where
+an identifier is refused: an identifier is compared and resolved by exact string, so folding one
+would change what it names.
+
+**What the parse accepts, it accepts again unchanged.** The walk returns something other than what
+it was given, so every rule about a sequence is judged on what that sequence became: CNT-023's
+adjacency runs over the blocks the walk returned, not over the blocks that arrived, because a
+paragraph holding one empty run is an empty paragraph once the run is dropped. Judged the other way
+round, two of them would be accepted at the door, stored, and refused on read-back - a version an
+author could never cut. A test parses every fixture and every awkward shape twice and compares.
 
 **Migration is a read-time projection and never a rewrite.** Version rows take inserts only and
 `content_hash` is the hash of what was written, so migrating stored content would either invalidate

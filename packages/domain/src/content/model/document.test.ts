@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
@@ -647,5 +650,156 @@ describe('adjacent runs, which the canonical form merges (issue #154)', () => {
     const inner =
       footnote?.type === 'footnote' ? (footnote.content as { content: unknown[] }[])[0] : undefined;
     expect(inner?.content).toHaveLength(1);
+  });
+});
+
+describe('the parse of what the parse returned, which must be what it returned', () => {
+  const emptyRun = (id: string) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content: [{ type: 'text', value: '', marks: [] }],
+  });
+
+  it('refuses two paragraphs left empty by their runs, as it refuses two written empty', () => {
+    // CNT-023 is judged on the canonical form, not on what arrived: two paragraphs holding one
+    // empty run each are two empty paragraphs once the walk has dropped the runs, so they are
+    // refused at the door rather than stored and refused on read-back.
+    expect(() => parseContentDocument(doc([emptyRun('b1'), emptyRun('b2')]))).toThrow(/adjacent/);
+  });
+
+  it('refuses the same pair inside a footnote and inside a table cell', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Dose', marks: [] },
+        { type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content },
+      ],
+    });
+    const tabling = (content: unknown[]) => ({
+      type: 'table',
+      id: 't1',
+      caption: 'Doses',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
+    });
+    expect(() => parseContentDocument(doc([noting([emptyRun('fb1'), emptyRun('fb2')])]))).toThrow(
+      /adjacent/,
+    );
+    expect(() => parseContentDocument(doc([tabling([emptyRun('c1'), emptyRun('c2')])]))).toThrow(
+      /adjacent/,
+    );
+  });
+
+  it('accepts what it returned, unchanged, for every document it accepts at all', () => {
+    // The invariant the walk owes every caller, now that what it returns is not what it was given:
+    // a document it accepts parses again to itself. A document it refuses is refused at the door,
+    // which is the other half of the same promise - never accepted once and refused on read-back.
+    const attempt = (value: unknown) => {
+      try {
+        return { ok: true as const, document: parseContentDocument(value) };
+      } catch {
+        return { ok: false as const };
+      }
+    };
+    const stored = (name: string) =>
+      JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures', 'v1', name), 'utf8'));
+    const emphasis = [{ type: 'emphasis', id: 'm1' }];
+    const documents: unknown[] = [
+      stored('minimal.json'),
+      stored('every-node.json'),
+      doc([paragraph('b1')]),
+      doc([emptyRun('b1')]),
+      doc([emptyRun('b1'), emptyRun('b2')]),
+      doc([emptyRun('b1'), paragraph('b2')]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Install ', marks: emphasis },
+            { type: 'text', value: '', marks: [] },
+            { type: 'text', value: 'the printer.', marks: emphasis },
+            { type: 'text', value: 'Cafe', marks: [] },
+            { type: 'text', value: '\u{301} au lait', marks: [] },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'blockquote',
+          id: 'b1',
+          content: [emptyRun('b2')],
+          attribution: [
+            { type: 'text', value: 'Ada ', marks: emphasis },
+            { type: 'text', value: 'Lovelace', marks: emphasis },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'b2',
+                  style: 'footnote',
+                  content: [
+                    { type: 'text', value: 'See ', marks: emphasis },
+                    { type: 'text', value: 'the appendix.', marks: emphasis },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    ];
+    for (const document of documents) {
+      const where = JSON.stringify(document).slice(0, 90);
+      const first = attempt(document);
+      if (!first.ok) continue;
+      expect(attempt(first.document), where).toEqual({ ok: true, document: first.document });
+      expect(canonicalise(parseContentDocument(first.document)), where).toBe(
+        canonicalise(first.document),
+      );
+    }
+  });
+
+  it('stores a run in NFC, so no join can make a spelling the digest does not cover', () => {
+    // Written as code points: an editor normalises what it saves, so two literals typed as "cafe
+    // with an acute" are one string in the file and the test asserts nothing.
+    const composed = 'Caf\u{E9} au lait';
+    const decomposed = 'Cafe\u{301} au lait';
+    expect(composed).not.toBe(decomposed);
+    const runs = (content: unknown[]) =>
+      doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+    const contentOf = (document: unknown) => {
+      const block = parseContentDocument(document).content[0];
+      return block?.type === 'paragraph' ? block.content : [];
+    };
+    const one = { type: 'text', value: composed, marks: [] };
+    // Two NFC runs whose join is not NFC, one decomposed run, and the composed run itself.
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Cafe', marks: [] },
+          { type: 'text', value: '\u{301} au lait', marks: [] },
+        ]),
+      ),
+    ).toEqual([one]);
+    expect(contentOf(runs([{ type: 'text', value: decomposed, marks: [] }]))).toEqual([one]);
+    expect(contentOf(runs([one]))).toEqual([one]);
   });
 });

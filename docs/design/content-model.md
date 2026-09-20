@@ -228,6 +228,18 @@ annotations of one type, which differ only by identifier (CNT-004), stay apart a
 they are. Nothing had stored a mark when this was tightened, so there is no migration; it is a rule
 about what is written, and a version already stored is read back exactly as it was written.
 
+A run's value is put in NFC by the same walk (CNT-056), on the way in and again after a join: two
+strings each in NFC need not join into one, so a merge could otherwise write a spelling the hash
+does not cover. Text is normalised where an identifier is refused, because an identifier is compared
+and resolved by exact string and folding one would change what it names, while a run's value is
+prose the hash already reads in NFC.
+
+**And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
+than what it was given, every rule about a sequence has to be judged on what that sequence became -
+CNT-023's adjacency over the blocks the walk returned, because a paragraph holding one empty run is
+an empty paragraph once the run is dropped. Judged on what arrived, two of them would be accepted,
+stored, and then refused on read-back, which is a version an author can never cut.
+
 That the schema version sits inside the JSON makes the hash shortcut sound as well as fast: equal
 bytes implies equal schema version, so two versions with equal hashes cannot be two different schemas
 that happen to say the same thing.

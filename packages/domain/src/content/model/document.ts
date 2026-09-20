@@ -53,6 +53,12 @@ function claim(id: string, seen: Set<string>): void {
  * cursor stands (CNT-124). Held in every sequence of blocks the model has - the top level, a list
  * item, a blockquote, a table cell and a footnote - because admission's normalise collapses them in
  * every one, and a rule the two write paths disagree on is a rule one of them breaks.
+ *
+ * **Judged on what the walk returned, never on what arrived.** A paragraph holding one empty run is
+ * an empty paragraph once the inline walk has dropped that run (issue #154), so reading adjacency
+ * off the input would accept two of them, store them as two empty paragraphs, and then refuse the
+ * same document on read-back - a 500 for an author whose work could never become a version. The
+ * parse owes every caller one invariant: what it accepts, it accepts again unchanged.
  */
 function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
   const isEmptyParagraph = (block: BlockNode | undefined) =>
@@ -92,23 +98,36 @@ function markSetOf(run: { marks: readonly unknown[] }): string {
  *   stay apart.
  * - **Only runs merge.** Anything else inline - an equation, a footnote, a cross-reference - ends a
  *   run, because it is visible text between them.
+ * - **A run's value is put in NFC** (CNT-056), on the way in and again after a join. Two NFC strings
+ *   joined need not be one: `'Cafe'` and `'\u{301} au lait'` are each in NFC and their join is not,
+ *   so without this the merge would write a spelling the digest does not cover - one digest and two
+ *   stored spellings, which is the defect this function exists to close, by another door. Text is
+ *   normalised rather than refused, unlike an identifier (`refuseUnnormalised`): an identifier is
+ *   compared and resolved by exact string, so folding one would change what it names, while a run's
+ *   value is prose the digest already reads in NFC. Normalising also refuses nothing that was
+ *   accepted before, which a stored shape at this point in its life may not do.
  *
  * Empty runs go first, so two runs one stood between still meet.
  */
 function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
   const merged: InlineNode[] = [];
+  let previousMarks: string | undefined;
   for (const inline of inlines) {
     if (inline.type !== 'text') {
       merged.push(inline);
+      previousMarks = undefined;
       continue;
     }
-    if (inline.value === '') continue;
+    const value = inline.value.normalize('NFC');
+    if (value === '') continue;
+    const marks = markSetOf(inline);
     const previous = merged[merged.length - 1];
-    if (previous?.type === 'text' && markSetOf(previous) === markSetOf(inline)) {
-      merged[merged.length - 1] = { ...previous, value: previous.value + inline.value };
+    if (previous?.type === 'text' && previousMarks === marks) {
+      merged[merged.length - 1] = { ...previous, value: (previous.value + value).normalize('NFC') };
       continue;
     }
-    merged.push(inline);
+    merged.push(value === inline.value ? inline : { ...inline, value });
+    previousMarks = marks;
   }
   return merged;
 }
@@ -176,7 +195,6 @@ export function checkInlineContent(
     if (inline.type !== 'footnote') return inline;
     claim(inline.id, seen);
     const parsed = footnoteContentSchema.parse(inline.content);
-    refuseAdjacentEmpties(parsed);
     const paragraphs = parsed.map((paragraph) => {
       claim(paragraph.id, seen);
       for (const inner of paragraph.content) {
@@ -186,6 +204,7 @@ export function checkInlineContent(
       }
       return { ...paragraph, content: checkInlineContent(paragraph.content, home, seen) };
     });
+    refuseAdjacentEmpties(paragraphs);
     return { ...inline, content: paragraphs };
   });
 }
@@ -196,8 +215,9 @@ export function checkInlineContent(
  * rebuilds each block from what it returns, so what is stored is the parsed form all the way down.
  */
 function checkBlocks(blocks: readonly BlockNode[], seen: Set<string>): BlockNode[] {
-  refuseAdjacentEmpties(blocks);
-  return blocks.map((block) => checkBlock(block, seen));
+  const checked = blocks.map((block) => checkBlock(block, seen));
+  refuseAdjacentEmpties(checked);
+  return checked;
 }
 
 function checkBlock(block: BlockNode, seen: Set<string>): BlockNode {
@@ -257,9 +277,11 @@ export type InlineHome = 'component' | 'title';
  * cross-reference in a component never targets an outline node, and a sequence of inline content
  * comes back with its runs merged (issue #154). One walk holds all five: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
- * adjacency held in every sequence of blocks either half reaches, a footnote's among them. A single
- * empty paragraph is admitted, because CNT-124 requires a new component to be one. What is returned
- * is what the walk parsed, and nothing else.
+ * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
+ * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,
+ * because CNT-124 requires a new component to be one. What is returned is what the walk parsed, and
+ * nothing else - and parsing that again returns it unchanged, which is the invariant every caller
+ * here relies on, because the service parses a request body and `packages/db` parses it again.
  */
 export function parseContentDocument(value: unknown): ContentDocument {
   const parsed = contentDocumentSchema.parse(value);
