@@ -316,11 +316,13 @@ describe('the whole system', () => {
     const { data: kept } = await api.GET('/v1/publications/{id}', {
       params: { path: { id: publication! } },
     });
-    // The API exposes no field naming the layout's own version directly; template 2 is set only for
-    // a request made under a layout (task 7b's fix, `publication_layout`), so the publication
-    // carries the layout's record the one way this suite can read from outside the database - and
-    // every assertion below is only reachable through template 2's own composition.
-    expect(kept).toMatchObject({ template: { name: 'publication', version: 2 } });
+    // The API exposes no field naming the layout's own version directly; a template above 1 is set
+    // only for a request made under a layout (`publication_layout`), so the publication carries the
+    // layout's record the one way this suite can read from outside the database - and every
+    // assertion below is only reachable through that template's own composition. The version is the
+    // newest template, which moves whenever the published schema does: it was 2 until a run could
+    // carry marks, and `PUBLICATION_TEMPLATE` in `apps/worker/src/template.ts` is where it is set.
+    expect(kept).toMatchObject({ template: { name: 'publication', version: 3 } });
 
     const pdf = await followSignedLink(new URL(kept!.outputs[0]!.download));
     expect(pdf.status).toBe(200);
