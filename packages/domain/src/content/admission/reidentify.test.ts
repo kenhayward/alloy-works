@@ -143,6 +143,52 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it("re-identifies the marks in a definition item's term, as in any other inline content", () => {
+    // The list branch is the one place a block's inline content is reached through an item rather
+    // than through a member of the block itself, so a term left out of it would carry a pasted
+    // mark's identifier into the receiving component unchanged (CNT-132) - and that identifier may
+    // already name an annotation there.
+    const { outcome, entries } = run({
+      schemaVersion: 1,
+      content: [
+        {
+          type: 'list',
+          id: 'old-list',
+          kind: 'definition',
+          items: [
+            {
+              term: [text('Tensile strength', [{ type: 'emphasis', id: 'old-mark' }])],
+              content: [paragraph('old-item', [text('The stress it bears.')])],
+            },
+          ],
+        },
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          {
+            type: 'list',
+            id: 'n3',
+            kind: 'definition',
+            items: [
+              {
+                term: [text('Tensile strength', [{ type: 'emphasis', id: 'n4' }])],
+                content: [paragraph('n5', [text('The stress it bears.')])],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 1 },
+    ]);
+  });
+
   it('gives a cross-reference a new identifier, and points one at the copy of what it refers to', () => {
     const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
     const dose = figure('old-figure', 'asset-1', 'Dose');

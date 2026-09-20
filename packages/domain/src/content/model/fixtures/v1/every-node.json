@@ -149,6 +149,7 @@
                       "kind": "definition",
                       "items": [
                         {
+                          "term": [{ "type": "text", "value": "Tensile strength", "marks": [] }],
                           "content": [
                             {
                               "type": "paragraph",

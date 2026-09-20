@@ -15,7 +15,7 @@ export type BlockNode =
       kind: 'ordered' | 'unordered' | 'definition';
       start?: number | undefined;
       format?: 'decimal' | 'alphabetic' | 'roman' | undefined;
-      items: { content: BlockNode[] }[];
+      items: { term?: z.infer<typeof inlineNodeSchema>[] | undefined; content: BlockNode[] }[];
     }
   | {
       type: 'table';
@@ -72,7 +72,23 @@ export const listNodeSchema = z.strictObject({
   format: z.enum(['decimal', 'alphabetic', 'roman']).optional(),
   // A list item holds block content, so nesting is unbounded by construction and CNT-118's six
   // levels is a floor rather than a limit.
-  items: z.array(z.strictObject({ content: z.array(blockNodeSchema).min(1) })).min(1),
+  //
+  // An item of a definition list carries the term it defines, as inline content rather than a
+  // string: a term is a phrase an author writes, and a plain string is what makes an equation, a
+  // mark or a cross-reference unrepresentable in a caption (issue #88). Optional, and so additive -
+  // every document stored under schema version 1 stays valid, the canonical form of one is
+  // unchanged, `CURRENT_SCHEMA_VERSION` stays 1 and the migration chain stays empty. WHICH items
+  // must have one is a rule in the walk (`document.ts`) rather than a shape here, because it is a
+  // narrowing, and a narrowing is safe to add while nothing has stored a list where tightening this
+  // insert-only shape later would not be. The same reasoning keeps `start`'s `min(0)` above.
+  items: z
+    .array(
+      z.strictObject({
+        term: z.array(inlineNodeSchema).min(1).optional(),
+        content: z.array(blockNodeSchema).min(1),
+      }),
+    )
+    .min(1),
 });
 
 export const tableNodeSchema = z.strictObject({

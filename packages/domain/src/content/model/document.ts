@@ -396,12 +396,54 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
     case 'paragraph':
       return { ...block, content: checkInlineContent(block.content, 'component', claimed) };
     case 'list':
+      // Three narrowings the schema deliberately does not hold, because `listNodeSchema` is an
+      // insert-only stored shape and a rule in the walk can be added while nothing has stored a
+      // list, where a tightening of the shape could never be taken back.
+      //
+      // **A term belongs to a definition list and to nothing else.** The shape puts `term` on every
+      // item, because it is one item type; a term on an ordered or unordered item means nothing,
+      // and the published half would have nowhere to print it.
+      //
+      // **A definition item always has one**, so nothing downstream has to decide what a definition
+      // without its term looks like - the publishing template maps over `item.term` unguarded.
+      //
+      // **A list starts at 0 only where its numbering is decimal** (CNT-153) - a zeroth item is a
+      // convention decimal has and letters and roman numerals do not. Held here rather than in
+      // `assemble` alone: `assemble` refuses at publish time, which is weeks after the author wrote
+      // it, and any producer that is not the editor's own panel - an import, a paste, a future API
+      // client - would otherwise store content publishing declines without the author ever being
+      // told at the time.
+      if (block.start === 0 && (block.format === 'alphabetic' || block.format === 'roman')) {
+        throw new Error(`List ${block.id} starts at 0, which only decimal numbering permits`);
+      }
       return {
         ...block,
-        items: block.items.map((item) => ({
-          ...item,
-          content: checkBlocks(item.content, claimed),
-        })),
+        items: block.items.map((item) => {
+          if (item.term !== undefined && block.kind !== 'definition') {
+            throw new Error(
+              `List ${block.id} has an item carrying a term, which only a definition list's item may`,
+            );
+          }
+          if (item.term === undefined && block.kind === 'definition') {
+            throw new Error(`List ${block.id} is a definition list with an item carrying no term`);
+          }
+          // A term is inline content in the component's one scope, so a mark in one claims its
+          // identifier exactly as a mark in a paragraph does - and it is walked before the item's
+          // body, which is the order a reader meets the two in.
+          const term = item.term && checkInlineContent(item.term, 'component', claimed);
+          // **Judged on what the walk returned, never on what arrived.** A term holding one empty
+          // run passes `min(1)` on the way in and is nothing once `mergeRuns` has dropped it, so a
+          // rule reading the input would store a term the same schema refuses on read-back - a 500
+          // for an author whose work could never become a version.
+          if (term !== undefined && term.length === 0) {
+            throw new Error(`List ${block.id} has an item whose term holds no text`);
+          }
+          return {
+            ...item,
+            ...(term === undefined ? {} : { term }),
+            content: checkBlocks(item.content, claimed),
+          };
+        }),
       };
     case 'blockquote': {
       const attribution =
@@ -447,12 +489,14 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Seven rules the schema cannot express on its own, because each is about a document rather than a
+ * Ten rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
  * cross-reference in a component never targets an outline node, a mark identifier carries one value
- * (CNT-004) over one contiguous range of runs, and a sequence of inline content comes back with its
- * runs merged (issue #154). One walk holds all seven: the block
+ * (CNT-004) over one contiguous range of runs, a sequence of inline content comes back with its
+ * runs merged (issue #154), a list item carries a term exactly where its list is a definition list,
+ * a term holds visible text, and a list starts at 0 only where its numbering is decimal (CNT-153).
+ * One walk holds all ten: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
  * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,

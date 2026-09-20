@@ -237,7 +237,18 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
   if (block.type === 'list') {
     out.items = mapArray(block.items, (item) => {
       const record = asRecord(item);
-      return [record ? { ...record, content: blocks(record.content) } : item];
+      if (!record) return [item];
+      // A definition item's term is inline content, reached through the item rather than through a
+      // member of the block itself - the only inline home in the model shaped that way. Left out,
+      // a pasted term's mark identifier would survive into the receiving component unchanged
+      // (CNT-132), where it may already name an annotation of its own.
+      return [
+        {
+          ...record,
+          ...('term' in record ? { term: inlines(record.term) } : {}),
+          content: blocks(record.content),
+        },
+      ];
     });
   }
   if (block.type === 'table') {

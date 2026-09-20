@@ -6,8 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
 
 import { canonicalise } from './canonical.js';
-import { CURRENT_SCHEMA_VERSION, contentDocumentSchema, parseContentDocument } from './document.js';
-import { readContent } from './migrate.js';
+import {
+  CURRENT_SCHEMA_VERSION,
+  contentDocumentSchema,
+  parseContentDocument,
+  type ContentDocument,
+} from './document.js';
+import { contentMigrationChain, readContent } from './migrate.js';
 
 const paragraph = (id: string, value = 'A sentence.') => ({
   type: 'paragraph',
@@ -336,6 +341,146 @@ describe('the nesting limit, on every path that parses content (issue #125)', ()
     // again unchanged - checked here for the one rule this task adds, at the depth closest to it.
     const accepted = parseContentDocument(documentWith(nested(30)));
     expect(parseContentDocument(accepted)).toEqual(accepted);
+  });
+});
+
+describe("a definition list's term, and the rules the walk holds that the schema cannot", () => {
+  const run = (value: string, marks: unknown[] = []) => ({ type: 'text', value, marks });
+  const listIn = (document: ContentDocument) => {
+    const block = document.content[0];
+    if (block?.type !== 'list') throw new Error('expected a list');
+    return block;
+  };
+  const definitionList = (items: unknown[]) => ({
+    type: 'list',
+    id: 'D1',
+    kind: 'definition',
+    items,
+  });
+  const defined = [
+    { term: [run('Tensile strength')], content: [paragraph('d1', 'The stress a material bears.')] },
+  ];
+
+  /**
+   * The canonical form of a list stored before the term existed, written out rather than computed,
+   * because a literal computed from the code under test would move with it. The version digest
+   * (ADR-0024) is taken over this string: a widening that moved it would record a new version for
+   * every component holding a list, for no author change at all.
+   */
+  const CANONICAL_BEFORE_THE_WIDENING =
+    '{"content":[{"id":"L1","items":[{"content":[{"content":[{"marks":[],"type":"text",' +
+    '"value":"alpha"}],"id":"L1p1","style":"body","type":"paragraph"}]}],"kind":"unordered",' +
+    '"type":"list"}],"direction":"ltr","language":"en-GB","schemaVersion":1,"title":"A component"}';
+
+  it('holds a definition list, each item carrying the term it defines', () => {
+    const document = parseContentDocument(doc([definitionList(defined)]));
+    expect(listIn(document).items[0]?.term).toEqual([
+      { type: 'text', value: 'Tensile strength', marks: [] },
+    ]);
+  });
+
+  it('keeps a document stored before the term existed valid, and its canonical form unchanged', () => {
+    const stored = doc([
+      {
+        type: 'list',
+        id: 'L1',
+        kind: 'unordered',
+        items: [{ content: [paragraph('L1p1', 'alpha')] }],
+      },
+    ]);
+    expect(canonicalise(parseContentDocument(stored))).toBe(CANONICAL_BEFORE_THE_WIDENING);
+  });
+
+  it('adds no schema version and no migration, because an optional member is additive', () => {
+    // The whole reason the term is landable in an insert-only stored shape: nothing stored before it
+    // becomes unreadable, so there is no step to write and no version for the chain to carry.
+    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(contentMigrationChain.migrations).toEqual({});
+  });
+
+  it('refuses a term on an item of a list that is not a definition list, naming it', () => {
+    const ordered = { type: 'list', id: 'L1', kind: 'ordered', items: defined };
+    expect(() => parseContentDocument(doc([ordered]))).toThrow(/term/);
+  });
+
+  it('refuses an item of a definition list that has no term, naming it', () => {
+    const undefinedTerm = definitionList([{ content: [paragraph('d1', 'A definition.')] }]);
+    expect(() => parseContentDocument(doc([undefinedTerm]))).toThrow(/term/);
+  });
+
+  it('refuses a term with no inline content at all', () => {
+    const empty = definitionList([{ term: [], content: [paragraph('d1', 'A definition.')] }]);
+    expect(() => parseContentDocument(doc([empty]))).toThrow();
+  });
+
+  it('refuses a term the walk empties, rather than storing one a read-back would refuse', () => {
+    // Judged on what the walk RETURNED, never on what arrived. A term holding one empty run passes
+    // `min(1)` on the way in and is nothing once `mergeRuns` has dropped that run - so a rule
+    // reading the input would store a term the same schema refuses on read-back, which is a 500 for
+    // an author whose work could never become a version.
+    const blank = definitionList([
+      { term: [run('')], content: [paragraph('d1', 'A definition.')] },
+    ]);
+    expect(() => parseContentDocument(doc([blank]))).toThrow(/term/);
+  });
+
+  it('claims a mark in a term in the same scope as one in a paragraph', () => {
+    // A term is inline content in the component's one scope, so an annotation runs through it as it
+    // runs through any other run: one identifier, one value, one contiguous range.
+    const emphasis = [{ type: 'emphasis', id: 'm1' }];
+    const body = (content: unknown[]) => ({ type: 'paragraph', id: 'd1', style: 'body', content });
+    const after = {
+      type: 'paragraph',
+      id: 'b9',
+      style: 'body',
+      content: [run(' and no more.', emphasis)],
+    };
+    const continuous = doc([
+      definitionList([
+        {
+          term: [run('Tensile strength', emphasis)],
+          content: [body([run('the stress it bears', emphasis)])],
+        },
+      ]),
+      after,
+    ]);
+    expect(() => parseContentDocument(continuous)).not.toThrow();
+    // The same identifier split by readable text is two ranges, exactly as it is anywhere else: the
+    // term opens the annotation, the body closes it, and the paragraph after the list reopens it.
+    const split = doc([
+      definitionList([
+        {
+          term: [run('Tensile strength', emphasis)],
+          content: [body([run('the stress it bears')])],
+        },
+      ]),
+      after,
+    ]);
+    expect(() => parseContentDocument(split)).toThrow(/m1/);
+  });
+
+  it('refuses a start of 0 where the numbering is letters or roman numerals, naming the list', () => {
+    // CNT-153's rule, held in the walk rather than in `listNodeSchema`, which keeps `min(0)`: an
+    // insert-only stored shape may not be tightened, and a narrowing in the walk is safe while
+    // nothing has stored a list. Without it a producer that is not the editor's own panel could
+    // store `{start: 0, format: 'roman'}`, which publishing then refuses at a publish weeks later.
+    const ordered = (attrs: Record<string, unknown>) => ({
+      type: 'list',
+      id: 'L1',
+      kind: 'ordered',
+      ...attrs,
+      items: [{ content: [paragraph('L1p1', 'alpha')] }],
+    });
+    expect(() => parseContentDocument(doc([ordered({ start: 0, format: 'alphabetic' })]))).toThrow(
+      /L1/,
+    );
+    expect(() => parseContentDocument(doc([ordered({ start: 0, format: 'roman' })]))).toThrow(/L1/);
+    // Decimal is the one format a zeroth item means anything in, and it is what no format means.
+    expect(() =>
+      parseContentDocument(doc([ordered({ start: 0, format: 'decimal' })])),
+    ).not.toThrow();
+    expect(() => parseContentDocument(doc([ordered({ start: 0 })]))).not.toThrow();
+    expect(() => parseContentDocument(doc([ordered({ start: 1, format: 'roman' })]))).not.toThrow();
   });
 });
 
@@ -866,6 +1011,45 @@ describe('the parse of what the parse returned, which must be what it returned',
           id: 'b3',
           style: 'body',
           content: [{ type: 'text', value: ' is ready.', marks: emphasis }],
+        },
+      ]),
+      // A definition list. Its term is inline content the walk returns merged, so the item it
+      // rebuilds has to be the item that parses again to itself - and an annotation running from
+      // the term into the body has to be one range the second time as well as the first.
+      doc([
+        {
+          type: 'list',
+          id: 'D1',
+          kind: 'definition',
+          items: [
+            {
+              term: [
+                { type: 'text', value: 'Tensile ', marks: emphasis },
+                { type: 'text', value: '', marks: [] },
+                { type: 'text', value: 'strength', marks: emphasis },
+              ],
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'd1',
+                  style: 'body',
+                  content: [{ type: 'text', value: ' is the stress it bears.', marks: emphasis }],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+      // An ordered list starting at 0, which only decimal numbering admits: accepted at the door,
+      // so the start rule cannot be one that accepts at a save and refuses on a read either.
+      doc([
+        {
+          type: 'list',
+          id: 'L1',
+          kind: 'ordered',
+          start: 0,
+          format: 'decimal',
+          items: [{ content: [paragraph('L1p1')] }],
         },
       ]),
     ];
