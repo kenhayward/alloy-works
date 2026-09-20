@@ -396,6 +396,11 @@ describe('the formatting toolbar', () => {
     expect(buttons).toHaveLength(LABELS.length);
     for (const button of buttons) expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(buttons.filter((button) => button.tabIndex === 0)).toHaveLength(1);
+    // Focus it for its own sake, not through the attribute: `tabIndex` still reads 0 on a natively
+    // disabled button, so the count above passes either way. This is the half of the rule that
+    // matters, and it is the half a `disabled` attribute would break.
+    buttons[0]!.focus();
+    expect(document.activeElement).toBe(buttons[0]);
 
     await userEvent.click(screen.getByRole('button', { name: 'Strong' }));
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
