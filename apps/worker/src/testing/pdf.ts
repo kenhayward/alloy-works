@@ -9,7 +9,8 @@ export interface Bookmark {
 /**
  * A PDF as a reader and assistive technology meet it, read by pdf.js rather than by our own code: its
  * bookmarks; per page, the text inside artifacts (running heads and feet, which assistive technology
- * skips) and the text in tagged content; the structure roles in document order after the role map,
+ * skips), the text in tagged content and the addresses its link annotations take a reader to; the
+ * structure roles in document order after the role map,
  * which is what a screen reader is told; whether it is marked tagged; and its PDF/UA part. And the
  * page as it is set: each page's label, as a reader's page box shows it (null where the PDF declares
  * none); each page's width and height in points, as it is turned; and the least x of each page's
@@ -22,6 +23,12 @@ export interface ReadPdf {
   readonly bookmarks: readonly Bookmark[];
   readonly artifactText: readonly (readonly string[])[];
   readonly taggedText: readonly (readonly string[])[];
+  /**
+   * Every link annotation, per page, as a reader's viewer would follow it. A link into the document
+   * itself - a contents entry - carries a destination rather than an address and is not one of
+   * these; its role is in `roles`, where a contents is read for its `Link` elements.
+   */
+  readonly links: readonly (readonly string[])[];
   readonly roles: readonly string[];
   readonly marked: boolean;
   readonly pdfuaPart: string | null;
@@ -50,6 +57,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       }));
     const artifactText: string[][] = [];
     const taggedText: string[][] = [];
+    const links: string[][] = [];
     const roles: string[] = [];
     const pageSizes: (readonly [number, number])[] = [];
     const textLeft: (number | null)[] = [];
@@ -89,6 +97,18 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       }
       artifactText.push(artifacts);
       taggedText.push(tagged);
+      // pdf.js reads a link annotation's URI action into `url`; an annotation with a destination
+      // inside the document has none, and there is nothing for a reader to be taken to outside it.
+      const annotations = (await page.getAnnotations()) as {
+        subtype?: string;
+        url?: string;
+      }[];
+      links.push(
+        annotations
+          .filter((annotation) => annotation.subtype === 'Link')
+          .map((annotation) => annotation.url)
+          .filter((url): url is string => url !== undefined),
+      );
       textLeft.push(left);
       textBaselines.push(baselines);
       // The MediaBox as the PDF writes it, [x1, y1, x2, y2]: Typst turns a landscape page by writing
@@ -112,6 +132,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       bookmarks: bookmarks(outline as { title: string; items: unknown[] }[]),
       artifactText,
       taggedText,
+      links,
       roles,
       marked: markInfo?.get('Marked') === true,
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
