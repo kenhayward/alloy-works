@@ -362,28 +362,37 @@ describe('the component editor', () => {
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
-    const withList = content('Before');
-    withList.content.push({
-      type: 'list',
-      id: 'l1',
-      kind: 'unordered',
-      items: [
+    // A table: a list is carried now, and this is about the block the editor still has no node for.
+    const withTable = content('Before');
+    withTable.content.push({
+      type: 'table',
+      id: 't1',
+      caption: 'Readings',
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
         {
-          content: [
+          cells: [
             {
-              type: 'paragraph',
-              id: 'i1',
-              style: 'body',
-              content: [{ type: 'text', value: 'Item', marks: [] }],
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'i1',
+                  style: 'body',
+                  content: [{ type: 'text', value: 'Ambient', marks: [] }],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
             },
           ],
         },
       ],
     } as never);
-    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withList })) });
+    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withTable })) });
     expect(
       await screen.findByText(
-        'This component holds content this editor cannot change yet (list), so it is shown for reading only.',
+        'This component holds content this editor cannot change yet (table), so it is shown for reading only.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();

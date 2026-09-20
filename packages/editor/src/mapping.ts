@@ -31,26 +31,63 @@ export type Opened =
  */
 function unsupportedIn(blocks: readonly BlockNode[]): string[] {
   const found = new Set<string>();
+  namesWithNoNode(blocks, found);
+  return [...found];
+}
+
+/**
+ * Walks every block sequence the model has a node for, so a block with no counterpart is named
+ * **wherever it stands** - a table inside a list item, six levels down, is as much a reason to open
+ * read-only as one at the top level, and a walk that stopped at the top would open the component and
+ * drop the table on the next save.
+ *
+ * A block it has no node for is named and **not descended into**: the editor has nothing to hold it
+ * with, so what is inside it is not a second thing to report.
+ */
+function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void {
   for (const block of blocks) {
-    if (block.type !== 'paragraph') {
-      found.add(block.type);
-      continue;
-    }
-    for (const inline of block.content) {
-      if (inline.type !== 'text') {
-        found.add(inline.type);
-        continue;
-      }
-      const types = new Set<string>();
-      for (const mark of inline.marks) {
-        if (!(mark.type in editorSchema.marks) || types.has(mark.type)) {
-          found.add(`mark:${mark.type}`);
+    switch (block.type) {
+      case 'paragraph':
+        marksWithNoType(block.content, found);
+        break;
+      case 'list':
+        // The stored shape puts `start` and `format` on a list of any kind, and the editor's
+        // `definitionList` has nowhere to keep either - a definition list is numbered by nothing.
+        // Named rather than dropped, in the spelling `mark:` already uses, because opening one and
+        // saving it would take the author's numbering off a list they never touched.
+        if (block.kind === 'definition') {
+          if (block.start !== undefined) found.add('list:start');
+          if (block.format !== undefined) found.add('list:format');
         }
-        types.add(mark.type);
-      }
+        for (const item of block.items) {
+          // A term is inline content and is walked for the same reason a paragraph's is. Where a
+          // term stands at all is the content model's rule, held in `checkBlock`, so a document
+          // that has been parsed carries one only on a definition list's item.
+          if (item.term !== undefined) marksWithNoType(item.term, found);
+          namesWithNoNode(item.content, found);
+        }
+        break;
+      default:
+        found.add(block.type);
     }
   }
-  return [...found];
+}
+
+/** The inline nodes and the marks of one run sequence that this schema has no counterpart for. */
+function marksWithNoType(content: readonly InlineNode[], found: Set<string>): void {
+  for (const inline of content) {
+    if (inline.type !== 'text') {
+      found.add(inline.type);
+      continue;
+    }
+    const types = new Set<string>();
+    for (const mark of inline.marks) {
+      if (!(mark.type in editorSchema.marks) || types.has(mark.type)) {
+        found.add(`mark:${mark.type}`);
+      }
+      types.add(mark.type);
+    }
+  }
 }
 
 /**
@@ -83,22 +120,77 @@ function toRun(inline: InlineNode): Node[] {
 export function toEditor(document: ContentDocument): Opened {
   const unsupported = unsupportedIn(document.content);
   if (unsupported.length > 0) return { editable: false, unsupported };
-  const paragraphs = document.content.map((block) => {
-    const paragraph = block as Extract<BlockNode, { type: 'paragraph' }>;
-    return editorSchema.node(
-      'paragraph',
-      { id: paragraph.id, style: paragraph.style },
-      paragraph.content.flatMap(toRun),
-    );
-  });
   return {
     editable: true,
     doc: editorSchema.node(
       'doc',
       { title: document.title, language: document.language, direction: document.direction },
-      paragraphs,
+      nodesOf(document.content),
     ),
   };
+}
+
+/** One stored block sequence as the editor holds it, and the recursion a list item opens. */
+function nodesOf(blocks: readonly BlockNode[]): Node[] {
+  return blocks.map(nodeOf);
+}
+
+function nodeOf(block: BlockNode): Node {
+  switch (block.type) {
+    case 'paragraph':
+      return editorSchema.node(
+        'paragraph',
+        { id: block.id, style: block.style },
+        block.content.flatMap(toRun),
+      );
+    case 'list':
+      return block.kind === 'definition' ? definitionListOf(block) : countedListOf(block);
+    default:
+      // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
+      // what keeps it that way. A family given a node in the schema and forgotten here is named
+      // rather than opened as something else.
+      throw new Error(`Block ${block.id} is a ${block.type}, which this editor cannot open`);
+  }
+}
+
+/**
+ * A numbered or bulleted list. Its `start` and `format` are absent in the stored form and null in
+ * the editor's, which is the same bargain `toMark` strikes with a hyperlink's title, and `fromEditor`
+ * spells back as absence.
+ */
+function countedListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
+  return editorSchema.node(
+    'list',
+    {
+      id: list.id,
+      kind: list.kind,
+      start: list.start ?? null,
+      format: list.format ?? null,
+    },
+    list.items.map((item) => editorSchema.node('listItem', null, nodesOf(item.content))),
+  );
+}
+
+/**
+ * A definition list. The stored model holds one `list` node of three kinds and the editor holds two
+ * node types, because a ProseMirror content expression is fixed per type and a definition item opens
+ * with the term it defines (ADR, "the editor schema is not the stored model one for one"). This is
+ * where the two spellings meet, and `storedBlock` widens `definitionList` back to `kind: 'definition'`.
+ *
+ * An item whose term is absent gets the empty `term` node an author types into. The editor always
+ * has the node, because that is where their cursor goes; what is optional is what reaches the store.
+ */
+function definitionListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
+  return editorSchema.node(
+    'definitionList',
+    { id: list.id },
+    list.items.map((item) =>
+      editorSchema.node('definitionItem', null, [
+        editorSchema.node('term', null, (item.term ?? []).flatMap(toRun)),
+        ...nodesOf(item.content),
+      ]),
+    ),
+  );
 }
 
 /**
@@ -139,9 +231,9 @@ function markOf(mark: EditorMark): unknown {
  * else can get in; the day it holds an image or a footnote, this says which node has no run yet
  * instead of storing a document quietly missing it.
  */
-function runsOf(paragraph: Node, id: string): unknown[] {
+function runsOf(textblock: Node, id: string): unknown[] {
   const runs: unknown[] = [];
-  paragraph.forEach((child) => {
+  textblock.forEach((child) => {
     if (child.type.name !== 'text') {
       throw new Error(`Block ${id} holds a node this editor cannot store: ${child.type.name}`);
     }
@@ -156,22 +248,102 @@ function runsOf(paragraph: Node, id: string): unknown[] {
  * "Invariants the editor holds"). A block with no identifier is refused here, and never reaches storage.
  */
 export function fromEditor(doc: Node): ContentDocument {
-  const content: unknown[] = [];
-  doc.forEach((paragraph, _offset, index) => {
-    const id: unknown = paragraph.attrs.id;
-    if (typeof id !== 'string') throw new Error(`Block ${index} has no identifier`);
-    content.push({
-      type: 'paragraph',
-      id,
-      style: paragraph.attrs.style as string,
-      content: runsOf(paragraph, id),
-    });
-  });
   return parseContentDocument({
     schemaVersion: 1,
     title: doc.attrs.title as string,
     language: doc.attrs.language as string,
     direction: doc.attrs.direction as string,
-    content,
+    content: storedBlocks(doc, ''),
   });
+}
+
+/**
+ * The blocks of one parent as the stored model holds them, each labelled with where it stands: `2`
+ * at the top level, `2.0.1` for the second block of the first item of the list at `2`. A block with
+ * no identifier has no other name to be refused under, and at depth an index alone would say almost
+ * nothing about which block an author should look at.
+ *
+ * `from` skips the children that are not blocks. A definition item opens with its term, so its body
+ * starts at 1 - and the body's own labels start at 0, because the term is not a block and counting
+ * it would make every message in a definition list one out.
+ */
+function storedBlocks(parent: Node, within: string, from = 0): unknown[] {
+  const blocks: unknown[] = [];
+  parent.forEach((child, _offset, index) => {
+    if (index < from) return;
+    const at = index - from;
+    blocks.push(storedBlock(child, within === '' ? String(at) : `${within}.${at}`));
+  });
+  return blocks;
+}
+
+/** One block's identifier, or a refusal naming where the block with none stands. */
+function identifierOf(node: Node, at: string): string {
+  const id: unknown = node.attrs.id;
+  if (typeof id !== 'string') throw new Error(`Block ${at} has no identifier`);
+  return id;
+}
+
+/**
+ * One editor block as the stored model holds it, and the recursion `toEditor` opened.
+ *
+ * A node type this mapping has no stored shape for is **refused by name**, exactly as a child a
+ * paragraph cannot hold is in `runsOf`, rather than skipped. Skipping is the failure the whole
+ * mapping is arranged against: it would save a component quietly missing what the author wrote.
+ */
+function storedBlock(node: Node, at: string): unknown {
+  switch (node.type.name) {
+    case 'paragraph': {
+      const id = identifierOf(node, at);
+      return {
+        type: 'paragraph',
+        id,
+        style: node.attrs.style as string,
+        content: runsOf(node, id),
+      };
+    }
+    case 'list': {
+      const id = identifierOf(node, at);
+      const items: unknown[] = [];
+      node.forEach((item, _offset, index) => {
+        items.push({ content: storedBlocks(item, `${at}.${index}`) });
+      });
+      // **An attribute reading null is omitted, never written**, for the reason `markOf` gives: the
+      // stored shape is strict and admits the member's absence rather than null. `start` is written
+      // where it is 0, which is a start a decimal list may have (CNT-153) and not an absence.
+      return {
+        type: 'list',
+        id,
+        kind: node.attrs.kind as string,
+        ...(node.attrs.start === null ? {} : { start: node.attrs.start }),
+        ...(node.attrs.format === null ? {} : { format: node.attrs.format }),
+        items,
+      };
+    }
+    case 'definitionList': {
+      const id = identifierOf(node, at);
+      const items: unknown[] = [];
+      node.forEach((item, _offset, index) => {
+        const opening = item.child(0);
+        if (opening.type.name !== 'term') {
+          throw new Error(`Block ${at} has an item that does not open with its term`);
+        }
+        // **Judged on what `runsOf` returned, never on what the term node holds.** A term the
+        // author has not typed into is no term at all and its member is left out: `term: []` is a
+        // second spelling of absent, which `listNodeSchema` refuses and one document may not have
+        // two digests of. Absent rather than refused because an author who writes the definition
+        // before the word is mid-edit, not in error, and the only message an iteration save can
+        // give them names nothing (`checkBlock`, and CNT-124's empty paragraph before it).
+        const term = runsOf(opening, id);
+        items.push({
+          ...(term.length === 0 ? {} : { term }),
+          content: storedBlocks(item, `${at}.${index}`, 1),
+        });
+      });
+      // One stored `list` of three kinds, out of the editor's two node types: this is the join.
+      return { type: 'list', id, kind: 'definition', items };
+    }
+    default:
+      throw new Error(`Block ${at} holds a node this editor cannot store: ${node.type.name}`);
+  }
 }

@@ -330,8 +330,13 @@ describe('the citations in the committed model', () => {
   // removed in every home the editor can make a pair in, the top level, a list item and a definition
   // item's body, which is what makes a spacer unrepresentable now that a block can stand at depth.
   // The file carried no CNT-023 citation before, so this one hides behind nothing either.
+  // 221, from 219: the same plan's mapping task cites CNT-117 and CNT-118 once each in
+  // packages/editor/src/mapping.test.ts, which carried neither before. One body makes all three
+  // kinds of list and round-trips them through the editor and back; the other nests six levels
+  // mixing all three kinds and round-trips that. Every other list test in that file keeps its words
+  // and no identifier, because a definition list alone is a third of what CNT-117 states.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(219);
+    expect(model.citations).toHaveLength(221);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -192,14 +192,18 @@ describe('what the editor always holds', () => {
     expect(() => fromEditor(redone.doc)).not.toThrow();
   });
 
-  it('holds a storable document after any sequence of typing, splitting, joining, deleting and undoing', () => {
+  /**
+   * Two thousand edits from one seed, each one followed by a save, so a document the store would
+   * refuse is caught at the step that made it rather than by an author weeks later.
+   */
+  const storableAfterAnySequence = (start: EditorState, from: number) => {
     // A seeded generator, so a failure names a sequence that can be replayed.
-    let seed = 20260916;
+    let seed = from;
     const random = (below: number) => {
       seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
       return seed % below;
     };
-    let state = stateOf([['b1', 'Unbox the printer.']]);
+    let state = start;
     for (let step = 0; step < 2000; step += 1) {
       const size = state.doc.content.size;
       const pos = 1 + random(Math.max(1, size - 1));
@@ -217,6 +221,63 @@ describe('what the editor always holds', () => {
       if (operation === 5) state = run(placed, undo);
       expect(() => fromEditor(state.doc), `step ${step}`).not.toThrow();
     }
+  };
+
+  it('holds a storable document after any sequence of typing, splitting, joining, deleting and undoing', () => {
+    storableAfterAnySequence(stateOf([['b1', 'Unbox the printer.']]), 20260916);
+  });
+
+  it('holds one after any such sequence inside a list and a definition list too', () => {
+    // The sequence above never leaves the top level, where every position is a paragraph's. Seeded
+    // with a document that nests, the same two thousand edits land inside list items, inside a
+    // definition item's body and inside its term - which is where identity, adjacency and the
+    // mapping all had to learn to descend, and where a position they disagree about first shows up.
+    const opened = toEditor({
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        { type: 'paragraph', id: 'b1', style: 'body', content: [] },
+        {
+          type: 'list',
+          id: 'L1',
+          kind: 'unordered',
+          items: [
+            { content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }] },
+            {
+              content: [
+                { type: 'paragraph', id: 'b3', style: 'body', content: [] },
+                {
+                  type: 'list',
+                  id: 'L2',
+                  kind: 'ordered',
+                  items: [
+                    { content: [{ type: 'paragraph', id: 'b4', style: 'body', content: [] }] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'D1',
+          kind: 'definition',
+          items: [
+            {
+              term: [{ type: 'text', value: 'Tensile strength', marks: [] }],
+              content: [{ type: 'paragraph', id: 'b5', style: 'body', content: [] }],
+            },
+          ],
+        },
+      ],
+    });
+    if (!opened.editable) throw new Error('expected an editable document');
+    storableAfterAnySequence(
+      createEditorState({ doc: opened.doc, newIdentifier: counter() }),
+      20260921,
+    );
   });
 });
 
