@@ -1,4 +1,5 @@
 import { markTypes } from '@alloy-works/domain';
+import { readFileSync } from 'node:fs';
 import { Mark, type ParseRule, type TagParseRule } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
 
@@ -188,5 +189,34 @@ describe('the editor schema', () => {
     // `parseContentDocument`, which `fromEditor` ends in - so a command that re-used an identifier
     // for a changed value would be refused on the way to storage rather than silently stored.
     expect(french.eq(german)).toBe(false);
+  });
+});
+
+describe('the editor stylesheet', () => {
+  it('styles every mark the schema can render', () => {
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
+    // A rule at a time, comments stripped first: a selector counts only when it heads a real
+    // `{ ... }` rule body, not when it merely appears in a comment or a string - so this also
+    // proves the file parses as CSS, not just that the ten names occur somewhere in the text.
+    const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const ruleSelectors = [...withoutComments.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((match) =>
+      match[1]!.split(',').map((selector) => selector.trim()),
+    );
+    // The eight tag selectors task 1's schema renders, `a[href]` for the hyperlink (not the bare
+    // `a`, which would style an anchor with no target) and `.aw-language` for the language mark,
+    // whose own element carries no tag of its own (F19).
+    const expected = [
+      '.ProseMirror em',
+      '.ProseMirror strong',
+      '.ProseMirror u',
+      '.ProseMirror sub',
+      '.ProseMirror sup',
+      '.ProseMirror code',
+      '.ProseMirror q',
+      '.ProseMirror dfn',
+      '.ProseMirror a[href]',
+      '.ProseMirror .aw-language',
+    ];
+    for (const selector of expected) expect(ruleSelectors, selector).toContain(selector);
   });
 });

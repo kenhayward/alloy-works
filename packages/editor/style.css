@@ -15,3 +15,70 @@
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+/*
+ * The ten marks the schema can render (packages/editor/src/schema.ts), one rule each, named by the
+ * selector the mark's own `toDOM` or `parseDOM` actually produces rather than by the mark's name -
+ * a renamed tag fails schema.test.ts rather than silently styling nothing. `em`, `strong`, `sub` and
+ * `sup` need no rule of their own; the browser default already matches CNT's intent for them, and
+ * they are named here anyway so the test proves every mark was considered.
+ */
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror strong {
+  font-weight: bold;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror sub {
+  vertical-align: sub;
+}
+
+.ProseMirror sup {
+  vertical-align: super;
+}
+
+/* No pinned monospace face: the published side does not pin one either (docs/plans/2026-09-20-
+ * editor-03-marks-and-links.md, decision C), so the editor does not promise a face publishing
+ * cannot keep. The generic `monospace` keyword still sets code apart from body text visually. */
+.ProseMirror code {
+  font-family: monospace;
+}
+
+/*
+ * The mark's own characters are the author's text; a browser's default `open-quote`/`close-quote`
+ * pair would print a second one around it. The editor is the authority the PDF template is made to
+ * agree with (F16), not the other way round.
+ */
+.ProseMirror q {
+  quotes: none;
+}
+
+.ProseMirror dfn {
+  font-style: normal;
+}
+
+/*
+ * `a[href]`, never a bare `a`: the schema only ever renders an anchor with a target (schema.ts), and
+ * matching only what it can render keeps this file honest about what the mark is. The colour is
+ * `--data` from the brand's design tokens (assets/brand/README.md); there is no app stylesheet yet
+ * for it to live in as a custom property, so the hex value is used directly, as that table itself
+ * says to do until one exists.
+ */
+.ProseMirror a[href] {
+  color: #2e6f9e;
+  text-decoration: underline;
+}
+
+/*
+ * The language mark's decoration - whether the run is spell checked - is recomputed from the
+ * document, never from the mark alone (CNT-147, packages/editor/src/state.ts), so this rule sets
+ * nothing. It stays in the file so schema.test.ts proves the mark was considered, not forgotten.
+ */
+.ProseMirror .aw-language {
+}
