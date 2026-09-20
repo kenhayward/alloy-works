@@ -24,12 +24,18 @@ import type { JobHandler } from '../worker.js';
  * the layout's words - which the template's hash does not cover, because they are the data's. Raised
  * with any of them; `template.test.ts` holds what each version's `assemble` makes of one fixed input,
  * notice included. Version 1 is still made, for a request made before layouts (Ken's answer F);
- * version 2 is what a request under a layout made before a run carried its marks, and is named only
- * by the publications it made.
+ * version 2 is what a request under a layout made before a run carried its marks, and version 3
+ * what one made before a block could be a list - each named only by the publications it made.
+ *
+ * **Both keys are computed.** Repoint `PUBLISHING_SCHEMA` and the key moves while the value stays
+ * behind, and the `satisfies` clause cannot catch it because `PublishedSchema` derives from the
+ * same constant: every publication the new pipeline makes would record itself as made by the old
+ * one, in the single field this constant exists for. `template.test.ts` pins this map as a LITERAL
+ * object so that a bump left half-done goes red rather than lying in a PDF's own provenance.
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA]: '3',
+  [PUBLISHING_SCHEMA]: '4',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -96,8 +102,8 @@ export function publishJob(deps: {
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
       // Chosen by what `assemble` made, so a document is never handed to a template that cannot read
-      // it: template 1 and pipeline 1 for `publishing/1`, template 3 and pipeline 3 for `publishing/3`.
-      // A publication under template 3 must name a layout, which only a request made under one has.
+      // it: template 1 and pipeline 1 for `publishing/1`, template 4 and pipeline 4 for `publishing/4`.
+      // A publication under template 4 must name a layout, which only a request made under one has.
       const { schema } = assembled.document;
       const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // The digest is of the bytes Typst reads, so a reproduction can tell input from engine.

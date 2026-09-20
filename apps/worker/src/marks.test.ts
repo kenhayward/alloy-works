@@ -199,7 +199,7 @@ const compileOne = (data: string) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[3].file, data, at);
+      const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at);
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);
@@ -253,7 +253,7 @@ describe('the PDF a marked document makes', () => {
     expect(spoken(read.taggedText[0]!)).toContain(CODE);
 
     // `assemble` writes a run's marks in one fixed order and `inlineCode` is last in it, so the
-    // fold in template 3 could not lose the emphasis whatever it did. The template's own rule is
+    // fold in template 4 could not lose the emphasis whatever it did. The template's own rule is
     // wider than that: it reads the document as data, and no order of a run's marks may silence
     // one. So the same document is compiled again with this run's two marks the other way round -
     // the order `assemble` does not write today, and the one a later order could - and the two PDFs
