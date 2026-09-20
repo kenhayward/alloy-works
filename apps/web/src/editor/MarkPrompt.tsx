@@ -1,3 +1,4 @@
+import { markSchema, publishedLanguage } from '@alloy-works/domain';
 import type { EditorCommand } from '@alloy-works/editor';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
@@ -20,7 +21,22 @@ interface Shape {
   readonly absent: string;
   /** What Remove does, said before they press it rather than after. */
   readonly removes: string;
+  /**
+   * What the author is told about a value the stored model takes and an output cannot carry, or
+   * null where there is nothing to say. Not a refusal, so it never stops them: it is said once,
+   * before the mark goes in, and pressing Apply again with the same value applies it (CNT-152).
+   */
+  readonly warn?: (value: string) => string | null;
 }
+
+/**
+ * Whether a language tag is one the content model would take, asked of the model itself rather than
+ * restated here. The identifier is a placeholder and nothing is applied: what is being asked is the
+ * shape of the tag, and the warning must not stand in front of a refusal - telling an author that a
+ * publication cannot carry `klingon` answers a question nobody asked.
+ */
+const wellFormedTag = (tag: string) =>
+  markSchema.safeParse({ type: 'language', id: 'unapplied', tag }).success;
 
 /**
  * The two marks whose value only the author can supply, and the words each one is asked for in.
@@ -56,6 +72,10 @@ const SHAPES: Record<string, Shape> = {
     empty: 'Type a language tag, or press Cancel to leave the text as it is.',
     absent: 'There is no language tag here any more, so there is nothing to take off.',
     removes: 'Remove takes this language tag off and leaves the text it was on.',
+    warn: (tag) =>
+      wellFormedTag(tag) && publishedLanguage(tag) === null
+        ? `A publication cannot carry the tag ${tag}. Press Apply again to use it anyway.`
+        : null,
   },
 };
 
@@ -115,6 +135,13 @@ export interface MarkPromptProps {
  * It is a form, so `Enter` in a box applies: that is the most ordinary gesture there is in a dialog
  * with one box in it, and reaching for Apply with the mouse or the Tab key is not a price worth
  * charging for it.
+ *
+ * **A value an output cannot carry is warned about here, before it is applied** (CNT-152). It is not
+ * a refusal - the content model takes any well-formed language tag - so the warning names the tag
+ * and gets out of the way: pressing Apply again with the same value applies it, and changing the
+ * value takes the warning away and earns a fresh one if the new value needs it. Warning at the time
+ * is the whole point of it, because the alternative is a component that looks right until a publish
+ * somebody else asked for is refused, with the work long since done.
  */
 export function MarkPrompt({
   command,
@@ -136,6 +163,10 @@ export function MarkPrompt({
       }),
     ),
   );
+  // The value Apply was pressed over and warned about, and nothing longer lived than that: the
+  // warning stands only while that very value is still in the box, so correcting the tag takes it
+  // away and pressing Apply again with it unchanged goes ahead.
+  const [warnedAbout, setWarnedAbout] = useState<string | null>(null);
 
   useEffect(() => first.current?.focus(), []);
 
@@ -155,6 +186,10 @@ export function MarkPrompt({
           : nothingTyped
             ? shape.empty
             : shape.refusal;
+  // Asked of what is in the box, because a warning is about the value the author is looking at and
+  // about to apply, where a complaint is about a press that has already been made and answered.
+  const inFirst = typed[shape.fields[0]!.name] ?? '';
+  const warning = warnedAbout === inFirst ? (shape.warn?.(inFirst) ?? null) : null;
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -185,6 +220,13 @@ export function MarkPrompt({
       <form
         onSubmit={(event) => {
           event.preventDefault();
+          // Raised rather than applied, once, for this value: the author reads it and presses again
+          // if they meant it. Raising it a second time for a value already warned about would make
+          // Apply a button that never applies.
+          if (warning === null && (shape.warn?.(inFirst) ?? null) !== null) {
+            setWarnedAbout(inFirst);
+            return;
+          }
           onApply(typed);
         }}
       >
@@ -202,6 +244,7 @@ export function MarkPrompt({
                   // The complaint first: what went wrong is read before what a good value looks
                   // like, rather than after it.
                   index === 0 && complaint !== null ? id('complaint') : null,
+                  index === 0 && warning !== null ? id('warning') : null,
                   field.hint === undefined ? null : id(`hint-${field.name}`),
                 ]
                   .filter((each) => each !== null)
@@ -217,6 +260,11 @@ export function MarkPrompt({
         {complaint !== null && (
           <p id={id('complaint')} role="alert">
             {complaint}
+          </p>
+        )}
+        {warning !== null && (
+          <p id={id('warning')} role="alert">
+            {warning}
           </p>
         )}
         {removable && <p id={id('removes')}>{shape.removes}</p>}

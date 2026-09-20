@@ -4,7 +4,7 @@ import {
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type Ref } from 'react';
 
 import { pressCommand, type AskForValue } from './press.js';
 
@@ -22,6 +22,11 @@ export interface EditorToolbarProps {
    * simply had nothing to do: the words belong to whoever renders the notice.
    */
   readonly onRefused?: (command: EditorCommand) => void;
+  /**
+   * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
+   * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
+   */
+  readonly ref?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -77,6 +82,7 @@ export function EditorToolbar({
   newIdentifier,
   prompt,
   onRefused,
+  ref,
 }: EditorToolbarProps) {
   const [tabStop, setTabStop] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
@@ -108,7 +114,15 @@ export function EditorToolbar({
   };
 
   return (
-    <div role="toolbar" aria-label="Formatting" onKeyDown={onKeyDown}>
+    <div
+      ref={ref}
+      role="toolbar"
+      aria-label="Formatting"
+      // So the region ring has somewhere to land even if the row were ever empty. One button always
+      // carries the roving stop today, so this is the fallback and not the usual landing.
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+    >
       {EDITOR_COMMANDS.map((command, index) => (
         <button
           key={command.mark}

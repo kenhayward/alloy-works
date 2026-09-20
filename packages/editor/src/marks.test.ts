@@ -121,7 +121,12 @@ function textAndMarks(state: EditorState): { text: string; marks: string[] }[] {
 }
 
 describe('the command registry', () => {
-  it('CNT-077 gives every command a shortcut and one label, with no shortcut used twice', () => {
+  // Uncited on purpose. CNT-077 asks that every editing action is reachable from the keyboard
+  // alone, and this body asserts strings and presses no key: it shows the registry is well formed,
+  // which is a precondition and not the requirement. The citation lives where a key is pressed -
+  // `EditorToolbar.test.tsx` for the toolbar's own row, and `ComponentEditor.test.tsx` for F6 and
+  // Shift-F6 between the regions of the view.
+  it('gives every command a shortcut and one label, with no shortcut used twice', () => {
     expect(EDITOR_COMMANDS).toHaveLength(9);
     for (const command of EDITOR_COMMANDS) {
       expect(command.label, command.mark).toMatch(/^[A-Z][a-z ]+$/);

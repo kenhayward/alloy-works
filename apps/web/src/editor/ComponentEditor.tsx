@@ -19,7 +19,7 @@ import {
   type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ComponentHeader } from './ComponentHeader.js';
@@ -129,6 +129,11 @@ export function ComponentEditor({
   // of it: nothing of it is rendered until a press asks for a value.
   const [asking, setAsking] = useState<Asking | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
+  // The other two regions of the view; `place` is the third. Held as elements rather than as a list
+  // of selectors, so a region that is not rendered at all - a component that failed to open - is
+  // simply absent from the ring rather than a query that quietly finds nothing.
+  const headerRegion = useRef<HTMLElement | null>(null);
+  const toolbarRegion = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
@@ -482,6 +487,54 @@ export function ComponentEditor({
   }, [session, kept]);
 
   /**
+   * Puts the focus in a region: on the first control a Tab would reach inside it, or on the region
+   * itself where it has none.
+   *
+   * The fallback is not a rare case. A component being read has a header whose fields are disabled
+   * and a surface that takes no input, so two of the three regions hold nothing focusable at all -
+   * and a ring that skipped them would leave a reader moving between one region and itself, with no
+   * way to reach the text. Each region is therefore focusable in its own right, and a Tab from
+   * there walks into whatever it holds.
+   */
+  const land = (region: HTMLElement) => {
+    const inside = [
+      ...region.querySelectorAll<HTMLElement>('input, select, textarea, button, [contenteditable]'),
+    ].find(
+      (each) =>
+        // A disabled control reports `tabIndex` 0 all the same, and an editable surface is asked
+        // for by its own attribute rather than by `tabIndex`, which jsdom reports as -1 for one
+        // while a browser reports 0. Both are load-bearing: the first would land on a header field
+        // a reader cannot type into, and the second would skip the surface in every test here.
+        !each.hasAttribute('disabled') &&
+        (each.tabIndex >= 0 || each.getAttribute('contenteditable') === 'true'),
+    );
+    (inside ?? region).focus();
+  };
+
+  /**
+   * `F6` and `Shift-F6` move the focus between the regions of the view and wrap (CNT-077): the
+   * component header, the formatting toolbar, the surface. The design names a fourth, the metadata
+   * panel, which is not built; the **Component** toolbar - Save version and Done editing - is
+   * deliberately not one of them and keeps its own ordinary tab stops.
+   *
+   * Pressed from somewhere that is no region at all, it enters the ring at the first region going
+   * forwards and at the last going backwards, rather than guessing which region the author meant.
+   */
+  const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
+    const ring = [headerRegion.current, toolbarRegion.current, place.current].filter(
+      (region) => region !== null,
+    );
+    if (ring.length === 0) return;
+    event.preventDefault();
+    const at = ring.findIndex((region) => region.contains(document.activeElement));
+    const back = event.shiftKey;
+    const next =
+      at < 0 ? (back ? ring.length - 1 : 0) : (at + (back ? -1 : 1) + ring.length) % ring.length;
+    land(ring[next]!);
+  };
+
+  /**
    * Asks the view to make a header step, answering the header the document holds afterwards - the
    * model's own answer to what was sent, which the fields compare against rather than assuming their
    * value survived unchanged (fix round 2): a title comes back trimmed, and a step the editor refused
@@ -540,8 +593,8 @@ export function ComponentEditor({
           `aria-modal` promises: a keyboard is held inside the dialog by its own trap, and a mouse
           by this. Without it the surface behind still takes clicks, so the selection the command
           is about to act on moves out from under the author while they type a target for it. */}
-      <article aria-labelledby="component-title" inert={asking !== null}>
-        <header>
+      <article aria-labelledby="component-title" inert={asking !== null} onKeyDown={moveRegion}>
+        <header ref={headerRegion} tabIndex={-1}>
           {header ? (
             <ComponentHeader
               header={header}
@@ -608,6 +661,7 @@ export function ComponentEditor({
               (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
               than absent, so what the editor can do with the text is visible before the lock is. */}
             <EditorToolbar
+              ref={toolbarRegion}
               view={surface}
               enabled={shown.mayEdit && isEditablePhase(phase)}
               newIdentifier={newBlockIdentifier}
@@ -616,7 +670,9 @@ export function ComponentEditor({
                 surface && askAgain(surface, command, whyRefused(surface, command))
               }
             />
-            <div ref={place} />
+            {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
+                itself where what it holds cannot take the focus, such as a component being read. */}
+            <div ref={place} tabIndex={-1} />
             {kept !== null && (
               <label>
                 Text that was not saved

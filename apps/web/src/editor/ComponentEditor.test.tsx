@@ -1949,4 +1949,234 @@ describe('the link and language prompts', () => {
     expect(screen.queryByText(/is not there any more/)).toBeNull();
     expect(screen.getByLabelText('Address')).toHaveValue('');
   });
+
+  it('CNT-152 names a language tag a publication cannot carry before the mark is applied', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Said at the time and naming the tag, with the dialog still standing and nothing written: the
+    // alternative is a component that looks fine until a publish somebody else asks for is refused.
+    expect(
+      await screen.findByText(
+        'A publication cannot carry the tag zh-Hans. Press Apply again to use it anyway.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+
+    // A warning, not a refusal. The content model takes any well-formed tag, so the author who
+    // means it presses again and it goes in.
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'language', tag: 'zh-Hans' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says nothing about a language tag a publication can carry', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'pt-BR');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // One press, nothing said: a warning every carriable tag also collected would be one nobody
+    // reads by the third time they see it.
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'language', tag: 'pt-BR' }],
+      }),
+    );
+    expect(screen.queryByText(/A publication cannot carry/)).toBeNull();
+  });
+
+  it('warns again when the tag is changed to another one a publication cannot carry', async () => {
+    // The warning is spent on the value it was raised over, and on nothing else. A dialog that
+    // counted presses instead would let the second tag through unremarked, and the author would be
+    // told about the tag they corrected and not about the one they applied.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    const box = await screen.findByLabelText('Language tag');
+    await userEvent.type(box, 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByText(/cannot carry the tag zh-Hans/);
+
+    await userEvent.clear(box);
+    await userEvent.type(box, 'es-419');
+
+    // Corrected to something else the engine cannot carry: the complaint is about what is in the
+    // box now, and the press that follows is the first press of that value.
+    expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText(
+        'A publication cannot carry the tag es-419. Press Apply again to use it anyway.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('refuses a tag the content model will not take rather than warning about a publication', async () => {
+    // The two are different answers to different questions, and the warning must not stand in front
+    // of the refusal: `klingon` is not a tag at all, so a publication carrying it is beside the
+    // point and pressing Apply a second time would still end in nothing.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/A publication cannot carry/)).toBeNull();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+});
+
+describe('the regions of the view', () => {
+  /** The three things F6 lands on while a component is open for editing, in the ring's own order. */
+  const landings = () => ({
+    title: screen.getByLabelText('Title'),
+    formatting: within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
+      'button',
+    )[0]!,
+    text: screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+  });
+
+  it('CNT-077 moves between the header, the toolbar and the surface with F6 alone', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    const { title, formatting, text } = landings();
+
+    title.focus();
+    await userEvent.keyboard('{F6}');
+    expect(formatting).toHaveFocus();
+
+    await userEvent.keyboard('{F6}');
+    expect(text).toHaveFocus();
+
+    // A ring, not a line with two dead ends.
+    await userEvent.keyboard('{F6}');
+    expect(title).toHaveFocus();
+
+    // Save version and Done editing are not a region: they keep their own ordinary tab stops, and
+    // F6 pressed from them enters the ring at its first region rather than cycling out of them.
+    // They take the focus only once a change has claimed the lock, which is what this types.
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    const save = await screen.findByRole('button', { name: 'Save version' });
+    await waitFor(() => expect(save).toBeEnabled());
+
+    save.focus();
+    await userEvent.keyboard('{F6}');
+    expect(title).toHaveFocus();
+  });
+
+  it('CNT-077 moves backwards between the regions with Shift-F6', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    const { title, formatting, text } = landings();
+
+    title.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(text).toHaveFocus();
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(formatting).toHaveFocus();
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(title).toHaveFocus();
+
+    // From outside the ring it enters at the last region, as F6 enters at the first: the author
+    // who pressed it was going backwards, and dropping them at the second region of three would be
+    // the ring guessing which one they meant to have left.
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    const save = await screen.findByRole('button', { name: 'Save version' });
+    await waitFor(() => expect(save).toBeEnabled());
+
+    save.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(text).toHaveFocus();
+  });
+
+  it('lands on a region a reader cannot type in rather than skipping it', async () => {
+    // A component being read has a header whose fields are disabled and a surface that takes no
+    // input, so neither region holds anything a Tab would reach. Skipping them would leave F6
+    // moving between one region and itself, and the reader with no way to reach the text at all.
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })) },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const formatting = within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
+      'button',
+    )[0]!;
+    const header = screen.getByRole('heading', { name: 'Install the printer' }).closest('header')!;
+
+    // The toolbar is `aria-disabled` rather than disabled, which is what leaves the ring a place to
+    // start from while nothing else in the view will take the focus.
+    formatting.focus();
+    await userEvent.keyboard('{F6}');
+    expect(document.activeElement).toBe(view.dom.parentElement);
+
+    await userEvent.keyboard('{F6}');
+    expect(document.activeElement).toBe(header);
+
+    await userEvent.keyboard('{F6}');
+    expect(formatting).toHaveFocus();
+  });
 });

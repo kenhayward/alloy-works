@@ -118,6 +118,9 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_1',
         'assemble',
         'publishFailureCodes',
+        // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
+        // could not carry without keeping a second copy of the rule (CNT-152).
+        'publishedLanguage',
         // The layout, promoted in the plan that adds it
         // (docs/plans/2026-09-19-publishing-02-the-layout.md).
         'LAYOUT_SCHEMA_VERSION',

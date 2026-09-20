@@ -205,6 +205,7 @@ the separation rather than losing it. The blank lines go; the gap they were maki
 | **CNT-083** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag                                                                                                                                                                        | T1      | Superseded by CNT-140 |
 | **CNT-084** | A run's language must be carried through to every output format as the language of that passage                                                                                                                                                                                                                      | T1      | Specified             |
 | **CNT-140** | Every component must declare a base language, and any run whose language differs from its surrounding context must carry its own language tag. Every such tag must be a **BCP 47** language tag, carrying a region wherever the region changes the content - `pt-BR` distinct from `pt-PT`, `zh-Hans` from `zh-Hant` | T1      | Specified             |
+| **CNT-152** | Where an author marks a run of text with a language the product's outputs cannot carry, the editor must say so at the time, naming the tag, rather than letting the component be written and the publication be refused later                                                                                        | T1      | Specified             |
 | **CNT-085** | An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning                                                                                                                                                                                         | T1      | Specified             |
 | **CNT-087** | An image must be placeable inline within a run of text                                                                                                                                                                                                                                                               | T1      | Specified             |
 | **CNT-126** | Hyperlinks must be supported, as a mark over a range of text carrying an absolute target and an optional title                                                                                                                                                                                                       | T1      | Specified             |
@@ -249,6 +250,16 @@ of text. The model records **language**, never foreignness: a component declares
 and a run that differs declares its own. This is not decoration - tagged PDF and accessible Word
 both require the language of a passage to be known, and it cannot be recovered at publish time from
 the text alone.
+
+**CNT-152 exists because CNT-140 is wider than any output.** CNT-140 requires a script subtag to be
+kept where it changes the content - `zh-Hans` distinct from `zh-Hant` - and the model duly takes any
+well-formed tag. A publication does not: PUB's engine carries a language and, where there is one, a
+region of exactly two letters, and it refuses the rest by name rather than shortening it, because
+`sr-Latn` and `sr-Cyrl` are not the same language to a screen reader. Narrowing the model to what
+today's engine takes would be throwing away a distinction an author can see; letting the difference
+surface as a refused publish means somebody who did not write the component learns about it long
+after the work is done. So the editor says it at the time, names the tag, and applies the mark all
+the same.
 
 ## 6. Footnotes
 
@@ -725,5 +736,22 @@ and leaves both rows unclaimed until its own slice.
 | Counts           | Before                      | After                       |
 | ---------------- | --------------------------- | --------------------------- |
 | Requirements     | 149, of which 13 superseded | 151, of which 15 superseded |
+| Non-requirements | 10                          | 10                          |
+| Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |
+
+### From building the editor's marks, 2026-09-20
+
+Not a review. Building the language mark found that the model and the publisher disagree about what a
+language tag may be, and that nothing said what an author should be told about it. Ken answered
+[#155](https://github.com/kenhayward/alloy-works/issues/155) while the marks plan was being written.
+
+| What was found                                                                                                                                                                                                                                                                                                                         | Change                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-140 takes any well-formed BCP 47 tag and requires a script subtag to be kept; the publishing engine carries a language and an optional two-letter region and refuses the rest (the sibling of PUB-095). So `zh-Hans` is storable and unpublishable, and an author learned of it only at a publish somebody else may have asked for | **CNT-152** added (issue #155): the editor says so at the time, naming the tag, before the mark is applied                                                            |
+| Declined: narrowing the mark's tag to what the engine carries, which would have removed the disagreement entirely                                                                                                                                                                                                                      | It would throw away a distinction CNT-140 exists to keep, and bind the content model to one engine's limits. CNT-152 warns instead of refusing, so the author decides |
+
+| Counts           | Before                      | After                       |
+| ---------------- | --------------------------- | --------------------------- |
+| Requirements     | 151, of which 15 superseded | 152, of which 15 superseded |
 | Non-requirements | 10                          | 10                          |
 | Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |

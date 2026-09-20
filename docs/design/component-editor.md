@@ -69,6 +69,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                          |
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                        |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                           |
+| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; a second press applies it anyway                          |
 
 **What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
 a run whose language mark differs from the component's base language is rendered with
@@ -84,6 +85,17 @@ was to keep the native checker, so CNT-099 is superseded by CNT-147 and CNT-101 
 what native checking can honestly promise. In the web delivery that is less than it sounds: a page
 cannot choose which dictionaries the browser uses, so a component in a language the author's browser
 has not enabled is checked against whatever it has.
+
+**CNT-152 is a warning, not a refusal, and the editor asks the publishing rule rather than keeping a
+copy of it.** The content model takes any well-formed BCP 47 tag and CNT-140 requires a script
+subtag to be kept where it changes the content; the publishing engine carries a language and an
+optional two-letter region and refuses the rest. The language prompt therefore calls
+`publishedLanguage` from the publishing design's own module, and where the answer is nothing it
+names the tag back to the author, in the dialog, before anything is applied. Pressing Apply again
+applies the mark: refusing here would narrow the model to one engine's limits, and saying nothing
+would leave the author to find out at a publish they may not be the one to ask for. The editor never
+shortens the tag to something the engine would take, for the reason `publishing.md` gives - a
+shortened tag tells assistive technology something the author never said.
 
 ## What this document does not own
 
@@ -502,8 +514,12 @@ undo, a refusal putting the surface back, or a version cut, and never this field
 
 ## Accessibility
 
-- **Regions.** The view has four: component header, toolbar, surface, metadata panel. `F6` and
-  `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
+- **Regions.** The view has four: component header, **formatting** toolbar, surface, metadata panel.
+  `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
+  The view holds a second toolbar, Save version and Done editing, and that one is deliberately not a
+  region: it is two buttons, reached by a Tab from the header as any two buttons are, and making it a
+  fifth stop would lengthen the ring without shortening any journey through it. `F6` pressed from it
+  enters the ring at the first region, and `Shift-F6` at the last.
 - **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
   into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
   popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.

@@ -309,8 +309,14 @@ describe('the citations in the committed model', () => {
   // and language dialogs and the surface is rendered under jsdom: the surface asks the delivery to
   // check spelling, and a run whose language mark differs from the component's base language is
   // rendered with the checker turned off while one carrying the base language is not.
+  // 217, from 216: the same plan's last editor task lands CNT-152, the warning about a language tag
+  // a publication cannot carry, and moves CNT-077 off the registry table in
+  // packages/editor/src/marks.test.ts - whose body asserts strings and presses no key - onto the two
+  // tests in apps/web/src/editor/ComponentEditor.test.tsx that move between the regions of the view
+  // with F6 and Shift-F6. One file leaves and one file arrives for CNT-077, so the count rises only
+  // by CNT-152's own.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(216);
+    expect(model.citations).toHaveLength(217);
   });
 
   it('cites no identifier the corpus does not hold', () => {
