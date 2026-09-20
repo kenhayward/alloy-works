@@ -318,8 +318,8 @@ describe('a cross-reference, where a component holds one', () => {
   it('refuses an identifier or a target not already in NFC, which the digest would fold into another', () => {
     // One identifier, spelled composed and decomposed. The canonical form writes every string in NFC,
     // so both would be stored as one, while the parse compared them as two.
-    const composed = 'café';
-    const decomposed = 'café';
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
     const noted = (id: string) => ({
       type: 'footnote',
       id,
@@ -770,20 +770,11 @@ describe('the parse of what the parse returned, which must be what it returned',
           ],
         },
       ]),
-      // One identifier over one range, and over two that only look like one: the walk's answer has
-      // to be the same the second time, or a document is accepted at a save and refused on a read.
-      doc([
-        {
-          type: 'paragraph',
-          id: 'b1',
-          style: 'body',
-          content: [
-            { type: 'text', value: 'alp', marks: emphasis },
-            { type: 'text', value: 'ha beta g', marks: [] },
-            { type: 'text', value: 'amma', marks: emphasis },
-          ],
-        },
-      ]),
+      // One identifier over one range that a node which is not a run stands inside, and over one
+      // that a block boundary and an empty paragraph stand inside: the walk's answer has to be the
+      // same the second time, or a document is accepted at a save and refused on a read. The
+      // disjoint shape belongs to the refusal test rather than here - this loop skips what the
+      // parse refuses, so adding it would have asserted nothing (fix round 1, minor 3).
       doc([
         {
           type: 'paragraph',
@@ -877,10 +868,29 @@ describe('a mark identifier, which names one annotation and not two', () => {
     expect(attempt).not.toThrow(/printer/);
   });
 
-  it('refuses one identifier worn by two kinds of mark', () => {
-    expect(() => parseContentDocument(runs(apart(french, { type: 'emphasis', id: 'm1' })))).toThrow(
-      /m1/,
-    );
+  it('refuses one identifier worn by two kinds of mark, on two runs or on one', () => {
+    const onTwoRuns = () =>
+      parseContentDocument(runs(apart(french, { type: 'emphasis', id: 'm1' })));
+    expect(onTwoRuns).toThrow(/m1/);
+    expect(onTwoRuns).toThrow(/two different values/);
+    // And on one run, where there is no range to be in two of: a caller hands the message back as
+    // a failure, so it has to say what is actually wrong with the document (fix round 1, minor 1).
+    const onOneRun = () =>
+      parseContentDocument(
+        runs([
+          {
+            type: 'text',
+            value: 'Install the printer.',
+            marks: [
+              { type: 'emphasis', id: 'm1' },
+              { type: 'strong', id: 'm1' },
+            ],
+          },
+        ]),
+      );
+    expect(onOneRun).toThrow(/m1/);
+    expect(onOneRun).toThrow(/two different values/);
+    expect(onOneRun).not.toThrow(/two separate ranges/);
   });
 
   it('holds the rule wherever inline content lives, not only in a paragraph', () => {
@@ -914,12 +924,31 @@ describe('a mark identifier, which names one annotation and not two', () => {
       content: [paragraph('b2')],
       attribution: marked(mark),
     });
-    // A blockquote's attribution against a table's note, and a footnote's paragraph against both.
+    // The same blockquote with nothing quoted, so that its attribution stands immediately after
+    // whatever came before it, with no text of any kind between the two.
+    const quoteBeside = (mark: unknown) => ({
+      ...quote(mark),
+      content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }],
+    });
+    // Two homes with no text between them, which is where this rule rather than the contiguity one
+    // has to answer: one identifier reading fr-FR in a table's note and de-DE in an attribution.
+    expect(() => parseContentDocument(doc([table(french), quoteBeside(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([table(french), quoteBeside(german)]))).toThrow(
+      /two different values/,
+    );
+    // And the same value in both is one annotation in two homes, which is accepted - the control
+    // this test exists for (fix round 1, minor 2).
+    expect(() =>
+      parseContentDocument(doc([table(french), quoteBeside({ ...french })])),
+    ).not.toThrow();
+    // A blockquote's attribution against a table's note, and a footnote's paragraph against both,
+    // each with the quoted text or the footnote's own boundary between them - so what answers here
+    // is the contiguity rule, which reaches every inline home the walk does just as this one does.
     expect(() => parseContentDocument(doc([quote(french), table(german)]))).toThrow(/m1/);
     expect(() => parseContentDocument(doc([quote(french), noted(german)]))).toThrow(/m1/);
     expect(() => parseContentDocument(doc([table(french), noted(german)]))).toThrow(/m1/);
     // And the same value in all three is one identifier carrying one value, so this rule is done
-    // with it - but the three homes have unmarked text between them, so the contiguity rule below
+    // with it - but the three homes have unmarked text between them, so the contiguity rule
     // refuses it by the other name. Both messages name m1 and nothing of the text.
     expect(() =>
       parseContentDocument(doc([quote(french), table({ ...french }), noted({ ...french })])),

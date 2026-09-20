@@ -112,9 +112,20 @@ function claimMark(mark: Mark, claimed: Claimed): void {
  * be constructed. Refusing is also the reversible direction: nothing has stored a mark, so admitting
  * more later needs no migration, while admitting it now could never be tightened.
  *
- * **Only a text run closes an identifier**, which is the rule the editor holds too
- * (`spansOf` in `packages/editor/src/marks.ts` joins two runs when `textBetween` between them is
- * empty), so an ordinary gesture cannot make a document that will not save:
+ * **Only a text run closes an identifier.** The editor is written to the same predicate - `spansOf`
+ * in `packages/editor/src/marks.ts` joins two runs when the text between them is empty - and holds
+ * it **after every transaction**, in `annotationsInOnePiece` (`packages/editor/src/state.ts`), which
+ * renames the later pieces of an annotation left in two, whatever split it. It is a plugin rather
+ * than a rule inside each command because the gestures that split an annotation are not all
+ * commands: typing one character at the end of a `language` run is not, and the mark is not
+ * inclusive, so the typed run carries no mark and stands between two pieces of one annotation. So an
+ * editing session cannot reach this refusal **within a mark type**, and what it stands between a
+ * version and is content from somewhere else - another producer, a future import - and two cases the
+ * plugin's scope leaves out on purpose: one identifier worn by two **kinds** of mark, which
+ * `claimMark` answers instead and no command can mint, and a document handed to `createEditorState`
+ * already in two pieces, which nothing produces and which stays that way until the first edit.
+ *
+ * The predicate itself, on both sides:
  *
  * - **A run split by an edit** is four adjacent runs of one annotation, differing only in their
  *   other marks (CNT-004). Each carries the identifier, so none closes it.
@@ -289,12 +300,20 @@ export function checkInlineContent(
 ): InlineNode[] {
   return mergeRuns(inlines).map((inline) => {
     if (inline.type === 'text') {
+      // The identifiers this one run carries, which `claimRange` is asked about once each: a second
+      // mark of one run wearing an identifier the first already wore is not a second range - there
+      // is one run and no gap - and `claimMark` has the accurate answer for it, that one identifier
+      // cannot carry two values. A caller hands that message back as a failure, so which of the two
+      // rules answers decides what an author is told.
+      const own = new Set<string>();
       for (const mark of inline.marks) {
-        claimRange(mark, claimed);
+        const id = mark.id.normalize('NFC');
+        if (!own.has(id)) claimRange(mark, claimed);
+        own.add(id);
         claimMark(mark, claimed);
       }
       claimed.carried.clear();
-      for (const mark of inline.marks) claimed.carried.add(mark.id.normalize('NFC'));
+      for (const id of own) claimed.carried.add(id);
       return inline;
     }
     if (inline.type === 'crossReference') {

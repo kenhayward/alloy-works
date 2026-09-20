@@ -256,9 +256,16 @@ so an annotation runs from the end of one paragraph into the start of the next a
 paragraph between them breaks nothing; and a node that is not a run carries no marks, so an
 equation or a cross-reference inside an emphasised phrase leaves it whole. A footnote's content is
 a range of its own: its anchor never breaks an annotation it stands in, and an annotation in the
-main text is not the annotation inside the note. The editor holds the same rule at the keystroke -
-a removal that splits an annotation gives the surviving far piece a fresh identifier - so the two
-agree about what an author can make, and this refuses what only a raw transaction could reach.
+main text is not the annotation inside the note. The editor is written to the same predicate and
+holds it after **every** transaction rather than inside each command, because the gestures that
+split an annotation are not all commands - typing one character at the end of a language run is
+not one, and the mark is not inclusive, so the typed run carries no mark and stands between two
+pieces of one annotation. The later pieces are renamed and the first keeps the identifier, so text
+nobody touched is not renamed. Within a mark type an editing session therefore cannot reach this
+refusal, which leaves it standing between a version and content from somewhere else, and between a
+version and the two cases the editor's repair leaves out on purpose: one identifier worn by two
+kinds of mark, which the value rule answers and no command can mint, and a document opened into a
+state already in two pieces, which nothing produces.
 
 **And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
 than what it was given, every rule about a sequence has to be judged on what that sequence became -

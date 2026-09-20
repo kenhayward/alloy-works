@@ -159,9 +159,19 @@ phrase, then press the same button over a word in the middle. Only a text run cl
 so the runs one edit splits an annotation into all carry it, a block boundary and an empty paragraph
 break nothing, and a node that is not a run - an equation, a cross-reference - carries no marks and
 leaves an annotation whole. A footnote's content is a range of its own, so its anchor never breaks
-an annotation it stands in and an identifier cannot reach from the main text into the note. The
-editor holds the same rule at the keystroke, re-identifying the far piece of an annotation a removal
-splits, so what this refuses is what only a raw transaction could reach.
+an annotation it stands in and an identifier cannot reach from the main text into the note.
+
+The editor is written to the same predicate and holds it after **every** transaction rather than
+inside each command, in `annotationsInOnePiece`: an annotation left in two pieces has its later
+pieces renamed, whatever split it, and the first piece keeps the identifier so that text nobody
+touched is not renamed. A plugin rather than a command, because the gestures that split an
+annotation are not all commands - typing one character at the end of a language run is not one, and
+the mark is not inclusive, so the typed run carries no mark and stands between two pieces. Within a
+mark type, then, an editing session cannot reach this refusal; what it stands between a version and
+is content from somewhere else, and the two cases the plugin leaves out on purpose - one identifier
+worn by two kinds of mark, which the value rule above answers and no command can mint, and a
+document handed to `createEditorState` already in two pieces, which nothing produces and which the
+plugin leaves alone until the first edit.
 
 **What the parse accepts, it accepts again unchanged.** The walk returns something other than what
 it was given, so every rule about a sequence is judged on what that sequence became: CNT-023's
