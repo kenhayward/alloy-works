@@ -184,8 +184,9 @@ describe('the editor schema', () => {
     // carry two values in one place.
     expect(german.addToSet([french]).map((mark) => mark.attrs.tag)).toEqual(['de-DE']);
     // Across two places it can, and no mark spec can tell: a spec is handed one mark, never the
-    // document. CNT-004's "one annotation under one identifier" is held by the commands that mint an
-    // identifier per application, not here.
+    // document. CNT-004's "one annotation under one identifier" is held over the whole document, by
+    // `parseContentDocument`, which `fromEditor` ends in - so a command that re-used an identifier
+    // for a changed value would be refused on the way to storage rather than silently stored.
     expect(french.eq(german)).toBe(false);
   });
 });
