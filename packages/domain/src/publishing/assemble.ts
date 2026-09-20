@@ -1,6 +1,7 @@
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
+import type { Mark } from '../content/model/marks.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
 import { contents } from '../structure/lists.js';
 import {
@@ -19,15 +20,19 @@ import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
 import {
   DRAFT_NOTICE,
+  PUBLISHED_MARK_ORDER,
   PUBLISHING_SCHEMA,
   PUBLISHING_SCHEMA_1,
   type PublishedBlock,
+  type PublishedBlock1,
   type PublishedDocument,
   type PublishedDocument1,
+  type PublishedMark,
   type PublishedNode,
   type PublishedNode1,
   type PublishedPattern,
   type PublishedPdfFormat,
+  type PublishedRun,
 } from './published.js';
 
 /**
@@ -151,6 +156,10 @@ export function assemble(input: AssembleInput): Assembled {
     }
   }
 
+  // `publishing/1` holds a run of text alone and is frozen, so a mark is refused outright when there
+  // is no layout; under a layout a run carries the nine of `PUBLISHED_MARK_ORDER`.
+  const carriesMarks = layout !== null;
+
   /** A block the template can set, or a failure naming what it is. */
   const publishable = (block: BlockNode, node: string): PublishedBlock[] => {
     if (block.type !== 'paragraph') {
@@ -160,17 +169,25 @@ export function assemble(input: AssembleInput): Assembled {
     if (block.style !== BODY) {
       failures.push(failure('compose', 'style_missing', node, block.id, block.style));
     }
-    const runs: { text: string }[] = [];
+    const runs: PublishedRun[] = [];
     for (const inline of block.content) {
-      const refusal = unpublishableInline(inline);
-      if (refusal !== null) {
-        failures.push(failure('compose', 'inline_not_publishable', node, block.id, refusal));
+      if (inline.type !== 'text') {
+        failures.push(failure('compose', 'inline_not_publishable', node, block.id, inline.type));
         continue;
       }
-      if (inline.type === 'text') {
-        check(inline.value, node, block.id);
-        runs.push({ text: inline.value });
+      const outcome = publishedMarks(inline.marks, carriesMarks);
+      if (outcome.kind === 'refused') {
+        // Every reason this run cannot be published, in the order the marks are stored in, never
+        // the first alone (PUB-052).
+        for (const { code, detail } of outcome.refusals) {
+          failures.push(failure('compose', code, node, block.id, detail));
+        }
+        continue;
       }
+      // Only what will be set is checked against the faces, exactly as an unmarked run is: a run
+      // already refused is not set, and a second complaint about it would say nothing new.
+      check(inline.value, node, block.id);
+      runs.push({ text: inline.value, marks: outcome.marks });
     }
     return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
   };
@@ -183,15 +200,17 @@ export function assemble(input: AssembleInput): Assembled {
 
     if (node.type === 'section') {
       const title = textOf(node.title);
-      if (title === null) {
-        failures.push(failure('compose', 'title_not_publishable', node.id, null, null));
+      if ('unpublishable' in title) {
+        failures.push(
+          failure('compose', 'title_not_publishable', node.id, null, title.unpublishable),
+        );
       } else {
-        check(title, node.id, null);
+        check(title.words, node.id, null);
       }
       const children = node.children.map((child) => project(child, depth + 1, matter));
       return {
         ...shell,
-        title: title ?? '',
+        title: 'words' in title ? title.words : '',
         language: null,
         direction: null,
         blocks: [],
@@ -304,9 +323,18 @@ function withoutMatter(node: PublishedNode): PublishedNode1 {
     title: node.title,
     language: node.language,
     direction: node.direction,
-    blocks: node.blocks,
+    blocks: node.blocks.map(withoutMarks),
     children: node.children.map(withoutMatter),
   };
+}
+
+/**
+ * A block as `publishing/1` held it: a run of its text and nothing else. Every run that reaches here
+ * carries no mark, because `assemble` refuses a marked inline outright where there is no layout, so
+ * this drops an always-empty member rather than a mark - which is what keeps the frozen bytes frozen.
+ */
+function withoutMarks(block: PublishedBlock): PublishedBlock1 {
+  return { type: block.type, id: block.id, runs: block.runs.map((run) => ({ text: run.text })) };
 }
 
 /** The layout's PDF member as the template reads it: the page in points, numbering as patterns. */
@@ -331,19 +359,120 @@ function publishedPdf(pdf: PdfFormat): PublishedPdfFormat {
   };
 }
 
-/** Why an inline cannot be set yet - its node type, or its first mark - or null when it can. */
-function unpublishableInline(inline: InlineNode): string | null {
-  if (inline.type !== 'text') return inline.type;
-  const [mark] = inline.marks;
-  return mark === undefined ? null : mark.type;
+/** The nine marks a published run carries, as a lookup: `PUBLISHED_MARK_ORDER` and nothing else. */
+const CARRIED: ReadonlySet<string> = new Set<string>(PUBLISHED_MARK_ORDER);
+
+/** A mark of one of those nine kinds. */
+type CarriedMark = Extract<Mark, { type: (typeof PUBLISHED_MARK_ORDER)[number] }>;
+
+const isCarried = (mark: Mark): mark is CarriedMark => CARRIED.has(mark.type);
+
+/** One reason a run cannot be published, as the failure it becomes: its code and its detail. */
+interface MarkRefusal {
+  readonly code: 'inline_not_publishable' | 'language_not_publishable';
+  readonly detail: string;
 }
 
-/** A section title's words, where it holds nothing but unmarked text; null otherwise. */
-function textOf(title: readonly InlineNode[]): string | null {
+/** What a run's marks publish as, or **every** reason the run is refused, in the order found. */
+type MarksOutcome =
+  | { readonly kind: 'marks'; readonly marks: readonly PublishedMark[] }
+  | { readonly kind: 'refused'; readonly refusals: readonly MarkRefusal[] };
+
+/**
+ * A run's marks as the template reads them, in `PUBLISHED_MARK_ORDER`, or why the run is refused.
+ * Every reason at once, never the first alone (PUB-052), and each kind named once.
+ *
+ * The rule is an **allowlist**: a mark is carried only where `PUBLISHED_MARK_ORDER` names its kind,
+ * and every other is refused by name. There is deliberately no branch that lets an unrecognised mark
+ * through, because three of the four refused - `condition`, `suggestion` and `comment` - are marks
+ * the content model accepts from any source, and a condition mark that fell through would set
+ * conditional text in a PDF unconditionally, which is text a reader was not meant to be shown. The
+ * fourth, `definedTerm`, is refused because nothing resolves a term.
+ *
+ * **A run carrying two marks of one kind is refused by that kind's name**, although the kind is
+ * carried. CNT-003 lets two annotations of one kind cover one range and the parse stores both, so
+ * the shape reaches here from any source; the template can only fold one inside the other, and one
+ * of the two would then win by fold order rather than by anything the author said - a link to a
+ * target the document does not name, or a language a screen reader announces that the document does
+ * not claim. `packages/editor/src/mapping.ts` refuses the same shape by the same name rather than
+ * keeping one of the two, and the reason is the same: keeping one would publish the loss under the
+ * author's name. Nothing has stored a mark yet, so refusing is the direction that can be undone.
+ *
+ * `carriesMarks` is false for `publishing/1`, whose run is text alone and whose bytes are frozen:
+ * there every mark is refused by name, so the frozen shape can never quietly lose one.
+ */
+function publishedMarks(marks: readonly Mark[], carriesMarks: boolean): MarksOutcome {
+  const published: PublishedMark[] = [];
+  const refusals: MarkRefusal[] = [];
+  const carried = new Set<string>();
+  const named = new Set<string>();
+  /** A kind the run cannot be published with, named once however many marks of it there are. */
+  const refuseKind = (type: string) => {
+    if (named.has(type)) return;
+    named.add(type);
+    refusals.push({ code: 'inline_not_publishable', detail: type });
+  };
+
+  for (const mark of marks) {
+    if (!carriesMarks || !isCarried(mark) || carried.has(mark.type)) {
+      refuseKind(mark.type);
+      continue;
+    }
+    carried.add(mark.type);
+    if (mark.type === 'language') {
+      // The one rule, asked here and by the editor's warning about a tag no publication can carry
+      // (CNT-152), so that the refusal and the warning cannot become two copies of one rule.
+      const language = publishedLanguage(mark.tag);
+      if (language === null) refusals.push({ code: 'language_not_publishable', detail: mark.tag });
+      else published.push({ kind: 'language', language });
+      continue;
+    }
+    published.push(publishedMark(mark));
+  }
+
+  if (refusals.length > 0) return { kind: 'refused', refusals };
+  const rank = (mark: PublishedMark) => PUBLISHED_MARK_ORDER.indexOf(mark.kind);
+  published.sort((a, b) => rank(a) - rank(b));
+  return { kind: 'marks', marks: published };
+}
+
+/**
+ * One carried mark as the template reads it. A branch per kind and no `default:`, so a tenth kind
+ * added to `PUBLISHED_MARK_ORDER` without a branch here fails to compile rather than reaching a
+ * reader as an unmarked run.
+ */
+function publishedMark(mark: Exclude<CarriedMark, { type: 'language' }>): PublishedMark {
+  switch (mark.type) {
+    case 'hyperlink':
+      // The title is not carried: a PDF link annotation has no place for it, and inventing one
+      // would tell a reader something the author did not say.
+      return { kind: 'hyperlink', href: mark.href };
+    case 'emphasis':
+    case 'strong':
+    case 'underline':
+    case 'subscript':
+    case 'superscript':
+    case 'inlineCode':
+    case 'quotedPhrase':
+      return { kind: mark.type };
+  }
+}
+
+/**
+ * A section title's words, where it holds nothing but unmarked text, or **what in it** cannot be
+ * published: an inline's node type, or a mark's. A title is published as a string and has nowhere to
+ * put a mark, so a marked title is refused rather than flattened into words the author did not
+ * write - and the refusal names what to look for, as a block that cannot be published names its kind.
+ */
+function textOf(
+  title: readonly InlineNode[],
+): { readonly words: string } | { readonly unpublishable: string } {
   let words = '';
   for (const inline of title) {
-    if (inline.type !== 'text' || unpublishableInline(inline) !== null) return null;
+    if (inline.type !== 'text') return { unpublishable: inline.type };
+    const [mark] = inline.marks;
+    if (mark !== undefined) return { unpublishable: mark.type };
     words += inline.value;
   }
-  return words;
+  return { words };
 }

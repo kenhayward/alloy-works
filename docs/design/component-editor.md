@@ -15,14 +15,18 @@ written). **The document view** - many components in one scroll, the read, revie
 headings, choosing which version a reference points at, and preview - is the next slice, designed once
 the outline (STR) and the publishing pipeline are.
 
-> **Part of this is built.** Opening a component, editing its paragraphs of unmarked text, the lock,
+> **Part of this is built.** Opening a component, editing its paragraphs, the lock,
 > iterations under the sequence rules, Save version and Done editing, the save indicator, and the six
 > routes below are in `packages/editor`, `packages/db`, `apps/service` and `apps/web`;
 > [`../architecture.md`](../architecture.md) describes them as they stand, and
 > [the plan that built them](../plans/2026-09-16-editor-01-open-edit-and-save.md) changed this document
 > where planning the build found it wrong or unfinished - see
-> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
-> creating a component, every node and mark but the paragraph, paste, equations, tables and footnotes,
+> [Changed while planning the build](#changed-while-planning-the-build). Creating a component is built
+> too, and so are **ten of the thirteen marks**: strong, emphasis, underline, subscript, superscript,
+> inline code and a quoted phrase from the **Formatting** toolbar or the keyboard, a hyperlink and a
+> language mark through a prompt, and a defined term in the schema with no control yet, by
+> [the marks plan](../plans/2026-09-20-editor-03-marks-and-links.md). What is still design here: every
+> block but the paragraph, paste, equations, tables and footnotes,
 > the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 
@@ -69,6 +73,14 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                          |
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                        |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                           |
+| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **Apply anyway** then applies it                          |
+
+**What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
+a run whose language mark differs from the component's base language is rendered with
+`spellcheck="false"`, and a run marked with the base language is not. It never shows a checker obeying
+it, because no delivery's checker is under test here - CNT-148 is the bridge that gives the desktop
+shell one, and it is not built. Whether a checker honours the attribute is the accessibility suite's
+(CNT-139).
 
 **CNT-147 and CNT-148 are new, and the change they come from is part of this design's review.** Native
 spellcheck ignores an element's `lang`, in Chromium and in Firefox, so CNT-099 - check each run against
@@ -77,6 +89,27 @@ was to keep the native checker, so CNT-099 is superseded by CNT-147 and CNT-101 
 what native checking can honestly promise. In the web delivery that is less than it sounds: a page
 cannot choose which dictionaries the browser uses, so a component in a language the author's browser
 has not enabled is checked against whatever it has.
+
+**CNT-152 is a warning, not a refusal, and the editor asks the publishing rule rather than keeping a
+copy of it.** The content model takes any well-formed BCP 47 tag and CNT-140 requires a script
+subtag to be kept where it changes the content; the publishing engine carries a language and an
+optional two-letter region and refuses the rest. The language prompt therefore calls
+`publishedLanguage` from the publishing design's own module, and where the answer is nothing it
+names the tag back to the author, in the dialog, before anything is applied. The button becomes
+**Apply anyway** while the warning stands, so a press that means something else is under a name that
+says so; pressing it applies the mark. Refusing here would narrow the model to one engine's limits,
+and saying nothing would leave the author to find out at a publish they may not be the one to ask
+for. The editor never shortens the tag to something the engine would take, for the reason
+`publishing.md` gives - a shortened tag tells assistive technology something the author never said.
+
+**What this claim does not cover: the component's own base language.** CNT-152 asks only about a run
+an author marks, and the base language goes through exactly the same rule - `assemble` already
+refuses a component whose own language the engine cannot carry - while the field that sets it, in
+the component header and in Creating a component, is checked against the wide BCP 47 shape alone. So
+an author can set a base language of `zh-Hans` today, be told nothing, and have somebody else's
+publish refused: the same harm, on the half that has already shipped.
+[Issue #156](https://github.com/kenhayward/alloy-works/issues/156) carries it, and this design does
+not answer it yet.
 
 ## What this document does not own
 
@@ -495,8 +528,12 @@ undo, a refusal putting the surface back, or a version cut, and never this field
 
 ## Accessibility
 
-- **Regions.** The view has four: component header, toolbar, surface, metadata panel. `F6` and
-  `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
+- **Regions.** The view has four: component header, **formatting** toolbar, surface, metadata panel.
+  `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
+  The view holds a second toolbar, Save version and Done editing, and that one is deliberately not a
+  region: it is two buttons, reached by a Tab from the header as any two buttons are, and making it a
+  fifth stop would lengthen the ring without shortening any journey through it. `F6` pressed from it
+  enters the ring at the first region, and `Shift-F6` at the last.
 - **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
   into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
   popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.

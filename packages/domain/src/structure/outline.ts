@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { marksAsASet } from '../content/model/canonical.js';
-import { checkInlineContent, contentDocumentSchema } from '../content/model/document.js';
+import { checkInlineContent, contentDocumentSchema, newScope } from '../content/model/document.js';
 import {
   artifactIdentifierSchema as artifactIdentifier,
   nodeIdentifierSchema as nodeIdentifier,
@@ -117,7 +117,7 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
 export const sectionTitleSchema = z.array(inlineNodeSchema).transform((title, context) => {
   let parsed: InlineNode[] = title;
   try {
-    parsed = checkInlineContent(title, 'title', new Set());
+    parsed = checkInlineContent(title, 'title', newScope());
   } catch {
     context.addIssue({
       code: 'custom',

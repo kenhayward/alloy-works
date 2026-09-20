@@ -337,6 +337,32 @@ describe('a document in the version chain, and its outline edited a version at a
     expect(await chainOf(first.artifactId)).toHaveLength(3);
   });
 
+  it('records a section title of runs merged, so its split and whole spellings are one version', async () => {
+    const first = await created();
+    const second = await recorded(first, section('Results'));
+    const node = (second.content as OutlineDocument).nodes[0]!.id;
+    const emphasis = [{ type: 'emphasis' as const, id: 'm1' }];
+    const retitle = (title: { type: 'text'; value: string; marks: typeof emphasis }[]) =>
+      ({ operation: 'retitle', node, title }) as OutlineOperation;
+
+    const third = await recorded(
+      second,
+      retitle([
+        { type: 'text', value: 'Results ', marks: emphasis },
+        { type: 'text', value: 'in full', marks: emphasis },
+      ]),
+    );
+    expect((third.content as OutlineDocument).nodes[0]).toMatchObject({
+      title: [{ type: 'text', value: 'Results in full', marks: emphasis }],
+    });
+    const again = await edit(
+      third,
+      retitle([{ type: 'text', value: 'Results in full', marks: emphasis }]),
+    );
+    expect(again).toEqual({ answer: 'version.unchanged', current: third });
+    expect(await chainOf(first.artifactId)).toHaveLength(3);
+  });
+
   it('lets two acts from one version take turns: one is recorded, the other refused with the outline as it stands', async () => {
     const first = await created();
     const holding = deferred<number>();

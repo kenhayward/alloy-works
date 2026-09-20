@@ -3,6 +3,48 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.32.0 - 2026-09-20 (PR #157)
+
+### Added
+
+- **An author can format text.** Strong, emphasis, underline, subscript, superscript, inline code and
+  a quoted phrase, from a toolbar above the surface or from the keyboard, over a selection or over
+  the next thing typed. Pressing the same button again takes the formatting off.
+- **A span of text can be a link.** **Link** asks for an address beginning http:, https: or mailto:,
+  and an optional title. An address of any other kind is refused with a sentence saying why, and
+  nothing is applied.
+- **A run can be in another language.** **Language** marks a selection with a BCP 47 tag, such as fr
+  or pt-BR, and the surface stops asking the browser to spell check it, so a passage in another
+  language is no longer flagged as misspelt.
+- **The whole toolbar is reachable from the keyboard.** It is one tab stop, the arrow keys move
+  along it, and F6 moves between the component header, the toolbar and the surface.
+- **A publication prints all of it.** A PDF now carries emphasis, strong, underline, subscript,
+  superscript, inline code, quoted phrases, live links and a run's own language, and still passes
+  every PDF/UA-1 rule the checker applies.
+
+### Changed
+
+- A publication made from now on uses publication template 3. Publications already made are
+  unchanged and still open exactly as they were.
+
+### Known limits
+
+- Inline code prints in the same face as the text around it, because only one typeface is pinned
+  today. A screen reader is still told it is code. A monospace face arrives with themes.
+- Of the nine marks a publication carries, only a link, inline code and a quoted phrase reach a
+  screen reader as something it names. Strong, emphasis, underline, subscript and superscript are
+  printed but are not announced.
+- A quoted phrase is marked as a quotation for assistive technology and is given no quotation marks
+  of its own, so the only quotation characters on the page are the ones the author typed.
+- A language tag carrying a script or a numeric region, such as zh-Hans or es-419, is stored but
+  cannot be published to PDF yet. The editor says so when a run's tag is applied, and a publish
+  naming that tag says so and prints nothing. A component's own base language, in the header, is not
+  warned about: one of these tags typed there is taken without comment and refused only at the
+  publish (issue #156).
+- The optional title on a link is stored and is not carried into a PDF, because a PDF link has
+  nowhere to put it and inventing somewhere would tell a reader something you did not say. The
+  address is what a reader of the PDF gets.
+
 ## 0.31.0 - 2026-09-20 (PR #153)
 
 ### Added

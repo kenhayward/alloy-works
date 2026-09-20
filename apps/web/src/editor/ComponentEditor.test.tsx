@@ -1,12 +1,15 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { fromEditor, Selection, type EditorView } from '@alloy-works/editor';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { shimRangeMeasurement } from '../test/range.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { designTiming } from './session.js';
+
+shimRangeMeasurement();
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 const SESSION = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
@@ -303,6 +306,42 @@ describe('the component editor', () => {
     expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
   });
 
+  it('says which mark the selection already carries', async () => {
+    // Moving the caret changes every answer the formatting toolbar gives and changes nothing else,
+    // so a page that re-rendered only when the document changed would leave `aria-pressed` at
+    // whatever it was when the surface mounted - which is a toolbar telling a screen reader the
+    // wrong thing about the text the author is standing in (pre-flight F8).
+    const emphasised = {
+      ...content('Unbox the printer.'),
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Unbox', marks: [{ type: 'emphasis', id: 'm1' }] },
+            { type: 'text', value: ' the printer.', marks: [] },
+          ],
+        },
+      ],
+    };
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ content: emphasised })) },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const emphasis = await screen.findByRole('button', { name: 'Emphasis' });
+
+    act(() =>
+      view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(10)))),
+    );
+    expect(emphasis).toHaveAttribute('aria-pressed', 'false');
+
+    act(() => view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(3)))));
+    expect(emphasis).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('shows a component to a reader without letting them change it', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })),
@@ -314,6 +353,12 @@ describe('the component editor', () => {
     );
     expect(screen.getByText('You may read this component but not edit it.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    // The formatting toolbar stays in the accessibility tree, reachable and inert: a reader can see
+    // what the editor would do with the text without being able to do it.
+    const formatting = screen.getByRole('toolbar', { name: 'Formatting' });
+    for (const button of within(formatting).getAllByRole('button')) {
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+    }
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
@@ -1191,6 +1236,45 @@ describe('the component editor', () => {
     expect(screen.getByLabelText('Title')).toBeDisabled();
   });
 
+  it('stops offering formatting once the surface goes read-only, such as in the lost phase', async () => {
+    // The toolbar's `enabled` must follow the surface's own `editable`, `lost` among the phases it
+    // excludes - and this one has teeth the header's does not: ProseMirror's `editable` stops what
+    // an author types and stops nothing a command dispatches, so a toolbar left enabled here would
+    // go on changing a document its author has been locked out of.
+    let putCount = 0;
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => {
+          putCount += 1;
+          return json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 });
+        },
+      },
+      quick,
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(putCount).toBe(1));
+    await screen.findByRole('button', { name: 'Continue' });
+    // Something selected, so that a press which was allowed through would change the document
+    // rather than merely storing a mark for the next keystroke.
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(
+          Selection.fromJSON(view.state.doc, { type: 'text', anchor: 1, head: 6 }),
+        ),
+      ),
+    );
+    const before = view.state.doc;
+
+    const strong = screen.getByRole('button', { name: 'Strong' });
+    expect(strong).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(strong);
+
+    expect(view.state.doc.eq(before)).toBe(true);
+  });
+
   it('shows the header for reading only where the caller may not edit', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })),
@@ -1320,5 +1404,884 @@ describe('the component editor', () => {
       'Newer text was saved from another window',
     );
     expect(screen.getByRole('status')).not.toHaveTextContent('A language tag looks like en-GB.');
+  });
+});
+
+/** The first paragraph's runs, as the stored model spells them and a save would send them. */
+const runsOf = (view: EditorView) => {
+  const [block] = fromEditor(view.state.doc).content;
+  return block?.type === 'paragraph' ? block.content : [];
+};
+
+/** A selection over the surface, as a test makes one: jsdom cannot drag across text. */
+const selectRange = (view: EditorView, anchor: number, head: number) =>
+  act(() => {
+    view.dispatch(
+      view.state.tr.setSelection(
+        Selection.fromJSON(view.state.doc, { type: 'text', anchor, head }),
+      ),
+    );
+  });
+
+/** One paragraph of stored content, given run by run rather than as plain text. */
+const runs = (...inlines: unknown[]) => ({
+  ...content(''),
+  content: [{ type: 'paragraph', id: 'b1', style: 'body', content: inlines }],
+});
+
+describe('the link and language prompts', () => {
+  it('links a selection to an address the author gives', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'hyperlink', href: 'https://example.test/setup' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('refuses an address whose scheme is not allowed, saying so, and applies nothing', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'javascript:alert(1)');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Said where the author typed it, while the dialog is still open and the value still in the
+    // box: a press that ended in nothing is the one thing they must not have to discover.
+    expect(
+      await screen.findByText('That address must begin http:, https: or mailto:.'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Address')).toHaveValue('javascript:alert(1)');
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('refuses a language tag that is not one, saying so, and applies nothing', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('takes a link off again from inside the dialog that shows it', async () => {
+    // Link opens a dialog rather than toggling, so there is no second press to take one off with.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                {
+                  type: 'text',
+                  value: 'Unbox',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+                { type: 'text', value: ' the printer.', marks: [] },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 3, 3);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+
+    // Opened filled with what is there, and saying what Remove will do before it is pressed.
+    expect(await screen.findByLabelText('Address')).toHaveValue('https://example.test/old');
+    expect(
+      screen.getByText('Remove takes this link off and leaves the text it was on.'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('opens the Link dialog from the keyboard alone', async () => {
+    // `createEditorState` takes `onPrompt` as an option, so a renderer that passed none would leave
+    // `Mod-k` doing nothing at all with no suite the wiser. This is the guard that it is passed.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    selectRange(view, 1, 6);
+
+    fireEvent.keyDown(view.dom, { key: 'k', ctrlKey: true });
+
+    expect(await screen.findByRole('dialog', { name: 'Link' })).toBeInTheDocument();
+    expect(await screen.findByLabelText('Address')).toHaveFocus();
+  });
+
+  it('opens the Language dialog from the keyboard alone', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Language' });
+    selectRange(view, 1, 6);
+
+    // What a browser sends for Ctrl and Shift and L: an upper-case `key`, and the code the
+    // keymap falls back to when the shifted spelling matches no binding.
+    fireEvent.keyDown(view.dom, { key: 'L', keyCode: 76, ctrlKey: true, shiftKey: true });
+
+    expect(await screen.findByRole('dialog', { name: 'Language' })).toBeInTheDocument();
+  });
+
+  it('does not ask for a target from the keyboard where there is nowhere to put one', async () => {
+    // A cursor in unmarked text has nothing to link. Opening a dialog there would ask the author
+    // for a target the command then drops, and the key is left to whatever else wants it.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    selectRange(view, 8, 8);
+
+    fireEvent.keyDown(view.dom, { key: 'k', ctrlKey: true });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('returns the focus to what opened it when the author cancels', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    const link = await screen.findByRole('button', { name: 'Link' });
+    link.focus();
+
+    await userEvent.keyboard('{Enter}');
+
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(await screen.findByLabelText('Address')).toHaveFocus();
+    // Nothing there to take off, so nothing offers to.
+    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(link).toHaveFocus();
+  });
+
+  it('keeps the keyboard inside the dialog while it is open', async () => {
+    // `aria-modal` says the rest of the page is not there for now, and a dialog that let Tab walk
+    // out of it into a surface it is covering would be saying something untrue.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+
+    cancel.focus();
+    await userEvent.tab();
+    expect(screen.getByLabelText('Address')).toHaveFocus();
+
+    await userEvent.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+  });
+
+  it('CNT-098 asks the delivery to check spelling as the author types', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    await surface();
+
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveAttribute(
+      'spellcheck',
+      'true',
+    );
+  });
+
+  it('CNT-147 does not ask the checker to check a run in another language', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'fr');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    selectRange(view, 11, 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'en-GB');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box.querySelector('span[lang="fr"]')).toHaveTextContent('Unbox');
+    expect(box.querySelector('span[lang="en-GB"]')).toHaveTextContent('printer');
+    // Only the run whose language differs from the component's own is left unchecked: a passage in
+    // the base language is still checked, mark or no mark.
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual(['Unbox']);
+  });
+
+  it('carries the base language the author set, not the one the surface opened on', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    // A run in French, marked while the component itself is still English, so the checker leaves it
+    // alone.
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'fr-FR');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('lang', 'en-GB');
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual(['Unbox']);
+
+    await userEvent.clear(screen.getByLabelText('Language'));
+    await userEvent.type(screen.getByLabelText('Language'), 'fr-FR');
+
+    // The surface reads the document it is showing, not the one it mounted with. Frozen at the
+    // opening value, the browser would check the whole component as English while the decorations
+    // read the document that is now French - so the French run would lose its `spellcheck="false"`
+    // and the English one would gain it, which is the answer to CNT-147 exactly inverted.
+    await waitFor(() => expect(box).toHaveAttribute('lang', 'fr-FR'));
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual([]);
+  });
+
+  it('carries the base direction the author set, not the one the surface opened on', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    await surface();
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('dir', 'ltr');
+
+    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
+
+    // A component whose base direction is right to left and whose surface still renders left to
+    // right shows the author the opposite of what the document says and of what a publish will do.
+    await waitFor(() => expect(box).toHaveAttribute('dir', 'rtl'));
+  });
+
+  it('saves an iteration holding the marks the author applied', async () => {
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    const saved = asked.find((each) => each.route.startsWith('PUT'))!.body as {
+      content: {
+        content: { content: { marks: { type: string; id: string; href: string }[] }[] }[];
+      };
+    };
+    const [mark] = saved.content.content[0]!.content[0]!.marks;
+    expect(mark).toMatchObject({ type: 'hyperlink', href: 'https://example.test/setup' });
+    // Minted by the editor, in the one spelling a block identifier takes (ADR-0023).
+    expect(mark!.id).toMatch(/^[a-z2-7]{26}$/);
+  });
+
+  it('carries the title the author gave the link as well as its target', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    await userEvent.type(
+      await screen.findByLabelText('Title (optional)'),
+      'Setting the printer up',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [
+          {
+            type: 'hyperlink',
+            href: 'https://example.test/setup',
+            title: 'Setting the printer up',
+          },
+        ],
+      }),
+    );
+  });
+
+  it('applies what the author typed when they press Enter in a box', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(
+      await screen.findByLabelText('Address'),
+      'https://example.test/setup{Enter}',
+    );
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'hyperlink', href: 'https://example.test/setup' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says nothing was typed rather than complaining about a scheme', async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('Type an address, or press Cancel to leave the text as it is.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('That address must begin http:, https: or mailto:.')).toBeNull();
+    // The box that was refused says so, and says it before the hint rather than after it.
+    const address = screen.getByLabelText('Address');
+    expect(address).toHaveAttribute('aria-invalid', 'true');
+    expect(address.getAttribute('aria-describedby')?.split(' ')).toEqual([
+      'mark-prompt-hyperlink-complaint',
+      'mark-prompt-hyperlink-hint-href',
+    ]);
+  });
+
+  it('says so when the text a dialog was opened over has gone, and does not poison the next press', async () => {
+    // The range gate is the first press's job. Re-asking it when a value comes back refused made a
+    // moved selection close the dialog with nothing applied and nothing said - and left the refusal
+    // standing, so the next ordinary press opened pre-filled and complaining about nobody's value.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
+    // A transaction from outside the dialog puts the cursor in unmarked text, so by the time the
+    // command runs there is nowhere to put the mark.
+    selectRange(view, 8, 8);
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText(
+        'That text is not there any more. Press Cancel, select some text, and try again.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    selectRange(view, 1, 6);
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+
+    expect(await screen.findByLabelText('Address')).toHaveValue('');
+    expect(screen.queryByText(/is not there any more/)).toBeNull();
+    expect(screen.queryByText(/must begin http:/)).toBeNull();
+  });
+
+  it('says so when the mark a dialog offered to take off has gone', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                {
+                  type: 'text',
+                  value: 'Unbox',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+                { type: 'text', value: ' the printer.', marks: [] },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 3, 3);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+    // The linked text goes while the dialog stands over it, so there is nothing left to take off.
+    act(() => view.dispatch(view.state.tr.delete(1, 6)));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(
+      await screen.findByText(
+        'That text is not there any more. Press Cancel, select some text, and try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('leaves the page behind the dialog inert while it is open', async () => {
+    // jsdom implements none of what `inert` does - focus still moves in and clicks still arrive -
+    // so what can be pinned here is the attribute. What it buys in a browser is the reason the
+    // dialog may say `aria-modal`: the surface behind cannot be clicked into, so the selection the
+    // command is about to act on cannot move out from under the author while they type.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+    const article = screen.getByRole('article');
+    expect(article).not.toHaveAttribute('inert');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+
+    expect(article).toHaveAttribute('inert');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(article).not.toHaveAttribute('inert');
+  });
+
+  it('goes on saying what happened while a dialog stands over the page', async () => {
+    // What makes the page behind inert also takes it out of the accessibility tree, and the status
+    // region is in there: a notice that arrives while a dialog is open - newer text saved from
+    // another window, signed out, the lock lost - would be announced to nobody at all. It is not
+    // polish; it is the sentence that says the author's work is in danger.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    view.someProp('handlePaste', (handle) =>
+      handle(view, new Event('paste') as ClipboardEvent, view.state.doc.slice(1, 6)),
+    );
+    await screen.findByText('Pasting is not available yet. Type the text instead.');
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await screen.findByLabelText('Address');
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Pasting is not available yet. Type the text instead.');
+    expect(status.closest('[inert]')).toBeNull();
+  });
+
+  it('says a mark has gone rather than the text, and offers nobody else the address', async () => {
+    // Two mistakes that compounded: the remove path asserted that the text had gone, when what had
+    // gone was the mark; and the boxes were refilled from a ref written only by Apply and never
+    // cleared, so a refused Remove came back holding an address typed into a different dialog - one
+    // that Apply would then have stored on text the author never meant.
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: runs(
+                { type: 'text', value: 'Unbox ', marks: [] },
+                {
+                  type: 'text',
+                  value: 'the printer',
+                  marks: [{ type: 'hyperlink', id: 'a1', href: 'https://example.test/old' }],
+                },
+              ),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    // One address, typed and applied to the first run.
+    selectRange(view, 1, 7);
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/first');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // A dialog over the other run's link, whose mark then goes while the dialog stands over it.
+    selectRange(view, 7, 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(await screen.findByLabelText('Address')).toHaveValue('https://example.test/old');
+    act(() => view.dispatch(view.state.tr.removeMark(7, 18, view.state.schema.marks.hyperlink!)));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    // The text is plainly still there, so saying it has gone would be telling the author something
+    // they can see is untrue.
+    expect(
+      await screen.findByText('There is no link here any more, so there is nothing to take off.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/is not there any more/)).toBeNull();
+    expect(screen.getByLabelText('Address')).toHaveValue('');
+  });
+
+  it('CNT-152 names a language tag a publication cannot carry before the mark is applied', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Said at the time and naming the tag, with the dialog still standing and nothing written: the
+    // alternative is a component that looks fine until a publish somebody else asks for is refused.
+    expect(
+      await screen.findByText(
+        'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+
+    // The button that now does something else is called something else, and carries the warning as
+    // its description: a name that changed with the behaviour is heard on focus, where an alert
+    // fired once is heard only by whoever was listening in that instant.
+    expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
+    const anyway = screen.getByRole('button', { name: 'Apply anyway' });
+    expect(anyway).toHaveAccessibleDescription(
+      'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
+    );
+
+    // A warning, not a refusal. The content model takes any well-formed tag, so the author who
+    // means it presses again and it goes in.
+    await userEvent.click(anyway);
+
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'language', tag: 'zh-Hans' }],
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says nothing about a language tag a publication can carry', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'pt-BR');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // One press, nothing said: a warning every carriable tag also collected would be one nobody
+    // reads by the third time they see it.
+    await waitFor(() =>
+      expect(runsOf(view)[0]).toMatchObject({
+        type: 'text',
+        value: 'Unbox',
+        marks: [{ type: 'language', tag: 'pt-BR' }],
+      }),
+    );
+    expect(screen.queryByText(/A publication cannot carry/)).toBeNull();
+  });
+
+  it('warns again when the tag is changed to another one a publication cannot carry', async () => {
+    // The warning is spent on the value it was raised over, and on nothing else. A dialog that
+    // counted presses instead would let the second tag through unremarked, and the author would be
+    // told about the tag they corrected and not about the one they applied.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    const box = await screen.findByLabelText('Language tag');
+    await userEvent.type(box, 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByText(/cannot carry the tag zh-Hans/);
+
+    await userEvent.clear(box);
+    await userEvent.type(box, 'es-419');
+
+    // Corrected to something else the engine cannot carry: the complaint is about what is in the
+    // box now, and the press that follows is the first press of that value, under the button's
+    // ordinary name again.
+    expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText(
+        'A publication cannot carry the tag es-419. Press Apply anyway to use it.',
+      ),
+    ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('spends a warning on one press of one value, not on a tag typed a second time', async () => {
+    // A warning stood over by what is in the box would count a tag typed, corrected and typed again
+    // as already answered: Apply would apply it with nothing said, though the author pressed nothing
+    // over the value they are looking at. It is spent by a press, and any keystroke unspends it.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    const box = await screen.findByLabelText('Language tag');
+    await userEvent.type(box, 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByText(/cannot carry the tag zh-Hans/);
+
+    await userEvent.clear(box);
+    await userEvent.type(box, 'zh-Hans');
+
+    expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(await screen.findByText(/cannot carry the tag zh-Hans/)).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('refuses a tag the content model will not take rather than warning about a publication', async () => {
+    // The two are different answers to different questions, and the warning must not stand in front
+    // of the refusal: `klingon` is not a tag at all, so a publication carrying it is beside the
+    // point and pressing Apply a second time would still end in nothing.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(
+      await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/A publication cannot carry/)).toBeNull();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+});
+
+describe('the regions of the view', () => {
+  /** The three things F6 lands on while a component is open for editing, in the ring's own order. */
+  const landings = () => ({
+    title: screen.getByLabelText('Title'),
+    formatting: within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
+      'button',
+    )[0]!,
+    text: screen.getByRole('textbox', { name: 'Content of Install the printer' }),
+  });
+
+  it('CNT-077 moves between the header, the toolbar and the surface with F6 alone', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    const { title, formatting, text } = landings();
+
+    title.focus();
+    await userEvent.keyboard('{F6}');
+    expect(formatting).toHaveFocus();
+
+    await userEvent.keyboard('{F6}');
+    expect(text).toHaveFocus();
+    // And no tab index of its own while it takes input: a surface being edited is focusable
+    // already, and a `-1` would take it out of the tab order a Tab from the toolbar uses.
+    expect(text).not.toHaveAttribute('tabindex');
+
+    // A ring, not a line with two dead ends.
+    await userEvent.keyboard('{F6}');
+    expect(title).toHaveFocus();
+
+    // Save version and Done editing are not a region: they keep their own ordinary tab stops, and
+    // F6 pressed from them enters the ring at its first region rather than cycling out of them.
+    // They take the focus only once a change has claimed the lock, which is what this types.
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    const save = await screen.findByRole('button', { name: 'Save version' });
+    await waitFor(() => expect(save).toBeEnabled());
+
+    save.focus();
+    await userEvent.keyboard('{F6}');
+    expect(title).toHaveFocus();
+  });
+
+  it('CNT-077 moves backwards between the regions with Shift-F6', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Link' });
+    const { title, formatting, text } = landings();
+
+    title.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(text).toHaveFocus();
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(formatting).toHaveFocus();
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(title).toHaveFocus();
+
+    // From outside the ring it enters at the last region, as F6 enters at the first: the author
+    // who pressed it was going backwards, and dropping them at the second region of three would be
+    // the ring guessing which one they meant to have left.
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    const save = await screen.findByRole('button', { name: 'Save version' });
+    await waitFor(() => expect(save).toBeEnabled());
+
+    save.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(text).toHaveFocus();
+  });
+
+  it('lands on a region a reader cannot type in rather than skipping it', async () => {
+    // A component being read has a header whose fields are disabled and a surface that takes no
+    // input, so neither region holds anything a Tab would reach. Skipping them would leave F6
+    // moving between one region and itself, and the reader with no way to reach the text at all.
+    // What it lands on must still say what it is: a div with no role and no name announces nothing,
+    // so the surface takes the focus on its own element and the header is a named group.
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })) },
+      quick,
+      true,
+    );
+    const view = await surface();
+    const formatting = within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
+      'button',
+    )[0]!;
+
+    // The toolbar is `aria-disabled` rather than disabled, which is what leaves the ring a place to
+    // start from while nothing else in the view will take the focus.
+    formatting.focus();
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveFocus();
+    // jsdom focuses a `contenteditable="false"` element, which a browser does not, so the focus
+    // above is not by itself evidence that this works outside a test. What makes it work is the
+    // tab index the surface carries while it takes no input, and the attribute is what can be
+    // pinned here - the same trade as `inert`, which jsdom does not implement either.
+    expect(view.dom).not.toHaveAttribute('contenteditable', 'true');
+    expect(view.dom).toHaveAttribute('tabindex', '-1');
+
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('group', { name: 'Component header' })).toHaveFocus();
+
+    await userEvent.keyboard('{F6}');
+    expect(formatting).toHaveFocus();
   });
 });

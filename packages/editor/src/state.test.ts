@@ -1,13 +1,16 @@
 import { joinBackward, splitBlock } from 'prosemirror-commands';
 import { redo, undo } from 'prosemirror-history';
 import { Slice, type Node } from 'prosemirror-model';
-import { Selection, type EditorState, type Transaction } from 'prosemirror-state';
+import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
+import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
 
+import { setLanguage } from './header.js';
 import { newBlockIdentifier } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
+import { removeMarkCommand, toggleMarkCommand } from './marks.js';
 import { editorSchema } from './schema.js';
-import { createEditorState, enterWithoutEmpties } from './state.js';
+import { createEditorState, enterWithoutEmpties, spellcheckDecorations } from './state.js';
 
 const counter = () => {
   let next = 0;
@@ -208,5 +211,160 @@ describe('what the editor always holds', () => {
       if (operation === 5) state = run(placed, undo);
       expect(() => fromEditor(state.doc), `step ${step}`).not.toThrow();
     }
+  });
+});
+
+/**
+ * One annotation is one region of the text, whatever split it - a command, a keystroke, or a
+ * transaction nothing in this package wrote. The content model refuses a document where one mark
+ * identifier covers two separate ranges, and a component that reaches that refusal through
+ * `fromEditor` is a 500 out of the snapshot path rather than a refusal an author can read.
+ */
+describe('an annotation left in two pieces', () => {
+  const over = (state: EditorState, from: number, to: number) =>
+    state.apply(state.tr.setSelection(TextSelection.create(state.doc, from, to)));
+
+  /** The identifier each run carrying that mark holds, one per run, in document order. */
+  const runIds = (doc: Node, mark: string) => {
+    const found: string[] = [];
+    doc.descendants((node) => {
+      if (!node.isText) return;
+      const carried = node.marks.find((one) => one.type.name === mark);
+      if (carried !== undefined) found.push(carried.attrs.id as string);
+    });
+    return found;
+  };
+
+  it('repairs one that typing split, although typing runs no command', () => {
+    const ids = counter();
+    let state = stateOf(
+      [
+        ['b1', 'the report'],
+        ['b2', ' now'],
+      ],
+      ids,
+    );
+    // One gesture across the paragraph break: one annotation, which the stored model accepts.
+    state = run(over(state, 5, 17), toggleMarkCommand('language', ids, { tag: 'fr-FR' }));
+    expect(runIds(state.doc, 'language')).toEqual(['n1', 'n1']);
+    expect(() => fromEditor(state.doc)).not.toThrow();
+    // A character typed at the end of the first paragraph. `language` is not inclusive, so the
+    // typed run carries no mark and stands between the two pieces of the annotation.
+    const typed = state.apply(state.tr.insertText('X', 11, 11));
+    expect(texts(typed.doc)).toEqual(['the reportX', ' now']);
+    expect(() => fromEditor(typed.doc)).not.toThrow();
+    expect(runIds(typed.doc, 'language')).toEqual(['n1', 'n2']);
+  });
+
+  it('repairs one a removal in the middle of it split, which the command could not see', () => {
+    const ids = counter();
+    let state = stateOf(
+      [
+        ['b1', 'alpha'],
+        ['b2', 'beta'],
+        ['b3', 'gamma'],
+      ],
+      ids,
+    );
+    state = run(over(state, 1, 19), toggleMarkCommand('emphasis', ids));
+    expect(runIds(state.doc, 'emphasis')).toEqual(['n1', 'n1', 'n1']);
+    // Taking the mark off from a cursor in the middle paragraph is block-local, so the first
+    // paragraph's piece ends before that range begins and the third's begins after it ends.
+    const removed = run(at(state, 10), removeMarkCommand('emphasis'));
+    expect(() => fromEditor(removed.doc)).not.toThrow();
+    expect(runIds(removed.doc, 'emphasis')).toEqual(['n1', 'n2']);
+  });
+
+  it('repairs one a transaction no command wrote split', () => {
+    const ids = counter();
+    let state = stateOf([['b1', 'alpha beta gamma']], ids);
+    state = run(over(state, 1, 17), toggleMarkCommand('emphasis', ids));
+    // Unmarked text dropped into the middle of the annotation by a raw transaction: no command ran,
+    // and the two pieces either side answer to one name until the invariant is restored.
+    const split = state.apply(state.tr.replaceWith(7, 7, editorSchema.text('XX')));
+    expect(() => fromEditor(split.doc)).not.toThrow();
+    expect(runIds(split.doc, 'emphasis')).toEqual(['n1', 'n2']);
+  });
+
+  it('leaves an annotation that is in one piece exactly as it found it', () => {
+    const ids = counter();
+    let state = stateOf(
+      [
+        ['b1', 'alpha'],
+        ['b2', 'beta gamma'],
+      ],
+      ids,
+    );
+    state = run(over(state, 8, 12), toggleMarkCommand('emphasis', ids));
+    state = state.apply(state.tr.insertText('XX', 1, 1));
+    // An identifier is what accepting or rejecting an annotation acts on (CNT-005), so renaming one
+    // nothing split is the harm this plugin exists to prevent, inside out.
+    expect(runIds(state.doc, 'emphasis')).toEqual(['n1']);
+  });
+
+  it('draws again when a fresh identifier is one a mark in the component already carries', () => {
+    const draws = ['m1', 'm1', 'fresh'];
+    const ids = () => draws.shift()!;
+    let state = stateOf([['b1', 'alpha beta gamma']], ids);
+    state = run(over(state, 1, 17), toggleMarkCommand('emphasis', ids));
+    const split = state.apply(state.tr.replaceWith(7, 7, editorSchema.text('XX')));
+    expect(runIds(split.doc, 'emphasis')).toEqual(['m1', 'fresh']);
+  });
+});
+
+/**
+ * Whether a run is spell checked depends on the component's base language, which a mark cannot see,
+ * so the rule is a decoration recomputed from the document rather than an attribute rendered once.
+ */
+describe('spelling, over a run in another language', () => {
+  /** One paragraph of runs, each either plain or carrying a language mark. */
+  const componentIn = (base: string, runs: readonly (readonly [string, string | null])[]) =>
+    editorSchema.node('doc', { title: 'Install the printer', language: base, direction: 'ltr' }, [
+      editorSchema.node(
+        'paragraph',
+        { id: 'p1', style: 'body' },
+        runs.map(([text, tag], index) =>
+          editorSchema.text(
+            text,
+            tag === null ? [] : [editorSchema.mark('language', { id: `m${index}`, tag })],
+          ),
+        ),
+      ),
+    ]);
+
+  const runs = [
+    ['Unbox it. ', null],
+    ['Deballez-le. ', 'fr-CA'],
+    ['Check the colour.', 'en-GB'],
+  ] as const;
+
+  /** The text of every run the decorations turn the checker off over. */
+  const unchecked = (doc: Node, set = spellcheckDecorations(doc)) =>
+    set.find().map((decoration) => doc.textBetween(decoration.from, decoration.to));
+
+  it("CNT-147 does not check a run whose language differs from the component's base language", () => {
+    const doc = componentIn('en-GB', runs);
+    // The French run is left alone; the English one is checked like the unmarked text around it.
+    expect(unchecked(doc)).toEqual(['Deballez-le. ']);
+    // The attribute the decoration carries has no public accessor, and asserting the range alone
+    // would pass with any attribute at all - including one that turns the checker *on*. This reads
+    // the same field `Decoration.inline` writes, in the test only.
+    const attributesOf = (decoration: Decoration) =>
+      (decoration as unknown as { type: { attrs: Record<string, string> } }).type.attrs;
+    expect(spellcheckDecorations(doc).find().map(attributesOf)).toEqual([{ spellcheck: 'false' }]);
+  });
+
+  it('recomputes the rule for every run when the base language changes', () => {
+    let state = createEditorState({ doc: componentIn('en-GB', runs), newIdentifier: counter() });
+    const throughThePlugin = (of: EditorState) => {
+      const sets = of.plugins
+        .map((plugin) => plugin.props.decorations?.call(plugin, of))
+        .filter((set): set is DecorationSet => set instanceof DecorationSet);
+      expect(sets).toHaveLength(1);
+      return unchecked(of.doc, sets[0]!);
+    };
+    expect(throughThePlugin(state)).toEqual(['Deballez-le. ']);
+    state = run(state, setLanguage('fr-CA'));
+    expect(throughThePlugin(state)).toEqual(['Check the colour.']);
   });
 });

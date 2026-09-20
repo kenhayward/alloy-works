@@ -1,16 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
+import { markTypes } from '../content/model/marks.js';
 import {
   OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
   type OutlineDocument,
 } from '../structure/outline.js';
 
-import { assemble, type AssembleInput } from './assemble.js';
+import { assemble, type Assembled, type AssembleInput } from './assemble.js';
 import type { PublishFailure } from './failures.js';
+import { publishedLanguage } from './language.js';
 import { defaultLayout, parseLayout, type Layout } from './layout.js';
-import { DRAFT_NOTICE } from './published.js';
+import {
+  DRAFT_NOTICE,
+  PUBLISHED_MARK_ORDER,
+  type PublishedDocument,
+  type PublishedRun,
+} from './published.js';
 
 /** A 26-character node identifier, readable in a failure. */
 const id = (name: string) => name.padEnd(26, 'a');
@@ -18,6 +25,8 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
 const OTHER = '00000000-0000-4000-8000-000000000002';
 
 const text = (value: string) => ({ type: 'text' as const, value, marks: [] });
+/** A text inline carrying marks, written in whatever order the fixture reads best. */
+const marked = (value: string, ...marks: object[]) => ({ type: 'text' as const, value, marks });
 const positional = {
   numbered: true,
   matter: 'body' as const,
@@ -95,6 +104,35 @@ const inMatter = <T extends object>(matter: 'front' | 'body' | 'appendix', node:
   matter,
 });
 
+/** One occurrence of one component, holding one paragraph `b1` of these inlines, under a layout. */
+const oneParagraph = (...inlines: unknown[]) =>
+  input({
+    outline: outline([reference('calib')]),
+    occurrences: new Map([[id('calib'), component([paragraph('b1', ...inlines)])]]),
+  });
+
+/** Every failure, or none where the document published: what a refusal is read from. */
+const failuresOf = (assembled: Assembled): readonly PublishFailure[] =>
+  assembled.ok ? [] : assembled.failures;
+
+/**
+ * The runs of the one paragraph of the one node the input publishes. Anything else - a refusal, a
+ * second node, a second block - throws naming what it found, so a test can never read the runs of
+ * something other than what it wrote.
+ */
+const runsOf = (assembled: Assembled<PublishedDocument>): readonly PublishedRun[] => {
+  if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+  const [node, ...otherNodes] = assembled.document.nodes;
+  if (node === undefined || otherNodes.length > 0) {
+    throw new Error(`${assembled.document.nodes.length} nodes, not one`);
+  }
+  const [block, ...otherBlocks] = node.blocks;
+  if (block === undefined || otherBlocks.length > 0) {
+    throw new Error(`${node.blocks.length} blocks, not one`);
+  }
+  return block.runs;
+};
+
 describe('assemble', () => {
   it('projects the outline as headings numbered by number, and each occurrence as its paragraphs', () => {
     const assembled = assemble(
@@ -128,7 +166,7 @@ describe('assemble', () => {
             title: 'Calibration',
             language: null,
             direction: null,
-            blocks: [{ type: 'paragraph', id: 'p1', runs: [{ text: 'Set the tray.' }] }],
+            blocks: [{ type: 'paragraph', id: 'p1', runs: [{ text: 'Set the tray.', marks: [] }] }],
             children: [],
           },
         ],
@@ -232,6 +270,260 @@ describe('assemble', () => {
     ]);
   });
 
+  it('carries a run and the marks over it, in one fixed order', () => {
+    const assembled = assemble(
+      oneParagraph(
+        text('see '),
+        marked(
+          'the report',
+          { type: 'hyperlink', id: 'm1', href: 'https://example.test/report', title: 'The report' },
+          { type: 'emphasis', id: 'm2' },
+        ),
+        marked(' now', { type: 'language', id: 'm3', tag: 'fr' }),
+      ),
+    );
+
+    expect(runsOf(assembled)).toEqual([
+      { text: 'see ', marks: [] },
+      {
+        text: 'the report',
+        marks: [{ kind: 'hyperlink', href: 'https://example.test/report' }, { kind: 'emphasis' }],
+      },
+      { text: ' now', marks: [{ kind: 'language', language: { lang: 'fr', region: null } }] },
+    ]);
+  });
+
+  it('writes every mark a run can carry in one fixed order, whatever order it was stored in', () => {
+    const assembled = assemble(
+      oneParagraph(
+        marked(
+          'all of them',
+          { type: 'inlineCode', id: 'm1' },
+          { type: 'strong', id: 'm2' },
+          { type: 'language', id: 'm3', tag: 'pt-BR' },
+          { type: 'superscript', id: 'm4' },
+          { type: 'emphasis', id: 'm5' },
+          { type: 'hyperlink', id: 'm6', href: 'https://example.test/report' },
+          { type: 'underline', id: 'm7' },
+          { type: 'quotedPhrase', id: 'm8' },
+          { type: 'subscript', id: 'm9' },
+        ),
+      ),
+    );
+
+    expect(runsOf(assembled)[0]?.marks.map((mark) => mark.kind)).toEqual([...PUBLISHED_MARK_ORDER]);
+  });
+
+  it('accounts for every mark the content model has, carrying nine and refusing four by name', () => {
+    const ordered: readonly string[] = PUBLISHED_MARK_ORDER;
+    expect([...PUBLISHED_MARK_ORDER].sort()).toEqual(
+      markTypes.filter((each) => ordered.includes(each)).sort(),
+    );
+    // The four are refused rather than carried, each for its own reason: nothing resolves a term,
+    // and a condition, a suggestion or a comment is text a reader was not meant to be shown.
+    expect(markTypes.filter((t) => !ordered.includes(t))).toEqual([
+      'definedTerm',
+      'condition',
+      'suggestion',
+      'comment',
+    ]);
+  });
+
+  it('refuses a defined term, naming it, because nothing resolves a term', () => {
+    const result = assemble(
+      oneParagraph(marked('the tray', { type: 'definedTerm', id: 'm1', term: 'tray' })),
+    );
+    expect(failuresOf(result)).toEqual([
+      expect.objectContaining({ code: 'inline_not_publishable', detail: 'definedTerm' }),
+    ]);
+  });
+
+  it('refuses a run carrying an annotation mark, naming it, rather than setting what it hides', () => {
+    const result = assemble(
+      oneParagraph(
+        marked('for Ada alone', {
+          type: 'condition',
+          id: 'm1',
+          axis: 'audience',
+          values: ['internal'],
+        }),
+        marked('reworded', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
+        marked('proposed', {
+          type: 'suggestion',
+          id: 'm3',
+          operation: 'insert',
+          author: 'Grace',
+        }),
+      ),
+    );
+    expect(failuresOf(result).map((each) => each.detail)).toEqual([
+      'condition',
+      'comment',
+      'suggestion',
+    ]);
+  });
+
+  it('refuses a run carrying more than one mark of a kind, naming the kind once', () => {
+    // CNT-003 lets two annotations of one kind cover one range and the parse stores both, so this
+    // shape reaches `assemble` from any source. The template would fold one inside the other and one
+    // of the two would win by fold order: a PDF linking somewhere the document does not say, or a
+    // screen reader announcing a language the document does not claim. The editor refuses the same
+    // shape by the same name rather than keeping one of the two (packages/editor/src/mapping.ts).
+    const twoLinks = assemble(
+      oneParagraph(
+        marked(
+          'the report',
+          { type: 'hyperlink', id: 'm1', href: 'https://example.test/one' },
+          { type: 'hyperlink', id: 'm2', href: 'https://example.test/two' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoLinks)).toEqual([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: id('calib'),
+        block: 'b1',
+        detail: 'hyperlink',
+      },
+    ]);
+
+    const twoLanguages = assemble(
+      oneParagraph(
+        marked(
+          'le rapport',
+          { type: 'language', id: 'm1', tag: 'fr' },
+          { type: 'language', id: 'm2', tag: 'de' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoLanguages).map((each) => each.detail)).toEqual(['language']);
+
+    // Named once however many there are, whether the kind is one a run could carry or not: the
+    // author has one thing to look for, and hearing it three times says nothing more.
+    const three = assemble(
+      oneParagraph(
+        marked(
+          'quoted',
+          { type: 'quotedPhrase', id: 'm1' },
+          { type: 'quotedPhrase', id: 'm2' },
+          { type: 'quotedPhrase', id: 'm3' },
+        ),
+        marked(
+          'reworded',
+          { type: 'comment', id: 'm4', threadId: 'thread-1' },
+          { type: 'comment', id: 'm5', threadId: 'thread-2' },
+        ),
+      ),
+    );
+    expect(failuresOf(three).map((each) => each.detail)).toEqual(['quotedPhrase', 'comment']);
+  });
+
+  it('names every mark of one run that cannot be published, not only the first', () => {
+    const twoAnnotations = assemble(
+      oneParagraph(
+        marked(
+          'for Ada alone',
+          { type: 'condition', id: 'm1', axis: 'audience', values: ['internal'] },
+          { type: 'comment', id: 'm2', threadId: 'thread-1' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoAnnotations).map((each) => each.detail)).toEqual(['condition', 'comment']);
+
+    // A tag already collected is not thrown away by a mark refused after it.
+    const both = assemble(
+      oneParagraph(
+        marked(
+          'now',
+          { type: 'language', id: 'm1', tag: 'zh-Hans' },
+          { type: 'definedTerm', id: 'm2', term: 'tray' },
+        ),
+      ),
+    );
+    expect(failuresOf(both).map((each) => [each.code, each.detail])).toEqual([
+      ['language_not_publishable', 'zh-Hans'],
+      ['inline_not_publishable', 'definedTerm'],
+    ]);
+  });
+
+  it('refuses a run whose language tag the engine cannot carry, naming the tag', () => {
+    const result = assemble(
+      oneParagraph(marked('now', { type: 'language', id: 'm1', tag: 'zh-Hans' })),
+    );
+    expect(result).toEqual({
+      ok: false,
+      failures: [
+        expect.objectContaining({
+          stage: 'compose',
+          code: 'language_not_publishable',
+          block: 'b1',
+          detail: 'zh-Hans',
+        }),
+      ],
+    });
+  });
+
+  it("refuses a run's language tag exactly where publishedLanguage cannot carry it", () => {
+    // The editor warns an author about a tag no publication could carry (CNT-152) by asking
+    // `publishedLanguage`. This refusal asks the same function rather than keeping a second copy of
+    // the rule, and this test is what would go red if the two ever parted.
+    const tags = [
+      'en',
+      'en-GB',
+      'fil',
+      'de-AT',
+      'pt-BR',
+      'zh-Hans',
+      'es-419',
+      'sr-Latn',
+      'sl-rozaj',
+    ];
+    const refusedByAssemble = tags.filter(
+      (tag) =>
+        failuresOf(assemble(oneParagraph(marked('now', { type: 'language', id: 'm1', tag }))))
+          .length > 0,
+    );
+
+    expect(refusedByAssemble).toEqual(tags.filter((tag) => publishedLanguage(tag) === null));
+    // Neither list is everything, so neither side can agree with the other by refusing the lot.
+    expect(refusedByAssemble).toEqual(['zh-Hans', 'es-419', 'sr-Latn', 'sl-rozaj']);
+  });
+
+  it('checks a marked run against the pinned faces as it checks an unmarked one', () => {
+    const result = assemble(oneParagraph(marked('Tray \u{4e2d}', { type: 'emphasis', id: 'm1' })));
+    expect(failuresOf(result)).toEqual([
+      { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b1', detail: 'U+4E2D' },
+    ]);
+  });
+
+  it('refuses a section title that carries a mark, because a title is published as words alone', () => {
+    const result = assemble(
+      input({
+        outline: outline([
+          {
+            type: 'section',
+            id: id('intro'),
+            title: [marked('Introduction', { type: 'emphasis', id: 'm1' })],
+            ...positional,
+            children: [],
+          },
+        ]),
+      }),
+    );
+    expect(failuresOf(result)).toEqual([
+      {
+        stage: 'compose',
+        code: 'title_not_publishable',
+        node: id('intro'),
+        block: null,
+        // Named, as a block that cannot be published is named: a refusal that says only that the
+        // title holds "something" leaves the author nothing to look for.
+        detail: 'emphasis',
+      },
+    ]);
+  });
+
   it('PUB-052 reports every failure at once: an unreadable place, a mark, a block and a glyph', () => {
     const unreadable: PublishFailure = {
       stage: 'resolve',
@@ -256,8 +548,8 @@ describe('assemble', () => {
             component([
               paragraph(
                 'p1',
-                { type: 'text', value: 'Bold', marks: [{ type: 'strong', id: 'm1' }] },
-                { type: 'text', value: 'Leaning', marks: [{ type: 'emphasis', id: 'm2' }] },
+                marked('Tray', { type: 'definedTerm', id: 'm1', term: 'tray' }),
+                marked('Reworded', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
               ),
               { type: 'preformatted', id: 'pre1', text: 'x' },
               paragraph('p2', text('Arabic \u{627} and \u{4e2d} here')),
@@ -276,14 +568,14 @@ describe('assemble', () => {
         code: 'inline_not_publishable',
         node: id('calib'),
         block: 'p1',
-        detail: 'strong',
+        detail: 'definedTerm',
       },
       {
         stage: 'compose',
         code: 'inline_not_publishable',
         node: id('calib'),
         block: 'p1',
-        detail: 'emphasis',
+        detail: 'comment',
       },
       {
         stage: 'compose',
@@ -631,6 +923,25 @@ describe('assemble for a request made before layouts', () => {
         SLICE_1,
       );
     }
+  });
+
+  it('refuses a mark rather than carrying one, because a run of slice 1 is words alone', () => {
+    // `publishing/1` is frozen: its runs hold text and nothing else, and the bytes above say so. A
+    // request made before layouts predates marks, so nothing reaches this by an ordinary route -
+    // but stored content assembled by any path must be refused by name here, never flattened.
+    const assembled = assemble({
+      ...oneParagraph(marked('the report', { type: 'emphasis', id: 'm1' })),
+      layout: null,
+    });
+    expect(failuresOf(assembled)).toEqual([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: id('calib'),
+        block: 'b1',
+        detail: 'emphasis',
+      },
+    ]);
   });
 
   it('publishes an empty document as slice 1 did, never refusing it as nothing to publish', () => {

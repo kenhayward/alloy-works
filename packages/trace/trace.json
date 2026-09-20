@@ -1963,13 +1963,22 @@
       "line": 207
     },
     {
-      "id": "CNT-085",
+      "id": "CNT-152",
       "area": "CNT",
-      "statement": "An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning",
+      "statement": "Where an author marks a run of text with a language the product's outputs cannot carry, the editor must name the tag at the time, before the mark is applied, rather than leaving it to be discovered at a refused publication",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 208
+    },
+    {
+      "id": "CNT-085",
+      "area": "CNT",
+      "statement": "An underline mark must be supported",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 209
     },
     {
       "id": "CNT-087",
@@ -1978,7 +1987,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "CNT-126",
@@ -1987,7 +1996,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "CNT-127",
@@ -1996,7 +2005,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "CNT-128",
@@ -2005,7 +2014,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "CNT-036",
@@ -2014,7 +2023,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 261
+      "line": 272
     },
     {
       "id": "CNT-037",
@@ -2023,7 +2032,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 262
+      "line": 273
     },
     {
       "id": "CNT-038",
@@ -2032,7 +2041,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 263
+      "line": 274
     },
     {
       "id": "CNT-039",
@@ -2041,7 +2050,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 264
+      "line": 275
     },
     {
       "id": "CNT-040",
@@ -2050,7 +2059,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-129",
       "document": "CNT-content-and-authoring.md",
-      "line": 265
+      "line": 276
     },
     {
       "id": "CNT-041",
@@ -2059,7 +2068,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 266
+      "line": 277
     },
     {
       "id": "CNT-042",
@@ -2068,7 +2077,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 267
+      "line": 278
     },
     {
       "id": "CNT-107",
@@ -2077,7 +2086,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 268
+      "line": 279
     },
     {
       "id": "CNT-129",
@@ -2086,7 +2095,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 269
+      "line": 280
     },
     {
       "id": "CNT-043",
@@ -2095,7 +2104,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 282
+      "line": 293
     },
     {
       "id": "CNT-044",
@@ -2104,7 +2113,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 283
+      "line": 294
     },
     {
       "id": "CNT-045",
@@ -2113,7 +2122,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 284
+      "line": 295
     },
     {
       "id": "CNT-046",
@@ -2122,7 +2131,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 285
+      "line": 296
     },
     {
       "id": "CNT-047",
@@ -2131,7 +2140,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 286
+      "line": 297
     },
     {
       "id": "CNT-048",
@@ -2140,7 +2149,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 287
+      "line": 298
     },
     {
       "id": "CNT-049",
@@ -2149,7 +2158,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 288
+      "line": 299
     },
     {
       "id": "CNT-050",
@@ -2158,7 +2167,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 294
+      "line": 305
     },
     {
       "id": "CNT-051",
@@ -2167,7 +2176,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 295
+      "line": 306
     },
     {
       "id": "CNT-052",
@@ -2176,7 +2185,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 296
+      "line": 307
     },
     {
       "id": "CNT-053",
@@ -2185,7 +2194,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 297
+      "line": 308
     },
     {
       "id": "CNT-054",
@@ -2194,7 +2203,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 298
+      "line": 309
     },
     {
       "id": "CNT-102",
@@ -2203,7 +2212,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 299
+      "line": 310
     },
     {
       "id": "CNT-055",
@@ -2212,7 +2221,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 309
+      "line": 320
     },
     {
       "id": "CNT-056",
@@ -2221,7 +2230,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 310
+      "line": 321
     },
     {
       "id": "CNT-057",
@@ -2230,7 +2239,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 311
+      "line": 322
     },
     {
       "id": "CNT-058",
@@ -2239,7 +2248,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 312
+      "line": 323
     },
     {
       "id": "CNT-059",
@@ -2248,7 +2257,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 313
+      "line": 324
     },
     {
       "id": "CNT-060",
@@ -2257,7 +2266,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 323
+      "line": 334
     },
     {
       "id": "CNT-061",
@@ -2266,7 +2275,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 324
+      "line": 335
     },
     {
       "id": "CNT-062",
@@ -2275,7 +2284,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 325
+      "line": 336
     },
     {
       "id": "CNT-063",
@@ -2284,7 +2293,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 326
+      "line": 337
     },
     {
       "id": "CNT-064",
@@ -2293,7 +2302,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 327
+      "line": 338
     },
     {
       "id": "CNT-065",
@@ -2302,7 +2311,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 328
+      "line": 339
     },
     {
       "id": "CNT-130",
@@ -2311,7 +2320,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 329
+      "line": 340
     },
     {
       "id": "CNT-131",
@@ -2320,7 +2329,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 330
+      "line": 341
     },
     {
       "id": "CNT-132",
@@ -2329,7 +2338,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 351
+      "line": 362
     },
     {
       "id": "CNT-133",
@@ -2338,7 +2347,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 352
+      "line": 363
     },
     {
       "id": "CNT-134",
@@ -2347,7 +2356,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 353
+      "line": 364
     },
     {
       "id": "CNT-135",
@@ -2356,7 +2365,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 354
+      "line": 365
     },
     {
       "id": "CNT-066",
@@ -2365,7 +2374,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 398
+      "line": 409
     },
     {
       "id": "CNT-067",
@@ -2374,7 +2383,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 399
+      "line": 410
     },
     {
       "id": "CNT-068",
@@ -2383,7 +2392,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 400
+      "line": 411
     },
     {
       "id": "CNT-069",
@@ -2392,7 +2401,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 401
+      "line": 412
     },
     {
       "id": "CNT-070",
@@ -2401,7 +2410,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 402
+      "line": 413
     },
     {
       "id": "CNT-071",
@@ -2410,7 +2419,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 403
+      "line": 414
     },
     {
       "id": "CNT-089",
@@ -2419,7 +2428,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 404
+      "line": 415
     },
     {
       "id": "CNT-090",
@@ -2428,7 +2437,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 405
+      "line": 416
     },
     {
       "id": "CNT-103",
@@ -2437,7 +2446,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 406
+      "line": 417
     },
     {
       "id": "CNT-149",
@@ -2446,7 +2455,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 407
+      "line": 418
     },
     {
       "id": "CNT-098",
@@ -2455,7 +2464,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 413
+      "line": 424
     },
     {
       "id": "CNT-099",
@@ -2464,7 +2473,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-147",
       "document": "CNT-content-and-authoring.md",
-      "line": 414
+      "line": 425
     },
     {
       "id": "CNT-100",
@@ -2473,7 +2482,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 415
+      "line": 426
     },
     {
       "id": "CNT-101",
@@ -2482,7 +2491,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-148",
       "document": "CNT-content-and-authoring.md",
-      "line": 416
+      "line": 427
     },
     {
       "id": "CNT-147",
@@ -2491,7 +2500,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 417
+      "line": 428
     },
     {
       "id": "CNT-148",
@@ -2500,7 +2509,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 418
+      "line": 429
     },
     {
       "id": "CNT-072",
@@ -2509,7 +2518,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 437
+      "line": 448
     },
     {
       "id": "CNT-073",
@@ -2518,7 +2527,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 438
+      "line": 449
     },
     {
       "id": "CNT-074",
@@ -2527,7 +2536,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 439
+      "line": 450
     },
     {
       "id": "CNT-075",
@@ -2536,7 +2545,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 440
+      "line": 451
     },
     {
       "id": "CNT-076",
@@ -2545,7 +2554,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 441
+      "line": 452
     },
     {
       "id": "CNT-082",
@@ -2554,7 +2563,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 442
+      "line": 453
     },
     {
       "id": "CNT-097",
@@ -2563,7 +2572,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 443
+      "line": 454
     },
     {
       "id": "CNT-115",
@@ -2572,7 +2581,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 444
+      "line": 455
     },
     {
       "id": "CNT-095",
@@ -2581,7 +2590,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-150",
       "document": "CNT-content-and-authoring.md",
-      "line": 445
+      "line": 456
     },
     {
       "id": "CNT-150",
@@ -2590,7 +2599,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 446
+      "line": 457
     },
     {
       "id": "CNT-096",
@@ -2599,7 +2608,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 447
+      "line": 458
     },
     {
       "id": "CNT-114",
@@ -2608,7 +2617,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-136",
       "document": "CNT-content-and-authoring.md",
-      "line": 448
+      "line": 459
     },
     {
       "id": "CNT-136",
@@ -2617,7 +2626,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-151",
       "document": "CNT-content-and-authoring.md",
-      "line": 449
+      "line": 460
     },
     {
       "id": "CNT-151",
@@ -2626,7 +2635,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 450
+      "line": 461
     },
     {
       "id": "CNT-104",
@@ -2635,7 +2644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 456
+      "line": 467
     },
     {
       "id": "CNT-105",
@@ -2644,7 +2653,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 457
+      "line": 468
     },
     {
       "id": "CNT-106",
@@ -2653,7 +2662,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 458
+      "line": 469
     },
     {
       "id": "CNT-108",
@@ -2662,7 +2671,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 464
+      "line": 475
     },
     {
       "id": "CNT-109",
@@ -2671,7 +2680,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 465
+      "line": 476
     },
     {
       "id": "CNT-110",
@@ -2680,7 +2689,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 466
+      "line": 477
     },
     {
       "id": "CNT-141",
@@ -2689,7 +2698,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 467
+      "line": 478
     },
     {
       "id": "CNT-111",
@@ -2698,7 +2707,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 468
+      "line": 479
     },
     {
       "id": "CNT-112",
@@ -2707,7 +2716,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 469
+      "line": 480
     },
     {
       "id": "CNT-113",
@@ -2716,7 +2725,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 470
+      "line": 481
     },
     {
       "id": "CNT-077",
@@ -2725,7 +2734,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 511
+      "line": 522
     },
     {
       "id": "CNT-078",
@@ -2734,7 +2743,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 512
+      "line": 523
     },
     {
       "id": "CNT-079",
@@ -2743,7 +2752,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 513
+      "line": 524
     },
     {
       "id": "CNT-080",
@@ -2752,7 +2761,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 514
+      "line": 525
     },
     {
       "id": "CNT-137",
@@ -2761,7 +2770,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 515
+      "line": 526
     },
     {
       "id": "CNT-138",
@@ -2770,7 +2779,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 516
+      "line": 527
     },
     {
       "id": "CNT-139",
@@ -2779,7 +2788,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 517
+      "line": 528
     },
     {
       "id": "COL-001",
@@ -12546,61 +12555,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 535
+      "line": 546
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 536
+      "line": 547
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 537
+      "line": 548
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 538
+      "line": 549
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 539
+      "line": 550
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 540
+      "line": 551
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 541
+      "line": 552
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 542
+      "line": 553
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 543
+      "line": 554
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 544
+      "line": 555
     },
     {
       "id": "COL-N01",
@@ -13307,105 +13316,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 550
+      "line": 561
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 551
+      "line": 562
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 552
+      "line": 563
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 553
+      "line": 564
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 554
+      "line": 565
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 555
+      "line": 566
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 556
+      "line": 567
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 557
+      "line": 568
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 558
+      "line": 569
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 559
+      "line": 570
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 560
+      "line": 571
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-151)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 561
+      "line": 572
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 562
+      "line": 573
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 563
+      "line": 574
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 564
+      "line": 575
     },
     {
       "id": "COL-Q01",
@@ -14308,6 +14317,10 @@
         {
           "id": "CNT-148",
           "howItIsMet": "The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker"
+        },
+        {
+          "id": "CNT-152",
+          "howItIsMet": "A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **Apply anyway** then applies it"
         }
       ]
     },
@@ -15952,6 +15965,36 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 2177,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-098",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 1615,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-147",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 1625,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-152",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 2014,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/EditorToolbar.test.tsx",
+      "line": 146,
+      "kind": "title"
+    },
+    {
       "id": "CNT-149",
       "file": "apps/web/src/editor/NewComponent.test.tsx",
       "line": 55,
@@ -16128,7 +16171,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 277,
+      "line": 281,
       "kind": "title"
     },
     {
@@ -16266,31 +16309,31 @@
     {
       "id": "CNT-056",
       "file": "packages/domain/src/content/admission/admit.test.ts",
-      "line": 239,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "CNT-064",
       "file": "packages/domain/src/content/admission/admit.test.ts",
-      "line": 323,
+      "line": 325,
       "kind": "title"
     },
     {
       "id": "CNT-065",
       "file": "packages/domain/src/content/admission/admit.test.ts",
-      "line": 203,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/domain/src/content/admission/admit.test.ts",
-      "line": 131,
+      "line": 132,
       "kind": "title"
     },
     {
       "id": "CNT-131",
       "file": "packages/domain/src/content/admission/admit.test.ts",
-      "line": 156,
+      "line": 157,
       "kind": "title"
     },
     {
@@ -16332,115 +16375,115 @@
     {
       "id": "CNT-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 24,
+      "line": 28,
       "kind": "title"
     },
     {
       "id": "CNT-002",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 65,
+      "line": 69,
       "kind": "title"
     },
     {
       "id": "CNT-011",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 34,
+      "line": 38,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 177,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 190,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 217,
+      "line": 221,
       "kind": "title"
     },
     {
       "id": "CNT-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 206,
+      "line": 210,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 190,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "CNT-023",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 109,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "CNT-059",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 52,
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "CNT-107",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 177,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 145,
+      "line": 149,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 161,
+      "line": 165,
       "kind": "title"
     },
     {
       "id": "CNT-119",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 145,
+      "line": 149,
       "kind": "title"
     },
     {
       "id": "CNT-124",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 61,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 224,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "CNT-140",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 46,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "CNT-142",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 41,
+      "line": 45,
       "kind": "title"
     },
     {
       "id": "CNT-146",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 28,
+      "line": 32,
       "kind": "title"
     },
     {
@@ -16572,7 +16615,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 136,
+      "line": 142,
       "kind": "title"
     },
     {
@@ -16800,25 +16843,25 @@
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 235,
+      "line": 527,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 424,
+      "line": 716,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 308,
+      "line": 600,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 397,
+      "line": 689,
       "kind": "title"
     },
     {
@@ -16974,7 +17017,7 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 613,
+      "line": 654,
       "kind": "title"
     },
     {
@@ -17041,6 +17084,48 @@
       "id": "STY-051",
       "file": "packages/domain/src/theme/typst.test.ts",
       "line": 14,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-003",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-031",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-126",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-004",
+      "file": "packages/editor/src/marks.test.ts",
+      "line": 165,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-127",
+      "file": "packages/editor/src/marks.test.ts",
+      "line": 283,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-126",
+      "file": "packages/editor/src/schema.test.ts",
+      "line": 82,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-147",
+      "file": "packages/editor/src/state.test.ts",
+      "line": 345,
       "kind": "title"
     }
   ]

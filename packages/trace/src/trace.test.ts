@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1385, from 1384: CNT-152, a language tag the model takes and no output can carry named to the
+    // author at the time, before the mark is applied (issue #155), landed by the marks plan.
     // 1384, from 1383: PUB-095, a layout's words in one declared language, and a document in another
     // refused naming both (issue #144), landed by the second publishing plan.
     // 1383, from 1382: STR-064, front matter only at the top level and before the rest of the outline
@@ -53,9 +55,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1384);
+    expect(model.requirements).toHaveLength(1385);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 409, from 408: component-editor.md claims CNT-152, met by the mark prompt naming the tag before
+    // it applies anything.
     // 408, from 407: publishing.md claims PUB-095, met by the layout's language matched as a range.
     // 407, from 406: structure.md claims STR-064, front matter first, met by the outline parse.
     // 406, unchanged: publishing.md claims PUB-094 (#143) and no longer IAM-074, which Ken withdrew for it.
@@ -125,7 +129,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(408);
+    ).toBe(409);
   });
 });
 
@@ -289,8 +293,34 @@ describe('the citations in the committed model', () => {
   // 205, from 204: the same plan cites STR-036 in apps/web/src/structure/DocumentPage.test.tsx: the
   // outline panel and the generated lists number with the scheme of the layout the document would be
   // published under, and the test shows those are the numbers `assemble` prints under that layout.
+  // 207, from 205: the editor's marks plan cites CNT-126 in packages/editor/src/schema.test.ts - the
+  // schema holds a hyperlink as a mark carrying an absolute target and an optional title - and
+  // CNT-147 in packages/editor/src/state.test.ts: the spelling checker is turned off over a run whose
+  // language mark differs from the component's base language, and over no other run.
+  // 210, from 207: the same plan cites CNT-031, CNT-003 and CNT-126 in
+  // packages/editor/src/mapping.test.ts: the mapping carries all eight character marks there and
+  // back unchanged, keeps two overlapping annotations whole across three runs under two identifiers,
+  // and carries a hyperlink over a range with an absolute target and the title it has or has not.
+  // 213, from 210: the same plan cites CNT-077, CNT-004 and CNT-127 in
+  // packages/editor/src/marks.test.ts: one registry gives every mark command a label and a shortcut
+  // no other command uses, an edit that splits a marked run leaves one annotation under one
+  // identifier, and a link target whose scheme is not allowlisted is refused before it is applied.
+  // 214, from 213: the same plan cites CNT-077 in apps/web/src/editor/EditorToolbar.test.tsx: the
+  // formatting toolbar offers every command in that registry as a button, in one tab stop the arrow
+  // keys, Home and End move around.
+  // 216, from 214: the same plan cites CNT-098 and CNT-147 in
+  // apps/web/src/editor/ComponentEditor.test.tsx, which is where a mark is applied through the link
+  // and language dialogs and the surface is rendered under jsdom: the surface asks the delivery to
+  // check spelling, and a run whose language mark differs from the component's base language is
+  // rendered with the checker turned off while one carrying the base language is not.
+  // 217, from 216: the same plan's last editor task lands CNT-152, the warning about a language tag
+  // a publication cannot carry, and moves CNT-077 off the registry table in
+  // packages/editor/src/marks.test.ts - whose body asserts strings and presses no key - onto the two
+  // tests in apps/web/src/editor/ComponentEditor.test.tsx that move between the regions of the view
+  // with F6 and Shift-F6. One file leaves and one file arrives for CNT-077, so the count rises only
+  // by CNT-152's own.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(205);
+    expect(model.citations).toHaveLength(217);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -335,6 +365,7 @@ describe('scanning the repository for test files', () => {
     // 7, from 6: NewComponent.test.tsx, which cites CNT-149.
     // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
     // 10, from 8: publishing/Publishing.test.tsx and publishing/PublicationPage.test.tsx, which cite nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(10);
+    // 11, from 10: editor/EditorToolbar.test.tsx, which cites CNT-077.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(11);
   });
 });

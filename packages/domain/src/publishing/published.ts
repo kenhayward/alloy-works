@@ -5,11 +5,11 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/2` is the document under a layout, which `apps/worker/templates/publication/2/` reads.
- * It is never stored - only its digest is, on the publication - so a later shape is a new schema
- * string and a new template version, not a migration.
+ * `publishing/3` is the document under a layout whose runs carry their marks, which
+ * `apps/worker/templates/publication/3/` reads. It is never stored - only its digest is, on the
+ * publication - so a later shape is a new schema string and a new template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/2';
+export const PUBLISHING_SCHEMA = 'publishing/3';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -17,6 +17,14 @@ export const PUBLISHING_SCHEMA = 'publishing/2';
  * would have then, with template 1 (Ken's answer F, 2026-09-19).
  */
 export const PUBLISHING_SCHEMA_1 = 'publishing/1';
+
+/**
+ * The document under a layout as it stood before a run carried its marks, frozen. Nothing makes one
+ * now - every request under a layout is assembled as `publishing/3` - and the string is kept because
+ * `apps/worker/templates/publication/2/` asserts it and a template version is immutable: template 2,
+ * and the publications made with it, are a record rather than something to migrate.
+ */
+export const PUBLISHING_SCHEMA_2 = 'publishing/2';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -28,8 +36,58 @@ export interface PublishedLanguage {
   readonly region: string | null;
 }
 
+/**
+ * A mark a published run carries: nine of the content model's thirteen, each as the kind the template
+ * branches on, and the two that carry more than their kind carrying it beside.
+ *
+ * A hyperlink's `title` is **not** carried: a PDF link annotation has no place for it, and inventing
+ * one would tell a reader something the author did not say. A language arrives as
+ * `publishedLanguage` reads it, refused by name where the engine cannot carry the tag rather than
+ * shortened to something the author never wrote.
+ *
+ * The four that are not here - `definedTerm`, `condition`, `suggestion` and `comment` - are refused
+ * by name by `assemble`, never dropped: nothing resolves a term, and a condition, a suggestion or a
+ * comment carried through would set text a reader was not meant to be shown.
+ */
+export type PublishedMark =
+  | {
+      readonly kind:
+        | 'emphasis'
+        | 'strong'
+        | 'underline'
+        | 'subscript'
+        | 'superscript'
+        | 'inlineCode'
+        | 'quotedPhrase';
+    }
+  | { readonly kind: 'hyperlink'; readonly href: string }
+  | { readonly kind: 'language'; readonly language: PublishedLanguage };
+
+/**
+ * The order a run's marks are written in, outermost first, so that one document makes one PDF: a
+ * publication's digest is of these bytes, and the repository holds three orders that disagree (the
+ * content model's `markTypes`, the editor schema's declaration order and the toolbar's), so the
+ * published order is pinned here and nowhere else.
+ *
+ * `inlineCode` is last, and so innermost, because the template sets it with Typst's `raw`, which
+ * takes text rather than a body: anything applied inside it would be lost.
+ */
+export const PUBLISHED_MARK_ORDER = [
+  'language',
+  'hyperlink',
+  'quotedPhrase',
+  'emphasis',
+  'strong',
+  'underline',
+  'subscript',
+  'superscript',
+  'inlineCode',
+] as const satisfies readonly PublishedMark['kind'][];
+
+/** A run of `publishing/3`: its text, and the marks over it in `PUBLISHED_MARK_ORDER`. */
 export interface PublishedRun {
   readonly text: string;
+  readonly marks: readonly PublishedMark[];
 }
 
 export interface PublishedParagraph {
@@ -39,6 +97,23 @@ export interface PublishedParagraph {
 }
 
 export type PublishedBlock = PublishedParagraph;
+
+/**
+ * A run of `publishing/1` and `publishing/2`, before a run carried its marks: its text and nothing
+ * else. Frozen with the schemas that hold it - `assemble` refuses a marked inline outright when it
+ * is making one - so that a request made before layouts still publishes byte for byte as it did.
+ */
+export interface PublishedRun1 {
+  readonly text: string;
+}
+
+export interface PublishedParagraph1 {
+  readonly type: 'paragraph';
+  readonly id: string;
+  readonly runs: readonly PublishedRun1[];
+}
+
+export type PublishedBlock1 = PublishedParagraph1;
 
 /**
  * One outline node in `publishing/1`, set as a heading at its depth. `number` is `number`'s, set as
@@ -52,7 +127,7 @@ export interface PublishedNode1 {
   readonly title: string;
   readonly language: PublishedLanguage | null;
   readonly direction: 'ltr' | 'rtl' | null;
-  readonly blocks: readonly PublishedBlock[];
+  readonly blocks: readonly PublishedBlock1[];
   readonly children: readonly PublishedNode1[];
 }
 

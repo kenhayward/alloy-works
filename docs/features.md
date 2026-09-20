@@ -5,9 +5,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 **both change in the same PR**.
 
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
-> versioned, and documents made, their outlines restructured, their sections numbered and their
-> paragraphs published as a laid-out PDF with a cover, a contents and numbered pages, but nothing is
-> formatted beyond plain paragraphs or cross-referenced.
+> versioned, their text formatted, linked and marked with a language, and documents made, their
+> outlines restructured, their sections numbered and their paragraphs published as a laid-out PDF with
+> a cover, a contents and numbered pages that carries all of that formatting. Nothing is arranged
+> beyond paragraphs - no list, table, footnote or equation - and nothing is cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -54,8 +55,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and into tagged PDF. It is pure TypeScript: no React, no Electron, no filesystem.
 
   **This is the shape, not the product.** Nothing authors most of this content, imports it from
-  another format or publishes it yet: the editor writes paragraphs of text, and publishing takes
-  paragraphs of unmarked text and refuses the rest.
+  another format or publishes it yet: the editor writes paragraphs of formatted text, and publishing
+  takes those and refuses the rest.
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
   denial, on the whole environment, one space, or one item. Every environment starts with nine roles -
@@ -89,8 +90,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and keeps what was not saved, and your next change after signing in again saves it; if you may no
   longer edit or read the component, the page says that instead, and keeps the text for you to copy.
 
-  **This is paragraphs of text, not the editor.** A component holding a list, a table, an equation, a
-  footnote or any formatting opens for reading only. Changes saved but never made into a version are
+  **Formatting, links and languages.** Above the surface is a **Formatting** toolbar: **Strong**,
+  **Emphasis**, **Underline**, **Subscript**, **Superscript**, **Inline code** and **Quoted phrase**,
+  each with a keyboard shortcut, each applied over what you have selected or over the next thing you
+  type, and each taken off again by pressing the same button. **Link** asks for an address beginning
+  `http:`, `https:` or `mailto:` and an optional title; an address of any other kind is refused with a
+  sentence saying why, and nothing is applied. **Language** marks a run with a BCP 47 tag such as `fr`
+  or `pt-BR`, and the page stops asking the browser to check that run's spelling, so a passage in
+  another language is no longer flagged as misspelt. Where you type a tag a publication cannot carry,
+  the dialog says so before anything is applied and the button becomes **Apply anyway**, so you decide
+  rather than finding out at a publish somebody else asked for. The whole toolbar is one tab stop with
+  the arrow keys moving along it, and `F6` and `Shift-F6` move between the component header, the
+  toolbar and the surface.
+
+  **This is formatted paragraphs, not the editor.** A component holding a list, a table, an equation
+  or a footnote opens for reading only. There is no control for a defined term or a citation, nothing
+  pastes, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
 
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
@@ -150,15 +165,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
   second or two later the page says it is published. The publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
-  component's paragraphs beneath its heading, set in Liberation Serif. **Every publication says it is
+  component's paragraphs beneath its heading, set in Liberation Serif, with everything you formatted
+  carried into it: strong, emphasis, underline, subscript, superscript, inline code, quoted phrases,
+  links a reader can follow, and each run's own language. **Every publication says it is
   not approved** - at the top of every page, and once where a screen reader reads it - because nothing
   can approve one yet. Publications are kept and never changed: publishing again makes another. The
   document lists its publications beneath the outline, each with the version, who published it and
   when, and each has its own page with a download. Who may read a publication is decided on the
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
-  outline: a component you may not read, without saying which; formatting, a list, a table or any other
-  block that cannot be published yet; or a character no typeface can set.
+  outline: a component you may not read, without saying which; a list, a table or any other block that
+  cannot be published yet; a defined term, which has no control and no published form yet; or a
+  character no typeface can set.
 
   **The publication is laid out.** It opens with a cover carrying the title, then a contents page a
   screen reader announces as a table of contents, then the document. Every page after the cover
@@ -174,8 +192,26 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `en-GB` document as well as an `en` one. Asking for a format the layout does not make - Word, today
   - is refused the same way.
 
-  **This is a PDF of paragraphs, not publishing.** Nothing formatted is published: no bold or italics,
-  links, lists, tables, figures, footnotes or equations - a document holding any of them is refused.
+  **Four things about formatting in a PDF, said plainly rather than left to be found.** Inline code
+  prints in the same face as the text around it, because only one typeface is pinned today - a screen
+  reader is still told it is code, and a monospace face arrives with themes. A quoted phrase is marked
+  as a quotation for assistive technology and is given no quotation marks of its own, so the
+  characters on the page are the ones you typed and no others. Of the nine marks, only a link,
+  inline code and a quoted phrase reach a screen reader as something it names: strong, emphasis,
+  underline, subscript and superscript are printed but are not announced, which is how the engine tags
+  them. And the optional **title** on a link is stored with the link and is not carried into the PDF -
+  a PDF link has nowhere to put it, and inventing somewhere would tell a reader something you did not
+  say - so the address is what a reader of the PDF gets.
+
+  **A language tag a publication cannot carry.** The model keeps any well-formed tag, and the PDF
+  engine carries a language and, where there is one, a region of exactly two letters. So `zh-Hans` or
+  `es-419` can be stored and cannot be published; the editor says so when you apply it **to a run**,
+  and a publish naming one is refused by name rather than shortened to something it does not mean.
+  A component's own base language, in the header, is not warned about: one of these tags typed there
+  is taken without comment and refused only when the document is published (issue #156).
+
+  **This is a PDF of paragraphs, not publishing.** No lists, tables, figures, footnotes or equations -
+  a document holding any of them is refused.
   There is no list of figures or tables, no caption labels and no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
@@ -186,8 +222,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 Named explicitly so nobody has to read the source to find out:
 
-- No way to author anything but paragraphs of text: a list, a table, an equation or any formatting still
-  opens for reading only. Nothing imports content from a Word file, and nothing exports it but a
+- No way to author anything but formatted paragraphs: a component holding a list, a table, a footnote
+  or an equation still opens for reading only, and there is no control for a defined term or a
+  citation. Nothing pastes. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs. The one sample document is a fixed template with no content
   of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
@@ -196,9 +233,10 @@ Named explicitly so nobody has to read the source to find out:
 - No document view: a document's outline is a tree you build, and a component still opens on its own
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
-- No publishing beyond a laid-out PDF of a document's outline and paragraphs: no formatting, lists,
+- No publishing beyond a laid-out PDF of a document's outline and its formatted paragraphs: no lists,
   tables, figures, footnotes or equations in a publication, no list of figures or tables, no caption
-  labels, no theme, no Word, no preview, and no way to approve a publication.
+  labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
+  publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,
   and every document publishes under it.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.

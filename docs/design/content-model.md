@@ -219,6 +219,60 @@ content is parsed by the walk rather than by the inline schema, which cannot nam
 the walk hands back what it parsed rather than checking it and keeping what arrived (issue #124). A
 section title, which runs the same walk, is stored the same way.
 
+**And one visible text carrying one set of marks is one run** (issue #154). The same walk drops a run
+holding no text and joins two adjacent runs whose marks are equal, so a text has one stored spelling
+as well as one hash, in every place inline content is stored. "Equal" is equal in the canonical form:
+the two mark arrays go through the marks-as-a-set rule (CNT-003) and are then compared member by
+member, a mark's identifier included - so a set written in two orders is one set, while two
+annotations of one type, which differ only by identifier (CNT-004), stay apart as the two annotations
+they are. Nothing had stored a mark when this was tightened, so there is no migration; it is a rule
+about what is written, and a version already stored is read back exactly as it was written.
+
+A run's value is put in NFC by the same walk (CNT-056), on the way in and again after a join: two
+strings each in NFC need not join into one, so a merge could otherwise write a spelling the hash
+does not cover. Text is normalised where an identifier is refused, because an identifier is compared
+and resolved by exact string and folding one would change what it names, while a run's value is
+prose the hash already reads in NFC.
+
+**A mark identifier carries one value.** CNT-004 makes an annotation fragmented across runs one
+annotation under one identifier, so within one scope - a component, or a section title - an
+identifier stands for exactly one mark: one kind, one set of attributes. The same identifier reading
+two ways, or worn by two kinds of mark, is two annotations sharing a name, and CNT-005's one
+operation over every fragment of that identifier cannot then mean anything; the parse refuses such a
+document by name, saying which identifier and that it carries two values, and nothing of the text.
+The comparison is the mark's canonical form, and the identifier is keyed in NFC, because the
+canonical form folds its two spellings into one. This was tightened while nothing had stored a mark,
+which is the only moment it could be: admitting more later needs no migration, admitting it then
+could never have been undone.
+
+**And it covers one range.** The runs carrying one identifier are contiguous in document order:
+once an identifier has appeared and a later text run does not carry it, it may not appear again in
+that scope. An emphasis over `alp`, nothing over the words between, and the same identifier again
+over `amma` is one annotation in two visually separate pieces, and CNT-005's one operation over
+every fragment would change the document in two places an author never joined. **Only a text run
+closes an identifier**, which is what keeps an ordinary gesture from making a document that will
+not save: the runs one edit splits an annotation into all carry it; a block boundary is not a run,
+so an annotation runs from the end of one paragraph into the start of the next and an empty
+paragraph between them breaks nothing; and a node that is not a run carries no marks, so an
+equation or a cross-reference inside an emphasised phrase leaves it whole. A footnote's content is
+a range of its own: its anchor never breaks an annotation it stands in, and an annotation in the
+main text is not the annotation inside the note. The editor is written to the same predicate and
+holds it after **every** transaction rather than inside each command, because the gestures that
+split an annotation are not all commands - typing one character at the end of a language run is
+not one, and the mark is not inclusive, so the typed run carries no mark and stands between two
+pieces of one annotation. The later pieces are renamed and the first keeps the identifier, so text
+nobody touched is not renamed. Within a mark type an editing session therefore cannot reach this
+refusal. What it still stands between a version and is content from somewhere else, and the two
+cases the editor's repair leaves out on purpose: one identifier worn by two kinds of mark, which
+the value rule answers and no command can mint, and a document opened into a state already in two
+pieces, which nothing produces.
+
+**And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
+than what it was given, every rule about a sequence has to be judged on what that sequence became -
+CNT-023's adjacency over the blocks the walk returned, because a paragraph holding one empty run is
+an empty paragraph once the run is dropped. Judged on what arrived, two of them would be accepted,
+stored, and then refused on read-back, which is a version an author can never cut.
+
 That the schema version sits inside the JSON makes the hash shortcut sound as well as fast: equal
 bytes implies equal schema version, so two versions with equal hashes cannot be two different schemas
 that happen to say the same thing.

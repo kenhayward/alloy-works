@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
 
+import { canonicalise } from './canonical.js';
 import { CURRENT_SCHEMA_VERSION, contentDocumentSchema, parseContentDocument } from './document.js';
 import { readContent } from './migrate.js';
 
@@ -314,8 +318,8 @@ describe('a cross-reference, where a component holds one', () => {
   it('refuses an identifier or a target not already in NFC, which the digest would fold into another', () => {
     // One identifier, spelled composed and decomposed. The canonical form writes every string in NFC,
     // so both would be stored as one, while the parse compared them as two.
-    const composed = 'café';
-    const decomposed = 'café';
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
     const noted = (id: string) => ({
       type: 'footnote',
       id,
@@ -455,5 +459,686 @@ describe('an equation, stored only as the MathML reader writes it', () => {
     expect(outcome).toMatchObject({ ok: false, artifact: 'component-10', version: '1.0' });
     expect(outcome).not.toHaveProperty('document');
     expect(!outcome.ok && outcome.failure).toMatch(/not in the one form the MathML reader writes/);
+  });
+});
+
+describe('adjacent runs, which the canonical form merges (issue #154)', () => {
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  const contentOf = (document: unknown) => {
+    const block = parseContentDocument(document).content[0];
+    return block?.type === 'paragraph' ? block.content : [];
+  };
+  const link = (id: string) => ({ type: 'hyperlink', id, href: 'https://example.test/setup' });
+  const emphasised = (value: string, id = 'm1') => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'emphasis', id }],
+  });
+
+  it('merges two adjacent runs carrying the same marks into one', () => {
+    expect(contentOf(runs([emphasised('Install '), emphasised('the printer.')]))).toEqual([
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id: 'm1' }] },
+    ]);
+  });
+
+  it('gives the merged and the split spelling of one text one digest', () => {
+    const split = canonicalise(
+      parseContentDocument(runs([emphasised('Install '), emphasised('the printer.')])),
+    );
+    const whole = canonicalise(parseContentDocument(runs([emphasised('Install the printer.')])));
+    expect(split).toBe(whole);
+  });
+
+  it('merges two runs holding one set of marks written in two orders', () => {
+    const marks = [
+      { type: 'emphasis', id: 'm1' },
+      { type: 'language', id: 'm2', tag: 'fr-FR' },
+    ];
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks },
+          { type: 'text', value: 'the printer.', marks: [...marks].reverse() },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks }]);
+  });
+
+  it('leaves two runs whose marks differ alone', () => {
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          { type: 'text', value: 'the printer.', marks: [{ type: 'strong', id: 'm2' }] },
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('leaves two annotations of one type beside each other alone', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [link('m1')] },
+          { type: 'text', value: 'the printer.', marks: [link('m2')] },
+        ]),
+      ),
+    ).toEqual([
+      { type: 'text', value: 'Install ', marks: [link('m1')] },
+      { type: 'text', value: 'the printer.', marks: [link('m2')] },
+    ]);
+  });
+
+  it('never has to leave two runs apart over an attribute, because that document is refused', () => {
+    // This test used to assert that two runs whose marks share a kind and an identifier but differ
+    // in an attribute stay apart. They do, but the document never gets that far: one identifier
+    // carrying two values is two annotations wearing one identifier, and the walk refuses it by
+    // name. So the merge's attribute comparison has no legal case left to be observed in - it is
+    // demonstrated by the refusal instead, in "a mark identifier, which names one annotation".
+    expect(() =>
+      parseContentDocument(
+        runs([
+          {
+            type: 'text',
+            value: 'Install ',
+            marks: [{ type: 'language', id: 'm1', tag: 'fr-FR' }],
+          },
+          {
+            type: 'text',
+            value: 'the printer.',
+            marks: [{ type: 'language', id: 'm1', tag: 'fr-CA' }],
+          },
+        ]),
+      ),
+    ).toThrow(/m1/);
+  });
+
+  it('does not merge a run with the node beside it that is not a run', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [] },
+          { type: 'variable', name: 'productName' },
+          { type: 'text', value: ' first.', marks: [] },
+        ]),
+      ),
+    ).toHaveLength(3);
+  });
+
+  it('drops a run whose value is empty, which is a second spelling of one text', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: '', marks: [] },
+          { type: 'text', value: 'Install the printer.', marks: [] },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks: [] }]);
+  });
+
+  it('gives a document with an empty run the digest of the same document without it', () => {
+    const withEmpty = canonicalise(
+      parseContentDocument(
+        runs([
+          { type: 'text', value: 'Install the printer.', marks: [] },
+          { type: 'text', value: '', marks: [{ type: 'strong', id: 'm1' }] },
+        ]),
+      ),
+    );
+    const without = canonicalise(
+      parseContentDocument(runs([{ type: 'text', value: 'Install the printer.', marks: [] }])),
+    );
+    expect(withEmpty).toBe(without);
+  });
+
+  it('leaves a paragraph of nothing but empty runs with no content at all', () => {
+    expect(contentOf(runs([{ type: 'text', value: '', marks: [] }]))).toEqual([]);
+  });
+
+  it('joins runs an empty run stood between', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [] },
+          { type: 'text', value: '', marks: [{ type: 'strong', id: 'm1' }] },
+          { type: 'text', value: 'the printer.', marks: [] },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks: [] }]);
+  });
+
+  it('merges in every inline home the walk reaches, not only a paragraph', () => {
+    const parsed = parseContentDocument(
+      doc([
+        {
+          type: 'blockquote',
+          id: 'b1',
+          content: [paragraph('b2')],
+          attribution: [emphasised('Ada '), emphasised('Lovelace')],
+        },
+        {
+          type: 'table',
+          id: 'b3',
+          caption: 'A table',
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [],
+          note: [emphasised('Measured ', 'm2'), emphasised('at sea level.', 'm2')],
+        },
+        {
+          type: 'paragraph',
+          id: 'b4',
+          style: 'body',
+          content: [
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'b5',
+                  style: 'footnote',
+                  content: [emphasised('See ', 'm3'), emphasised('the appendix.', 'm3')],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    const [quote, table, anchor] = parsed.content;
+    expect(quote?.type === 'blockquote' && quote.attribution).toHaveLength(1);
+    expect(table?.type === 'table' && table.note).toHaveLength(1);
+    const footnote = anchor?.type === 'paragraph' ? anchor.content[0] : undefined;
+    const inner =
+      footnote?.type === 'footnote' ? (footnote.content as { content: unknown[] }[])[0] : undefined;
+    expect(inner?.content).toHaveLength(1);
+  });
+});
+
+describe('the parse of what the parse returned, which must be what it returned', () => {
+  const emptyRun = (id: string) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content: [{ type: 'text', value: '', marks: [] }],
+  });
+
+  it('refuses two paragraphs left empty by their runs, as it refuses two written empty', () => {
+    // CNT-023 is judged on the canonical form, not on what arrived: two paragraphs holding one
+    // empty run each are two empty paragraphs once the walk has dropped the runs, so they are
+    // refused at the door rather than stored and refused on read-back.
+    expect(() => parseContentDocument(doc([emptyRun('b1'), emptyRun('b2')]))).toThrow(/adjacent/);
+  });
+
+  it('refuses the same pair inside a footnote and inside a table cell', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Dose', marks: [] },
+        { type: 'footnote', id: 'f1', anchor: { kind: 'span' }, content },
+      ],
+    });
+    const tabling = (content: unknown[]) => ({
+      type: 'table',
+      id: 't1',
+      caption: 'Doses',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
+    });
+    expect(() => parseContentDocument(doc([noting([emptyRun('fb1'), emptyRun('fb2')])]))).toThrow(
+      /adjacent/,
+    );
+    expect(() => parseContentDocument(doc([tabling([emptyRun('c1'), emptyRun('c2')])]))).toThrow(
+      /adjacent/,
+    );
+  });
+
+  it('accepts what it returned, unchanged, for every document it accepts at all', () => {
+    // The invariant the walk owes every caller, now that what it returns is not what it was given:
+    // a document it accepts parses again to itself. A document it refuses is refused at the door,
+    // which is the other half of the same promise - never accepted once and refused on read-back.
+    const attempt = (value: unknown) => {
+      try {
+        return { ok: true as const, document: parseContentDocument(value) };
+      } catch {
+        return { ok: false as const };
+      }
+    };
+    const stored = (name: string) =>
+      JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures', 'v1', name), 'utf8'));
+    const emphasis = [{ type: 'emphasis', id: 'm1' }];
+    const documents: unknown[] = [
+      stored('minimal.json'),
+      stored('every-node.json'),
+      doc([paragraph('b1')]),
+      doc([emptyRun('b1')]),
+      doc([emptyRun('b1'), emptyRun('b2')]),
+      doc([emptyRun('b1'), paragraph('b2')]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Install ', marks: emphasis },
+            { type: 'text', value: '', marks: [] },
+            { type: 'text', value: 'the printer.', marks: emphasis },
+            { type: 'text', value: 'Cafe', marks: [] },
+            { type: 'text', value: '\u{301} au lait', marks: [] },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'blockquote',
+          id: 'b1',
+          content: [emptyRun('b2')],
+          attribution: [
+            { type: 'text', value: 'Ada ', marks: emphasis },
+            { type: 'text', value: 'Lovelace', marks: emphasis },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'b2',
+                  style: 'footnote',
+                  content: [
+                    { type: 'text', value: 'See ', marks: emphasis },
+                    { type: 'text', value: 'the appendix.', marks: emphasis },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+      // One identifier over one range that a node which is not a run stands inside, and over one
+      // that a block boundary and an empty paragraph stand inside: the walk's answer has to be the
+      // same the second time, or a document is accepted at a save and refused on a read. The
+      // disjoint shape belongs to the refusal test rather than here - this loop skips what the
+      // parse refuses, so adding it would have asserted nothing (fix round 1, minor 3).
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'where ', marks: emphasis },
+            { type: 'text', value: '', marks: [] },
+            { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
+            { type: 'text', value: ' is the rate', marks: emphasis },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'the printer', marks: emphasis }],
+        },
+        { type: 'paragraph', id: 'b2', style: 'body', content: [] },
+        {
+          type: 'paragraph',
+          id: 'b3',
+          style: 'body',
+          content: [{ type: 'text', value: ' is ready.', marks: emphasis }],
+        },
+      ]),
+    ];
+    for (const document of documents) {
+      const where = JSON.stringify(document).slice(0, 90);
+      const first = attempt(document);
+      if (!first.ok) continue;
+      expect(attempt(first.document), where).toEqual({ ok: true, document: first.document });
+      expect(canonicalise(parseContentDocument(first.document)), where).toBe(
+        canonicalise(first.document),
+      );
+    }
+  });
+
+  it('stores a run in NFC, so no join can make a spelling the digest does not cover', () => {
+    // Written as code points: an editor normalises what it saves, so two literals typed as "cafe
+    // with an acute" are one string in the file and the test asserts nothing.
+    const composed = 'Caf\u{E9} au lait';
+    const decomposed = 'Cafe\u{301} au lait';
+    expect(composed).not.toBe(decomposed);
+    const runs = (content: unknown[]) =>
+      doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+    const contentOf = (document: unknown) => {
+      const block = parseContentDocument(document).content[0];
+      return block?.type === 'paragraph' ? block.content : [];
+    };
+    const one = { type: 'text', value: composed, marks: [] };
+    // Two NFC runs whose join is not NFC, one decomposed run, and the composed run itself.
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Cafe', marks: [] },
+          { type: 'text', value: '\u{301} au lait', marks: [] },
+        ]),
+      ),
+    ).toEqual([one]);
+    expect(contentOf(runs([{ type: 'text', value: decomposed, marks: [] }]))).toEqual([one]);
+    expect(contentOf(runs([one]))).toEqual([one]);
+  });
+});
+
+describe('a mark identifier, which names one annotation and not two', () => {
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  // A node between two runs, so they are two runs rather than one merged run.
+  const apart = (first: unknown, second: unknown) => [
+    { type: 'text', value: 'Install ', marks: [first] },
+    { type: 'variable', name: 'productName' },
+    { type: 'text', value: 'the printer.', marks: [second] },
+  ];
+  const french = { type: 'language', id: 'm1', tag: 'fr-FR' };
+
+  it('accepts one identifier on two runs carrying the same value, which is one annotation', () => {
+    const parsed = parseContentDocument(runs(apart(french, { ...french })));
+    const block = parsed.content[0];
+    expect(block?.type === 'paragraph' && block.content).toHaveLength(3);
+  });
+
+  it('refuses one identifier carrying two values, naming it and nothing of the text', () => {
+    const attempt = () =>
+      parseContentDocument(runs(apart(french, { type: 'language', id: 'm1', tag: 'de-DE' })));
+    expect(attempt).toThrow(/m1/);
+    expect(attempt).toThrow(/two different values/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/printer/);
+  });
+
+  it('refuses one identifier worn by two kinds of mark, on two runs or on one', () => {
+    const onTwoRuns = () =>
+      parseContentDocument(runs(apart(french, { type: 'emphasis', id: 'm1' })));
+    expect(onTwoRuns).toThrow(/m1/);
+    expect(onTwoRuns).toThrow(/two different values/);
+    // And on one run, where there is no range to be in two of: a caller hands the message back as
+    // a failure, so it has to say what is actually wrong with the document (fix round 1, minor 1).
+    const onOneRun = () =>
+      parseContentDocument(
+        runs([
+          {
+            type: 'text',
+            value: 'Install the printer.',
+            marks: [
+              { type: 'emphasis', id: 'm1' },
+              { type: 'strong', id: 'm1' },
+            ],
+          },
+        ]),
+      );
+    expect(onOneRun).toThrow(/m1/);
+    expect(onOneRun).toThrow(/two different values/);
+    expect(onOneRun).not.toThrow(/two separate ranges/);
+  });
+
+  it('holds the rule wherever inline content lives, not only in a paragraph', () => {
+    const german = { type: 'language', id: 'm1', tag: 'de-DE' };
+    const marked = (mark: unknown) => [{ type: 'text', value: 'Ada Lovelace', marks: [mark] }];
+    const noted = (mark: unknown) => ({
+      type: 'paragraph',
+      id: 'b4',
+      style: 'body',
+      content: [
+        {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [{ type: 'paragraph', id: 'b5', style: 'footnote', content: marked(mark) }],
+        },
+      ],
+    });
+    const table = (mark: unknown) => ({
+      type: 'table',
+      id: 'b3',
+      caption: 'A table',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [],
+      note: marked(mark),
+    });
+    const quote = (mark: unknown) => ({
+      type: 'blockquote',
+      id: 'b1',
+      content: [paragraph('b2')],
+      attribution: marked(mark),
+    });
+    // The same blockquote with nothing quoted, so that its attribution stands immediately after
+    // whatever came before it, with no text of any kind between the two.
+    const quoteBeside = (mark: unknown) => ({
+      ...quote(mark),
+      content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }],
+    });
+    // Two homes with no text between them, which is where this rule rather than the contiguity one
+    // has to answer: one identifier reading fr-FR in a table's note and de-DE in an attribution.
+    expect(() => parseContentDocument(doc([table(french), quoteBeside(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([table(french), quoteBeside(german)]))).toThrow(
+      /two different values/,
+    );
+    // And the same value in both is one annotation in two homes, which is accepted - the control
+    // this test exists for (fix round 1, minor 2).
+    expect(() =>
+      parseContentDocument(doc([table(french), quoteBeside({ ...french })])),
+    ).not.toThrow();
+    // A blockquote's attribution against a table's note, and a footnote's paragraph against both,
+    // each with the quoted text or the footnote's own boundary between them - so what answers here
+    // is the contiguity rule, which reaches every inline home the walk does just as this one does.
+    expect(() => parseContentDocument(doc([quote(french), table(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([quote(french), noted(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([table(french), noted(german)]))).toThrow(/m1/);
+    // And the same value in all three is one identifier carrying one value, so this rule is done
+    // with it - but the three homes have unmarked text between them, so the contiguity rule
+    // refuses it by the other name. Both messages name m1 and nothing of the text.
+    expect(() =>
+      parseContentDocument(doc([quote(french), table({ ...french }), noted({ ...french })])),
+    ).toThrow(/two separate ranges/);
+  });
+
+  it('refuses an identifier not already in NFC, which the digest would fold into another', () => {
+    // The same rule every other identifier is held to (`refuseUnnormalised`): the caller stores
+    // exactly what the digest covers, and the digest writes a mark's identifier in NFC. A
+    // decomposed spelling stored verbatim would never match itself again by exact string - which is
+    // how CNT-005 would have to find every fragment of an annotation - and a version row is
+    // insert-only, so nothing can be tightened once a mark has been stored.
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
+    const marked = (id: string) => [
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id }] },
+    ];
+    expect(() => parseContentDocument(runs(marked(composed)))).not.toThrow();
+    const attempt = () => parseContentDocument(runs(marked(decomposed)));
+    expect(attempt).toThrow(/NFC/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/printer/);
+    // And the two spellings in one document are told what is actually wrong with them. Both are
+    // refused today, by the contiguity rule, which talks about ranges when the problem is that one
+    // of the two identifiers is not normalised at all.
+    const both = () =>
+      parseContentDocument(
+        runs([
+          { type: 'text', value: 'Install ', marks: [{ type: 'emphasis', id: composed }] },
+          { type: 'text', value: 'the ', marks: [] },
+          { type: 'text', value: 'printer.', marks: [{ type: 'emphasis', id: decomposed }] },
+        ]),
+      );
+    expect(both).toThrow(/NFC/);
+    expect(both).not.toThrow(/two separate ranges/);
+  });
+
+  it('refuses an unnormalised identifier whichever of two adjacent runs it arrives in', () => {
+    // `mergeRuns` runs before the walk that claims anything, and it compares mark sets by their
+    // canonical form, which is NFC - so two ADJACENT runs differing only in the spelling of one
+    // identifier are one value to it and become one run, the second spelling disappearing into the
+    // first. Nothing bad is stored, but one document would have two answers depending on which
+    // spelling came first. Normalisation is a property of a single mark and no merge can change it -
+    // unlike adjacency and contiguity, which is why those are judged on what the walk returned and
+    // this is judged on what arrived.
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
+    const pair = (first: string, second: string) =>
+      runs([
+        { type: 'text', value: 'Install ', marks: [{ type: 'emphasis', id: first }] },
+        { type: 'text', value: 'the printer.', marks: [{ type: 'emphasis', id: second }] },
+      ]);
+    expect(() => parseContentDocument(pair(composed, decomposed))).toThrow(/NFC/);
+    expect(() => parseContentDocument(pair(decomposed, composed))).toThrow(/NFC/);
+    // The control, which is issue #154's rule: one spelling in both runs is one annotation, and the
+    // two runs are merged into one.
+    const merged = parseContentDocument(pair(composed, composed)).content[0];
+    expect(merged?.type === 'paragraph' && merged.content).toHaveLength(1);
+  });
+
+  it('lets two components use one identifier, because the rule is per document', () => {
+    const german = { type: 'language', id: 'm1', tag: 'de-DE' };
+    expect(() =>
+      parseContentDocument(runs([{ type: 'text', value: 'Ada', marks: [french] }])),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(runs([{ type: 'text', value: 'Grace', marks: [german] }])),
+    ).not.toThrow();
+  });
+});
+
+describe('a mark identifier, whose runs are one range and not two', () => {
+  // Deliberately uncited. CNT-004 asks that an annotation fragmented across several text nodes
+  // remain one annotation under one identifier; these tests show the converse - that two
+  // separated regions are not one annotation - which is not that statement, and CNT-004 is
+  // already demonstrated in full by marks.test.ts and by the editor's split test. CNT-005, which
+  // makes accepting or rejecting an annotation one operation over every fragment, is the reason
+  // this rule exists, but no resolution operation exists yet for a test to demonstrate it.
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  const plain = (value: string) => ({ type: 'text', value, marks: [] });
+  const emphasised = (value: string, ...others: unknown[]) => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'emphasis', id: 'm1' }, ...others],
+  });
+  const contentOf = (document: unknown) => {
+    const block = parseContentDocument(document).content[0];
+    return block?.type === 'paragraph' ? block.content : [];
+  };
+
+  it('refuses an identifier that appears again after a run without it, naming it and nothing else', () => {
+    const attempt = () =>
+      parseContentDocument(runs([emphasised('alp'), plain('ha beta g'), emphasised('amma')]));
+    expect(attempt).toThrow(/m1/);
+    expect(attempt).toThrow(/two separate ranges/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/beta/);
+  });
+
+  it('accepts the four runs one annotation is split into by the edits over it', () => {
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          emphasised('the ', { type: 'strong', id: 'm2' }),
+          emphasised('printer'),
+          emphasised(' now', { type: 'language', id: 'm3', tag: 'fr-FR' }),
+        ]),
+      ),
+    ).toHaveLength(4);
+  });
+
+  it('judges the runs the walk returned, so a run carrying no text closes nothing', () => {
+    // The trap CNT-023's rule paid for once: a run with no text is dropped by the merge, so a rule
+    // reading what arrived would refuse a document the walk itself makes contiguous - accepted at a
+    // save and quarantined on read-back. Both the pair the merge joins and the pair it leaves apart.
+    expect(
+      contentOf(runs([emphasised('Install '), plain(''), emphasised('the printer.')])),
+    ).toEqual([
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id: 'm1' }] },
+    ]);
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          plain(''),
+          emphasised('the printer.', { type: 'strong', id: 'm2' }),
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('accepts an annotation across a block boundary, and across an empty paragraph', () => {
+    const paragraphOf = (id: string, content: unknown[]) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content,
+    });
+    expect(() =>
+      parseContentDocument(
+        doc([
+          paragraphOf('b1', [plain('Install '), emphasised('the printer')]),
+          paragraphOf('b2', []),
+          paragraphOf('b3', [emphasised(' now'), plain(' if you can.')]),
+        ]),
+      ),
+    ).not.toThrow();
+  });
+
+  it('accepts an annotation across a node that is not a run, which carries no marks', () => {
+    const mathml = `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>`;
+    expect(() =>
+      parseContentDocument(
+        runs([emphasised('where '), { type: 'equation', mathml }, emphasised(' is the rate')]),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(
+        runs([
+          emphasised('see '),
+          {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 'b9' },
+            display: 'number',
+          },
+          emphasised(' for the rate'),
+        ]),
+      ),
+    ).not.toThrow();
+  });
+
+  it('makes a footnote its own range, which an identifier may span but not reach into', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: 'b2', style: 'footnote', content }],
+    });
+    // The anchor stands between two pieces of one annotation, which the reader never sees broken.
+    expect(() =>
+      parseContentDocument(
+        runs([emphasised('the printer'), noting([plain('Model 1.')]), emphasised(' is ready')]),
+      ),
+    ).not.toThrow();
+    // And the annotation in the main text cannot be the annotation inside the note.
+    expect(() =>
+      parseContentDocument(runs([emphasised('the printer'), noting([emphasised('Model 1.')])])),
+    ).toThrow(/two separate ranges/);
   });
 });

@@ -94,8 +94,9 @@ describe('admitting content', () => {
     expect(outcome.ok && outcome.content).toEqual([
       paragraph(
         [
-          text('Open '),
-          text('this'),
+          // The link went, so the two runs beside each other carry one set of marks - none - and the
+          // validate stage's walk joins them (issue #154).
+          text('Open this'),
           { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
         ],
         { id: 'a1' },
@@ -168,8 +169,9 @@ describe('admitting content', () => {
     expect(outcome.ok && outcome.content).toEqual([
       paragraph(
         [
-          text('one'),
-          text('two'),
+          // Both links were dropped, so the two runs are one unmarked run (issue #154). The third
+          // and fourth keep their own links, which are two annotations, so they stay apart.
+          text('onetwo'),
           text('three', [{ type: 'hyperlink', id: 'a2', href: 'https://example.test/a' }]),
           text('four', [{ type: 'hyperlink', id: 'a3', href: 'https://example.test/kept' }]),
         ],
@@ -371,9 +373,8 @@ describe('admitting content', () => {
     expect(outcome.ok && outcome.content).toEqual([
       paragraph(
         [
-          text('Visit '),
-          text('the site'),
-          text(' or '),
+          // The dropped link leaves three unmarked runs in a row, which are one run (issue #154).
+          text('Visit the site or '),
           text('the guide', [{ type: 'hyperlink', id: 'a2', href: 'https://example.test/guide' }]),
           { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
         ],

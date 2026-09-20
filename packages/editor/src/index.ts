@@ -2,6 +2,17 @@ export { editorSchema } from './schema.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {
+  applyMarkCommand,
+  EDITOR_COMMANDS,
+  markAt,
+  markKeymap,
+  markThroughout,
+  removeMarkCommand,
+  somewhereToPutMark,
+  toggleMarkCommand,
+  type EditorCommand,
+} from './marks.js';
+export {
   createEditorState,
   enterWithoutEmpties,
   noAdjacentEmptyParagraphs,

@@ -241,7 +241,7 @@ const compiled = (nodes: readonly Node[], layout: Layout) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[2].file, data, at);
+      const pdf = await typst.compile(PUBLICATION_TEMPLATE[3].file, data, at);
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);
@@ -287,7 +287,7 @@ const letters = (count: number) =>
 const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
 const UPPER_ROMAN = ROMAN.map((numeral) => numeral.toUpperCase());
 
-describe('template 2 lays out the page', () => {
+describe('template 3 lays out the page', () => {
   it('PUB-007 sets the page the layout declares: its size, orientation, and inside and outside margins alternating about the gutter', async () => {
     const { read } = await compiled(FIXTURE, testLayout);
     // Enough pages that both sides of a spread are measured more than once.
