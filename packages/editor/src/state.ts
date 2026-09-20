@@ -12,28 +12,79 @@ const isEmptyParagraph = (node: Node | null | undefined) =>
   node?.type.name === 'paragraph' && node.content.size === 0;
 
 /**
+ * Every second of two adjacent empty paragraphs in the document, as a range to delete, in ascending
+ * document order.
+ *
+ * **A sequence is the children that are in the `block` group, and that is read off the schema rather
+ * than from a list of type names** - the same rule `identified` follows in `identity.ts`, and for a
+ * sharper reason here. A `definitionItem` is `term block+`, so a walk over a node's children meets a
+ * `term` standing where the stored model has no sequence member at all: an item's term belongs to
+ * the item and its blocks are a sequence of their own (`checkBlock` in `packages/domain`). Asking
+ * the schema which children are blocks is what makes the editor's sequence the same sequence the
+ * stored model's rule runs over, rather than the same one by the coincidence that a term is not
+ * called `paragraph`. It also means a blockquote, a table cell and a footnote are walked the day
+ * they are declared, without being remembered here.
+ *
+ * **Emptiness is still the paragraph's own type and size**, because that is what CNT-023 is about
+ * and what `refuseAdjacentEmpties` compares: a list is in the `block` group and is no empty
+ * paragraph, and an empty `term` is no paragraph either. A text node cannot be empty in
+ * ProseMirror, so `content.size === 0` is exactly the stored model's `content.length === 0` after
+ * `mergeRuns` has dropped a run with no text.
+ *
+ * **The walk pushes a node's removal and then descends into that node**, which is what keeps the
+ * collected positions ascending: finishing a sequence before descending into its members would
+ * collect a later sibling's position before a deeper one, and reversing that list would then delete
+ * front to back at depth. Every range collected is one empty paragraph, which holds nothing, so no
+ * two overlap and deleting them back to front is enough.
+ */
+function adjacentEmpties(parent: Node, start: number, removals: [number, number][]): void {
+  let previous: Node | null = null;
+  parent.forEach((child, offset) => {
+    const at = start + offset;
+    if (child.type.isInGroup('block')) {
+      if (isEmptyParagraph(previous) && isEmptyParagraph(child)) {
+        removals.push([at, at + child.nodeSize]);
+      }
+      previous = child;
+    }
+    // A node's own content begins one position inside it; a leaf has none and this does nothing.
+    adjacentEmpties(child, at + 1, removals);
+  });
+}
+
+/**
  * CNT-023's invariant, held on every transaction: the second of two adjacent empty paragraphs is
  * removed, however the pair arose - a join, a deletion, an undo (component-editor.md, "Invariants the
  * editor holds"). The document keeps at least one block because its content is `block+`, and an
  * empty one is filled with a paragraph because `paragraph` is declared first in that group.
  *
- * This walks the top level only. A list item holds blocks too, so the pair can arise at depth, and
- * descending is the next task's.
+ * **It walks every sequence of blocks, not the top level**, because `refuseAdjacentEmpties` in
+ * `packages/domain` does - it runs over the top level, a list item, a blockquote, a table cell and a
+ * footnote - and a rule the two write paths disagree on is a rule one of them breaks. A list item
+ * holds block content, so the pair arises at depth from the ordinary gestures, and a document
+ * carrying one is refused by `parseContentDocument` out of the save path, where `saveIteration`
+ * answers with a fixed message that tells the author nothing.
+ *
+ * **Judged on what the document became, never on what arrived.** The walk reads `newState.doc`, the
+ * state the transactions left, and ProseMirror re-runs `appendTransaction` over what this returns,
+ * so a pair that only a removal made adjacent is met on the next pass rather than stored. That is
+ * the same side of the transforming step the model's own rule is judged on, which is what makes the
+ * two answer alike: `refuseAdjacentEmpties` runs over `mergeRuns`' output, because a paragraph
+ * holding one empty run is an empty paragraph only once the walk has dropped that run.
+ *
+ * Only ever the **second** of a pair is removed, so the block before it stays in the same sequence
+ * and an item never empties - which matters because `listItem` is `block+` and a sequence emptied by
+ * a repair would be a document ProseMirror itself refuses.
  */
 export function noAdjacentEmptyParagraphs(): Plugin {
   return new Plugin({
     appendTransaction(transactions, _oldState, newState) {
       if (!transactions.some((transaction) => transaction.docChanged)) return null;
       const removals: [number, number][] = [];
-      let previous: Node | null = null;
-      newState.doc.forEach((node, offset) => {
-        if (isEmptyParagraph(previous) && isEmptyParagraph(node)) {
-          removals.push([offset, offset + node.nodeSize]);
-        }
-        previous = node;
-      });
+      adjacentEmpties(newState.doc, 0, removals);
       if (removals.length === 0) return null;
       const tr = newState.tr;
+      // Back to front, so a removal never invalidates a position collected before it.
       for (const [from, to] of removals.reverse()) tr.delete(from, to);
       return tr;
     },
@@ -199,6 +250,12 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // editor, and both have to be unique within the component (ADR-0023, CNT-004).
       keymap(markKeymap(options.newIdentifier, options.onPrompt)),
       keymap(baseKeymap),
+      // **Identity before adjacency, and the order is load-bearing now that both descend.**
+      // Adjacency deletes, which moves every position after what it deleted; identity reads
+      // positions out of the document and writes attributes back at them. A paragraph named and then
+      // removed in the same cycle is harmless - the name goes with it. The other way round, the
+      // deletion would happen between identity's read and its write. ProseMirror re-runs both over
+      // whatever either appends, so each still sees the document the other left.
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.

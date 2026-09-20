@@ -325,8 +325,13 @@ describe('the citations in the committed model', () => {
   // an identifier of its own, no two blocks in the component share one, and an identifier it already
   // carries is refused and drawn again. It is a new file, so unlike the case at 163 above this
   // citation does not hide behind one already in the same file.
+  // 219, from 218: the same plan's adjacency task cites CNT-023 in packages/editor/src/state.test.ts,
+  // where the editor's rule descends with the schema - the second of two adjacent empty paragraphs is
+  // removed in every home the editor can make a pair in, the top level, a list item and a definition
+  // item's body, which is what makes a spacer unrepresentable now that a block can stand at depth.
+  // The file carried no CNT-023 citation before, so this one hides behind nothing either.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(218);
+    expect(model.citations).toHaveLength(219);
   });
 
   it('cites no identifier the corpus does not hold', () => {
