@@ -21,6 +21,13 @@ export type Opened =
  * carried by the mapping the moment it is declared, and one it loses is refused by name rather than
  * dropped. Today that leaves `condition`, `suggestion` and `comment` - the three annotations nothing
  * in T1 can create (content-model.md).
+ *
+ * **A run carrying two marks of one type is refused by that type's name**, although the schema holds
+ * the type. CNT-003 lets two annotations of one kind cover one range - two defined terms over one
+ * phrase - and ProseMirror does not: a text node with two marks of one type is what `Node.check`
+ * calls an invalid collection of marks, and the view's read-back of what it rendered keeps one of
+ * the two. Opening such a component read-only keeps the promise `toEditor` makes below, that opening
+ * never loses anything; opening it and saving would store the loss under the author's name.
  */
 function unsupportedIn(blocks: readonly BlockNode[]): string[] {
   const found = new Set<string>();
@@ -30,11 +37,16 @@ function unsupportedIn(blocks: readonly BlockNode[]): string[] {
       continue;
     }
     for (const inline of block.content) {
-      if (inline.type !== 'text') found.add(inline.type);
-      else {
-        for (const mark of inline.marks) {
-          if (!(mark.type in editorSchema.marks)) found.add(`mark:${mark.type}`);
+      if (inline.type !== 'text') {
+        found.add(inline.type);
+        continue;
+      }
+      const types = new Set<string>();
+      for (const mark of inline.marks) {
+        if (!(mark.type in editorSchema.marks) || types.has(mark.type)) {
+          found.add(`mark:${mark.type}`);
         }
+        types.add(mark.type);
       }
     }
   }
@@ -93,11 +105,16 @@ export function toEditor(document: ContentDocument): Opened {
  * One editor mark as the stored model holds it.
  *
  * **An attribute reading null is omitted, never written.** Every mark schema is a `strictObject` and
- * an optional member - a `hyperlink`'s `title` - is `z.string().optional()`, which refuses null; the
- * editor has no absence to spell, so a mark with no title carries `title: null` instead and this is
- * where the two meet. Dropping every null rather than `title` alone is the safe direction: a member
- * the stored form requires is refused by name by `markSchema` whether it arrives null or absent,
- * while a member it only allows is the one that has to be absent.
+ * an optional member - a `hyperlink`'s `title` - is `z.string().min(1).optional()`, which admits the
+ * member's absence and refuses both null and the empty string; the editor has no absence to spell,
+ * so a mark with no title carries `title: null` instead and this is where the two meet. Dropping
+ * every null rather than `title` alone is the safe direction: a member the stored form requires is
+ * refused by name by `markSchema` whether it arrives null or absent, while a member it only allows
+ * is the one that has to be absent.
+ *
+ * A title typed as the empty string is a different case and is **not** turned into absence here: it
+ * is refused, by the schema, when the document is saved. Refusing it when it is typed, in words the
+ * author reads, belongs to the link prompt.
  */
 function markOf(mark: EditorMark): unknown {
   const members: Record<string, unknown> = { type: mark.type.name };
@@ -116,11 +133,19 @@ function markOf(mark: EditorMark): unknown {
  * `Mark.setFrom` sorts by; canonicalisation treats a run's marks as a set, so that order is never a
  * spurious version. `parseContentDocument` merges back any two adjacent runs the editor left split
  * carrying one mark set, so what this returns has one stored spelling (issue #154).
+ *
+ * A child that is not a text node is **refused by name**, as a block with no identifier is, rather
+ * than coerced into a run with no text. Today the schema's `paragraph` holds `text*` and nothing
+ * else can get in; the day it holds an image or a footnote, this says which node has no run yet
+ * instead of storing a document quietly missing it.
  */
-function runsOf(paragraph: Node): unknown[] {
+function runsOf(paragraph: Node, id: string): unknown[] {
   const runs: unknown[] = [];
-  paragraph.forEach((text) => {
-    runs.push({ type: 'text', value: text.text ?? '', marks: text.marks.map(markOf) });
+  paragraph.forEach((child) => {
+    if (child.type.name !== 'text') {
+      throw new Error(`Block ${id} holds a node this editor cannot store: ${child.type.name}`);
+    }
+    runs.push({ type: 'text', value: child.text, marks: child.marks.map(markOf) });
   });
   return runs;
 }
@@ -139,7 +164,7 @@ export function fromEditor(doc: Node): ContentDocument {
       type: 'paragraph',
       id,
       style: paragraph.attrs.style as string,
-      content: runsOf(paragraph),
+      content: runsOf(paragraph, id),
     });
   });
   return parseContentDocument({
