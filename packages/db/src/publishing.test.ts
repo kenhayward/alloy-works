@@ -12,6 +12,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
+import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import {
@@ -261,7 +262,7 @@ describe('requesting and recording a publication', () => {
     });
   });
 
-  it('refuses a version that is not the latest, and a format the template cannot make, recording nothing', async () => {
+  it('refuses a version that is not the latest, and a format the layout does not make, recording nothing', async () => {
     await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, [section('Scope', [])]);
       const older = await trx
@@ -291,6 +292,145 @@ describe('requesting and recording a publication', () => {
         .execute();
       expect(requests).toEqual([]);
     });
+  });
+
+  /** Every request the tenant holds, by id - to say a refusal recorded none. */
+  const requestIds = (trx: TenantTransaction) =>
+    trx
+      .selectFrom('publication_request')
+      .select('id')
+      .execute()
+      .then((rows) => rows.map((row) => row.id));
+
+  /** A document in General at 0.1, in the language given. */
+  const documentIn = async (trx: TenantTransaction, language: string) => {
+    const made = await createDocument(trx, {
+      spaceId: general,
+      title: 'The dosing report',
+      language,
+      direction: 'ltr',
+      author: ada,
+    });
+    if (made.answer !== 'created') throw new Error(made.answer);
+    return made.version;
+  };
+
+  it('PUB-014 refuses a format its layout does not make, naming it, and records nothing', async () => {
+    await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, [section('Scope', [])]);
+      // The layout the request would be made under declares its formats, one member each: `pdf` alone.
+      expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual(['pdf']);
+      const before = await requestIds(trx);
+      const asked = (formats: string[]) =>
+        requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats,
+          requester: ada,
+        });
+      // Refused, never approximated as the formats it can make: the one it cannot is named.
+      expect(await asked(['pdf', 'docx'])).toEqual({
+        answer: 'format.unsupported',
+        formats: ['docx'],
+      });
+      expect(await asked(['docx', 'odt', 'docx'])).toEqual({
+        answer: 'format.unsupported',
+        formats: ['docx', 'odt'],
+      });
+      expect(await requestIds(trx)).toEqual(before);
+      // A format it declares is taken.
+      expect((await asked(['pdf'])).answer).toBe('requested');
+    });
+  });
+
+  it('refuses a request naming no format, or one format twice, and records nothing', async () => {
+    await service.withTenant(production, async (trx) => {
+      const version = await documentWith(trx, [section('Scope', [])]);
+      const before = await requestIds(trx);
+      for (const formats of [[], ['pdf', 'pdf']]) {
+        expect(
+          await requestPublication(trx, {
+            documentId: version.artifactId,
+            version: version.id,
+            formats,
+            requester: ada,
+          }),
+        ).toEqual({ answer: 'format.unsupported', formats: [] });
+      }
+      expect(await requestIds(trx)).toEqual(before);
+    });
+  });
+
+  it("PUB-095 refuses a document in a language its layout is not written in, naming both, and takes one in the layout's language", async () => {
+    await service.withTenant(production, async (trx) => {
+      // The layout declares its words' language as a BCP 47 tag.
+      expect((await defaultLayout(trx)).layout.language).toBe('en');
+      const french = await documentIn(trx, 'fr');
+      const before = await requestIds(trx);
+      expect(
+        await requestPublication(trx, {
+          documentId: french.artifactId,
+          version: french.id,
+          formats: ['pdf'],
+          requester: ada,
+        }),
+      ).toEqual({ answer: 'layout.language', document: 'fr', layout: 'en' });
+      expect(await requestIds(trx)).toEqual(before);
+
+      // `en`, taken as a language range, matches `en-GB`.
+      const british = await documentIn(trx, 'en-GB');
+      const answer = await requestPublication(trx, {
+        documentId: british.artifactId,
+        version: british.id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      expect(answer).toMatchObject({ answer: 'requested', request: { state: 'queued' } });
+    });
+  });
+
+  it('records the layout version a request was made under, and hands it and the revision to the job', async () => {
+    const rolledBack = new Error('rolled back');
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const declared = await defaultLayout(trx);
+        const version = await documentIn(trx, 'en-GB');
+        const id = await requested(trx, version, ada);
+        const row = await trx
+          .selectFrom('publication_request')
+          .select(['layout_id', 'layout_version_id'])
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow();
+        expect(row).toEqual({
+          layout_id: DEFAULT_LAYOUT_ID,
+          layout_version_id: declared.versionId,
+        });
+
+        // The layout moves on after the request: the job is still handed the version it was made
+        // under, never the latest.
+        const next = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom: declared.versionId,
+          author: ada,
+          substance: {
+            kind: 'layout',
+            content: {
+              ...declared.layout,
+              words: { ...declared.layout.words, contents: 'Table of contents' },
+            },
+          },
+        });
+        if (next.answer !== 'recorded') throw new Error(next.answer);
+        expect((await defaultLayout(trx)).number).toBe('0.2');
+
+        const inputs = await publicationInputs(trx, id);
+        expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
+        // The document's version as `revision.version` (VER-009): a first version is 0.1.
+        expect(inputs!.revision).toBe('0.1');
+        // Thrown to roll the layout's 0.2 back: the rest of the suite publishes under the default.
+        throw rolledBack;
+      }),
+    ).rejects.toBe(rolledBack);
   });
 
   it('answers document.missing for an id that is no document, and records nothing', async () => {
@@ -527,12 +667,15 @@ describe('requesting and recording a publication', () => {
     );
     expect(occurrences).toHaveLength(1);
   });
-  /** What a worker records for a request, over an output the store need not hold. */
+  /**
+   * What a worker records for a request made under a layout - template 2 and pipeline 2 - over an
+   * output the store need not hold.
+   */
   const recording = (requestId: string) => ({
     requestId,
     engineVersion: '0.15.1',
-    templateVersion: 1,
-    pipelineVersion: '1',
+    templateVersion: 2,
+    pipelineVersion: '2',
     fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
     dataSha256: 'b'.repeat(64),
     numbering: { scheme: defaultNumberingScheme.id, entries: [] },
@@ -575,7 +718,9 @@ describe('requesting and recording a publication', () => {
       expect(adas!.refused.map((each) => each.node)).toEqual([hidden.id]);
       // Grace may read both.
       const graces = await publicationInputs(trx, await requested(trx, version, grace));
-      expect([...graces!.occurrences.keys()]).toEqual([open.id, hidden.id]);
+      // As a set: the occurrences are keyed by node, and the query reading them names no order, so
+      // the order rows come back in is the plan's (it changed when 0018 added the layout's version).
+      expect(new Set(graces!.occurrences.keys())).toEqual(new Set([open.id, hidden.id]));
       expect(graces!.refused).toEqual([]);
     });
   });
@@ -656,6 +801,12 @@ describe('requesting and recording a publication', () => {
         .returning('id')
         .executeTakeFirstOrThrow();
       const made = recording(queued);
+      // Under its request's own layout, so the row passes every check but the one at commit.
+      const under = await trx
+        .selectFrom('publication_request')
+        .select(['layout_id', 'layout_version_id'])
+        .where('id', '=', queued)
+        .executeTakeFirstOrThrow();
       await trx
         .insertInto('publication')
         .values({
@@ -675,6 +826,8 @@ describe('requesting and recording a publication', () => {
           fonts: JSON.stringify(made.fonts),
           data_sha256: made.dataSha256,
           numbering: JSON.stringify(made.numbering),
+          layout_id: under.layout_id,
+          layout_version_id: under.layout_version_id,
         })
         .execute();
       return artifact.id;
@@ -725,6 +878,7 @@ describe('requesting and recording a publication', () => {
     });
 
     await service.withTenant(production, async (trx) => {
+      const layout = await defaultLayout(trx);
       const request = await trx
         .selectFrom('publication_request')
         .select(['state', 'failures', 'finished_at', 'requested_at'])
@@ -760,11 +914,15 @@ describe('requesting and recording a publication', () => {
         engine: 'typst',
         engine_version: '0.15.1',
         template: 'publication',
-        template_version: 1,
-        pipeline_version: '1',
+        template_version: 2,
+        pipeline_version: '2',
         fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
         data_sha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+        // Its request's layout version, copied under the request's lock (0018).
+        layout_id: DEFAULT_LAYOUT_ID,
+        layout_version_id: layout.versionId,
+        layout_kind: 'layout',
       });
 
       const inputs = await trx
@@ -798,6 +956,104 @@ describe('requesting and recording a publication', () => {
         },
       ]);
     });
+  });
+
+  it("records the publication under its request's layout, and refuses another", async () => {
+    const { request, declared } = await service.withTenant(production, async (trx) => ({
+      request: await requested(trx, await documentWith(trx, []), ada),
+      declared: await defaultLayout(trx),
+    }));
+
+    // Rigged as the runtime role, in SQL: a publication whole in every other respect, its request
+    // marked done, but made under another version of the layout - here a 0.2 recorded in the same
+    // transaction. Refused when the transaction commits, which takes the 0.2 with it.
+    const other = 'e'.repeat(64);
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const version = await trx
+          .selectFrom('publication_request')
+          .select(['document_id', 'document_version_id', 'requested_at'])
+          .where('id', '=', request)
+          .executeTakeFirstOrThrow();
+        const next = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom: declared.versionId,
+          author: ada,
+          substance: {
+            kind: 'layout',
+            content: {
+              ...declared.layout,
+              words: { ...declared.layout.words, contents: 'Table of contents' },
+            },
+          },
+        });
+        if (next.answer !== 'recorded') throw new Error(next.answer);
+        const artifact = await trx
+          .insertInto('artifact')
+          .values({ kind: 'publication', space_id: general })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const made = recording(request);
+        await trx
+          .insertInto('publication')
+          .values({
+            id: artifact.id,
+            request_id: request,
+            document_id: version.document_id,
+            document_version_id: version.document_version_id,
+            publisher: ada,
+            published_at: version.requested_at,
+            approval: 'none',
+            formats: ['pdf'],
+            engine: 'typst',
+            engine_version: made.engineVersion,
+            template: 'publication',
+            template_version: made.templateVersion,
+            pipeline_version: made.pipelineVersion,
+            fonts: JSON.stringify(made.fonts),
+            data_sha256: made.dataSha256,
+            numbering: JSON.stringify(made.numbering),
+            layout_id: DEFAULT_LAYOUT_ID,
+            layout_version_id: next.version.id,
+          })
+          .execute();
+        await trx
+          .insertInto('publication_input')
+          .values({
+            publication_id: artifact.id,
+            version_id: version.document_version_id,
+            node: null,
+          })
+          .execute();
+        await trx
+          .insertInto('publication_output')
+          .values({
+            publication_id: artifact.id,
+            format: 'pdf',
+            object_key: `${production.role}/sha256/${other}`,
+            sha256: other,
+            bytes: 1,
+            standard: 'ua-1',
+          })
+          .execute();
+        await sql`update publication_request set state = 'done', finished_at = now()
+                  where id = ${request}`.execute(trx);
+      }),
+    ).rejects.toThrow(/recorded whole/);
+    expect(await stateOf(request)).toEqual({ state: 'queued', failures: [], finished_at: null });
+
+    // Recorded as the worker records it, the publication carries its request's layout version.
+    const id = await service.withTenant(production, (trx) =>
+      recordPublication(trx, recording(request)),
+    );
+    const row = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('publication')
+        .select(['layout_id', 'layout_version_id'])
+        .where('id', '=', id!)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ layout_id: DEFAULT_LAYOUT_ID, layout_version_id: declared.versionId });
   });
 
   it('leaves no row of a record any part of which is refused, such as an output keyed by other bytes', async () => {

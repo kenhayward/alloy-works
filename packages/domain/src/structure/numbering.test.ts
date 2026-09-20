@@ -11,6 +11,7 @@ import {
   type NumberableNode,
   type NumberingEntry,
 } from './numbering.js';
+import type { OutlineMatter } from './outline.js';
 import {
   defaultNumberingScheme,
   formatCounter,
@@ -382,6 +383,154 @@ describe('numbering an outline', () => {
     },
   );
 
+  it('numbers front matter in its own counters, and the body as before', () => {
+    const equation = (block: string): Contribution => ({
+      block,
+      sequence: 'equation',
+      numbered: true,
+    });
+    // A reference is a heading in the outline, so each top-level one is a numbered section too.
+    const numbered = table([reference('preface', [], { matter: 'front' }), reference('one')], {
+      preface: [...figures('pf'), equation('pe')],
+      one: [...figures('bf'), equation('be')],
+    });
+    expect(numbered.entries.map((entry) => [entry.matter, entry.label])).toEqual([
+      ['front', 'i'],
+      ['front', 'Figure i.1'],
+      ['front', 'Equation i'],
+      ['body', '1'],
+      ['body', 'Figure 1.1'],
+      ['body', 'Equation 1'],
+    ]);
+  });
+
+  it('restarts front figures per front section, and counts front footnotes from 1 apart from the body', () => {
+    const footnote = (block: string): Contribution => ({
+      block,
+      sequence: 'footnote',
+      numbered: true,
+    });
+    const numbered = table(
+      [
+        section('preface', [reference('p')], { matter: 'front' }),
+        section('foreword', [reference('q')], { matter: 'front' }),
+        section('one', [reference('r')]),
+      ],
+      { p: [...figures('p1'), footnote('pn')], q: figures('q1'), r: [footnote('bn')] },
+    );
+    expect(labels(numbered.entries, 'figure')).toEqual(['Figure i.1', 'Figure ii.1']);
+    expect(numbered.entries.filter((entry) => entry.sequence === 'footnote')).toMatchObject([
+      { block: 'pn', matter: 'front', value: 1, number: '1' },
+      // The body's first footnote is 1 again: front matter's footnotes moved no body number.
+      { block: 'bn', matter: 'body', value: 1, number: '1' },
+    ]);
+  });
+
+  it('withholds a front caption before any numbered front section, spending no value', () => {
+    const outline = [
+      section('dedication', [reference('p')], { matter: 'front', numbered: false }),
+      section('foreword', [reference('q')], { matter: 'front' }),
+    ];
+    const known = { p: figures('p1'), q: figures('q1') };
+    expect(labels(table(outline, known).entries, 'figure')).toEqual([null, 'Figure i.1']);
+    // With a front figure rule that never restarts, the withheld caption would show in the next
+    // one's value had it spent one: it did not, so the first printed front figure is still the first.
+    const figure = defaultNumberingScheme.sequences['figure']!;
+    const scheme = numberingSchemeSchema.parse({
+      ...defaultNumberingScheme,
+      id: 'front-continuous/1',
+      sequences: {
+        ...defaultNumberingScheme.sequences,
+        figure: { ...figure, front: { ...figure.front, restartAt: null, prefix: 1 } },
+      },
+    });
+    expect(
+      table(outline, known, scheme).entries.filter((entry) => entry.sequence === 'figure'),
+    ).toMatchObject([
+      { block: 'p1', value: null, number: null, label: null },
+      { block: 'q1', value: 1, label: 'Figure i.1' },
+    ]);
+  });
+
+  it('withholds front numbers after an occurrence nobody here can read, and no body number', () => {
+    const equation = (block: string): Contribution => ({
+      block,
+      sequence: 'equation',
+      numbered: true,
+    });
+    const numbered = table(
+      [
+        reference('sealed', [], { matter: 'front' }),
+        reference('foreword', [], { matter: 'front' }),
+        reference('one'),
+      ],
+      { foreword: [equation('fe')], one: [equation('be')] },
+    );
+    expect(numbered.entries.filter((entry) => entry.sequence === 'equation')).toMatchObject([
+      // Front equations are continuous: the unreadable occurrence before it could have moved this one.
+      { block: 'fe', matter: 'front', value: null, number: null, label: null },
+      // The body keeps its own counters, which nothing in front matter touches.
+      { block: 'be', matter: 'body', value: 1, label: 'Equation 1' },
+    ]);
+    // Section numbers never depend on what an occurrence holds, in front matter as elsewhere.
+    expect([...sectionNumbers(numbered).values()]).toEqual(['i', 'ii', '1']);
+  });
+
+  it(
+    'numbers every body and appendix node the same with front matter before it as without',
+    () => {
+      let seed = 11;
+      const next = (below: number) => {
+        seed = (seed * 48271) % 2147483647;
+        return seed % below;
+      };
+      const sequences = ['figure', 'table', 'equation', 'footnote'] as const;
+      let count = 0;
+      const known = new Map<string, readonly Contribution[]>();
+      const grow = (depth: number): NumberableNode[] =>
+        Array.from({ length: depth > 3 ? 0 : next(3) }, () => {
+          count += 1;
+          const name = `m${count}`;
+          const over = { numbered: next(4) !== 0 };
+          if (next(2) === 0) return section(name, grow(depth + 1), over);
+          // Three in four occurrences are readable here; the rest withhold what follows them.
+          if (next(4) !== 0) {
+            known.set(
+              id(name),
+              Array.from({ length: next(3) }, (_, index) => ({
+                block: `${name}-${index}`,
+                sequence: sequences[next(sequences.length)]!,
+                numbered: true,
+              })),
+            );
+          }
+          return reference(name, grow(depth + 1), over);
+        });
+      let frontEntries = 0;
+      let restEntries = 0;
+      for (let run = 0; run < 100; run += 1) {
+        const rest = grow(1).map((node) => ({
+          ...node,
+          matter: next(3) === 0 ? ('appendix' as const) : ('body' as const),
+        }));
+        const front = grow(1).map((node) => ({ ...node, matter: 'front' as const }));
+        const without = number(conditions(resolve({ nodes: rest }, known)), defaultNumberingScheme);
+        const withFront = number(
+          conditions(resolve({ nodes: [...front, ...rest] }, known)),
+          defaultNumberingScheme,
+        );
+        const outside = withFront.entries.filter((entry) => entry.matter !== 'front');
+        expect(outside).toEqual(without.entries);
+        frontEntries += withFront.entries.length - outside.length;
+        restEntries += outside.length;
+      }
+      // Non-triviality: both sides of the comparison number something across the runs.
+      expect(frontEntries).toBeGreaterThan(100);
+      expect(restEntries).toBeGreaterThan(100);
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
+
   it('STR-017 excludes a node from numbering without it consuming a number', () => {
     const numbered = table([
       section('preface', [section('thanks')], { numbered: false }),
@@ -652,12 +801,16 @@ describe('numbering an outline', () => {
         readable: (occurrence: string) => boolean,
       ) => {
         const sectionRule = defaultNumberingScheme.sequences['section']!;
-        const sections: Record<'body' | 'appendix', number[]> = { body: [], appendix: [] };
-        const figureCounter: Record<'body' | 'appendix', number> = { body: 0, appendix: 0 };
+        const sections: Record<OutlineMatter, number[]> = { front: [], body: [], appendix: [] };
+        const figureCounter: Record<OutlineMatter, number> = { front: 0, body: 0, appendix: 0 };
         // True once an occurrence nobody here can read has stood in this matter since the figure
         // counter last restarted - the same window CNT-047's neighbour, Important #2, and the
         // withholding tests each exercise by hand; here it is derived, not asserted.
-        const hiddenSince: Record<'body' | 'appendix', boolean> = { body: false, appendix: false };
+        const hiddenSince: Record<OutlineMatter, boolean> = {
+          front: false,
+          body: false,
+          appendix: false,
+        };
         const expectedSections = new Map<string, string>();
         const expectedFigures = new Map<string, string | null>();
 
@@ -668,7 +821,7 @@ describe('numbering an outline', () => {
         const walk = (
           list: readonly NumberableNode[],
           depth: number,
-          matter: 'body' | 'appendix',
+          matter: OutlineMatter,
           numberedAbove: boolean,
         ) => {
           for (const node of list) {
@@ -701,13 +854,14 @@ describe('numbering an outline', () => {
                     const chapter = sections[matter][0] ?? 0;
                     const own = formatCounter(figureCounter[matter], 'decimal');
                     if (chapter > 0) {
-                      const chapterFormat = matter === 'appendix' ? 'upperAlpha' : 'decimal';
+                      const chapterFormat = sectionRule[matter].format[0]!;
                       expectedFigures.set(
                         node.id,
                         `Figure ${formatCounter(chapter, chapterFormat)}.${own}`,
                       );
-                    } else if (matter === 'appendix') {
-                      // No numbered appendix has started: no count to continue (Important #2).
+                    } else if (matter !== 'body') {
+                      // No numbered appendix (or front section) has started: no count to continue
+                      // (Important #2).
                       expectedFigures.set(node.id, null);
                     } else {
                       expectedFigures.set(node.id, `Figure ${own}`);

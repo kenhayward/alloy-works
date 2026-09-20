@@ -3,6 +3,43 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.31.0 - 2026-09-20 (PR #153)
+
+### Added
+
+- **A publication is laid out.** It opens with a cover carrying the document's title, then a contents
+  page a screen reader announces as a table of contents, then the document itself. Every page after
+  the cover carries a running head with the title and the part you are in, and a foot with the
+  revision and the page number. Pages are numbered per part: roman numerals through the front matter,
+  from 1 again in the body, and appendices carrying on from the body.
+- **A top-level part of an outline is front matter, the body or an appendix.** **Matter** beside the
+  selected part replaces the **Appendix** tick box and offers all three, so an outline can now open
+  with front matter - a preface, say - numbered `i`, `i.1` in a scheme of its own and paged on its
+  own. Front matter has to come first, so it is not offered once the body has begun, and a move that
+  would break the order is refused with a sentence saying why rather than done. `Ctrl+Z` takes a
+  **Matter** change back like any other.
+- **The outline panel numbers with the scheme the document publishes with**, not with a scheme of the
+  page's own, so the numbers you see while you work are the numbers that come out of the PDF. So do
+  the figures, tables and equations listed beneath the outline. If the scheme cannot be read the page
+  says so and numbers nothing, rather than showing numbers no publish would produce; the outline is
+  still fully editable.
+- **Every environment starts with a layout**, the product's default: English words, A4 with an inch
+  margin, the cover and a contents three deep, and each appendix starting a new page. Every
+  publication records the exact version of the layout it was made under, beside the document version
+  and the fonts it already recorded.
+
+### Changed
+
+- **A document is published only under a layout written in its own language.** Where the two do not
+  agree the page says so, naming both, before anything is queued; a layout in English publishes a
+  document in `en-GB` as well as one in `en`. Asking for a format the layout does not make is refused
+  the same way. Every document still publishes under the product's default layout, in English (#144).
+- The requirements now number 1,384: front matter must come before the rest of an outline (#152), and
+  a layout must declare the language its generated words are in (#144).
+
+Nothing chooses or edits a layout yet, and there is still no list of figures or tables, no caption
+labels, no Word file and no preview.
+
 ## 0.30.0 - 2026-09-19 (PR #151)
 
 ### Added

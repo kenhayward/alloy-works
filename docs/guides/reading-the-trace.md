@@ -3,7 +3,7 @@
 > How to run the traceability tooling, and how to read what it tells you. Two audiences, two reading
 > paths, one worked example that goes all the way through.
 
-This repository holds 1,382 product requirements. Every one of them has an identifier, and the point
+This repository holds 1,384 product requirements. Every one of them has an identifier, and the point
 of `packages/trace` is that the identifier is a handle: you can ask what answers a requirement, what
 demonstrates it, and whether the demonstration passed, and get an answer computed from the repository
 rather than remembered by somebody.
@@ -205,9 +205,10 @@ Paste the row into the section it belongs in, and put `Fixes #<issue>` in the pu
 If the filer gave no tranche, the row carries `T?`, which **the parser refuses** - so a missing
 tranche cannot be forgotten into the corpus.
 
-### After changing a requirement or a design
+### After changing a requirement, a design or a test title
 
 ```bash
+pnpm exec prettier --write .      # first
 pnpm --filter @alloy-works/trace generate
 ```
 
@@ -215,13 +216,20 @@ pnpm --filter @alloy-works/trace generate
 `openapi.json` is, and a test fails when the two drift apart. Regenerate it in the same commit as the
 change.
 
+**Run `generate` after `prettier --write`, never before.** The model records the file and **line**
+each citation was found at, so prettier reformatting a test file moves every citation below the
+reformatting and leaves a `trace.json` that no longer matches the tree. `pnpm trace pins` will not
+warn you: the counts are still right, and only the line numbers are wrong. What catches it is the
+drift test - "trace.json is exactly what the documents compile to" - and by then it has failed
+`pnpm test`, which fails `pnpm trace gate`, which is the one check in CI that is not allowed to fail.
+
 ## For an auditor
 
 ### Which artifact answers which question
 
 | Your question                                                | Where it is answered                                                                              |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| What does this product claim to do?                          | [`../specification/requirements/`](../specification/requirements/) - 1,382 requirements, 22 areas |
+| What does this product claim to do?                          | [`../specification/requirements/`](../specification/requirements/) - 1,384 requirements, 22 areas |
 | What is this **release** answerable for?                     | [`../specification/baselines/`](../specification/baselines/) - one document per release           |
 | For each of those, what answers it and what demonstrates it? | the release's `matrix.md` in [`../trace/`](../trace/)                                             |
 | What is known to be missing?                                 | that release's `gaps.md`, and `pnpm trace check`                                                  |
@@ -235,10 +243,11 @@ computed, no command writes one, and
 [`../specification/baselines/README.md`](../specification/baselines/README.md) explains why: a
 baseline a tool can edit is not a declaration, it is a cache.
 
-**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,382 is not an error. When it was declared the product was scaffolding: it could sign
+**`0.13.0` declares seven requirements and excludes four, each with a stated reason.** Seven out of 1,384 is not an error. When it was declared the product was scaffolding: it could sign
 in, isolate a tenant, run a job and resolve a theme, and those were the things it could demonstrate end
 to end. It is still the only baseline, so what has been built since - access, versioned components,
-the editor, documents and their outlines - is cited by tests and shown by `pnpm trace verify`, and
+the editor, documents and their outlines, and publishing them - is cited by tests and shown by
+`pnpm trace verify`, and
 declared by no release yet. A matrix that is complete across a declared scope of seven is better
 evidence than one 13% populated across everything.
 

@@ -3,6 +3,7 @@ import { request as httpRequest } from 'node:http';
 import { createApiClient, followStream } from '@alloy-works/api-client';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { readPdf, spoken } from './pdf.js';
 
 /**
  * The whole system, as a person's browser would meet it: the service, a worker, the database, the
@@ -226,5 +227,130 @@ describe('the whole system', () => {
     // The image carries the pinned faces and the template: a publication set in anything else, or
     // in nothing, is the failure this test exists for (#145).
     expect(pdf.body.toString('latin1')).toContain('LiberationSerif');
+  }, 120_000);
+
+  it('publishes under the layout: its cover, its own front matter, the contents, running heads and the notice', async () => {
+    const api = client();
+    const { data: spaces } = await api.GET('/v1/spaces');
+    const general = spaces!.items.find((space) => space.name === 'General')!;
+    const { data: components } = await api.GET('/v1/components');
+    const printer = components!.items.find(
+      (component) => component.title === 'Install the printer',
+    );
+    if (!printer) throw new Error('The seeded component "Install the printer" was not found.');
+
+    const { data: created } = await api.POST('/v1/spaces/{space}/documents', {
+      params: { path: { space: general.id } },
+      body: { title: 'The maintenance handbook', language: 'en-GB', direction: 'ltr' },
+    });
+
+    // A front-matter section - a preface - ahead of the body, so the layout's own front numbering
+    // (lower roman, PUB-009) and its running head (PUB-008) have something of the document's own to
+    // show, alongside the cover and the contents the layout generates by itself (PUB-088).
+    const { data: sectioned } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: created!.id } },
+      body: {
+        openedFrom: created!.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'section', title: [{ type: 'text', value: 'Preface', marks: [] }] },
+        },
+      },
+    });
+    const preface = (sectioned!.outline as unknown as { nodes: { id: string }[] }).nodes[0]!.id;
+
+    const { data: fronted } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: created!.id } },
+      body: {
+        openedFrom: sectioned!.version.id,
+        operation: { operation: 'set', node: preface, matter: 'front', numbered: false },
+      },
+    });
+
+    const { data: filled } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: created!.id } },
+      body: {
+        openedFrom: fronted!.version.id,
+        operation: {
+          operation: 'insert',
+          parent: preface,
+          position: 0,
+          node: { type: 'reference', component: printer.id, mode: { kind: 'latest' } },
+        },
+      },
+    });
+
+    const { data: placed } = await api.POST('/v1/documents/{id}/outline', {
+      params: { path: { id: created!.id } },
+      body: {
+        openedFrom: filled!.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 1,
+          node: { type: 'reference', component: printer.id, mode: { kind: 'latest' } },
+        },
+      },
+    });
+    expect(placed?.mayPublish).toBe(true);
+
+    const { data: asked } = await api.POST('/v1/documents/{id}/publications', {
+      params: { path: { id: created!.id } },
+      body: { version: placed!.version.id, formats: ['pdf'] },
+    });
+    let publication: string | null = null;
+    await vi.waitFor(
+      async () => {
+        const { data } = await api.GET('/v1/publication-requests/{id}', {
+          params: { path: { id: asked!.id } },
+        });
+        expect(data?.failures).toEqual([]);
+        expect(data?.state).toBe('done');
+        publication = data!.publication;
+      },
+      { timeout: 60_000, interval: 250 },
+    );
+
+    const { data: kept } = await api.GET('/v1/publications/{id}', {
+      params: { path: { id: publication! } },
+    });
+    // The API exposes no field naming the layout's own version directly; template 2 is set only for
+    // a request made under a layout (task 7b's fix, `publication_layout`), so the publication
+    // carries the layout's record the one way this suite can read from outside the database - and
+    // every assertion below is only reachable through template 2's own composition.
+    expect(kept).toMatchObject({ template: { name: 'publication', version: 2 } });
+
+    const pdf = await followSignedLink(new URL(kept!.outputs[0]!.download));
+    expect(pdf.status).toBe(200);
+    const read = await readPdf(pdf.body);
+    expect(read.pageLabels).not.toBeNull();
+    const labels = read.pageLabels!;
+
+    // The cover, unlabelled, then the layout's own contents at `i` (decision in preflight I11).
+    expect(labels[0]).toBe('');
+    expect(labels[1]).toBe('i');
+
+    // A change of matter always starts a page of its own (main.typ), so the preface and the body
+    // each open one: the first lower-roman page after the contents, then the first page labelled `1`.
+    const frontPage = labels.findIndex((label, index) => index > 1 && /^[ivxlcdm]+$/i.test(label));
+    const bodyPage = labels.findIndex((label) => label === '1');
+    expect(frontPage).toBeGreaterThan(1);
+    expect(bodyPage).toBeGreaterThan(frontPage);
+
+    // The running head names the section the page is in (PUB-008): the preface's own, then the
+    // body's.
+    expect(spoken(read.artifactText[frontPage]!)).toContain('Preface');
+    expect(spoken(read.artifactText[bodyPage]!)).toContain('Install the printer');
+
+    // The notice is the template's, on every page - no layout may remove it (task 7a).
+    for (let page = 0; page < read.pages; page += 1) {
+      expect(spoken(read.artifactText[page]!), `page ${page + 1}`).toContain('Not approved');
+    }
+
+    // The contents page names itself and lists the preface it made a page of (PUB-037).
+    expect(spoken(read.taggedText[1]!)).toContain('Contents');
+    expect(spoken(read.taggedText[1]!)).toContain('Preface');
   }, 120_000);
 });

@@ -8,6 +8,7 @@ import {
   type DefinitionRef,
 } from '../metadata/record.js';
 import type { MetadataValues } from '../metadata/values.js';
+import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
 
@@ -36,7 +37,14 @@ export type DocumentSubstance = {
   readonly content: OutlineDocument;
 };
 
-export type VersionSubstance = ComponentSubstance | DefinitionSubstance | DocumentSubstance;
+/**
+ * A layout version says its layout, and nothing else. Its content takes the shared rule, as a
+ * definition's payload does: no array in a layout is a set, and a slot's parts are in the order set.
+ */
+export type LayoutSubstance = { readonly kind: 'layout'; readonly content: Layout };
+
+export type VersionSubstance =
+  ComponentSubstance | DefinitionSubstance | DocumentSubstance | LayoutSubstance;
 
 /**
  * The version of the one component type a component version was written against. `definitionsFor`
@@ -55,8 +63,8 @@ export function componentTypeOf(definitions: readonly DefinitionRef[]): string {
 /**
  * The canonical content alone: the input to `content_hash`, which keys derived data. A component's
  * content takes the content model's rules, where marks are a set; a document's outline takes the same
- * rule, because a section title is inline content too; a definition's payload takes the shared rules,
- * where no array is.
+ * rule, because a section title is inline content too; a definition's payload and a layout take the
+ * shared rules, where no array is.
  *
  * The content is serialised as it is handed in and never migrated, because a digest is over what was
  * written. Recomputing one from a stored row passes the row's content exactly as stored.

@@ -1,4 +1,4 @@
-import { outlineOperationSchema } from '@alloy-works/domain';
+import { outlineMatterSchema, outlineOperationSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { CreateComponentBody, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -57,6 +57,19 @@ export const DocumentView = z.object({
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
   mayPublish: z.boolean().describe('Whether the caller may publish the document'),
+  layout: z
+    .object({
+      id: z.string(),
+      version: z.object({ id: z.string(), number: z.string() }),
+      language: z.string(),
+      scheme: z
+        .record(z.string(), z.unknown())
+        .describe('The numbering scheme this document is numbered and published with'),
+    })
+    .describe(
+      "The environment's layout at its latest version, which is the version a publish requested " +
+        'now would be made under (publishing.md, "The layout")',
+    ),
 });
 export type DocumentView = z.infer<typeof DocumentView>;
 
@@ -72,14 +85,16 @@ export type OutlineRefusal = z.infer<typeof OutlineRefusal>;
 
 /**
  * A document's numbering (structure.md, "Numbering"), as the caller is shown it: the version it
- * numbers, the scheme, which component version each occurrence resolved to, and the numbering table.
+ * numbers, the scheme and the layout version it came from, which component version each occurrence
+ * resolved to, and the numbering table.
  */
 export const NumberingView = z.object({
   document: z.string(),
   version: z.object({ id: z.string(), number: z.string() }),
-  scheme: z
-    .string()
-    .describe('The scheme numbered against, by its id: `default/1` until layouts exist'),
+  scheme: z.string().describe("The scheme numbered against, by its id: the layout's"),
+  layout: z
+    .object({ id: z.string(), version: z.object({ id: z.string(), number: z.string() }) })
+    .describe('The layout whose scheme these numbers were taken from, at the version read'),
   occurrences: z
     .array(z.object({ node: z.string(), version: z.string().nullable() }))
     .describe(
@@ -93,7 +108,7 @@ export const NumberingView = z.object({
       node: z.string().describe('The outline node that produced it'),
       block: z.string().nullable().describe('The block or footnote, for a caption or a footnote'),
       sequence: z.string(),
-      matter: z.enum(['body', 'appendix']),
+      matter: outlineMatterSchema,
       sections: z.array(z.number().int()).describe('The section counter stack at this point'),
       value: z.number().int().nullable().describe("This sequence's counter; null when not known"),
       restartedAt: z.string().nullable().describe('The node that last restarted the counter'),

@@ -10,9 +10,11 @@ import { canonicaliseVersion, canonicaliseVersionContent } from '../version/subs
 
 import {
   canonicaliseOutline,
+  mayBeFront,
   migrateOutline,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
+  outlineMatterSchema,
   outlineNodeSchema,
   parseOutlineDocument,
   readOutline,
@@ -255,6 +257,41 @@ describe('the outline a document version holds', () => {
     expect(readOutline({}, { artifact: 'a', version: 'v' })).toMatchObject({ ok: false });
   });
 
+  it('reads a stored schema 1 outline as schema 2, member for member', () => {
+    // Schema 1 could not hold front matter, so a schema 1 outline this product wrote holds none, and
+    // the step to schema 2 changes nothing else: the stored bytes read back as they were written, bar
+    // the version they say they are. One holding front matter anyway is refused (the next test).
+    const stored: Record<string, unknown> = JSON.parse(
+      readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
+    );
+    const outcome = readOutline(stored, { artifact: 'a', version: 'v' });
+    expect(outcome).toEqual({ ok: true, outline: { ...stored, schemaVersion: 2 } });
+    expect(OUTLINE_SCHEMA_VERSION).toBe(2);
+  });
+
+  it('refuses a stored schema 1 outline holding front matter, which schema 1 could never store', () => {
+    // Schema 1's parse refused `front`, so a schema 1 row holding it was never written by this
+    // product: forged or corrupt, and read as unreadable rather than adopted as schema 2 front matter.
+    const stored: Record<string, unknown> = JSON.parse(
+      readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
+    );
+    const preface = section('e'.repeat(26), { matter: 'front', numbered: false });
+    const nested = section('f'.repeat(26), {
+      children: [section('g'.repeat(26), { matter: 'front' })],
+    });
+    for (const nodes of [
+      [preface, ...(stored.nodes as unknown[])],
+      [...(stored.nodes as unknown[]), nested],
+    ]) {
+      expect(readOutline({ ...stored, nodes }, { artifact: 'a', version: 'v' })).toEqual({
+        ok: false,
+        artifact: 'a',
+        version: 'v',
+        failure: 'Stored outline at schema version 1 holds front matter, which schema 1 could not',
+      });
+    }
+  });
+
   it('parses every fixture stored at every schema version, and the fixture holds every node', () => {
     const versions = readdirSync(fixtures);
     expect(versions.length).toBeGreaterThan(0);
@@ -269,16 +306,18 @@ describe('the outline a document version holds', () => {
       }
     }
     const every: OutlineDocument = JSON.parse(
-      readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8'),
+      readFileSync(join(fixtures, `v${OUTLINE_SCHEMA_VERSION}`, 'every-node.json'), 'utf8'),
     );
     const types = new Set<string>();
     const modes = new Set<string>();
     const breaks = new Set<string>();
+    const matters = new Set<string>();
     const inTitles = new Set<string>();
     const walk = (nodes: readonly OutlineNode[]) => {
       for (const node of nodes) {
         types.add(node.type);
         breaks.add(node.pageBreak);
+        matters.add(node.matter);
         if (node.type === 'reference') modes.add(node.mode.kind);
         if (node.type === 'section') for (const inline of node.title) inTitles.add(inline.type);
         walk(node.children);
@@ -294,6 +333,7 @@ describe('the outline a document version holds', () => {
     expect([...types].sort()).toEqual([...expectedTypes].sort());
     expect([...modes].sort()).toEqual([...expectedModes].sort());
     expect([...breaks].sort()).toEqual([...expectedBreaks].sort());
+    expect([...matters].sort()).toEqual([...outlineMatterSchema.options].sort());
     // A title's footnote and cross-reference, so a migration of either is tested against one stored
     // where a title holds it.
     expect([...inTitles].sort()).toEqual(['crossReference', 'footnote', 'text']);
@@ -568,6 +608,67 @@ describe('what the parse bounds', () => {
     expect(() => parseOutlineDocument(nested(65))).toThrow(/no deeper than 64 levels/);
     // Refused by the bound, never by the stack: deep enough to overflow a recursive parse.
     expect(() => parseOutlineDocument(nested(5000))).toThrow(/no deeper than 64 levels/);
+  });
+
+  it('STR-064 refuses front matter below the top level, and after any top-level node that is not front matter', () => {
+    const PREFACE = 'e'.repeat(26);
+    const THANKS = 'f'.repeat(26);
+    const GLOSSARY = 'g'.repeat(26);
+    const accepted = parseOutlineDocument({
+      ...empty,
+      nodes: [
+        section(PREFACE, { matter: 'front', numbered: false }),
+        section(THANKS, { matter: 'front' }),
+        section(NODE, { children: [section(OTHER)] }),
+        section(GLOSSARY, { matter: 'appendix' }),
+      ],
+    });
+    expect(accepted.nodes.map((node) => node.matter)).toEqual([
+      'front',
+      'front',
+      'body',
+      'appendix',
+    ]);
+    // After the body, and after an appendix: named, by the node that broke the rule.
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [section(NODE), section(PREFACE, { matter: 'front' })],
+      }),
+    ).toThrow(`Outline node ${PREFACE} is front matter after the rest of the outline has begun`);
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [section(GLOSSARY, { matter: 'appendix' }), section(PREFACE, { matter: 'front' })],
+      }),
+    ).toThrow(`Outline node ${PREFACE} is front matter after the rest of the outline has begun`);
+    // Below the top level, even under front matter itself: a subtree inherits its matter.
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [
+          section(PREFACE, {
+            matter: 'front',
+            children: [section(THANKS, { matter: 'front' })],
+          }),
+        ],
+      }),
+    ).toThrow(`Outline node ${THANKS} sets its matter below the top level`);
+  });
+
+  it('mayBeFront answers yes for a leading run of top-level nodes and no after the body begins', () => {
+    const nodes = [
+      { id: 'a', matter: 'front', children: [] },
+      { id: 'b', matter: 'body', children: [{ id: 'child', matter: 'body', children: [] }] },
+      { id: 'c', matter: 'body', children: [] },
+    ];
+    expect(mayBeFront(nodes, 'a')).toBe(true);
+    // The first node that is not front matter may become it: nothing but front matter precedes it.
+    expect(mayBeFront(nodes, 'b')).toBe(true);
+    expect(mayBeFront(nodes, 'c')).toBe(false);
+    // A node below the top level is never where front matter may be set, nor is one not there at all.
+    expect(mayBeFront(nodes, 'child')).toBe(false);
+    expect(mayBeFront(nodes, 'missing')).toBe(false);
   });
 
   it('refuses an appendix anywhere but the top level, where its subtree inherits it', () => {

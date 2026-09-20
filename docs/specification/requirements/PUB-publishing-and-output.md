@@ -56,18 +56,19 @@ exactly when it matters.
 
 ## 4. Publishing layouts
 
-| ID          | Requirement                                                                                                                                                       | Tranche | Status                |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
-| **PUB-007** | A layout must declare page size, orientation, margins and gutter                                                                                                  | T1      | Specified             |
-| **PUB-008** | A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the total pages and the revision | T1      | Specified             |
-| **PUB-009** | A layout must declare page numbering, including restarts and a different scheme for front matter                                                                  | T1      | Specified             |
-| **PUB-010** | A layout must declare the front and back matter a document carries: cover, approval page, contents, appendices                                                    | T1      | Superseded by PUB-088 |
-| **PUB-088** | A layout must declare the front and back matter a document carries: cover, contents and appendices                                                                | T1      | Specified             |
-| **PUB-089** | A layout must be able to declare an approval page, showing the approvals recorded for what is published                                                           | T3      | Specified             |
-| **PUB-011** | A layout must declare the numbering schemes **STR** applies to sections, figures, tables and equations                                                            | T1      | Specified             |
-| **PUB-012** | A layout must be able to differ per output format, because a page has no meaning in some of them                                                                  | T1      | Specified             |
-| **PUB-013** | A layout must be a versioned artifact, and a baseline must pin the layout version it published under                                                              | T3      | Specified             |
-| **PUB-014** | A layout must declare which output formats it supports, and publishing to one it does not must be refused rather than approximated                                | T1      | Specified             |
+| ID          | Requirement                                                                                                                                                                                    | Tranche | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **PUB-007** | A layout must declare page size, orientation, margins and gutter                                                                                                                               | T1      | Specified             |
+| **PUB-008** | A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the physical page count and the revision                      | T1      | Specified             |
+| **PUB-009** | A layout must declare page numbering, including restarts and a different scheme for front matter                                                                                               | T1      | Specified             |
+| **PUB-010** | A layout must declare the front and back matter a document carries: cover, approval page, contents, appendices                                                                                 | T1      | Superseded by PUB-088 |
+| **PUB-088** | A layout must declare the front and back matter a document carries: cover, contents and appendices                                                                                             | T1      | Specified             |
+| **PUB-089** | A layout must be able to declare an approval page, showing the approvals recorded for what is published                                                                                        | T3      | Specified             |
+| **PUB-011** | A layout must declare the numbering schemes **STR** applies to sections, figures, tables and equations                                                                                         | T1      | Specified             |
+| **PUB-012** | A layout must be able to differ per output format, because a page has no meaning in some of them                                                                                               | T1      | Specified             |
+| **PUB-013** | A layout must be a versioned artifact, and a baseline must pin the layout version it published under                                                                                           | T3      | Specified             |
+| **PUB-014** | A layout must declare which output formats it supports, and publishing to one it does not must be refused rather than approximated                                                             | T1      | Specified             |
+| **PUB-095** | A layout must declare, as a BCP 47 tag, the language its generated words are in; publishing a document whose language that tag does not match as a language range must be refused, naming both | T1      | Specified             |
 
 ## 5. PDF
 
@@ -259,7 +260,7 @@ already pinned, and the engine that turned them into pages was not. See [ADR-001
 | **PUB-071** | Publishing must fail wherever the resolved document cannot be faithfully rendered under its declared layout, styles and engine. The cases listed in PUB-072 are examples of that rule, never the whole of it                                                                                                                                                                                                                                                                                                        | Constraint | Specified             |
 | **PUB-072** | Publishing must fail on at least: an unresolved cross-reference, a failed binding, an unresolved citation, an unresolvable footnote anchor, missing alternative text, a missing style, an unavailable typeface, a missing glyph (**STY-049**), content that cannot be laid out - an unbreakable block taller than the area that must hold it, a figure that fits on no page at its declared size - and an equation neither output format can render. Each must name the block and the layout that could not take it | Constraint | Specified             |
 | **PUB-094** | Publishing must be refused where the publisher may not read every component the resolved document contains, naming each such place in the outline and never the component; a publication must never contain what its publisher could not read                                                                                                                                                                                                                                                                       | T1         | Specified             |
-| **PUB-079** | A resolved document with no body content must publish the front and back matter its layout declares, and must fail with a named error only where the layout declares none - never produce an empty artifact                                                                                                                                                                                                                                                                                                         | T1         | Specified             |
+| **PUB-079** | A resolved document in which no outline node survives conditions must publish the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and must fail with a named error otherwise - never produce an empty artifact                                                                                                                                                                                                                                         | T1         | Specified             |
 
 **PUB-071 is the requirement that makes PUB-072 a list rather than a limit.** An enumeration invites
 the reading that anything not on it is fine, and the dangerous case in a compliance-grade product is
@@ -412,5 +413,22 @@ landed the requirements Ken filed from the publishing design.
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 92, of which 8 superseded | 94, of which 8 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### From building the second publishing slice
+
+Not a review. [The second publishing plan](../../plans/2026-09-19-publishing-02-the-layout.md) landed
+the requirement Ken filed from the publishing design for the layout, and reworded two it cites.
+
+| What was found                                                                                                                                                                                                                                        | Change                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nothing said a layout's generated words - "Contents", "Figure", the draft notice - are in one language, so a French report would print them in English ([#144](https://github.com/kenhayward/alloy-works/issues/144))                                 | **PUB-095**: the layout declares its words' language as a BCP 47 tag, and a document whose language that tag does not match as a language range is refused, naming both                                                                                      |
+| PUB-079 said "no body content", which the outline does not define, and failed "only where the layout declares none", which left a layout declaring only a contents, with nothing to put in it, answered two ways. Ken's answer, 2026-09-19: refuse it | **PUB-079** reworded for clarity, identifier kept: where no outline node survives conditions, the front and back matter the layout declares that has something to show - a cover, or a contents with entries - is published, and anything else fails by name |
+| PUB-008 said "the total pages", which a document numbered per matter (front matter in roman, the body from 1) leaves open: the pages of the whole PDF, or of the page's matter. Ken's answer, 2026-09-19: the whole PDF's, as decision I measured     | **PUB-008** reworded for clarity, identifier kept: "the total pages" became "the physical page count"                                                                                                                                                        |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 94, of which 8 superseded | 95, of which 8 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

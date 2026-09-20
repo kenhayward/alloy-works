@@ -84,6 +84,7 @@ describe('migration 0016, which makes a document an artifact', () => {
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0016_documents',
       '0017_publishing',
+      '0018_layouts',
     ]);
 
     // The component and its version are as they were.
@@ -165,6 +166,7 @@ describe('migration 0016, which makes a document an artifact', () => {
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0016_documents',
       '0017_publishing',
+      '0018_layouts',
     ]);
 
     const { rows } = await queryAs(

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   bootstrapCluster,
   createComponent,
@@ -10,9 +11,11 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  defaultLayout,
   findRole,
   grant,
   migrate,
+  provisionTenant,
   publicationInputs,
   recordVersion,
   requestPublication,
@@ -26,7 +29,6 @@ import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@allo
 import {
   assemble,
   blockIdentifierFrom,
-  defaultNumberingScheme,
   DRAFT_NOTICE,
   type ContentDocument,
   type OutlineDocument,
@@ -348,10 +350,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
     const { read, row } = await published();
     expect(read.pages).toBeGreaterThan(1);
     // On every page, as an artifact - where no layout can remove it, and a screen reader skips it -
-    // and nothing else there.
-    expect(read.artifactText.map(spoken)).toEqual(
-      Array.from({ length: read.pages }, () => DRAFT_NOTICE.page),
-    );
+    // once, beside the running heads and feet the layout sets there.
+    expect(read.artifactText).toHaveLength(read.pages);
+    for (const [index, runs] of read.artifactText.entries()) {
+      expect(occurrencesOf(DRAFT_NOTICE.page, spoken(runs)), `page ${index + 1}`).toBe(1);
+    }
     // And once where a screen reader reads it: the whole sentence, however the page wraps it.
     expect(occurrencesOf(DRAFT_NOTICE.text, spoken(read.taggedText.flat()))).toBe(1);
     expect(row).toMatchObject({ approval: 'none' });
@@ -381,13 +384,16 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);
+    // Made under a layout, so by template 2 and pipeline 2, under the layout its request recorded.
     expect(row).toMatchObject({
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 1,
-      pipeline_version: '1',
+      template_version: 2,
+      pipeline_version: '2',
+      layout_version_id: (await requestRow(request)).layout_version_id,
     });
+    expect(row!.layout_version_id).not.toBeNull();
     expect(row!.fonts).toEqual(PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })));
     expect(row!.fonts.map((each) => each.file)).toEqual([
       'LiberationSerif-Bold.ttf',
@@ -397,6 +403,54 @@ describe('publishing a document, from the request to the stored PDF', () => {
     ]);
     expect(await requestRow(request)).toMatchObject({ state: 'done', failures: [] });
   });
+
+  it("records the default layout's version on the publication", async () => {
+    const { request } = await published();
+    const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
+    expect(await publicationOf(request)).toMatchObject({
+      layout_id: declared.artifactId,
+      layout_version_id: declared.versionId,
+    });
+  });
+
+  it('publishes an empty document as its cover alone, under the default layout', async () => {
+    const request = await service.withTenant(tenant, async (trx) => {
+      const made = await createDocument(trx, {
+        spaceId: general,
+        title: 'The empty report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      expect((made.version.content as OutlineDocument).nodes).toEqual([]);
+      const answer = await requestPublication(trx, {
+        documentId: made.version.artifactId,
+        version: made.version.id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+    expect(await work()).toBe('done');
+    const pdf = await pdfOf((await publicationOf(request))!.object_key);
+    const read = await readPdf(pdf);
+
+    // The default layout declares a cover, and a contents that would hold nothing and so is not set
+    // (decision K): one page, the title and the notice's sentence, the notice above them.
+    expect(read.pages).toBe(1);
+    expect(spoken(read.taggedText[0]!)).toBe(`The empty report ${DRAFT_NOTICE.text}`);
+    expect(spoken(read.artifactText[0]!)).toBe(DRAFT_NOTICE.page);
+    // The cover has no label, but here the PDF says so by declaring none: the pinned Typst writes page
+    // labels only where some page is numbered, so a cover alone has none, and a reader shows it as 1.
+    expect(read.pageLabels).toBeNull();
+    expect(await checkPdfUa1(pdf)).toMatchObject({
+      compliant: true,
+      profile: 'PDF/UA-1 validation profile',
+      failedRules: 0,
+    });
+  }, 120_000);
 
   it('refuses a publish job with no subject at once, rather than completing it silently', async () => {
     // Nothing enqueues a publish job with no subject; this is the row such a bug would leave.
@@ -593,18 +647,181 @@ describe('publishing a document, from the request to the stored PDF', () => {
       outline: inputs!.outline,
       occurrences: new Map([...inputs!.occurrences].map(([node, each]) => [node, each.content])),
       refused: inputs!.refused,
-      scheme: defaultNumberingScheme,
+      layout: inputs!.layout?.layout ?? null,
+      revision: inputs!.revision,
       covers: fonts.covers,
     });
     if (!again.ok) throw new Error('did not assemble');
     const data = JSON.stringify(again.document);
     // The record names the very bytes Typst read, so a reproduction can tell input from engine.
     expect(row!.data_sha256).toBe(createHash('sha256').update(data).digest('hex'));
-    const bytes = await typst.compile(PUBLICATION_TEMPLATE.file, data, inputs!.request.requestedAt);
+    // Compiled again with the template the record names.
+    const template =
+      PUBLICATION_TEMPLATE[row!.template_version as keyof typeof PUBLICATION_TEMPLATE];
+    const bytes = await typst.compile(template.file, data, inputs!.request.requestedAt);
     const stored = await pdfOf(row!.object_key);
     // The output row names the bytes the store holds under its key.
     expect(row!.sha256).toBe(createHash('sha256').update(stored).digest('hex'));
     expect(row!.bytes).toBe(stored.length);
     expect(bytes.equals(stored)).toBe(true);
   });
+});
+
+describe('publishing a request made before layouts', () => {
+  let db: TestDatabase;
+  let objects: TestObjectStore;
+  let before: string;
+  let fonts: PinnedFonts;
+  let typst: Typst;
+  const log: WorkerLog = { info: () => undefined, warn: () => undefined, error: () => undefined };
+
+  beforeAll(async () => {
+    fonts = await loadPinnedFonts();
+    typst = createTypst({ binary: typstBinaryPath(), fonts });
+    db = await freshDatabase();
+    objects = await testObjectStore();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    // Every tenant migration up to 0017 and none after: where every environment stood before layouts.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0018-'));
+    await cp(new URL('../../../packages/db/migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 18;
+      },
+    });
+  }, 120_000);
+
+  afterAll(async () => {
+    await objects?.drop();
+    await db?.drop();
+    if (before) await rm(before, { recursive: true, force: true });
+  });
+
+  it('publishes it with template 1 and pipeline 1, as the first slice did, and records no layout', async () => {
+    const migrationsDir = pathToFileURL(`${before}/`);
+    await migrate(db.migratorUrl, { migrationsDir });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Before layouts' },
+      hostnames: ['before.acme.alloy.test'],
+    });
+    await migrate(db.migratorUrl, { migrationsDir });
+    const service = createTenantDatabase(db.serviceUrl);
+    const worker = createTenantDatabase(db.workerUrl);
+    const queue = createJobQueue(db.workerUrl);
+    try {
+      // A document of two sections, and a request for it as 0017 took one: no layout, for there was none.
+      const version = await service.withTenant(tenant, async (trx) => {
+        const ada = await trx
+          .insertInto('principal')
+          .values({
+            issuer: 'https://idp.example',
+            subject: 'ada',
+            email: null,
+            display_name: 'Ada',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const general = await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow();
+        const made = await createDocument(trx, {
+          spaceId: general.id,
+          title: 'The dosing report',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada.id,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        const titled = (title: string, children: OutlineNode[]): OutlineNode => ({
+          type: 'section',
+          id: nodeId(),
+          title: [{ type: 'text', value: title, marks: [] }],
+          ...base,
+          children,
+        });
+        const recorded = await recordVersion(trx, {
+          artifactId: made.version.artifactId,
+          openedFrom: made.version.id,
+          author: ada.id,
+          substance: {
+            kind: 'document',
+            content: {
+              ...(made.version.content as OutlineDocument),
+              nodes: [titled('Introduction', [titled('Scope', [])]), titled('Method', [])],
+            },
+          },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        return { ...recorded.version, requester: ada.id };
+      });
+      const { rows } = await queryAs(
+        db.adminUrl,
+        `insert into ${tenant.schema}.publication_request
+           (document_id, document_version_id, formats, requested_by)
+         values ($1, $2, array['pdf'], $3) returning id`,
+        [version.artifactId, version.id, version.requester],
+      );
+      const request = (rows[0] as { id: string }).id;
+      await queryAs(
+        db.adminUrl,
+        "insert into platform.job (tenant_id, kind, subject_id) values ($1, 'publish', $2)",
+        [tenant.id, request],
+      );
+
+      // Then layouts arrive, and the worker finds the request still queued.
+      await migrate(db.migratorUrl);
+      await objects.setUp(db.adminUrl, tenant);
+      const stores = createObjectStores(objects.settings, objects.sealingKey);
+      const inputs = await service.withTenant(tenant, (trx) => publicationInputs(trx, request));
+      expect(inputs).toMatchObject({ layout: null });
+
+      expect(
+        await processNext({
+          queue,
+          db: worker,
+          handlers: { publish: publishJob({ db: worker, stores, typst, fonts }) },
+          workerId: 'worker-1',
+          leaseMs: 60_000,
+          log,
+        }),
+      ).toBe('done');
+
+      const published = await service.withTenant(tenant, (trx) =>
+        trx
+          .selectFrom('publication')
+          .selectAll()
+          .where('request_id', '=', request)
+          .executeTakeFirstOrThrow(),
+      );
+      expect(published).toMatchObject({
+        template_version: 1,
+        pipeline_version: '1',
+        layout_id: null,
+        layout_version_id: null,
+      });
+      // What Typst read was slice 1's `publishing/1`, under the default numbering and the draft notice.
+      const slice1 = assemble({
+        outline: inputs!.outline,
+        occurrences: new Map(),
+        refused: [],
+        layout: null,
+        revision: inputs!.revision,
+        covers: fonts.covers,
+      });
+      if (!slice1.ok) throw new Error('did not assemble');
+      expect(slice1.document).toMatchObject({ schema: 'publishing/1', notice: DRAFT_NOTICE });
+      expect(published.data_sha256).toBe(
+        createHash('sha256').update(JSON.stringify(slice1.document)).digest('hex'),
+      );
+      expect(published.numbering).toEqual(slice1.numbering);
+    } finally {
+      await queue.close();
+      await worker.close();
+      await service.close();
+    }
+  }, 120_000);
 });

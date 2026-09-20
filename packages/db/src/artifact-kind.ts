@@ -3,10 +3,16 @@ import { definitionKinds } from '@alloy-works/domain';
 /**
  * Every kind of artifact there is, and the check constraint on `artifact.kind` names the same list. A
  * kind is added with the plan that gives it a shape: a document arrived that way, by 0016 widening the
- * check, and a publication by 0017. A publication has no versions: nothing records one, because
- * `VersionSubstance` has no arm for it.
+ * check, a publication by 0017 and a layout by 0018. A publication has no versions: nothing records
+ * one, because `VersionSubstance` has no arm for it. A layout lives in no space, as a definition does.
  */
-export const artifactKinds = ['component', 'document', 'publication', ...definitionKinds] as const;
+export const artifactKinds = [
+  'component',
+  'document',
+  'publication',
+  ...definitionKinds,
+  'layout',
+] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
 

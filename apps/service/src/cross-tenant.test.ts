@@ -253,8 +253,9 @@ const publicationIn = async (tenant: Tenant, db: TenantDatabase) => {
     const publication = await recordPublication(trx, {
       requestId: asked.request.id,
       engineVersion: '0.15.1',
-      templateVersion: 1,
-      pipelineVersion: '1',
+      // Made under a layout, as every request since layouts is: template 2 and pipeline 2.
+      templateVersion: 2,
+      pipelineVersion: '2',
       fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
       dataSha256: 'b'.repeat(64),
       numbering: { scheme: 'default/1', entries: [] },

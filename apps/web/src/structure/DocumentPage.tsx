@@ -1,13 +1,14 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
-  defaultNumberingScheme,
   number,
+  numberingSchemeSchema,
   readOutlineView,
   resolve,
   sectionNumbers,
   walkOutline,
   type Contribution,
+  type NumberingScheme,
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
@@ -45,6 +46,12 @@ interface Opened {
   readonly outline: OutlineView;
   readonly mayEdit: boolean;
   readonly mayPublish: boolean;
+  /**
+   * The scheme of the layout version this document would be published under, parsed once per view:
+   * what the page numbers with (STR-036), so nothing it shows is a number a publish could not print.
+   * `null` where the view carried no layout, or one whose scheme the domain refuses.
+   */
+  readonly scheme: NumberingScheme | null;
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -60,7 +67,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function documentIn(data: unknown): Read {
   if (!isRecord(data)) return undefined;
-  const { id, space, version, outline, mayEdit, mayPublish } = data;
+  const { id, space, version, outline, mayEdit, mayPublish, layout } = data;
   if (typeof id !== 'string' || typeof mayEdit !== 'boolean' || typeof mayPublish !== 'boolean') {
     return undefined;
   }
@@ -72,6 +79,10 @@ function documentIn(data: unknown): Read {
   }
   const read = readOutlineView(outline, { artifact: id, version: version.id });
   if (!read.ok) return 'unreadable';
+  // The layout's scheme, checked rather than trusted like every other member. A view that carries
+  // none, or one the domain refuses, numbers nothing at all: falling back to the product's default
+  // would show the author numbers no publish under this layout could produce.
+  const scheme = isRecord(layout) ? numberingSchemeSchema.safeParse(layout.scheme) : undefined;
   return {
     id,
     space: { id: space.id, name: space.name },
@@ -79,6 +90,7 @@ function documentIn(data: unknown): Read {
     outline: read.outline,
     mayEdit,
     mayPublish,
+    scheme: scheme?.success ? scheme.data : null,
   };
 }
 
@@ -91,7 +103,12 @@ const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
  * is looked for in the outline the page holds, so nothing of a component the service withheld can be
  * named. A node the outline no longer holds is said to be gone.
  */
-function placeInOutline(outline: OutlineView, node: string, names: Names): string {
+function placeInOutline(
+  outline: OutlineView,
+  node: string,
+  names: Names,
+  scheme: NumberingScheme | null,
+): string {
   // Collected rather than assigned from the callback, which TypeScript's narrowing cannot follow.
   const held: OutlineViewNode[] = [];
   walkOutline(outline.nodes, (each) => {
@@ -99,9 +116,8 @@ function placeInOutline(outline: OutlineView, node: string, names: Names): strin
   });
   const [found] = held;
   if (found === undefined) return 'A part no longer in this document';
-  const numbers = sectionNumbers(
-    number(conditions(resolve(outline, NOTHING_KNOWN)), defaultNumberingScheme),
-  );
+  if (scheme === null) return nodeName(found, names);
+  const numbers = sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), scheme));
   const numbered = numbers.get(node);
   return numbered === undefined ? nodeName(found, names) : `${numbered} ${nodeName(found, names)}`;
 }
@@ -188,6 +204,13 @@ const STARTS = {
   recto: 'now starts on a new right-hand page',
 } as const;
 
+/** What a node's matter is now, said after its name. */
+const MATTERS = {
+  front: 'is now front matter',
+  body: 'is now in the body',
+  appendix: 'is now an appendix',
+} as const;
+
 /**
  * What an act did, said once it is done, from the outline the service returned: where a moved node
  * landed, what was added or renamed. The panel announces it through its status region.
@@ -244,9 +267,7 @@ function announce(
         return `${nodeName(node, names)} is ${operation.numbered ? 'now' : 'no longer'} numbered.`;
       }
       if (operation.matter !== undefined) {
-        return operation.matter === 'appendix'
-          ? `${nodeName(node, names)} is now an appendix.`
-          : `${nodeName(node, names)} is no longer an appendix.`;
+        return `${nodeName(node, names)} ${MATTERS[operation.matter]}.`;
       }
       return `Changed ${nodeName(node, names)}.`;
     }
@@ -550,8 +571,10 @@ export function DocumentPage({
         </p>
       </header>
       {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
+      {document.scheme === null && <p>This document's numbering could not be read.</p>}
       <OutlinePanel
         outline={document.outline}
+        scheme={document.scheme}
         editable={document.mayEdit}
         busy={busy}
         onOperation={(operation) => apply(operation, false)}
@@ -580,6 +603,7 @@ export function DocumentPage({
       <GeneratedLists
         document={document.id}
         outline={document.outline}
+        scheme={document.scheme}
         known={known}
         names={names}
         onRetry={() => setKnownAttempt((count) => count + 1)}
@@ -590,7 +614,7 @@ export function DocumentPage({
         document={document.id}
         version={document.version.id}
         mayPublish={document.mayPublish}
-        placeOf={(node) => placeInOutline(document.outline, node, names)}
+        placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
         followMs={followMs}
       />
     </article>

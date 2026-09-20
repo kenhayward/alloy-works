@@ -1,8 +1,12 @@
 import {
   readContent,
+  readLayout,
   readOutline,
+  speaksFor,
+  unsupportedFormats,
   walkOutline,
   type ContentDocument,
+  type Layout,
   type NumberingTable,
   type OutlineDocument,
   type PublishFailure,
@@ -10,6 +14,7 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { readableComponents } from './documents.js';
+import { defaultLayout } from './layouts.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
@@ -138,15 +143,24 @@ export type PublicationRequestAnswer =
    * caller may not read, so it is never handed back from here (IAM-073).
    */
   | { readonly answer: 'version.precondition'; readonly current: string }
-  /** A format the fixed template cannot make (PUB-014): only `pdf` until the layout slice. */
-  | { readonly answer: 'format.unsupported' }
+  /**
+   * A format the layout the request would be made under does not make (PUB-014), each named once,
+   * refused rather than approximated. No format, or one named twice, is refused naming none.
+   */
+  | { readonly answer: 'format.unsupported'; readonly formats: readonly string[] }
+  /**
+   * The document's language is not one the layout's words are written in (PUB-095): the layout's tag,
+   * taken as a language range, does not match the document's. Both tags, and nothing of any component.
+   */
+  | { readonly answer: 'layout.language'; readonly document: string; readonly layout: string }
   | { readonly answer: 'document.missing' };
 
 /**
  * One publish asked for, decided and recorded in the caller's transaction (docs/design/publishing.md,
  * "Who may publish"): `publish` has been decided on the document before this runs, under the access
- * epoch's shared lock. It refuses a stale version or an unsupported format before recording anything;
- * otherwise it resolves every occurrence **as the publisher**, records the request with the failures
+ * epoch's shared lock. It is made under the environment's declared layout, and refuses a stale version,
+ * a format that layout does not make or a document in another language than its words before recording
+ * anything; otherwise it resolves every occurrence **as the publisher**, records the request with the failures
  * resolving found - each naming its node and nothing else (issue #143) - one row per resolved
  * occurrence, and the job, all in one transaction. A request with failures is still queued: `assemble`
  * adds its own for what the publisher can read, and the author is told once (PUB-052).
@@ -163,11 +177,26 @@ export async function requestPublication(
   const latest = await latestVersion(trx, input.documentId);
   if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
   if (latest.id !== input.version) return { answer: 'version.precondition', current: latest.id };
-  if (input.formats.length !== 1 || input.formats[0] !== 'pdf') {
-    return { answer: 'format.unsupported' };
+
+  // Made under the environment's declared layout at its latest version, recorded by its key: the job
+  // publishes under that version, whatever the layout becomes before it runs.
+  const layout = await defaultLayout(trx);
+  const unsupported = unsupportedFormats(layout.layout, input.formats);
+  if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
+  // The contract refuses both; this function is public, and would otherwise record a request for
+  // formats nobody named, or one format twice.
+  if (input.formats.length === 0 || new Set(input.formats).size !== input.formats.length) {
+    return { answer: 'format.unsupported', formats: [] };
   }
   const read = readOutline(latest.content, { artifact: input.documentId, version: latest.id });
   if (!read.ok) throw new Error(`The document ${input.documentId} at ${latest.id} does not read`);
+  if (!speaksFor(layout.layout.language, read.outline.language)) {
+    return {
+      answer: 'layout.language',
+      document: read.outline.language,
+      layout: layout.layout.language,
+    };
+  }
 
   const outcomes = await resolveOccurrences(trx, read.outline, input.requester);
   const failures: PublishFailure[] = outcomes.flatMap((each) =>
@@ -191,9 +220,11 @@ export async function requestPublication(
     .values({
       document_id: input.documentId,
       document_version_id: latest.id,
-      formats: ['pdf'],
+      formats: [...input.formats],
       requested_by: input.requester,
       failures: JSON.stringify(failures),
+      layout_id: layout.artifactId,
+      layout_version_id: layout.versionId,
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -231,6 +262,13 @@ export interface PublicationInputs {
     { readonly version: string; readonly content: ContentDocument }
   >;
   readonly refused: readonly PublishFailure[];
+  /**
+   * The layout version the request was made under, as recorded on it - never the layout's latest - or
+   * null for a request made before layouts existed (0018), which publishes as the first slice did.
+   */
+  readonly layout: { readonly versionId: string; readonly layout: Layout } | null;
+  /** The document's version as `revision.version` (VER-009): what a running foot's `revision` shows. */
+  readonly revision: string;
 }
 
 /**
@@ -246,6 +284,7 @@ export async function publicationInputs(
     .selectFrom('publication_request as r')
     .innerJoin('artifact as a', 'a.id', 'r.document_id')
     .innerJoin('artifact_version as v', 'v.id', 'r.document_version_id')
+    .leftJoin('artifact_version as l', 'l.id', 'r.layout_version_id')
     .select([
       'r.id',
       'r.document_id',
@@ -254,8 +293,13 @@ export async function publicationInputs(
       'r.requested_at',
       'r.state',
       'r.failures',
+      'r.layout_id',
+      'r.layout_version_id',
       'a.space_id',
       'v.content',
+      'v.revision_no',
+      'v.version_no',
+      'l.content as layout_content',
     ])
     .where('r.id', '=', requestId)
     .executeTakeFirst();
@@ -268,6 +312,18 @@ export async function publicationInputs(
     throw new Error(
       `The document ${request.document_id} at ${request.document_version_id} does not read`,
     );
+  }
+  let layout: PublicationInputs['layout'] = null;
+  if (request.layout_version_id !== null) {
+    const stored = readLayout(request.layout_content, {
+      artifact: request.layout_id!,
+      version: request.layout_version_id,
+    });
+    // As a component that does not read: a broken store, thrown and so retried, then the engine's.
+    if (!stored.ok) {
+      throw new Error(`The layout ${stored.artifact} at ${stored.version} does not read`);
+    }
+    layout = { versionId: request.layout_version_id, layout: stored.layout };
   }
   const rows = await trx
     .selectFrom('publication_request_occurrence as o')
@@ -302,6 +358,8 @@ export async function publicationInputs(
     // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each
     // of the resolve stage, naming a node and nothing else - so they are read back without a parse.
     refused: request.failures as PublishFailure[],
+    layout,
+    revision: `${request.revision_no}.${request.version_no}`,
   };
 }
 
@@ -357,6 +415,8 @@ export async function recordPublication(
       'r.requested_by',
       'r.requested_at',
       'r.failures',
+      'r.layout_id',
+      'r.layout_version_id',
       'a.space_id',
     ])
     .where('r.id', '=', input.requestId)
@@ -393,6 +453,8 @@ async function insertPublication(
     readonly document_version_id: string;
     readonly requested_by: string;
     readonly requested_at: Date;
+    readonly layout_id: string | null;
+    readonly layout_version_id: string | null;
     readonly space_id: string | null;
   },
   input: NewPublication,
@@ -421,6 +483,9 @@ async function insertPublication(
       fonts: JSON.stringify(input.fonts),
       data_sha256: input.dataSha256,
       numbering: JSON.stringify(input.numbering),
+      // The request's, read under its lock: none for a request made before layouts (0018).
+      layout_id: request.layout_id,
+      layout_version_id: request.layout_version_id,
     })
     .execute();
   const occurrences = await trx

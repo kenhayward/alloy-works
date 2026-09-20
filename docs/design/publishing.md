@@ -19,16 +19,23 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 [themes.md](themes.md) (the theme's Typst projection and the typefaces) and
 [word-output.md](word-output.md) (the other writer that reads the same resolved document).
 
-> **The first slice is built: a document publishes to a tagged PDF of its outline and its
-> paragraphs, and nothing else yet.** The first publishing plan built it in two pull requests: 1a,
+> **Two slices are built: a document publishes to a tagged PDF of its outline and its paragraphs,
+> laid out by a layout.** The first publishing plan built the first slice in two pull requests: 1a,
 > the regression corpus checked by veraPDF in the worker's suite, the worker setting every PDF in
 > pinned Liberation Serif (#145), a job Typst refuses finished at once (#146), and `assemble`; 1b, the
 > Publisher role, the request decided and resolved as its publisher, the `publish` job and the fixed
 > template, the immutable record, four routes, the publishing panel on the document page and a
-> publication's own page. Every block but a paragraph, every mark, the layout, the theme, veraPDF on
-> every publication, preview and Word are later slices' ([Build order](#build-order)).
-> [`../architecture.md`](../architecture.md) describes what is built, and
+> publication's own page. The second plan built **the layout**: the artifact and the one version every
+> environment starts with, outline `front` matter, a request made under a layout and refused outside
+> its language or for a format it does not make, template `publication/2` with the page, the cover,
+> running heads and feet, page numbering per matter and a contents tagged as one, and the layout's
+> scheme reaching the routes, the outline panel and its lists. Every block
+> but a paragraph, every mark, the lists of figures and tables, the theme, veraPDF on every
+> publication, preview and Word are later slices' ([Build order](#build-order)), and nothing chooses
+> or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
 > [Changed while planning and building the first slice](#changed-while-planning-and-building-the-first-slice)
+> and
+> [Changed while planning and building the second slice](#changed-while-planning-and-building-the-second-slice)
 > where it departs from what follows. Everything else below is design, checked against that code and
 > against the pinned binary - see [What was run](#what-was-run).
 
@@ -49,54 +56,55 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                                                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PUB-003** | The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. Each stage takes the previous stage's type, and a test builds a document whose output differs under every adjacent swap |
-| **PUB-005** | A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once in the tagged text, and in its title                                                                                                           |
-| **PUB-006** | A preview is a request of kind `preview` run by the same job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show                                                                                           |
-| **PUB-061** | A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. Only the warm range preview omits tagging, and it is images, never a PDF                                                          |
-| **PUB-062** | The compile root holds `data.json`, the template, the fonts and the assets, nothing else. The template reads values with `json()` and has no `eval`; content reaches Typst only as strings and numbers                                                                                            |
-| **PUB-080** | A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it                                                                                                   |
-| **PUB-007** | A layout's paged format declares page size, orientation, margins as top, bottom, inside and outside, and a gutter                                                                                                                                                                                 |
-| **PUB-008** | Running heads and feet are three slots each, holding literal words and the fields `title`, `section`, `page`, `pages` and `revision`; `revision` is the document version as `revision.version` (VER-009)                                                                                          |
-| **PUB-009** | Page numbering is declared per matter - front, body, appendix - each with a format and whether it restarts; front matter is the generated front matter and the outline's `front` matter ([The layout](#the-layout))                                                                               |
-| **PUB-011** | A layout carries a numbering scheme in structure.md's shape; `number` is given the layout's, in the publisher, in the numbering route and in the outline panel                                                                                                                                    |
-| **PUB-012** | A layout holds one member per format, each its own declaration; `paged` is a property of a format                                                                                                                                                                                                 |
-| **PUB-013** | A layout is an artifact kind versioned by the chain; a publication pins the layout version it used, and a baseline pins it as it pins any version (VER-018)                                                                                                                                       |
-| **PUB-014** | A format is supported where the layout has a member for it; a request naming another is refused `format_unsupported` before anything is queued                                                                                                                                                    |
-| **PUB-016** | A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases                                                                                                       |
-| **PUB-021** | Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers                                                                                                                                                                                |
-| **PUB-033** | Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block                                                                                        |
-| **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                  |
-| **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row                                                                                                                                           |
-| **PUB-037** | The layout's `contents.depth` is passed to `contents`; the template sets each entry as a link with its page from Typst                                                                                                                                                                            |
-| **PUB-038** | The layout's `lists` names sequences; each is one `listOf` call, set like the contents                                                                                                                                                                                                            |
-| **PUB-042** | `contents` and `listOf` take the numbering table made after `conditions`, and the checks and projection read only the conditioned document                                                                                                                                                        |
-| **PUB-047** | A publication has no expiry and no delete route; it is `#/publications/{id}` in the renderer and `GET /v1/publications/{id}` in the API; reading it is `read` decided on the publication artifact                                                                                                 |
-| **PUB-048** | `GET /v1/documents/{id}/publications` lists the document's publications the caller may read, each with its publisher and time, and the document page shows them                                                                                                                                   |
-| **PUB-050** | `publication`, `publication_input` and `publication_output` take inserts only; publishing again inserts another publication                                                                                                                                                                       |
-| **PUB-052** | Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse                                                                             |
-| **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing, and no link can be signed for it                                                       |
-| **PUB-063** | The publication records the engine and its version, the template's name and version, and the pipeline's version                                                                                                                                                                                   |
-| **PUB-093** | Decision A: every T1 publication is a draft; the template sets **Not approved** on every page as a pagination artifact and the full sentence once as tagged text, and the record says `approval: 'none'`                                                                                          |
-| **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                |
-| **PUB-087** | The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))                                             |
-| **PUB-088** | A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))                                                                                                                                                                           |
-| **PUB-094** | Decision C: the request resolves every occurrence restricted to what the publisher may read, in the query; one they may not read is `occurrence_unreadable`, naming its node and nothing else, and compose never reads it                                                                         |
-| **PUB-073** | A request names one source and a non-empty set of formats; the publication records the set, and publishing the same source to another format is another request and another publication                                                                                                           |
-| **PUB-074** | A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited                                                                                |
-| **PUB-079** | Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`                                                                                                                                       |
-| **STR-013** | The scheme is declared by the layout (here) and applied by `number` (structure.md); the numbering route and the panel number with the document's layout's scheme                                                                                                                                  |
-| **STR-024** | The caption's text is the component's; its label is the layout scheme's rule, and its number is `number`'s                                                                                                                                                                                        |
-| **STR-027** | `number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is "above" or "below" by document order, in the layout's words                                                                                                                         |
-| **STR-029** | `references`' failures are the resolve stage's, each naming the reference and its target, and any fails the publish                                                                                                                                                                               |
-| **STR-050** | A format whose layout member is not `paged` has no page breaks in its projection, and nothing reports their absence                                                                                                                                                                               |
-| **STR-052** | `number` is pure over the outline, the layout's scheme and the profile; the publication pins the first two and records the numbering table it published, in full                                                                                                                                  |
-| **STR-055** | In a format that is not `paged`, a `page` reference renders its `withoutPages` form, and one with none fails `page_reference_without_pages`, naming it                                                                                                                                            |
-| **CNT-042** | A footnote anchored to a cell whose key or position the table does not hold fails `footnote_anchor_unresolved`, naming the footnote and its component                                                                                                                                             |
-| **CNT-049** | One converter turns stored MathML into the maths tree both writers read; an element it does not know fails `equation_unrenderable`, naming the block, before either writer runs                                                                                                                   |
-| **CNT-054** | A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component                                                                                                              |
-| **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                          |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PUB-003** | The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. Each stage takes the previous stage's type, and a test builds a document whose output differs under every adjacent swap                                                                                     |
+| **PUB-005** | A preview reads the document's latest version and each occurrence's current resolution, and says **Preview - not approved** on every page and once in the tagged text, and in its title                                                                                                                                                                                               |
+| **PUB-006** | A preview is a request of kind `preview` run by the same job, the same `assemble`, template and engine; the differences are listed under [Preview](#preview) and none of them is in what the pages show                                                                                                                                                                               |
+| **PUB-061** | A publication is always compiled with `--pdf-standard ua-1`; the publication path has no page-range parameter to pass, and Typst refuses `--pages` with `ua-1`. Only the warm range preview omits tagging, and it is images, never a PDF                                                                                                                                              |
+| **PUB-062** | The compile root holds `data.json`, the template, the fonts and the assets, nothing else. The template reads values with `json()` and has no `eval`; content reaches Typst only as strings and numbers                                                                                                                                                                                |
+| **PUB-080** | A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it                                                                                                                                                                                       |
+| **PUB-007** | A layout's paged format declares page size, orientation, margins as top, bottom, inside and outside, and a gutter                                                                                                                                                                                                                                                                     |
+| **PUB-008** | Running heads and feet are three slots each, holding literal words and the fields `title`, `section`, `page`, `pages` and `revision`; `revision` is the document version as `revision.version` (VER-009)                                                                                                                                                                              |
+| **PUB-009** | Page numbering is declared per matter - front, body, appendix - each with a format and whether it restarts; front matter is the generated front matter and the outline's `front` matter ([The layout](#the-layout))                                                                                                                                                                   |
+| **PUB-011** | A layout carries a numbering scheme in structure.md's shape; `number` is given the layout's, in the publisher, in the numbering route and in the outline panel                                                                                                                                                                                                                        |
+| **PUB-012** | A layout holds one member per format, each its own declaration, so everything a page means is the `pdf` member's and nothing above it. `paged` belongs to a format rather than to the layout, and is not stored until a format without pages exists to read it (decision B of the second slice): the shape lets a layout differ per format today, and the Word slice is what cites it |
+| **PUB-013** | A layout is an artifact kind versioned by the chain; a publication pins the layout version it used, and a baseline pins it as it pins any version (VER-018)                                                                                                                                                                                                                           |
+| **PUB-014** | A format is supported where the layout has a member for it; a request naming another is refused `format_unsupported` before anything is queued                                                                                                                                                                                                                                        |
+| **PUB-095** | A layout's `language` is a BCP 47 tag, taken as a language range and matched to the document's language by RFC 4647 basic filtering (the second publishing plan's decision G): `en` takes `en-GB`. A document outside it is refused `layout_language` at the request, naming both tags, before anything is queued                                                                     |
+| **PUB-016** | A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases                                                                                                                                                                                           |
+| **PUB-021** | Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers                                                                                                                                                                                                                                                                    |
+| **PUB-033** | Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block                                                                                                                                                                            |
+| **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                                                                                                      |
+| **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row                                                                                                                                                                                                                               |
+| **PUB-037** | The layout's `contents.depth` reaches Typst's `outline`, which selects the headings the template sets with `number`'s numbers, so the depth is the layout's and only the page is the engine's (decision C of the second slice); `contents(conditioned, numbering, depth)` is what a worker test measures the compiled entries against                                                 |
+| **PUB-038** | The layout's `lists` names sequences; each is one `listOf` call, set like the contents                                                                                                                                                                                                                                                                                                |
+| **PUB-042** | `contents` and `listOf` take the numbering table made after `conditions`, and the checks and projection read only the conditioned document                                                                                                                                                                                                                                            |
+| **PUB-047** | A publication has no expiry and no delete route; it is `#/publications/{id}` in the renderer and `GET /v1/publications/{id}` in the API; reading it is `read` decided on the publication artifact                                                                                                                                                                                     |
+| **PUB-048** | `GET /v1/documents/{id}/publications` lists the document's publications the caller may read, each with its publisher and time, and the document page shows them                                                                                                                                                                                                                       |
+| **PUB-050** | `publication`, `publication_input` and `publication_output` take inserts only; publishing again inserts another publication                                                                                                                                                                                                                                                           |
+| **PUB-052** | Resolve and compose never stop at a failure: each records it and carries on over what remains, and the request answers the whole list. Typst runs only on a document with none, and is handed nothing it would refuse                                                                                                                                                                 |
+| **PUB-053** | The publication row, its artifact row and its outputs are inserted in one transaction after every output is stored; a failed request has none. An object stored before a failure is referenced by nothing, and no link can be signed for it                                                                                                                                           |
+| **PUB-063** | The publication records the engine and its version, the template's name and version, and the pipeline's version                                                                                                                                                                                                                                                                       |
+| **PUB-093** | Decision A: every T1 publication is a draft; the template sets **Not approved** on every page as a pagination artifact and the full sentence once as tagged text, and the record says `approval: 'none'`                                                                                                                                                                              |
+| **PUB-086** | Every failure names its stage - `resolve`, `compose`, `engine` or `store` - its code, and the node, block, reference or definition it concerns ([Failure](#failure-retry-and-what-an-author-sees))                                                                                                                                                                                    |
+| **PUB-087** | The regression corpus - the spike's cases, grown by a case for every defect - is compiled on every change to the template, the engine or `assemble`, and each case holds its expected outcome and its veraPDF verdict ([Verification](#verification))                                                                                                                                 |
+| **PUB-088** | A layout's `matter` declares a cover, a contents and whether appendices start on a new page ([The layout](#the-layout))                                                                                                                                                                                                                                                               |
+| **PUB-094** | Decision C: the request resolves every occurrence restricted to what the publisher may read, in the query; one they may not read is `occurrence_unreadable`, naming its node and nothing else, and compose never reads it                                                                                                                                                             |
+| **PUB-073** | A request names one source and a non-empty set of formats; the publication records the set, and publishing the same source to another format is another request and another publication                                                                                                                                                                                               |
+| **PUB-074** | A request whose formats exclude `pdf` is refused `page_citation_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited                                                                                                                                                                    |
+| **PUB-079** | Where no node survives conditions, the document publishes the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and otherwise fails `nothing_to_publish`                                                                                                                                                                   |
+| **STR-013** | The scheme is declared by the layout (here) and applied by `number` (structure.md); the numbering route and the panel number with the document's layout's scheme                                                                                                                                                                                                                      |
+| **STR-024** | The caption's text is the component's; its label is the layout scheme's rule, and its number is `number`'s                                                                                                                                                                                                                                                                            |
+| **STR-027** | `number`, `title` and `numberAndTitle` come from `references`; `page` from Typst, at the label; `relative` is "above" or "below" by document order, in the layout's words                                                                                                                                                                                                             |
+| **STR-029** | `references`' failures are the resolve stage's, each naming the reference and its target, and any fails the publish                                                                                                                                                                                                                                                                   |
+| **STR-050** | A format whose layout member is not `paged` has no page breaks in its projection, and nothing reports their absence                                                                                                                                                                                                                                                                   |
+| **STR-052** | `number` is pure over the outline, the layout's scheme and the profile; the publication pins the first two and records the numbering table it published, in full                                                                                                                                                                                                                      |
+| **STR-055** | In a format that is not `paged`, a `page` reference renders its `withoutPages` form, and one with none fails `page_reference_without_pages`, naming it                                                                                                                                                                                                                                |
+| **CNT-042** | A footnote anchored to a cell whose key or position the table does not hold fails `footnote_anchor_unresolved`, naming the footnote and its component                                                                                                                                                                                                                                 |
+| **CNT-049** | One converter turns stored MathML into the maths tree both writers read; an element it does not know fails `equation_unrenderable`, naming the block, before either writer runs                                                                                                                                                                                                       |
+| **CNT-054** | A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component                                                                                                                                                                                                  |
+| **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                                                                                                              |
 
 **PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
 nine-level regression case passes every veraPDF PDF/UA-1 machine rule - 106 rules, 0 failed - and the
@@ -120,7 +128,7 @@ described under [Verification](#verification).
 
 ## What this document does not own
 
-Forty-six claims. What is left out is either answered only in part, answered with another design,
+Forty-seven claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
 | Left unclaimed                       | Why                                                                                                                                                                                                                                                    |
@@ -203,9 +211,15 @@ transaction under the access epoch's shared lock (IAM-063):
    an external principal, whatever the grants say (IAM-047's cap);
 2. reads the latest version and refuses `version_precondition` unless it is the one the caller named,
    so a publisher publishes what they are looking at;
-3. resolves every reference node to a version - `pinned` to its pin, `latest` to the head -
+3. reads the environment's declared layout at its latest version, and refuses `format_unsupported`
+   for any format that layout has no member for (PUB-014) or `layout_language` where its words are
+   not in a language the document's tag matches (PUB-095), naming both tags;
+4. resolves every reference node to a version - `pinned` to its pin, `latest` to the head -
    restricted to the publisher's readable set **in the query**, as `numberingInputs` is;
-4. records the request, one row per occurrence, and the job.
+5. records the request under **that** layout version by its key, one row per occurrence, and the job.
+
+The job publishes under the version the request recorded, never the layout's latest, so a layout
+changed between the request and the compile moves nothing.
 
 **Decision C: an occurrence the publisher may not read refuses the publish**, as the failure
 `occurrence_unreadable`, naming the node by its section number and title and saying **A component**, as
@@ -262,8 +276,9 @@ and the layout, and must decide none of them. So the intermediate is one type in
 
 | Member   | Holds                                                                                                                                                        |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `schema` | `publishing/1`, the version of this shape the template reads                                                                                                 |
+| `schema` | `publishing/2`, the version of this shape the template reads. `publishing/1` is slice 1's, still made for a request recorded before layouts                  |
 | Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                 |
+| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                       |
 | `format` | The layout's member for this format, in points, with its words                                                                                               |
 | `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                 |
 | `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                  |
@@ -318,18 +333,42 @@ template, **every document publishes under the default layout** and the publicat
 version it was (finding 5).
 
 **The stored shape is closed at its first version**, because versions are insert-only and a layout
-that accepts a member nothing reads becomes a migration of every tenant's layouts. Version 1:
+that accepts a member nothing reads becomes a migration of every tenant's layouts. That rule decided
+what schema version 1 leaves out as much as what it holds: `lists`, `paged` and a `docx` member are
+all refused rather than stored, and each arrives with the schema version that reads it (decisions A
+and B of the second slice). **Version 1, as built:**
 
-| Member     | Holds                                                                                                                                                                                                                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `language` | The one language its words are in (BCP 47). A document whose primary language differs is refused `layout_language`, rather than printing "Figure" in a French report. [Issue #144](https://github.com/kenhayward/alloy-works/issues/144) asks for it, and lands with the layout slice |
-| `words`    | Contents, list titles, "above", "below", "continued", **Not approved**, **Preview - not approved**                                                                                                                                                                                    |
-| `scheme`   | A numbering scheme in structure.md's shape, labels included (PUB-011, STR-013, STR-024). The default layout's is structure's default scheme, exactly                                                                                                                                  |
-| `matter`   | `cover`, `contents` with a `depth`, `lists` naming sequences, and whether appendices start on a new page. No approval page: PUB-089's is LIF's and T3's                                                                                                                               |
-| `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: `paged: true`, page size, orientation, margins and gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter (PUB-009)                     |
+| Member     | Holds                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language` | The one language its words are in (BCP 47). A document whose language that tag does not match as a language range is refused `layout_language`, naming both, rather than printing "Figure" in a French report. [Issue #144](https://github.com/kenhayward/alloy-works/issues/144) asked for it, and landed with the layout slice as PUB-095                                                                             |
+| `words`    | The three the product sets itself: the contents' title, **Not approved** and its sentence. "Above", "below" and "continued" arrive with cross-references and tables; the list titles with the lists; **Preview - not approved** with preview                                                                                                                                                                            |
+| `scheme`   | A numbering scheme in structure.md's shape, labels included (PUB-011, STR-013, STR-024), with a rule per matter per sequence. The default layout's is structure's default scheme, exactly, `default/1` and all                                                                                                                                                                                                          |
+| `matter`   | `cover`, `contents` with a `depth` or none, and whether appendices start on a new page (PUB-088). No `lists`: nothing publishes a figure or a table yet, so every list would be empty. No approval page: PUB-089's is LIF's and T3's                                                                                                                                                                                    |
+| `formats`  | A member per supported format (PUB-014), each declared on its own (PUB-012). `pdf`: page size in the portrait sense, orientation, margins as top, bottom, inside and outside, and a gutter (PUB-007); running heads and feet as three slots of words and fields (PUB-008); page numbering per matter, each a format and whether it restarts (PUB-009). No `paged`: nothing reads it until a format without pages exists |
 
 `docx` is absent from the default layout until the Word slice, so asking for Word is refused
 `format_unsupported` until it can be answered.
+
+**The notice is not a slot.** The draft mark's words are the layout's, set in the layout's language,
+but **the template places them itself** - above the running head, on every page including the cover,
+outside the three slots - so no layout can leave the mark off (decision H of the second slice). The
+parse holds those words to showing something: a blank notice, or one made only of characters the
+engine draws nothing for, is refused rather than stored.
+
+**The running head's `section` field names the level-one node the page is in: the first to begin on
+that page, else the last begun before it.** Where one chapter ends and another begins on one page the
+head names the new one, and where several begin on one page it names the first. Asking only for the
+last begun before the head was measured and is wrong on exactly the page a chapter begins, because
+the head is laid out above the heading; the cover's title and the contents' are outside the selection,
+so neither is ever named as a section.
+
+**A publication is recorded with template 1 exactly when it has no layout, and with template 2 under
+one.** A request made before migration 0018 carries no layout version, is assembled as `publishing/1`
+and compiled by template 1, exactly as it would have been before layouts; every request since carries
+one, is assembled as `publishing/2` and compiled by template 2. The database holds the rule rather
+than trusting the job: `publication`'s check constraint is
+`(template_version = 1) = (layout_version_id is null)`, so neither a template 1 publication under a
+layout nor a template 2 publication without one can be recorded at all.
 
 **Front matter needs a place in the outline.** PUB-009 wants front matter numbered in its own scheme,
 and structure's `matter` is `body` or `appendix`: a preface is `body`, unnumbered, and its pages would
@@ -339,10 +378,37 @@ version 2 reads every version 1 outline unchanged, and nothing stored changes; i
 nothing else is stored in its place. Inferring front matter from position - everything before the first
 numbered node - was rejected, because an unnumbered interlude in the body would become front matter.
 
-**The panel is given the layout's scheme.** structure.md claims STR-036 on the term that PUB brings its
-scheme to the panel. The numbering route and the document route answer the document's layout version,
-and the page numbers with that version's scheme; while every document takes the default, nothing the
-panel shows changes.
+**The panel is given the layout's scheme - built.** structure.md claims STR-036 on the term that PUB
+brings its scheme to the panel. `DocumentView` carries the document's layout - its id, its version,
+its language and its scheme - built by the one `documentView` that every document answer goes
+through, so a create, a get, an act's answer and a `409`'s `current` all carry it; the numbering
+route numbers with that scheme and names the version beside its table; and the page parses the scheme
+once per view and gives it to the panel, to the generated lists and to the words that name a publish
+failure's place. Nothing in the renderer reaches for the product's default any more, and STR-036 is
+cited by the panel's own test, which compares every number the panel shows with `assemble`'s under a
+second layout version.
+
+**A layout that will not read is a 500, never a fallback.** If the environment declares no layout, or
+its content does not parse, `GET /v1/documents/{id}` and `GET /v1/documents/{id}/numbering` fail
+rather than numbering with the product's default; in the page, a scheme that will not parse numbers
+nothing and says **This document's numbering could not be read.** A fallback was rejected because it
+would show numbers no publish under that layout could produce, which is the one thing STR-036 exists
+to prevent - a wrong number that looks right is worse than no number. The blast radius is wider than
+publishing, and named here for it: before this, a broken layout stopped a publish; now it stops the
+document page too. Migration 0018 declares a layout in every environment and nothing removes it, so
+this is reachable only by a broken store. **If a fallback is ever wanted it is to the last layout
+version that reads**, which is at least a scheme something could have published under, never to the
+product's default.
+
+**The layout is read afresh for every view, and not cached.** Four small reads, one to two
+milliseconds. A cache would serve a scheme that has since moved, and a page showing numbers that will
+not publish is exactly what STR-036 forbids; if the cost ever shows, the right answer is one memo per
+request, not one per process.
+
+**Nothing in the product makes or edits a layout.** The store can hold a second version - that is
+what `recordVersion` with a `layout` substance is for, and it is how the tests vary the scheme - but
+no route, no page and no permission reaches it, so every environment has the one version its
+migration seeded until a layout-editing plan builds the rest.
 
 ## The request and the job
 
@@ -497,17 +563,17 @@ the paged record (PUB-065).
 
 ## Stores
 
-One tenant migration. The application role holds `INSERT` and `SELECT` on everything a publication is
-made of, so PUB-050 is a grant, as VER-008 is.
+Two tenant migrations, 0017 and 0018. The application role holds `INSERT` and `SELECT` on everything
+a publication is made of, so PUB-050 is a grant, as VER-008 is.
 
-| Table                            | Holds                                                                                                                                                                                                                                                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `artifact.kind`                  | Gains `publication`, in a space, and `layout`, in none                                                                                                                                                                                                                                                             |
-| `publication_request`            | Operational and mutable: kind, document, document version, formats, layout version, requester, `requested_at`, state (`queued`, `done`, `failed`), the failure list, and a preview's object and expiry. Swept once finished and a week old - not built: nothing sweeps them yet; a publication needs nothing in it |
-| `publication_request_occurrence` | Insert-only: request, node, the version it took                                                                                                                                                                                                                                                                    |
-| `publication`                    | Insert-only; its id is its artifact's. The request's id (unique, no foreign key), document, document version, publisher, `published_at`, `approval` (`none`; T3 adds `baseline` and `baseline_id`), formats, engine, template, pipeline, fonts, `data_sha256`, the numbering table as JSON                         |
-| `publication_input`              | Insert-only: publication, a version it read, and the node for an occurrence. The foreign key restricts deletion                                                                                                                                                                                                    |
-| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and the accessibility report's object                                                                                                                                                                                |
+| Table                            | Holds                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `artifact.kind`                  | Gains `publication`, in a space, and `layout`, in none; `layout_default` declares the environment's layout, one row, as `component_type_default` declares its component type                                                                                                                                                             |
+| `publication_request`            | Operational and mutable: kind, document, document version, formats, layout version, requester, `requested_at`, state (`queued`, `done`, `failed`), the failure list, and a preview's object and expiry. Swept once finished and a week old - not built: nothing sweeps them yet; a publication needs nothing in it                       |
+| `publication_request_occurrence` | Insert-only: request, node, the version it took                                                                                                                                                                                                                                                                                          |
+| `publication`                    | Insert-only; its id is its artifact's. The request's id (unique, no foreign key), document, document version, publisher, `published_at`, `approval` (`none`; T3 adds `baseline` and `baseline_id`), formats, the layout version it was made under or none, engine, template, pipeline, fonts, `data_sha256`, the numbering table as JSON |
+| `publication_input`              | Insert-only: publication, a version it read, and the node for an occurrence. The foreign key restricts deletion                                                                                                                                                                                                                          |
+| `publication_output`             | Insert-only: publication, format, object key, SHA-256, size, the standard it was compiled to, and the accessibility report's object                                                                                                                                                                                                      |
 
 **Settled now because they would be migrations later.** The occurrence resolution is recorded per node,
 not as a set. `approval` is a closed column from the first row, so T3 widens a check rather than
@@ -536,6 +602,26 @@ the database suite's own request tests do exactly that; and a publication's inpu
 request's occurrences when the record is made, not carried from what the job compiled, so an
 occurrence inserted into a queued request between the two would be recorded as read.
 
+**As built, migration 0018 adds the layout and closes both columns without a `NOT VALID` check.** It
+adds `layout` to the artifact kinds, seeds the product's default layout as version 0.1 - the content,
+the content hash and the version digest written as literals, and `default-layout.test.ts` recomputing
+all three in TypeScript so the row can never drift from `packages/domain` - and declares it in
+`layout_default`, a singleton the runtime role may read and never change. A request and a publication
+each gain `layout_id`, `layout_version_id` and a `layout_kind` fixed to `layout`, keyed together into
+`artifact_version` so the declaration can never name anything but a layout version.
+
+**Nothing existing is updated, and no trigger is held off** (Ken's answer F). A request queued before
+0018 keeps no layout, and is published under template 1 as it would have been. Closing the column
+with `check (layout_version_id is not null) not valid` would have looked equivalent and been a trap:
+Postgres applies such a check to every row an `UPDATE` writes, so the one move a request queued
+before 0018 still has to make - to `done` or to `failed` - would have been refused, and it could
+never have finished. It is closed instead by a check on the pair (`(layout_id is null) =
+(layout_version_id is null)`, which every existing row passes) and a **before insert** trigger that
+refuses a new request with no layout version. 0017's finish-once trigger gains both columns among
+what finishing never changes, and its commit-time rule gains one condition: the publication's layout
+version `is not distinct from` its request's, so a publication can neither name another layout nor
+drop the one it was made under.
+
 ## Routes
 
 | Route                                  | Permission        | Does                                                                                                                    |
@@ -563,14 +649,14 @@ not `202`: a permission-checked handler cannot set its status.
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | `src/publishing/`: the layout schema and the default layout, `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection |
-| `packages/db`           | The migration, the Publisher role, `requestPublication` (decide, resolve, record, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                                          |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                          |
-| `apps/service`          | The handlers; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                          |
-| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/`                                                                                                 |
-| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, and the failure list naming each place in the outline                                   |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | `src/publishing/`: `layout.ts` (the layout schema closed at its first version, the product's default, `readLayout`, `speaksFor` and `unsupportedFormats`), `PublishedDocument`, `assemble` and its stages, the failure vocabulary, the MathML-to-tree converter; the theme module exported for the first time, for its Typst projection |
+| `packages/db`           | The two migrations, the Publisher role, `src/layouts.ts` (`defaultLayout`, the environment's declared layout at its latest version), `requestPublication` (decide, resolve, record under the layout, enqueue), `publicationInputs`, `recordPublication`, the listing, and `JobKind` gaining `publish` and `preview`                     |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                        |
+| `apps/service`          | The handlers; the document and numbering routes answering the document's layout and numbering with its scheme; nothing on the stream, since the requester follows the request by asking (decision G of the first publishing plan)                                                                                                       |
+| `apps/worker`           | `jobs/publish.ts`, the compile root and its flags, the font directory and its refusal when empty, veraPDF, and `templates/publication/1/` and `2/`, chosen by the published document's schema                                                                                                                                           |
+| `apps/web`              | **Publish** and **Preview** on the document page for those who may, the publications beneath the outline, a publication's page with its download, the failure list naming each place in the outline, and the outline panel and its lists numbering with the layout's scheme                                                             |
 
 ## Verification
 
@@ -591,6 +677,11 @@ not `202`: a permission-checked handler cannot set its status.
 - **The budget** (PUB-085, unclaimed until slice 5): a generated 300-page reference document of
   prose, figures, tables, equations and footnotes, from request to publication, measured in the worker
   suite.
+- **The panel and the publisher number alike** (STR-036): the outline panel is numbered under a
+  layout version whose scheme is not the product's default, and every number it shows is compared
+  with `assemble`'s over the same outline and the same layout - the one function the `publish` job
+  composes with. Asserted, not assumed, because "as it will publish" is the whole of the
+  requirement.
 
 ## What was ruled out
 
@@ -624,7 +715,8 @@ stream ([Routes](#routes)).
 ## Findings against what exists
 
 Most serious first. Findings 2 (#145) and 4 (#146) are fixed by 1a of the first publishing plan, and
-finding 1 by 1b, which adds the Publisher role; finding 7 is made no worse by 1b; the rest stand.
+finding 1 by 1b, which adds the Publisher role; finding 8 by the second slice, which gives the outline
+front matter; finding 7 is made no worse by 1b; the rest stand.
 
 1. **Nobody can publish.** No starter role holds `publish`, and `role.test.ts` asserts it on the premise
    that nothing publishes in T1, which scope section 12 contradicts. Decision L; fixed by 1b, whose
@@ -658,7 +750,10 @@ finding 1 by 1b, which adds the Publisher role; finding 7 is made no worse by 1b
    [issue #147](https://github.com/kenhayward/alloy-works/issues/147). The first publishing build
    makes it no worse by putting nothing about a publication on the stream: the requester follows the
    request by asking while the page is open (the first publishing plan's decision G).
-8. **The outline has no front matter**, which PUB-009 needs. Decision M.
+8. **The outline has no front matter**, which PUB-009 needs. Decision M; fixed by the second slice.
+   Outline schema 2 gives a top-level node the matter `front`, and the parse refuses one below the top
+   level or after any top-level node that is not front matter - which is [#152](https://github.com/kenhayward/alloy-works/issues/152),
+   landed as STR-064 and claimed by structure.md.
 9. **ADR-0013 and themes.md are out of date about glyphs.** Both say no engine reports a face that
    lacks a character. Under PDF/UA-1, Typst 0.15.1 fails the compile, quoting the character. The
    pipeline's own check (STY-049) is still needed - to report every glyph at once and name the style and
@@ -733,8 +828,8 @@ What was proposed, as it was written:
 the first as [#142](https://github.com/kenhayward/alloy-works/issues/142) and the second as
 [#143](https://github.com/kenhayward/alloy-works/issues/143), both PUB and both landing as rows, drafted
 with `pnpm trace draft`, in the first publishing build, whose behaviour they are; the third as
-[#144](https://github.com/kenhayward/alloy-works/issues/144), in TPL, landing with the layout slice.
-As proposed:
+[#144](https://github.com/kenhayward/alloy-works/issues/144), proposed for TPL, which landed with the
+layout slice as PUB-095, in PUB (Ken's answer to the second publishing plan). As proposed:
 
 1. **PUB**: "A publication not produced from a baseline must say that it is not approved, visibly on
    every page and once where assistive technology reads it, and its record must say so."
@@ -855,8 +950,97 @@ see. This section records what each changed against what this design said before
 - **What slice 1 cites.** PUB-021, PUB-047, PUB-048, PUB-050, PUB-053, PUB-061, PUB-062, PUB-063,
   PUB-093 and PUB-094, and PUB-086 again for its engine and store stages, beside PUB-052 and PUB-086
   cited by 1a - not PUB-003 or PUB-073, which need the order's swaps and a second format. It lands #142
-  and #143 as rows; #145 and #146 were fixed by 1a. The corpus now holds 1,382 requirements, and the
-  tests cite 193 across every area.
+  and #143 as rows; #145 and #146 were fixed by 1a. The corpus then held 1,382 requirements, and the
+  tests cited 193 across every area.
+
+## Changed while planning and building the second slice
+
+The second slice ([docs/plans/2026-09-19-publishing-02-the-layout.md](../plans/2026-09-19-publishing-02-the-layout.md))
+landed as one pull request: the layout artifact and the version every environment starts with, outline
+`front` matter, a request recorded under a layout and refused outside its language, `publishing/2` and
+template `publication/2`. It took twelve decisions, each with a rejected alternative; Ken accepted
+every one except F, and added four answers of his own. This section records them, and what building
+them changed against what this design said before.
+
+**The twelve decisions.**
+
+| #   | Decided                                                                                                                                                                                                                                                                                           | Rejected                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | **Lists and caption labels move to slice 3.** Slice 2 publishes paragraphs alone, so every list of figures would be empty and no caption is ever printed; layout schema 1 therefore holds no `lists` member, and slice 3 adds it with figures, by layout schema 2 and a second default version    | Building the lists now and citing them on a template test fed data `assemble` can never produce                                                                       |
+| B   | **PUB-012 is not cited, and `paged` is not stored.** With one format there is nothing for a layout to differ about; the shape answers PUB-012 and the Word slice cites it                                                                                                                         | A parse test of one member, cited as "able to differ per format"                                                                                                      |
+| C   | **The contents is Typst's `outline` over our headings**, not a list built from `contents()`. Measured: only `outline` is tagged `TOC`/`TOCI`; ours reads as paragraphs of links. Each heading still carries `number`'s number, and Typst supplies only the page                                   | Our own list of links to `<n-ID>` labels: compliant, and heard as paragraphs. Typst 0.15.1 cannot role-map custom content to `TOC`                                    |
+| D   | **Front matter is outline schema 2, by an identity step**, and must come first: a `front` node below the top level, or after any top-level node that is not front matter, is refused by the parse                                                                                                 | Widening schema 1 in place: no churn, but "schema 1" would mean two shapes, and a rolled-back build would read a `front` outline as corrupt                           |
+| E   | **The scheme gains a `front` rule per sequence**, and the default's are sections `i`, `i.1`; figures and tables `Figure i.1` restarting with each numbered front section; equations `Equation i`; footnotes from 1. Every front label differs from every body label, and the id stays `default/1` | Front sharing the body's counters, which would renumber every body figure after a preface figure; `default/2`, which records identical numbers under two names        |
+| F   | **The layout is an artifact version seeded by migration 0018**, declared by a singleton, and recorded on each request and publication by its key                                                                                                                                                  | A `publication_input` row, whose unique `(publication_id, node)` cannot tell a node-less layout row from the document's; a layout held in code, which VER-011 forbids |
+| G   | **A layout's language matches a document's by RFC 4647 basic filtering**, case-insensitively: `en` takes `en` and `en-GB`, never `fr`, and `sr-Latn` never takes `sr-Cyrl`. Only the document's own language is compared                                                                          | Exact equality, refusing every `en-GB` document under `en`; the primary subtag alone, publishing `sr-Cyrl` under `sr-Latn` words                                      |
+| H   | **The notice's words are the layout's, and the template places them** - above the head on every page, the cover included, outside the three slots - so no layout can remove the draft mark                                                                                                        | The notice as a slot field, which a layout could leave out                                                                                                            |
+| I   | **`pages` is the PDF's physical page count, in decimal; `page` is the page's label in its matter's format.** So the default foot prints `Page 3`, never `Page 3 of 12`: the two count differently                                                                                                 | The last page of the page's own matter, which is undefined for an appendix that continues the body                                                                    |
+| J   | **Every change of matter starts a new page**, because page numbering is a page property in Typst. The cover is a page of its own with no label, holding the title and the notice's sentence; without a cover both open the first page as in slice 1                                               | Numbering within the flow, which Typst cannot do                                                                                                                      |
+| K   | **`nothing_to_publish` where no node survives and the layout declares no cover.** A contents of nothing is omitted, so it never counts as front matter; an empty document under the default layout publishes its cover alone                                                                      | Publishing an empty artifact, which PUB-079 forbids                                                                                                                   |
+| L   | **The layout reaches the renderer inside the document view** (`DocumentView.layout`), and the numbering route numbers with it and names it                                                                                                                                                        | A layouts route: a round trip and an access decision for a definition every reader of the document already depends on                                                 |
+
+**Ken's four answers.** **F is amended: no trigger is disabled and nothing is backfilled.** A request
+queued before migration 0018 keeps no layout and is published under template 1, exactly as it would
+have been; 0017's triggers stay enabled throughout. **#144 lands in PUB, not TPL**, as PUB-095, beside
+PUB-007 to PUB-014 - the issue's own area said TPL, which was a filing error. **Front matter first is
+a requirement**, filed as [#152](https://github.com/kenhayward/alloy-works/issues/152) and landed as
+**STR-064**, claimed by structure.md. **PUB-008 and PUB-079 are reworded for clarity**, each keeping
+its identifier and gaining a change-history row: PUB-008's "total pages" became "the physical page
+count", and PUB-079's "no body content" became "no outline node survives conditions", with the front
+and back matter it must still publish spelled out. And decision D's cost is accepted knowingly: the
+first act on an existing document that changes nothing records one extra version, once per document,
+because the canonical form carries the schema version.
+
+**What building it changed.**
+
+- **`NOT VALID` was the trap, and the migration does not use it.** Removing the backfill was not
+  enough: Postgres applies a `NOT VALID` check to every row an `UPDATE` writes, so a request queued
+  before 0018 could never have been moved to `done` or `failed`. The column is closed by a check on
+  the pair and a before-insert trigger instead ([Stores](#stores)).
+- **Slice 1's path survives, byte for byte.** `assemble` returns `publishing/1` when it is given no
+  layout, and the worker picks its template and its pipeline version by the document's schema. The
+  template test computes template 1's row from the same fixed input with no layout and holds it to the
+  digest slice 1 pinned, which is the proof that a request made before layouts still publishes as it
+  would have.
+- **The page-number pattern is mapped by name, never by position.** `NumberFormat` and PDF's patterns
+  are not in the same order, so mapping by index would have made `lowerAlpha` print `i` - a PDF whose
+  page labels lie.
+- **Page numbers run in chains.** Typst has one page counter, and an outline may return to a matter it
+  left, which schema 1 already allowed. A matter whose rule restarts begins a chain of its own; one
+  that does not joins the chain of the page before it; and re-entering a matter resumes its chain one
+  past that chain's last page, whatever its rule says. Without that, a body after an appendix would
+  repeat labels and the contents would point at the wrong page.
+- **The contents always ends its page**, so the first front node starts one. With a cover: page 1 the
+  cover, page `i` the contents. Without one: the title, the notice's sentence and the contents open
+  page `i`.
+- **Three failures were added and worded.** `nothing_to_publish` says what is missing and never invites
+  a retry that cannot succeed; and a glyph or a language the **layout** brings is
+  `layout_glyph_missing` or `layout_language_not_publishable`, which blame the layout rather than the
+  document, because nothing the author can do to the document would fix either. Both are unreachable
+  under the default layout, whose words are ASCII and English.
+- **The layout's own words are glyph-checked** against the pinned faces, as a component's text is, and
+  the parse refuses words that show nothing: a blank notice, or one of only zero-width characters,
+  would take the draft mark off every page.
+- **The layout is strict where the plan was silent.** A page is given in the portrait sense - width
+  never above height, landscape being an orientation - the gutter is never negative, and every scheme
+  refinement reaches `front`, because a layout version is insert-only and whatever this parse accepts
+  today it must accept for ever.
+- **`assemble` counts conditioned nodes, not input nodes,** when deciding `nothing_to_publish` -
+  untestable until conditions are anything but the identity, and commented where it is written.
+- **A layout that will not read fails the page, and does not fall back.** The ruling and its cost are
+  under [The layout](#the-layout). It is the one change in this slice that widened a failure's blast
+  radius, so it is stated rather than discovered.
+- **The panel's refusals are the outline's, in the panel's own words.** A key move or a drop that
+  would take front matter or an appendix below the top level, or put a front node after one that is
+  not, is refused by the panel before anything is sent - **Front matter and appendices stay at the
+  top level.** and **Front matter comes before the rest of the outline.** An insert or a **Matter**
+  change is left to the service, whose refusal carries the same sentence, so an author meets one
+  wording whichever path refused them.
+- **What slice 2 cites.** PUB-007, PUB-008, PUB-009, PUB-011, PUB-014, PUB-037, PUB-079, PUB-088,
+  PUB-095, STR-013 and STR-036 (in structure.md's name) - not PUB-012, PUB-038 or STR-024, which
+  decisions A and B move to later slices. It lands #144 as PUB-095 and #152 as STR-064, so the corpus
+  now holds **1,384** requirements, the designs claim **408** of them, and the tests cite **205**
+  across every area.
 
 ## Build order
 
@@ -871,14 +1055,24 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    download, the requester following the request by asking. Every other block, and any mark or inline
    item, fails, all of them at once. Cites PUB-021, PUB-047, PUB-048, PUB-050, PUB-052, PUB-053,
    PUB-061, PUB-062, PUB-063, PUB-086, PUB-093 and PUB-094. Landed #142 and #143 as rows.
-2. **The layout.** The layout artifact and its default version; running heads and feet; page
-   numbering per matter and outline `front` matter; the cover; the contents and lists; the layout's
-   scheme to the numbering route and the panel. Cites PUB-007 to PUB-009, PUB-011, PUB-012, PUB-014,
-   PUB-037, PUB-038, PUB-079, STR-013, STR-024, and STR-036 in structure.md's name.
+2. **The layout - built.** The layout artifact, closed at its first version, and the one version every
+   environment starts with, seeded and declared by migration 0018; outline `front` matter, first and
+   at the top level, numbered in its own scheme; a request recorded under the layout and refused at
+   the door for a format it does not make or a language it does not speak for; `assemble` making
+   `publishing/2` under a layout and slice 1's `publishing/1` without one; template `publication/2`
+   with the page, the cover, page numbering per matter in chains, running heads and feet, the contents
+   as Typst's `outline` and appendices on their own pages; and the layout's scheme reaching the
+   document view, the numbering route, the outline panel and the generated lists, with **Matter** -
+   Front matter, Body or Appendix - beside a top-level node. Landed #144 as PUB-095 and #152 as
+   STR-064. Cites PUB-007, PUB-008, PUB-009, PUB-011, PUB-014, PUB-037, PUB-079, PUB-088, PUB-095,
+   STR-013 and STR-036 in structure.md's name.
 3. **The rest of the content.** Marks, hyperlinks and language marks; lists, quotations, preformatted
    text, tables with captions and header rows, footnotes, equations through the maths tree, figures
-   with assets, citations failing, and cross-references once structure 4 has built `references`. Cites
-   PUB-003, PUB-016, PUB-033, CNT-042, CNT-049, CNT-054, STR-027 and STR-029.
+   with assets, citations failing, and cross-references once structure 4 has built `references`. With
+   figures come the layout's `lists` - by layout schema 2 and a second version of the default layout -
+   and caption labels, which slice 2 deliberately left out because every list of a document of
+   paragraphs would be empty (decision A). Cites PUB-003, PUB-016, PUB-033, PUB-038, CNT-042,
+   CNT-049, CNT-054, STR-024, STR-027 and STR-029.
 4. **Themes and typefaces.** The default theme's Typst projection; themes.md's typeface and theme
    artifacts replace the image's faces, and the coverage check reads theirs. Its claims are
    themes.md's.
@@ -888,8 +1082,10 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    PUB-090 stays unclaimed, since slice 1 measured headings from level seven read as paragraphs.
 6. **Preview.** The whole-document preview (PUB-005, PUB-006), then the warm range preview as images
    (PUB-080), once the cadence question is answered.
-7. **Word.** word-output.md's writer in the job, `docx` in the default layout. Cites PUB-034, CNT-084,
-   PUB-073 and PUB-074, which need a second format to show.
+7. **Word.** word-output.md's writer in the job, `docx` in the default layout by a layout schema
+   version that reads one. Cites PUB-034, CNT-084, PUB-073, PUB-074 and **PUB-012**, all of which
+   need a second format to show: with one format there is nothing for a layout to differ about
+   (decision B of the second slice).
 
 **Claimed and cited by nothing yet**, each for a reason a test cannot get round: PUB-013 and STR-052
 need a baseline to pin into (T3); PUB-042 needs conditions to be anything but the identity (REU, T4);
@@ -936,3 +1132,19 @@ throwaway spike:**
 | A multi-page document through the whole job - the request, `assemble`, the template, Typst, the store and the record - checked by the pinned veraPDF image | Compliant, 0 rules failed. **Not approved** is the only artifact text on every page, and the sentence appears once in the tagged text; the bookmarks are the outline with its numbers                                                                                                            |
 | A publish whose store refuses the PDF, three attempts, each compiling                                                                                      | Failed at the `store` stage with no place, no publication and no artifact: 232 ms for all three                                                                                                                                                                                                  |
 | The same request compiled again from what it recorded                                                                                                      | Byte-identical, and `data_sha256` is the digest of the data compiled again: 149 ms                                                                                                                                                                                                               |
+
+**Measured while planning the second slice**, in a scratch directory since deleted: the same pinned
+Typst 0.15.1 and Liberation Serif faces, `--pdf-standard ua-1` and a pinned creation timestamp;
+pdf.js (the worker's) reading page labels, page boxes, artifact and tagged text and the structure
+tree; veraPDF by the digest in `apps/worker/src/testing/verapdf.ts`, `--rm --network none`. Only the
+three questions whose answers could change the plan were run, each by the smallest thing that answers
+it:
+
+| Case                                                                                                                                                                                                                                                                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q1** A 12-page document with a cover numbered `none`, front matter `i` restarting, a body `1` restarting and an appendix continuing in decimal; heads and feet of three slots (title, section, pages; revision, empty, page) in `page(header:, footer:)`; the notice above the head on every page | **veraPDF compliant, 106 rules, 0 failed**, in portrait and in landscape. Page labels exactly `["", "i", "ii", "iii", "1" ... "8"]` - the cover unlabelled, the appendix continuing at 7. Every page's artifact text holds **Not approved** once; the notice's sentence is tagged once, on page 1. Heads and feet are artifacts. `pages` from `locate(<end>).page()` printed `12`. Landscape A4: every page box `842 x 595` |
+| Q1+ The `section` field, first as "the last level-one heading before here"                                                                                                                                                                                                                          | **Wrong on the page a chapter begins** - it named the previous chapter, because the head is laid out above the heading. Corrected to "the first level-one heading on this page, else the last before it", which is what template 2 sets                                                                                                                                                                                     |
+| Q1+ Inside 72 plus a gutter of 18, outside 54                                                                                                                                                                                                                                                       | The tagged text's leftmost x is **90.00 on odd pages and 54.00 on even**, from the cover on: the gutter widens the inside margin, which alternates about the binding edge                                                                                                                                                                                                                                                   |
+| Q1+ The matter switch as a loop over segments of consecutive top-level nodes, with `set page(numbering:)` inside the loop body                                                                                                                                                                      | Compiles; identical labels and bookmarks. This is the shape template 2 uses                                                                                                                                                                                                                                                                                                                                                 |
+| **Q2** The same document's contents two ways: (a) Typst's `outline(depth: 2, target: heading.where(outlined: true))` with a `show outline.entry` rule; (b) our own list of links to `<n-ID>` labels, each page from `counter(page).at()`                                                            | **Both compliant, 106 rules, 0 failed.** Only (a) is tagged as a table of contents - `TOC TOCI Reference Link`, nested `TOC` for depth 2; (b) is `P Link`, which a screen reader hears as paragraphs of links. In both the numbers are the heading text we set and only the page is Typst's; the leader dots are artifacts; the `Contents` heading is not bookmarked. An empty `outline` compiles and passes                |
+| **Q3** `fixtures/v1/every-node.json` parsed now, then through an identity step to schema 2 and parsed again, both canonicalised                                                                                                                                                                     | **Parses member for member unchanged.** The canonical forms differ at one place only, `"schemaVersion":1` against `2`, so the content hash and version digest differ - decision D's named cost. A grep found 15 test files building **outlines** with a literal `schemaVersion: 1`, which schema 2 refuses; `dev-content.ts`'s literal is a component's content at its own version 1 and was left alone                     |

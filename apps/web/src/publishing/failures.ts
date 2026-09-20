@@ -43,6 +43,15 @@ export function failureWords(failure: Failure): string {
       return `The character ${failure.detail ?? ''} is in no typeface this publication can use.`;
     case 'character_disallowed':
       return `An invisible character, ${failure.detail ?? ''}, cannot be published. Delete it and publish again.`;
+    // Another attempt would make the same nothing, so this never says to publish again (PUB-079).
+    case 'nothing_to_publish':
+      return 'There is nothing to publish: no part of the outline is left, and the layout sets no cover.';
+    // The layout's own words and language: nothing in the document caused these, and another attempt
+    // would fail the same way, so they blame the layout and never say to publish again.
+    case 'layout_glyph_missing':
+      return `This publication's layout uses a character, ${failure.detail ?? ''}, that no typeface it can use has. The layout has to change before this document can be published.`;
+    case 'layout_language_not_publishable':
+      return `This publication's layout is in the language ${failure.detail ?? ''}, which cannot be published. The layout has to change before this document can be published.`;
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

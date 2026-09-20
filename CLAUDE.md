@@ -13,16 +13,17 @@ a web application and a desktop application**.
 > them are real and tested. A component can be created in a space, and its paragraphs opened, edited
 > and saved as versions, in `packages/editor`, `apps/web` and `apps/service`, over the version chain
 > in `packages/db`; its title, base language and base direction are edited above the surface. A
-> document can be created in a space and its outline - a tree of sections and component references -
-> restructured a version at a time, through `packages/domain/src/structure/`, the same chain and the
-> documents page in `apps/web`, which numbers its sections with the same function the service uses,
-> gives every node an address, and lists the document's figures, tables and equations beneath the
-> outline. Its latest version can be published from that page to a tagged PDF of its outline and
-> its components' paragraphs, marked **Not approved** on every page, through the `publish` job in
+> document can be created in a space and its outline - a tree of front matter, sections and component
+> references - restructured a version at a time, through `packages/domain/src/structure/`, the same
+> chain and the documents page in `apps/web`, which numbers its sections with the environment's
+> layout's scheme, the same one a publish uses, gives every node an address, and lists the document's
+> figures, tables and equations beneath the outline. Its latest version can be published from that
+> page to a tagged PDF laid out by that layout - a cover, a contents, running heads and feet, and
+> pages numbered per matter - marked **Not approved** on every page, through the `publish` job in
 > `apps/worker` and the routes in `apps/service/src/publishing.ts` - and nothing else authors or
 > publishes content: no list, table, mark or equation can be written, no paste, no metadata panel,
-> no making a component type, no cross-references resolved, no document view, and no layout, theme,
-> preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
+> no making a component type, no cross-references resolved, no document view, no list of figures, no
+> choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
 > exist.
 
@@ -64,7 +65,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,382 requirements in 22 documents under
+There are 1,384 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements
@@ -286,6 +287,8 @@ pnpm --filter @alloy-works/worker fetch-typst     # the pinned Typst, once per m
 pnpm --filter @alloy-works/api-contract generate  # rewrite openapi.json after changing a route
 pnpm --filter @alloy-works/api-client generate    # rewrite the client's types after that
 pnpm --filter @alloy-works/trace generate         # rewrite trace.json after changing a requirement or a design
+                                                  # run it AFTER prettier: reformatting a test file moves the
+                                                  # citation lines it records, and `trace pins` cannot see that
 pnpm trace show <ID>                              # one requirement: statement, tranche, state, design, tests
 pnpm trace search <term>                          # every requirement whose statement mentions the term
 pnpm trace area <XXX>                             # a whole area, with each requirement's state

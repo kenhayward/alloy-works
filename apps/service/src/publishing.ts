@@ -97,10 +97,24 @@ export function publishingHandlers(
             'This document has a newer version than the one this page opened.',
           );
         case 'format.unsupported':
+          // The contract refuses an empty or repeated formats list at the door (PUB-014); the store's
+          // own defence against a caller that skips the contract answers `formats: []`, which would
+          // read as nonsense joined into a sentence.
+          if (answer.formats.length === 0) {
+            throw new Error(
+              'A format refusal named no format: the contract should have refused it',
+            );
+          }
           throw new AppError(
             400,
             wireCode('format.unsupported'),
-            'This document can be published as PDF only.',
+            `The layout this document is published under does not make ${answer.formats.join(', ')}.`,
+          );
+        case 'layout.language':
+          throw new AppError(
+            400,
+            wireCode('layout.language'),
+            `This document is in ${answer.document}, and its layout is written in ${answer.layout}. It can be published only under a layout in its own language.`,
           );
         case 'requested': {
           const made = await readPublicationRequest(trx, answer.request.id);

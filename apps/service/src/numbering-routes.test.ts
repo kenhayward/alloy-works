@@ -5,6 +5,8 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  DEFAULT_LAYOUT_ID,
+  defaultLayout,
   findRole,
   grant,
   migrate,
@@ -16,6 +18,7 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import type { Layout } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -46,6 +49,7 @@ interface Numbering {
   document: string;
   version: { id: string; number: string };
   scheme: string;
+  layout: { id: string; version: { id: string; number: string } };
   occurrences: { node: string; version: string | null }[];
   entries: Entry[];
 }
@@ -536,6 +540,83 @@ describe('a document numbered through the service', () => {
     const answer = await call('alice', 'GET', `/v1/documents/${doc.id}/numbering`);
     expect(answer.statusCode).toBe(200);
     expect(answer.json<Numbering>()).toMatchObject({ occurrences: [], entries: [] });
+  });
+
+  it('numbers with the scheme of the layout the document is published under, and names it', async () => {
+    /** A new version of the environment's layout, by its id and its `revision.version`. */
+    const record = (content: Layout, openedFrom: string) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const recorded = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom,
+          author: ids.grace!,
+          substance: { kind: 'layout', content },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        const { id, revision, version } = recorded.version;
+        return { id, number: `${revision}.${version}` };
+      });
+
+    const declared = await tenantDb.withTenant(tenant, (trx) => defaultLayout(trx));
+    const section = declared.layout.scheme.sequences['section']!;
+    // A new version of the environment's layout, numbering the body's sections in upper roman. Its
+    // scheme is named apart from the default's, because STR-031 keys a numbering by that id.
+    const upperRoman: Layout = {
+      ...declared.layout,
+      scheme: {
+        id: 'upper-roman/1',
+        sequences: {
+          ...declared.layout.scheme.sequences,
+          section: { ...section, body: { ...section.body, format: ['upperRoman', 'decimal'] } },
+        },
+      },
+    };
+    const next = await record(upperRoman, declared.versionId);
+    expect(next.number).not.toBe(declared.number);
+    try {
+      let doc = await create('The dosing report');
+      const act = async (operation: Json) => {
+        const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+          openedFrom: doc.version.id,
+          operation,
+        });
+        expect(answer.statusCode, answer.body).toBe(200);
+        doc = answer.json<DocumentBody>();
+      };
+      await act({
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'section', title: text('Introduction') },
+      });
+      const [introduction] = doc.outline.nodes.map((node) => node.id);
+      await act({
+        operation: 'insert',
+        parent: introduction,
+        position: 0,
+        node: { type: 'section', title: text('Scope') },
+      });
+      const [scope] = doc.outline.nodes[0]!.children.map((child) => child.id);
+
+      const answer = await call('grace', 'GET', `/v1/documents/${doc.id}/numbering`);
+      expect(answer.statusCode, answer.body).toBe(200);
+      const body = answer.json<Numbering>();
+      // The scheme numbered against is the layout's, named by its own id, and the layout is named
+      // beside it at the version the numbers were taken from.
+      expect(body.scheme).toBe('upper-roman/1');
+      expect(body.layout).toEqual({ id: DEFAULT_LAYOUT_ID, version: next });
+      expect(
+        body.entries
+          .filter((entry) => entry.sequence === 'section')
+          .map((entry) => [entry.node, entry.number]),
+      ).toEqual([
+        [introduction, 'I'],
+        [scope, 'I.1'],
+      ]);
+    } finally {
+      // The environment's layout goes back to what the rest of this suite numbers against.
+      await record(declared.layout, next.id);
+    }
   });
 
   it('answers what is not a document here as absent, and a caller with no session as unknown', async () => {

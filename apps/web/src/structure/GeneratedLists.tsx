@@ -1,10 +1,10 @@
 import {
   conditions,
-  defaultNumberingScheme,
   listOf,
   number,
   resolve,
   type Contribution,
+  type NumberingScheme,
   type OutlineView,
 } from '@alloy-works/domain';
 import { useId, useMemo } from 'react';
@@ -33,6 +33,12 @@ const LISTS = [
 export interface GeneratedListsProps {
   readonly document: string;
   readonly outline: OutlineView;
+  /**
+   * The scheme every entry's label and number comes from: the layout version's this document would
+   * be published under (STR-036). `null` where that scheme could not be read, and then there are no
+   * lists to show rather than lists a publication would print differently.
+   */
+  readonly scheme: NumberingScheme | null;
   readonly known: Known;
   readonly names: Names;
   readonly onRetry: () => void;
@@ -51,6 +57,7 @@ export interface GeneratedListsProps {
 export function GeneratedLists({
   document,
   outline,
+  scheme,
   known,
   names,
   onRetry,
@@ -59,15 +66,19 @@ export function GeneratedLists({
   const prefix = useId();
   const contributions = known.state === 'loaded' ? known.contributions : NOTHING;
   const lists = useMemo(() => {
+    if (scheme === null) return [];
     const conditioned = conditions(resolve(outline, contributions));
-    const numbering = number(conditioned, defaultNumberingScheme);
+    const numbering = number(conditioned, scheme);
     return LISTS.map((list) => ({
       ...list,
-      word: defaultNumberingScheme.sequences[list.sequence]?.body.label ?? list.heading,
+      word: scheme.sequences[list.sequence]?.body.label ?? list.heading,
       entries: listOf(conditioned, numbering, list.sequence),
     }));
-  }, [outline, contributions]);
+  }, [outline, contributions, scheme]);
 
+  // Nothing at all without a scheme: the page says once why, and no entry here could be labelled or
+  // numbered without guessing at what a publication would print.
+  if (scheme === null) return null;
   if (known.state === 'loading') return <p>Reading the figures, tables and equations...</p>;
   if (known.state === 'failed') {
     return known.signedOut ? (

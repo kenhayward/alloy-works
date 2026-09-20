@@ -7563,7 +7563,7 @@
     {
       "id": "PUB-008",
       "area": "PUB",
-      "statement": "A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the total pages and the revision",
+      "statement": "A layout must declare running heads and feet, with fields for at least the document title, the current section, the page number, the physical page count and the revision",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -7642,13 +7642,22 @@
       "line": 70
     },
     {
+      "id": "PUB-095",
+      "area": "PUB",
+      "statement": "A layout must declare, as a BCP 47 tag, the language its generated words are in; publishing a document whose language that tag does not match as a language range must be refused, naming both",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 71
+    },
+    {
       "id": "PUB-015",
       "area": "PUB",
       "statement": "PDF must be a first-class output and must meet the fidelity bar in scope §4",
       "tranche": "T1",
       "status": "Superseded by PUB-087",
       "document": "PUB-publishing-and-output.md",
-      "line": 76
+      "line": 77
     },
     {
       "id": "PUB-087",
@@ -7657,7 +7666,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 77
+      "line": 78
     },
     {
       "id": "PUB-016",
@@ -7666,7 +7675,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 78
+      "line": 79
     },
     {
       "id": "PUB-017",
@@ -7675,7 +7684,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 79
+      "line": 80
     },
     {
       "id": "PUB-018",
@@ -7684,7 +7693,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-092",
       "document": "PUB-publishing-and-output.md",
-      "line": 80
+      "line": 81
     },
     {
       "id": "PUB-092",
@@ -7693,7 +7702,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 81
+      "line": 82
     },
     {
       "id": "PUB-019",
@@ -7702,7 +7711,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 82
+      "line": 83
     },
     {
       "id": "PUB-020",
@@ -7711,7 +7720,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 83
+      "line": 84
     },
     {
       "id": "PUB-021",
@@ -7720,7 +7729,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 84
+      "line": 85
     },
     {
       "id": "PUB-022",
@@ -7729,7 +7738,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 85
+      "line": 86
     },
     {
       "id": "PUB-068",
@@ -7738,7 +7747,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 86
+      "line": 87
     },
     {
       "id": "PUB-069",
@@ -7747,7 +7756,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 87
+      "line": 88
     },
     {
       "id": "PUB-070",
@@ -7756,7 +7765,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 88
+      "line": 89
     },
     {
       "id": "PUB-023",
@@ -7765,7 +7774,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "PUB-024",
@@ -7774,7 +7783,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "PUB-025",
@@ -7783,7 +7792,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "PUB-026",
@@ -7792,7 +7801,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "PUB-027",
@@ -7801,7 +7810,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "PUB-028",
@@ -7810,7 +7819,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "PUB-029",
@@ -7819,7 +7828,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "PUB-065",
@@ -7828,7 +7837,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "PUB-066",
@@ -7837,7 +7846,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "PUB-067",
@@ -7846,7 +7855,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "PUB-078",
@@ -7855,7 +7864,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "PUB-030",
@@ -7864,7 +7873,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-090",
       "document": "PUB-publishing-and-output.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "PUB-090",
@@ -7873,7 +7882,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "PUB-031",
@@ -7882,7 +7891,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "PUB-032",
@@ -7891,7 +7900,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "PUB-033",
@@ -7900,7 +7909,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "PUB-034",
@@ -7909,7 +7918,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "PUB-035",
@@ -7918,7 +7927,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "PUB-036",
@@ -7927,7 +7936,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "PUB-091",
@@ -7936,7 +7945,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "PUB-080",
@@ -7945,7 +7954,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "PUB-037",
@@ -7954,7 +7963,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "PUB-038",
@@ -7963,7 +7972,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "PUB-039",
@@ -7972,7 +7981,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "PUB-040",
@@ -7981,7 +7990,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "PUB-041",
@@ -7990,7 +7999,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "PUB-042",
@@ -7999,7 +8008,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "PUB-043",
@@ -8008,7 +8017,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "PUB-063",
@@ -8017,7 +8026,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "PUB-064",
@@ -8026,7 +8035,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "PUB-085",
@@ -8035,7 +8044,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "PUB-044",
@@ -8044,7 +8053,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "PUB-045",
@@ -8053,7 +8062,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "PUB-082",
@@ -8062,7 +8071,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "PUB-046",
@@ -8071,7 +8080,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "PUB-075",
@@ -8080,7 +8089,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "PUB-076",
@@ -8089,7 +8098,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "PUB-077",
@@ -8098,7 +8107,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "PUB-047",
@@ -8107,7 +8116,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "PUB-093",
@@ -8116,7 +8125,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "PUB-048",
@@ -8125,7 +8134,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "PUB-049",
@@ -8134,7 +8143,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "PUB-050",
@@ -8143,7 +8152,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "PUB-057",
@@ -8152,7 +8161,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "PUB-058",
@@ -8161,7 +8170,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "PUB-059",
@@ -8170,7 +8179,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "PUB-060",
@@ -8179,7 +8188,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "PUB-073",
@@ -8188,7 +8197,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "PUB-074",
@@ -8197,7 +8206,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "PUB-081",
@@ -8206,7 +8215,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "PUB-083",
@@ -8215,7 +8224,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 225
+      "line": 226
     },
     {
       "id": "PUB-084",
@@ -8224,7 +8233,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 226
+      "line": 227
     },
     {
       "id": "PUB-051",
@@ -8233,7 +8242,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 256
+      "line": 257
     },
     {
       "id": "PUB-052",
@@ -8242,7 +8251,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 257
+      "line": 258
     },
     {
       "id": "PUB-053",
@@ -8251,7 +8260,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 258
+      "line": 259
     },
     {
       "id": "PUB-071",
@@ -8260,7 +8269,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 259
+      "line": 260
     },
     {
       "id": "PUB-072",
@@ -8269,7 +8278,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 260
+      "line": 261
     },
     {
       "id": "PUB-094",
@@ -8278,16 +8287,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 261
+      "line": 262
     },
     {
       "id": "PUB-079",
       "area": "PUB",
-      "statement": "A resolved document with no body content must publish the front and back matter its layout declares, and must fail with a named error only where the layout declares none - never produce an empty artifact",
+      "statement": "A resolved document in which no outline node survives conditions must publish the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and must fail with a named error otherwise - never produce an empty artifact",
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 262
+      "line": 263
     },
     {
       "id": "PUB-054",
@@ -8296,7 +8305,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 278
+      "line": 279
     },
     {
       "id": "PUB-055",
@@ -8305,7 +8314,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 279
+      "line": 280
     },
     {
       "id": "PUB-056",
@@ -8314,7 +8323,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 280
+      "line": 281
     },
     {
       "id": "REL-001",
@@ -9937,13 +9946,22 @@
       "line": 63
     },
     {
+      "id": "STR-064",
+      "area": "STR",
+      "statement": "Front matter must precede the body and appendices in an outline: a node in front matter may appear only at the top level, before every node that is not",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 64
+    },
+    {
       "id": "STR-013",
       "area": "STR",
       "statement": "Numbering schemes must be declared by the publishing layout, and applied here (**PUB** owns the declaration)",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "STR-014",
@@ -9952,7 +9970,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "STR-015",
@@ -9961,7 +9979,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "STR-016",
@@ -9970,7 +9988,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "STR-017",
@@ -9979,7 +9997,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "STR-018",
@@ -9988,7 +10006,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "STR-019",
@@ -9997,7 +10015,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "STR-020",
@@ -10006,7 +10024,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "STR-021",
@@ -10015,7 +10033,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "STR-022",
@@ -10024,7 +10042,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "STR-051",
@@ -10033,7 +10051,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "STR-052",
@@ -10042,7 +10060,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "STR-023",
@@ -10051,7 +10069,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "STR-024",
@@ -10060,7 +10078,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "STR-025",
@@ -10069,7 +10087,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "STR-026",
@@ -10078,7 +10096,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "STR-027",
@@ -10087,7 +10105,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "STR-028",
@@ -10096,7 +10114,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "STR-029",
@@ -10105,7 +10123,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "STR-030",
@@ -10114,7 +10132,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "STR-031",
@@ -10123,7 +10141,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "STR-032",
@@ -10132,7 +10150,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "STR-033",
@@ -10141,7 +10159,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "STR-056",
@@ -10150,7 +10168,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "STR-055",
@@ -10159,7 +10177,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "STR-062",
@@ -10168,7 +10186,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "STR-034",
@@ -10177,7 +10195,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "STR-035",
@@ -10186,7 +10204,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "STR-036",
@@ -10195,7 +10213,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "STR-037",
@@ -10204,7 +10222,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "STR-038",
@@ -10213,7 +10231,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "STR-039",
@@ -10222,7 +10240,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "STR-063",
@@ -10231,7 +10249,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "STR-040",
@@ -10240,7 +10258,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "STR-041",
@@ -10249,7 +10267,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "STR-042",
@@ -10258,7 +10276,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "STR-043",
@@ -10267,7 +10285,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "STR-044",
@@ -10276,7 +10294,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "STR-045",
@@ -10285,7 +10303,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "STR-046",
@@ -10294,7 +10312,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "STR-047",
@@ -10303,7 +10321,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "STR-048",
@@ -10312,7 +10330,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "STR-049",
@@ -10321,7 +10339,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "STR-050",
@@ -10330,7 +10348,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "STY-001",
@@ -12906,25 +12924,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 286
+      "line": 287
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 287
+      "line": 288
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 288
+      "line": 289
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 289
+      "line": 290
     },
     {
       "id": "REL-N01",
@@ -13014,31 +13032,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 234
+      "line": 235
     },
     {
       "id": "STY-N01",
@@ -13786,35 +13804,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 295
+      "line": 296
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 296
+      "line": 297
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 297
+      "line": 298
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 298
+      "line": 299
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 299
+      "line": 300
     },
     {
       "id": "REL-Q01",
@@ -13940,28 +13958,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 241
+      "line": 242
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "STY-Q01",
@@ -14732,7 +14750,7 @@
         },
         {
           "id": "PUB-012",
-          "howItIsMet": "A layout holds one member per format, each its own declaration; `paged` is a property of a format"
+          "howItIsMet": "A layout holds one member per format, each its own declaration, so everything a page means is the `pdf` member's and nothing above it. `paged` belongs to a format rather than to the layout, and is not stored until a format without pages exists to read it (decision B of the second slice): the shape lets a layout differ per format today, and the Word slice is what cites it"
         },
         {
           "id": "PUB-013",
@@ -14741,6 +14759,10 @@
         {
           "id": "PUB-014",
           "howItIsMet": "A format is supported where the layout has a member for it; a request naming another is refused `format_unsupported` before anything is queued"
+        },
+        {
+          "id": "PUB-095",
+          "howItIsMet": "A layout's `language` is a BCP 47 tag, taken as a language range and matched to the document's language by RFC 4647 basic filtering (the second publishing plan's decision G): `en` takes `en-GB`. A document outside it is refused `layout_language` at the request, naming both tags, before anything is queued"
         },
         {
           "id": "PUB-016",
@@ -14764,7 +14786,7 @@
         },
         {
           "id": "PUB-037",
-          "howItIsMet": "The layout's `contents.depth` is passed to `contents`; the template sets each entry as a link with its page from Typst"
+          "howItIsMet": "The layout's `contents.depth` reaches Typst's `outline`, which selects the headings the template sets with `number`'s numbers, so the depth is the layout's and only the page is the engine's (decision C of the second slice); `contents(conditioned, numbering, depth)` is what a worker test measures the compiled entries against"
         },
         {
           "id": "PUB-038",
@@ -14828,7 +14850,7 @@
         },
         {
           "id": "PUB-079",
-          "howItIsMet": "Where no node survives conditions, the document publishes the front and back matter its layout declares; a layout declaring none fails `nothing_to_publish`"
+          "howItIsMet": "Where no node survives conditions, the document publishes the front and back matter its layout declares that has something to show - a cover, or a contents with entries - and otherwise fails `nothing_to_publish`"
         },
         {
           "id": "STR-013",
@@ -15381,6 +15403,10 @@
           "howItIsMet": "A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`"
         },
         {
+          "id": "STR-064",
+          "howItIsMet": "The outline parse refuses a `front` node below the top level, or after any top-level node that is not front matter, naming the node; every operation's result goes back through that parse, and an operation that would break the order is refused in words of its own"
+        },
+        {
           "id": "STR-017",
           "howItIsMet": "A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter"
         },
@@ -15790,7 +15816,7 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 322,
+      "line": 323,
       "kind": "title"
     },
     {
@@ -15808,25 +15834,25 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 366,
+      "line": 367,
       "kind": "title"
     },
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 216,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 382,
+      "line": 457,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 188,
+      "line": 200,
       "kind": "title"
     },
     {
@@ -15886,25 +15912,25 @@
     {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
-      "line": 111,
+      "line": 116,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
-      "line": 238,
+      "line": 242,
       "kind": "title"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 440,
+      "line": 474,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 382,
+      "line": 416,
       "kind": "title"
     },
     {
@@ -15952,85 +15978,121 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2310,
+      "line": 2515,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 362,
+      "line": 410,
+      "kind": "title"
+    },
+    {
+      "id": "STR-036",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 2719,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2350,
+      "line": 2555,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2120,
+      "line": 2325,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2166,
+      "line": 2371,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 679,
+      "line": 727,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-007",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 291,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-008",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 438,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-009",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 340,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-037",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 474,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-088",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 525,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 333,
+      "line": 335,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 485,
+      "line": 539,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 360,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 376,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 381,
+      "line": 384,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 503,
+      "line": 557,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 347,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 430,
+      "line": 484,
       "kind": "title"
     },
     {
@@ -16060,7 +16122,7 @@
     {
       "id": "STR-003",
       "file": "packages/db/src/documents.test.ts",
-      "line": 271,
+      "line": 275,
       "kind": "title"
     },
     {
@@ -16100,9 +16162,21 @@
       "kind": "title"
     },
     {
+      "id": "PUB-014",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 318,
+      "kind": "title"
+    },
+    {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 610,
+      "line": 755,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-095",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 364,
       "kind": "title"
     },
     {
@@ -16138,31 +16212,31 @@
     {
       "id": "CNT-145",
       "file": "packages/db/src/versions.test.ts",
-      "line": 221,
+      "line": 233,
       "kind": "title"
     },
     {
       "id": "MET-016",
       "file": "packages/db/src/versions.test.ts",
-      "line": 206,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "VER-007",
       "file": "packages/db/src/versions.test.ts",
-      "line": 171,
+      "line": 183,
       "kind": "title"
     },
     {
       "id": "VER-010",
       "file": "packages/db/src/versions.test.ts",
-      "line": 200,
+      "line": 212,
       "kind": "title"
     },
     {
       "id": "VER-042",
       "file": "packages/db/src/versions.test.ts",
-      "line": 285,
+      "line": 297,
       "kind": "title"
     },
     {
@@ -16498,7 +16572,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 119,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -16726,13 +16800,31 @@
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 210,
+      "line": 235,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-079",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 424,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 283,
+      "line": 308,
+      "kind": "title"
+    },
+    {
+      "id": "STR-013",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 397,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-011",
+      "file": "packages/domain/src/publishing/layout.test.ts",
+      "line": 25,
       "kind": "title"
     },
     {
@@ -16780,103 +16872,109 @@
     {
       "id": "CNT-041",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 429,
+      "line": 578,
       "kind": "title"
     },
     {
       "id": "CNT-047",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 152,
+      "line": 153,
       "kind": "title"
     },
     {
       "id": "STR-014",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 182,
+      "line": 183,
       "kind": "title"
     },
     {
       "id": "STR-015",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 204,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "STR-016",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 229,
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "STR-017",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 385,
+      "line": 534,
       "kind": "title"
     },
     {
       "id": "STR-018",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 484,
+      "line": 633,
       "kind": "title"
     },
     {
       "id": "STR-021",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 416,
+      "line": 565,
       "kind": "title"
     },
     {
       "id": "STR-022",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 455,
+      "line": 604,
       "kind": "title"
     },
     {
       "id": "STR-003",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 220,
+      "line": 221,
       "kind": "title"
     },
     {
       "id": "STR-007",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 269,
+      "line": 270,
       "kind": "title"
     },
     {
       "id": "STR-010",
       "file": "packages/domain/src/structure/operations.test.ts",
-      "line": 288,
+      "line": 289,
       "kind": "title"
     },
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 76,
+      "line": 78,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 91,
+      "line": 93,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 125,
+      "line": 127,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 138,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 167,
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "STR-064",
+      "file": "packages/domain/src/structure/outline.test.ts",
+      "line": 613,
       "kind": "title"
     },
     {

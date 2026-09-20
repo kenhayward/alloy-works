@@ -1854,6 +1854,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };
@@ -2070,8 +2083,16 @@ export interface operations {
                             id: string;
                             number: string;
                         };
-                        /** @description The scheme numbered against, by its id: `default/1` until layouts exist */
+                        /** @description The scheme numbered against, by its id: the layout's */
                         scheme: string;
+                        /** @description The layout whose scheme these numbers were taken from, at the version read */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        };
                         /** @description Each component reference, in outline order, and the component version it resolved to: null where the caller may not read the component, where it waits on revisions, or where its content does not read. Its contributions are then not counted, and every number it could have moved is null */
                         occurrences: {
                             node: string;
@@ -2084,7 +2105,7 @@ export interface operations {
                             block: string | null;
                             sequence: string;
                             /** @enum {string} */
-                            matter: "body" | "appendix";
+                            matter: "front" | "body" | "appendix";
                             /** @description The section counter stack at this point */
                             sections: number[];
                             /** @description This sequence's counter; null when not known */
@@ -2521,7 +2542,7 @@ export interface operations {
                         node: string;
                         numbered?: boolean;
                         /** @enum {string} */
-                        matter?: "body" | "appendix";
+                        matter?: "front" | "body" | "appendix";
                         /** @enum {string} */
                         pageBreak?: "none" | "page" | "recto";
                         mode?: {
@@ -2571,6 +2592,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };
@@ -2613,6 +2647,19 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
@@ -2712,6 +2759,19 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                language: string;
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                         /** @description outline_invalid: why the operation does not apply */
                         reason?: string;
@@ -2889,7 +2949,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -2902,7 +2962,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the template cannot make */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3999,7 +4059,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -5272,6 +5332,19 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description The environment's layout at its latest version, which is the version a publish requested now would be made under (publishing.md, "The layout") */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            language: string;
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };

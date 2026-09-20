@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MAXIMUM_OUTLINE_DEPTH } from './outline.js';
+import { MAXIMUM_OUTLINE_DEPTH, outlineMatterSchema } from './outline.js';
 
 /**
  * How one part of a number is written. Alphabetic is bijective base 26 - `z` is followed by `aa`, as a
@@ -43,8 +43,12 @@ export const numberingRuleSchema = z.strictObject({
 });
 export type NumberingRule = z.infer<typeof numberingRuleSchema>;
 
-/** Every sequence has a rule in each matter: an appendix numbers in its own scheme (STR-016). */
+/**
+ * Every sequence has a rule in each matter: front matter and an appendix each number in a scheme of
+ * their own (STR-016, decision E), so a preface's numbers never shift the body's.
+ */
 export const sequenceRulesSchema = z.strictObject({
+  front: numberingRuleSchema,
   body: numberingRuleSchema,
   appendix: numberingRuleSchema,
 });
@@ -53,9 +57,11 @@ export const sequenceRulesSchema = z.strictObject({
 export const REQUIRED_SEQUENCES = ['section', 'figure', 'table', 'equation', 'footnote'] as const;
 
 /**
- * A numbering scheme: an open map from a sequence's name to its rules. **Not stored anywhere** - the
- * product's default below is a value in code, and a layout's will be a value PUB reads from the layout
- * artifact (STR-013) - so nothing here is a shape a later rule could find already written.
+ * A numbering scheme: an open map from a sequence's name to its rules. The product's default below is
+ * a value in code, and a layout's is **stored inside the layout's versions** (STR-013, PUB-011), which
+ * are insert-only: whatever this parse accepts, a later reader must go on accepting. So every rule
+ * below holds in every matter - front, body and appendix alike - and nothing the engine cannot number
+ * sensibly is let in to be found already written.
  *
  * `id` names the scheme so that anything keyed by the inputs to a numbering (STR-031) can key by it.
  * The section sequence's `restartAt` and `prefix` are `null`: a section number is the counter stack
@@ -74,8 +80,8 @@ export const numberingSchemeSchema = z
     const section = scheme.sequences['section'];
     return (
       section === undefined ||
-      [section.body, section.appendix].every(
-        (rule) => rule.restartAt === null && rule.prefix === null,
+      outlineMatterSchema.options.every(
+        (matter) => section[matter].restartAt === null && section[matter].prefix === null,
       )
     );
   }, 'A section number is its counter stack, so the section sequence neither restarts nor takes a prefix')
@@ -85,10 +91,10 @@ export const numberingSchemeSchema = z
         // Every sequence but section (checked above) and footnote: a house style routinely
         // restarts footnotes per chapter with no prefix, and its labels are meant to repeat.
         if (name === 'section' || name === 'footnote') return true;
-        return [rules.body, rules.appendix].every(
-          (rule) =>
-            rule.restartAt === null || (rule.prefix !== null && rule.prefix >= rule.restartAt),
-        );
+        return outlineMatterSchema.options.every((matter) => {
+          const rule = rules[matter];
+          return rule.restartAt === null || (rule.prefix !== null && rule.prefix >= rule.restartAt);
+        });
       }),
     'A rule that restarts must prefix with the section number down to at least the depth it ' +
       'restarts at, or two restarts of its counter could print the same label',
@@ -96,6 +102,7 @@ export const numberingSchemeSchema = z
 export type NumberingScheme = z.infer<typeof numberingSchemeSchema>;
 
 const caption = (label: string) => ({
+  front: { label, format: ['decimal'], restartAt: 1, prefix: 1, separator: '.' },
   body: { label, format: ['decimal'], restartAt: 1, prefix: 1, separator: '.' },
   appendix: { label, format: ['decimal'], restartAt: 1, prefix: 1, separator: '.' },
 });
@@ -112,7 +119,11 @@ const continuous = (label: string) => ({
  * **The product's default scheme** (structure.md, "The scheme", design decision E): decimal sections,
  * figures and tables prefixed with their chapter and restarting with it, equations continuous,
  * footnotes continuous, and appendices in upper alphabetic - "Appendix A" is `A`, its sections `A.1`,
- * its figures `Figure A.1`, and its equations `Equation A.1`, restarting per appendix. It is what every
+ * its figures `Figure A.1`, and its equations `Equation A.1`, restarting per appendix. Front matter
+ * numbers in lower roman on counters of its own - a numbered preface is `i`, its figures `Figure i.1`,
+ * its equations `Equation i` - and its footnotes count from 1, so no body number moves when a preface
+ * is added. The id stayed `default/1` when front rules arrived: an outline with no front matter
+ * numbers exactly as it did before them. It is what every
  * document numbers against until PUB gives a layout a scheme of its own (STR-013, PUB-011), and PUB
  * replaces it without the engine changing.
  */
@@ -120,16 +131,18 @@ export const defaultNumberingScheme: NumberingScheme = numberingSchemeSchema.par
   id: 'default/1',
   sequences: {
     section: {
+      front: { ...continuous(''), format: ['lowerRoman', 'decimal'] },
       body: continuous(''),
       appendix: { ...continuous(''), format: ['upperAlpha', 'decimal'] },
     },
     figure: caption('Figure'),
     table: caption('Table'),
     equation: {
+      front: { ...continuous('Equation'), format: ['lowerRoman'] },
       body: continuous('Equation'),
       appendix: { ...continuous('Equation'), restartAt: 1, prefix: 1 },
     },
-    footnote: { body: continuous(''), appendix: continuous('') },
+    footnote: { front: continuous(''), body: continuous(''), appendix: continuous('') },
   },
 });
 

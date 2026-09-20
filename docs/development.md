@@ -202,7 +202,10 @@ in for: the tests drive the keymap and drag and drop with synthetic events, whic
 and its own dragging never see.
 
 **Numbering changes nothing stored**, so a database from before 0.28.0 is numbered as it stands and
-needs no step. To see it by hand, carry on as Ada with **The dosing report** as step 10 left it:
+needs no step - but since 0.31.0 it is numbered with the scheme the environment's **layout** carries,
+which migration 0018 seeds, so run `pnpm dev:setup` on a database prepared before then or the
+document page answers `500`. To see it by hand, carry on as Ada with **The dosing report** as step 10
+left it:
 **Introduction**, **Method and materials** with **Install the printer** under it, and **Results**.
 
 1. Each row shows its number before its title: `1` **Introduction**, `2` **Method and materials**,
@@ -218,21 +221,32 @@ needs no step. To see it by hand, carry on as Ada with **The dosing report** as 
    a node left out uses up no number. Select **Install the printer**: its own **Numbered** is still
    ticked, and beside it the page says **Not numbered while Method and materials is not.** Press
    `Ctrl+Z`: **Undone. Method and materials is now numbered.** `Ctrl+Z` undoes from the tree, from
-   **Numbered** and **Appendix** and from **Starts on** alike, so it works straight after unticking the
-   box too; only a text field, such as **Title**, keeps it as its own undo.
-4. Select **Results** and tick **Appendix**: **Results is now an appendix.**, and its number is `A`.
-   Click **Results** in the tree and press `Alt+Right`: nothing moves, and the page says **An appendix
-   stays at the top level.** Select **Install the printer**: it has a **Numbered** box and no
-   **Appendix**, which only a top-level node is offered.
-5. Select **Install the printer**, press **Add component**, choose **Replace the printer toner** (made
+   **Numbered** and **Matter** and from **Starts on** alike, so it works straight after unticking the
+   box or changing the select too; only a text field, such as **Title**, keeps it as its own undo.
+4. Select **Results** and choose **Appendix** in **Matter**: **Results is now an appendix.**, and its
+   number is `A`. Click **Results** in the tree and press `Alt+Right`: nothing moves, and the page
+   says **Front matter and appendices stay at the top level.** Select **Install the printer**: it has
+   a **Numbered** box and no **Matter**, which only a top-level node is offered.
+5. **Front matter, and why it has to come first.** Select **Introduction**, the first top-level row,
+   and choose **Front matter**: **Introduction is now front matter.** Its number becomes `i` and
+   **Method and materials** becomes `1`, because front matter counts in a scheme of its own and the
+   body starts again. Select **Results**, the appendix, and open **Matter**: it offers **Body** and
+   **Appendix** only, because a node that is not front matter comes before it and front matter has to
+   come first. (**Method and materials**, which follows the front matter directly, still offers all
+   three: it could become the second front node.) Select **Introduction** again and press `Alt+Down`:
+   nothing moves, and the page says **Front matter comes before the rest of the outline.** Choose
+   **Body** to put it back, and every number returns.
+6. Select **Install the printer**, press **Add component**, choose **Replace the printer toner** (made
    under **New component** above) and press **Add**: it goes after **Install the printer** as `2.2`.
    Add it again, from the new row: `2.3`. One component, placed twice, each place with its number.
-6. The address bar ends `#/documents/` and the document's id. Open
+7. The address bar ends `#/documents/` and the document's id. Open
    `http://dev.acme.localhost:8088/v1/documents/<that id>/numbering` in the same window: the numbering
    of the latest version, with `"scheme": "default/1"`, a `section` entry for each of `1`, `2`, `2.1`,
    `2.2`, `2.3` and `A`, each naming its node, and under `occurrences` the component version each of
-   the three component rows resolved to. There is no figure yet, because nothing holds one.
-7. **Figure numbers, through the API**, because the editor writes paragraphs alone. Open **Replace the
+   the three component rows resolved to. There is no figure yet, because nothing holds one. Beside
+   them, `layout` names the environment's layout and the version numbered against - the same scheme
+   the panel used for the numbers on the page, and the same version a publish made now would record.
+8. **Figure numbers, through the API**, because the editor writes paragraphs alone. Open **Replace the
    printer toner**; the address bar ends `#/components/` and its id. In the browser's console, on that
    page, give it two figures after its paragraph and make a version of that - claiming the lock
    (`move: true` takes it from another window of yours, if one holds it), saving one iteration, and
@@ -279,7 +293,7 @@ needs no step. To see it by hand, carry on as Ada with **The dosing report** as 
    on the editor opens **Replace the printer toner** for reading only, because it holds figures it
    cannot change yet.
 
-8. **A number never says what somebody may not read.** Alice has **Reader** on General from step 9.
+9. **A number never says what somebody may not read.** Alice has **Reader** on General from step 9.
    As Ada, open **Replace the printer toner**, choose **Manage access**, and give Alice **Reader** at
    **This component** with **Deny**. Signed in as Alice, open the document's numbering: the section
    entries are the same six, both **Replace the printer toner** occurrences answer `"version": null`,
@@ -289,11 +303,14 @@ needs no step. To see it by hand, carry on as Ada with **The dosing report** as 
 
 These numbering steps are written from the code and its tests, and were **not** followed in a
 browser: the renderer's tests run in jsdom and the route's on the wire. What only a person can check
-is that the numbers, the two boxes, the hint and the appendix's refusal look and read right.
+is that the numbers, the **Numbered** box, the **Matter** select, the hint and the two refusals look
+and read right. That the panel's numbers are the ones a publish would produce is checked in the
+suite, by numbering the panel under a layout whose scheme is not the default's and comparing every
+number with `assemble`'s.
 
 **Navigation changes nothing stored either**, so a document from before 0.29.0 has addresses and lists
 the moment it opens. To see it by hand, sign in as Ada and open **The dosing report** again from
-**Documents**, as step 8 above left it.
+**Documents**, as step 9 above left it.
 
 1. Select **Install the printer**. Beneath the tree, **Link to Install the printer** shows an address
    ending `#/documents/<the document's id>/nodes/<its id>`, matching the browser's own address bar.
@@ -311,7 +328,7 @@ the moment it opens. To see it by hand, sign in as Ada and open **The dosing rep
 toner` and `Figure 1.4 A caption in Replace the printer toner` - the chapter prefix followed
    **Method and materials** from `2` to `1` at once, before the page heard back from the service.
    Choose a figure's link: the occurrence that holds it is chosen and marked in the tree.
-5. Signed in as Alice, denied **Replace the printer toner** in step 8 above, the same document lists
+5. Signed in as Alice, denied **Replace the printer toner** in step 9 above, the same document lists
    no figures at all: neither occurrence's caption nor number is hers to see, and nothing says the
    component behind them holds any.
 
@@ -324,8 +341,12 @@ Chromium against the same fake.
 next time `pnpm dev:setup` runs - in containers, the `setup` container runs it. It adds a publication as
 a kind of artifact, the tables a request and a publication are kept in, and a ninth starter role,
 Publisher, which alone may publish; the seed then gives Ada and Grace Publisher on General beside
-Author. It changes nothing you had. Without a worker, a publish says **Publishing...** and the page
-keeps asking about it, less and less often, for as long as it stays open.
+Author. **A database prepared before 0.31.0** gains migration 0018 the same way: a layout as a kind of
+artifact, the product's default layout at version 0.1, the one row that declares it, and the layout
+columns on a request and a publication. Neither changes anything you had: a publication made before
+0.31.0 was made under no layout, and is still shown as made with publication template 1.
+Without a worker, a publish says **Publishing...** and the page keeps asking about it, less and less
+often, for as long as it stays open.
 
 To publish by hand, sign in as Ada and choose **Documents**:
 
@@ -341,13 +362,28 @@ To publish by hand, sign in as Ada and choose **Documents**:
 4. Choose **Open the publication**. The address ends `#/publications/` and the publication's id, and
    the page shows **Calibration**, **Not approved. This is a draft publication, not made from an
    approved baseline.**, **Version 0.3, published by Ada on** the date and time, **Made with Typst
-   0.15.1 and publication template 1.**, **Download the PDF** with its size, and **Open the document**.
+   0.15.1 and publication template 2.**, **Download the PDF** with its size, and **Open the document**.
+   Template 2 is the one every publish uses since 0.31.0, because every request is made under a
+   layout; template 1 is shown only by a publication made before layouts existed.
 5. Choose **Download the PDF**: the browser saves the file under the publication's id, with `.pdf`,
-   never under the document's title. The PDF says **Not approved** at the top of every page, then
-   **Calibration** as a heading and the sentence once, in bold, then **1 Scope** and **2 Install the
-   printer**, the component's two paragraphs beneath it; its bookmarks are **1 Scope** and **2 Install
-   the printer**. The link is signed when the page opens and lasts five minutes: after that the store
-   refuses it, and opening the publication again signs a new one.
+   never under the document's title. The PDF is three pages, laid out by the product's default layout:
+   A4 portrait with an inch margin.
+   - **Page 1 is the cover**, and carries no page number: **Not approved** at the top right, then
+     **Calibration** as a heading and the notice's sentence once, in bold.
+   - **Page 2 is the contents**, numbered `i`. **Not approved** at the top right again, then the
+     running head - **Calibration** on the left, nothing on the right, since no section has begun -
+     then **Contents**, **1 Scope** and **2 Install the printer**, each with leader dots and the page
+     `1`, then the foot: **Revision 0.3** on the left and **Page i** on the right. The entries are
+     links, and a screen reader announces them as a table of contents.
+   - **Page 3 is the body**, numbered `1`. The head reads **Calibration** and **1 Scope**, the page
+     holds **1 Scope** and **2 Install the printer** with the component's two paragraphs beneath it,
+     and the foot reads **Revision 0.3** and **Page 1**.
+   - Its bookmarks are **1 Scope** and **2 Install the printer** alone: neither the cover's title nor
+     the contents' is bookmarked.
+
+   The link is signed when the page opens and lasts five minutes: after that the store refuses it, and
+   opening the publication again signs a new one.
+
 6. **A component the publisher may not read.** Still as Ada, open **Replace the printer toner** (made
    under **New component** above), choose **Manage access**, and give Grace **Reader** at **This
    component** with **Deny**. Open **Calibration** again, select **Install the printer**, press **Add
@@ -357,24 +393,34 @@ To publish by hand, sign in as Ada and choose **Documents**:
    component you may not read is placed here. Only someone who may read every component can publish
    this document.** - and nothing else of it, not even the figures below.
 7. **Every reason at once.** Back in Ada's window, press **Publish as PDF**. Ada may read **Replace the
-   printer toner**, and it holds the two figures step 7 of the numbering steps gave it, which cannot be
+   printer toner**, and it holds the two figures step 8 of the numbering steps gave it, which cannot be
    published yet: the page lists **3 Replace the printer toner: A figure cannot be published yet.**
    twice, once for each. Select row `3`, press **Remove component** and then **Remove**, and press
    **Publish as PDF** again: **Published.**, and the list shows two publications, the newer first.
 8. **Somebody who may read and not publish.** Sign in as **Alice**, who has **Reader** on General from
    step 9 of the document steps, and open **Calibration**: **Publications** lists both, and there is no
    **Publish as PDF**. She can open either and download it.
-9. **The desktop app.** Run `pnpm app`, sign in as Ada, open a publication and choose **Download the
-   PDF**. The link leaves the renderer's address for the store's, and the shell has no handling of its
-   own for that; nobody has yet checked whether the window saves the file, opens it, or does nothing.
-   Note what it does - this is the step no test covers.
+9. **A document the layout does not speak for.** As Ada, choose **Documents** and **New document**,
+   type `Etalonnage` in **Title**, replace `en-GB` in **Language** with `fr`, and press **Create**.
+   Add a section, then press **Publish as PDF**: nothing is queued, and the panel says **This document
+   is in fr, and its layout is written in en. It can be published only under a layout in its own
+   language.** `Calibration` publishes because the default layout's `en` takes `en-GB` as well as
+   `en`. There is nothing to put right in the document and no other layout to choose, so this is a
+   dead end until a layout can be made in another language.
+10. **The desktop app.** Run `pnpm app`, sign in as Ada, open a publication and choose **Download the
+    PDF**. The link leaves the renderer's address for the store's, and the shell has no handling of its
+    own for that; nobody has yet checked whether the window saves the file, opens it, or does nothing.
+    Note what it does - this is the step no test covers.
 
 These publishing steps are written from the code and its tests, and were **not** followed in a browser:
 the page's tests run in jsdom over a fake service, the routes' against the service, and the whole
 publish, from the request to the stored PDF, in the worker's suite and the end-to-end check. What a
 screen reader is told - the draft notice read once, and a heading at level seven to nine read as a
 paragraph - is checked in the suite with pdf.js and by opening the PDF in a screen reader by hand;
-veraPDF's verdict only by the suite. That a refused publish is not tried again, and that nothing of an
+veraPDF's verdict only by the suite. The laid-out page is read back the same way, in
+`apps/worker/src/layout.test.ts`: the page boxes and each page's text margins, the page labels per
+matter, what each running head and foot prints on which page, and that the contents' entries are the
+ones `contents()` computes and are tagged as a table of contents. That a refused publish is not tried again, and that nothing of an
 unreadable component reaches any answer, only a test can see.
 
 The development environment also takes Google accounts, with the stand-in playing Google and

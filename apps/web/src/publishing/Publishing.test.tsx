@@ -191,6 +191,43 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('The publication could not be made');
   });
 
+  it('says there is nothing to publish, rather than asking for another attempt that cannot succeed', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'nothing_to_publish', node: null, block: null, detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'There is nothing to publish: no part of the outline is left, and the layout sets no cover.',
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
+  it("blames the layout, not the document, for the layout's own words and language", async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },
+      {
+        stage: 'compose',
+        code: 'layout_language_not_publishable',
+        node: null,
+        block: null,
+        detail: 'sr-Latn',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      "This publication's layout uses a character, U+0627, that no typeface it can use has. The layout has to change before this document can be published.",
+    );
+    expect(why).toHaveTextContent(
+      "This publication's layout is in the language sr-Latn, which cannot be published. The layout has to change before this document can be published.",
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+    expect(why).not.toHaveTextContent('is in no typeface this publication can use');
+  });
+
   it('says a failure of the engine or the store is nothing in the document, and to publish again', async () => {
     for (const [stage, code, words] of [
       ['engine', 'engine_failed', 'The publication could not be made. Publish again.'],
@@ -360,6 +397,28 @@ describe('publishing from the document page', () => {
     expect(
       await screen.findByText(
         'This document has changed since the page opened. Reload it and publish again.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();
+  });
+
+  it("says why a publish was refused at the door, in the service's words", async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: () => listed([]),
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        new Status(400, {
+          code: 'layout_language',
+          message:
+            'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
+          traceId: 't',
+        }),
+      ],
+    });
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    expect(
+      await screen.findByText(
+        'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeEnabled();

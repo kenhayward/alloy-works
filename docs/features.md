@@ -6,7 +6,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
 > versioned, and documents made, their outlines restructured, their sections numbered and their
-> paragraphs published as a PDF, but nothing is formatted beyond plain paragraphs or cross-referenced.
+> paragraphs published as a laid-out PDF with a cover, a contents and numbered pages, but nothing is
+> formatted beyond plain paragraphs or cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -115,12 +116,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   **Sections are numbered.** Each section and each component in the outline shows its number - `1`,
   `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
-  under it out of the section numbering; tick **Appendix** on a top-level node to number it `A`, `B`
-  and so on. Figures, tables, equations and footnotes are numbered too - figures and tables per
-  chapter, equations and footnotes straight through, and each appendix on its own - and the
-  service answers every number with where it came from - but the editor does not yet write a figure,
-  so you only see those through the API. A number that depends on a component you may not read is
-  left out rather than guessed.
+  under it out of the section numbering. Figures, tables, equations and footnotes are numbered too -
+  figures and tables per chapter, equations and footnotes straight through, and each appendix on its
+  own - and the service answers every number with where it came from - but the editor does not yet
+  write a figure, so you only see those through the API. A number that depends on a component you may
+  not read is left out rather than guessed. **The numbers are the ones the document will publish
+  with**: the panel numbers with the very scheme its layout carries, not with a scheme of the page's
+  own, so what you see in the outline is what comes out of the PDF.
+
+  **A top-level part is front matter, the body or an appendix.** **Matter** beside the selected node
+  offers all three: **Front matter** for a preface, numbered `i`, `i.1` in a scheme of its own and
+  paged on its own; **Body**; and **Appendix**, numbered `A`, `B`. Only a top-level part has the
+  choice, because everything under one takes its matter. Front matter has to come first, so **Front
+  matter** is not offered once the body has begun, and a move that would take a part out of the top
+  level or put front matter after anything else is refused rather than done: the page says **Front
+  matter and appendices stay at the top level.** or **Front matter comes before the rest of the
+  outline.** `Ctrl+Z` takes a **Matter** change back like any other.
 
   **Every part of a document has a link.** Choose a section or a component in the outline and its link
   is shown beneath it, with **Copy link**; the address in the browser follows too. Opening the link
@@ -149,9 +160,24 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   outline: a component you may not read, without saying which; formatting, a list, a table or any other
   block that cannot be published yet; or a character no typeface can set.
 
+  **The publication is laid out.** It opens with a cover carrying the title, then a contents page a
+  screen reader announces as a table of contents, then the document. Every page after the cover
+  carries a running head with the title and the part you are in, and a foot with the revision and the
+  page number. Pages are numbered per part: roman numerals through the front matter, from 1 again in
+  the body, and appendices carrying on from the body. How all of that is set comes from a **layout** -
+  A4 with an inch margin, English words, a contents three deep, each appendix on a new page - which
+  every environment starts with one of and every document publishes under. Each publication records
+  the exact version of the layout that made it, beside the document version and the fonts.
+
+  **A document is published only under a layout written in its own language.** Where the two do not
+  agree the page says so, naming both, before anything is queued; an English layout publishes an
+  `en-GB` document as well as an `en` one. Asking for a format the layout does not make - Word, today
+  - is refused the same way.
+
   **This is a PDF of paragraphs, not publishing.** Nothing formatted is published: no bold or italics,
   links, lists, tables, figures, footnotes or equations - a document holding any of them is refused.
-  There is no layout - no running heads or page numbers, no cover, no contents - and no theme; no Word
+  There is no list of figures or tables, no caption labels and no theme; nothing chooses, makes or
+  edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
@@ -170,9 +196,11 @@ Named explicitly so nobody has to read the source to find out:
 - No document view: a document's outline is a tree you build, and a component still opens on its own
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
-- No publishing beyond a PDF of a document's outline and paragraphs: no formatting, lists, tables,
-  figures, footnotes or equations in a publication, no layout or theme, no Word, no preview, and no
-  way to approve a publication.
+- No publishing beyond a laid-out PDF of a document's outline and paragraphs: no formatting, lists,
+  tables, figures, footnotes or equations in a publication, no list of figures or tables, no caption
+  labels, no theme, no Word, no preview, and no way to approve a publication.
+- No way to choose, make or edit a layout: every environment has the one it started with, in English,
+  and every document publishes under it.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search, no metadata anybody can fill in, no taxonomy, no workflow, and no revisions, baselines or

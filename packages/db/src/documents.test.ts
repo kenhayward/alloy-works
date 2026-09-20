@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import type { OutlineDocument, OutlineOperation } from '@alloy-works/domain';
+import {
+  OUTLINE_SCHEMA_VERSION,
+  type OutlineDocument,
+  type OutlineOperation,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
@@ -173,14 +177,14 @@ describe('a document in the version chain, and its outline edited a version at a
       revision: 0,
       version: 1,
       author: ada,
-      schemaVersion: 1,
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
       componentType: null,
       values: {},
       notCarried: [],
       definitions: [],
     });
     expect(answer.version.content).toEqual({
-      schemaVersion: 1,
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The dosing report',
       language: 'en-GB',
       direction: 'ltr',
@@ -579,7 +583,7 @@ describe('a document in the version chain, and its outline edited a version at a
           version_no: 2,
           author_id: ada,
           note: null,
-          schema_version: 1,
+          schema_version: OUTLINE_SCHEMA_VERSION,
           content: JSON.stringify({ ...(first.content as object), title: '' }),
           content_hash: 'a'.repeat(64),
           metadata_values: '{}',

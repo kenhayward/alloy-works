@@ -5,14 +5,20 @@ import {
   createSpace,
   createTenant,
   createTenantDatabase,
+  DEFAULT_LAYOUT_ID,
+  defaultLayout,
   findRole,
   grant,
   migrate,
+  publicationInputs,
+  recordVersion,
+  requestPublication,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import { OUTLINE_SCHEMA_VERSION, type Layout } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -38,6 +44,12 @@ interface DocumentBody {
     nodes: { id: string; type: string; title?: { value: string }[]; children: unknown[] }[];
   };
   mayEdit: boolean;
+  layout: {
+    id: string;
+    version: { id: string; number: string };
+    language: string;
+    scheme: Record<string, unknown>;
+  };
 }
 
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
@@ -230,6 +242,69 @@ describe('documents through the service', () => {
         .json<{ items: { id: string }[] }>()
         .items.map((i) => i.id),
     ).toContain(body.id);
+  });
+
+  it("answers the document's layout beside its outline, the version a publish would record", async () => {
+    const made = await create('ada', general, 'Published under a layout');
+    const document = made.json<DocumentBody>();
+    const declared = await tenantDb.withTenant(tenant, (trx) => defaultLayout(trx));
+    const expected = {
+      id: declared.artifactId,
+      version: { id: declared.versionId, number: declared.number },
+      language: declared.layout.language,
+      scheme: declared.layout.scheme,
+    };
+    expect(document.layout).toEqual(expected);
+    // Every answer carrying the outline carries it, so the page never has to ask a second route.
+    const opened = await call('ada', 'GET', `/v1/documents/${document.id}`);
+    expect(opened.statusCode, opened.body).toBe(200);
+    expect(opened.json<DocumentBody>().layout).toEqual(expected);
+
+    // The version a publish would record: a request made next is made under exactly this one, so
+    // the numbers the page shows are the numbers that would publish.
+    const inputs = await tenantDb.withTenant(tenant, async (trx) => {
+      const requested = await requestPublication(trx, {
+        documentId: document.id,
+        version: document.version.id,
+        formats: ['pdf'],
+        requester: ids.ada!,
+      });
+      if (requested.answer !== 'requested') throw new Error(requested.answer);
+      return publicationInputs(trx, requested.request.id);
+    });
+    expect(document.layout.version.id).toBe(inputs!.layout!.versionId);
+
+    /** A new version of the environment's layout, by its id and its `revision.version`. */
+    const record = (content: Layout, openedFrom: string) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const recorded = await recordVersion(trx, {
+          artifactId: DEFAULT_LAYOUT_ID,
+          openedFrom,
+          author: ids.ada!,
+          substance: { kind: 'layout', content },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        const { id, revision, version } = recorded.version;
+        return { id, number: `${revision}.${version}` };
+      });
+
+    // The scheme answered is the **layout's own**, which the seeded layout happens to hold byte for
+    // byte from the product's default: a version naming its scheme apart moves the answer, so
+    // nothing here could be the default standing in.
+    const apart: Layout = {
+      ...declared.layout,
+      scheme: { ...declared.layout.scheme, id: 'apart/1' },
+    };
+    const next = await record(apart, declared.versionId);
+    expect(next.number).not.toBe(declared.number);
+    try {
+      const again = (await call('ada', 'GET', `/v1/documents/${document.id}`)).json<DocumentBody>();
+      expect(again.layout.scheme['id']).toBe('apart/1');
+      expect(again.layout.version).toEqual(next);
+    } finally {
+      // The environment's layout goes back to what the rest of this suite is answered.
+      await record(declared.layout, next.id);
+    }
   });
 
   it('keeps a section inside the document that declares it, with no identity to reach it by alone', async () => {
@@ -697,7 +772,7 @@ describe('documents through the service', () => {
           version_no: 2,
           author_id: ids.ada!,
           note: null,
-          schema_version: 1,
+          schema_version: OUTLINE_SCHEMA_VERSION,
           content: JSON.stringify({ ...doc.outline, title: '' }),
           content_hash: 'a'.repeat(64),
           metadata_values: '{}',

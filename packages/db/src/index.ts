@@ -15,6 +15,7 @@ export {
   type ArtifactKind,
   type ContentKind,
 } from './artifact-kind.js';
+export { DEFAULT_LAYOUT_ID, defaultLayout, type StoredLayout } from './layouts.js';
 export {
   failPublicationRequest,
   listPublications,

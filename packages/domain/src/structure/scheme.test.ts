@@ -18,6 +18,75 @@ describe('a numbering scheme', () => {
     ).toBe(false);
   });
 
+  it('holds the default front matter to its own rules', () => {
+    const { sequences } = defaultNumberingScheme;
+    expect(sequences['section']!.front).toEqual({
+      label: '',
+      format: ['lowerRoman', 'decimal'],
+      restartAt: null,
+      prefix: null,
+      separator: '.',
+    });
+    expect(sequences['figure']!.front).toEqual({
+      label: 'Figure',
+      format: ['decimal'],
+      restartAt: 1,
+      prefix: 1,
+      separator: '.',
+    });
+    expect(sequences['table']!.front).toEqual({
+      label: 'Table',
+      format: ['decimal'],
+      restartAt: 1,
+      prefix: 1,
+      separator: '.',
+    });
+    expect(sequences['equation']!.front).toEqual({
+      label: 'Equation',
+      format: ['lowerRoman'],
+      restartAt: null,
+      prefix: null,
+      separator: '.',
+    });
+    expect(sequences['footnote']!.front).toEqual({
+      label: '',
+      format: ['decimal'],
+      restartAt: null,
+      prefix: null,
+      separator: '.',
+    });
+    // Every sequence has a front rule: a scheme missing any one is refused, never numbered as the body.
+    for (const name of ['section', 'figure', 'table', 'equation', 'footnote']) {
+      const withoutFront: Record<string, unknown> = { ...sequences[name]! };
+      delete withoutFront['front'];
+      const missing = {
+        ...defaultNumberingScheme,
+        sequences: { ...sequences, [name]: withoutFront },
+      };
+      expect(numberingSchemeSchema.safeParse(missing).success, name).toBe(false);
+    }
+    // The scheme is stored in a layout's versions, so its rules hold in front matter as in the others:
+    // a front figure restarting with no prefix, and a front section that restarts, are both refused.
+    const figure = sequences['figure']!;
+    const unprefixed = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...sequences,
+        figure: { ...figure, front: { ...figure.front, restartAt: 1, prefix: null } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(unprefixed).success).toBe(false);
+    const section = sequences['section']!;
+    const restarting = {
+      ...defaultNumberingScheme,
+      sequences: {
+        ...sequences,
+        section: { ...section, front: { ...section.front, restartAt: 1 } },
+      },
+    };
+    expect(numberingSchemeSchema.safeParse(restarting).success).toBe(false);
+  });
+
   it('refuses a section rule that restarts or takes a prefix, since a section number is its stack', () => {
     const section = defaultNumberingScheme.sequences['section']!;
     const restarting = {

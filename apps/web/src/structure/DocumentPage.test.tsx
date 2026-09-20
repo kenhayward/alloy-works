@@ -1,12 +1,18 @@
 import { createApiClient } from '@alloy-works/api-client';
 import {
   applyOutlineOperation,
+  assemble,
   canonicaliseOutline,
+  defaultLayout,
+  OUTLINE_SCHEMA_VERSION,
   outlineOperationSchema,
+  parseLayout,
   withholdComponents,
+  type Layout,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
+  type PublishedNode,
 } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,6 +33,45 @@ const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
 const SCOPE = 'ssssssssssssssssssssssssss';
 const METHOD = 'mmmmmmmmmmmmmmmmmmmmmmmmmm';
 const RESULTS = 'rrrrrrrrrrrrrrrrrrrrrrrrrr';
+const PREFACE = 'pppppppppppppppppppppppppp';
+
+const LAYOUT = 'llllllll-0000-4000-8000-000000000001';
+const LAYOUT_V1 = { id: 'llllllll-0000-4000-8000-000000000002', number: '0.1' };
+const LAYOUT_V2 = { id: 'llllllll-0000-4000-8000-000000000003', number: '0.2' };
+
+/**
+ * The environment's layout as `DocumentView` carries it (publishing.md, "The layout"): its id, the
+ * version read, the language its generated words are in, and that version's numbering scheme.
+ */
+const layoutView = (scheme: unknown, version = LAYOUT_V1) => ({
+  id: LAYOUT,
+  version,
+  language: defaultLayout.language,
+  scheme,
+});
+
+/**
+ * A second version of the environment's layout, numbering the body's sections in upper roman and
+ * calling a figure `Fig.` - what task 9's numbering test records against the database, and what this
+ * suite's service answers instead. Its scheme is named apart from the default's, because STR-031 keys
+ * a numbering by that id.
+ */
+const upperRomanLayout: Layout = (() => {
+  const sequences = defaultLayout.scheme.sequences;
+  const section = sequences['section']!;
+  const figure = sequences['figure']!;
+  return parseLayout({
+    ...defaultLayout,
+    scheme: {
+      id: 'upper-roman/1',
+      sequences: {
+        ...sequences,
+        section: { ...section, body: { ...section.body, format: ['upperRoman', 'decimal'] } },
+        figure: { ...figure, body: { ...figure.body, label: 'Fig.' } },
+      },
+    },
+  });
+})();
 
 const SPACES = {
   items: [
@@ -77,7 +122,7 @@ function reference(id: string, mode: 'latest' | 'approved'): OutlineNode {
 
 function outline(nodes: OutlineNode[]): OutlineDocument {
   return {
-    schemaVersion: 1,
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The dosing report',
     language: 'en-GB',
     direction: 'ltr',
@@ -122,6 +167,8 @@ function service(
     components?: unknown;
     /** Whether the caller may read a component: one they may not is withheld, as the service does. */
     mayRead?: (component: string) => boolean;
+    /** The layout every answer carries; the environment's own, at its first version, by default. */
+    layout?: unknown;
     /** What each component's head contributes, by component; nothing where it is not named. */
     holds?: Record<
       string,
@@ -168,6 +215,7 @@ function service(
     outline: withholdComponents(version.outline, options.mayRead ?? (() => true)),
     mayEdit: options.mayEdit ?? true,
     mayPublish: options.mayPublish ?? false,
+    layout: options.layout ?? layoutView(defaultLayout.scheme),
   });
   const record = (next: OutlineDocument) => {
     const count = chain.length + 1;
@@ -1530,7 +1578,7 @@ describe('the outline panel, answered', () => {
     await screen.findByRole('treeitem', { name: 'Introduction' });
     fake.refuse(OUTLINE_URL, 200, {
       ...fake.latest(),
-      outline: { schemaVersion: 1, nodes: 'none' },
+      outline: { schemaVersion: OUTLINE_SCHEMA_VERSION, nodes: 'none' },
     });
     await userEvent.click(item('Introduction'));
     await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
@@ -1650,7 +1698,7 @@ describe('New document', () => {
       note: null,
     },
     outline: {
-      schemaVersion: 1,
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
       title: 'The dosing report',
       language: 'fr-CA',
       direction: 'rtl',
@@ -1887,9 +1935,9 @@ describe('section numbers in the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Scope' });
     await userEvent.click(item('Scope'));
     expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: 'Appendix' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Matter' })).toBeNull();
     await userEvent.click(item('Method'));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Appendix');
     await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('A'));
     expect(item('Scope')).toHaveAccessibleDescription('A.1');
     expect(fake.edits().at(-1)?.body).toMatchObject({
@@ -1901,14 +1949,168 @@ describe('section numbers in the outline panel', () => {
       operation: { operation: 'set', node: METHOD, matter: 'appendix' },
     });
     expect(screen.getByRole('status')).toHaveTextContent('Method is now an appendix.');
-    expect(screen.getByRole('checkbox', { name: 'Appendix' })).toBeChecked();
+    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('appendix');
 
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Appendix' }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Body');
     await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
     expect(fake.edits().at(-1)?.body).toMatchObject({
       operation: { operation: 'set', node: METHOD, matter: 'body' },
     });
-    expect(screen.getByRole('status')).toHaveTextContent('Method is no longer an appendix.');
+    expect(screen.getByRole('status')).toHaveTextContent('Method is now in the body.');
+  });
+
+  it('offers Front matter, Body and Appendix for a top-level node, and Front matter only before the body begins', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    // Below the top level a node's matter is its top-level ancestor's, so there is nothing to set.
+    await userEvent.click(item('Scope'));
+    expect(screen.queryByRole('combobox', { name: 'Matter' })).toBeNull();
+
+    await userEvent.click(item('Introduction'));
+    const matter = screen.getByRole('combobox', { name: 'Matter' });
+    expect(
+      within(matter)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter', 'Body', 'Appendix']);
+    expect(matter).toHaveValue('body');
+
+    await userEvent.selectOptions(matter, 'Front matter');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Introduction is now front matter.'),
+    );
+    expect(fake.edits().at(-1)?.body).toEqual({
+      openedFrom: 'dddddddd-0000-4000-8000-000000000001',
+      operation: { operation: 'set', node: INTRODUCTION, matter: 'front' },
+    });
+    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('front');
+    // Front matter numbers on counters of its own, so the body's first chapter is still 1.
+    expect(item('Introduction')).toHaveAccessibleDescription('i');
+    expect(item('Method')).toHaveAccessibleDescription('1');
+
+    // Method is the first node that is not front matter, so nothing but front matter precedes it
+    // and it may still become some.
+    await userEvent.click(item('Method'));
+    expect(
+      within(screen.getByRole('combobox', { name: 'Matter' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter', 'Body', 'Appendix']);
+
+    // Results has the body before it, so it is not offered as front matter at all.
+    await userEvent.click(item('Results'));
+    expect(
+      within(screen.getByRole('combobox', { name: 'Matter' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Body', 'Appendix']);
+  });
+
+  it('will not let a front node leave front matter while another front node follows it, and says why', async () => {
+    const fake = service(
+      outline([
+        { ...section(PREFACE, 'Preface'), matter: 'front' },
+        { ...section(INTRODUCTION, 'Introduction'), matter: 'front' },
+        section(METHOD, 'Method'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+
+    // Making the Preface body matter would leave the Introduction, still front matter, after it,
+    // which the outline's parse refuses. The select is disabled and says why beside itself, the
+    // shape the Numbered box's hint follows, rather than offering a choice that would be refused.
+    await userEvent.click(item('Preface'));
+    const stuck = screen.getByRole('combobox', { name: 'Matter' });
+    expect(stuck).toBeDisabled();
+    expect(stuck).toHaveAccessibleDescription(
+      'Front matter comes first, so this cannot leave while Introduction is front matter.',
+    );
+
+    // The Introduction is the last front node, so it may still be given any of the three.
+    await userEvent.click(item('Introduction'));
+    const matter = screen.getByRole('combobox', { name: 'Matter' });
+    expect(matter).toBeEnabled();
+    expect(matter).toHaveAccessibleDescription('');
+    expect(
+      within(matter)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Front matter', 'Body', 'Appendix']);
+    await userEvent.selectOptions(matter, 'Body');
+    await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('1'));
+
+    // And now nothing follows the Preface in front matter, so it is free too.
+    await userEvent.click(item('Preface'));
+    expect(screen.getByRole('combobox', { name: 'Matter' })).toBeEnabled();
+    expect(screen.queryByText(/Front matter comes first/)).toBeNull();
+  });
+
+  it('says front matter stays at the top level and comes first, and sends nothing', async () => {
+    const fake = service(
+      outline([
+        { ...section(PREFACE, 'Preface'), matter: 'front' },
+        { ...section(INTRODUCTION, 'Introduction'), matter: 'front' },
+        section(METHOD, 'Method'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Introduction'));
+
+    // Alt+Right would nest it under the Preface, where the outline's parse refuses front matter.
+    await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Front matter and appendices stay at the top level.',
+      ),
+    );
+    expect(item('Introduction')).toHaveAttribute('aria-level', '1');
+
+    // And Alt+Down would take it past the body, where front matter may not go.
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Front matter comes before the rest of the outline.',
+      ),
+    );
+    expect(fake.edits()).toEqual([]);
+    expect(item('Introduction')).toHaveAccessibleDescription('ii');
+  });
+
+  it('takes a Matter change back with Ctrl+Z, from the select it was made in', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    await userEvent.click(item('Introduction'));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Front matter');
+    await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('i'));
+    await settled();
+
+    // A select has no undo of its own, so Ctrl+Z from it is the panel's, and one operation takes
+    // the act back - the same shape the Numbered box and the Starts on select follow.
+    screen.getByRole('combobox', { name: 'Matter' }).focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Undone. Introduction is now in the body.',
+      ),
+    );
+    expect(fake.edits()).toHaveLength(2);
+    expect(fake.edits().at(-1)?.body).toMatchObject({
+      operation: { operation: 'set', node: INTRODUCTION, matter: 'body' },
+    });
+    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('body');
+    expect(item('Introduction')).toHaveAccessibleDescription('1');
   });
 
   it('numbers a reference to a component the reader may not read like any other node', async () => {
@@ -1938,7 +2140,9 @@ describe('an appendix in the outline panel', () => {
     await userEvent.click(item('Results'));
     await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('An appendix stays at the top level.'),
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Front matter and appendices stay at the top level.',
+      ),
     );
     expect(fake.edits()).toEqual([]);
     expect(item('Results')).toHaveAttribute('aria-level', '1');
@@ -2030,6 +2234,7 @@ describe('a drag started before the panel has settled', () => {
               () => true,
             )}
             editable
+            scheme={defaultLayout.scheme}
             onOperation={vi.fn()}
             notice={null}
           />
@@ -2505,6 +2710,86 @@ describe('the lists of figures, tables and equations', () => {
     expect(
       await screen.findByText('This document has no figures, tables or equations.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe("the layout's scheme in the page", () => {
+  afterEach(() => window.history.replaceState(null, '', '#'));
+
+  it('STR-036 numbers the outline with the scheme of the layout the document is published under', async () => {
+    const sections = outline([
+      section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')]),
+      section(METHOD, 'Method'),
+    ]);
+    const fake = service(sections, { layout: layoutView(upperRomanLayout.scheme, LAYOUT_V2) });
+    const { unmount } = open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    expect(item('Introduction')).toHaveAccessibleDescription('I');
+    expect(item('Method')).toHaveAccessibleDescription('II');
+    expect(item('Scope')).toHaveAccessibleDescription('I.1');
+    // Never the product's default scheme, which numbers this same outline 1, 1.1 and 2.
+    for (const shown of ['1', '1.1', '2']) expect(screen.queryByText(shown)).toBeNull();
+
+    // And these are the numbers a publish made under that layout prints: `assemble` is the one
+    // function the job composes with, and over the same outline and the same layout it gives every
+    // node the number the panel has just shown - so the author is never guessing what a section
+    // will be called.
+    const published = assemble({
+      outline: sections,
+      occurrences: new Map(),
+      refused: [],
+      layout: upperRomanLayout,
+      revision: '0.1',
+      covers: () => true,
+    });
+    const printed = new Map<string, string | null>();
+    const walk = (nodes: readonly PublishedNode[]) => {
+      for (const node of nodes) {
+        printed.set(node.id, node.number);
+        walk(node.children);
+      }
+    };
+    if (!published.ok) throw new Error(published.failures.map((each) => each.code).join(', '));
+    walk(published.document.nodes);
+    expect([...printed]).toEqual([
+      [INTRODUCTION, 'I'],
+      [SCOPE, 'I.1'],
+      [METHOD, 'II'],
+    ]);
+    unmount();
+
+    // The generated lists take their words and their numbers from that same scheme.
+    const withFigures = service(
+      outline([section(METHOD, 'Method', [referenceTo(RESULTS, PRINTER)])]),
+      { layout: layoutView(upperRomanLayout.scheme, LAYOUT_V2), holds: { [PRINTER]: [tray] } },
+    );
+    open(withFigures.fetch);
+    await screen.findByRole('region', { name: 'Figures' });
+    expect(listed('Figures')).toEqual([
+      ['Fig. I.1 The paper tray', `#/documents/${DOCUMENT}/nodes/${RESULTS}`],
+    ]);
+  });
+
+  it('numbers nothing, and says so, when the scheme it would number with does not read', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)]),
+        section(METHOD, 'Method'),
+      ]),
+      { layout: layoutView({ id: 'broken/1', sequences: {} }), holds: { [PRINTER]: [tray] } },
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    expect(
+      await screen.findByText("This document's numbering could not be read."),
+    ).toBeInTheDocument();
+    // No number the author could take for a publication's, and no list, rather than a fallback
+    // scheme printing numbers no publish under this layout could produce.
+    expect(item('Introduction')).not.toHaveAccessibleDescription();
+    expect(item('Method')).not.toHaveAccessibleDescription();
+    expect(screen.queryByRole('region', { name: 'Figures' })).toBeNull();
+    // The outline is still the author's to restructure.
+    expect(screen.getByRole('button', { name: 'Add section' })).toBeInTheDocument();
   });
 });
 

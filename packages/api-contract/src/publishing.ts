@@ -110,7 +110,8 @@ export const publishingRoutes = {
         schema: PublicationRequestView,
       },
       400: {
-        description: '`format_unsupported`: a format the template cannot make',
+        description:
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language",
         schema: ErrorBody,
       },
       401: unauthenticated,

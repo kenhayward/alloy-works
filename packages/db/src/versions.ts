@@ -4,6 +4,7 @@ import {
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
   parseContentDocument,
+  parseLayout,
   parseOutlineDocument,
   type DefinitionRef,
   type MetadataValues,
@@ -90,6 +91,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // An outline carries no `id`: a document's identity is its artifact row's, as a component's is.
     return { kind: 'document', content: parseOutlineDocument(substance.content) };
   }
+  if (substance.kind === 'layout') {
+    // A layout carries no `id` either: it is a definition in no space, identified by its artifact row.
+    return { kind: 'layout', content: parseLayout(substance.content) };
+  }
   const content = definitionSchemas[substance.kind].parse(substance.content);
   if (!UUID.test(content.id)) {
     throw new Error(
@@ -166,6 +171,10 @@ export async function createArtifact(
 ): Promise<StoredVersion> {
   checkAuthorship(input);
   const substance = prepare(input.substance);
+  // Every environment's layout is seeded by the migration that makes layouts an artifact kind (0018).
+  if (substance.kind === 'layout') {
+    throw new Error('A layout is created by its migration, not by createArtifact');
+  }
   const artifact = await trx
     .insertInto('artifact')
     .values(
@@ -312,10 +321,11 @@ export async function recordVersion(
 
   const substance = prepare(input.substance);
   // A definition's rule, not content's: a definition's payload repeats its identity, and a
-  // component's content and a document's outline carry none.
+  // component's content, a document's outline and a layout carry none.
   if (
     substance.kind !== 'component' &&
     substance.kind !== 'document' &&
+    substance.kind !== 'layout' &&
     substance.content.id !== input.artifactId
   ) {
     throw new Error(

@@ -5,21 +5,30 @@ import {
   recordPublication,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { assemble, defaultNumberingScheme, type PublishFailure } from '@alloy-works/domain';
+import {
+  assemble,
+  PUBLISHING_SCHEMA,
+  PUBLISHING_SCHEMA_1,
+  type PublishFailure,
+} from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import { PINNED_FONT_FILES, type PinnedFonts } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
-import { PUBLICATION_TEMPLATE } from '../template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING, type PublishedSchema } from '../template.js';
 import type { Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
 /**
- * The pipeline's own version (PUB-063): `assemble` and this job, as one, and the draft notice
- * `assemble` carries into every page - words the template's hash does not cover, because they are
- * the data's. Raised with any of them; `template.test.ts` holds what each version's `assemble` makes
- * of one fixed input, notice included.
+ * The pipeline's own version (PUB-063), by the schema of the document it makes: `assemble` and this
+ * job, as one, and the words `assemble` carries into every page - the draft notice, and since layouts
+ * the layout's words - which the template's hash does not cover, because they are the data's. Raised
+ * with any of them; `template.test.ts` holds what each version's `assemble` makes of one fixed input,
+ * notice included. Version 1 is still made, for a request made before layouts (Ken's answer F).
  */
-export const PIPELINE_VERSION = '1';
+export const PIPELINE_VERSION = {
+  [PUBLISHING_SCHEMA_1]: '1',
+  [PUBLISHING_SCHEMA]: '2',
+} as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
 export class PublishRefused extends JobRefused {
@@ -70,20 +79,28 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused } = read.inputs;
+      const { request, outline, occurrences, refused, layout, revision } = read.inputs;
 
       const assembled = assemble({
         outline,
         occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
         refused,
-        scheme: defaultNumberingScheme,
+        // The layout version the request was made under, never the latest; none for a request made
+        // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
+        layout: layout?.layout ?? null,
+        revision,
         covers: deps.fonts.covers,
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
+      // Chosen by what `assemble` made, so a document is never handed to a template that cannot read
+      // it: template 1 and pipeline 1 for `publishing/1`, template 2 and pipeline 2 for `publishing/2`.
+      // A publication under template 2 must name a layout, which only a request made under one has.
+      const { schema } = assembled.document;
+      const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // The digest is of the bytes Typst reads, so a reproduction can tell input from engine.
       const data = JSON.stringify(assembled.document);
-      const pdf = await deps.typst.compile(PUBLICATION_TEMPLATE.file, data, request.requestedAt);
+      const pdf = await deps.typst.compile(template.file, data, request.requestedAt);
       const engineVersion = await deps.typst.version();
       let stored;
       try {
@@ -100,8 +117,8 @@ export function publishJob(deps: {
           recordPublication(trx, {
             requestId: request.id,
             engineVersion,
-            templateVersion: PUBLICATION_TEMPLATE.version,
-            pipelineVersion: PIPELINE_VERSION,
+            templateVersion: template.version,
+            pipelineVersion: PIPELINE_VERSION[schema],
             // `compile` re-hashed the faces against these very pins before Typst ran.
             fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
             dataSha256: createHash('sha256').update(data).digest('hex'),

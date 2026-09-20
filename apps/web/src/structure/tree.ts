@@ -53,67 +53,160 @@ function contains(node: OutlineViewNode, id: string): boolean {
   return node.id === id || node.children.some((child) => contains(child, id));
 }
 
+/** Which way a key move goes, from the four the keymap has. */
+export type MoveDirection = 'up' | 'down' | 'promote' | 'demote';
+
 /**
- * A move, unless it would leave the node exactly where it is. `parent` and `position` are already in
- * the domain's post-removal convention.
+ * Whether the top level begins with its front matter, which is where front matter goes (STR-064):
+ * no `front` node after one that is not. The same rule the outline's parse holds a whole document
+ * to, asked of the order a move would leave.
  */
-function moveOrNothing(from: Place, parent: string | null, position: number): MoveOperation | null {
+function frontFirst(nodes: readonly OutlineViewNode[]): boolean {
+  let begun = false;
+  for (const node of nodes) {
+    if (node.matter !== 'front') begun = true;
+    else if (begun) return false;
+  }
+  return true;
+}
+
+/**
+ * The top level as a move to it would leave it: the node taken out of it, then put back at
+ * `position` - which is the domain's post-removal convention, so this is that convention's order.
+ * A node that is not at the top level is taken out of nothing and simply arrives.
+ */
+function topLevelAfter(
+  nodes: readonly OutlineViewNode[],
+  node: OutlineViewNode,
+  position: number,
+): OutlineViewNode[] {
+  const rest = nodes.filter((each) => each.id !== node.id);
+  return [...rest.slice(0, position), node, ...rest.slice(position)];
+}
+
+/**
+ * A move, unless it would leave the node exactly where it is, or the outline's parse would refuse
+ * the tree it makes. `parent` and `position` are already in the domain's post-removal convention.
+ */
+function moveOrNothing(
+  nodes: readonly OutlineViewNode[],
+  from: Place,
+  parent: string | null,
+  position: number,
+): MoveOperation | null {
   if ((from.parent?.id ?? null) === parent && from.index === position) return null;
-  // An appendix is one at the top level alone (STR-016), and the outline's parse refuses one anywhere
-  // else - so a move that would nest one is not offered, rather than sent to be refused.
-  if (from.node.matter === 'appendix' && parent !== null) return null;
+  // Front matter and an appendix are at the top level alone (STR-016, STR-064), and the outline's
+  // parse refuses one anywhere else - so a move that would nest one is not offered, rather than
+  // sent to be refused.
+  if (from.node.matter !== 'body' && parent !== null) return null;
+  // Front matter comes before the rest (STR-064), which a move to the top level can break either
+  // way: a front node landing after one that is not, or another node landing before one that is.
+  if (parent === null && !frontFirst(topLevelAfter(nodes, from.node, position))) return null;
   return { operation: 'move', node: from.node.id, parent, position };
 }
 
 /**
- * The keymap's four moves (structure.md, "Accessibility"): Alt+Up and Alt+Down among siblings,
- * Alt+Left to become the next sibling of its parent, Alt+Right to become the last child of the sibling
- * before it. `null` where the key has nowhere to go - the first sibling moving up, a top-level node
- * promoted - so nothing is sent that could only be refused.
+ * Where one of the keymap's four moves would put a node, before any rule about matter: Alt+Up and
+ * Alt+Down among siblings, Alt+Left to become the next sibling of its parent, Alt+Right to become
+ * the last child of the sibling before it. `null` where the key has nowhere to go at all - the first
+ * sibling moving up, a top-level node promoted.
  */
-export function keyMove(
+function keyTarget(
   nodes: readonly OutlineViewNode[],
-  id: string,
-  direction: 'up' | 'down' | 'promote' | 'demote',
-): MoveOperation | null {
-  const from = placeOf(nodes, id);
-  if (!from) return null;
+  from: Place,
+  direction: MoveDirection,
+): { parent: string | null; position: number } | null {
   const parent = from.parent?.id ?? null;
   switch (direction) {
     case 'up':
-      return from.index === 0 ? null : moveOrNothing(from, parent, from.index - 1);
+      return from.index === 0 ? null : { parent, position: from.index - 1 };
     case 'down':
       // Post-removal: the sibling that was after it is now at `index`, so `index + 1` is after that.
-      return from.index === from.siblings.length - 1
-        ? null
-        : moveOrNothing(from, parent, from.index + 1);
+      return from.index === from.siblings.length - 1 ? null : { parent, position: from.index + 1 };
     case 'promote': {
       if (from.parent === null) return null;
       const above = placeOf(nodes, from.parent.id);
       if (!above) return null;
       // The grandparent's children do not include the moving node, so no adjustment is due.
-      return moveOrNothing(from, above.parent?.id ?? null, above.index + 1);
+      return { parent: above.parent?.id ?? null, position: above.index + 1 };
     }
     case 'demote': {
       const before = from.siblings[from.index - 1];
       if (!before) return null;
-      return moveOrNothing(from, before.id, before.children.length);
+      return { parent: before.id, position: before.children.length };
     }
   }
 }
 
 /**
- * Whether a key move has nowhere to go only because the node is an appendix: said, so the key does
- * not look broken. An appendix is always at the top level, where promoting has nowhere to go and up
- * and down keep it there, so demoting beneath the sibling before it is the one move this refuses.
+ * The keymap's four moves (structure.md, "Accessibility"), or `null` where the key has nowhere to go
+ * and where the outline would refuse what it reached - so nothing is sent that could only be refused.
+ * The two functions below say which of those rules refused it, for the notice the panel gives.
  */
-export function nestsAnAppendix(
+export function keyMove(
   nodes: readonly OutlineViewNode[],
   id: string,
-  direction: 'up' | 'down' | 'promote' | 'demote',
+  direction: MoveDirection,
+): MoveOperation | null {
+  const from = placeOf(nodes, id);
+  if (!from) return null;
+  const target = keyTarget(nodes, from, direction);
+  return target === null ? null : moveOrNothing(nodes, from, target.parent, target.position);
+}
+
+/**
+ * Whether a key move has nowhere to go only because the node is not body matter: front matter and an
+ * appendix are at the top level alone, so a move that would nest one is refused rather than sent, and
+ * the panel says so rather than letting the key look broken.
+ */
+export function leavesTheTopLevel(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+  direction: MoveDirection,
 ): boolean {
   const from = placeOf(nodes, id);
-  return from?.node.matter === 'appendix' && direction === 'demote' && from.index > 0;
+  if (!from || from.node.matter === 'body') return false;
+  const target = keyTarget(nodes, from, direction);
+  return target !== null && target.parent !== null;
+}
+
+/**
+ * Whether a key move has nowhere to go only because it would leave the top level with front matter
+ * after the rest of the outline (STR-064): a front node moved down past one that is not, a node moved
+ * up past a front one, or a node promoted to the top level ahead of one.
+ */
+export function breaksFrontFirst(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+  direction: MoveDirection,
+): boolean {
+  const from = placeOf(nodes, id);
+  if (!from) return false;
+  const target = keyTarget(nodes, from, direction);
+  if (target === null || target.parent !== null) return false;
+  return !frontFirst(topLevelAfter(nodes, from.node, target.position));
+}
+
+/**
+ * The first front node after this top-level one, if there is one: while there is, the node cannot
+ * stop being front matter, since a front node after one that is not is what the outline's parse
+ * refuses (STR-064). A node that is not front matter has nothing to leave, so it never has one, and
+ * the panel names the node this returns as the reason its Matter cannot change.
+ */
+export function frontAfter(
+  nodes: readonly OutlineViewNode[],
+  id: string,
+): OutlineViewNode | undefined {
+  let found = false;
+  for (const node of nodes) {
+    if (found) {
+      if (node.matter === 'front') return node;
+    } else if (node.id === id) {
+      if (node.matter !== 'front') return undefined;
+      found = true;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -143,19 +236,19 @@ export function dropMove(
       if (!at || contains(from.node, target.node)) return null;
       const parent = at.parent?.id ?? null;
       const position = fromParent === parent && from.index < at.index ? at.index - 1 : at.index;
-      return moveOrNothing(from, parent, position);
+      return moveOrNothing(nodes, from, parent, position);
     }
     case 'into': {
       const at = placeOf(nodes, target.node);
       if (!at || contains(from.node, target.node)) return null;
-      return moveOrNothing(from, at.node.id, remaining(at.node.id, at.node.children));
+      return moveOrNothing(nodes, from, at.node.id, remaining(at.node.id, at.node.children));
     }
     case 'end': {
       if (target.parent !== null && contains(from.node, target.parent)) return null;
       const children =
         target.parent === null ? nodes : placeOf(nodes, target.parent)?.node.children;
       if (!children) return null;
-      return moveOrNothing(from, target.parent, remaining(target.parent, children));
+      return moveOrNothing(nodes, from, target.parent, remaining(target.parent, children));
     }
   }
 }

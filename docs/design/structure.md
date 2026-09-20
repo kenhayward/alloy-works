@@ -73,6 +73,7 @@ current outline rather than silently overwriting it.
 | **STR-014** | `sequences` is an open map from a name to its rule, with `section`, `figure`, `table` and `equation` always present. A further sequence is a member, not a code change                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **STR-015** | A sequence's rule carries `restartAt`, an outline depth. The engine's counter stack drops every counter below that depth on entering a node at it                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **STR-016** | A top-level node carries `matter`, inherited by its subtree; a sequence declares a rule per matter, so an appendix numbers in its own scheme with its own `restartAt`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **STR-064** | The outline parse refuses a `front` node below the top level, or after any top-level node that is not front matter, naming the node; every operation's result goes back through that parse, and an operation that would break the order is refused in words of its own                                                                                                                                                                                                                                                                                                                                    |
 | **STR-017** | A node carries `numbered`, and an unnumbered node is walked for its children and never increments a counter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **STR-018** | `number(conditioned, scheme)` is pure: no clock, no identifiers minted, no iteration order that depends on anything but the tree                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **STR-019** | No number is representable. The content model has no member for one, the outline holds switches rather than values, and the numbering table is returned rather than written                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -116,16 +117,30 @@ alone, and a figure in an unnumbered body preface is still `Figure 1` - so the c
 "every caption-bearing block" in part. Issue #129 reopens STR-023: its superseding row answers both
 this case and a figure or table explicitly unnumbered, and this design claims that row once it does.
 
-**STR-036 is claimed on two terms that are not built yet.** The panel numbers with the same function
-the service does, over the default scheme, so it shows numbering as it will publish only while the
-publisher uses that scheme too, and only while no condition hides a node. When PUB brings a layout's
-scheme, the panel must be given it; when REU brings conditions and profiles, the panel must number
-under the profile being published. Both are named where they land ("Numbering", and the change
-history); until then there is one scheme and no condition, and the claim holds in full.
+**STR-036 was claimed on two terms that were not built. The first is now built; one stands.** The
+panel numbers with the same function the service does, so it shows numbering as it will publish only
+while it is given the scheme the publisher uses, and only while no condition hides a node. The first
+term was PUB's: when PUB brings a layout's scheme, the panel must be given it. **Publishing's second
+slice brought it.** The document view answers the document's layout - its version, its language and
+its scheme - the numbering route numbers with that scheme and names the version, and the panel and
+the generated lists parse it and number with it, never with the product's default. A scheme the page
+cannot read numbers nothing and says so, because a fallback to the default would show numbers no
+publish could produce.
+
+So **STR-036 is cited**, by `apps/web/src/structure/DocumentPage.test.tsx`: the panel is numbered
+under a second layout version whose scheme is not the default's, and every number it shows is
+compared with what `assemble` - the function the `publish` job composes with - makes of the same
+outline under the same layout. The numbers are the same function's, over the same scheme, shown to
+be so rather than assumed.
+
+**The second term stands.** When REU brings conditions and profiles, the panel must number under the
+profile being published; until then `conditions` is the identity, the panel and the publisher see
+the same nodes, and the claim holds in full. It is named where it lands ("Numbering", and the change
+history).
 
 ## What this document does not own
 
-Forty-one claims above. The requirements deliberately left out are where this design's edges are, and
+Forty-two claims above. The requirements deliberately left out are where this design's edges are, and
 each one is a design that does not exist yet rather than a detail.
 
 **The named failure is produced here; failing the publish is PUB's.** This is the split
@@ -244,7 +259,7 @@ documents' prose was corrected by the pull request that built this.
 
 ```
 OutlineDocument = {
-  schemaVersion: 1,
+  schemaVersion: 2,              // 2 added `front` to `matter`; a schema 1 outline reads as 2 unchanged
   title: string,                 // the document's title, inside the versioned content, as a component's is
   language: BCP 47,
   direction: 'ltr' | 'rtl',
@@ -299,6 +314,19 @@ mistake.
 (STR-016), so a node below the top level is `body` and never says otherwise. The parse refuses any
 other, which covers `set`, `insert` and `move` in one rule: an operation's result comes back through
 the same parse.
+
+**Front matter comes first** (STR-064). `matter` is `front`, `body` or `appendix` since schema 2
+(publishing.md, decision M), and a `front` node follows only other front matter at the top level: the
+parse refuses one after any top-level node that is not front matter, naming the node, as it refuses
+one below the top level. The body and appendices interleave as they always could. An operation that
+would break the order - a section inserted above the preface, the preface moved down, `front` set on a
+node the body precedes - is refused before the parse with `Front matter comes before the rest of the
+outline`, because an author meets it in the ordinary course of editing and the constant an unstorable
+result is answered with would tell them nothing. Schema 1 could not hold `front`, so its migration
+changes nothing but the version, and a schema 1 row holding `front` anyway - forged or corrupt, since
+nothing here wrote it - is refused by the migration and reads as unreadable rather than adopted as
+front matter. The one cost is that the first operation on a schema 1 document that changes nothing
+records a version, once, because its digest is taken over schema 2.
 
 **The depth is bounded at 64.** STR-007 asks for nine levels. A recursive parse of an unbounded tree
 overflows the stack - between 500 and 800 levels in Node, and fewer in a browser - so a stored
@@ -514,7 +542,7 @@ is what `packages/domain` exists for.
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `id`          | The scheme's name - `default/1` for the product's default - so anything keyed by numbering's inputs can key by it                                                                                                                    |
 | `sequences`   | A map from a name to its rules. `section`, `figure`, `table`, `equation` and `footnote` are always present; more may be added                                                                                                        |
-| Each sequence | A rule for `body` and a rule for `appendix`, so an appendix numbers in its own scheme with its own restarts (STR-016)                                                                                                                |
+| Each sequence | A rule per matter - `front`, `body` and `appendix`, all three required - so front matter and appendices each number in their own scheme with their own restarts (STR-016, PUB-009)                                                   |
 | Each rule     | `label` ("Figure", or empty), `format` - a list, one per part of the number from the top, the last repeating, each decimal, alphabetic or roman in either case - `restartAt` and `prefix` (outline depths, or none), and `separator` |
 
 `format` is a list because one format cannot write `A.1`: an appendix's top-level part is alphabetic
@@ -523,23 +551,35 @@ written with the section rule's formats. **The scheme refuses two things.** A se
 counter stack, so the section sequence neither restarts nor takes a prefix. And a rule that restarts
 must prefix with the section number down to at least the depth it restarts at, or two restarts of its
 counter could print the same label - except a footnote's, because a house style restarting footnotes
-per chapter means its labels to repeat.
+per chapter means its labels to repeat. **Both refusals reach every matter**, `front` included: the
+scheme is stored inside a layout version, which is insert-only, so a front rule that could print one
+label twice must be refused on the way in rather than found in a published PDF.
 
 **The scheme is a value this design defines; the layout is what carries one, and PUB owns that.**
 Until a layout artifact exists, **the product's default scheme stands in** - decimal sections;
 figures and tables prefixed with their chapter and restarting with it, `Figure 2.4`; equations and
 footnotes continuous; appendices `A`, `B`, their sections `A.1`, their figures `Figure A.1` and their
 equations `Equation A.1`, each restarting per appendix, and their footnotes from 1 again, running
-through every appendix. A section's label is empty, so a section is
-`2.1` and not `Section 2.1`. It is defined here, it is what T1 numbers against, and PUB replaces it
-with the layout's without the engine changing. Naming it as a default rather than leaving numbering
-undefined is what lets STR-036 be true before PUB is designed - **provided PUB brings the layout's
-scheme to the panel too**, since the panel's numbers are otherwise the default's while the
-publication's are the layout's.
+through every appendix. **Front matter numbers on its own**: sections `i`, `i.1` - lower roman at the
+top level, decimal beneath - figures and tables `Figure i.1`, restarting with each numbered front
+section, equations `Equation i` running straight through, and footnotes from 1. Every front label
+therefore differs from every body label, so no label prints twice across the two. A section's label is
+empty, so a section is `2.1` and not `Section 2.1`. It is defined here, it is what T1 numbers against,
+and PUB replaces it with the layout's without the engine changing. Adding front matter's rules did not
+change its name: `default/1` still numbers every outline that could exist before front matter existed
+exactly as it did.
 
-**The counter stack.** The engine walks the outline depth-first in document order, and **each matter
-keeps its own counters**: the first appendix is `A` and the second `B`, and a body chapter after them
-carries on the body's numbering. For each node, in order:
+Naming it as a default rather than leaving numbering undefined is what lets STR-036 be true before PUB
+is designed - **provided PUB brings the layout's scheme to the panel too**, since the panel's numbers
+are otherwise the default's while the publication's are the layout's. **PUB brought it**: publishing's
+second slice has the document view answer the document's layout and the panel number with that
+layout's scheme, so this default is now what the seeded layout carries rather than what the panel
+reaches for. Nothing in the renderer falls back to it - see the claim above.
+
+**The counter stack.** The engine walks the outline depth-first in document order, and **each of the
+three matters keeps its own counters**: a preface is `i` whatever follows it, the first appendix is
+`A` and the second `B`, and a body chapter after either carries on the body's numbering. For each
+node, in order:
 
 1. **Its section number**, where it and every ancestor are numbered - **a reference takes one too**,
    being a heading in the outline. A node with `numbered: false` takes none and consumes none
@@ -551,16 +591,20 @@ carries on the body's numbering. For each node, in order:
    unnumbered equation takes none.
 4. **Its children.** What an unnumbered node holds carries on the counters of the numbered node before
    it and restarts nothing: a figure in an unnumbered interlude after chapter 2 is `Figure 2.4`,
-   continuing chapter 2's, and one in a preface before any chapter is `Figure 1`, with no chapter to
-   prefix it.
+   continuing chapter 2's. A figure in an unnumbered **body** node before any chapter is `Figure 1`,
+   with no chapter to prefix it; one in a node marked `front` takes front matter's own rules instead,
+   and is withheld where those rules want a prefix it cannot have.
 
-A top-level node whose `matter` is `appendix` - and only a top-level node may carry one - numbers its
-whole subtree by the appendix rules and the appendix counters. A caption whose rule wants a chapter
-prefix, met in appendix matter before any numbered appendix has begun one, has no count to continue
-and takes no number rather than a bare one that would repeat a body caption's own label - and uses up
-no value of its counter, so the first numbered appendix's first figure is still `Figure A.1`. An
-occurrence nobody numbering can read makes every other counter in its matter unknown until that
-counter next restarts, whatever the occurrence holds ([Who is shown what](#who-is-shown-what)).
+A top-level node whose `matter` is `front` or `appendix` - and only a top-level node may carry either
+
+- numbers its whole subtree by that matter's rules and that matter's counters. A caption whose rule
+  wants a chapter prefix, met in front or appendix matter before any numbered node of that matter has
+  begun one, has no count to continue and takes no number rather than a bare one that would repeat
+  another matter's caption label - and uses up no value of its counter, so the first numbered
+  appendix's first figure is still `Figure A.1` and the first numbered front section's first figure is
+  still `Figure i.1`. An occurrence nobody numbering can read makes every other counter in its matter
+  unknown until that counter next restarts, whatever the occurrence holds
+  ([Who is shown what](#who-is-shown-what)).
 
 **The numbering table is the answer to STR-022.** It names its scheme, and holds one entry per
 numbered thing, a `NumberingEntry`:
@@ -570,7 +614,7 @@ numbered thing, a `NumberingEntry`:
 | `node`        | The outline node that produced it                                                                     |
 | `block`       | The block or footnote, where the thing is a caption-bearing block or a footnote; `null` for a section |
 | `sequence`    | Which sequence it took from                                                                           |
-| `matter`      | `body` or `appendix`                                                                                  |
+| `matter`      | `front`, `body` or `appendix`                                                                         |
 | `sections`    | The section counter stack at that point                                                               |
 | `value`       | This sequence's own counter                                                                           |
 | `restartedAt` | The node whose entry last restarted that counter - for a section, its numbered parent                 |
@@ -846,14 +890,14 @@ them nothing they could not already read; the component routes order it the same
 
 ## Where the code lives
 
-| Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf`. Not built: reference resolution                                                                                                  |
-| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                            |
-| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                                                                                                                                         |
-| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render, and offers **Numbered** and **Appendix** beside each node; `links.ts`, a node's address and the `#/documents/{id}/nodes/{node}` route; the panel's **Link to** field and **Copy link**; and `GeneratedLists.tsx`, the figures, tables and equations beneath the outline |
+| Where                   | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`       | The outline schema and its parse, the five operations as pure functions over a tree; in `src/structure/`, `scheme.ts` - the scheme, the product's default and the formats - `contributions.ts` - the contribution projection - `numbering.ts` - `resolve`, `conditions`, `number` and `sectionNumbers` - and `lists.ts` - `contents` and `listOf`. Not built: reference resolution                                                                                                                                                                                                        |
+| `packages/db`           | The migration, `createDocument`, `readDocument`, `listReadableDocuments`, `readableComponents`, and `editOutline`, which checks a reference's target, applies an operation and records it through `recordVersion`; `numberingInputs`, which resolves each occurrence and reads what the readable ones contribute; later, the cycle check                                                                                                                                                                                                                                                  |
+| `packages/api-contract` | The routes above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `apps/service`          | The handlers, and the mapping from the store's dotted answers to the wire codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `packages/editor`       | The title editor: one ProseMirror view per node title, over an inline-only schema. Not built: the panel edits a title as plain text for now                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `apps/web`              | The contents panel, its keymap, and the undo stack over returned outlines - built as the outline panel in `src/structure/`, which shows each node's section number, computed with `number` on every render over the scheme the document's layout carries, and offers **Numbered** beside each node and **Matter** - Front matter, Body or Appendix - beside a top-level one; `links.ts`, a node's address and the `#/documents/{id}/nodes/{node}` route; the panel's **Link to** field and **Copy link**; and `GeneratedLists.tsx`, the figures, tables and equations beneath the outline |
 
 **The operations are pure functions over a tree, and the service applies them.** `packages/domain` is
 where a tree operation can be property-tested without a database, and where determinism is provable.

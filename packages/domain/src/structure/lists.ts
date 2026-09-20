@@ -1,6 +1,7 @@
 import type { InlineNode } from '../content/model/inline.js';
 
 import type { Conditioned, NumberableNode, NumberingTable } from './numbering.js';
+import type { OutlineMatter } from './outline.js';
 
 /**
  * One line of a table of contents (STR-040): a node, how deep it is, and its section number where it
@@ -13,7 +14,7 @@ export interface ContentsEntry {
   readonly type: 'section' | 'reference';
   /** 1 for a top-level node. */
   readonly depth: number;
-  readonly matter: 'body' | 'appendix';
+  readonly matter: OutlineMatter;
   /** `null` for a node that takes no section number: unnumbered, or beneath one that is. */
   readonly number: string | null;
   /** A section's title; `null` for a reference, whose heading is its component's title. */
@@ -51,7 +52,7 @@ export function contents(
     ),
   );
   const entries: ContentsEntry[] = [];
-  const visit = (node: NumberableNode, at: number, matter: 'body' | 'appendix') => {
+  const visit = (node: NumberableNode, at: number, matter: OutlineMatter) => {
     if (at > depth) return;
     entries.push({
       node: node.id,
