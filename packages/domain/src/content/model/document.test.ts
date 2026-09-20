@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
 
+import { canonicalise } from './canonical.js';
 import { CURRENT_SCHEMA_VERSION, contentDocumentSchema, parseContentDocument } from './document.js';
 import { readContent } from './migrate.js';
 
@@ -455,5 +456,196 @@ describe('an equation, stored only as the MathML reader writes it', () => {
     expect(outcome).toMatchObject({ ok: false, artifact: 'component-10', version: '1.0' });
     expect(outcome).not.toHaveProperty('document');
     expect(!outcome.ok && outcome.failure).toMatch(/not in the one form the MathML reader writes/);
+  });
+});
+
+describe('adjacent runs, which the canonical form merges (issue #154)', () => {
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  const contentOf = (document: unknown) => {
+    const block = parseContentDocument(document).content[0];
+    return block?.type === 'paragraph' ? block.content : [];
+  };
+  const link = (id: string) => ({ type: 'hyperlink', id, href: 'https://example.test/setup' });
+  const emphasised = (value: string, id = 'm1') => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'emphasis', id }],
+  });
+
+  it('merges two adjacent runs carrying the same marks into one', () => {
+    expect(contentOf(runs([emphasised('Install '), emphasised('the printer.')]))).toEqual([
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id: 'm1' }] },
+    ]);
+  });
+
+  it('gives the merged and the split spelling of one text one digest', () => {
+    const split = canonicalise(
+      parseContentDocument(runs([emphasised('Install '), emphasised('the printer.')])),
+    );
+    const whole = canonicalise(parseContentDocument(runs([emphasised('Install the printer.')])));
+    expect(split).toBe(whole);
+  });
+
+  it('merges two runs holding one set of marks written in two orders', () => {
+    const marks = [
+      { type: 'emphasis', id: 'm1' },
+      { type: 'language', id: 'm2', tag: 'fr-FR' },
+    ];
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks },
+          { type: 'text', value: 'the printer.', marks: [...marks].reverse() },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks }]);
+  });
+
+  it('leaves two runs whose marks differ alone', () => {
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          { type: 'text', value: 'the printer.', marks: [{ type: 'strong', id: 'm2' }] },
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('leaves two annotations of one type beside each other alone', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [link('m1')] },
+          { type: 'text', value: 'the printer.', marks: [link('m2')] },
+        ]),
+      ),
+    ).toEqual([
+      { type: 'text', value: 'Install ', marks: [link('m1')] },
+      { type: 'text', value: 'the printer.', marks: [link('m2')] },
+    ]);
+  });
+
+  it('leaves two runs apart when one mark of the set differs in an attribute', () => {
+    expect(
+      contentOf(
+        runs([
+          {
+            type: 'text',
+            value: 'Install ',
+            marks: [{ type: 'language', id: 'm1', tag: 'fr-FR' }],
+          },
+          {
+            type: 'text',
+            value: 'the printer.',
+            marks: [{ type: 'language', id: 'm1', tag: 'fr-CA' }],
+          },
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('does not merge a run with the node beside it that is not a run', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [] },
+          { type: 'variable', name: 'productName' },
+          { type: 'text', value: ' first.', marks: [] },
+        ]),
+      ),
+    ).toHaveLength(3);
+  });
+
+  it('drops a run whose value is empty, which is a second spelling of one text', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: '', marks: [] },
+          { type: 'text', value: 'Install the printer.', marks: [] },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks: [] }]);
+  });
+
+  it('gives a document with an empty run the digest of the same document without it', () => {
+    const withEmpty = canonicalise(
+      parseContentDocument(
+        runs([
+          { type: 'text', value: 'Install the printer.', marks: [] },
+          { type: 'text', value: '', marks: [{ type: 'strong', id: 'm1' }] },
+        ]),
+      ),
+    );
+    const without = canonicalise(
+      parseContentDocument(runs([{ type: 'text', value: 'Install the printer.', marks: [] }])),
+    );
+    expect(withEmpty).toBe(without);
+  });
+
+  it('leaves a paragraph of nothing but empty runs with no content at all', () => {
+    expect(contentOf(runs([{ type: 'text', value: '', marks: [] }]))).toEqual([]);
+  });
+
+  it('joins runs an empty run stood between', () => {
+    expect(
+      contentOf(
+        runs([
+          { type: 'text', value: 'Install ', marks: [] },
+          { type: 'text', value: '', marks: [{ type: 'strong', id: 'm1' }] },
+          { type: 'text', value: 'the printer.', marks: [] },
+        ]),
+      ),
+    ).toEqual([{ type: 'text', value: 'Install the printer.', marks: [] }]);
+  });
+
+  it('merges in every inline home the walk reaches, not only a paragraph', () => {
+    const parsed = parseContentDocument(
+      doc([
+        {
+          type: 'blockquote',
+          id: 'b1',
+          content: [paragraph('b2')],
+          attribution: [emphasised('Ada '), emphasised('Lovelace')],
+        },
+        {
+          type: 'table',
+          id: 'b3',
+          caption: 'A table',
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [],
+          note: [emphasised('Measured ', 'm2'), emphasised('at sea level.', 'm2')],
+        },
+        {
+          type: 'paragraph',
+          id: 'b4',
+          style: 'body',
+          content: [
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'b5',
+                  style: 'footnote',
+                  content: [emphasised('See ', 'm3'), emphasised('the appendix.', 'm3')],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    const [quote, table, anchor] = parsed.content;
+    expect(quote?.type === 'blockquote' && quote.attribution).toHaveLength(1);
+    expect(table?.type === 'table' && table.note).toHaveLength(1);
+    const footnote = anchor?.type === 'paragraph' ? anchor.content[0] : undefined;
+    const inner =
+      footnote?.type === 'footnote' ? (footnote.content as { content: unknown[] }[])[0] : undefined;
+    expect(inner?.content).toHaveLength(1);
   });
 });

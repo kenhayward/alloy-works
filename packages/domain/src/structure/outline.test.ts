@@ -504,6 +504,22 @@ describe('a section title, under the content model rules', () => {
     expect(canonicaliseOutline(omitted)).toBe(canonicaliseOutline(spelled));
   });
 
+  it('merges adjacent runs in a title, so a split and a whole spelling give one digest', () => {
+    const emphasis = [{ type: 'emphasis', id: 'm1' }];
+    const split = parseOutlineDocument(
+      titled([
+        { type: 'text', value: 'Dosing ', marks: emphasis },
+        { type: 'text', value: '', marks: [] },
+        { type: 'text', value: 'the sample', marks: emphasis },
+      ]),
+    );
+    const whole = parseOutlineDocument(
+      titled([{ type: 'text', value: 'Dosing the sample', marks: emphasis }]),
+    );
+    expect(split).toEqual(whole);
+    expect(canonicaliseOutline(split)).toBe(canonicaliseOutline(whole));
+  });
+
   it('keeps every identifier inside a title unique within that title, as a component keeps its own', () => {
     const second = { ...footnote([{ ...paragraph, id: 'p2' }]), id: 'f2' };
     expect(() =>

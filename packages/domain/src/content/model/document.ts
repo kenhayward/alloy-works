@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
+import { canonicalJson } from '../../stored/canonical.js';
+
 import { blockNodeSchema, footnoteContentSchema, type BlockNode } from './blocks.js';
+import { marksAsASet } from './canonical.js';
 import type { InlineNode } from './inline.js';
 
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -64,6 +67,53 @@ function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
 }
 
 /**
+ * The mark set of a run as the canonical form writes it, which is what "identical marks" means
+ * (issue #154). Marks are a set (CNT-003), so `[emphasis, language]` and `[language, emphasis]` are
+ * one value: the comparison goes through `marksAsASet`, the rule the digest already sorts by, and
+ * then through `canonicalJson`, which compares every member of every mark - a mark's identifier
+ * included. So two runs merge only where the digest already calls their marks one value, and a merge
+ * can never fold two marks the stored form keeps apart.
+ */
+function markSetOf(run: { marks: readonly unknown[] }): string {
+  return canonicalJson({ marks: run.marks }, marksAsASet);
+}
+
+/**
+ * The canonical form of a sequence of inline nodes (issue #154): one visible text carrying one set of
+ * marks is one run, so it has one stored spelling and one digest.
+ *
+ * - **A run with no text is dropped.** `{ value: '' }` is storable and shows nothing, so a paragraph
+ *   holding one is a second spelling of the paragraph without it - and the editor's own save path
+ *   drops it, which would change a digest with no author change. A paragraph left with no runs keeps
+ *   `content: []`, which CNT-124 admits.
+ * - **Two adjacent runs whose mark sets are equal become one**, their values joined in order. No
+ *   identifier "wins": the two sets are the same value, so the merged run keeps the first run's array
+ *   as it stands. Runs differing **only** by a mark's identifier are two annotations (CNT-004) and
+ *   stay apart.
+ * - **Only runs merge.** Anything else inline - an equation, a footnote, a cross-reference - ends a
+ *   run, because it is visible text between them.
+ *
+ * Empty runs go first, so two runs one stood between still meet.
+ */
+function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
+  const merged: InlineNode[] = [];
+  for (const inline of inlines) {
+    if (inline.type !== 'text') {
+      merged.push(inline);
+      continue;
+    }
+    if (inline.value === '') continue;
+    const previous = merged[merged.length - 1];
+    if (previous?.type === 'text' && markSetOf(previous) === markSetOf(inline)) {
+      merged[merged.length - 1] = { ...previous, value: previous.value + inline.value };
+      continue;
+    }
+    merged.push(inline);
+  }
+  return merged;
+}
+
+/**
  * The rules inline content is held to wherever it is stored, in one walk. The walk cannot live in
  * `inline.ts`, because a footnote holds blocks and a block holds inlines - so one of the two files
  * has to learn about the other after the fact, and this is that place.
@@ -93,6 +143,13 @@ function refuseAdjacentEmpties(blocks: readonly BlockNode[]): void {
  * spellings of one footnote are one value, one canonical string and one digest. Everything else is
  * returned as it was given, already parsed by the schema that reached it.
  *
+ * **And the runs come back merged** (`mergeRuns`, issue #154), which is the same rule reaching the
+ * other way: one visible text carrying one set of marks is one run. The merge is here rather than in
+ * `canonicalise`, which returns a string and so would leave the stored spelling split while only the
+ * digest agreed - and would miss a section title altogether, whose canonical form the outline
+ * composes itself. Every inline home this walk reaches is covered by putting it here: a paragraph's
+ * content, a blockquote's attribution, a table's note, a footnote's paragraphs and a section title.
+ *
  * Exported because inline content is stored in more than one place: a section title in an outline
  * is inline content too (structure.md), and runs this same walk rather than a copy of it, so one rule
  * governs inline content wherever it is stored. Throws on the first breach.
@@ -102,7 +159,7 @@ export function checkInlineContent(
   home: InlineHome,
   seen: Set<string>,
 ): InlineNode[] {
-  return inlines.map((inline) => {
+  return mergeRuns(inlines).map((inline) => {
     if (inline.type === 'crossReference') {
       claim(inline.id, seen);
       if (inline.target.kind !== 'node') refuseUnnormalised(inline.target.block, 'Target');
@@ -194,10 +251,11 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Four rules the schema cannot express on its own, because each is about a document rather than a
+ * Five rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
- * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), and a
- * cross-reference in a component never targets an outline node. One walk holds all four: the block
+ * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
+ * cross-reference in a component never targets an outline node, and a sequence of inline content
+ * comes back with its runs merged (issue #154). One walk holds all five: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them. A single
  * empty paragraph is admitted, because CNT-124 requires a new component to be one. What is returned

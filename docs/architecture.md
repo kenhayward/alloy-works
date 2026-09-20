@@ -101,11 +101,12 @@ format or publishes it.
 against, its own title, its base language, its base direction, and its blocks. Adding a member is a
 schema version with a migration and a fixture, not a configuration option.
 
-**Every document goes through `parseContentDocument`.** Four rules live there rather than in the
+**Every document goes through `parseContentDocument`.** Five rules live there rather than in the
 schema, because each is a property of a document rather than of a node: every block's, footnote's
 and cross-reference's identifier, a footnote's paragraphs included, is unique within the component;
 two adjacent empty paragraphs are refused while one is admitted; a footnote's content is paragraphs
-holding no image and no footnote; and a cross-reference in a component never targets an outline node.
+holding no image and no footnote; a cross-reference in a component never targets an outline node;
+and a sequence of inline content comes back with its runs merged.
 The identifiers, the footnote's list and where a cross-reference may point are checked in one walk
 over inline content, `checkInlineContent`, sharing one set of claimed identifiers with the walk over
 the blocks; adjacency is checked in every sequence of blocks either reaches - the top level, a list
@@ -117,6 +118,18 @@ it parsed - a footnote's paragraphs with the defaults the parse fills in everywh
 is what is stored and digested, in a component and in a section title alike, so two spellings of one
 footnote are one version. Every identifier the walk claims, and the block a target names, is refused
 unless it is already in NFC, the form the digest is taken over.
+
+**One visible text carrying one set of marks is one run.** The same walk drops a run holding no text
+and joins two adjacent runs whose marks are equal, so a text has one stored spelling and one digest
+wherever it is stored - a paragraph, a blockquote's attribution, a table's note, a footnote's
+paragraphs, a section title. "Equal" is equal in the canonical form: the mark arrays go through the
+marks-as-a-set rule the digest already sorts by and are then compared member by member, a mark's
+identifier included, so `[emphasis, language]` and `[language, emphasis]` merge while two links, or
+two annotations of one type, do not. No identifier survives at another's expense, because the two
+mark sets that merge are one value; the merged run keeps the first run's array as it stands. The
+merge is in the walk rather than in `canonicalise`, which returns a string and would have left the
+stored spelling split while only the digest agreed - and would have missed a section title, whose
+canonical form the outline composes itself.
 
 **Migration is a read-time projection and never a rewrite.** Version rows take inserts only and
 `content_hash` is the hash of what was written, so migrating stored content would either invalidate

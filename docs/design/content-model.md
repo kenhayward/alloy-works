@@ -219,6 +219,15 @@ content is parsed by the walk rather than by the inline schema, which cannot nam
 the walk hands back what it parsed rather than checking it and keeping what arrived (issue #124). A
 section title, which runs the same walk, is stored the same way.
 
+**And one visible text carrying one set of marks is one run** (issue #154). The same walk drops a run
+holding no text and joins two adjacent runs whose marks are equal, so a text has one stored spelling
+as well as one hash, in every place inline content is stored. "Equal" is equal in the canonical form:
+the two mark arrays go through the marks-as-a-set rule (CNT-003) and are then compared member by
+member, a mark's identifier included - so a set written in two orders is one set, while two
+annotations of one type, which differ only by identifier (CNT-004), stay apart as the two annotations
+they are. Nothing had stored a mark when this was tightened, so there is no migration; it is a rule
+about what is written, and a version already stored is read back exactly as it was written.
+
 That the schema version sits inside the JSON makes the hash shortcut sound as well as fast: equal
 bytes implies equal schema version, so two versions with equal hashes cannot be two different schemas
 that happen to say the same thing.

@@ -14,6 +14,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import {
   claimLock,
   ITERATION_RETENTION_DAYS,
+  iterationDigest,
   LOCK_PERIOD_MINUTES,
   readLock,
   saveIteration,
@@ -24,6 +25,9 @@ import { createSpace } from './spaces.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { createArtifact } from './versions.js';
+
+/** One paragraph of the content document, which this file builds runs inside. */
+type Paragraph = Extract<ContentDocument['content'][number], { type: 'paragraph' }>;
 
 const identity = (id: string, name: string) =>
   ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name }) as const;
@@ -309,6 +313,53 @@ describe('editing a component: its lock and its iterations', () => {
           service.withTenant(production, (trx) => statement.execute(trx)),
         ).rejects.toThrow(/permission denied/);
       }
+    });
+
+    it('stores an iteration with its runs merged, so a split and a whole spelling are one iteration', async () => {
+      const component = await held();
+      const emphasis = [{ type: 'emphasis' as const, id: 'm1' }];
+      const runs = (inline: Paragraph['content']): ContentDocument => ({
+        schemaVersion: 1,
+        title: 'Install the printer',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [{ type: 'paragraph', id: 'b1', style: 'body', content: inline }],
+      });
+      const whole = runs([{ type: 'text', value: 'Unbox the printer.', marks: emphasis }]);
+      const save = (content: ContentDocument, sequence: number) =>
+        service.withTenant(production, (trx) =>
+          saveIteration(trx, {
+            artifactId: component.id,
+            principal: ada,
+            session: component.session,
+            sequence,
+            openedFrom: component.openedFrom,
+            content,
+          }),
+        );
+
+      expect(
+        await save(
+          runs([
+            { type: 'text', value: 'Unbox ', marks: emphasis },
+            { type: 'text', value: '', marks: [] },
+            { type: 'text', value: 'the printer.', marks: emphasis },
+          ]),
+          1,
+        ),
+      ).toMatchObject({ answer: 'accepted', sequence: 1, repeated: false });
+      const row = await service.withTenant(production, (trx) =>
+        trx
+          .selectFrom('iteration')
+          .selectAll()
+          .where('artifact_id', '=', component.id)
+          .executeTakeFirstOrThrow(),
+      );
+      expect(row.content).toEqual(whole);
+      expect(row.digest).toBe(iterationDigest(whole, { [audience]: 'Engineers' }));
+      // The whole spelling at the same sequence is the same content, never a conflict, and makes no
+      // second row: the two spellings are one stored value.
+      expect(await save(whole, 1)).toMatchObject({ answer: 'accepted', repeated: true });
     });
 
     it('accepts a repeated sequence with the same content as it did the first time, making no second row', async () => {
