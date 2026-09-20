@@ -319,8 +319,14 @@ describe('the citations in the committed model', () => {
   // tests in apps/web/src/editor/ComponentEditor.test.tsx that move between the regions of the view
   // with F6 and Shift-F6. One file leaves and one file arrives for CNT-077, so the count rises only
   // by CNT-152's own.
+  // 218, from 217: the lists plan's identity task cites CNT-002 in a new file,
+  // packages/editor/src/identity.test.ts, where the plugin's walk descends: a block made at depth -
+  // by splitting a list item, by sinking one, by Enter inside the item that sink made - is allocated
+  // an identifier of its own, no two blocks in the component share one, and an identifier it already
+  // carries is refused and drawn again. It is a new file, so unlike the case at 163 above this
+  // citation does not hide behind one already in the same file.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(217);
+    expect(model.citations).toHaveLength(218);
   });
 
   it('cites no identifier the corpus does not hold', () => {
