@@ -530,9 +530,14 @@ describe('adjacent runs, which the canonical form merges (issue #154)', () => {
     ]);
   });
 
-  it('leaves two runs apart when one mark of the set differs in an attribute', () => {
-    expect(
-      contentOf(
+  it('never has to leave two runs apart over an attribute, because that document is refused', () => {
+    // This test used to assert that two runs whose marks share a kind and an identifier but differ
+    // in an attribute stay apart. They do, but the document never gets that far: one identifier
+    // carrying two values is two annotations wearing one identifier, and the walk refuses it by
+    // name. So the merge's attribute comparison has no legal case left to be observed in - it is
+    // demonstrated by the refusal instead, in "a mark identifier, which names one annotation".
+    expect(() =>
+      parseContentDocument(
         runs([
           {
             type: 'text',
@@ -546,7 +551,7 @@ describe('adjacent runs, which the canonical form merges (issue #154)', () => {
           },
         ]),
       ),
-    ).toHaveLength(2);
+    ).toThrow(/m1/);
   });
 
   it('does not merge a run with the node beside it that is not a run', () => {
@@ -801,5 +806,89 @@ describe('the parse of what the parse returned, which must be what it returned',
     ).toEqual([one]);
     expect(contentOf(runs([{ type: 'text', value: decomposed, marks: [] }]))).toEqual([one]);
     expect(contentOf(runs([one]))).toEqual([one]);
+  });
+});
+
+describe('a mark identifier, which names one annotation and not two', () => {
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  // A node between two runs, so they are two runs rather than one merged run.
+  const apart = (first: unknown, second: unknown) => [
+    { type: 'text', value: 'Install ', marks: [first] },
+    { type: 'variable', name: 'productName' },
+    { type: 'text', value: 'the printer.', marks: [second] },
+  ];
+  const french = { type: 'language', id: 'm1', tag: 'fr-FR' };
+
+  it('accepts one identifier on two runs carrying the same value, which is one annotation', () => {
+    const parsed = parseContentDocument(runs(apart(french, { ...french })));
+    const block = parsed.content[0];
+    expect(block?.type === 'paragraph' && block.content).toHaveLength(3);
+  });
+
+  it('refuses one identifier carrying two values, naming it and nothing of the text', () => {
+    const attempt = () =>
+      parseContentDocument(runs(apart(french, { type: 'language', id: 'm1', tag: 'de-DE' })));
+    expect(attempt).toThrow(/m1/);
+    expect(attempt).toThrow(/two different values/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/printer/);
+  });
+
+  it('refuses one identifier worn by two kinds of mark', () => {
+    expect(() => parseContentDocument(runs(apart(french, { type: 'emphasis', id: 'm1' })))).toThrow(
+      /m1/,
+    );
+  });
+
+  it('holds the rule wherever inline content lives, not only in a paragraph', () => {
+    const german = { type: 'language', id: 'm1', tag: 'de-DE' };
+    const marked = (mark: unknown) => [{ type: 'text', value: 'Ada Lovelace', marks: [mark] }];
+    const noted = (mark: unknown) => ({
+      type: 'paragraph',
+      id: 'b4',
+      style: 'body',
+      content: [
+        {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [{ type: 'paragraph', id: 'b5', style: 'footnote', content: marked(mark) }],
+        },
+      ],
+    });
+    const table = (mark: unknown) => ({
+      type: 'table',
+      id: 'b3',
+      caption: 'A table',
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [],
+      note: marked(mark),
+    });
+    const quote = (mark: unknown) => ({
+      type: 'blockquote',
+      id: 'b1',
+      content: [paragraph('b2')],
+      attribution: marked(mark),
+    });
+    // A blockquote's attribution against a table's note, and a footnote's paragraph against both.
+    expect(() => parseContentDocument(doc([quote(french), table(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([quote(french), noted(german)]))).toThrow(/m1/);
+    expect(() => parseContentDocument(doc([table(french), noted(german)]))).toThrow(/m1/);
+    // And the same value in all three is one annotation, wherever its fragments stand.
+    expect(() =>
+      parseContentDocument(doc([quote(french), table({ ...french }), noted({ ...french })])),
+    ).not.toThrow();
+  });
+
+  it('lets two components use one identifier, because the rule is per document', () => {
+    const german = { type: 'language', id: 'm1', tag: 'de-DE' };
+    expect(() =>
+      parseContentDocument(runs([{ type: 'text', value: 'Ada', marks: [french] }])),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(runs([{ type: 'text', value: 'Grace', marks: [german] }])),
+    ).not.toThrow();
   });
 });

@@ -504,6 +504,31 @@ describe('a section title, under the content model rules', () => {
     expect(canonicaliseOutline(omitted)).toBe(canonicaliseOutline(spelled));
   });
 
+  it('holds a title to the one-identifier-one-annotation rule, and scopes it to that title', () => {
+    const french = { type: 'language', id: 'm1', tag: 'fr-FR' };
+    const german = { type: 'language', id: 'm1', tag: 'de-DE' };
+    const marked = (mark: unknown, value: string) => [{ type: 'text', value, marks: [mark] }];
+    expect(() =>
+      parseOutlineDocument(
+        titled([
+          ...marked(french, 'Dosing '),
+          { type: 'variable', name: 'productName' },
+          ...marked(german, 'again'),
+        ]),
+      ),
+    ).toThrow(/content model refuses/);
+    // A title is the scope, as a component is for a block, so a second title may reuse it.
+    expect(() =>
+      parseOutlineDocument({
+        ...empty,
+        nodes: [
+          section(NODE, { title: marked(french, 'Dosing') }),
+          section(OTHER, { title: marked(german, 'Results') }),
+        ],
+      }),
+    ).not.toThrow();
+  });
+
   it('merges adjacent runs in a title, so a split and a whole spelling give one digest', () => {
     const emphasis = [{ type: 'emphasis', id: 'm1' }];
     const split = parseOutlineDocument(

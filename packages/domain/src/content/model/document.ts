@@ -5,6 +5,7 @@ import { canonicalJson } from '../../stored/canonical.js';
 import { blockNodeSchema, footnoteContentSchema, type BlockNode } from './blocks.js';
 import { marksAsASet } from './canonical.js';
 import type { InlineNode } from './inline.js';
+import type { Mark } from './marks.js';
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
@@ -46,6 +47,52 @@ function claim(id: string, seen: Set<string>): void {
   refuseUnnormalised(id, 'Identifier');
   if (seen.has(id)) throw new Error(`Identifier ${id} is used more than once in this component`);
   seen.add(id);
+}
+
+/**
+ * What one scope has claimed so far: the identifiers taken, and the value each mark identifier
+ * stands for. A component is one scope and a section title is another, because a title is in no
+ * component and is reached through its node as a block is through its occurrence.
+ */
+export interface Claimed {
+  readonly ids: Set<string>;
+  readonly marks: Map<string, string>;
+}
+
+/** A fresh scope. The two halves are always made together, so nothing can thread one without the other. */
+export function newScope(): Claimed {
+  return { ids: new Set(), marks: new Map() };
+}
+
+/**
+ * An identifier names one annotation (CNT-004), so within one scope it carries exactly one value -
+ * one kind and one set of attributes. A `language` mark `m1` reading `fr-FR` on one run and `de-DE`
+ * on another is two annotations wearing one identifier, and CNT-005 makes accepting, rejecting or
+ * excluding an annotation one operation over every fragment of that identifier - which cannot mean
+ * anything when the identifier names two. The same argument refuses one identifier worn by two
+ * **kinds** of mark, for which no case has been made that it should be allowed: an identifier that
+ * is both an emphasis and a comment names two annotations as surely as two tags do. Refusing is
+ * also the reversible direction. Nothing has stored a mark, so refusing costs nothing now, and
+ * admitting more later needs no migration, while admitting it now could never be tightened.
+ *
+ * The value compared is the mark's canonical form, the same string the digest is taken over, so two
+ * marks the stored form cannot tell apart are one annotation here too. The identifier is keyed in
+ * NFC for the same reason: the canonical form folds the two spellings into one, so comparing raw
+ * strings would let one identifier past as two.
+ *
+ * The message names the identifier and says what is wrong with it, and carries no word of the
+ * author's text, which a caller may log or hand back.
+ */
+function claimMark(mark: Mark, claimed: Claimed): void {
+  const value = canonicalJson(mark);
+  const held = claimed.marks.get(mark.id.normalize('NFC'));
+  if (held === undefined) {
+    claimed.marks.set(mark.id.normalize('NFC'), value);
+    return;
+  }
+  if (held !== value) {
+    throw new Error(`Mark identifier ${mark.id} carries two different values in one document`);
+  }
 }
 
 /**
@@ -140,7 +187,7 @@ function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
  * - **A footnote holds paragraphs** (CNT-129), and its content is parsed as such here. Those
  *   paragraphs hold nothing outside CNT-129's closed list: no image, and no footnote - so the walk
  *   descends one footnote deep and no further, whatever it is given.
- * - **Every identifier inside is claimed in `seen`** - a footnote's own, each of its paragraphs', and
+ * - **Every identifier inside is claimed in the scope** - a footnote's own, each of its paragraphs', and
  *   a cross-reference's - so none can share one with a block or with anything else in what holds it
  *   (CNT-002, issue #122). A cross-reference targets a footnote by identity (STR-026), so one it
  *   shared would name two things. Each is in NFC, and so is the block a target names, because the
@@ -162,6 +209,11 @@ function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
  * spellings of one footnote are one value, one canonical string and one digest. Everything else is
  * returned as it was given, already parsed by the schema that reached it.
  *
+ * - **A mark identifier carries one value in the scope** (`claimMark`): an annotation fragmented
+ *   across runs stays one annotation under one identifier (CNT-004), so the same identifier reading
+ *   two ways is refused by name. A run carrying no text is dropped before this, so a mark on one
+ *   claims nothing - it is not stored, so there is nothing for it to disagree with.
+ *
  * **And the runs come back merged** (`mergeRuns`, issue #154), which is the same rule reaching the
  * other way: one visible text carrying one set of marks is one run. The merge is here rather than in
  * `canonicalise`, which returns a string and so would leave the stored spelling split while only the
@@ -176,11 +228,15 @@ function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
 export function checkInlineContent(
   inlines: readonly InlineNode[],
   home: InlineHome,
-  seen: Set<string>,
+  claimed: Claimed,
 ): InlineNode[] {
   return mergeRuns(inlines).map((inline) => {
+    if (inline.type === 'text') {
+      for (const mark of inline.marks) claimMark(mark, claimed);
+      return inline;
+    }
     if (inline.type === 'crossReference') {
-      claim(inline.id, seen);
+      claim(inline.id, claimed.ids);
       if (inline.target.kind !== 'node') refuseUnnormalised(inline.target.block, 'Target');
       if (home === 'component' && inline.target.kind === 'node') {
         throw new Error(`Cross-reference ${inline.id} in a component targets an outline node`);
@@ -193,16 +249,16 @@ export function checkInlineContent(
       }
     }
     if (inline.type !== 'footnote') return inline;
-    claim(inline.id, seen);
+    claim(inline.id, claimed.ids);
     const parsed = footnoteContentSchema.parse(inline.content);
     const paragraphs = parsed.map((paragraph) => {
-      claim(paragraph.id, seen);
+      claim(paragraph.id, claimed.ids);
       for (const inner of paragraph.content) {
         if (inner.type === 'image' || inner.type === 'footnote') {
           throw new Error(`Footnote ${inline.id} holds a node a footnote may not: ${inner.type}`);
         }
       }
-      return { ...paragraph, content: checkInlineContent(paragraph.content, home, seen) };
+      return { ...paragraph, content: checkInlineContent(paragraph.content, home, claimed) };
     });
     refuseAdjacentEmpties(paragraphs);
     return { ...inline, content: paragraphs };
@@ -214,39 +270,45 @@ export function checkInlineContent(
  * inline home a block has - a paragraph's content, a blockquote's attribution, a table's note - and
  * rebuilds each block from what it returns, so what is stored is the parsed form all the way down.
  */
-function checkBlocks(blocks: readonly BlockNode[], seen: Set<string>): BlockNode[] {
-  const checked = blocks.map((block) => checkBlock(block, seen));
+function checkBlocks(blocks: readonly BlockNode[], claimed: Claimed): BlockNode[] {
+  const checked = blocks.map((block) => checkBlock(block, claimed));
   refuseAdjacentEmpties(checked);
   return checked;
 }
 
-function checkBlock(block: BlockNode, seen: Set<string>): BlockNode {
-  claim(block.id, seen);
+function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
+  claim(block.id, claimed.ids);
   switch (block.type) {
     case 'paragraph':
-      return { ...block, content: checkInlineContent(block.content, 'component', seen) };
+      return { ...block, content: checkInlineContent(block.content, 'component', claimed) };
     case 'list':
       return {
         ...block,
-        items: block.items.map((item) => ({ ...item, content: checkBlocks(item.content, seen) })),
+        items: block.items.map((item) => ({
+          ...item,
+          content: checkBlocks(item.content, claimed),
+        })),
       };
     case 'blockquote': {
       const attribution =
-        block.attribution && checkInlineContent(block.attribution, 'component', seen);
+        block.attribution && checkInlineContent(block.attribution, 'component', claimed);
       return {
         ...block,
         ...(attribution === undefined ? {} : { attribution }),
-        content: checkBlocks(block.content, seen),
+        content: checkBlocks(block.content, claimed),
       };
     }
     case 'table': {
-      const note = block.note && checkInlineContent(block.note, 'component', seen);
+      const note = block.note && checkInlineContent(block.note, 'component', claimed);
       return {
         ...block,
         ...(note === undefined ? {} : { note }),
         rows: block.rows.map((row) => ({
           ...row,
-          cells: row.cells.map((cell) => ({ ...cell, content: checkBlocks(cell.content, seen) })),
+          cells: row.cells.map((cell) => ({
+            ...cell,
+            content: checkBlocks(cell.content, claimed),
+          })),
         })),
       };
     }
@@ -271,11 +333,12 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Five rules the schema cannot express on its own, because each is about a document rather than a
+ * Six rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
- * cross-reference in a component never targets an outline node, and a sequence of inline content
- * comes back with its runs merged (issue #154). One walk holds all five: the block
+ * cross-reference in a component never targets an outline node, a mark identifier carries one value
+ * (CNT-004), and a sequence of inline content comes back with its runs merged (issue #154). One
+ * walk holds all six: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
  * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,
@@ -285,5 +348,5 @@ export type InlineHome = 'component' | 'title';
  */
 export function parseContentDocument(value: unknown): ContentDocument {
   const parsed = contentDocumentSchema.parse(value);
-  return { ...parsed, content: checkBlocks(parsed.content, new Set()) };
+  return { ...parsed, content: checkBlocks(parsed.content, newScope()) };
 }

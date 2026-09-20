@@ -234,6 +234,17 @@ does not cover. Text is normalised where an identifier is refused, because an id
 and resolved by exact string and folding one would change what it names, while a run's value is
 prose the hash already reads in NFC.
 
+**A mark identifier carries one value.** CNT-004 makes an annotation fragmented across runs one
+annotation under one identifier, so within one scope - a component, or a section title - an
+identifier stands for exactly one mark: one kind, one set of attributes. The same identifier reading
+two ways, or worn by two kinds of mark, is two annotations sharing a name, and CNT-005's one
+operation over every fragment of that identifier cannot then mean anything; the parse refuses such a
+document by name, saying which identifier and that it carries two values, and nothing of the text.
+The comparison is the mark's canonical form, and the identifier is keyed in NFC, because the
+canonical form folds its two spellings into one. This was tightened while nothing had stored a mark,
+which is the only moment it could be: admitting more later needs no migration, admitting it then
+could never have been undone.
+
 **And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
 than what it was given, every rule about a sequence has to be judged on what that sequence became -
 CNT-023's adjacency over the blocks the walk returned, because a paragraph holding one empty run is

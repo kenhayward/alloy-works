@@ -101,12 +101,12 @@ format or publishes it.
 against, its own title, its base language, its base direction, and its blocks. Adding a member is a
 schema version with a migration and a fixture, not a configuration option.
 
-**Every document goes through `parseContentDocument`.** Five rules live there rather than in the
+**Every document goes through `parseContentDocument`.** Six rules live there rather than in the
 schema, because each is a property of a document rather than of a node: every block's, footnote's
 and cross-reference's identifier, a footnote's paragraphs included, is unique within the component;
 two adjacent empty paragraphs are refused while one is admitted; a footnote's content is paragraphs
-holding no image and no footnote; a cross-reference in a component never targets an outline node;
-and a sequence of inline content comes back with its runs merged.
+holding no image and no footnote; a cross-reference in a component never targets an outline node; a
+mark identifier carries one value; and a sequence of inline content comes back with its runs merged.
 The identifiers, the footnote's list and where a cross-reference may point are checked in one walk
 over inline content, `checkInlineContent`, sharing one set of claimed identifiers with the walk over
 the blocks; adjacency is checked in every sequence of blocks either reaches - the top level, a list
@@ -134,6 +134,20 @@ after a join, because two strings each in NFC need not join into one, and a join
 differently from what is stored would be the same defect by another door. Text is normalised where
 an identifier is refused: an identifier is compared and resolved by exact string, so folding one
 would change what it names.
+
+**A mark identifier names one annotation, and only one.** Within one scope - a component, or a
+section title, which is in no component - an identifier carries exactly one value: one kind and one
+set of attributes. A `language` mark `m1` reading `fr-FR` on one run and `de-DE` on another is two
+annotations wearing one identifier, and the parse refuses that document by name, saying which
+identifier and that it carries two values, with no word of the author's text in the message. An
+identifier worn by two different kinds of mark is refused for the same reason: CNT-005 makes
+accepting or rejecting an annotation one operation over every fragment of that identifier, which
+means nothing when the identifier names two. The value compared is the mark's canonical form, the
+same string the digest is taken over, and the identifier is keyed in NFC, because the canonical form
+folds its two spellings into one. Refusing was the reversible direction: nothing had stored a mark,
+so admitting more later needs no migration, while admitting it then could never have been tightened.
+What the rule protects is the fragmented annotation itself - one identifier on many runs, all
+reading alike, is exactly what CNT-004 asks for and is accepted.
 
 **What the parse accepts, it accepts again unchanged.** The walk returns something other than what
 it was given, so every rule about a sequence is judged on what that sequence became: CNT-023's
