@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { exceedsLimits } from '../admission/limits.js';
 import { canonicalJson } from '../../stored/canonical.js';
 
 import { blockNodeSchema, footnoteContentSchema, type BlockNode } from './blocks.js';
@@ -458,8 +459,19 @@ export type InlineHome = 'component' | 'title';
  * because CNT-124 requires a new component to be one. What is returned is what the walk parsed, and
  * nothing else - and parsing that again returns it unchanged, which is the invariant every caller
  * here relies on, because the service parses a request body and `packages/db` parses it again.
+ *
+ * **Held to the same nesting limit as admission (issue #125), before either the schema or the walk
+ * below recurses over it.** Admission checks `exceedsLimits` on the candidate it sanitises, but a
+ * component already admitted is edited and saved again through this function alone, with nothing
+ * upstream measuring its depth - so a document too deep to admit was, until this call, storable by
+ * every other path. Run first and iteratively, so a document built to exhaust the call stack is
+ * refused rather than crashing the schema parse it would otherwise recurse into.
  */
 export function parseContentDocument(value: unknown): ContentDocument {
+  const exceeded = exceedsLimits(value);
+  if (exceeded !== undefined) {
+    throw new Error(`Content is ${exceeded}`);
+  }
   const parsed = contentDocumentSchema.parse(value);
   return { ...parsed, content: checkBlocks(parsed.content, newScope()) };
 }

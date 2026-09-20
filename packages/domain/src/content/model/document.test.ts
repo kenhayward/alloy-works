@@ -274,6 +274,71 @@ describe('the content document', () => {
   });
 });
 
+describe('the nesting limit, on every path that parses content (issue #125)', () => {
+  /** A list nested `levels` deep, holding one paragraph at the bottom. */
+  const nested = (levels: number): unknown => {
+    let content: unknown[] = [paragraph('b-deep')];
+    for (let level = levels; level >= 1; level -= 1) {
+      content = [
+        {
+          type: 'list',
+          id: `b-l${level}`,
+          kind: level % 2 ? 'ordered' : 'unordered',
+          items: [{ content }],
+        },
+      ];
+    }
+    return content[0];
+  };
+  const documentWith = (list: unknown) => doc([list]);
+
+  it('refuses content nested past the limit, at the one entry point every path uses', () => {
+    expect(() => parseContentDocument(documentWith(nested(1_000)))).toThrow(
+      /nested more than 128 deep/,
+    );
+    // And it is a refusal, not a stack overflow: today this is a RangeError, because the schema
+    // parse recurses before this check exists.
+    try {
+      parseContentDocument(documentWith(nested(1_000)));
+    } catch (error) {
+      expect(error).not.toBeInstanceOf(RangeError);
+    }
+  });
+
+  it('refuses content admission would refuse, which today it accepts', () => {
+    // 200 levels is within the stack and over the limit: today this returns a document, because
+    // parseContentDocument never calls exceedsLimits at all - only the admission path does.
+    expect(() => parseContentDocument(documentWith(nested(200)))).toThrow(
+      /nested more than 128 deep/,
+    );
+  });
+
+  it('accepts a list nested far deeper than six levels', () => {
+    // Twenty levels: ten past the model's own floor of six (CNT-118), and ten short of the
+    // measured boundary at thirty, so there is headroom on both sides rather than a fixture
+    // balanced on the cliff edge (preflight F20).
+    expect(parseContentDocument(documentWith(nested(20))).content).toHaveLength(1);
+  });
+
+  it('pins the boundary the limit refuses at, rather than leaving it to a fixture nobody measured', () => {
+    // The number here is a JSON depth this particular fixture's shape produces, not a count of list
+    // levels an author would recognise - issue #159 is about saying it in levels instead. Pinned
+    // explicitly so a future change to the fixture's shape fails loudly rather than silently losing
+    // the one level of headroom the earlier fixture had (preflight F20).
+    expect(() => parseContentDocument(documentWith(nested(30)))).not.toThrow();
+    expect(() => parseContentDocument(documentWith(nested(31)))).toThrow(
+      /nested more than 128 deep/,
+    );
+  });
+
+  it('accepts the parse of what it returned, for a list nested at the edge of the limit', () => {
+    // The invariant every caller of parseContentDocument relies on: what it accepts, it accepts
+    // again unchanged - checked here for the one rule this task adds, at the depth closest to it.
+    const accepted = parseContentDocument(documentWith(nested(30)));
+    expect(parseContentDocument(accepted)).toEqual(accepted);
+  });
+});
+
 describe('a cross-reference, where a component holds one', () => {
   const COMPONENT = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
   const reference = (id: string, target: unknown) => ({
