@@ -709,6 +709,15 @@ it('saves an iteration holding the marks the author applied', async () => {
 
 ---
 
+**Ken's answer, binding (issue #155).** The language prompt says at the time when the tag an author
+gives is one the product's outputs cannot carry (the publisher takes a language and an optional
+two-letter region; `zh-Hans`, `es-419` and `sr-Latn-RS` are not carriable), naming the tag, before the
+mark is applied - it is not a refusal by the content model, which takes any well-formed tag, but a
+warning the author can act on. Land #155's row with `pnpm trace draft 155`, placed as the corpus's
+rules say, and cite it from the test that demonstrates it. Words for the warning are yours, in the
+editor's voice, with no dashes; say them in your report. If the warning proves to cost more than this
+task can carry, say so plainly and make the publish refusal name the run and its place instead.
+
 ## Task 7: a published run carries its marks
 
 **Files:** modify `packages/domain/src/publishing/published.ts` and `assemble.ts`; modify
