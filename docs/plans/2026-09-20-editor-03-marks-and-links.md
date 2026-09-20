@@ -221,24 +221,24 @@ test asserts the attribute the product sets, not the checker obeying it.
 
 ## File structure
 
-| File                                           | Responsibility                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------------- |
-| `packages/editor/src/schema.ts`                | Modify: ten marks, their attributes, `inclusive`, `excludes` and `toDOM`  |
-| `packages/editor/src/marks.ts`                 | Create: the command registry, `toggleMarkCommand`, `markAt`, `markActive` |
-| `packages/editor/src/marks.test.ts`            | Create                                                                    |
-| `packages/editor/src/mapping.ts`               | Modify: a run per mark set, both ways                                     |
-| `packages/editor/src/state.ts`                 | Modify: the mark keymap, built from the registry                          |
-| `packages/editor/src/index.ts`                 | Modify: the new exports                                                   |
-| `packages/editor/style.css`                    | Modify: how each mark is set on the surface                               |
-| `apps/web/src/editor/EditorToolbar.tsx`        | Create: `role="toolbar"`, one tab stop, arrow keys                        |
-| `apps/web/src/editor/MarkPrompt.tsx`           | Create: the link and language prompts                                     |
-| `apps/web/src/editor/ComponentEditor.tsx`      | Modify: the toolbar, the prompts, `F6` between regions                    |
-| `apps/web/src/editor/EditorToolbar.test.tsx`   | Create                                                                    |
-| `packages/domain/src/publishing/published.ts`  | Modify: `PublishedMark`, `PublishedRun.marks`, `publishing/3`             |
-| `packages/domain/src/publishing/assemble.ts`   | Modify: carry a run's marks, refuse a tag the engine cannot carry         |
-| `apps/worker/templates/publication/3/main.typ` | Create: template 2 plus `run`                                             |
-| `apps/worker/src/template.ts`                  | Modify: version 3, its hash, and the reading map                          |
-| `apps/worker/src/marks.test.ts`                | Create: the PDF a marked document makes, through veraPDF                  |
+| File                                           | Responsibility                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `packages/editor/src/schema.ts`                | Modify: ten marks, their attributes, `inclusive`, `excludes` and `toDOM`      |
+| `packages/editor/src/marks.ts`                 | Create: the command registry, `toggleMarkCommand`, `markAt`, `markThroughout` |
+| `packages/editor/src/marks.test.ts`            | Create                                                                        |
+| `packages/editor/src/mapping.ts`               | Modify: a run per mark set, both ways                                         |
+| `packages/editor/src/state.ts`                 | Modify: the mark keymap, built from the registry                              |
+| `packages/editor/src/index.ts`                 | Modify: the new exports                                                       |
+| `packages/editor/style.css`                    | Modify: how each mark is set on the surface                                   |
+| `apps/web/src/editor/EditorToolbar.tsx`        | Create: `role="toolbar"`, one tab stop, arrow keys                            |
+| `apps/web/src/editor/MarkPrompt.tsx`           | Create: the link and language prompts                                         |
+| `apps/web/src/editor/ComponentEditor.tsx`      | Modify: the toolbar, the prompts, `F6` between regions                        |
+| `apps/web/src/editor/EditorToolbar.test.tsx`   | Create                                                                        |
+| `packages/domain/src/publishing/published.ts`  | Modify: `PublishedMark`, `PublishedRun.marks`, `publishing/3`                 |
+| `packages/domain/src/publishing/assemble.ts`   | Modify: carry a run's marks, refuse a tag the engine cannot carry             |
+| `apps/worker/templates/publication/3/main.typ` | Create: template 2 plus `run`                                                 |
+| `apps/worker/src/template.ts`                  | Modify: version 3, its hash, and the reading map                              |
+| `apps/worker/src/marks.test.ts`                | Create: the PDF a marked document makes, through veraPDF                      |
 
 ---
 
@@ -426,10 +426,24 @@ export function toggleMarkCommand(
   newIdentifier: () => string,
   attrs?: Record<string, unknown>,
 ): Command;
-export function removeMarkCommand(mark: string): Command;
+export function applyMarkCommand(
+  mark: string,
+  newIdentifier: () => string,
+  attrs?: Record<string, unknown>,
+): Command;
+export function removeMarkCommand(mark: string, newIdentifier: () => string): Command;
 export function markAt(state: EditorState, mark: string): Record<string, unknown> | null;
-export function markActive(state: EditorState, mark: string): boolean;
+export function markThroughout(state: EditorState, mark: string): boolean;
 ```
+
+> **Corrected during the build (task 3 and its two reviews).** `markActive` is `markThroughout`,
+> because `toggleMark` runs with `{ removeWhenPresent: false }` and a button reading "the mark is
+> somewhere in the selection" would contradict what pressing it does. `removeMarkCommand` takes the
+> identifier generator because a removal that splits an annotation gives the surviving far piece a
+> fresh identifier. `applyMarkCommand` exists because `toggleMark` decides by `rangeHasMark` and
+> ignores attributes, so re-applying a hyperlink over a range that already carries one removes it
+> instead of retargeting it. `markAt` returns no `id`, so a prompt filled from it cannot hand an
+> identifier back to name a changed value.
 
 The registry, in the order the toolbar shows it. **These are the exact user-facing words:**
 
@@ -563,7 +577,7 @@ one test asserts the stylesheet parses and names each selector.
 
 **Files:** create `apps/web/src/editor/EditorToolbar.tsx` and `EditorToolbar.test.tsx`.
 
-**Consumes:** `EDITOR_COMMANDS`, `toggleMarkCommand`, `markActive`, `markAt`.
+**Consumes:** `EDITOR_COMMANDS`, `toggleMarkCommand`, `applyMarkCommand`, `markThroughout`, `markAt`.
 
 **Produces:**
 
@@ -582,7 +596,7 @@ export function EditorToolbar(props: EditorToolbarProps): JSX.Element;
 ```
 
 One `role="toolbar"` with `aria-label="Formatting"`, one tab stop (roving `tabIndex`), `ArrowLeft`,
-`ArrowRight`, `Home` and `End` moving between buttons, each button `aria-pressed` from `markActive`
+`ArrowRight`, `Home` and `End` moving between buttons, each button `aria-pressed` from `markThroughout`
 and `title` from `shortcutSaid`, and each disabled when `enabled` is false.
 
 - [ ] **Step 1: write the failing tests**
