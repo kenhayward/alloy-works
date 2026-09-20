@@ -1424,12 +1424,11 @@ a **material change**, so it is a new identifier and not an edit in place.
 
 - [ ] **Step 1:** `pnpm trace next CNT` to confirm the identifier - it was **CNT-153** when this plan
       was written, and a row filed in between moves it. Take the tool's answer, never this sentence's.
-- [ ] **Step 2:** add the row, in CNT-119's place in the document's order:
-
-      > An ordered list must carry an author-settable start number and numbering format - decimal,
-              > alphabetic or roman - local to that list and independent of the outline's numbering
-              > (**STR**). The start number must be 1 or more, except where the format is decimal, where 0
-              > is also permitted.
+- [ ] **Step 2:** add the row, in CNT-119's place in the document's order, with this statement: "An
+      ordered list must carry an author-settable start number and numbering format - decimal,
+      alphabetic or roman - local to that list and independent of the outline's numbering (**STR**).
+      The start number must be 1 or more, except where the format is decimal, where 0 is also
+      permitted."
 
 - [ ] **Step 3:** mark CNT-119 `Superseded by CNT-153`, leaving its statement untouched.
 - [ ] **Step 4:** add the change-history row at the end of the document, naming what prompted it:
