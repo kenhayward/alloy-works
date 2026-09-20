@@ -1,7 +1,7 @@
 import { markSchema } from '@alloy-works/domain';
 import { toggleMark } from 'prosemirror-commands';
 import type { Mark as EditorMark, MarkType, Node } from 'prosemirror-model';
-import type { Command, EditorState, Transaction } from 'prosemirror-state';
+import type { Command, EditorState } from 'prosemirror-state';
 
 import { editorSchema } from './schema.js';
 
@@ -148,8 +148,18 @@ function accepted(
  * marking a selection that crosses a break - one gesture - would come out as two annotations. It
  * also joins across an inline node that is not text, which is the same answer for the same reason:
  * an emphasis over a phrase holding an equation is one annotation, not two.
+ *
+ * **This is the same predicate the content model holds**: `claimRange` in
+ * `packages/domain/src/content/model/document.ts` closes an identifier on a text run that does not
+ * carry it and on nothing else, so what the editor calls one annotation is what the stored model
+ * calls one range. The two are written apart because neither package may import the other's world,
+ * and they must be changed together. Exported for `annotationsInOnePiece` in `state.ts`, which is
+ * what keeps the editor unable to produce what that rule refuses; not part of the package's surface.
  */
-function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; to: number }[] {
+export function spansOf(
+  doc: Node,
+  type: MarkType,
+): { mark: EditorMark; from: number; to: number }[] {
   const spans: { mark: EditorMark; from: number; to: number }[] = [];
   doc.descendants((node, pos) => {
     if (!node.isText) return;
@@ -161,54 +171,6 @@ function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; t
     else spans.push({ mark, from: pos, to: pos + node.nodeSize });
   });
   return spans;
-}
-
-/**
- * The same transaction, with every piece of an annotation after the first given an identifier of
- * its own.
- *
- * One annotation is one region of the text. Taking a mark off the middle of one, or changing what it
- * says there, leaves the text either side under the identifier it had - two separated regions
- * answering to one name - and CNT-005 makes accepting or rejecting an annotation one operation over
- * every fragment of that identifier, so the two would resolve together although the author sees two
- * of them. Nothing has stored a mark yet, so the rule is held here, where the split happens, rather
- * than discovered at a save.
- *
- * `addMark` is enough to re-identify a piece: a mark type excludes its own kind, so the new mark
- * replaces the old one over that range and leaves every other mark on the run alone. Mark steps move
- * no positions, so the ranges read before the first of them stay right for all of them.
- *
- * **Only an annotation the edit reached is repaired.** An identifier counts as reached when any of
- * its pieces touches `range`, and then every piece of it is looked at, including the piece on the
- * far side of the hole the edit just made. An annotation somewhere else in the component is left
- * exactly as it was found: an identifier is what accepting or rejecting acts on (CNT-005), so
- * renaming one in a block nobody touched is the harm this function exists to prevent, inside out.
- */
-function reidentified(
-  tr: Transaction,
-  type: MarkType,
-  newIdentifier: () => string,
-  range: { from: number; to: number },
-): Transaction {
-  if (!tr.docChanged) return tr;
-  const from = tr.mapping.map(range.from, -1);
-  const to = tr.mapping.map(range.to, 1);
-  const spans = spansOf(tr.doc, type);
-  const reached = new Set<string>();
-  for (const span of spans) {
-    if (span.to >= from && span.from <= to) reached.add(span.mark.attrs.id as string);
-  }
-  const named = new Set<string>();
-  for (const span of spans) {
-    const id = span.mark.attrs.id as string;
-    if (!reached.has(id)) continue;
-    if (!named.has(id)) {
-      named.add(id);
-      continue;
-    }
-    tr.addMark(span.from, span.to, type.create({ ...span.mark.attrs, id: newIdentifier() }));
-  }
-  return tr;
 }
 
 /**
@@ -228,6 +190,10 @@ function reidentified(
  * `removeWhenPresent: false` is deliberate: pressing Strong over a selection that is half bold makes
  * all of it bold, which is what every editor an author has used does, rather than clearing the half
  * that was.
+ *
+ * **Pressing it over the middle of an annotation leaves the text either side in two pieces**, and
+ * the command does nothing about that: `annotationsInOnePiece` in `state.ts` gives the later pieces
+ * identifiers of their own, after this transaction as after any other.
  */
 export function toggleMarkCommand(
   mark: string,
@@ -239,11 +205,7 @@ export function toggleMarkCommand(
     if (type === undefined) return false;
     const members = accepted(mark, newIdentifier(), attrs);
     if (members === null) return false;
-    return toggleMark(type, members, { removeWhenPresent: false })(
-      state,
-      dispatch && ((tr) => dispatch(reidentified(tr, type, newIdentifier, state.selection))),
-      view,
-    );
+    return toggleMark(type, members, { removeWhenPresent: false })(state, dispatch, view);
   };
 }
 
@@ -258,6 +220,9 @@ export function toggleMarkCommand(
  *
  * False, and a no-op, where the value is one the stored model would refuse, and where a cursor sits
  * in no annotation of that type and has selected nothing to put one over.
+ *
+ * Changing what a mark says in the middle of an annotation leaves the old one in two pieces;
+ * `annotationsInOnePiece` in `state.ts` names the later one, as it does for any other split.
  */
 export function applyMarkCommand(
   mark: string,
@@ -275,7 +240,7 @@ export function applyMarkCommand(
     if (dispatch) {
       const tr = state.tr.removeMark(range.from, range.to, type);
       tr.addMark(range.from, range.to, type.create(members));
-      dispatch(reidentified(tr, type, newIdentifier, range).scrollIntoView());
+      dispatch(tr.scrollIntoView());
     }
     return true;
   };
@@ -312,19 +277,19 @@ function annotationAt(state: EditorState, type: MarkType): { from: number; to: n
  * false, where there is nothing of that type to take off - so a toolbar can offer it without first
  * asking what is there.
  *
- * It takes an identifier source because taking the middle out of an annotation leaves the text
- * either side of the hole two separated pieces of it, and the far piece becomes one of its own.
+ * Taking the middle out of an annotation leaves the text either side of the hole two separated
+ * pieces of it, and the far piece becomes one of its own - but **not here**. The command has no
+ * identifier source, because it needs none: `annotationAt` sees only the block the cursor is in, so
+ * a piece two paragraphs away is a piece this command never knew about. The repair belongs where it
+ * can see the whole document, which is `annotationsInOnePiece` in `state.ts`.
  */
-export function removeMarkCommand(mark: string, newIdentifier: () => string): Command {
+export function removeMarkCommand(mark: string): Command {
   return (state, dispatch) => {
     const type = editorSchema.marks[mark];
     if (type === undefined) return false;
     const range = annotationAt(state, type);
     if (range === null) return false;
-    if (dispatch) {
-      const tr = state.tr.removeMark(range.from, range.to, type);
-      dispatch(reidentified(tr, type, newIdentifier, range));
-    }
+    if (dispatch) dispatch(state.tr.removeMark(range.from, range.to, type));
     return true;
   };
 }

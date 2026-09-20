@@ -26,7 +26,11 @@ beforeEach(() => {
 });
 const counter = () => () => `id${(minted += 1)}`;
 
-/** Block identifiers come from their own sequence, so they never consume a mark's. */
+/**
+ * Block identifiers come from their own sequence, so they never consume a mark's. The state is
+ * built with it, so it is also what `annotationsInOnePiece` names a repaired piece from - one
+ * source serves a block and a mark alike, here as in the application (`createEditorState`).
+ */
 const blockIds = () => {
   let next = 0;
   return () => `b${(next += 1)}`;
@@ -195,22 +199,21 @@ describe('applying a mark', () => {
       { text: ' ', marks: ['emphasis'] },
       { text: 'now', marks: ['emphasis', 'strong'] },
     ]);
-    // The far piece is one annotation of its own, over both of the runs it spans. `id3` was drawn
-    // by the call that did the removing, before it knew it would not be applying anything.
-    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id4']);
+    // The far piece is one annotation of its own, over both of the runs it spans, and it is named
+    // from the state's own source rather than the command's: the repair is a plugin that runs after
+    // every transaction, and no command tells it what was pressed.
+    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'b1']);
   });
 
-  it('re-identifies only the annotation the edit reached', () => {
+  it('leaves an annotation in another block alone', () => {
     let state = run(stateWith('alpha beta gamma'), 6, 6, splitBlock);
     state = run(state, 8, 19, toggleMarkCommand('emphasis', counter()));
-    // A hole punched by something that is not one of these commands - no gesture in the editor
-    // makes one today, and this is the shape the content model is about to refuse. A command in
-    // the paragraph above must leave it exactly as it found it, because that identifier is what
-    // accepting or rejecting the annotation acts on (CNT-005).
-    state = state.apply(state.tr.replaceWith(14, 14, editorSchema.text('XX')));
+    // An annotation in one piece, in a paragraph this gesture never reaches, comes out under the
+    // identifier it went in with: that identifier is what accepting or rejecting the annotation
+    // acts on (CNT-005), so renaming one nothing split would change somebody else's decision.
     state = run(state, 1, 6, toggleMarkCommand('emphasis', counter()));
-    expect(markedText(state, 'emphasis')).toEqual(['alpha', 'beta ', 'gamma']);
-    expect(runIds(state, 'emphasis')).toEqual(['id2', 'id1', 'id1']);
+    expect(markedText(state, 'emphasis')).toEqual(['alpha', 'beta gamma']);
+    expect(runIds(state, 'emphasis')).toEqual(['id2', 'id1']);
   });
 
   it('ignores an identifier, or a type, handed in with the attributes', () => {
@@ -403,7 +406,9 @@ describe('changing what a mark says', () => {
       11,
       applyMarkCommand('hyperlink', counter(), { href: 'https://example.test/summary' }),
     );
-    expect(idsIn(state, 'hyperlink')).toEqual(['id1', 'id2', 'id3']);
+    // `id2` is the new target's own annotation; the piece beyond it is named by the plugin, from
+    // the state's identifier source.
+    expect(idsIn(state, 'hyperlink')).toEqual(['id1', 'id2', 'b1']);
     expect(textAndMarks(state)).toEqual([
       { text: 'the ', marks: ['hyperlink'] },
       { text: 'report', marks: ['hyperlink'] },
@@ -454,7 +459,7 @@ describe('what the selection already carries', () => {
 describe('taking a mark off', () => {
   it('takes the mark off the selected text', () => {
     let state = run(stateWith('alpha beta'), 1, 11, toggleMarkCommand('emphasis', counter()));
-    state = run(state, 1, 6, removeMarkCommand('emphasis', counter()));
+    state = run(state, 1, 6, removeMarkCommand('emphasis'));
     expect(textAndMarks(state)).toEqual([
       { text: 'alpha', marks: [] },
       { text: ' beta', marks: ['emphasis'] },
@@ -463,13 +468,13 @@ describe('taking a mark off', () => {
 
   it('gives the far piece its own identifier when the middle is taken off', () => {
     let state = run(stateWith('the report now'), 1, 15, toggleMarkCommand('emphasis', counter()));
-    state = run(state, 5, 11, removeMarkCommand('emphasis', counter()));
+    state = run(state, 5, 11, removeMarkCommand('emphasis'));
     expect(textAndMarks(state)).toEqual([
       { text: 'the ', marks: ['emphasis'] },
       { text: 'report', marks: [] },
       { text: ' now', marks: ['emphasis'] },
     ]);
-    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id2']);
+    expect(idsIn(state, 'emphasis')).toEqual(['id1', 'b1']);
   });
 
   it('gives the far piece one identifier of its own where it spans a block boundary', () => {
@@ -479,10 +484,12 @@ describe('taking a mark off', () => {
     // first leaves the rest one piece, not one piece per block: what is left in the paragraph
     // below was never selected, and giving it a name of its own would be a second annotation
     // where the author made one.
-    state = run(state, 5, 11, removeMarkCommand('emphasis', counter()));
+    state = run(state, 5, 11, removeMarkCommand('emphasis'));
     expect(paragraphTexts(state)).toEqual(['the report', ' now']);
     expect(markedText(state, 'emphasis')).toEqual(['the ', ' now']);
-    expect(runIds(state, 'emphasis')).toEqual(['id1', 'id2']);
+    // `b1` is the identifier the paragraph already there holds, so the split's second half took
+    // `b2`, and the repair draws `b3`.
+    expect(runIds(state, 'emphasis')).toEqual(['id1', 'b3']);
   });
 
   it('takes the whole annotation off from a cursor inside it, and does nothing outside one', () => {
@@ -492,10 +499,8 @@ describe('taking a mark off', () => {
       11,
       toggleMarkCommand('hyperlink', counter(), { href: 'https://example.test/report' }),
     );
-    expect(removeMarkCommand('language', counter())(select(linked, 4), () => undefined)).toBe(
-      false,
-    );
-    expect(textAndMarks(run(linked, 4, 4, removeMarkCommand('hyperlink', counter())))).toEqual([
+    expect(removeMarkCommand('language')(select(linked, 4), () => undefined)).toBe(false);
+    expect(textAndMarks(run(linked, 4, 4, removeMarkCommand('hyperlink')))).toEqual([
       { text: 'the report', marks: [] },
     ]);
   });
