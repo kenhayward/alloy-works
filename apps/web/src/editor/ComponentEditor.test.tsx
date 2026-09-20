@@ -1657,6 +1657,67 @@ describe('the link and language prompts', () => {
     ).toEqual(['Unbox']);
   });
 
+  it('carries the base language the author set, not the one the surface opened on', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+
+    // A run in French, marked while the component itself is still English, so the checker leaves it
+    // alone.
+    selectRange(view, 1, 6);
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.type(await screen.findByLabelText('Language tag'), 'fr-FR');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('lang', 'en-GB');
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual(['Unbox']);
+
+    await userEvent.clear(screen.getByLabelText('Language'));
+    await userEvent.type(screen.getByLabelText('Language'), 'fr-FR');
+
+    // The surface reads the document it is showing, not the one it mounted with. Frozen at the
+    // opening value, the browser would check the whole component as English while the decorations
+    // read the document that is now French - so the French run would lose its `spellcheck="false"`
+    // and the English one would gain it, which is the answer to CNT-147 exactly inverted.
+    await waitFor(() => expect(box).toHaveAttribute('lang', 'fr-FR'));
+    expect(
+      [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
+    ).toEqual([]);
+  });
+
+  it('carries the base direction the author set, not the one the surface opened on', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    await surface();
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('dir', 'ltr');
+
+    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
+
+    // A component whose base direction is right to left and whose surface still renders left to
+    // right shows the author the opposite of what the document says and of what a publish will do.
+    await waitFor(() => expect(box).toHaveAttribute('dir', 'rtl'));
+  });
+
   it('saves an iteration holding the marks the author applied', async () => {
     const { asked, surface } = open(
       {

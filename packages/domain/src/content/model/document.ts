@@ -307,6 +307,15 @@ export function checkInlineContent(
       // rules answers decides what an author is told.
       const own = new Set<string>();
       for (const mark of inline.marks) {
+        // Held to NFC first, and before either rule below, for the reason `claim` holds a block's,
+        // a footnote's and a cross-reference's identifier to it: the caller stores exactly what the
+        // digest covers, and the canonical form writes an identifier in NFC. A decomposed spelling
+        // stored verbatim could never be matched again by exact string, which is what CNT-005's one
+        // operation over every fragment of an annotation would have to do. Before `claimRange`,
+        // because both rules key their maps in NFC and so answer a document holding two spellings
+        // of one identifier by the wrong name - a complaint about ranges when the problem is
+        // normalisation. Version rows are insert-only, so this cannot be tightened later.
+        refuseUnnormalised(mark.id, 'Mark identifier');
         const id = mark.id.normalize('NFC');
         if (!own.has(id)) claimRange(mark, claimed);
         own.add(id);

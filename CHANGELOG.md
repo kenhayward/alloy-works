@@ -37,8 +37,13 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - A quoted phrase is marked as a quotation for assistive technology and is given no quotation marks
   of its own, so the only quotation characters on the page are the ones the author typed.
 - A language tag carrying a script or a numeric region, such as zh-Hans or es-419, is stored but
-  cannot be published to PDF yet. The editor says so when the tag is applied, and a publish naming
-  that tag says so and prints nothing.
+  cannot be published to PDF yet. The editor says so when a run's tag is applied, and a publish
+  naming that tag says so and prints nothing. A component's own base language, in the header, is not
+  warned about: one of these tags typed there is taken without comment and refused only at the
+  publish (issue #156).
+- The optional title on a link is stored and is not carried into a PDF, because a PDF link has
+  nowhere to put it and inventing somewhere would tell a reader something you did not say. The
+  address is what a reader of the PDF gets.
 
 ## 0.31.0 - 2026-09-20 (PR #153)
 

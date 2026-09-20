@@ -955,6 +955,37 @@ describe('a mark identifier, which names one annotation and not two', () => {
     ).toThrow(/two separate ranges/);
   });
 
+  it('refuses an identifier not already in NFC, which the digest would fold into another', () => {
+    // The same rule every other identifier is held to (`refuseUnnormalised`): the caller stores
+    // exactly what the digest covers, and the digest writes a mark's identifier in NFC. A
+    // decomposed spelling stored verbatim would never match itself again by exact string - which is
+    // how CNT-005 would have to find every fragment of an annotation - and a version row is
+    // insert-only, so nothing can be tightened once a mark has been stored.
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
+    const marked = (id: string) => [
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id }] },
+    ];
+    expect(() => parseContentDocument(runs(marked(composed)))).not.toThrow();
+    const attempt = () => parseContentDocument(runs(marked(decomposed)));
+    expect(attempt).toThrow(/NFC/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/printer/);
+    // And the two spellings in one document are told what is actually wrong with them. Both are
+    // refused today, by the contiguity rule, which talks about ranges when the problem is that one
+    // of the two identifiers is not normalised at all.
+    const both = () =>
+      parseContentDocument(
+        runs([
+          { type: 'text', value: 'Install ', marks: [{ type: 'emphasis', id: composed }] },
+          { type: 'text', value: 'the ', marks: [] },
+          { type: 'text', value: 'printer.', marks: [{ type: 'emphasis', id: decomposed }] },
+        ]),
+      );
+    expect(both).toThrow(/NFC/);
+    expect(both).not.toThrow(/two separate ranges/);
+  });
+
   it('lets two components use one identifier, because the rule is per document', () => {
     const german = { type: 'language', id: 'm1', tag: 'de-DE' };
     expect(() =>

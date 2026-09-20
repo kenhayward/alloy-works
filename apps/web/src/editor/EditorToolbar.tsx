@@ -1,6 +1,7 @@
 import {
   EDITOR_COMMANDS,
   markThroughout,
+  somewhereToPutMark,
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
@@ -54,6 +55,15 @@ export interface EditorToolbarProps {
  * toolbar that disabled its buttons would be one a keyboard could not reach at all while a component
  * is being read - and the view's region ring needs somewhere to land. The button stays reachable and
  * `press` is what refuses to act.
+ *
+ * **A dialog announces itself as unavailable where the press would open nothing** (final review,
+ * finding 5). `pressCommand` gates a prompting command on `somewhereToPutMark` and answers false, so
+ * a caret in plain text opens no dialog at all - the most ordinary caret state there is. Announced
+ * as an available button, a screen reader would say "Link, button, has popup dialog" and pressing it
+ * would do nothing. The attribute is read from the editor's own predicate, the same one the press is
+ * gated on, so the announcement cannot come to mean something different from the behaviour. The
+ * seven that apply where they stand are unaffected: each stores a mark for the next keystroke, so a
+ * caret is a perfectly good place to press one.
  *
  * **A press that ends in nothing is reported, never swallowed.** Every one of these commands answers
  * whether it ran. Where the author supplied a value and the answer is no - a target whose scheme the
@@ -130,7 +140,10 @@ export function EditorToolbar({
           ref={(element) => {
             buttons.current[index] = element;
           }}
-          aria-disabled={!enabled}
+          aria-disabled={
+            !enabled ||
+            (command.prompts && !(view !== null && somewhereToPutMark(view.state, command.mark)))
+          }
           tabIndex={index === tabStop ? 0 : -1}
           // Spelled out rather than drawn with symbols, for the reason the registry gives: a screen
           // reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has no glyph for it.

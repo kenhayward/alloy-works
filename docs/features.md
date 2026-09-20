@@ -192,19 +192,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `en-GB` document as well as an `en` one. Asking for a format the layout does not make - Word, today
   - is refused the same way.
 
-  **Three things about formatting in a PDF, said plainly rather than left to be found.** Inline code
+  **Four things about formatting in a PDF, said plainly rather than left to be found.** Inline code
   prints in the same face as the text around it, because only one typeface is pinned today - a screen
   reader is still told it is code, and a monospace face arrives with themes. A quoted phrase is marked
   as a quotation for assistive technology and is given no quotation marks of its own, so the
-  characters on the page are the ones you typed and no others. And of the nine marks, only a link,
+  characters on the page are the ones you typed and no others. Of the nine marks, only a link,
   inline code and a quoted phrase reach a screen reader as something it names: strong, emphasis,
   underline, subscript and superscript are printed but are not announced, which is how the engine tags
-  them.
+  them. And the optional **title** on a link is stored with the link and is not carried into the PDF -
+  a PDF link has nowhere to put it, and inventing somewhere would tell a reader something you did not
+  say - so the address is what a reader of the PDF gets.
 
   **A language tag a publication cannot carry.** The model keeps any well-formed tag, and the PDF
   engine carries a language and, where there is one, a region of exactly two letters. So `zh-Hans` or
-  `es-419` can be stored and cannot be published; the editor says so when you apply it, and a publish
-  naming one is refused by name rather than shortened to something it does not mean.
+  `es-419` can be stored and cannot be published; the editor says so when you apply it **to a run**,
+  and a publish naming one is refused by name rather than shortened to something it does not mean.
+  A component's own base language, in the header, is not warned about: one of these tags typed there
+  is taken without comment and refused only when the document is published (issue #156).
 
   **This is a PDF of paragraphs, not publishing.** No lists, tables, figures, footnotes or equations -
   a document holding any of them is refused.

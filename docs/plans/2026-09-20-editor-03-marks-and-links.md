@@ -446,8 +446,12 @@ export function markThroughout(state: EditorState, mark: string): boolean;
 > **Corrected during the build (task 3 and its two reviews).** `markActive` is `markThroughout`,
 > because `toggleMark` runs with `{ removeWhenPresent: false }` and a button reading "the mark is
 > somewhere in the selection" would contradict what pressing it does. `removeMarkCommand` takes the
-> identifier generator because a removal that splits an annotation gives the surviving far piece a
-> fresh identifier. `applyMarkCommand` exists because `toggleMark` decides by `rangeHasMark` and
+> mark and nothing else, because **no command repairs a split annotation**: `annotationsInOnePiece`
+> (`packages/editor/src/state.ts`) holds the contiguity predicate after every transaction and renames
+> the later pieces of an annotation left in two, whatever split it. An earlier version of this note
+> gave the opposite reason - that the command takes the identifier generator so a removal can rename
+> the surviving far piece itself - and task 3b overturned it, because the gestures that split an
+> annotation are not all commands. `applyMarkCommand` exists because `toggleMark` decides by `rangeHasMark` and
 > ignores attributes, so re-applying a hyperlink over a range that already carries one removes it
 > instead of retargeting it. `markAt` returns no `id`, so a prompt filled from it cannot hand an
 > identifier back to name a changed value.

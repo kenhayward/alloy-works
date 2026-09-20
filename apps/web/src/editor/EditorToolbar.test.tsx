@@ -193,8 +193,30 @@ describe('the formatting toolbar', () => {
       const button = screen.getByRole('button', { name: label });
       expect(button).toHaveAttribute('aria-haspopup', 'dialog');
       expect(button).not.toHaveAttribute('aria-pressed');
+      // Available, because there is a selection for the dialog's answer to land on: the positive
+      // control for the caret case below.
+      expect(button).toHaveAttribute('aria-disabled', 'false');
     }
     expect(buttons).toHaveLength(LABELS.length);
+  });
+
+  it('announces a dialog as unavailable where the press would open nothing', async () => {
+    // A caret in plain text has nowhere to put a mark, so `pressCommand` refuses a prompting command
+    // before it opens anything. Announced as an ordinary available button, a screen reader says
+    // "Link, button, has popup dialog" in the most ordinary caret state there is, and pressing it
+    // does nothing at all. `aria-disabled` is read from the same predicate the press is gated on.
+    const { prompt } = renderToolbar({ caret: 3 });
+
+    for (const label of ['Link', 'Language']) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
+    }
+    // The seven that apply where they stand are untouched: each stores a mark for the next
+    // keystroke, so a caret is a perfectly good place to press one.
+    for (const label of TOGGLES) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'false');
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(prompt).not.toHaveBeenCalled();
   });
 
   it('keeps the focus on the surface when a button is pressed', async () => {

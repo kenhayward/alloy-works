@@ -15967,7 +15967,7 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2116,
+      "line": 2177,
       "kind": "title"
     },
     {
@@ -15985,7 +15985,7 @@
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1953,
+      "line": 2014,
       "kind": "title"
     },
     {
