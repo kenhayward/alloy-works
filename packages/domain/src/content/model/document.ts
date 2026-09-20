@@ -298,6 +298,29 @@ export function checkInlineContent(
   home: InlineHome,
   claimed: Claimed,
 ): InlineNode[] {
+  // Every mark identifier is held to NFC, for the reason `claim` holds a block's, a footnote's and a
+  // cross-reference's identifier to it: the caller stores exactly what the digest covers, and the
+  // canonical form writes an identifier in NFC. A decomposed spelling stored verbatim could never be
+  // matched again by exact string, which is what CNT-005's one operation over every fragment of an
+  // annotation would have to do. Version rows are insert-only, so this cannot be tightened later.
+  //
+  // **Judged on what arrived, not on what the walk returned** - the opposite way round from
+  // `claimRange` and `refuseAdjacentEmpties`, and for the reason that makes those two what they are.
+  // Those are rules about a SEQUENCE, and `mergeRuns` changes what is adjacent, so judging them on
+  // the input would refuse documents the parse itself makes contiguous. Normalisation is a property
+  // of ONE mark, which no merge can change - and `mergeRuns` compares mark sets by their canonical
+  // form, which is already NFC, so two adjacent runs differing only in the spelling of one
+  // identifier are one value to it and become one run, the decomposed spelling disappearing into the
+  // composed one. Nothing bad is stored by that, but the same document would be accepted or refused
+  // according to which spelling came first. Checking the input is both correct and order-independent.
+  //
+  // First of everything, so that a document carrying two spellings of one identifier is told what is
+  // actually wrong with it: `claimRange` and `claimMark` both key their maps in NFC, so either would
+  // otherwise answer with a complaint about ranges or values when the problem is normalisation.
+  for (const inline of inlines) {
+    if (inline.type !== 'text') continue;
+    for (const mark of inline.marks) refuseUnnormalised(mark.id, 'Mark identifier');
+  }
   return mergeRuns(inlines).map((inline) => {
     if (inline.type === 'text') {
       // The identifiers this one run carries, which `claimRange` is asked about once each: a second
@@ -307,15 +330,8 @@ export function checkInlineContent(
       // rules answers decides what an author is told.
       const own = new Set<string>();
       for (const mark of inline.marks) {
-        // Held to NFC first, and before either rule below, for the reason `claim` holds a block's,
-        // a footnote's and a cross-reference's identifier to it: the caller stores exactly what the
-        // digest covers, and the canonical form writes an identifier in NFC. A decomposed spelling
-        // stored verbatim could never be matched again by exact string, which is what CNT-005's one
-        // operation over every fragment of an annotation would have to do. Before `claimRange`,
-        // because both rules key their maps in NFC and so answer a document holding two spellings
-        // of one identifier by the wrong name - a complaint about ranges when the problem is
-        // normalisation. Version rows are insert-only, so this cannot be tightened later.
-        refuseUnnormalised(mark.id, 'Mark identifier');
+        // Every identifier reaching here is in NFC already, refused above if not, so `normalize` is
+        // keying these maps rather than deciding anything.
         const id = mark.id.normalize('NFC');
         if (!own.has(id)) claimRange(mark, claimed);
         own.add(id);

@@ -434,6 +434,14 @@ describe('the formatting toolbar', () => {
         .filter((button) => button.hasAttribute('aria-pressed'))
         .map((button) => button.getAttribute('aria-pressed')),
     ).toEqual(TOGGLES.map(() => 'false'));
+    // There is no state to ask where a mark could go, so the two dialogs are unavailable rather than
+    // available-and-inert: a press before the surface exists opens nothing either.
+    for (const label of ['Link', 'Language']) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
+    }
+    for (const label of TOGGLES) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'false');
+    }
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
     expect(prompt).not.toHaveBeenCalled();
   });

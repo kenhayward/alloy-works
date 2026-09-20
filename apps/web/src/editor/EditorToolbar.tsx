@@ -63,7 +63,8 @@ export interface EditorToolbarProps {
  * would do nothing. The attribute is read from the editor's own predicate, the same one the press is
  * gated on, so the announcement cannot come to mean something different from the behaviour. The
  * seven that apply where they stand are unaffected: each stores a mark for the next keystroke, so a
- * caret is a perfectly good place to press one.
+ * caret is a perfectly good place to press one. **Before the surface has mounted** there is no state
+ * to ask, and the two say unavailable for the same reason: a press then opens nothing either.
  *
  * **A press that ends in nothing is reported, never swallowed.** Every one of these commands answers
  * whether it ran. Where the author supplied a value and the answer is no - a target whose scheme the

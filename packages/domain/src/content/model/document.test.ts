@@ -986,6 +986,29 @@ describe('a mark identifier, which names one annotation and not two', () => {
     expect(both).not.toThrow(/two separate ranges/);
   });
 
+  it('refuses an unnormalised identifier whichever of two adjacent runs it arrives in', () => {
+    // `mergeRuns` runs before the walk that claims anything, and it compares mark sets by their
+    // canonical form, which is NFC - so two ADJACENT runs differing only in the spelling of one
+    // identifier are one value to it and become one run, the second spelling disappearing into the
+    // first. Nothing bad is stored, but one document would have two answers depending on which
+    // spelling came first. Normalisation is a property of a single mark and no merge can change it -
+    // unlike adjacency and contiguity, which is why those are judged on what the walk returned and
+    // this is judged on what arrived.
+    const composed = 'caf\u{E9}';
+    const decomposed = 'cafe\u{301}';
+    const pair = (first: string, second: string) =>
+      runs([
+        { type: 'text', value: 'Install ', marks: [{ type: 'emphasis', id: first }] },
+        { type: 'text', value: 'the printer.', marks: [{ type: 'emphasis', id: second }] },
+      ]);
+    expect(() => parseContentDocument(pair(composed, decomposed))).toThrow(/NFC/);
+    expect(() => parseContentDocument(pair(decomposed, composed))).toThrow(/NFC/);
+    // The control, which is issue #154's rule: one spelling in both runs is one annotation, and the
+    // two runs are merged into one.
+    const merged = parseContentDocument(pair(composed, composed)).content[0];
+    expect(merged?.type === 'paragraph' && merged.content).toHaveLength(1);
+  });
+
   it('lets two components use one identifier, because the rule is per document', () => {
     const german = { type: 'language', id: 'm1', tag: 'de-DE' };
     expect(() =>
