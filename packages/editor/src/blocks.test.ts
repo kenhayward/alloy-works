@@ -217,7 +217,7 @@ describe('making a list of a paragraph, and taking one back out', () => {
   it('makes a numbered list carrying no start and no numbering until the author sets one', () => {
     const state = stateOf(documentOf(paragraph('b1', 'Unbox the printer.')), 'b1');
     const { next } = run(state, blockCommand('numberedList', ids()));
-    expect(listAt(next)).toEqual({ kind: 'ordered', start: null, format: null });
+    expect(listAt(next)).toEqual({ id: 'n1', kind: 'ordered', start: null, format: null });
     // Absent rather than 1: `start` says where an author chose to begin, and a list nobody has
     // chosen for carries no member at all in the store.
     expect(stored(next.doc).content[0]).toMatchObject({ type: 'list', kind: 'ordered' });
@@ -246,7 +246,7 @@ describe('making a list of a paragraph, and taking one back out', () => {
     );
     const { handled, next } = run(stateOf(doc, 'b1'), blockCommand('bulletedList', ids()));
     expect(handled).toBe(true);
-    expect(listAt(next)).toEqual({ kind: 'unordered', start: null, format: null });
+    expect(listAt(next)).toEqual({ id: 'L1', kind: 'unordered', start: null, format: null });
     expect(shapeOf(next.doc)).toEqual(['doc', ['list', ['listItem', ['paragraph', 'Unbox']]]]);
     expect(() => stored(next.doc)).not.toThrow();
   });
@@ -484,7 +484,7 @@ describe('the Enter chain', () => {
       'doc',
       ['list', ['listItem', ['paragraph', 'One'], 'paragraph']],
     ]);
-    expect(listAt(next)).toEqual({ kind: 'unordered', start: null, format: null });
+    expect(listAt(next)).toEqual({ id: 'L1', kind: 'unordered', start: null, format: null });
     expect(() => stored(next.doc)).not.toThrow();
   });
 
@@ -649,7 +649,7 @@ describe('nesting an item and lifting it back', () => {
     );
     const { handled, next } = run(stateOf(doc, 'b2'), blockCommand('nestItem', ids()));
     expect(handled).toBe(true);
-    expect(listAt(next)).toEqual({ kind: 'ordered', start: null, format: 'roman' });
+    expect(listAt(next)).toEqual({ id: 'n1', kind: 'ordered', start: null, format: 'roman' });
     expect(next.doc.firstChild!.attrs).toMatchObject({
       kind: 'ordered',
       start: 7,
@@ -672,8 +672,8 @@ describe('nesting an item and lifting it back', () => {
     );
     const { handled, next } = run(stateOf(doc, 'b3'), blockCommand('nestItem', ids()));
     expect(handled).toBe(true);
-    // The sublist the author already numbered keeps its own start and its own numbering.
-    expect(listAt(next)).toEqual({ kind: 'ordered', start: 4, format: 'alphabetic' });
+    // The sublist the author already numbered keeps its own start, numbering and identifier.
+    expect(listAt(next)).toEqual({ id: 'L2', kind: 'ordered', start: 4, format: 'alphabetic' });
     expect(identifiers(next.doc)).toEqual(['L1', 'b1', 'L2', 'b2', 'b3']);
   });
 
@@ -695,7 +695,10 @@ describe('nesting an item and lifting it back', () => {
     );
     const { handled, next } = run(stateOf(doc, 'b3'), blockCommand('nestItem', ids()));
     expect(handled).toBe(true);
-    expect(listAt(next)).toEqual({ kind: 'ordered', start: 4, format: 'alphabetic' });
+    // The sublist that was already there, keeping its start and its numbering - and named `n1` by
+    // the identity plugin in the same cycle, because it went in carrying no identifier. That is
+    // what makes `listAt`'s `id` safe for a renderer to key on: what reaches one has been applied.
+    expect(listAt(next)).toEqual({ id: 'n1', kind: 'ordered', start: 4, format: 'alphabetic' });
   });
 
   it('names the sublist it makes in its own transaction, before any plugin has run', () => {
@@ -748,12 +751,26 @@ describe('what a list panel reads and changes', () => {
         { start: 7, format: 'roman' },
       ),
     );
-    expect(listAt(stateOf(doc, 'b2'))).toEqual({ kind: 'unordered', start: null, format: null });
-    expect(listAt(stateOf(doc, 'b1'))).toEqual({ kind: 'ordered', start: 7, format: 'roman' });
+    // The identifier is which list this is, so a renderer holding a value the author typed can
+    // tell one list from another - two lists with neither a start nor a numbering are otherwise
+    // the same answer twice.
+    expect(listAt(stateOf(doc, 'b2'))).toEqual({
+      id: 'L2',
+      kind: 'unordered',
+      start: null,
+      format: null,
+    });
+    expect(listAt(stateOf(doc, 'b1'))).toEqual({
+      id: 'L1',
+      kind: 'ordered',
+      start: 7,
+      format: 'roman',
+    });
     const definition = documentOf(
       definitionList('D1', definitionItem('Creep', paragraph('b1', 'Slow strain.'))),
     );
     expect(listAt(stateOf(definition, 'b1'))).toEqual({
+      id: 'D1',
       kind: 'definition',
       start: null,
       format: null,
@@ -783,7 +800,7 @@ describe('what a list panel reads and changes', () => {
     expect(setListAttributes({ format: 'roman' })(inAListStartingAtZero(), undefined)).toBe(false);
     const { handled, next } = run(inAListStartingAtZero(), setListAttributes({ start: 3 }));
     expect(handled).toBe(true);
-    expect(listAt(next)).toEqual({ kind: 'ordered', start: 3, format: 'decimal' });
+    expect(listAt(next)).toEqual({ id: 'L1', kind: 'ordered', start: 3, format: 'decimal' });
   });
 
   it('clears the start and the numbering when a list stops being a numbered one', () => {
@@ -792,7 +809,7 @@ describe('what a list panel reads and changes', () => {
     );
     const { handled, next } = run(stateOf(doc, 'b1'), setListAttributes({ kind: 'unordered' }));
     expect(handled).toBe(true);
-    expect(listAt(next)).toEqual({ kind: 'unordered', start: null, format: null });
+    expect(listAt(next)).toEqual({ id: 'L1', kind: 'unordered', start: null, format: null });
     expect(() => stored(next.doc)).not.toThrow();
   });
 

@@ -45,16 +45,26 @@ function innermostList(state: EditorState): { node: Node; pos: number } | null {
  * editor holds it as its own node type and the stored model holds it as a third kind of one list
  * (ADR, "the editor schema is not the stored model one for one"). The panel therefore asks one
  * question - which kind is this - rather than two.
+ *
+ * **`id` is which list this is, and it is here so a renderer can tell one list from another.** A
+ * panel holding a value the author typed has to know when it is looking at a different list, and
+ * the three attributes cannot tell it: two lists with no start and no numbering are the same answer
+ * twice, so a refused value typed on one would follow the cursor to the next and the complaint
+ * under it would then be about a list that never had the problem. Null only for a list nothing has
+ * named yet, which the identity plugin repairs in the same cycle - so anything reading this after
+ * `state.apply` sees a real one.
  */
 export function listAt(
   state: EditorState,
-): { kind: string; start: number | null; format: string | null } | null {
+): { id: string | null; kind: string; start: number | null; format: string | null } | null {
   const inside = innermostList(state);
   if (inside === null) return null;
+  const id = inside.node.attrs.id as string | null;
   if (inside.node.type === definitionListNode) {
-    return { kind: 'definition', start: null, format: null };
+    return { id, kind: 'definition', start: null, format: null };
   }
   return {
+    id,
     kind: inside.node.attrs.kind as string,
     start: inside.node.attrs.start as number | null,
     format: inside.node.attrs.format as string | null,
