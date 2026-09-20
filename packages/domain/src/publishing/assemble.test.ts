@@ -363,6 +363,90 @@ describe('assemble', () => {
     ]);
   });
 
+  it('refuses a run carrying more than one mark of a kind, naming the kind once', () => {
+    // CNT-003 lets two annotations of one kind cover one range and the parse stores both, so this
+    // shape reaches `assemble` from any source. The template would fold one inside the other and one
+    // of the two would win by fold order: a PDF linking somewhere the document does not say, or a
+    // screen reader announcing a language the document does not claim. The editor refuses the same
+    // shape by the same name rather than keeping one of the two (packages/editor/src/mapping.ts).
+    const twoLinks = assemble(
+      oneParagraph(
+        marked(
+          'the report',
+          { type: 'hyperlink', id: 'm1', href: 'https://example.test/one' },
+          { type: 'hyperlink', id: 'm2', href: 'https://example.test/two' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoLinks)).toEqual([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: id('calib'),
+        block: 'b1',
+        detail: 'hyperlink',
+      },
+    ]);
+
+    const twoLanguages = assemble(
+      oneParagraph(
+        marked(
+          'le rapport',
+          { type: 'language', id: 'm1', tag: 'fr' },
+          { type: 'language', id: 'm2', tag: 'de' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoLanguages).map((each) => each.detail)).toEqual(['language']);
+
+    // Named once however many there are, whether the kind is one a run could carry or not: the
+    // author has one thing to look for, and hearing it three times says nothing more.
+    const three = assemble(
+      oneParagraph(
+        marked(
+          'quoted',
+          { type: 'quotedPhrase', id: 'm1' },
+          { type: 'quotedPhrase', id: 'm2' },
+          { type: 'quotedPhrase', id: 'm3' },
+        ),
+        marked(
+          'reworded',
+          { type: 'comment', id: 'm4', threadId: 'thread-1' },
+          { type: 'comment', id: 'm5', threadId: 'thread-2' },
+        ),
+      ),
+    );
+    expect(failuresOf(three).map((each) => each.detail)).toEqual(['quotedPhrase', 'comment']);
+  });
+
+  it('names every mark of one run that cannot be published, not only the first', () => {
+    const twoAnnotations = assemble(
+      oneParagraph(
+        marked(
+          'for Ada alone',
+          { type: 'condition', id: 'm1', axis: 'audience', values: ['internal'] },
+          { type: 'comment', id: 'm2', threadId: 'thread-1' },
+        ),
+      ),
+    );
+    expect(failuresOf(twoAnnotations).map((each) => each.detail)).toEqual(['condition', 'comment']);
+
+    // A tag already collected is not thrown away by a mark refused after it.
+    const both = assemble(
+      oneParagraph(
+        marked(
+          'now',
+          { type: 'language', id: 'm1', tag: 'zh-Hans' },
+          { type: 'definedTerm', id: 'm2', term: 'tray' },
+        ),
+      ),
+    );
+    expect(failuresOf(both).map((each) => [each.code, each.detail])).toEqual([
+      ['language_not_publishable', 'zh-Hans'],
+      ['inline_not_publishable', 'definedTerm'],
+    ]);
+  });
+
   it('refuses a run whose language tag the engine cannot carry, naming the tag', () => {
     const result = assemble(
       oneParagraph(marked('now', { type: 'language', id: 'm1', tag: 'zh-Hans' })),
@@ -433,7 +517,9 @@ describe('assemble', () => {
         code: 'title_not_publishable',
         node: id('intro'),
         block: null,
-        detail: null,
+        // Named, as a block that cannot be published is named: a refusal that says only that the
+        // title holds "something" leaves the author nothing to look for.
+        detail: 'emphasis',
       },
     ]);
   });
