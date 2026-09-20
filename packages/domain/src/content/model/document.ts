@@ -119,7 +119,7 @@ function claimMark(mark: Mark, claimed: Claimed): void {
  * than a rule inside each command because the gestures that split an annotation are not all
  * commands: typing one character at the end of a `language` run is not, and the mark is not
  * inclusive, so the typed run carries no mark and stands between two pieces of one annotation. So an
- * editing session cannot reach this refusal **within a mark type**, and what it stands between a
+ * editing session cannot reach this refusal **within a mark type**. What it still stands between a
  * version and is content from somewhere else - another producer, a future import - and two cases the
  * plugin's scope leaves out on purpose: one identifier worn by two **kinds** of mark, which
  * `claimMark` answers instead and no command can mint, and a document handed to `createEditorState`

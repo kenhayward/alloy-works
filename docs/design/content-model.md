@@ -262,10 +262,10 @@ split an annotation are not all commands - typing one character at the end of a 
 not one, and the mark is not inclusive, so the typed run carries no mark and stands between two
 pieces of one annotation. The later pieces are renamed and the first keeps the identifier, so text
 nobody touched is not renamed. Within a mark type an editing session therefore cannot reach this
-refusal, which leaves it standing between a version and content from somewhere else, and between a
-version and the two cases the editor's repair leaves out on purpose: one identifier worn by two
-kinds of mark, which the value rule answers and no command can mint, and a document opened into a
-state already in two pieces, which nothing produces.
+refusal. What it still stands between a version and is content from somewhere else, and the two
+cases the editor's repair leaves out on purpose: one identifier worn by two kinds of mark, which
+the value rule answers and no command can mint, and a document opened into a state already in two
+pieces, which nothing produces.
 
 **And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
 than what it was given, every rule about a sequence has to be judged on what that sequence became -

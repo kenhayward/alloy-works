@@ -167,11 +167,12 @@ pieces renamed, whatever split it, and the first piece keeps the identifier so t
 touched is not renamed. A plugin rather than a command, because the gestures that split an
 annotation are not all commands - typing one character at the end of a language run is not one, and
 the mark is not inclusive, so the typed run carries no mark and stands between two pieces. Within a
-mark type, then, an editing session cannot reach this refusal; what it stands between a version and
-is content from somewhere else, and the two cases the plugin leaves out on purpose - one identifier
-worn by two kinds of mark, which the value rule above answers and no command can mint, and a
-document handed to `createEditorState` already in two pieces, which nothing produces and which the
-plugin leaves alone until the first edit.
+mark type, then, an editing session cannot reach this refusal. What the refusal still stands
+between a version and is content from somewhere else - another producer, a future import - and the
+two cases the plugin leaves out on purpose: one identifier worn by two kinds of mark, which the
+value rule above answers and no command can mint, and a document handed to `createEditorState`
+already in two pieces, which nothing produces and which the plugin leaves alone until the first
+edit.
 
 **What the parse accepts, it accepts again unchanged.** The walk returns something other than what
 it was given, so every rule about a sequence is judged on what that sequence became: CNT-023's
