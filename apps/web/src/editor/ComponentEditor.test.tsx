@@ -2173,6 +2173,185 @@ describe('the link and language prompts', () => {
   });
 });
 
+/** Enough acknowledged saves that a panel test is never held up by a route nobody answered. */
+const saves = Object.fromEntries(
+  Array.from({ length: 8 }, (_, at) => [
+    `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+    () => json(200, { sequence: at + 1, lock }),
+  ]),
+);
+
+/** Just inside the block carrying that identifier, wherever the nesting has put it. */
+const inside = (view: EditorView, id: string) => {
+  let at = -1;
+  view.state.doc.descendants((node, pos) => {
+    if (at !== -1) return false;
+    if (node.attrs.id === id) at = pos + 1;
+    return true;
+  });
+  if (at === -1) throw new Error(`no ${id} in this document`);
+  return at;
+};
+
+describe('the list panel', () => {
+  /** A component of two paragraphs, open for editing, with everything a change needs answered. */
+  const openTwoParagraphs = () =>
+    open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(200, opened({ content: content('Unbox the printer.', 'Keep the box.') })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...saves,
+      },
+      quick,
+      true,
+    );
+
+  /** The first stored block, as a save would send it. */
+  const firstBlock = (view: EditorView) => fromEditor(view.state.doc).content[0];
+
+  it('shows the list panel only while the cursor is in a counted list, and sets its numbering', async () => {
+    const { surface } = openTwoParagraphs();
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Bulleted list' });
+    expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
+
+    const panel = await screen.findByRole('group', { name: 'List' });
+    const kind = within(panel).getByLabelText('Kind');
+    expect(kind).toHaveValue('unordered');
+    // Neither has anything to say about a bulleted list, so both are gone from the accessibility
+    // tree rather than sitting there disabled - and `setListAttributes` refuses a start or a
+    // numbering on a list that is not ordered, so a box left standing would be one that announced
+    // itself as available and did nothing when it was used.
+    expect(within(panel).queryByLabelText('Start at')).toBeNull();
+    expect(within(panel).queryByLabelText('Numbering')).toBeNull();
+
+    await userEvent.selectOptions(kind, within(kind).getByRole('option', { name: 'Numbered' }));
+    const numbering = await screen.findByLabelText('Numbering');
+    await userEvent.selectOptions(
+      numbering,
+      within(numbering).getByRole('option', { name: 'a, b, c' }),
+    );
+    expect(screen.getByText('The number the first item takes')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Start at'), '5');
+
+    await waitFor(() =>
+      expect(firstBlock(view)).toMatchObject({
+        type: 'list',
+        kind: 'ordered',
+        start: 5,
+        format: 'alphabetic',
+      }),
+    );
+
+    // And it goes again when the cursor leaves the list: the panel is a region that comes and goes
+    // with the selection, which nothing else in this view does.
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(Selection.near(view.state.doc.resolve(inside(view, 'b2')))),
+      ),
+    );
+    expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+  });
+
+  it('shows no list panel for a definition list, which has nothing to set', async () => {
+    const { surface } = openTwoParagraphs();
+    await surface();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Definition list' }));
+
+    // The cursor lands in the new item's term, so `listAt` says `definition`. A definition list
+    // carries no start and no numbering, and its kind is the button that made it, so there is
+    // nothing for a panel to hold: the absence is deliberate rather than an empty box.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Definition list' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+  });
+
+  it('says why a start of 0 is refused on a lettered list, and changes nothing', async () => {
+    const { surface } = openTwoParagraphs();
+    const view = await surface();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Numbered list' }));
+    await screen.findByRole('group', { name: 'List' });
+    // A zeroth item is a convention 1, 2, 3 has and letters and roman numerals do not, so the
+    // start is taken here and only the numbering beside it makes it wrong.
+    await userEvent.type(screen.getByLabelText('Start at'), '0');
+    await waitFor(() => expect(firstBlock(view)).toMatchObject({ start: 0 }));
+
+    const numbering = screen.getByLabelText('Numbering');
+    await userEvent.selectOptions(
+      numbering,
+      within(numbering).getByRole('option', { name: 'a, b, c' }),
+    );
+
+    // The refusal arrives from the **numbering** field, which is the half a command judging only
+    // the member it was handed would miss: the panel changes one field at a time, so a list left
+    // at `start: 0, format: 'alphabetic'` would reach the author weeks later as the fixed message
+    // a refused save carries, which names nothing.
+    expect(
+      await screen.findByText('Only a 1, 2, 3 list can start at 0. Try 1 or more.'),
+    ).toBeInTheDocument();
+    expect(firstBlock(view)).toMatchObject({ type: 'list', kind: 'ordered', start: 0 });
+    expect(firstBlock(view)).not.toHaveProperty('format');
+    expect(numbering).toHaveValue('decimal');
+
+    // And from the other side: a lettered list told to start at 0. Clearing the start first is
+    // what makes the numbering acceptable, which also takes the refusal away.
+    await userEvent.clear(screen.getByLabelText('Start at'));
+    await userEvent.selectOptions(
+      screen.getByLabelText('Numbering'),
+      within(screen.getByLabelText('Numbering')).getByRole('option', { name: 'a, b, c' }),
+    );
+    await waitFor(() => expect(firstBlock(view)).toMatchObject({ format: 'alphabetic' }));
+    expect(screen.queryByText('Only a 1, 2, 3 list can start at 0. Try 1 or more.')).toBeNull();
+
+    await userEvent.type(screen.getByLabelText('Start at'), '0');
+
+    expect(
+      await screen.findByText('Only a 1, 2, 3 list can start at 0. Try 1 or more.'),
+    ).toBeInTheDocument();
+    expect(firstBlock(view)).not.toHaveProperty('start');
+  });
+
+  it('writes a term the author typed into the definition list it saves', async () => {
+    const { asked, surface } = openTwoParagraphs();
+    const view = await surface();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Definition list' }));
+    // jsdom cannot type into a ProseMirror surface, so the word arrives by transaction; Enter goes
+    // through the view's own key handler, which is the route a keystroke really takes.
+    act(() => view.dispatch(view.state.tr.insertText('Creep')));
+    fireEvent.keyDown(view.dom, { key: 'Enter', keyCode: 13 });
+
+    await waitFor(() => expect(asked.some((each) => each.route.startsWith('PUT'))).toBe(true));
+    const saved = asked.filter((each) => each.route.startsWith('PUT')).at(-1)!.body as {
+      content: { content: unknown[] };
+    };
+    expect(saved.content.content).toMatchObject([
+      {
+        type: 'list',
+        kind: 'definition',
+        items: [
+          {
+            term: [{ type: 'text', value: 'Creep', marks: [] }],
+            // The paragraph that was wrapped keeps the identifier it went in with, so nothing
+            // hanging on it is renamed by a button press (CNT-002).
+            content: [{ type: 'paragraph', id: 'b1' }],
+          },
+        ],
+      },
+      { type: 'paragraph', id: 'b2' },
+    ]);
+  });
+});
+
 describe('the regions of the view', () => {
   /** The three things F6 lands on while a component is open for editing, in the ring's own order. */
   const landings = () => ({
@@ -2183,17 +2362,17 @@ describe('the regions of the view', () => {
     text: screen.getByRole('textbox', { name: 'Content of Install the printer' }),
   });
 
-  it('CNT-077 moves between the header, the toolbar and the surface with F6 alone', async () => {
+  it('CNT-077 moves between the header, the toolbar, the list panel and the surface with F6 alone', async () => {
     const { surface } = open(
       {
         'GET /v1/components/{id}': () => json(200, opened()),
         'POST /v1/components/{id}/lock': () => json(200, { lock }),
-        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        ...saves,
       },
       quick,
       true,
     );
-    const view = await surface();
+    await surface();
     await screen.findByRole('button', { name: 'Link' });
     const { title, formatting, text } = landings();
 
@@ -2211,10 +2390,30 @@ describe('the regions of the view', () => {
     await userEvent.keyboard('{F6}');
     expect(title).toHaveFocus();
 
+    // The list panel is a fourth region while the cursor stands in a counted list, between the
+    // toolbar and the surface, and it is reached the same way. It is the first region in this ring
+    // that comes and goes: a press of Bulleted list adds a stop the author can reach with F6.
+    await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
+    const panel = await screen.findByRole('group', { name: 'List' });
+
+    title.focus();
+    await userEvent.keyboard('{F6}');
+    expect(formatting).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(within(panel).getByLabelText('Kind')).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(text).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(title).toHaveFocus();
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(text).toHaveFocus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(within(panel).getByLabelText('Kind')).toHaveFocus();
+
     // Save version and Done editing are not a region: they keep their own ordinary tab stops, and
     // F6 pressed from them enters the ring at its first region rather than cycling out of them.
-    // They take the focus only once a change has claimed the lock, which is what this types.
-    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    // They take the focus only once a change has claimed the lock, which the press above did.
     const save = await screen.findByRole('button', { name: 'Save version' });
     await waitFor(() => expect(save).toBeEnabled());
 

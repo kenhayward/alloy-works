@@ -528,12 +528,17 @@ undo, a refusal putting the surface back, or a version cut, and never this field
 
 ## Accessibility
 
-- **Regions.** The view has four: component header, **formatting** toolbar, surface, metadata panel.
-  `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region that holds it.
-  The view holds a second toolbar, Save version and Done editing, and that one is deliberately not a
-  region: it is two buttons, reached by a Tab from the header as any two buttons are, and making it a
-  fifth stop would lengthen the ring without shortening any journey through it. `F6` pressed from it
-  enters the ring at the first region, and `Shift-F6` at the last.
+- **Regions.** The view has five: component header, **formatting** toolbar, **list** panel, surface,
+  metadata panel. `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region
+  that holds it. The view holds a second toolbar, Save version and Done editing, and that one is
+  deliberately not a region: it is two buttons, reached by a Tab from the header as any two buttons
+  are, and making it another stop would lengthen the ring without shortening any journey through it.
+  `F6` pressed from it enters the ring at the first region, and `Shift-F6` at the last.
+- **A region that is not there is not in the ring.** The list panel is the first of these to come and
+  go with the selection: it stands between the toolbar and the surface while the cursor is inside a
+  counted list, holding that list's kind, start and numbering, and is absent everywhere else -
+  including inside a definition list, which carries none of the three and whose kind is the button
+  that made it. So the ring is built from the regions actually rendered, and the wrap is over those.
 - **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
   into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
   popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.

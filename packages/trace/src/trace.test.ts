@@ -335,8 +335,13 @@ describe('the citations in the committed model', () => {
   // kinds of list and round-trips them through the editor and back; the other nests six levels
   // mixing all three kinds and round-trips that. Every other list test in that file keeps its words
   // and no identifier, because a definition list alone is a third of what CNT-117 states.
+  // 222, from 221: the same plan's toolbar task cites CNT-077 once in packages/editor/src/marks.ts's
+  // test file, which carried none before - the registry widened to fourteen rows and one loop now
+  // binds all of them, so that body presses `Mod-Shift-8`, `Mod-]` and `Mod-[` through the real
+  // keymap chain and makes, nests and lifts a list without a toolbar. The registry's own string
+  // assertions beside it stay deliberately uncited: they press no key.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(221);
+    expect(model.citations).toHaveLength(222);
   });
 
   it('cites no identifier the corpus does not hold', () => {

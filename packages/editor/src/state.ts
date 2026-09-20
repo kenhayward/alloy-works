@@ -7,7 +7,7 @@ import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { blockCommand, listAwareEnter } from './blocks.js';
 import { identityPlugin } from './identity.js';
-import { markKeymap, spansOf } from './marks.js';
+import { commandKeymap, spansOf } from './marks.js';
 
 const isEmptyParagraph = (node: Node | null | undefined) =>
   node?.type.name === 'paragraph' && node.content.size === 0;
@@ -275,10 +275,11 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         Tab: blockCommand('nestItem', options.newIdentifier),
         'Shift-Tab': blockCommand('liftItem', options.newIdentifier),
       }),
-      // Every mark the toolbar offers, from the one registry, so the two cannot drift (CNT-077).
-      // A mark's identifier is drawn from the same source a block's is: both are allocated by the
-      // editor, and both have to be unique within the component (ADR-0023, CNT-004).
-      keymap(markKeymap(options.newIdentifier, options.onPrompt)),
+      // Every command the toolbar offers - nine marks and five block actions - from the one
+      // registry, so the two cannot drift (CNT-077). A mark's identifier is drawn from the same
+      // source a block's is: both are allocated by the editor, and both have to be unique within
+      // the component (ADR-0023, CNT-004).
+      keymap(commandKeymap(options.newIdentifier, options.onPrompt)),
       keymap(baseKeymap),
       // **Identity before adjacency, and it is a preference rather than a rule.** ProseMirror
       // re-runs every `appendTransaction` over whatever any of them appends, so each of these two

@@ -3,19 +3,11 @@ import { toggleMark } from 'prosemirror-commands';
 import type { Mark as EditorMark, MarkType, Node } from 'prosemirror-model';
 import type { Command, EditorState } from 'prosemirror-state';
 
+import { blockCommand, type BlockAction } from './blocks.js';
 import { editorSchema } from './schema.js';
 
-/**
- * One editing action over a mark, as both the toolbar and the keymap read it.
- *
- * There is one registry rather than a list per surface, because CNT-077 asks that every editing
- * action be reachable from the keyboard alone: a button somebody added without a shortcut, or a
- * shortcut nobody can see the name of, is the failure that rule exists to prevent, and neither is
- * possible when the button and the binding are the same row.
- */
-export interface EditorCommand {
-  /** The mark type's name, as `editorSchema.marks` and the stored model both spell it. */
-  readonly mark: string;
+/** What every row of the registry says, whatever it acts on. */
+interface CommandBase {
   /** The toolbar's and the keymap's one label. */
   readonly label: string;
   /** A `prosemirror-keymap` key, e.g. `Mod-i`. */
@@ -29,9 +21,35 @@ export interface EditorCommand {
   readonly prompts: boolean;
 }
 
+/**
+ * One editing action, as the toolbar and the keymap both read it: a mark over the selection, or a
+ * block action over where the cursor stands.
+ *
+ * There is one registry rather than a list per surface, because CNT-077 asks that every editing
+ * action be reachable from the keyboard alone: a button somebody added without a shortcut, or a
+ * shortcut nobody can see the name of, is the failure that rule exists to prevent, and neither is
+ * possible when the button and the binding are the same row.
+ *
+ * **One union rather than two registries**, so that invariant stays one assertion over one list. Two
+ * lists would each be well formed on their own while sharing a shortcut between them, and the test
+ * that would have caught it would have to be written a third time to see both.
+ */
+export type EditorCommand =
+  | (CommandBase & {
+      readonly kind: 'mark';
+      /** The mark type's name, as `editorSchema.marks` and the stored model both spell it. */
+      readonly mark: string;
+    })
+  | (CommandBase & {
+      readonly kind: 'block';
+      /** The action `blockCommand` answers to. */
+      readonly action: BlockAction;
+    });
+
 /** The registry, in the order the toolbar shows it. */
 export const EDITOR_COMMANDS: readonly EditorCommand[] = [
   {
+    kind: 'mark',
     mark: 'strong',
     label: 'Strong',
     shortcut: 'Mod-b',
@@ -39,6 +57,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'emphasis',
     label: 'Emphasis',
     shortcut: 'Mod-i',
@@ -46,6 +65,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'underline',
     label: 'Underline',
     shortcut: 'Mod-u',
@@ -53,6 +73,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'subscript',
     label: 'Subscript',
     shortcut: 'Mod-,',
@@ -60,6 +81,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'superscript',
     label: 'Superscript',
     shortcut: 'Mod-.',
@@ -67,6 +89,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'inlineCode',
     label: 'Inline code',
     shortcut: 'Mod-e',
@@ -74,6 +97,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'quotedPhrase',
     label: 'Quoted phrase',
     shortcut: 'Mod-Shift-q',
@@ -81,6 +105,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: false,
   },
   {
+    kind: 'mark',
     mark: 'hyperlink',
     label: 'Link',
     shortcut: 'Mod-k',
@@ -88,11 +113,55 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     prompts: true,
   },
   {
+    kind: 'mark',
     mark: 'language',
     label: 'Language',
     shortcut: 'Mod-Shift-l',
     shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
+  },
+  // The five block actions, after the nine marks. None of them prompts: nothing about making a list
+  // is a value only the author can give, and a list's start and numbering are set over a list that
+  // already exists, in the renderer's own list panel, rather than asked for before one is made.
+  {
+    kind: 'block',
+    action: 'bulletedList',
+    label: 'Bulleted list',
+    shortcut: 'Mod-Shift-8',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 8',
+    prompts: false,
+  },
+  {
+    kind: 'block',
+    action: 'numberedList',
+    label: 'Numbered list',
+    shortcut: 'Mod-Shift-7',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 7',
+    prompts: false,
+  },
+  {
+    kind: 'block',
+    action: 'definitionList',
+    label: 'Definition list',
+    shortcut: 'Mod-Shift-9',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 9',
+    prompts: false,
+  },
+  {
+    kind: 'block',
+    action: 'nestItem',
+    label: 'Nest item',
+    shortcut: 'Mod-]',
+    shortcutSaid: 'Ctrl or Cmd and right square bracket',
+    prompts: false,
+  },
+  {
+    kind: 'block',
+    action: 'liftItem',
+    label: 'Lift item',
+    shortcut: 'Mod-[',
+    shortcutSaid: 'Ctrl or Cmd and left square bracket',
+    prompts: false,
   },
 ];
 
@@ -388,21 +457,31 @@ export function markThroughout(state: EditorState, mark: string): boolean {
 /**
  * The registry as `prosemirror-keymap` takes it, so the keyboard and the toolbar cannot drift.
  *
+ * **Every row, not every mark.** A registry that declared five block shortcuts and bound none of
+ * them would leave CNT-077 failing while the test that cites it passed, because a row's shortcut is
+ * a string until something reads it: the registry earns its keep only where one loop binds all of
+ * it. That is also why `Mod-]` and `Mod-[` are written here and nowhere else - `state.ts` binds
+ * `Tab` and `Shift-Tab` literally, and those two deliberately have no row.
+ *
  * The two commands that need a value from the author are bound to one that **asks the renderer**,
  * because a value can only be typed into something the editor does not own. It reports the key
  * handled exactly when a renderer is listening: returning true with nobody there would swallow the
  * key and leave the author pressing it at nothing, and returning true from the editor when the
  * dialog is what handled it would be a claim this package cannot make.
  */
-export function markKeymap(
+export function commandKeymap(
   newIdentifier: () => string,
   onPrompt?: (mark: string) => boolean,
 ): Record<string, Command> {
   const bound: Record<string, Command> = {};
   for (const command of EDITOR_COMMANDS) {
-    bound[command.shortcut] = command.prompts
-      ? () => onPrompt?.(command.mark) ?? false
-      : toggleMarkCommand(command.mark, newIdentifier);
+    if (command.kind === 'block') {
+      bound[command.shortcut] = blockCommand(command.action, newIdentifier);
+    } else {
+      bound[command.shortcut] = command.prompts
+        ? () => onPrompt?.(command.mark) ?? false
+        : toggleMarkCommand(command.mark, newIdentifier);
+    }
   }
   return bound;
 }

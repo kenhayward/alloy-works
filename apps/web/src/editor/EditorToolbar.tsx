@@ -1,13 +1,27 @@
 import {
+  blockCommand,
   EDITOR_COMMANDS,
+  listAt,
   markThroughout,
   somewhereToPutMark,
+  type BlockAction,
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
 import { useRef, useState, type KeyboardEvent, type Ref } from 'react';
 
-import { pressCommand, type AskForValue } from './press.js';
+import { pressCommand, type AskForValue, type MarkCommand } from './press.js';
+
+/**
+ * Which kind of list each of the three list buttons reports itself pressed inside, as `listAt`
+ * spells it. `nestItem` and `liftItem` are deliberately absent: they move an item a level in one
+ * direction and are not toggles, so neither has a state to announce.
+ */
+const PRESSED_INSIDE: Partial<Record<BlockAction, string>> = {
+  bulletedList: 'unordered',
+  numberedList: 'ordered',
+  definitionList: 'definition',
+};
 
 export interface EditorToolbarProps {
   /** Null until the surface has mounted, which is the page's first render. */
@@ -22,7 +36,7 @@ export interface EditorToolbarProps {
    * dialog that failed. Only ever called after they were asked for something, never for a press that
    * simply had nothing to do: the words belong to whoever renders the notice.
    */
-  readonly onRefused?: (command: EditorCommand) => void;
+  readonly onRefused?: (command: MarkCommand) => void;
   /**
    * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
@@ -42,6 +56,12 @@ export interface EditorToolbarProps {
  * Which button is the stop is state; which button a key came from is read off the event's own target,
  * so a burst of keys arriving before React renders again cannot move by the wrong number.
  *
+ * **Nine marks and five block actions**, from that one registry, so a list the keyboard can make is
+ * one the toolbar shows. A block button is not a mark button wearing a different label: what it can
+ * do depends on where the cursor stands and not on what the selection carries, so its two
+ * announcements come from two different places - `listAt` for which kind of list this is, and the
+ * command itself for whether pressing it would do anything.
+ *
  * **Seven toggles and two dialogs.** A command that applies a mark where it stands carries
  * `aria-pressed`, read from **`markThroughout`** and never from "somewhere in the selection": the
  * commands run `toggleMark` with `removeWhenPresent: false`, so pressing Strong over a half-bold
@@ -55,6 +75,18 @@ export interface EditorToolbarProps {
  * toolbar that disabled its buttons would be one a keyboard could not reach at all while a component
  * is being read - and the view's region ring needs somewhere to land. The button stays reachable and
  * `press` is what refuses to act.
+ *
+ * **Every block button announces itself as unavailable where the press would do nothing**, and the
+ * answer is taken from the command itself rather than reasoned about here:
+ * `blockCommand(action, ...)(view.state, undefined)` is the very question the press asks, run with
+ * no dispatch, which costs nothing and mints no identifier in any of the five branches. It is
+ * **paired with `aria-pressed`, never replaced by it**. `blockCommand('definitionList')` declines
+ * inside a definition list - there is no lossless way to unmake one, because a term has no home
+ * outside it - so a button reading its state from `listAt` alone would announce itself as available
+ * and pressed in the one place pressing it does nothing. That is the same defect this toolbar was
+ * fixed for twice, once for the two prompting marks and once for a component being read. The other
+ * four decline somewhere too: all three list commands with the cursor in a term, **Nest item** on
+ * the first item of a list, **Lift item** at the top level of a definition list.
  *
  * **A dialog announces itself as unavailable where the press would open nothing** (final review,
  * finding 5). `pressCommand` gates a prompting command on `somewhereToPutMark` and answers false, so
@@ -115,6 +147,32 @@ export function EditorToolbar({
     event.preventDefault();
   };
 
+  /**
+   * Whether a press would do nothing, which is what `aria-disabled` says. Asked of the command for
+   * a block action, and of the range rule for a mark that prompts; a mark that applies where it
+   * stands is always available, because a caret is a perfectly good place to store one for the next
+   * keystroke, even before the surface exists.
+   */
+  const unavailable = (command: EditorCommand): boolean => {
+    if (!enabled) return true;
+    if (command.kind === 'block') {
+      return view === null || !blockCommand(command.action, newIdentifier)(view.state, undefined);
+    }
+    return command.prompts && !(view !== null && somewhereToPutMark(view.state, command.mark));
+  };
+
+  /** What the button says it is: a dialog, a toggle and what it is toggled to, or neither. */
+  const announces = (command: EditorCommand) => {
+    if (command.kind === 'mark') {
+      return command.prompts
+        ? { 'aria-haspopup': 'dialog' as const }
+        : { 'aria-pressed': view !== null && markThroughout(view.state, command.mark) };
+    }
+    const inside = PRESSED_INSIDE[command.action];
+    if (inside === undefined) return {};
+    return { 'aria-pressed': view !== null && listAt(view.state)?.kind === inside };
+  };
+
   const press = (command: EditorCommand) => {
     // An `aria-disabled` button is still focusable and still clickable, which is the point of it
     // being that rather than `disabled`: what it must not do is act.
@@ -136,22 +194,20 @@ export function EditorToolbar({
     >
       {EDITOR_COMMANDS.map((command, index) => (
         <button
-          key={command.mark}
+          // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each
+          // of them is a duplicate React key - a `console.error`, which the console gate turns into
+          // a failure with no obvious cause. The registry's own test proves the labels are unique.
+          key={command.label}
           type="button"
           ref={(element) => {
             buttons.current[index] = element;
           }}
-          aria-disabled={
-            !enabled ||
-            (command.prompts && !(view !== null && somewhereToPutMark(view.state, command.mark)))
-          }
+          aria-disabled={unavailable(command)}
           tabIndex={index === tabStop ? 0 : -1}
           // Spelled out rather than drawn with symbols, for the reason the registry gives: a screen
           // reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has no glyph for it.
           title={command.shortcutSaid}
-          {...(command.prompts
-            ? { 'aria-haspopup': 'dialog' as const }
-            : { 'aria-pressed': view !== null && markThroughout(view.state, command.mark) })}
+          {...announces(command)}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => press(command)}
         >
