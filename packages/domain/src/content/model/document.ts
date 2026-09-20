@@ -50,18 +50,21 @@ function claim(id: string, seen: Set<string>): void {
 }
 
 /**
- * What one scope has claimed so far: the identifiers taken, and the value each mark identifier
- * stands for. A component is one scope and a section title is another, because a title is in no
- * component and is reached through its node as a block is through its occurrence.
+ * What one scope has claimed so far: the identifiers taken, the value each mark identifier stands
+ * for, and the mark identifiers the **last text run the walk returned** carried, which is what
+ * `claimRange` reads to tell one annotation from two. A component is one scope and a section title
+ * is another, because a title is in no component and is reached through its node as a block is
+ * through its occurrence.
  */
 export interface Claimed {
   readonly ids: Set<string>;
   readonly marks: Map<string, string>;
+  readonly carried: Set<string>;
 }
 
-/** A fresh scope. The two halves are always made together, so nothing can thread one without the other. */
+/** A fresh scope. The three parts are always made together, so nothing can thread one without the others. */
 export function newScope(): Claimed {
-  return { ids: new Set(), marks: new Map() };
+  return { ids: new Set(), marks: new Map(), carried: new Set() };
 }
 
 /**
@@ -92,6 +95,55 @@ function claimMark(mark: Mark, claimed: Claimed): void {
   }
   if (held !== value) {
     throw new Error(`Mark identifier ${mark.id} carries two different values in one document`);
+  }
+}
+
+/**
+ * **The runs carrying one mark identifier are contiguous.** `claimMark` makes an identifier name one
+ * annotation by value; this makes it name one *place*. Once an identifier has appeared and a later
+ * text run does not carry it, it may not appear again in the scope: an emphasis over `alp`, nothing
+ * over `ha beta g`, and the same identifier again over `amma` is one annotation in two visually
+ * separate pieces, and CNT-005 makes accepting, rejecting or excluding an annotation one operation
+ * over every fragment of that identifier - so that one would change the document in two places an
+ * author never joined, which is a surprise no wording of a prompt can undo. The editor reaches it by
+ * the shortest route there is: mark a phrase, then press the same button over a word in the middle.
+ *
+ * Refusing costs an annotation that legitimately covers two disjoint ranges, and no such case could
+ * be constructed. Refusing is also the reversible direction: nothing has stored a mark, so admitting
+ * more later needs no migration, while admitting it now could never be tightened.
+ *
+ * **Only a text run closes an identifier**, which is the rule the editor holds too
+ * (`spansOf` in `packages/editor/src/marks.ts` joins two runs when `textBetween` between them is
+ * empty), so an ordinary gesture cannot make a document that will not save:
+ *
+ * - **A run split by an edit** is four adjacent runs of one annotation, differing only in their
+ *   other marks (CNT-004). Each carries the identifier, so none closes it.
+ * - **A block boundary is not a run.** An annotation running from the end of one paragraph into the
+ *   start of the next is one annotation, and an empty paragraph between them has no runs at all.
+ * - **A node that is not a run carries no marks**, so an equation or a cross-reference inside an
+ *   emphasised phrase must not close it. Only a text run without the identifier does.
+ *
+ * A footnote's inline content is its own range (`checkInlineContent` empties `carried` for it and
+ * puts back what stood outside). Two sides of it: a footnote anchor standing inside an annotation
+ * never breaks it, because its words are not in the flow of the sentence the annotation covers and a
+ * reader sees no gap; and an identifier in the main text is not the identifier inside the note,
+ * because those are two regions a reader would have to resolve in two places, which is the very
+ * thing this rule exists to refuse.
+ *
+ * **Judged on what the walk returned, never on what arrived** - the trap `refuseAdjacentEmpties`
+ * paid for. An empty run between two fragments of one annotation is dropped by `mergeRuns`, so a
+ * rule reading adjacency off the input would refuse a document the parse itself makes contiguous;
+ * and conversely, a document accepted at a save and refused on read-back is a 500 for an author
+ * whose work could never become a version. So this runs over `mergeRuns`' output, with the rest of
+ * the walk.
+ *
+ * The message names the identifier and says what is wrong with it, and carries no word of the
+ * author's text, which a caller may log or hand back.
+ */
+function claimRange(mark: Mark, claimed: Claimed): void {
+  const id = mark.id.normalize('NFC');
+  if (claimed.marks.has(id) && !claimed.carried.has(id)) {
+    throw new Error(`Mark identifier ${mark.id} covers two separate ranges in one document`);
   }
 }
 
@@ -213,6 +265,11 @@ function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
  *   across runs stays one annotation under one identifier (CNT-004), so the same identifier reading
  *   two ways is refused by name. A run carrying no text is dropped before this, so a mark on one
  *   claims nothing - it is not stored, so there is nothing for it to disagree with.
+ * - **And it covers one range in the scope** (`claimRange`): an identifier that appears, stops and
+ *   appears again is two separated pieces answering to one name, which CNT-005 would resolve
+ *   together although the author sees two. Only a text run without the identifier ends it, so a
+ *   block boundary, an empty paragraph and a node that is not a run are all transparent, and a
+ *   footnote's content is a range of its own.
  *
  * **And the runs come back merged** (`mergeRuns`, issue #154), which is the same rule reaching the
  * other way: one visible text carrying one set of marks is one run. The merge is here rather than in
@@ -232,7 +289,12 @@ export function checkInlineContent(
 ): InlineNode[] {
   return mergeRuns(inlines).map((inline) => {
     if (inline.type === 'text') {
-      for (const mark of inline.marks) claimMark(mark, claimed);
+      for (const mark of inline.marks) {
+        claimRange(mark, claimed);
+        claimMark(mark, claimed);
+      }
+      claimed.carried.clear();
+      for (const mark of inline.marks) claimed.carried.add(mark.id.normalize('NFC'));
       return inline;
     }
     if (inline.type === 'crossReference') {
@@ -251,6 +313,11 @@ export function checkInlineContent(
     if (inline.type !== 'footnote') return inline;
     claim(inline.id, claimed.ids);
     const parsed = footnoteContentSchema.parse(inline.content);
+    // A footnote's paragraphs are a range of their own (`claimRange`): nothing inside continues an
+    // annotation from outside, and nothing outside continues one from inside - while the anchor
+    // itself, being no run, leaves an annotation it stands in untouched.
+    const outside = [...claimed.carried];
+    claimed.carried.clear();
     const paragraphs = parsed.map((paragraph) => {
       claim(paragraph.id, claimed.ids);
       for (const inner of paragraph.content) {
@@ -261,6 +328,8 @@ export function checkInlineContent(
       return { ...paragraph, content: checkInlineContent(paragraph.content, home, claimed) };
     });
     refuseAdjacentEmpties(paragraphs);
+    claimed.carried.clear();
+    for (const id of outside) claimed.carried.add(id);
     return { ...inline, content: paragraphs };
   });
 }
@@ -333,12 +402,12 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Six rules the schema cannot express on its own, because each is about a document rather than a
+ * Seven rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
  * cross-reference in a component never targets an outline node, a mark identifier carries one value
- * (CNT-004), and a sequence of inline content comes back with its runs merged (issue #154). One
- * walk holds all six: the block
+ * (CNT-004) over one contiguous range of runs, and a sequence of inline content comes back with its
+ * runs merged (issue #154). One walk holds all seven: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
  * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,

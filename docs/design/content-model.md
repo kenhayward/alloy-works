@@ -245,6 +245,21 @@ canonical form folds its two spellings into one. This was tightened while nothin
 which is the only moment it could be: admitting more later needs no migration, admitting it then
 could never have been undone.
 
+**And it covers one range.** The runs carrying one identifier are contiguous in document order:
+once an identifier has appeared and a later text run does not carry it, it may not appear again in
+that scope. An emphasis over `alp`, nothing over the words between, and the same identifier again
+over `amma` is one annotation in two visually separate pieces, and CNT-005's one operation over
+every fragment would change the document in two places an author never joined. **Only a text run
+closes an identifier**, which is what keeps an ordinary gesture from making a document that will
+not save: the runs one edit splits an annotation into all carry it; a block boundary is not a run,
+so an annotation runs from the end of one paragraph into the start of the next and an empty
+paragraph between them breaks nothing; and a node that is not a run carries no marks, so an
+equation or a cross-reference inside an emphasised phrase leaves it whole. A footnote's content is
+a range of its own: its anchor never breaks an annotation it stands in, and an annotation in the
+main text is not the annotation inside the note. The editor holds the same rule at the keystroke -
+a removal that splits an annotation gives the surviving far piece a fresh identifier - so the two
+agree about what an author can make, and this refuses what only a raw transaction could reach.
+
 **And what the parse accepts, it accepts again unchanged.** Once the walk returns something other
 than what it was given, every rule about a sequence has to be judged on what that sequence became -
 CNT-023's adjacency over the blocks the walk returned, because a paragraph holding one empty run is

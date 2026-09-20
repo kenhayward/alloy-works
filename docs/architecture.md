@@ -101,12 +101,13 @@ format or publishes it.
 against, its own title, its base language, its base direction, and its blocks. Adding a member is a
 schema version with a migration and a fixture, not a configuration option.
 
-**Every document goes through `parseContentDocument`.** Six rules live there rather than in the
+**Every document goes through `parseContentDocument`.** Seven rules live there rather than in the
 schema, because each is a property of a document rather than of a node: every block's, footnote's
 and cross-reference's identifier, a footnote's paragraphs included, is unique within the component;
 two adjacent empty paragraphs are refused while one is admitted; a footnote's content is paragraphs
 holding no image and no footnote; a cross-reference in a component never targets an outline node; a
-mark identifier carries one value; and a sequence of inline content comes back with its runs merged.
+mark identifier carries one value, over one contiguous range of runs; and a sequence of inline
+content comes back with its runs merged.
 The identifiers, the footnote's list and where a cross-reference may point are checked in one walk
 over inline content, `checkInlineContent`, sharing one set of claimed identifiers with the walk over
 the blocks; adjacency is checked in every sequence of blocks either reaches - the top level, a list
@@ -148,6 +149,19 @@ folds its two spellings into one. Refusing was the reversible direction: nothing
 so admitting more later needs no migration, while admitting it then could never have been tightened.
 What the rule protects is the fragmented annotation itself - one identifier on many runs, all
 reading alike, is exactly what CNT-004 asks for and is accepted.
+
+**And it covers one range, not two.** The runs carrying one identifier are contiguous in document
+order: once an identifier has appeared and a later text run does not carry it, it may not appear
+again in that scope, and the parse says which identifier covers two separate ranges, again with no
+word of the author's text. One annotation in two visually separate pieces would resolve in two
+places an author never joined, and the editor reaches it by the shortest route there is - mark a
+phrase, then press the same button over a word in the middle. Only a text run closes an identifier,
+so the runs one edit splits an annotation into all carry it, a block boundary and an empty paragraph
+break nothing, and a node that is not a run - an equation, a cross-reference - carries no marks and
+leaves an annotation whole. A footnote's content is a range of its own, so its anchor never breaks
+an annotation it stands in and an identifier cannot reach from the main text into the note. The
+editor holds the same rule at the keystroke, re-identifying the far piece of an annotation a removal
+splits, so what this refuses is what only a raw transaction could reach.
 
 **What the parse accepts, it accepts again unchanged.** The walk returns something other than what
 it was given, so every rule about a sequence is judged on what that sequence became: CNT-023's

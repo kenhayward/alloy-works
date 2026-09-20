@@ -770,6 +770,48 @@ describe('the parse of what the parse returned, which must be what it returned',
           ],
         },
       ]),
+      // One identifier over one range, and over two that only look like one: the walk's answer has
+      // to be the same the second time, or a document is accepted at a save and refused on a read.
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'alp', marks: emphasis },
+            { type: 'text', value: 'ha beta g', marks: [] },
+            { type: 'text', value: 'amma', marks: emphasis },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'where ', marks: emphasis },
+            { type: 'text', value: '', marks: [] },
+            { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
+            { type: 'text', value: ' is the rate', marks: emphasis },
+          ],
+        },
+      ]),
+      doc([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'the printer', marks: emphasis }],
+        },
+        { type: 'paragraph', id: 'b2', style: 'body', content: [] },
+        {
+          type: 'paragraph',
+          id: 'b3',
+          style: 'body',
+          content: [{ type: 'text', value: ' is ready.', marks: emphasis }],
+        },
+      ]),
     ];
     for (const document of documents) {
       const where = JSON.stringify(document).slice(0, 90);
@@ -876,10 +918,12 @@ describe('a mark identifier, which names one annotation and not two', () => {
     expect(() => parseContentDocument(doc([quote(french), table(german)]))).toThrow(/m1/);
     expect(() => parseContentDocument(doc([quote(french), noted(german)]))).toThrow(/m1/);
     expect(() => parseContentDocument(doc([table(french), noted(german)]))).toThrow(/m1/);
-    // And the same value in all three is one annotation, wherever its fragments stand.
+    // And the same value in all three is one identifier carrying one value, so this rule is done
+    // with it - but the three homes have unmarked text between them, so the contiguity rule below
+    // refuses it by the other name. Both messages name m1 and nothing of the text.
     expect(() =>
       parseContentDocument(doc([quote(french), table({ ...french }), noted({ ...french })])),
-    ).not.toThrow();
+    ).toThrow(/two separate ranges/);
   });
 
   it('lets two components use one identifier, because the rule is per document', () => {
@@ -890,5 +934,128 @@ describe('a mark identifier, which names one annotation and not two', () => {
     expect(() =>
       parseContentDocument(runs([{ type: 'text', value: 'Grace', marks: [german] }])),
     ).not.toThrow();
+  });
+});
+
+describe('a mark identifier, whose runs are one range and not two', () => {
+  // Deliberately uncited. CNT-004 asks that an annotation fragmented across several text nodes
+  // remain one annotation under one identifier; these tests show the converse - that two
+  // separated regions are not one annotation - which is not that statement, and CNT-004 is
+  // already demonstrated in full by marks.test.ts and by the editor's split test. CNT-005, which
+  // makes accepting or rejecting an annotation one operation over every fragment, is the reason
+  // this rule exists, but no resolution operation exists yet for a test to demonstrate it.
+  const runs = (content: unknown[]) =>
+    doc([{ type: 'paragraph', id: 'b1', style: 'body', content }]);
+  const plain = (value: string) => ({ type: 'text', value, marks: [] });
+  const emphasised = (value: string, ...others: unknown[]) => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'emphasis', id: 'm1' }, ...others],
+  });
+  const contentOf = (document: unknown) => {
+    const block = parseContentDocument(document).content[0];
+    return block?.type === 'paragraph' ? block.content : [];
+  };
+
+  it('refuses an identifier that appears again after a run without it, naming it and nothing else', () => {
+    const attempt = () =>
+      parseContentDocument(runs([emphasised('alp'), plain('ha beta g'), emphasised('amma')]));
+    expect(attempt).toThrow(/m1/);
+    expect(attempt).toThrow(/two separate ranges/);
+    // The author's words never reach a message a caller may log or return.
+    expect(attempt).not.toThrow(/beta/);
+  });
+
+  it('accepts the four runs one annotation is split into by the edits over it', () => {
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          emphasised('the ', { type: 'strong', id: 'm2' }),
+          emphasised('printer'),
+          emphasised(' now', { type: 'language', id: 'm3', tag: 'fr-FR' }),
+        ]),
+      ),
+    ).toHaveLength(4);
+  });
+
+  it('judges the runs the walk returned, so a run carrying no text closes nothing', () => {
+    // The trap CNT-023's rule paid for once: a run with no text is dropped by the merge, so a rule
+    // reading what arrived would refuse a document the walk itself makes contiguous - accepted at a
+    // save and quarantined on read-back. Both the pair the merge joins and the pair it leaves apart.
+    expect(
+      contentOf(runs([emphasised('Install '), plain(''), emphasised('the printer.')])),
+    ).toEqual([
+      { type: 'text', value: 'Install the printer.', marks: [{ type: 'emphasis', id: 'm1' }] },
+    ]);
+    expect(
+      contentOf(
+        runs([
+          emphasised('Install '),
+          plain(''),
+          emphasised('the printer.', { type: 'strong', id: 'm2' }),
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('accepts an annotation across a block boundary, and across an empty paragraph', () => {
+    const paragraphOf = (id: string, content: unknown[]) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content,
+    });
+    expect(() =>
+      parseContentDocument(
+        doc([
+          paragraphOf('b1', [plain('Install '), emphasised('the printer')]),
+          paragraphOf('b2', []),
+          paragraphOf('b3', [emphasised(' now'), plain(' if you can.')]),
+        ]),
+      ),
+    ).not.toThrow();
+  });
+
+  it('accepts an annotation across a node that is not a run, which carries no marks', () => {
+    const mathml = `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>`;
+    expect(() =>
+      parseContentDocument(
+        runs([emphasised('where '), { type: 'equation', mathml }, emphasised(' is the rate')]),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      parseContentDocument(
+        runs([
+          emphasised('see '),
+          {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 'b9' },
+            display: 'number',
+          },
+          emphasised(' for the rate'),
+        ]),
+      ),
+    ).not.toThrow();
+  });
+
+  it('makes a footnote its own range, which an identifier may span but not reach into', () => {
+    const noting = (content: unknown[]) => ({
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: 'b2', style: 'footnote', content }],
+    });
+    // The anchor stands between two pieces of one annotation, which the reader never sees broken.
+    expect(() =>
+      parseContentDocument(
+        runs([emphasised('the printer'), noting([plain('Model 1.')]), emphasised(' is ready')]),
+      ),
+    ).not.toThrow();
+    // And the annotation in the main text cannot be the annotation inside the note.
+    expect(() =>
+      parseContentDocument(runs([emphasised('the printer'), noting([emphasised('Model 1.')])])),
+    ).toThrow(/two separate ranges/);
   });
 });
