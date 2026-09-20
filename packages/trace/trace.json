@@ -1974,7 +1974,7 @@
     {
       "id": "CNT-085",
       "area": "CNT",
-      "statement": "An underline mark must be supported, and must be understood as the one mark named for its appearance rather than its meaning",
+      "statement": "An underline mark must be supported",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",

@@ -6,10 +6,11 @@ application and a desktop application**.
 
 > **Status: research, and scaffolding.** One path runs end to end - open an environment, sign in,
 > ask for a sample document, watch a worker make it. Beside it, a component can be made and its
-> paragraphs edited and versioned, and a document can be made and its outline of sections and
-> components restructured, a version at a time, its sections numbered, and its paragraphs published
-> as a laid-out PDF with a cover, a contents and numbered pages. Nothing is formatted beyond plain
-> paragraphs or cross-referenced yet.
+> paragraphs edited, formatted, linked and versioned, and a document can be made and its outline of
+> sections and components restructured, a version at a time, its sections numbered, and its
+> paragraphs published as a laid-out PDF with a cover, a contents and numbered pages that carries
+> that formatting. Nothing is arranged beyond paragraphs - no list, table, footnote or equation - and
+> nothing is cross-referenced yet.
 > [`docs/features.md`](docs/features.md) is explicit about what does and does not exist.
 
 ## What it is for
@@ -68,7 +69,7 @@ Six tranches, each a usable increment rather than a layer:
 T1 alone is a single-author product that already publishes better than a word processor, which is
 what makes it a shippable increment rather than a foundation nobody can evaluate - and it is larger
 than its name suggests, touching thirteen of the twenty-two areas, because publishing at the fidelity
-bar needs themes, templates, assets and tables as well as an editor. **The first pieces of it are built** - tenancy and sign-in, access control, components with immutable versions, a component's paragraphs edited under a lock, documents whose outlines you restructure and whose sections are numbered, and a document published as a laid-out, tagged PDF of its paragraphs - on the scaffolding under them. Cross-references, formatting beyond plain paragraphs, themes, templates, search and Word are not, and the table below and [`docs/features.md`](docs/features.md) say exactly what is.
+bar needs themes, templates, assets and tables as well as an editor. **The first pieces of it are built** - tenancy and sign-in, access control, components with immutable versions, a component's paragraphs edited and formatted under a lock, documents whose outlines you restructure and whose sections are numbered, and a document published as a laid-out, tagged PDF that carries that formatting - on the scaffolding under them. Cross-references, lists, tables, footnotes, equations, themes, templates, search and Word are not, and the table below and [`docs/features.md`](docs/features.md) say exactly what is.
 
 ## Features
 
@@ -80,9 +81,10 @@ bar needs themes, templates, assets and tables as well as an editor. **The first
 | Content model                | The stored shape of a component's content: blocks, inline content and overlapping annotations, each identified, versioned by schema and checked both ways                                                                                                                                                                              |
 | Access                       | Who may do what, decided through roles and grants, which an administrator gives and takes away on a component's Manage access page - to people invited by address before they first sign in, too - with why for each answer                                                                                                            |
 | Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                                                                                                                                                                                                         |
+| Formatting, links, languages | Strong, emphasis, underline, subscript, superscript, inline code and quoted phrases from a toolbar or the keyboard; a link whose address is checked before it is applied; and a run marked with its own language, which the spelling checker then leaves alone                                                                         |
 | Making a component           | Create one in a space you may create in, with a title, a base language and a direction, and change them afterwards above the surface                                                                                                                                                                                                   |
 | Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time. Sections are numbered as you go, with the scheme the document publishes with; a top-level part can be front matter, the body or an appendix; every part has a link, and figures, tables and equations are listed |
-| Publishing a document        | Publish a document as a tagged PDF of its outline and paragraphs, laid out with a cover, a contents, running heads and feet and pages numbered per part, marked not approved on every page, kept, listed beneath the outline and downloaded from its own page                                                                          |
+| Publishing a document        | Publish a document as a tagged PDF of its outline and its formatted paragraphs, laid out with a cover, a contents, running heads and feet and pages numbered per part, marked not approved on every page, kept, listed beneath the outline and downloaded from its own page                                                            |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                                                                                                                                                                                                       |
 
 Full prose list: [`docs/features.md`](docs/features.md).

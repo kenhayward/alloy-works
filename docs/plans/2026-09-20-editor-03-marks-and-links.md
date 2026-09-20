@@ -201,7 +201,7 @@ that claims it claims it in full:
 
 | ID          | Claimed by          | What demonstrates it                                                                                                                                                                              |
 | ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CNT-003** | content-model.md    | A comment mark and an emphasis mark over overlapping ranges, neither nested nor split into two annotations                                                                                        |
+| **CNT-003** | content-model.md    | A language mark and an emphasis mark over overlapping ranges, neither nested nor split into two annotations - a `comment` as planned, because a component holding one opens read-only             |
 | **CNT-031** | content-model.md    | All eight character marks round-trip `toEditor` then `fromEditor` unchanged                                                                                                                       |
 | **CNT-126** | content-model.md    | A hyperlink applied over a selection carries `href` and an optional `title`, and overlaps a character mark                                                                                        |
 | **CNT-077** | component-editor.md | Every command in `EDITOR_COMMANDS` has a shortcut in the keymap and a button in the toolbar, asserted as one invariant over the registry, and the toolbar is reached and driven by keyboard alone |

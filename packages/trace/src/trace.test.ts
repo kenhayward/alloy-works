@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1385, from 1384: CNT-152, a language tag the model takes and no output can carry named to the
+    // author at the time, before the mark is applied (issue #155), landed by the marks plan.
     // 1384, from 1383: PUB-095, a layout's words in one declared language, and a document in another
     // refused naming both (issue #144), landed by the second publishing plan.
     // 1383, from 1382: STR-064, front matter only at the top level and before the rest of the outline
@@ -53,9 +55,11 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1384);
+    expect(model.requirements).toHaveLength(1385);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 409, from 408: component-editor.md claims CNT-152, met by the mark prompt naming the tag before
+    // it applies anything.
     // 408, from 407: publishing.md claims PUB-095, met by the layout's language matched as a range.
     // 407, from 406: structure.md claims STR-064, front matter first, met by the outline parse.
     // 406, unchanged: publishing.md claims PUB-094 (#143) and no longer IAM-074, which Ken withdrew for it.
@@ -125,7 +129,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(408);
+    ).toBe(409);
   });
 });
 

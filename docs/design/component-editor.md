@@ -15,14 +15,18 @@ written). **The document view** - many components in one scroll, the read, revie
 headings, choosing which version a reference points at, and preview - is the next slice, designed once
 the outline (STR) and the publishing pipeline are.
 
-> **Part of this is built.** Opening a component, editing its paragraphs of unmarked text, the lock,
+> **Part of this is built.** Opening a component, editing its paragraphs, the lock,
 > iterations under the sequence rules, Save version and Done editing, the save indicator, and the six
 > routes below are in `packages/editor`, `packages/db`, `apps/service` and `apps/web`;
 > [`../architecture.md`](../architecture.md) describes them as they stand, and
 > [the plan that built them](../plans/2026-09-16-editor-01-open-edit-and-save.md) changed this document
 > where planning the build found it wrong or unfinished - see
-> [Changed while planning the build](#changed-while-planning-the-build). What is still design here:
-> creating a component, every node and mark but the paragraph, paste, equations, tables and footnotes,
+> [Changed while planning the build](#changed-while-planning-the-build). Creating a component is built
+> too, and so are **ten of the thirteen marks**: strong, emphasis, underline, subscript, superscript,
+> inline code and a quoted phrase from the **Formatting** toolbar or the keyboard, a hyperlink and a
+> language mark through a prompt, and a defined term in the schema with no control yet, by
+> [the marks plan](../plans/2026-09-20-editor-03-marks-and-links.md). What is still design here: every
+> block but the paragraph, paste, equations, tables and footnotes,
 > the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 

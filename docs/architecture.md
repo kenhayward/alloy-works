@@ -8,18 +8,19 @@
 > [the version chain](#the-version-chain) - and who may do what to it - [access](#access) - and the
 > first thing a person authors with: [the editor and its session](#the-editor-and-its-session), which
 > creates a component in a space, opens its paragraphs, edits its title, base language and base direction
-> above the surface, saves them as iterations under a lock and cuts versions from them - and
+> above the surface, formats, links and language-marks its text from a toolbar or the keyboard, saves
+> them as iterations under a lock and cuts versions from them - and
 > [the document and its outline](#the-document-and-its-outline), which makes a document in a space,
 > restructures its outline of sections and component references a version at a time, and numbers it -
 > and [publishing](#publishing), which makes a document's latest version into a tagged PDF of its
-> outline and its paragraphs, keeps it and lists it. Nothing yet pastes, edits or publishes anything
-> but paragraphs of text, makes a component type or resolves a cross-reference; an administrator
+> outline and its marked paragraphs, keeps it and lists it. Nothing yet pastes, edits or publishes any
+> block but a paragraph, makes a component type or resolves a cross-reference; an administrator
 > invites people by address and grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the scaffolding's, and nothing
 > renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
-> them - is [`design/system.md`](design/system.md). Part of it exists here: the web service as the system of record, one worker and its queue, PostgreSQL with a schema per environment, and the object store, each described below; publishing beyond a PDF of paragraphs, search, realtime beyond one stream, and the rest do not.
+> them - is [`design/system.md`](design/system.md). Part of it exists here: the web service as the system of record, one worker and its queue, PostgreSQL with a schema per environment, and the object store, each described below; publishing beyond a PDF of marked paragraphs, search, realtime beyond one stream, and the rest do not.
 
 **This document describes the repository as it stands.** The subsystems being designed on top of it
 live in [`design/`](design/), one document per subsystem, each naming the requirements it answers.
@@ -449,26 +450,27 @@ Opening a component, editing its paragraphs and saving them, designed in
 [`design/component-editor.md`](design/component-editor.md) over
 [`design/storage-and-versioning.md`](design/storage-and-versioning.md)'s iterations and
 [ADR-0023](decisions/0023-prosemirror-as-the-editor-and-its-model.md)'s one view per component. A
-component is created, opened, edited above and on the surface, and cut; one holding anything but
-paragraphs of unmarked text opens for reading only, and nothing pastes, recovers an iteration or edits
-metadata.
+component is created, opened, edited above and on the surface, and cut; its text is formatted, linked
+and marked with a language from a toolbar or the keyboard; one holding anything but paragraphs of that
+text opens for reading only, and nothing pastes, recovers an iteration or edits metadata.
 
-| Where                                       | Holds                                                                                                                                                                                                   |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `editor: src/schema.ts`, `mapping.ts`       | The editor's schema - the root, paragraphs, text - and `toEditor`, which refuses by name what the schema lacks, and `fromEditor`, through `parseContentDocument`                                        |
-| `editor: src/identity.ts`, `state.ts`       | 128-bit block identifiers, ADR-0023's descent rule as a plugin, no two adjacent empty paragraphs, `Enter` that makes none, and one history per component                                                |
-| `editor: src/view.ts`, `style.css`          | `mountEditor`: spellcheck, language and direction on the surface, and paste and drop refused                                                                                                            |
-| `editor: src/header.ts`                     | `headerOf`, and `setTitle`, `setLanguage` and `setDirection` as steps on the root, with `titleAccepted` beside the command it gates                                                                     |
-| `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                                                             |
-| `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                                                                   |
-| `db: src/creation.ts`                       | `createComponent` at `0.1`, `listComponentTypes` and `defaultComponentType`, and `currentDefinitionsFor`, which creating and cutting share                                                              |
-| `db: src/components.ts`, `spaces.ts`        | `listReadableComponents`, filtered by the shared readable-set predicate inside its query, a page at a time; `listSpacesFor`, each space with whether the caller may create in it                        |
-| `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component over the component type the environment starts with, and Ada and Grace allowed Author on General, for development only                                            |
-| `api-contract: components.ts`, `editing.ts` | Nine routes and their schemas - `GET /v1/spaces`, `GET /v1/spaces/{space}/component-types` and `POST /v1/spaces/{space}/components` beside the six the session uses; a route may declare a request body |
-| `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                                                                  |
-| `web: src/editor/`                          | The session as a state machine over a service and a clock, the adapter onto the generated client, the save indicator, the editor and its header, **New component**, the list and the workspace          |
+| Where                                       | Holds                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor: src/schema.ts`, `mapping.ts`       | The editor's schema - the root, paragraphs, text and ten of the model's thirteen marks - and `toEditor`, which refuses by name what the schema lacks, and `fromEditor`, through `parseContentDocument`                                                                                                                |
+| `editor: src/marks.ts`                      | `EDITOR_COMMANDS`, the one registry the toolbar and the keymap both read; `markKeymap`; `toggleMarkCommand`, `applyMarkCommand` and `removeMarkCommand`; and `markAt`, `markThroughout` and `somewhereToPutMark`, which a renderer asks before it asks the author for anything                                        |
+| `editor: src/identity.ts`, `state.ts`       | 128-bit block and mark identifiers, ADR-0023's descent rule as a plugin, `annotationsInOnePiece`, which re-identifies a mark left in two pieces after **every** transaction, `spellcheckDecorations` (CNT-147), no two adjacent empty paragraphs, `Enter` that makes none, and one history per component              |
+| `editor: src/view.ts`, `style.css`          | `mountEditor`: spellcheck, language and direction on the surface, a rule per mark, and paste and drop refused                                                                                                                                                                                                         |
+| `editor: src/header.ts`                     | `headerOf`, and `setTitle`, `setLanguage` and `setDirection` as steps on the root, with `titleAccepted` beside the command it gates                                                                                                                                                                                   |
+| `db: migrations/tenant/0012_editing`        | `component_lock`, one row per component; `iteration`, insert-only, which nothing references                                                                                                                                                                                                                           |
+| `db: src/editing.ts`, `promotion.ts`        | `claimLock`, `readLock` and `saveIteration` under the sequence rules; `cutVersion`, promoting the latest iteration, and `releaseLock`                                                                                                                                                                                 |
+| `db: src/creation.ts`                       | `createComponent` at `0.1`, `listComponentTypes` and `defaultComponentType`, and `currentDefinitionsFor`, which creating and cutting share                                                                                                                                                                            |
+| `db: src/components.ts`, `spaces.ts`        | `listReadableComponents`, filtered by the shared readable-set predicate inside its query, a page at a time; `listSpacesFor`, each space with whether the caller may create in it                                                                                                                                      |
+| `db: src/dev-content.ts`                    | `seedDevelopmentContent`: a component over the component type the environment starts with, and Ada and Grace allowed Author on General, for development only                                                                                                                                                          |
+| `api-contract: components.ts`, `editing.ts` | Nine routes and their schemas - `GET /v1/spaces`, `GET /v1/spaces/{space}/component-types` and `POST /v1/spaces/{space}/components` beside the six the session uses; a route may declare a request body                                                                                                               |
+| `service: src/components.ts`, `editing.ts`  | The handlers, and refusals with their members - `lock_held` naming the holder and the expected release                                                                                                                                                                                                                |
+| `web: src/editor/`                          | The session as a state machine over a service and a clock, the adapter onto the generated client, the save indicator, the editor and its header, the **Formatting** toolbar and the mark prompt, `press.ts` - the one function a button press and a shortcut both run - **New component**, the list and the workspace |
 
-**Seven properties, because each is a decision rather than an implementation detail.**
+**Eight properties, because each is a decision rather than an implementation detail.**
 
 **The header is content, not a column on the component.** A component's title, base language and base
 direction are attributes of the editor's root, so changing one is a step in the same history as the text,
@@ -487,6 +489,31 @@ advisory lock `recordVersion` already takes.
 **No write in a session touches access.** A lock, an iteration and a version are not facts a decision
 reads, so none takes the access epoch for update, and the shared lock `authorise` took first is never
 upgraded; a test runs the writes while another transaction holds the epoch.
+
+**One registry, so a button and its shortcut cannot drift.** `EDITOR_COMMANDS` is one list of nine
+rows - the mark, the label, the key, how the key is said aloud, and whether the author must be asked
+for a value first. `markKeymap` builds the keymap from it and the toolbar renders from it, so a button
+added without a shortcut, or a shortcut with nothing that names it, is not a thing the code can
+express (CNT-077). Both routes end in `pressCommand`, one function in `apps/web/src/editor/press.ts`,
+so the keyboard cannot acquire its own answer to what a dialog opens on or what a refusal is reported
+as. Applying a mark always mints a fresh identifier: `markAt` answers a mark's attributes and never its
+identifier, so there is nothing for a caller to reuse, and re-marking a span with a changed value is a
+new annotation rather than the old one edited.
+
+**`F6` cycles three regions, and `Shift-F6` cycles them backwards; both wrap.** The regions are the
+component header, the **Formatting** toolbar and the surface. The design names a fourth, the metadata
+panel, which is not built. The **Component** toolbar - Save version and Done editing - is deliberately
+not one of them and keeps its own ordinary tab stops, which is why every test that reaches for a
+toolbar names it. The **Formatting** toolbar is a single tab stop with the arrow keys, `Home` and `End`
+moving along it, and its buttons are `aria-disabled` rather than `disabled` when the component is read
+only, so a keyboard user can still reach it and `F6` still has somewhere to land.
+
+**A dialog makes the rest of the component inert.** **Link** and **Language** open a prompt; while one
+stands, the article holding the surface and both toolbars carries `inert`, so a click cannot move the
+selection out from under the dialog and land the mark on text the author never opened it for. The
+session's `<p role="status">` is a permanent sibling of that article rather than inside it, because a
+live region removed from the accessibility tree announces nothing - and the rollback that moves text
+out from under a dialog is exactly what writes that notice.
 
 **What the editor holds is always storable.** Every iteration leaves the renderer through `fromEditor`,
 which runs `parseContentDocument`, and the service parses it again. The identity plugin and the
@@ -770,26 +797,28 @@ A document's latest version made into a tagged PDF of its outline and its paragr
 layout, kept for ever, listed with the document and downloaded, designed in
 [`design/publishing.md`](design/publishing.md) and built by
 [the first publishing plan](plans/2026-09-19-publishing-01-a-document-to-pdf.md) and then by
-[the second](plans/2026-09-19-publishing-02-the-layout.md), which added the layout. Every page says
-**Not approved**, because nothing can approve a publication yet. A paragraph holding any formatting or
-inline item, and every block but a paragraph, is refused rather than published; the theme, the lists
-of figures and tables, veraPDF on every publication, preview and Word are later slices'. Nothing
-chooses or edits a layout: every environment has the one its migration seeded, and every document
-publishes under it.
+[the second](plans/2026-09-19-publishing-02-the-layout.md), which added the layout, and
+[the marks plan](plans/2026-09-20-editor-03-marks-and-links.md), which carried a run's marks into it.
+Every page says **Not approved**, because nothing can approve a publication yet. A run's emphasis,
+strong, underline, subscript, superscript, inline code, quoted phrase, link and language are
+published; a defined term, a condition, a suggestion and a comment are refused by name, and so is
+every block but a paragraph and every inline item but text. The theme, the lists of figures and
+tables, veraPDF on every publication, preview and Word are later slices'. Nothing chooses or edits a
+layout: every environment has the one its migration seeded, and every document publishes under it.
 
-| Where                                    | Holds                                                                                                                                                                                                                                                                                                                                                                      |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db: migrations/tenant/0017_publishing`  | `publication` as a kind of artifact, in exactly one space; the Publisher role; `publication_request` and `publication_request_occurrence`, the operational rows a job works from; `publication`, `publication_input` and `publication_output`, the record; and the grants and triggers that hold it, below                                                                 |
-| `db: migrations/tenant/0018_layouts`     | `layout` as a kind of artifact, in no space; the product's default layout seeded as version 0.1 and declared by `layout_default`, one row the runtime role reads and never changes; `layout_id` and `layout_version_id` on a request and on a publication, keyed into `artifact_version`, and the checks and triggers that hold them, below                                |
-| `domain: publishing/layout.ts`           | The layout's stored shape, closed at its first version and strict at every depth; `parseLayout`, `readLayout` and its migration chain; `defaultLayout`, the product's own, which 0018's literal is checked against in TypeScript; `speaksFor` (RFC 4647 basic filtering) and `unsupportedFormats`                                                                          |
-| `db: src/layouts.ts`                     | `DEFAULT_LAYOUT_ID` and `defaultLayout(trx)`: the environment's declared layout at its latest version, parsed, throwing where the environment declares none or the content does not read                                                                                                                                                                                   |
-| `db: src/publishing.ts`                  | `resolveOccurrences` and `requestPublication`, which resolve every reference as the publisher - restricted to what they may read inside the query - and record the request, its occurrences and its job; `publicationInputs`, `recordPublication` and `failPublicationRequest`, the job's; `readPublicationRequest`, `readPublication` and `listPublications`, the routes' |
-| `api-contract: publishing.ts`            | The four routes below and their schemas; `DocumentView.mayPublish` is in `documents.ts`                                                                                                                                                                                                                                                                                    |
-| `service: src/publishing.ts`             | Their handlers, and `DOWNLOAD_SECONDS`, the five minutes a download link is signed for, which the sample routes in `app.ts` use too; `storageUnavailable`, shared with them, is in `errors.ts`                                                                                                                                                                             |
-| `objects: src/store.ts`                  | `signedLink(key, seconds, fileName?)`: a file name sets the download's `Content-Disposition`, and is refused unless it is a lowercase identifier and an extension, so nothing a header could be split on is ever signed                                                                                                                                                    |
-| `worker: src/jobs/publish.ts`            | The `publish` job, below                                                                                                                                                                                                                                                                                                                                                   |
-| `worker: templates/publication/1/`, `2/` | The publication templates, below: version 1 reads `publishing/1`, version 2 the document under a layout                                                                                                                                                                                                                                                                    |
-| `web: src/publishing/`                   | `Publishing.tsx`, the panel beneath a document's outline; `PublicationPage.tsx`, a publication's own page at `#/publications/{id}`; `failures.ts`, each failure's words                                                                                                                                                                                                    |
+| Where                                          | Holds                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db: migrations/tenant/0017_publishing`        | `publication` as a kind of artifact, in exactly one space; the Publisher role; `publication_request` and `publication_request_occurrence`, the operational rows a job works from; `publication`, `publication_input` and `publication_output`, the record; and the grants and triggers that hold it, below                                                                 |
+| `db: migrations/tenant/0018_layouts`           | `layout` as a kind of artifact, in no space; the product's default layout seeded as version 0.1 and declared by `layout_default`, one row the runtime role reads and never changes; `layout_id` and `layout_version_id` on a request and on a publication, keyed into `artifact_version`, and the checks and triggers that hold them, below                                |
+| `domain: publishing/layout.ts`                 | The layout's stored shape, closed at its first version and strict at every depth; `parseLayout`, `readLayout` and its migration chain; `defaultLayout`, the product's own, which 0018's literal is checked against in TypeScript; `speaksFor` (RFC 4647 basic filtering) and `unsupportedFormats`                                                                          |
+| `db: src/layouts.ts`                           | `DEFAULT_LAYOUT_ID` and `defaultLayout(trx)`: the environment's declared layout at its latest version, parsed, throwing where the environment declares none or the content does not read                                                                                                                                                                                   |
+| `db: src/publishing.ts`                        | `resolveOccurrences` and `requestPublication`, which resolve every reference as the publisher - restricted to what they may read inside the query - and record the request, its occurrences and its job; `publicationInputs`, `recordPublication` and `failPublicationRequest`, the job's; `readPublicationRequest`, `readPublication` and `listPublications`, the routes' |
+| `api-contract: publishing.ts`                  | The four routes below and their schemas; `DocumentView.mayPublish` is in `documents.ts`                                                                                                                                                                                                                                                                                    |
+| `service: src/publishing.ts`                   | Their handlers, and `DOWNLOAD_SECONDS`, the five minutes a download link is signed for, which the sample routes in `app.ts` use too; `storageUnavailable`, shared with them, is in `errors.ts`                                                                                                                                                                             |
+| `objects: src/store.ts`                        | `signedLink(key, seconds, fileName?)`: a file name sets the download's `Content-Disposition`, and is refused unless it is a lowercase identifier and an extension, so nothing a header could be split on is ever signed                                                                                                                                                    |
+| `worker: src/jobs/publish.ts`                  | The `publish` job, below                                                                                                                                                                                                                                                                                                                                                   |
+| `worker: templates/publication/1/`, `2/`, `3/` | The publication templates, below: version 1 reads `publishing/1`, version 2 the document under a layout (`publishing/2`), version 3 that document with a run's marks set (`publishing/3`)                                                                                                                                                                                  |
+| `web: src/publishing/`                         | `Publishing.tsx`, the panel beneath a document's outline; `PublicationPage.tsx`, a publication's own page at `#/publications/{id}`; `failures.ts`, each failure's words                                                                                                                                                                                                    |
 
 **Four routes.**
 
@@ -838,8 +867,10 @@ occurrences when the record is made rather than carried from what the job compil
 finishing the request never changes it; and the commit-time rule requires a publication's layout
 version to be exactly its request's, null for null, so a publication can neither name another layout
 nor drop the one it was made under. **A publication is recorded with template 1 exactly when it has
-no layout, and with template 2 under one**, by the check
-`(template_version = 1) = (layout_version_id is null)`. A request queued before migration 0018 keeps
+no layout, and with a later template under one**, by the check
+`(template_version = 1) = (layout_version_id is null)`; under a layout that template is 3 today and
+was 2 before a run carried its marks, and the publications made with 2 keep it. A request queued
+before migration 0018 keeps
 no layout and publishes under template 1 as it would have: 0018 updates no existing row and disables
 no trigger, and closes the new columns with a check on the pair and a **before insert** trigger
 rather than a `NOT VALID` check, which Postgres would have applied to every update and which would
@@ -872,6 +903,20 @@ have left such a request unable to finish at all.
   against the pinned faces' coverage, and returns either the published document or every failure at
   once (PUB-052). Given no layout it returns the first slice's `publishing/1` instead, unchanged. The
   `publish` job and the worker's regression corpus call it.
+- **A run and its marks (`publishing/3`).** A paragraph is a list of runs, each its text and the marks
+  that cover it, so one visible text carrying one set of marks is one run in the PDF as it is in the
+  stored model. Which marks may be carried is an **allowlist** over `PUBLISHED_MARK_ORDER` in
+  `packages/domain/src/publishing/published.ts` - `language`, `hyperlink`, `quotedPhrase`, `emphasis`,
+  `strong`, `underline`, `subscript`, `superscript`, `inlineCode`, outermost first - never a
+  `default:` that drops what it does not recognise: a defined term, a condition, a suggestion or a
+  comment is refused by name and the run is not published, because a condition silently flattened
+  would carry conditional text into a PDF unconditionally. The order is a literal rather than any
+  schema's own, so one document makes one PDF and the publication's digest is stable; a run carrying
+  two marks of one kind - two links, or `fr` and `de` - is refused naming the kind, the same shape the
+  editor's mapping refuses, because otherwise one target or one language would win by the template's
+  fold order rather than by anything the author wrote. A `hyperlink`'s title is deliberately dropped.
+  `assemble` makes no `publishing/2` any more - a request under a layout is now `publishing/3` - while
+  `publishing/1` is still made for a request recorded before layouts.
 - **The `publish` job.** `apps/worker/src/jobs/publish.ts` reads exactly what the request recorded
   (`publicationInputs`) - the layout version recorded on the request included, read by its key and
   never the layout's latest - runs `assemble` over it, compiles the published document through the
@@ -893,15 +938,20 @@ have left such a request unable to finish at all.
   nothing sweeps it yet. A job with no subject - nothing enqueues one - is refused at once, as
   `JobRefused('no_subject', ...)`, rather than matching no request and completing silently as `done`.
 - **The publication templates.** `apps/worker/templates/publication/1/main.typ` reads `assemble`'s
-  first published document (`publishing/1`) and `2/main.typ` the document under a layout
-  (`publishing/2`), each from `data.json` as values, evaluating none of it. The worker picks by the
+  first published document (`publishing/1`), `2/main.typ` the document under a layout
+  (`publishing/2`) and `3/main.typ` that document with a run's marks (`publishing/3`), each from
+  `data.json` as values, evaluating none of it. The worker picks by the
   document's schema, not by configuration (`apps/worker/src/template.ts`), and the pipeline's version
   is per schema too. A version is immutable: `apps/worker/src/template.test.ts` holds each one's hash,
   an edit is a new directory and a new number, and `.gitattributes` keeps every `.typ` file LF so no
   checkout rewrites a pinned template. Template 1's file and hash have not changed, and the same test
   recomputes template 1's row from a fixed input with no layout and holds it to the digest the first
   slice pinned, so a request made before layouts still publishes byte for byte as it would have.
-- **What template 2 sets.** The page the layout declares, in points and in the portrait sense, turned
+  **Template 2 is kept although nothing makes a document for it**, because it is what the publications
+  made before a run carried its marks were compiled with and a published version is a record; its test
+  builds the `#assert` it should carry from `PUBLISHING_SCHEMA_2` and reads it out of the template's
+  own bytes, so repointing a frozen schema fails there rather than quietly.
+- **What template 3 sets.** The page the layout declares, in points and in the portrait sense, turned
   where it is landscape, the gutter widening the inside margin, which alternates about the binding
   edge. A cover of its own with no page number, holding the title and the draft notice's sentence.
   Running heads and feet of three slots each, of the layout's words and the fields `title`, `section`,
@@ -910,13 +960,36 @@ have left such a request unable to finish at all.
   headings the template set with `number`'s numbers, so a screen reader is told it is a table of
   contents, and only the page comes from the engine; it always ends its page. Page numbers run in
   chains, so a matter entered again resumes its own chain rather than repeating a label, and every
-  change of matter starts a page.
+  change of matter starts a page. And a run's marks: `emph`, `strong`, `underline`, `sub`, `super`,
+  `quote(quotes: false, ...)` - the mark is for assistive technology and the author's own quotation
+  characters are the only ones on the page - `link` and `text(lang:, region:)`, folded outermost
+  first. `inlineCode` is **hoisted out of that fold** and computed before it, because Typst's `raw()`
+  replaces its body rather than wrapping it, and applying it inside the fold would silently throw away
+  every mark already applied - a PDF saying something the author did not write. A kind the template
+  does not know ends in `panic`, so a publish fails rather than printing an unmarked run. **That
+  failure is deliberately imprecise, and the cost is recorded rather than paid.** A `panic` reaches
+  the worker as `TypstRefused`, is recorded as `engine_failed`, and the page then says "The
+  publication could not be made. Publish again." - right for a transient engine fault, wrong for a
+  document that can never compile. A named `compose` failure was ruled out of the template's scope,
+  and `assemble`'s allowlist plus `marks.test.ts`'s `EVERY_MARK` - typed as
+  `Record<PublishedMark['kind'], true>`, so a tenth kind cannot be added to the domain without that
+  file failing to compile - make the branch unreachable in practice.
+- **What a test can see of a PDF.** `apps/worker/src/testing/pdf.ts` reads a compiled PDF back:
+  `taggedText` per page, `roles` flat in document order, `links` - each page's link annotations by
+  their target - and `languages`, each declaring run's language paired with the text it covers. That
+  last one exists because `/Lang` lives only on a marked-content property dictionary inside the page's
+  compressed content stream: no role, no annotation, nothing in the uncompressed bytes, so deleting
+  the template's `text(..language(m.language), body)` left every other assertion passing. It throws
+  rather than answering empty, so it cannot go quietly vacuous.
 - **The regression corpus and veraPDF.** `apps/worker/src/regression.test.ts` builds each case as an
   outline, through `assemble` and the publication template, and compiles it with the pinned Typst; the
   checker (`apps/worker/src/testing/verapdf.ts`) runs the pinned `verapdf/cli` image, pulled by digest
   (`pnpm --filter @alloy-works/worker fetch-verapdf`), against each PDF's PDF/UA-1 profile. This runs
   in the worker's own test suite, on every change to the template, the engine or `assemble` - not yet
-  per publication, which is a later slice's. It holds three cases: nine heading levels, which veraPDF
+  per publication, which is a later slice's. `apps/worker/src/marks.test.ts` is the same pattern over
+  a marked document: every mark set, the links reaching the page, a quoted phrase given no quotation
+  marks of its own, one run heard in another language, and veraPDF over the result. The corpus itself
+  holds three cases: nine heading levels, which veraPDF
   passes; a PDF not made to PDF/UA-1, which veraPDF must fail; and `assemble`'s verdict on sixteen
   character probes held to the engine's.
 

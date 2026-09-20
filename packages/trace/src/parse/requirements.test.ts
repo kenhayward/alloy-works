@@ -126,6 +126,8 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
+    // 1385, from 1384: CNT-152, a language tag no output can carry named to the author at the time
+    // (issue #155), landed by the marks plan.
     // 1384, from 1383: PUB-095, a layout's words in one declared language (issue #144), landed by the
     // second publishing plan in PUB rather than TPL.
     // 1383, from 1382: STR-064, front matter first in an outline (issue #152), landed by the second
@@ -148,7 +150,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1384);
+    expect(total((document) => document.requirements)).toBe(1385);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

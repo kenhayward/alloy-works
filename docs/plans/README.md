@@ -366,7 +366,22 @@ that each later slice arrives into something that runs.
 | --- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | 1   | [Open, edit and save](2026-09-16-editor-01-open-edit-and-save.md)               | `packages/editor`: a schema for paragraphs of text, the mapping that refuses what it lacks, the identity plugin, no two adjacent empty paragraphs, and a view that refuses paste; in `packages/db`, `component_lock` and the insert-only `iteration`, claiming, saving under the sequence rules, cutting from the latest iteration and releasing, the readable listing, and a component Ada and Grace may edit in development; six routes, request bodies in the contract and refusals carrying members; and in `apps/web`, the session as a state machine, the save indicator, the editor and the list. No creating, paste, marks, lists, tables, equations, metadata panel, recovery or undo across a reload                                                                                                                                                                               | Built (PR #106) |
 | 2   | [Creating a component](2026-09-17-editor-02-creating-a-component.md)            | In `packages/db`, migration 0015 - a component type in every environment, _Topic_, assigning no schemas, and the row declaring it the default (MET-012), with a definition the environment itself started with authored by nobody - `createComponent` writing version 0.1 with one empty paragraph and every default the type resolves to, and the definition loader cutting already used, lifted out to be shared; in `packages/api-contract` and `apps/service`, `GET /v1/spaces` with who may create in each, `GET /v1/spaces/{space}/component-types` decided by `create` on the space, and `POST /v1/spaces/{space}/components`; in `packages/editor`, the title, base language and base direction changed as steps; in `apps/web`, New component on the list and a component header above the surface. No managing component types, no metadata panel, no idempotency key, no deleting | Built (PR #117) |
-| 3   | [Marks, hyperlinks and language marks](2026-09-20-editor-03-marks-and-links.md) | In `packages/editor`, ten marks in the schema, a mapping carrying a run per mark set, one command registry feeding both the keymap and the toolbar, and a fresh identifier on every application; in `apps/web`, a formatting toolbar that is one tab stop, the link and language prompts with their refusals, and `F6` between the component header, the toolbar and the surface; in `packages/domain`, a published run carrying its marks as `publishing/3`, refusing a language tag the engine cannot carry; and in `apps/worker`, template `publication/3` setting them, checked through veraPDF. No lists, tables, quotations, preformatted text, footnotes, equations or paste, no defined term or citation control, and no monospace face                                                                                                                                              | Planned         |
+| 3   | [Marks, hyperlinks and language marks](2026-09-20-editor-03-marks-and-links.md) | In `packages/editor`, ten marks in the schema, a mapping carrying a run per mark set, one command registry feeding both the keymap and the toolbar, and a fresh identifier on every application; in `apps/web`, a formatting toolbar that is one tab stop, the link and language prompts with their refusals, and `F6` between the component header, the toolbar and the surface; in `packages/domain`, a published run carrying its marks as `publishing/3`, refusing a language tag the engine cannot carry; and in `apps/worker`, template `publication/3` setting them, checked through veraPDF. No lists, tables, quotations, preformatted text, footnotes, equations or paste, no defined term or citation control, and no monospace face                                                                                                                                              | Built (PR #n)   |
+
+**Plan 3 is the first slice that reaches the published half in the same pull request**, because there
+is no point in an author writing formatting a publication drops: it carries a run's marks through
+`publishing/3` and template `publication/3` as well as building the editor that makes them. It was
+planned under the new method and its pre-flight found 27 problems before any of it was built, six of
+them critical - the sharpest that Typst's `raw()` **replaces** its body rather than wrapping it, so
+applying inline code inside the fold over a run's marks would have thrown away every mark already
+applied, silently, in a PDF. What building it found was mostly about identity. A mark identifier names
+one annotation over one contiguous range, and three separate gestures could leave one in two pieces -
+typing at the end of a non-inclusive mark, removing a mark from the middle paragraph of three, and a
+transaction from outside the editor's own commands - so the invariant is restored by a plugin after
+**every** transaction rather than by each command, which retired a repair that was solving a problem
+already solved. It lands CNT-152 (#155), rewords CNT-085 to its first clause, and names in
+[component-editor.md](../design/component-editor.md) the half of the same harm still unwarned - a
+component's own base language, filed as #156. What it leaves is listed at the end of the plan.
 
 **Plan 2 led with ten findings** - the most serious that no environment holds a component type at all,
 so MET-011's choice has nothing to choose and nothing outside development can be created - and nine
@@ -397,9 +412,9 @@ access, the access management plan's; creating a component - reading component t
 tenant's default type (MET-012), MET-011 and the component header - editor 2's; undo across a reload, Recovery
 and the iterations listing, and lock events on the stream (CNT-069, CNT-103, CNT-067, CNT-090, VER-002,
 COL-007) - and with them, telling either window of two of the same author's about the other's saves once the
-lock has moved between them - editor 3's; paste through the admission pipeline with its report (CNT-063), editor
-4's; marks, lists, tables, block quotations, preformatted text and footnotes, with the toolbar and keymaps
-(CNT-077), one plan per family; equations and the #103 ruling, the equations plan's; the metadata panel
+lock has moved between them - editor 4's; paste through the admission pipeline with its report (CNT-063), editor
+5's; lists, tables, block quotations, preformatted text and footnotes, one plan per family, the toolbar
+and keymaps (CNT-077) having arrived with the marks plan; equations and the #103 ruling, the equations plan's; the metadata panel
 (MET-033, MET-036), its own plan's; retention and the lock period as tenant settings, the sweep - which may
 remove an iteration only once it is past retention and a later version exists - and an iteration's retention
 counted from the cut (VER-003, VER-004, COL-008), storage 2's; idempotency keys (API-008), service
@@ -466,8 +481,9 @@ a failure of the engine or the store is introduced on the page as the product's,
 document's. Three stored-shape gaps reachable only by SQL are named in publishing.md rather than
 closed. It cites PUB-021, PUB-047, PUB-048, PUB-050, PUB-053, PUB-061, PUB-062, PUB-063, PUB-093,
 PUB-094 and PUB-086's engine and store stages; 1,382 requirements, 193 citations. What it leaves is
-listed at the end of the plan: the layout, publishing 2's; marks, hyperlinks, language marks and every
-other block, publishing 3's, with PUB-003; the theme and its typefaces, publishing 4's; veraPDF on every
+listed at the end of the plan: the layout, publishing 2's; marks, hyperlinks and language marks, which
+the marks plan took early, with the editor that writes them; every other block, publishing 3's, with
+PUB-003; the theme and its typefaces, publishing 4's; veraPDF on every
 publication and its report kept, PUB-085 settled and floats' reading order, publishing 5's; preview,
 publishing 6's; Word and PUB-073, publishing 7's; sweeping finished requests and unreferenced objects;
 a stop for the page's asking; a download link that outlives five minutes; the desktop app's handling
