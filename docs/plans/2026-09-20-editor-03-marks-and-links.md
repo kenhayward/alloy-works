@@ -112,6 +112,24 @@ serif face and **warns about nothing** (a genuinely unknown family does warn, ch
 Each is a recommendation with the alternative that was rejected and why. A, B and C change what
 ships; D to H are rulings on open issues.
 
+**Ken's answers (2026-09-20):** every recommendation accepted, with three additions. Each is written
+into the task it changes as well as here.
+
+- **The canonical form merges adjacent runs carrying identical marks, in this slice** (issue #154,
+  filed): the plan proposed filing it. Two spellings of one text give two fingerprints, so a save that
+  changed nothing records a version; versions are insert-only, and nothing has stored a mark yet, so
+  it is cheapest now. It is **task 11**, and it lands before the mapping can write two runs that mean
+  one.
+- **The editor says at the time when a language an output cannot carry is used** (issue #155, filed as
+  a requirement): decision D lets an author write `zh-Hans` and leaves the publisher to refuse it,
+  which is the trap this slice was told to avoid. **Task 6** builds the warning and lands #155's row;
+  if the warning turns out to cost more than the slice can carry, the publish refusal must at least
+  name the run and its place, and the plan says which was done.
+- **CNT-085 is reworded to its first clause**, its second living in the design as prose (challenge 1).
+  **Task 10** makes the edit under `docs/specification/requirements/README.md`'s rules, with its
+  change-history row. Challenge 2 (splitting CNT-035) is **declined for now**: a requirement reading
+  `Designed` until T6 is honest, and splitting it would file a row to make a count look better.
+
 **A. Publishing prints marks and links in this slice, not in publishing 3.** Today
 `unpublishableInline` refuses any inline carrying a mark, so the first word an author emphasises
 makes the document unpublishable. It is refused by name, so nothing is silent - but shipping a
@@ -856,6 +874,18 @@ it('sets every mark, links what is linked, and passes veraPDF', async () => {
 
 ---
 
+## Task 11: the canonical form merges adjacent runs (issue #154)
+
+**Ken's answer, binding.** In `packages/domain`, the content model's canonicalisation merges adjacent
+runs of text that carry identical marks into one, so one visible text with one set of marks has one
+stored spelling and one digest. Nothing has stored a mark, so no migration is needed; the parse and
+every write path must accept what canonicalisation now produces, and refuse nothing it accepted
+before. Test first, red: two adjacent runs with the same marks canonicalise to one run, and their
+digest equals the digest of the same text written as one run; runs whose marks differ are left alone;
+a mark's identifier survives the merge as the plan's spike describes (say which identifier wins and
+why). The task's pull request closes #154; cite no requirement unless a test's own body demonstrates
+one in full. This task lands **before** task 2, which is what makes two runs meaning one possible.
+
 ## Task 10: the documents, and the changelog
 
 **Files:** modify `docs/architecture.md`, `docs/features.md`, `README.md`,
@@ -930,6 +960,10 @@ reformatted underneath it.
 ---
 
 ## Requirement challenges, for Ken
+
+**Answered (2026-09-20):** challenge 1 accepted - CNT-085 is reworded to its first clause in task 10,
+its second clause staying in the design as prose. Challenge 2 declined: CNT-035 stays whole and reads
+`Designed` until LIB's catalogue exists.
 
 1. **CNT-085's second clause cannot be verified.** "Must be understood as the one mark named for its
    appearance rather than its meaning" is a claim about a document. content-model.md answers it in
