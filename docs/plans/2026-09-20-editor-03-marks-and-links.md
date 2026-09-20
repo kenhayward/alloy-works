@@ -431,7 +431,7 @@ export function applyMarkCommand(
   newIdentifier: () => string,
   attrs?: Record<string, unknown>,
 ): Command;
-export function removeMarkCommand(mark: string, newIdentifier: () => string): Command;
+export function removeMarkCommand(mark: string): Command;
 export function markAt(state: EditorState, mark: string): Record<string, unknown> | null;
 export function markThroughout(state: EditorState, mark: string): boolean;
 ```
