@@ -1,3 +1,4 @@
+import { splitBlock } from 'prosemirror-commands';
 import { TextSelection, type Command, type EditorState, type Transaction } from 'prosemirror-state';
 import type { EditorView } from 'prosemirror-view';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -26,7 +27,7 @@ beforeEach(() => {
 const counter = () => () => `id${(minted += 1)}`;
 
 /** Block identifiers come from their own sequence, so they never consume a mark's. */
-const blocks = () => {
+const blockIds = () => {
   let next = 0;
   return () => `b${(next += 1)}`;
 };
@@ -48,7 +49,7 @@ function stateWith(text: string): EditorState {
     ],
   });
   if (!opened.editable) throw new Error('expected an editable document');
-  return createEditorState({ doc: opened.doc, newIdentifier: blocks() });
+  return createEditorState({ doc: opened.doc, newIdentifier: blockIds() });
 }
 
 /** The same state, with the text between two positions selected. */
@@ -73,6 +74,34 @@ function idsIn(state: EditorState, mark: string): string[] {
       const id = carried.attrs.id as string;
       if (carried.type.name === mark && !found.includes(id)) found.push(id);
     }
+  });
+  return found;
+}
+
+/** What each paragraph says, in order. */
+function paragraphTexts(state: EditorState): string[] {
+  const found: string[] = [];
+  state.doc.forEach((node) => found.push(node.textContent));
+  return found;
+}
+
+/** What every run carrying that mark says, in document order, however the blocks fall. */
+function markedText(state: EditorState, mark: string): string[] {
+  const said: string[] = [];
+  state.doc.descendants((node) => {
+    if (node.isText && node.marks.some((carried) => carried.type.name === mark))
+      said.push(node.text!);
+  });
+  return said;
+}
+
+/** The identifier each of those runs carries, one per run and never merged. */
+function runIds(state: EditorState, mark: string): string[] {
+  const found: string[] = [];
+  state.doc.descendants((node) => {
+    if (!node.isText) return;
+    const carried = node.marks.find((one) => one.type.name === mark);
+    if (carried !== undefined) found.push(carried.attrs.id as string);
   });
   return found;
 }
@@ -123,7 +152,22 @@ describe('applying a mark', () => {
     expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id2']);
   });
 
-  it('CNT-004 keeps one identifier when an edit splits a marked run', () => {
+  it('CNT-004 keeps one identifier when an edit splits a marked run, across blocks as well', () => {
+    // Marked in one gesture over a selection that crosses a paragraph break: two runs in two
+    // blocks, and one annotation, because nothing but the break separates them.
+    let state = run(stateWith('the report now'), 11, 11, splitBlock);
+    state = run(state, 5, 17, toggleMarkCommand('emphasis', counter()));
+    expect(paragraphTexts(state)).toEqual(['the report', ' now']);
+    expect(markedText(state, 'emphasis')).toEqual(['report', ' now']);
+    expect(runIds(state, 'emphasis')).toEqual(['id1', 'id1']);
+    // And pressing Enter inside it splits the run again without splitting the annotation.
+    state = run(state, 6, 6, splitBlock);
+    expect(paragraphTexts(state)).toEqual(['the r', 'eport', ' now']);
+    expect(markedText(state, 'emphasis')).toEqual(['r', 'eport', ' now']);
+    expect(idsIn(state, 'emphasis')).toEqual(['id1']);
+  });
+
+  it('keeps one identifier where a second mark breaks a marked run into three', () => {
     let state = run(stateWith('alpha beta'), 1, 11, toggleMarkCommand('emphasis', counter()));
     // A second mark over part of the first breaks one text node into three. The emphasis runs
     // straight through all three without a gap, so it is still one annotation under one identifier.
@@ -154,6 +198,19 @@ describe('applying a mark', () => {
     // The far piece is one annotation of its own, over both of the runs it spans. `id3` was drawn
     // by the call that did the removing, before it knew it would not be applying anything.
     expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id4']);
+  });
+
+  it('re-identifies only the annotation the edit reached', () => {
+    let state = run(stateWith('alpha beta gamma'), 6, 6, splitBlock);
+    state = run(state, 8, 19, toggleMarkCommand('emphasis', counter()));
+    // A hole punched by something that is not one of these commands - no gesture in the editor
+    // makes one today, and this is the shape the content model is about to refuse. A command in
+    // the paragraph above must leave it exactly as it found it, because that identifier is what
+    // accepting or rejecting the annotation acts on (CNT-005).
+    state = state.apply(state.tr.replaceWith(14, 14, editorSchema.text('XX')));
+    state = run(state, 1, 6, toggleMarkCommand('emphasis', counter()));
+    expect(markedText(state, 'emphasis')).toEqual(['alpha', 'beta ', 'gamma']);
+    expect(runIds(state, 'emphasis')).toEqual(['id2', 'id1', 'id1']);
   });
 
   it('ignores an identifier, or a type, handed in with the attributes', () => {
@@ -413,6 +470,19 @@ describe('taking a mark off', () => {
       { text: ' now', marks: ['emphasis'] },
     ]);
     expect(idsIn(state, 'emphasis')).toEqual(['id1', 'id2']);
+  });
+
+  it('gives the far piece one identifier of its own where it spans a block boundary', () => {
+    let state = run(stateWith('the report now'), 1, 15, toggleMarkCommand('emphasis', counter()));
+    state = run(state, 11, 11, splitBlock);
+    // The annotation now runs legitimately across two paragraphs. Taking a word out of it in the
+    // first leaves the rest one piece, not one piece per block: what is left in the paragraph
+    // below was never selected, and giving it a name of its own would be a second annotation
+    // where the author made one.
+    state = run(state, 5, 11, removeMarkCommand('emphasis', counter()));
+    expect(paragraphTexts(state)).toEqual(['the report', ' now']);
+    expect(markedText(state, 'emphasis')).toEqual(['the ', ' now']);
+    expect(runIds(state, 'emphasis')).toEqual(['id1', 'id2']);
   });
 
   it('takes the whole annotation off from a cursor inside it, and does nothing outside one', () => {

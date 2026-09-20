@@ -140,8 +140,14 @@ function accepted(
 
 /**
  * Every contiguous span of one mark type in the document, in order: the ranges over which one
- * annotation runs without a break. Two text nodes belong to one span when they touch and carry the
- * same mark, which is what makes a run an edit split away still part of the annotation (CNT-004).
+ * annotation runs without a break in the text.
+ *
+ * Two runs belong to one span when they carry the same mark and **nothing an author could read**
+ * lies between them (CNT-004). That is deliberately not position adjacency: a paragraph break costs
+ * two positions, so an annotation the author split with Enter would otherwise read as two, and
+ * marking a selection that crosses a break - one gesture - would come out as two annotations. It
+ * also joins across an inline node that is not text, which is the same answer for the same reason:
+ * an emphasis over a phrase holding an equation is one annotation, not two.
  */
 function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; to: number }[] {
   const spans: { mark: EditorMark; from: number; to: number }[] = [];
@@ -150,7 +156,8 @@ function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; t
     const mark = node.marks.find((carried) => carried.type === type);
     if (mark === undefined) return;
     const last = spans[spans.length - 1];
-    if (last !== undefined && last.to === pos && last.mark.eq(mark)) last.to = pos + node.nodeSize;
+    if (last !== undefined && last.mark.eq(mark) && doc.textBetween(last.to, pos) === '')
+      last.to = pos + node.nodeSize;
     else spans.push({ mark, from: pos, to: pos + node.nodeSize });
   });
   return spans;
@@ -170,12 +177,31 @@ function spansOf(doc: Node, type: MarkType): { mark: EditorMark; from: number; t
  * `addMark` is enough to re-identify a piece: a mark type excludes its own kind, so the new mark
  * replaces the old one over that range and leaves every other mark on the run alone. Mark steps move
  * no positions, so the ranges read before the first of them stay right for all of them.
+ *
+ * **Only an annotation the edit reached is repaired.** An identifier counts as reached when any of
+ * its pieces touches `range`, and then every piece of it is looked at, including the piece on the
+ * far side of the hole the edit just made. An annotation somewhere else in the component is left
+ * exactly as it was found: an identifier is what accepting or rejecting acts on (CNT-005), so
+ * renaming one in a block nobody touched is the harm this function exists to prevent, inside out.
  */
-function reidentified(tr: Transaction, type: MarkType, newIdentifier: () => string): Transaction {
+function reidentified(
+  tr: Transaction,
+  type: MarkType,
+  newIdentifier: () => string,
+  range: { from: number; to: number },
+): Transaction {
   if (!tr.docChanged) return tr;
+  const from = tr.mapping.map(range.from, -1);
+  const to = tr.mapping.map(range.to, 1);
+  const spans = spansOf(tr.doc, type);
+  const reached = new Set<string>();
+  for (const span of spans) {
+    if (span.to >= from && span.from <= to) reached.add(span.mark.attrs.id as string);
+  }
   const named = new Set<string>();
-  for (const span of spansOf(tr.doc, type)) {
+  for (const span of spans) {
     const id = span.mark.attrs.id as string;
+    if (!reached.has(id)) continue;
     if (!named.has(id)) {
       named.add(id);
       continue;
@@ -215,7 +241,7 @@ export function toggleMarkCommand(
     if (members === null) return false;
     return toggleMark(type, members, { removeWhenPresent: false })(
       state,
-      dispatch && ((tr) => dispatch(reidentified(tr, type, newIdentifier))),
+      dispatch && ((tr) => dispatch(reidentified(tr, type, newIdentifier, state.selection))),
       view,
     );
   };
@@ -249,7 +275,7 @@ export function applyMarkCommand(
     if (dispatch) {
       const tr = state.tr.removeMark(range.from, range.to, type);
       tr.addMark(range.from, range.to, type.create(members));
-      dispatch(reidentified(tr, type, newIdentifier).scrollIntoView());
+      dispatch(reidentified(tr, type, newIdentifier, range).scrollIntoView());
     }
     return true;
   };
@@ -297,7 +323,7 @@ export function removeMarkCommand(mark: string, newIdentifier: () => string): Co
     if (range === null) return false;
     if (dispatch) {
       const tr = state.tr.removeMark(range.from, range.to, type);
-      dispatch(reidentified(tr, type, newIdentifier));
+      dispatch(reidentified(tr, type, newIdentifier, range));
     }
     return true;
   };
