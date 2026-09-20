@@ -22,6 +22,9 @@
 // warning of any kind. If a document is ever refused with `TypstRefused` and nothing else, look
 // here first. Written as escapes, never as the characters themselves, so a source file carries no
 // glyph a diff or a terminal can hide.
+// Three markers are not a ceiling on the nesting: Typst CYCLES this array, so a fourth level takes
+// the disc again and a seventh the same, and there is no cliff waiting below the third. Confirmed
+// at six levels.
 // That a marker lives in a template at all, rather than in a named style, is issue #158: CNT-094
 // says a block takes its appearance from a style, and a marker is appearance. The home is wrong on
 // purpose, and deliberately not fixed here - moving it is the themes subsystem's work, not a
@@ -163,8 +166,12 @@
 // calls `block-of` itself. That is also why this binding stands exactly here - after `run` and
 // `paragraph`, which it calls, and before `node`, which calls it.
 //
-// An unknown kind stops the compile, as an unknown mark kind does: a publish failure the author is
-// told about is worth more than a block quietly set as nothing.
+// An unknown kind stops the compile, as an unknown mark kind does. Be exact about what that buys:
+// the author is told the publish failed and nothing more - `TypstRefused` carries no cause and no
+// diagnostic, by design, since a diagnostic quotes content - so nothing names the block, and
+// finding it is a developer's job from the document itself. It is still worth more than a block
+// quietly set as nothing, which would publish under the author's name with a piece missing and say
+// so nowhere.
 #let block-of(b) = {
   if b.type == "paragraph" {
     paragraph(b)

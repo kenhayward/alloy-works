@@ -125,6 +125,126 @@ const defined = (): ContentDocument =>
   });
 
 /**
+ * The roman component. Its own fixture rather than a third list in `listed()`, because what it
+ * pins is a branch of `numbering-of` nothing else in this worker asks for - and **a published
+ * template version is immutable**, so a roman list that set with the wrong pattern could not be
+ * corrected in template 4 at all: it would cost a template 5, and every publication made in
+ * between would carry the wrong numbers for good.
+ */
+const romanNumbered = (): ContentDocument =>
+  parseContentDocument({
+    schemaVersion: 1,
+    title: 'The appendices',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'list',
+        id: 'R1',
+        kind: 'ordered',
+        start: 4,
+        format: 'roman',
+        items: [
+          { content: [para('b1', 'Check the readings')] },
+          { content: [para('b2', 'Note the serial')] },
+        ],
+      },
+    ],
+  });
+
+/** The kinds a mixture cycles through, in the order `mixture` takes them. */
+const KINDS = ['ordered', 'unordered', 'definition'] as const;
+
+/** Where the term's hyperlink takes a reader, and the only address in the mixed document. */
+const SURVEY = 'https://example.test/survey';
+
+/**
+ * A list nested `levels` deep, cycling all three kinds, so every kind stands at more than one level
+ * and every level but the last holds a list of the next kind. The definition item at level three
+ * carries a **term with marks on it** - strong, emphasis, a subscript, inline code and a hyperlink -
+ * which is the one inline home in the model that no published document had ever been read for.
+ */
+const mixture = (levels: number): unknown => {
+  const inner = (level: number): unknown => {
+    const kind = KINDS[(level - 1) % KINDS.length]!;
+    const item: Record<string, unknown> = {
+      content: [
+        para(`b${level}`, `Level ${level}`),
+        ...(level === levels ? [] : [inner(level + 1)]),
+      ],
+    };
+    if (kind === 'definition') {
+      item.term =
+        level === 3
+          ? [
+              { type: 'text', value: 'Tensile ', marks: [{ type: 'strong', id: `m${level}a` }] },
+              {
+                type: 'text',
+                value: 'strength',
+                marks: [
+                  { type: 'strong', id: `m${level}a` },
+                  { type: 'emphasis', id: `m${level}b` },
+                ],
+              },
+              { type: 'text', value: 'y', marks: [{ type: 'subscript', id: `m${level}c` }] },
+              {
+                type: 'text',
+                value: 'tensile.cfg',
+                marks: [{ type: 'inlineCode', id: `m${level}d` }],
+              },
+              {
+                type: 'text',
+                value: 'the survey',
+                marks: [{ type: 'hyperlink', id: `m${level}e`, href: SURVEY }],
+              },
+            ]
+          : [text(`Term ${level}`)];
+    }
+    return { type: 'list', id: `M${level}`, kind, items: [item] };
+  };
+  return inner(1);
+};
+
+/** The mixed component: CNT-118's six levels, in a mixture of all three of CNT-117's kinds. */
+const mixed = (): ContentDocument =>
+  parseContentDocument({
+    schemaVersion: 1,
+    title: 'Every kind at once',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [mixture(6)],
+  });
+
+/**
+ * A list nested `levels` deep in one kind, whose deepest item says so: the fixture both cliffs are
+ * measured with. Each level adds the same amount of JSON nesting, so the two answers are comparable.
+ */
+const deeply = (levels: number): ContentDocument =>
+  parseContentDocument({
+    schemaVersion: 1,
+    title: 'As deep as it goes',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      (function inner(level: number): unknown {
+        return {
+          type: 'list',
+          id: `N${level}`,
+          kind: 'unordered',
+          items: [
+            {
+              content: [
+                para(`b${level}`, level === levels ? 'The deepest thing here' : `Level ${level}`),
+                ...(level === levels ? [] : [inner(level + 1)]),
+              ],
+            },
+          ],
+        };
+      })(1),
+    ],
+  });
+
+/**
  * The half-written component: the two shapes the model admits mid-edit, and which nothing above the
  * template refuses. The numbered list's second item holds the empty paragraph a cursor stands in, so
  * the item comes out of `assemble` with nothing in it at all; the definition item has no term yet,
@@ -210,6 +330,9 @@ const assembled = (content: ContentDocument): PublishedDocument => {
 const listedDocument = () => JSON.stringify(assembled(listed()));
 const definedDocument = () => JSON.stringify(assembled(defined()));
 const unfinishedDocument = () => JSON.stringify(assembled(unfinished()));
+const romanDocument = () => JSON.stringify(assembled(romanNumbered()));
+const mixedDocument = () => JSON.stringify(assembled(mixed()));
+const deeplyDocument = (levels: number) => JSON.stringify(assembled(deeply(levels)));
 
 /** Each compile once: the engine takes a second or two a document. */
 const made = new Map<string, Promise<{ pdf: Buffer; read: ReadPdf }>>();
@@ -382,6 +505,78 @@ describe('the PDF a list makes', () => {
     const verdict = await checkPdfUa1(pdf);
     expect(verdict.failures).toEqual([]);
     expect(verdict.compliant).toBe(true);
+  }, 120_000);
+
+  it('carries six levels in a mixture of all three kinds, and a term with marks, into the PDF', async () => {
+    const { pdf, read } = await compileOne(mixedDocument());
+    const said = spoken(read.taggedText[0]!);
+
+    // Six levels, each set as the kind it was stored as: a number, a marker, a term, and round
+    // again. Six `L`s and no more, so a level flattened into the one above it fails here too.
+    expect(read.roles.filter((role) => role === 'L')).toHaveLength(6);
+    expect(said).toContain('1. Level 1');
+    expect(said).toContain(`${DISC} Level 2`);
+    expect(said).toContain('Tensile strength');
+    // The ordered list at level four counts from one of its own, as a list local to its own item.
+    expect(said).toContain('1. Level 4');
+    expect(said).toContain(`${CIRCLE} Level 5`);
+    expect(said).toContain('Term 6 Level 6');
+
+    // A term's own marks, which no published document had been read for: `inlineCode` and
+    // `hyperlink` are the two that reach a reader as roles of their own, and both stand INSIDE the
+    // item's label - after the `Lbl` opens and before its `LBody` does - which is where the term
+    // is. The strong, emphasis and subscript beside them carry no role and are not asserted here;
+    // `marks.test.ts` reads the marks themselves, against a paragraph.
+    // Present first, and placed after: an index of -1 compares as happily as a real one, so the
+    // `toContain` pair is what stops the arithmetic below from passing over a term set as plain text.
+    expect(read.roles).toContain('Code');
+    expect(read.roles).toContain('Link');
+    const code = read.roles.indexOf('Code');
+    const link = read.roles.indexOf('Link');
+    // The nearest label before the code run, and the body that label's item opens after it.
+    const label = read.roles.lastIndexOf('Lbl', code);
+    const body = read.roles.indexOf('LBody', label);
+    expect(label).toBeGreaterThan(-1);
+    expect(code).toBeLessThan(body);
+    expect(link).toBeGreaterThan(label);
+    expect(link).toBeLessThan(body);
+    // And what a reader's viewer would follow: the term's own target, and no other.
+    expect(read.links[0]).toEqual([SURVEY]);
+
+    const verdict = await checkPdfUa1(pdf);
+    expect(verdict.failures).toEqual([]);
+    expect(verdict.compliant).toBe(true);
+  }, 120_000);
+
+  it('sets a roman numbering from the start the author set', async () => {
+    // The one branch of `numbering-of` nothing else in this worker asks for, and the one whose
+    // cost of being wrong cannot be undone: a published template version is immutable, so a roman
+    // list that set as `1.` would be a template 5 and a fleet of publications carrying numbers the
+    // author did not write. `i.` is the pattern, and Typst counts on from the start the author set.
+    const { read } = await compileOne(romanDocument());
+    const said = spoken(read.taggedText[0]!);
+    expect(said).toContain('iv. Check the readings');
+    expect(said).toContain('v. Note the serial');
+  }, 120_000);
+
+  it('is refused by the engine one level shallower than the model stops accepting a list', async () => {
+    // **Two cliffs, one level apart, pinned together so they cannot drift unnoticed.** The model
+    // admits a list nested THIRTY levels and refuses thirty-one (`exceedsLimits`, a JSON depth);
+    // Typst's own `json()` gives up at THIRTY, which the worker reports as `TypstRefused` with no
+    // cause, since a diagnostic quotes content. So there is a window exactly one level wide where
+    // an author stores content that can never be published and is told only that the publish
+    // failed. That is issue #159, which asks for a ceiling stated in levels an author understands;
+    // what this test does is keep the two numbers from moving apart without anybody noticing.
+    // Nobody reaches thirty levels by hand - CNT-118 asks for six - so this is a boundary, not a
+    // limit anyone meets.
+    expect(() => deeply(30)).not.toThrow();
+    expect(() => deeply(31)).toThrow(/nested more than 128 deep/);
+
+    const { read } = await compileOne(deeplyDocument(29));
+    expect(spoken(read.taggedText[0]!)).toContain('The deepest thing here');
+    await expect(
+      typst.compile(PUBLICATION_TEMPLATE[4].file, deeplyDocument(30), at),
+    ).rejects.toThrow(TypstRefused);
   }, 120_000);
 
   it('numbers a format it has never heard of, and refuses a block it has never heard of', async () => {

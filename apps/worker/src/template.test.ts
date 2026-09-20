@@ -40,13 +40,16 @@ describe('the publication template', () => {
     // with no nodes and no cover is refused before Typst sees it, so only the cover opened it.
     // Template 3 is template 2 with a run's marks set, and reads `publishing/3`. Template 4 is
     // template 3 with a block that can be a list, and reads `publishing/4`; it is re-pinned freely
-    // until the pull request that makes it merges, since nothing is published from a branch.
+    // until the pull request that makes it merges, since nothing is published from a branch. It
+    // moved once (e1a41129...), when two comments were made exact: that the three markers are
+    // cycled rather than a ceiling on the nesting, and that a refused compile tells the author the
+    // publish failed and never which block did it. No line that sets anything changed.
     // Templates 1, 2 and 3 are published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
       3: '682840cb57284deec3ccfd2c29a7c738f5013b2cc233971d177c34c3f4ac5381',
-      4: 'e1a41129f4a31ca41550dd9b77de7238076e1ff843958488419a1ad063d9e879',
+      4: '13b8f620f4b7bc4c627360aa30ea48d595745df5d01290558d57cf6677f6ba43',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -312,7 +315,16 @@ describe('the published list shapes that are easy to read past', () => {
     const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, JSON.stringify(document), at);
     expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
     const read = await readPdf(pdf);
-    expect(read.roles).toContain('LI');
+    // Every role from the first list to the end of the document: the two lists and nothing after
+    // them. `toContain('LI')` stood here and could not fail for this test's own title - drop the
+    // empty items from both branches and the roles still hold an `LI`, because the items that were
+    // not empty make one. What says the empty item is still there is the `LI Lbl LBody` ending each
+    // list with nothing inside that body, and only the sequence can show it. Taken from the first
+    // `L` rather than from the start so the cover and the contents, which are the layout's and not
+    // this test's subject, cannot move it.
+    expect(read.roles.slice(read.roles.indexOf('L')).join(' ')).toBe(
+      'L LI Lbl Span LBody P LI Lbl LBody L LI Lbl LBody P LI Lbl LBody',
+    );
   }, 120_000);
 
   it('sets a second level of bullets in a glyph the pinned faces have, rather than refusing', async () => {
