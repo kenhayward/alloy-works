@@ -14406,7 +14406,7 @@
         },
         {
           "id": "CNT-117",
-          "howItIsMet": "`list` carries `kind`: ordered, unordered or definition"
+          "howItIsMet": "`list` carries `kind`: ordered, unordered or definition. A definition list's item also carries the `term` it defines, as inline content, so a term can be emphasised, linked or given its own language - see \"A definition list reaches a reader as a list\""
         },
         {
           "id": "CNT-118",

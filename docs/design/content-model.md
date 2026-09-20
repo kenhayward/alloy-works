@@ -59,7 +59,7 @@ on read, because versions are immutable and `content_hash` is the hash of what w
 | **CNT-143** | `title` and `language` are inside the versioned content, so they are inside `content_hash` and a version records what the component was called when it was cut                                                                                                                                                                                                                                                                                  |
 | **CNT-146** | The root's members are closed - `schemaVersion`, `title`, `language`, `direction`, `content` - and a metadata value is never one of them. Adding a member is a schema version                                                                                                                                                                                                                                                                   |
 | **CNT-014** | `paragraph`, the default block                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| **CNT-117** | `list` carries `kind`: ordered, unordered or definition                                                                                                                                                                                                                                                                                                                                                                                         |
+| **CNT-117** | `list` carries `kind`: ordered, unordered or definition. A definition list's item also carries the `term` it defines, as inline content, so a term can be emphasised, linked or given its own language - see "A definition list reaches a reader as a list"                                                                                                                                                                                     |
 | **CNT-118** | A list item holds block content, so a list nests by construction and six levels is a floor rather than a limit, in any mixture of kinds                                                                                                                                                                                                                                                                                                         |
 | **CNT-153** | An ordered list carries `start` and `format` - decimal, alphabetic or roman - local to that list and unrelated to the outline's numbering. `start` is an integer of 0 or more in the shape, and a start of 0 under a lettered or roman numbering is refused by the walk - see "Where a list's start number is held"                                                                                                                             |
 | **CNT-016** | `table` declares header rows and header columns, carries cell spans, and carries a caption                                                                                                                                                                                                                                                                                                                                                      |
@@ -148,6 +148,22 @@ say this design holds ground it does not.
 | CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content     |
 | CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                       |
 | AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference |
+
+**A definition list reaches a reader as a list, and that is a named limit rather than a claim.** The
+stored shape is right: a definition list's item carries the term it defines as inline content, so the
+term is a thing of its own rather than the first words of its definition. What the model cannot make
+the output do is carry that distinction into a PDF. **Typst 0.15.1 tags a definition list as `L`,
+`LI`, `Lbl` and `LBody` - an ordinary list with a label - and offers no way to ask for PDF/UA's `DL`,
+`DI`, `DT` and `DD`.** This was measured on the pinned engine, reading the compiled PDF's own roles
+back, not inferred from its documentation. So a reader with a screen reader hears the term and then
+its definition, in the right order and with the right emphasis, and is told "list" where the content
+says "definition list". The term is not lost and nothing is invented; what is missing is the
+structure the format has and the engine does not emit. It is one of the reasons **CNT-079 is left
+unclaimed by every design** - a claim that structure is exposed as structure would be untrue of the
+one block family that is built - and it is written into the changelog's Known limits, where an author
+reads it, as well as here. The publishing template's own comment says the same thing at the line that
+makes the choice, and the test that compiles a definition list asserts that no `DL` role appears, so
+the day the pinned engine grows the structure the assertion goes red and says so.
 
 **Component metadata is not here, and it has since been specified.** A component is of one component type, whose metadata schemas decide the fields its values are validated against - [MET](../specification/requirements/MET-metadata-and-component-types.md), which settled **CNT-Q12**. None of it enters the content document: the type and the values belong to the version, beside its content (MET-015, MET-016). That is why this document claims **CNT-146**, the root it built, and not **CNT-145**, which superseded CNT-144 by adding the type to what every component carries. No member is reserved in the root for either, which the specification now requires rather than merely allows.
 
@@ -282,15 +298,15 @@ that happen to say the same thing.
 Seven, and the vocabulary is closed. Every addition is a construct that has to survive comparison,
 conditional resolution, translation and three output formats.
 
-| Node           | Carries                                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `paragraph`    | Inline content, and a style name                                                                                    |
-| `list`         | A kind - ordered, unordered, definition - and items holding block content. An ordered list carries start and format |
-| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note     |
-| `figure`       | An asset reference, an image style name, a caption, and an alternative-text state                                   |
-| `preformatted` | Text with whitespace significant, and an optional language label                                                    |
-| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                |
-| `equation`     | MathML, and numbered or explicitly unnumbered                                                                       |
+| Node           | Carries                                                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paragraph`    | Inline content, and a style name                                                                                                                                                                          |
+| `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format |
+| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note                                                                                           |
+| `figure`       | An asset reference, an image style name, a caption, and an alternative-text state                                                                                                                         |
+| `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                          |
+| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                      |
+| `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                             |
 
 Two are absent on purpose. **`admonition`** is CNT-120, which is T2 and takes its closed vocabulary
 from an admonition style catalogue that does not exist yet. **A bound table** arrives with T2's

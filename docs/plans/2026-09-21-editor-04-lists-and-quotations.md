@@ -1582,7 +1582,15 @@ Named so the next plan starts from a list rather than from a reading of the diff
 - **Issue #158**, the list marker as a theme property. It is pinned in the template here, which is
   the wrong home and is said to be, in the template's own comment and in the design.
 - **Issue #159**, a maximum nesting depth stated in levels, so an author who reaches it is told in
-  their own language rather than in the language of a JSON walk.
+  their own language rather than in the language of a JSON walk. Building the published half added a
+  second half to it, measured: the model admits a list nested 30 levels and the engine's own JSON
+  reader refuses at exactly 30, so there is a one-level window where content stores and can never
+  publish, and the author is told only that the publish failed. Any depth chosen must sit below the
+  engine's cliff as well as the parser's guard.
+- **A footnote inside a definition term takes no number.** `blockContributions` does not read
+  `item.term`, so a footnote there would be counted by nothing. Unreachable today from both the editor
+  and `assemble` - neither can put one in a term - and found while building rather than by a reader.
+  Named here so the slice that gives a term a footnote starts from a list.
 - **CNT-079 in full**, which needs headings, tables and footnotes as well as lists - and an engine
   that emits a definition list's own structure.
 - **PUB-090 in full**, which needs the Matterhorn Protocol review a person does. The veraPDF half

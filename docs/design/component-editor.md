@@ -25,8 +25,13 @@ the outline (STR) and the publishing pipeline are.
 > too, and so are **ten of the thirteen marks**: strong, emphasis, underline, subscript, superscript,
 > inline code and a quoted phrase from the **Formatting** toolbar or the keyboard, a hyperlink and a
 > language mark through a prompt, and a defined term in the schema with no control yet, by
-> [the marks plan](../plans/2026-09-20-editor-03-marks-and-links.md). What is still design here: every
-> block but the paragraph, paste, equations, tables and footnotes,
+> [the marks plan](../plans/2026-09-20-editor-03-marks-and-links.md). **Lists are built too** - bulleted,
+> numbered and definition, from the toolbar, the keyboard or Tab and Shift-Tab, nesting to any depth
+> the content model admits, with a **List** panel carrying a numbered list's start and numbering, by
+> [the lists plan](../plans/2026-09-21-editor-04-lists-and-quotations.md), which also carried them into
+> the PDF. What is still design here: every
+> block but the paragraph and the list - block quotations, preformatted text, tables, footnotes,
+> equations and figures - paste,
 > the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 

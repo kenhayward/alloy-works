@@ -43,7 +43,7 @@ function innermostList(state: EditorState): { node: Node; pos: number } | null {
  *
  * A definition list reads `kind: 'definition'` with neither a start nor a numbering, because the
  * editor holds it as its own node type and the stored model holds it as a third kind of one list
- * (ADR, "the editor schema is not the stored model one for one"). The panel therefore asks one
+ * (ADR-0025, "the editor schema is not the stored model one for one"). The panel therefore asks one
  * question - which kind is this - rather than two.
  *
  * **`id` is which list this is, and it is here so a renderer can tell one list from another.** A

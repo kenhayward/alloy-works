@@ -173,7 +173,7 @@ function countedListOf(list: Extract<BlockNode, { type: 'list' }>): Node {
 /**
  * A definition list. The stored model holds one `list` node of three kinds and the editor holds two
  * node types, because a ProseMirror content expression is fixed per type and a definition item opens
- * with the term it defines (ADR, "the editor schema is not the stored model one for one"). This is
+ * with the term it defines (ADR-0025, "the editor schema is not the stored model one for one"). This is
  * where the two spellings meet, and `storedBlock` widens `definitionList` back to `kind: 'definition'`.
  *
  * An item whose term is absent gets the empty `term` node an author types into. The editor always

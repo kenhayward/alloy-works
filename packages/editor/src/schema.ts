@@ -98,7 +98,7 @@ export const editorSchema = new Schema({
      * A counted list - numbered or bulleted. The stored model holds one `list` node carrying a
      * `kind` of `'ordered' | 'unordered' | 'definition'`; the editor holds two node types, because a
      * ProseMirror content expression is fixed per type and a definition item must open with its term
-     * (ADR, "the editor schema is not the stored model one for one"). `kind` here is therefore two
+     * (ADR-0025, "the editor schema is not the stored model one for one"). `kind` here is therefore two
      * of the stored three, and the mapping widens it back.
      *
      * `start` and `format` reach the rendered element. They are not decoration: the stylesheet takes

@@ -3,6 +3,56 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.33.0 - 2026-09-21 (PR #n)
+
+### Added
+
+- **An author can make lists.** Bulleted, numbered and definition lists, from the toolbar or the
+  keyboard, over the paragraph the cursor is in. Pressing the same button again takes the list off.
+- **Lists nest.** Nest item and Lift item move an item in and out, with Tab and Shift Tab as well as
+  Ctrl or Cmd and the square brackets, to six levels and well past them, mixing all three kinds
+  freely. Enter in an item you have written nothing in leaves the list, one level at a time.
+- **A definition list holds the term it defines**, written as ordinary text, so it can be
+  emphasised, linked or marked as being in another language like any other phrase.
+- **A numbered list can start where you want and count how you want.** Set it to start at any number
+  and to count 1, 2, 3 or a, b, c or i, ii, iii, from the List panel beside the toolbar. The panel
+  is there while the cursor is in a numbered list and F6 reaches it like the other regions.
+- **A publication prints all of it.** A PDF now carries lists at every level, with the numbering and
+  the start the author chose, and a screen reader is told it is a list rather than a row of
+  characters. It still passes every PDF/UA-1 rule the checker applies.
+
+### Fixed
+
+- **Content can no longer be saved nested more deeply than the product allows.** The limit that
+  applied when content was pasted or imported now applies on every path that stores content,
+  including an editing session. Content past it is refused by name rather than accepted, or, past a
+  certain depth, failing with an error that said nothing.
+
+### Changed
+
+- A numbered list counting in letters or roman numerals now starts at 1 or more. Only a list
+  counting 1, 2, 3 can start at 0, where a zero means something.
+- A publication made from now on uses publication template 4. Publications already made are
+  unchanged and still open exactly as they were.
+
+### Known limits
+
+- A definition list is published as a list whose item label is the term. A screen reader announces
+  the term and then its definition, which is the right order and the right emphasis, but PDF has a
+  definition-list structure of its own and the engine the product uses cannot yet produce it, so a
+  reader is told "list" where you wrote "definition list".
+- The markers beside a bulleted list - a disc, then a circle, then a square - are fixed by the
+  product rather than set by a style, and they repeat after three levels of nesting. They belong in
+  a named style and will move there.
+- A list nested to about thirty levels is stored by the editor and can never be published: the
+  publish fails, and the only thing you are told is that it failed. Nothing warns you at the time
+  you write it. A stated limit, in levels rather than in the language of a file format, is still to
+  come.
+- A footnote written inside a definition list's term would take no number. Nothing can put one there
+  today; it is named so that whatever makes it possible starts from knowing.
+- Block quotations and preformatted text are still not writable, and a document holding one still
+  cannot be published.
+
 ## 0.32.0 - 2026-09-20 (PR #157)
 
 ### Added
