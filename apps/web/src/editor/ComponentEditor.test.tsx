@@ -1971,14 +1971,23 @@ describe('the link and language prompts', () => {
     // alternative is a component that looks fine until a publish somebody else asks for is refused.
     expect(
       await screen.findByText(
-        'A publication cannot carry the tag zh-Hans. Press Apply again to use it anyway.',
+        'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
       ),
     ).toBeInTheDocument();
     expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
 
+    // The button that now does something else is called something else, and carries the warning as
+    // its description: a name that changed with the behaviour is heard on focus, where an alert
+    // fired once is heard only by whoever was listening in that instant.
+    expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
+    const anyway = screen.getByRole('button', { name: 'Apply anyway' });
+    expect(anyway).toHaveAccessibleDescription(
+      'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
+    );
+
     // A warning, not a refusal. The content model takes any well-formed tag, so the author who
     // means it presses again and it goes in.
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(anyway);
 
     await waitFor(() =>
       expect(runsOf(view)[0]).toMatchObject({
@@ -2037,15 +2046,40 @@ describe('the link and language prompts', () => {
     await userEvent.type(box, 'es-419');
 
     // Corrected to something else the engine cannot carry: the complaint is about what is in the
-    // box now, and the press that follows is the first press of that value.
+    // box now, and the press that follows is the first press of that value, under the button's
+    // ordinary name again.
     expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(
       await screen.findByText(
-        'A publication cannot carry the tag es-419. Press Apply again to use it anyway.',
+        'A publication cannot carry the tag es-419. Press Apply anyway to use it.',
       ),
     ).toBeInTheDocument();
+    expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
+  });
+
+  it('spends a warning on one press of one value, not on a tag typed a second time', async () => {
+    // A warning stood over by what is in the box would count a tag typed, corrected and typed again
+    // as already answered: Apply would apply it with nothing said, though the author pressed nothing
+    // over the value they are looking at. It is spent by a press, and any keystroke unspends it.
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    const box = await screen.findByLabelText('Language tag');
+    await userEvent.type(box, 'zh-Hans');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByText(/cannot carry the tag zh-Hans/);
+
+    await userEvent.clear(box);
+    await userEvent.type(box, 'zh-Hans');
+
+    expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(await screen.findByText(/cannot carry the tag zh-Hans/)).toBeInTheDocument();
     expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
   });
 
@@ -2099,6 +2133,9 @@ describe('the regions of the view', () => {
 
     await userEvent.keyboard('{F6}');
     expect(text).toHaveFocus();
+    // And no tab index of its own while it takes input: a surface being edited is focusable
+    // already, and a `-1` would take it out of the tab order a Tab from the toolbar uses.
+    expect(text).not.toHaveAttribute('tabindex');
 
     // A ring, not a line with two dead ends.
     await userEvent.keyboard('{F6}');
@@ -2156,6 +2193,8 @@ describe('the regions of the view', () => {
     // A component being read has a header whose fields are disabled and a surface that takes no
     // input, so neither region holds anything a Tab would reach. Skipping them would leave F6
     // moving between one region and itself, and the reader with no way to reach the text at all.
+    // What it lands on must still say what it is: a div with no role and no name announces nothing,
+    // so the surface takes the focus on its own element and the header is a named group.
     const { surface } = open(
       { 'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })) },
       quick,
@@ -2165,16 +2204,21 @@ describe('the regions of the view', () => {
     const formatting = within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
       'button',
     )[0]!;
-    const header = screen.getByRole('heading', { name: 'Install the printer' }).closest('header')!;
 
     // The toolbar is `aria-disabled` rather than disabled, which is what leaves the ring a place to
     // start from while nothing else in the view will take the focus.
     formatting.focus();
     await userEvent.keyboard('{F6}');
-    expect(document.activeElement).toBe(view.dom.parentElement);
+    expect(screen.getByRole('textbox', { name: 'Content of Install the printer' })).toHaveFocus();
+    // jsdom focuses a `contenteditable="false"` element, which a browser does not, so the focus
+    // above is not by itself evidence that this works outside a test. What makes it work is the
+    // tab index the surface carries while it takes no input, and the attribute is what can be
+    // pinned here - the same trade as `inert`, which jsdom does not implement either.
+    expect(view.dom).not.toHaveAttribute('contenteditable', 'true');
+    expect(view.dom).toHaveAttribute('tabindex', '-1');
 
     await userEvent.keyboard('{F6}');
-    expect(document.activeElement).toBe(header);
+    expect(screen.getByRole('group', { name: 'Component header' })).toHaveFocus();
 
     await userEvent.keyboard('{F6}');
     expect(formatting).toHaveFocus();

@@ -25,14 +25,22 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
   const view: EditorView = new EditorView(place, {
     state: options.state,
     editable: options.editable,
-    attributes: {
+    // A function, so the tab index below is re-read whenever the view updates or its props are set.
+    attributes: () => ({
       role: 'textbox',
       'aria-multiline': 'true',
       'aria-label': options.label,
       spellcheck: 'true',
       lang: doc.attrs.language as string,
       dir: doc.attrs.direction as string,
-    },
+      // Focusable while it takes no input, and only then. A renderer's region ring has to be able
+      // to put the focus on the element that carries the surface's role and name - a component
+      // being read is exactly where there is nothing else in the region to land on - and an
+      // element ProseMirror has made uneditable is not focusable at all. `-1` rather than `0`
+      // because this is for a key that moves focus deliberately, not a new stop in the tab order;
+      // an editable surface is focusable already, and `-1` would take it out of that order.
+      ...(options.editable() ? {} : { tabindex: '-1' }),
+    }),
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
     handlePaste: () => {
       options.refused('paste');

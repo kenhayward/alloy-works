@@ -74,7 +74,7 @@ const SHAPES: Record<string, Shape> = {
     removes: 'Remove takes this language tag off and leaves the text it was on.',
     warn: (tag) =>
       wellFormedTag(tag) && publishedLanguage(tag) === null
-        ? `A publication cannot carry the tag ${tag}. Press Apply again to use it anyway.`
+        ? `A publication cannot carry the tag ${tag}. Press Apply anyway to use it.`
         : null,
   },
 };
@@ -138,10 +138,13 @@ export interface MarkPromptProps {
  *
  * **A value an output cannot carry is warned about here, before it is applied** (CNT-152). It is not
  * a refusal - the content model takes any well-formed language tag - so the warning names the tag
- * and gets out of the way: pressing Apply again with the same value applies it, and changing the
- * value takes the warning away and earns a fresh one if the new value needs it. Warning at the time
- * is the whole point of it, because the alternative is a component that looks right until a publish
- * somebody else asked for is refused, with the work long since done.
+ * and gets out of the way: the button becomes **Apply anyway** and a press of it applies the value,
+ * while a keystroke in the box takes the warning back and earns a fresh one if the new value needs
+ * it. The button is renamed rather than left saying Apply because an alert is heard once, in the
+ * instant it fires, and a name is heard on every focus: one button that means two things under one
+ * name is a button a screen reader user cannot tell apart from the press before. Warning at the
+ * time is the whole point of it, because the alternative is a component that looks right until a
+ * publish somebody else asked for is refused, with the work long since done.
  */
 export function MarkPrompt({
   command,
@@ -163,9 +166,11 @@ export function MarkPrompt({
       }),
     ),
   );
-  // The value Apply was pressed over and warned about, and nothing longer lived than that: the
-  // warning stands only while that very value is still in the box, so correcting the tag takes it
-  // away and pressing Apply again with it unchanged goes ahead.
+  // The value Apply was pressed over and warned about, and nothing longer lived than that: one
+  // press of one value **as typed**. Any keystroke in the box clears it, so it can never stand over
+  // a value the author has not pressed Apply on - a tag warned about, corrected, and typed again is
+  // a value nobody has answered for, and applying it with nothing said would be the warning being
+  // spent by somebody who never read it.
   const [warnedAbout, setWarnedAbout] = useState<string | null>(null);
 
   useEffect(() => first.current?.focus(), []);
@@ -190,6 +195,10 @@ export function MarkPrompt({
   // about to apply, where a complaint is about a press that has already been made and answered.
   const inFirst = typed[shape.fields[0]!.name] ?? '';
   const warning = warnedAbout === inFirst ? (shape.warn?.(inFirst) ?? null) : null;
+  // The button that is about to do something else is called something else. An alert is heard once,
+  // in the instant it fires; an accessible name is heard on every focus, which is what a user who
+  // tabbed to this button and is deciding whether to press it again actually has.
+  const applies = warning === null ? 'Apply' : 'Apply anyway';
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -250,9 +259,13 @@ export function MarkPrompt({
                   .filter((each) => each !== null)
                   .join(' ') || undefined
               }
-              onChange={(event) =>
-                setTyped((before) => ({ ...before, [field.name]: event.target.value }))
-              }
+              onChange={(event) => {
+                setTyped((before) => ({ ...before, [field.name]: event.target.value }));
+                // Every keystroke, not only one that changes the first box: a warning is answered
+                // by a press and by nothing else, and the value it was raised over is gone the
+                // moment the author starts typing over it.
+                setWarnedAbout(null);
+              }}
             />
             {field.hint !== undefined && <span id={id(`hint-${field.name}`)}>{field.hint}</span>}
           </p>
@@ -268,7 +281,9 @@ export function MarkPrompt({
           </p>
         )}
         {removable && <p id={id('removes')}>{shape.removes}</p>}
-        <button type="submit">Apply</button>
+        <button type="submit" {...(warning !== null ? { 'aria-describedby': id('warning') } : {})}>
+          {applies}
+        </button>
         {removable && (
           <button type="button" aria-describedby={id('removes')} onClick={onRemove}>
             Remove

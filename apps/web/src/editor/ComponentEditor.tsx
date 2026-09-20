@@ -497,17 +497,22 @@ export function ComponentEditor({
    * there walks into whatever it holds.
    */
   const land = (region: HTMLElement) => {
+    // The surface is the one region whose control ProseMirror owns rather than React, and it is
+    // asked for by name rather than found: it is the element carrying `role="textbox"` and the
+    // component's own name, where the div it sits in carries neither, so the focus belongs on it
+    // whether or not it is taking input today.
+    if (region === place.current) {
+      (surface?.dom ?? region).focus();
+      return;
+    }
+    // The other two regions hold form controls and nothing else - the header's three fields, the
+    // toolbar's nine buttons - so the first in document order that a Tab would reach is the first
+    // one this finds. A disabled control is excluded by its attribute rather than by `tabIndex`,
+    // which reports 0 for one all the same; without that, F6 would land a reader on a header field
+    // they cannot type into.
     const inside = [
-      ...region.querySelectorAll<HTMLElement>('input, select, textarea, button, [contenteditable]'),
-    ].find(
-      (each) =>
-        // A disabled control reports `tabIndex` 0 all the same, and an editable surface is asked
-        // for by its own attribute rather than by `tabIndex`, which jsdom reports as -1 for one
-        // while a browser reports 0. Both are load-bearing: the first would land on a header field
-        // a reader cannot type into, and the second would skip the surface in every test here.
-        !each.hasAttribute('disabled') &&
-        (each.tabIndex >= 0 || each.getAttribute('contenteditable') === 'true'),
-    );
+      ...region.querySelectorAll<HTMLElement>('input, select, textarea, button'),
+    ].find((each) => !each.hasAttribute('disabled') && each.tabIndex >= 0);
     (inside ?? region).focus();
   };
 
@@ -594,7 +599,11 @@ export function ComponentEditor({
           by this. Without it the surface behind still takes clicks, so the selection the command
           is about to act on moves out from under the author while they type a target for it. */}
       <article aria-labelledby="component-title" inert={asking !== null} onKeyDown={moveRegion}>
-        <header ref={headerRegion} tabIndex={-1}>
+        {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
+            inside it are disabled, and an element with no role and no name announces nothing at
+            all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
+            a new stop in the tab order. */}
+        <header ref={headerRegion} role="group" aria-label="Component header" tabIndex={-1}>
           {header ? (
             <ComponentHeader
               header={header}

@@ -1965,7 +1965,7 @@
     {
       "id": "CNT-152",
       "area": "CNT",
-      "statement": "Where an author marks a run of text with a language the product's outputs cannot carry, the editor must say so at the time, naming the tag, rather than letting the component be written and the publication be refused later",
+      "statement": "Where an author marks a run of text with a language the product's outputs cannot carry, the editor must name the tag at the time, before the mark is applied, rather than leaving it to be discovered at a refused publication",
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
@@ -14320,7 +14320,7 @@
         },
         {
           "id": "CNT-152",
-          "howItIsMet": "A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; a second press applies it anyway"
+          "howItIsMet": "A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **Apply anyway** then applies it"
         }
       ]
     },
@@ -15967,7 +15967,7 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2082,
+      "line": 2116,
       "kind": "title"
     },
     {
