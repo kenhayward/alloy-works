@@ -2660,3 +2660,144 @@ describe('the regions of the view', () => {
     expect(panel).toHaveFocus();
   });
 });
+
+describe('quotations and preformatted text on the surface (editor 5)', () => {
+  const openWith = (stored: unknown) =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...saves,
+      },
+      quick,
+      true,
+    );
+
+  /** The content of every iteration the session has sent, oldest first. */
+  const sent = (asked: { route: string; body: unknown }[]) =>
+    asked
+      .filter((each) => each.route.startsWith('PUT /v1/components/{id}/iterations/'))
+      .map((each) => (each.body as { content: { content: unknown[] } }).content.content);
+
+  const REFUSED_SAVE = 'This text cannot be saved as it stands';
+
+  const typeText = (view: EditorView, text: string) =>
+    act(() => view.dispatch(view.state.tr.insertText(text)));
+  const key = (view: EditorView, name: 'Tab' | 'Enter') =>
+    act(() => {
+      fireEvent.keyDown(view.dom, { key: name, keyCode: name === 'Tab' ? 9 : 13 });
+    });
+
+  it('CNT-018 an author makes preformatted text, types indentation, a tab and a blank line, labels it sql, and the iteration sent holds all of it byte for byte', async () => {
+    const { asked, surface } = openWith(blocksOf(para('b1', 'x')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    act(() => view.dispatch(view.state.tr.delete(1, 2)));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Preformatted text' }));
+    typeText(view, '  a');
+    key(view, 'Tab');
+    typeText(view, 'b');
+    key(view, 'Enter');
+    key(view, 'Enter');
+    typeText(view, 'c');
+    const label = await screen.findByLabelText('Language label');
+    await userEvent.type(label, 'sql{Enter}');
+
+    await waitFor(() =>
+      expect(sent(asked).at(-1)).toEqual([
+        {
+          type: 'preformatted',
+          id: expect.any(String),
+          text: '  a\u{9}b\u{A}\u{A}c',
+          language: 'sql',
+        },
+      ]),
+    );
+    expect(screen.queryByText(REFUSED_SAVE, { exact: false })).toBeNull();
+  });
+
+  it('sends a quotation made from the toolbar with the attribution typed, and with none while it is empty', async () => {
+    const { asked, surface } = openWith(blocksOf(para('b1', 'Words.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Quotation' }));
+    await waitFor(() =>
+      expect(sent(asked).at(-1)).toEqual([
+        {
+          type: 'blockquote',
+          id: expect.any(String),
+          content: [expect.objectContaining({ id: 'b1' })],
+        },
+      ]),
+    );
+
+    let attribution = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'attribution') attribution = pos + 1;
+    });
+    act(() => view.dispatch(view.state.tr.insertText('Ada', attribution)));
+    await waitFor(() =>
+      expect(sent(asked).at(-1)).toEqual([
+        expect.objectContaining({
+          type: 'blockquote',
+          attribution: [{ type: 'text', value: 'Ada', marks: [] }],
+        }),
+      ]),
+    );
+    expect(screen.queryByText(REFUSED_SAVE, { exact: false })).toBeNull();
+  });
+
+  it('offers both on the toolbar with their shortcuts said, and Preformatted text over a bold paragraph', async () => {
+    const bold = {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Bold', marks: [{ type: 'strong', id: 'm1' }] }],
+    };
+    const { surface } = openWith(blocksOf(bold));
+    const view = await surface();
+    caretIn(view, 'b1');
+    const quotation = await screen.findByRole('button', { name: 'Quotation' });
+    const code = screen.getByRole('button', { name: 'Preformatted text' });
+    expect(quotation).toHaveAttribute('title', 'Ctrl or Cmd, Shift and full stop');
+    expect(code).toHaveAttribute('title', 'Ctrl or Cmd, Shift and comma');
+    // Offered, and the marks dropped when pressed (Ken, at plan review; decision K).
+    expect(code).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  it('shows the preformatted panel only in a preformatted block, reachable by F6, refusing a label that is not a token', async () => {
+    const pre = { type: 'preformatted', id: 'p1', text: 'select 1', language: 'sql' };
+    const { surface } = openWith(blocksOf(para('b1', 'Before.'), pre));
+    const view = await surface();
+    caretIn(view, 'b1');
+    expect(screen.queryByRole('group', { name: 'Preformatted text' })).toBeNull();
+
+    caretIn(view, 'p1');
+    const panel = await screen.findByRole('group', { name: 'Preformatted text' });
+    const label = within(panel).getByLabelText('Language label');
+    expect(label).toHaveValue('sql');
+
+    // F6 from the surface goes round the ring and reaches the panel.
+    view.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(panel.contains(document.activeElement) || document.activeElement === panel).toBe(true);
+
+    await userEvent.clear(label);
+    await userEvent.type(label, 'a b{Enter}');
+    expect(
+      await within(panel).findByText(
+        'A language label is letters, digits and + # . _ - only, up to 32 characters.',
+      ),
+    ).toBeInTheDocument();
+    expect(label).toHaveAttribute('aria-invalid', 'true');
+    expect(fromEditor(view.state.doc).content[1]).toMatchObject({ language: 'sql' });
+
+    await userEvent.clear(label);
+    await userEvent.type(label, '{Enter}');
+    await waitFor(() =>
+      expect(fromEditor(view.state.doc).content[1]).not.toHaveProperty('language'),
+    );
+  });
+});

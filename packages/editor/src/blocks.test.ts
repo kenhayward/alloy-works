@@ -1355,6 +1355,15 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
     }
   });
 
+  it('draws no identifier when only asked whether it could run, as the toolbar asks on every render', () => {
+    let drawn = 0;
+    const counting = () => `q${(drawn += 1)}`;
+    const state = stateOf(documentOf(paragraph('b1', 'a')), 'b1');
+    expect(blockCommand('quotation', counting)(state)).toBe(true);
+    expect(blockCommand('preformatted', counting)(state)).toBe(true);
+    expect(drawn).toBe(0);
+  });
+
   it('sets and clears a preformatted block label, and refuses one that is not a token', () => {
     const state = stateOf(documentOf(pre('p1', 'a')), 'p1');
     expect(preformattedAt(state)).toEqual({ language: null, pos: 0 });

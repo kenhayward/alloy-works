@@ -43,9 +43,9 @@
   vertical-align: super;
 }
 
-/* No pinned monospace face: the published side does not pin one either (docs/plans/2026-09-20-
- * editor-03-marks-and-links.md, decision C), so the editor does not promise a face publishing
- * cannot keep. The generic `monospace` keyword still sets code apart from body text visually. */
+/* The generic `monospace` keyword: publishing sets inline code and preformatted text in the pinned
+ * Liberation Mono since editor 5 (decision B), but the renderer ships no face of its own, so the
+ * surface promises a fixed pitch and not a particular typeface. */
 .ProseMirror code {
   font-family: monospace;
 }
@@ -154,4 +154,48 @@
  * see colour still has to be able to tell the two apart. */
 .ProseMirror dt {
   font-weight: bold;
+}
+
+/* Preformatted text (CNT-018): whitespace kept exactly, as the stored text keeps it, and tab stops
+ * every eight columns - the stops the published PDF expands tabs to (decision E), so the author sees
+ * on screen the columns the page will print. Framed by a border as well as a tint, so the block is
+ * set apart for a reader who cannot see the tint. */
+.ProseMirror pre {
+  font-family: monospace;
+  white-space: pre;
+  tab-size: 8;
+  overflow-x: auto;
+  margin-block: 0.5em;
+  padding: 0.5em;
+  border: 1px solid #767676;
+  background: #f4f4f4;
+}
+
+/* The label is shown above the text it names, read from the attribute the node renders. */
+.ProseMirror pre[data-language]::before {
+  content: attr(data-language);
+  display: block;
+  font-family: sans-serif;
+  font-size: 0.8em;
+}
+
+.ProseMirror blockquote {
+  margin-block: 0.5em;
+  margin-inline: 0;
+  padding-inline-start: 1em;
+  border-inline-start: 3px solid #767676;
+}
+
+/* The attribution closes its quotation, aligned to the end as the PDF sets it, and carries no
+ * character of its own before it: the author types whatever they want before a name (decision D). */
+.ProseMirror footer.aw-attribution {
+  text-align: end;
+}
+
+/* An attribution nobody has typed says what it is for. A class the editor puts on the node, rather
+ * than `:empty`: ProseMirror keeps a trailing break in an empty textblock, so `:empty` never
+ * matches one. */
+.ProseMirror footer.aw-empty::before {
+  content: 'Attribution';
+  color: #595959;
 }

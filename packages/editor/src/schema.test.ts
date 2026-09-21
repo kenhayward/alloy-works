@@ -524,3 +524,18 @@ describe('quotations and preformatted text in the editor schema (editor 5)', () 
     expect(doc.firstChild!.type.name).toBe('paragraph');
   });
 });
+
+describe('the editor stylesheet, for preformatted text (editor 5)', () => {
+  it('keeps whitespace and sets tab stops every eight columns, as the published PDF expands them', () => {
+    // Pinned in the stylesheet itself rather than through jsdom, which applies no stylesheet a
+    // package ships: the surface's tab stops are the ones the page will print (decision E).
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const rule = /\.ProseMirror pre\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/tab-size:\s*8;/);
+    expect(rule).toMatch(/white-space:\s*pre;/);
+    expect(css).toMatch(/\.ProseMirror footer\.aw-empty::before\s*\{[^}]*content:\s*'Attribution'/);
+  });
+});

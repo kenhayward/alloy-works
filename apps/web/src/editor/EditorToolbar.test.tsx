@@ -80,6 +80,8 @@ const LABELS = [
   'Definition list',
   'Nest item',
   'Lift item',
+  'Quotation',
+  'Preformatted text',
 ];
 
 /** The seven marks that apply where they stand; the two after them open a dialog first. */
@@ -216,14 +218,14 @@ describe('the formatting toolbar', () => {
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
     expect(document.activeElement).toBe(buttons[2]);
     await userEvent.keyboard('{End}');
-    expect(document.activeElement).toBe(buttons[13]);
+    expect(document.activeElement).toBe(buttons[15]);
     await userEvent.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(buttons[0]);
     // Both ways, and both wraps: a row a key can only be walked one way along is half a row.
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[13]);
+    expect(document.activeElement).toBe(buttons[15]);
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[12]);
+    expect(document.activeElement).toBe(buttons[14]);
     await userEvent.keyboard('{Home}');
     expect(document.activeElement).toBe(buttons[0]);
     expect(buttons[0]).toHaveAttribute('title', 'Ctrl or Cmd and B');

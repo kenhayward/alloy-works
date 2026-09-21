@@ -213,6 +213,21 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
  * The comparison is exact. `fr` and `fr-CA` are different languages here, which is what CNT-140's
  * "carrying a region wherever the region changes the content" asks for.
  */
+/**
+ * An empty attribution, marked so the stylesheet can show a placeholder in it. A class on the node
+ * rather than `:empty` in the stylesheet, because ProseMirror puts a trailing break into an empty
+ * textblock and `:empty` never matches one.
+ */
+export function placeholderDecorations(doc: Node): DecorationSet {
+  const decorations: Decoration[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'attribution' && node.content.size === 0) {
+      decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'aw-empty' }));
+    }
+  });
+  return DecorationSet.create(doc, decorations);
+}
+
 export function spellcheckDecorations(doc: Node): DecorationSet {
   const base: unknown = doc.attrs.language;
   const decorations: Decoration[] = [];
@@ -335,7 +350,17 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       noAdjacentEmptyParagraphs(),
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
-      new Plugin({ props: { decorations: (state) => spellcheckDecorations(state.doc) } }),
+      // One decorations plugin, holding both the spellcheck rule and the empty attribution's
+      // placeholder: the view merges every plugin's set anyway, and one set is one thing to test.
+      new Plugin({
+        props: {
+          decorations: (state) =>
+            DecorationSet.create(state.doc, [
+              ...spellcheckDecorations(state.doc).find(),
+              ...placeholderDecorations(state.doc).find(),
+            ]),
+        },
+      }),
     ],
   });
 }

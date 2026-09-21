@@ -776,7 +776,10 @@ function quotation(newIdentifier: () => string): Command {
     }
     const range = blockRangeOf(state);
     if (range === null) return false;
-    const tr = state.tr.wrap(range, [{ type: blockquoteNode, attrs: { id: newIdentifier() } }]);
+    // An identifier only when the wrap is really made: the toolbar asks every command on every
+    // render whether it is available, and a query that drew one would spend them on nothing.
+    const id = dispatch === undefined ? null : newIdentifier();
+    const tr = state.tr.wrap(range, [{ type: blockquoteNode, attrs: { id } }]);
     const wrapped = tr.doc.nodeAt(range.start);
     if (wrapped === null) return false;
     tr.insert(range.start + wrapped.nodeSize - 1, attributionNode.create());
