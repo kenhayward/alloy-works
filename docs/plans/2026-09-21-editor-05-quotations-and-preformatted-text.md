@@ -34,7 +34,9 @@ invariants, the regions), [publishing.md](../design/publishing.md) (build order 
 PDF's text layer carries no leading whitespace and no tab),
 [#163](https://github.com/kenhayward/alloy-works/issues/163) (the attribution and the language label
 have no structure role of their own), [#164](https://github.com/kenhayward/alloy-works/issues/164)
-(a preformatted line inside a list is held to a conservative measure).
+(a preformatted line inside a list is held to a conservative measure). Filed at plan review:
+[#165](https://github.com/kenhayward/alloy-works/issues/165) (a line wider than the page refuses the
+whole publish, and common code widths exceed it).
 
 ---
 
@@ -243,7 +245,12 @@ marker it will print plus 5.5 pt, and a definition list 22 pt. Every measured in
 that. The template **also** asserts, per line, with `layout` and `measure`, as a backstop that must
 never fire - an engine refusal on a document the checks passed is a pipeline defect by publishing.md's
 own rule. _Rejected:_ letting Typst wrap (a reader cannot tell a wrap from a line break) and a
-template assertion alone (`typst_refused` names nothing). **Tasks 7 and 8.**
+template assertion alone (`typst_refused` names nothing). **Accepted by Ken at plan review, knowing
+it will bite:** 83 columns is under the width of much ordinary code, and the editor cannot warn while
+the author types, because a component does not know the layout - and so the page width - it will be
+published under. The fix is a layout's to make (a smaller code size, or shrink to fit down to a
+floor), filed as [#165](https://github.com/kenhayward/alloy-works/issues/165) for a layout-editing
+slice. **Tasks 7 and 8.**
 
 **G. Six narrowings the walk holds, landing now because nothing has stored either block yet.** The
 editor has never made one and admission is not wired to a route; a development database may hold one
@@ -296,8 +303,14 @@ CNT-018 exists to keep), and an Escape-then-Tab mode (a state the author cannot 
 least one platform; `Ctrl-Alt` is AltGr on Windows. **Task 5.**
 
 **K. What the two commands do.** **Preformatted text** over paragraphs of one parent joins them into
-one block, a line each; it **declines** over a paragraph carrying any mark, rather than discard
-formatting (the doctrine `liftItem` follows for a definition term); pressed in a preformatted block it
+one block, a line each, and **drops every mark** the paragraphs carried (Ken's, at plan review): the
+loss is visible, it answers the author's own command, and one undo restores the paragraphs exactly,
+mark identifiers included. The plan's first answer - declining over any marked paragraph, the
+doctrine `liftItem` follows for a definition term - was overruled because nothing yet clears
+formatting in one gesture, so a paragraph holding a link could never become code. What it drops is
+**marks only**: over a paragraph holding any inline node that is not text (a footnote, a
+cross-reference, an equation, a citation) it still **declines**, because that is content rather than
+formatting and a line of code cannot hold it; pressed in a preformatted block it
 turns it back into paragraphs, one per line (the adjacency plugin then collapses blank lines, which
 are whitespace). **Quotation** wraps the selected blocks and adds an empty attribution; pressed inside
 a quotation it unwraps the innermost one, and an attribution with text becomes a paragraph after the
@@ -595,8 +608,10 @@ shortcut: 'Mod-Shift-,', shortcutSaid: 'Ctrl or Cmd, Shift and comma', prompts: 
 - Enter in an empty last body paragraph of a quotation holding two blocks moves it out after the
   quotation; in the only body paragraph it does nothing
 - Preformatted text over three paragraphs makes one block `'a\nb\nc'`; over a paragraph with a strong
-  run it declines and the toolbar query answers false; pressed in a block of three lines it makes three
-  paragraphs
+  run and a link it makes one block holding the paragraph's text with no mark, and one undo restores
+  the paragraph with both marks and their identifiers; over a paragraph holding a non-text inline
+  node it declines and the toolbar query answers false; pressed in a block of three lines it makes
+  three paragraphs
 - Quotation wraps two paragraphs and adds an empty attribution; pressed inside a quotation attributed
   `Ada` it unwraps and leaves a paragraph `Ada` after the blocks; at `MOST_NESTED_LEVELS` it declines
 - a quotation and a preformatted block made by the commands each carry a fresh identifier, unique in
@@ -808,11 +823,12 @@ preformatted text make`.
   entry's **Known limits**, in words for an author: a copied or read-aloud preformatted block loses its
   indentation (#162); a quotation's attribution is read as its last paragraph and a label as a stray
   word (#163); a line in preformatted text inside a numbered list may be refused although it would
-  fit (#164).
+  fit (#164); and a line wider than the page, 83 columns under the default layout, refuses the
+  publish rather than being wrapped or cut off (#165).
 - Trace, in this order: `pnpm exec prettier --write` on every touched file, then
   `pnpm --filter @alloy-works/trace generate`, then `pnpm trace check` (no problems) and
   `pnpm trace pins`; move each reported pin to **1,386 / 409 / 226**.
-- The PR body carries `Refs #162`, `Refs #163`, `Refs #164` (none is fixed) and asks the human to run
+- The PR body carries `Refs #162`, `Refs #163`, `Refs #164`, `Refs #165` (none is fixed) and asks the human to run
   `docker compose -f deploy/compose.yaml up -d --build --wait` and `pnpm test:e2e` before merging,
   because a build agent cannot.
 
@@ -824,6 +840,8 @@ Commit: `docs: quotations and preformatted text, as built (0.34.0)`.
 
 - The text layer's leading whitespace and tabs (#162), the attribution's and the label's roles (#163),
   and an exact measure inside lists (#164) - each filed with its measurement.
+- Setting code that is wider than the page - a smaller code size or shrink to fit, chosen by the
+  layout (#165). Until then an over-wide line refuses the publish.
 - A citation in an attribution: stored, opened read-only, never written or published (LIB, T6) - so
   CNT-019 stays uncited.
 - Syntax highlighting: never, while `lang:` deletes whitespace and colour is its only signal.
