@@ -15478,7 +15478,7 @@
         },
         {
           "id": "STR-063",
-          "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the margin, is held to the maximum and records the p95 (issue #179)"
+          "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
         },
         {
           "id": "STR-040",
