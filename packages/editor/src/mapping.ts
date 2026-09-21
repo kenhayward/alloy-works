@@ -66,6 +66,15 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
           namesWithNoNode(item.content, found);
         }
         break;
+      case 'preformatted':
+        // A string, not runs: nothing inside it can lack a node.
+        break;
+      case 'blockquote':
+        // Its attribution is inline content, walked as a paragraph's is: a citation in one - which
+        // no control writes yet - opens the component read-only by name rather than being dropped.
+        namesWithNoNode(block.content, found);
+        if (block.attribution !== undefined) marksWithNoType(block.attribution, found);
+        break;
       default:
         found.add(block.type);
     }
@@ -144,6 +153,20 @@ function nodeOf(block: BlockNode): Node {
       );
     case 'list':
       return block.kind === 'definition' ? definitionListOf(block) : countedListOf(block);
+    case 'preformatted':
+      // ProseMirror refuses an empty text node, so an empty block has no child at all.
+      return editorSchema.node(
+        'preformatted',
+        { id: block.id, language: block.language ?? null },
+        block.text === '' ? [] : [editorSchema.text(block.text)],
+      );
+    case 'blockquote':
+      // **Always** an attribution node, empty where none is stored: it is where an author types one,
+      // and `storedBlock` spells an empty one back as absence.
+      return editorSchema.node('blockquote', { id: block.id }, [
+        ...nodesOf(block.content),
+        editorSchema.node('attribution', null, (block.attribution ?? []).flatMap(toRun)),
+      ]);
     default:
       // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
       // what keeps it that way. A family given a node in the schema and forgotten here is named
@@ -351,6 +374,34 @@ function storedBlock(node: Node, at: string): unknown {
       });
       // One stored `list` of three kinds, out of the editor's two node types: this is the join.
       return { type: 'list', id, kind: 'definition', items };
+    }
+    case 'preformatted': {
+      const id = identifierOf(node, at);
+      // `textContent` is safe here where `runsOf` could not use it: the node admits no mark, so
+      // there are no runs to lose by joining.
+      return {
+        type: 'preformatted',
+        id,
+        text: node.textContent,
+        ...(node.attrs.language === null ? {} : { language: node.attrs.language }),
+      };
+    }
+    case 'blockquote': {
+      const id = identifierOf(node, at);
+      const content: unknown[] = [];
+      let attribution: unknown[] = [];
+      node.forEach((child, _offset, index) => {
+        if (child.type.name === 'attribution') attribution = runsOf(child, id);
+        else content.push(storedBlock(child, `${at}.${index}`));
+      });
+      // **Judged on what `runsOf` returned**, as a term is: an attribution nobody has typed is no
+      // attribution, and `attribution: []` is a second spelling of absent the walk refuses.
+      return {
+        type: 'blockquote',
+        id,
+        content,
+        ...(attribution.length === 0 ? {} : { attribution }),
+      };
     }
     default:
       throw new Error(`Block ${at} holds a node this editor cannot store: ${node.type.name}`);
