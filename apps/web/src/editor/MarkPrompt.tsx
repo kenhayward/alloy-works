@@ -1,6 +1,7 @@
 import { markSchema, publishedLanguage } from '@alloy-works/domain';
-import type { EditorCommand } from '@alloy-works/editor';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+
+import type { MarkCommand } from './press.js';
 
 interface Field {
   /** The attribute this box fills in, as the stored mark spells it. */
@@ -98,7 +99,8 @@ const GONE = 'That text is not there any more. Press Cancel, select some text, a
 export type Refused = 'value' | 'gone' | 'noMark';
 
 export interface MarkPromptProps {
-  readonly command: EditorCommand;
+  /** Only ever a mark: a block action takes nothing an author has to type. */
+  readonly command: MarkCommand;
   /**
    * What to put in the boxes: what the mark there says today, or what the author typed and had
    * refused. Null opens them empty.

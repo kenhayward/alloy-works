@@ -21,6 +21,9 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1386, from 1385: CNT-153, an ordered list's start number of 1 or more except in decimal,
+    // superseding CNT-119, which permitted the roman zero the engine sets as `n.`, landed by the
+    // lists plan. CNT-119 keeps its row as `Superseded by CNT-153`, so the count rises by one.
     // 1385, from 1384: CNT-152, a language tag the model takes and no output can carry named to the
     // author at the time, before the mark is applied (issue #155), landed by the marks plan.
     // 1384, from 1383: PUB-095, a layout's words in one declared language, and a document in another
@@ -55,7 +58,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1385);
+    expect(model.requirements).toHaveLength(1386);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
     // 409, from 408: component-editor.md claims CNT-152, met by the mark prompt naming the tag before
@@ -319,8 +322,35 @@ describe('the citations in the committed model', () => {
   // tests in apps/web/src/editor/ComponentEditor.test.tsx that move between the regions of the view
   // with F6 and Shift-F6. One file leaves and one file arrives for CNT-077, so the count rises only
   // by CNT-152's own.
+  // 218, from 217: the lists plan's identity task cites CNT-002 in a new file,
+  // packages/editor/src/identity.test.ts, where the plugin's walk descends: a block made at depth -
+  // by splitting a list item, by sinking one, by Enter inside the item that sink made - is allocated
+  // an identifier of its own, no two blocks in the component share one, and an identifier it already
+  // carries is refused and drawn again. It is a new file, so unlike the case at 163 above this
+  // citation does not hide behind one already in the same file.
+  // 219, from 218: the same plan's adjacency task cites CNT-023 in packages/editor/src/state.test.ts,
+  // where the editor's rule descends with the schema - the second of two adjacent empty paragraphs is
+  // removed in every home the editor can make a pair in, the top level, a list item and a definition
+  // item's body, which is what makes a spacer unrepresentable now that a block can stand at depth.
+  // The file carried no CNT-023 citation before, so this one hides behind nothing either.
+  // 221, from 219: the same plan's mapping task cites CNT-117 and CNT-118 once each in
+  // packages/editor/src/mapping.test.ts, which carried neither before. One body makes all three
+  // kinds of list and round-trips them through the editor and back; the other nests six levels
+  // mixing all three kinds and round-trips that. Every other list test in that file keeps its words
+  // and no identifier, because a definition list alone is a third of what CNT-117 states.
+  // 222, from 221: the same plan's toolbar task cites CNT-077 once in packages/editor/src/marks.ts's
+  // test file, which carried none before - the registry widened to fourteen rows and one loop now
+  // binds all of them, so that body presses `Mod-Shift-8`, `Mod-]` and `Mod-[` through the real
+  // keymap chain and makes, nests and lifts a list without a toolbar. The registry's own string
+  // assertions beside it stay deliberately uncited: they press no key.
+  // 223, from 222: the same plan's publishing task cites CNT-118 once in
+  // packages/domain/src/publishing/assemble.test.ts, whose body assembles a list nested six levels
+  // deep in a mixture of all three kinds and reads every level back off the published document.
+  // The list tests beside it keep their words and no identifier: the start rule's requirement is
+  // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
+  // already there, because a citation is kept once per identifier per kind per file.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(217);
+    expect(model.citations).toHaveLength(223);
   });
 
   it('cites no identifier the corpus does not hold', () => {

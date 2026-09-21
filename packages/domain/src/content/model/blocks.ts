@@ -15,7 +15,7 @@ export type BlockNode =
       kind: 'ordered' | 'unordered' | 'definition';
       start?: number | undefined;
       format?: 'decimal' | 'alphabetic' | 'roman' | undefined;
-      items: { content: BlockNode[] }[];
+      items: { term?: z.infer<typeof inlineNodeSchema>[] | undefined; content: BlockNode[] }[];
     }
   | {
       type: 'table';
@@ -67,13 +67,56 @@ export const listNodeSchema = z.strictObject({
   type: z.literal('list'),
   ...identified,
   kind: z.enum(['ordered', 'unordered', 'definition']),
-  // CNT-119: local to this list and independent of the outline's numbering.
+  // CNT-153: local to this list and independent of the outline's numbering.
   start: z.number().int().min(0).optional(),
   format: z.enum(['decimal', 'alphabetic', 'roman']).optional(),
   // A list item holds block content, so nesting is unbounded by construction and CNT-118's six
   // levels is a floor rather than a limit.
-  items: z.array(z.strictObject({ content: z.array(blockNodeSchema).min(1) })).min(1),
+  //
+  // An item of a definition list carries the term it defines, as inline content rather than a
+  // string: a term is a phrase an author writes, and a plain string is what makes an equation, a
+  // mark or a cross-reference unrepresentable in a caption (issue #88). Optional, and so additive -
+  // every document stored under schema version 1 stays valid, the canonical form of one is
+  // unchanged, `CURRENT_SCHEMA_VERSION` stays 1 and the migration chain stays empty. Optional on a
+  // definition list's item too, because an item whose term has not been typed yet is where a cursor
+  // stands, as CNT-124's empty paragraph is. WHERE a term may stand at all is a rule in the walk
+  // (`document.ts`) rather than a shape here, because it is a narrowing, and a narrowing is safe to
+  // add while nothing has stored a list where tightening this insert-only shape later would not be.
+  // The same reasoning keeps `start`'s `min(0)` above. `min(1)` is not a narrowing of that kind: an
+  // empty term is a second spelling of an absent one, and one document may not have two digests.
+  //
+  // It reaches no further than that, and deliberately: a term holding a space, or a zero-width
+  // space, is a third spelling with a digest of its own, and it is accepted - exactly as a
+  // paragraph holding a space is accepted, and by the same rule, since a run of whitespace is a run
+  // with text in it. Refusing here and nowhere else would make the term the one inline home in the
+  // model with a notion of blankness the rest does not share.
+  items: z
+    .array(
+      z.strictObject({
+        term: z.array(inlineNodeSchema).min(1).optional(),
+        content: z.array(blockNodeSchema).min(1),
+      }),
+    )
+    .min(1),
 });
+
+/** One stored list, in all three of CNT-117's kinds, as the repository spells such a narrowing. */
+export type ListNode = Extract<BlockNode, { type: 'list' }>;
+
+/**
+ * Whether a list's start number is one its numbering cannot express: a zeroth item is a convention
+ * decimal has and letters and roman numerals do not (CNT-153, which superseded CNT-119 for it).
+ *
+ * **One predicate, asked in two places, deliberately.** `checkBlock` asks it on the way in, so that
+ * no producer - an author, an import, a paste, a future API client - can store the shape and be told
+ * weeks later; `assemble` asks it again as a publish-time backstop, so that content assembled by any
+ * path is refused by name rather than numbered from something nobody wrote. Both are required, and
+ * two spellings of one rule would let a change to either side pass silently - which is why there is
+ * one spelling, here, and neither side carries a copy of it.
+ */
+export function startsOutsideItsNumbering(list: ListNode): boolean {
+  return list.start === 0 && (list.format === 'alphabetic' || list.format === 'roman');
+}
 
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),

@@ -55,6 +55,17 @@ function blockContributions(block: BlockNode): Contribution[] {
       return [{ block: block.id, sequence: 'equation', numbered: block.numbered }];
     case 'preformatted':
       return [];
+    default: {
+      // **Unreachable, and named rather than left to fall through.** The assignment is what makes
+      // an eighth `BlockNode` kind fail to compile; the throw is what happens if one arrives anyway.
+      // Falling through instead would return `undefined`, which every caller's `flatMap` folds into
+      // the contributions - so a figure or a table inside the new kind would take no number, and
+      // nothing would say why.
+      const unreachable: never = block;
+      throw new Error(
+        `No contribution rule for a block of kind ${(unreachable as BlockNode).type}`,
+      );
+    }
   }
 }
 

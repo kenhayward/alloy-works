@@ -1,7 +1,8 @@
+import { parseContentDocument } from '@alloy-works/domain';
 import { joinBackward, splitBlock } from 'prosemirror-commands';
 import { redo, undo } from 'prosemirror-history';
-import { Slice, type Node } from 'prosemirror-model';
-import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
+import { Schema, Slice, type Node } from 'prosemirror-model';
+import { EditorState, Selection, TextSelection, type Transaction } from 'prosemirror-state';
 import { DecorationSet, type Decoration } from 'prosemirror-view';
 import { describe, expect, it } from 'vitest';
 
@@ -10,7 +11,12 @@ import { newBlockIdentifier } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { removeMarkCommand, toggleMarkCommand } from './marks.js';
 import { editorSchema } from './schema.js';
-import { createEditorState, enterWithoutEmpties, spellcheckDecorations } from './state.js';
+import {
+  createEditorState,
+  enterWithoutEmpties,
+  noAdjacentEmptyParagraphs,
+  spellcheckDecorations,
+} from './state.js';
 
 const counter = () => {
   let next = 0;
@@ -186,14 +192,24 @@ describe('what the editor always holds', () => {
     expect(() => fromEditor(redone.doc)).not.toThrow();
   });
 
-  it('holds a storable document after any sequence of typing, splitting, joining, deleting and undoing', () => {
+  /**
+   * Two thousand edits from one seed, each one followed by a save, so a document the store would
+   * refuse is caught at the step that made it rather than by an author weeks later.
+   */
+  const storableAfterAnySequence = (start: EditorState, firstSeed: number) => {
     // A seeded generator, so a failure names a sequence that can be replayed.
-    let seed = 20260916;
+    //
+    // **The high bits, not the low ones.** This generator's low bit alternates deterministically,
+    // each step draws exactly twice, and 6 is even - so a plain `seed % 6` returned one parity for
+    // every step of a run, and `insertText` and `joinBackward` never ran at all. The test's own
+    // title names typing and joining; for two thousand steps it did neither. Shifting first spreads
+    // the six roughly evenly, and the shift is what makes the title true.
+    let seed = firstSeed;
     const random = (below: number) => {
       seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
-      return seed % below;
+      return (seed >>> 13) % below;
     };
-    let state = stateOf([['b1', 'Unbox the printer.']]);
+    let state = start;
     for (let step = 0; step < 2000; step += 1) {
       const size = state.doc.content.size;
       const pos = 1 + random(Math.max(1, size - 1));
@@ -204,13 +220,281 @@ describe('what the editor always holds', () => {
       if (operation === 2) state = run(placed, joinBackward);
       if (operation === 3) state = run(placed, enterWithoutEmpties);
       if (operation === 4) {
-        const from = Math.min(pos, size - 1);
-        const to = Math.min(size - 1, from + random(8));
-        state = placed.apply(placed.tr.delete(from, to));
+        const deleteFrom = Math.min(pos, size - 1);
+        const to = Math.min(size - 1, deleteFrom + random(8));
+        state = placed.apply(placed.tr.delete(deleteFrom, to));
       }
       if (operation === 5) state = run(placed, undo);
       expect(() => fromEditor(state.doc), `step ${step}`).not.toThrow();
     }
+  };
+
+  it('holds a storable document after any sequence of typing, splitting, joining, deleting and undoing', () => {
+    storableAfterAnySequence(stateOf([['b1', 'Unbox the printer.']]), 20260916);
+  });
+
+  it('holds one after any such sequence inside a list and a definition list too', () => {
+    // The sequence above never leaves the top level, where every position is a paragraph's. Seeded
+    // with a document that nests, the same two thousand edits land inside list items, inside a
+    // definition item's body and inside its term - which is where identity, adjacency and the
+    // mapping all had to learn to descend, and where a position they disagree about first shows up.
+    const opened = toEditor({
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        { type: 'paragraph', id: 'b1', style: 'body', content: [] },
+        {
+          type: 'list',
+          id: 'L1',
+          kind: 'unordered',
+          items: [
+            { content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }] },
+            {
+              content: [
+                { type: 'paragraph', id: 'b3', style: 'body', content: [] },
+                {
+                  type: 'list',
+                  id: 'L2',
+                  kind: 'ordered',
+                  items: [
+                    { content: [{ type: 'paragraph', id: 'b4', style: 'body', content: [] }] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'D1',
+          kind: 'definition',
+          items: [
+            {
+              term: [{ type: 'text', value: 'Tensile strength', marks: [] }],
+              content: [{ type: 'paragraph', id: 'b5', style: 'body', content: [] }],
+            },
+          ],
+        },
+      ],
+    });
+    if (!opened.editable) throw new Error('expected an editable document');
+    storableAfterAnySequence(
+      createEditorState({ doc: opened.doc, newIdentifier: counter() }),
+      20260921,
+    );
+  });
+});
+
+/**
+ * The stored model holds CNT-023 in **every** sequence of blocks it has - the top level, a list
+ * item, a blockquote, a table cell and a footnote - so the editor holds it wherever it can make a
+ * pair, and a rule the two write paths disagree on is a rule one of them breaks.
+ *
+ * Three of those homes are reachable from this schema today: the top level, a list item, and a
+ * definition item's body beneath its term. A blockquote, a table cell and a footnote arrive with the
+ * families that make them editable, and the walk meets them without being told, because it asks the
+ * schema which nodes are blocks rather than naming the nodes that hold them.
+ */
+describe('two adjacent empty paragraphs, at any depth', () => {
+  const emptyParagraph = () => editorSchema.node('paragraph', { id: null, style: 'body' });
+
+  const textParagraph = (text: string) =>
+    editorSchema.node('paragraph', { id: null, style: 'body' }, [editorSchema.text(text)]);
+
+  const listOf = (...blocks: Node[]) =>
+    editorSchema.node('list', { kind: 'unordered' }, [editorSchema.node('listItem', null, blocks)]);
+
+  /** One definition list of one item: the term it defines, then the blocks that define it. */
+  const definitionOf = (term: string, blocks: readonly Node[]) =>
+    editorSchema.node('definitionList', null, [
+      editorSchema.node('definitionItem', null, [
+        editorSchema.node('term', null, term === '' ? [] : [editorSchema.text(term)]),
+        ...blocks,
+      ]),
+    ]);
+
+  const componentOf = (blocks: readonly Node[]) =>
+    createEditorState({
+      doc: editorSchema.node(
+        'doc',
+        { title: 'Install the printer', language: 'en-GB', direction: 'ltr' },
+        blocks,
+      ),
+      newIdentifier: counter(),
+    });
+
+  /** The first node of a type, with the position ProseMirror addresses it at. */
+  const find = (doc: Node, type: string): { node: Node; pos: number } => {
+    let found: { node: Node; pos: number } | undefined;
+    doc.descendants((node, pos) => {
+      if (found === undefined && node.type.name === type) found = { node, pos };
+    });
+    if (found === undefined) throw new Error(`the document holds no ${type}`);
+    return found;
+  };
+
+  /** The paragraphs of one item, addressed by the list holding it and the item's index. */
+  const paragraphsIn = (doc: Node, [list, index]: readonly [string, number]) => {
+    const found: Node[] = [];
+    find(doc, list)
+      .node.child(index)
+      .forEach((child) => {
+        if (child.type.name === 'paragraph') found.push(child);
+      });
+    return found;
+  };
+
+  /** A keystroke in the opening paragraph: a transaction touching nothing these tests assert about. */
+  const typed = (state: EditorState) => state.apply(state.tr.insertText('X', 1, 1));
+
+  it('CNT-023 leaves no two adjacent empty paragraphs anywhere the editor can make a pair', () => {
+    const state = componentOf([
+      textParagraph('Unbox'),
+      emptyParagraph(),
+      emptyParagraph(),
+      listOf(emptyParagraph(), emptyParagraph()),
+      definitionOf('Cable', [emptyParagraph(), emptyParagraph()]),
+    ]);
+    const after = typed(state);
+    // The top level: one of the two is left, and the blocks after it are untouched.
+    expect(after.doc.childCount).toBe(4);
+    expect(after.doc.child(1).textContent).toBe('');
+    expect(after.doc.child(2).type.name).toBe('list');
+    // A list item, and a definition item's body beneath its term.
+    expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+    expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
+  });
+
+  it('deletes a pair after a deeper pair without moving the position of either', () => {
+    // The ordering case, and it is the whole of it: a pair **inside** a list, and a second pair
+    // **after** that list at the top level. The walk collects a node's own removal and then descends
+    // into that node, so the deeper position is collected before the later one and reversing the
+    // list deletes back to front. Collect a sequence before descending into it - the obvious
+    // rearrangement, and one the rest of this block cannot catch, because every other fixture here
+    // puts its top-level pair first - and the two removals come back out of order: the shallow
+    // deletion runs first, moves everything after it, and the deeper one then addresses a position
+    // that no longer exists. That is a `RangeError` thrown out of `appendTransaction`, which in a
+    // browser is an uncaught exception on a keystroke rather than a wrong document.
+    const state = componentOf([
+      listOf(emptyParagraph(), emptyParagraph()),
+      textParagraph('keep me'),
+      emptyParagraph(),
+      emptyParagraph(),
+    ]);
+    // Any transaction will do; this one renames the list's kind, which no assertion below reads.
+    const after = state.apply(state.tr.setNodeAttribute(0, 'kind', 'ordered'));
+    expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+    expect(texts(after.doc)).toEqual(['', 'keep me', '']);
+  });
+
+  it('removes the second of two adjacent empty paragraphs inside one list item', () => {
+    const state = componentOf([textParagraph('Unbox'), listOf(emptyParagraph())]);
+    // A second empty paragraph arriving beside the one already in the item, by a transaction:
+    // an item's content begins one position inside the item itself.
+    const item = find(state.doc, 'listItem');
+    const after = state.apply(state.tr.insert(item.pos + 1, emptyParagraph()));
+    expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+  });
+
+  it('does the same inside a definition item, beneath its term', () => {
+    const state = componentOf([textParagraph('Unbox'), definitionOf('Cable', [emptyParagraph()])]);
+    // The item's blocks begin where its term ends, so this is a pair in the body and not a term
+    // standing beside a paragraph.
+    const term = find(state.doc, 'term');
+    const after = state.apply(state.tr.insert(term.pos + term.node.nodeSize, emptyParagraph()));
+    expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
+    expect(find(after.doc, 'term').node.textContent).toBe('Cable');
+  });
+
+  it('does not remove an empty paragraph that is the only one in its item', () => {
+    // CNT-124's empty paragraph is where a cursor stands, at depth exactly as at the top level.
+    const state = componentOf([textParagraph('Unbox'), listOf(emptyParagraph())]);
+    const after = typed(state);
+    expect(paragraphsIn(after.doc, ['list', 0])).toHaveLength(1);
+  });
+
+  it('never reads a term as the paragraph beside it, because a term is not a block', () => {
+    // An author who writes the definition before the word leaves an empty term above an empty
+    // paragraph. The stored model never sees those two in one sequence - a term belongs to the item
+    // and its blocks are a sequence of their own - so neither may the editor. The two cannot be
+    // reordered by any gesture, `definitionItem` being `term block+`, so this pins the reading
+    // rather than catching a case a command produces: the walk asks the schema which children are
+    // blocks, and a term is not one.
+    const state = componentOf([textParagraph('Unbox'), definitionOf('', [emptyParagraph()])]);
+    const after = typed(state);
+    expect(paragraphsIn(after.doc, ['definitionList', 0])).toHaveLength(1);
+    expect(find(after.doc, 'term').node.textContent).toBe('');
+  });
+
+  it('takes a child that is not a block out of the sequence, rather than reading it as a member', () => {
+    // The group filter itself. **No document the editor's own schema can make reaches it**: the one
+    // non-block child it has is a `definitionItem`'s term, `definitionItem` is `term block+`, so a
+    // term can only stand first and never between two paragraphs - and the emptiness test keys on
+    // the type name `paragraph`, so a term pairs with nothing whatever group it is in. So this
+    // builds a schema of its own to put a node that is not a block **between** two empty paragraphs,
+    // which is the case the filter decides and the case the next family that nests may bring.
+    //
+    // The answer it pins: a child outside the group is not a member of the sequence, so it neither
+    // pairs with a paragraph nor separates two. That is how the stored model composes a sequence -
+    // from block content alone, an item's term being a field beside it rather than a member of it -
+    // and agreeing with that is the whole reason the walk asks the schema instead of naming types.
+    const schema = new Schema({
+      nodes: {
+        doc: { content: 'holder+' },
+        holder: { content: '(block | aside)+' },
+        paragraph: { group: 'block', content: 'text*' },
+        aside: {},
+        text: {},
+      },
+    });
+    const doc = schema.node('doc', null, [
+      schema.node('holder', null, [schema.node('paragraph'), schema.node('aside')]),
+    ]);
+    const state = EditorState.create({ doc, plugins: [noAdjacentEmptyParagraphs()] });
+    // An empty paragraph arriving at the end of the holder, with an `aside` between it and the
+    // empty paragraph already there. It is still the second of a pair.
+    const after = state.apply(state.tr.insert(4, schema.node('paragraph')));
+    const holder = after.doc.firstChild!;
+    expect(holder.childCount).toBe(2);
+    expect([holder.child(0).type.name, holder.child(1).type.name]).toEqual(['paragraph', 'aside']);
+  });
+
+  it('never leaves inside an item what the stored model refuses in one', () => {
+    const state = componentOf([textParagraph('Unbox'), listOf(emptyParagraph())]);
+    const item = find(state.doc, 'listItem');
+    const after = state.apply(state.tr.insert(item.pos + 1, emptyParagraph()));
+    // The invariant stated as the seam it is: whatever the plugin leaves, the stored model accepts.
+    // `fromEditor` cannot read a list yet - the mapping descends in its own task - so the item's
+    // blocks go to the door `fromEditor` goes through, `parseContentDocument`, spelled as the model
+    // spells them. They are the plugin's own output, identifiers and all, so a pair left at depth is
+    // refused here exactly as a pair at the top level is.
+    const list = find(after.doc, 'list');
+    const storable = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'list',
+          id: list.node.attrs.id,
+          kind: 'unordered',
+          items: [
+            {
+              content: paragraphsIn(after.doc, ['list', 0]).map((paragraph) => ({
+                type: 'paragraph',
+                id: paragraph.attrs.id,
+                style: paragraph.attrs.style,
+                content: [],
+              })),
+            },
+          ],
+        },
+      ],
+    };
+    expect(() => parseContentDocument(storable)).not.toThrow();
   });
 });
 

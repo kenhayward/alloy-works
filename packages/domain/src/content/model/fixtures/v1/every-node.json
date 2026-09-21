@@ -149,12 +149,25 @@
                       "kind": "definition",
                       "items": [
                         {
+                          "term": [{ "type": "text", "value": "Tensile strength", "marks": [] }],
                           "content": [
                             {
                               "type": "paragraph",
                               "id": "b3b",
                               "style": "body",
                               "content": [{ "type": "text", "value": "A definition.", "marks": [] }]
+                            }
+                          ]
+                        },
+                        {
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "id": "b3c",
+                              "style": "body",
+                              "content": [
+                                { "type": "text", "value": "A term nobody typed.", "marks": [] }
+                              ]
                             }
                           ]
                         }

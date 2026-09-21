@@ -119,6 +119,9 @@ describe('the domain package', () => {
         // The document under a layout before a run carried its marks: frozen, and nothing makes one
         // now (the editor's marks slice).
         'PUBLISHING_SCHEMA_2',
+        // The document under a layout before a block could be a list: frozen, and nothing makes one
+        // now (the editor's lists slice).
+        'PUBLISHING_SCHEMA_3',
         'assemble',
         'publishFailureCodes',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication

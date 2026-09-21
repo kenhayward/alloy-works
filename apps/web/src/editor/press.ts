@@ -1,5 +1,6 @@
 import {
   applyMarkCommand,
+  blockCommand,
   markAt,
   somewhereToPutMark,
   toggleMarkCommand,
@@ -7,16 +8,23 @@ import {
   type EditorView,
 } from '@alloy-works/editor';
 
+/**
+ * A registry row that acts on a mark. Only a mark ever asks the author for a value - a block action
+ * takes nothing an author has to type - so everything about prompting, about refusing a value and
+ * about the dialog is written in terms of this narrower type rather than guarded at every use.
+ */
+export type MarkCommand = Extract<EditorCommand, { kind: 'mark' }>;
+
 /** Asked for a value before a prompting command runs; resolves null when the author cancels. */
 export type AskForValue = (
-  command: EditorCommand,
+  command: MarkCommand,
   current: Record<string, unknown> | null,
 ) => Promise<Record<string, unknown> | null>;
 
 export interface PressOptions {
   readonly view: EditorView;
   readonly command: EditorCommand;
-  /** Where a mark's identifier comes from; the same source the surface names blocks from. */
+  /** Where an identifier comes from; the same source the surface names blocks and marks from. */
   readonly newIdentifier: () => string;
   readonly prompt: AskForValue;
   /**
@@ -24,7 +32,12 @@ export interface PressOptions {
    * dialog that failed. Only ever called after they were asked for something, never for a press that
    * simply had nothing to do: the words belong to whoever renders the notice.
    */
-  readonly onRefused?: ((command: EditorCommand) => void) | undefined;
+  readonly onRefused?: ((command: MarkCommand) => void) | undefined;
+}
+
+/** The same, for the asking half, which is only ever reached with a mark that prompts. */
+export interface AskOptions extends Omit<PressOptions, 'command'> {
+  readonly command: MarkCommand;
 }
 
 /**
@@ -42,6 +55,11 @@ export interface PressOptions {
  * The range rule comes from `somewhereToPutMark` in the editor package, which is the same expression
  * `applyMarkCommand` applies, so a press this admits is refused only over its **value** - and a value
  * the author typed and lost is the one thing they must be told about, which is `onRefused`.
+ *
+ * **A block action answers for itself.** `blockCommand` returns false wherever it would do nothing -
+ * unmaking a definition list, nesting the first item of a list, lifting a definition item that has
+ * nowhere to go - and that answer is the press's answer, so a shortcut it declined is handed back to
+ * the browser and a button that shows it as unavailable is showing the same thing the press does.
  */
 export function pressCommand({
   view,
@@ -50,8 +68,12 @@ export function pressCommand({
   prompt,
   onRefused,
 }: PressOptions): boolean {
+  const dispatch = view.dispatch.bind(view);
+  if (command.kind === 'block') {
+    return blockCommand(command.action, newIdentifier)(view.state, dispatch);
+  }
   if (!command.prompts) {
-    return toggleMarkCommand(command.mark, newIdentifier)(view.state, view.dispatch.bind(view));
+    return toggleMarkCommand(command.mark, newIdentifier)(view.state, dispatch);
   }
   if (!somewhereToPutMark(view.state, command.mark)) return false;
   askAndApply({ view, command, newIdentifier, prompt, onRefused });
@@ -68,13 +90,7 @@ export function pressCommand({
  * typing would close the dialog with nothing applied, nothing said, and the author's value gone.
  * Whoever asks again has already been through the gate once; what they need is the dialog back.
  */
-export function askAndApply({
-  view,
-  command,
-  newIdentifier,
-  prompt,
-  onRefused,
-}: PressOptions): void {
+export function askAndApply({ view, command, newIdentifier, prompt, onRefused }: AskOptions): void {
   prompt(command, markAt(view.state, command.mark))
     .then((answer) => {
       if (answer === null) return;

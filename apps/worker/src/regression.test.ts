@@ -95,10 +95,10 @@ describe('the publishing regression corpus', () => {
       covers: fonts.covers,
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    // Under the default layout, so `publishing/3` through template 3: what every request made since
+    // Under the default layout, so `publishing/4` through template 4: what every request made since
     // layouts publishes, with its cover and its contents.
     const pdf = await typst.compile(
-      PUBLICATION_TEMPLATE[3].file,
+      PUBLICATION_TEMPLATE[4].file,
       JSON.stringify(assembled.document),
       at,
     );
@@ -212,7 +212,7 @@ describe('the publishing regression corpus', () => {
         '"text":"PROBE"',
         `"text":${JSON.stringify(text)}`,
       );
-      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[3].file, data, at).then(
+      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at).then(
         () => false,
         (error: unknown) => {
           if (error instanceof TypstRefused) return true;

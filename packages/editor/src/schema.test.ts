@@ -18,7 +18,10 @@ const editorMarks = markTypes.filter((name) => !annotations.includes(name));
  * `document` here; a hand-written fake is enough, because a rule only ever asks for attributes.
  */
 const element = (attributes: Readonly<Record<string, string>>): HTMLElement =>
-  ({ getAttribute: (name: string) => attributes[name] ?? null }) as unknown as HTMLElement;
+  ({
+    getAttribute: (name: string) => attributes[name] ?? null,
+    hasAttribute: (name: string) => name in attributes,
+  }) as unknown as HTMLElement;
 
 const isTagRule = (rule: ParseRule): rule is TagParseRule => 'tag' in rule;
 
@@ -192,6 +195,164 @@ describe('the editor schema', () => {
   });
 });
 
+describe('the lists in the editor schema', () => {
+  /**
+   * The five node types, named once. The tuples are `as const` because `Schema.nodes` is a mapped
+   * type over the names the schema was built with: a `string` index would not typecheck, and a
+   * misspelling here should fail the compiler rather than the assertion.
+   */
+  const items = ['listItem', 'definitionItem'] as const;
+  const lists = ['list', 'definitionList'] as const;
+
+  /**
+   * The content match an item offers **once its required opening has been matched**. `contentMatch`
+   * is the match at position zero, and a definition item opens with its term (decision C: a
+   * ProseMirror content expression is fixed per type, so one item type cannot be `block+` for two
+   * kinds and `term block+` for the third). Do not "simplify" this by relaxing `definitionItem` to
+   * `block+` or `term? block+` - that is the one change decision C exists to forbid.
+   */
+  const opens = (item: (typeof items)[number]) =>
+    item === 'definitionItem'
+      ? editorSchema.nodes.definitionItem.contentMatch.matchType(editorSchema.nodes.term)!
+      : editorSchema.nodes.listItem.contentMatch;
+
+  it('holds a list and an item shaped as the stored model holds them', () => {
+    expect(editorSchema.nodes.list.spec.content).toBe('listItem+');
+    expect(editorSchema.nodes.listItem.spec.content).toBe('block+');
+    // The item carries nothing: the stored item has no identifier, so neither has this.
+    expect(editorSchema.nodes.listItem.spec.attrs).toBeUndefined();
+    expect(editorSchema.nodes.listItem.spec.defining).toBe(true);
+  });
+
+  // Uncited on purpose. CNT-117 asks for lists in three kinds - ordered, unordered and definition -
+  // and this body is about the definition kind alone, which is a third of the statement and not the
+  // statement. The citation belongs on a body that makes all three and round-trips them.
+  it('holds a definition list whose item opens with the term it defines', () => {
+    expect(editorSchema.nodes.definitionList.spec.content).toBe('definitionItem+');
+    expect(editorSchema.nodes.definitionItem.spec.content).toBe('term block+');
+    // A term takes marks, because a term is inline content and not a string.
+    expect(editorSchema.nodes.term.spec.marks).toBe('_');
+  });
+
+  it('keeps a term out of the block group, which the adjacency walk depends on', () => {
+    // `noAdjacentEmptyParagraphs` in `state.ts` builds each sequence from the children in the
+    // `block` group, because that is the sequence the stored model holds CNT-023 over: an item's
+    // term belongs to the item and its blocks are a sequence of their own (`checkBlock` in
+    // `packages/domain`). Give `term` this group and the editor's sequence stops being the stored
+    // model's.
+    //
+    // Worth recording plainly: **no shape this schema can make distinguishes the two readings
+    // today.** `definitionItem` is `term block+`, so a term can only stand first, and the walk's
+    // emptiness test keys on the type name `paragraph`, so a term pairs with nothing whatever group
+    // it is in. That is what makes this assertion the guard rather than a document-level test - and
+    // what makes it worth having, because the day a family puts a node that is not a block between
+    // two that are, the group is the only thing standing between the two write paths.
+    expect(editorSchema.nodes.term.isInGroup('block')).toBe(false);
+    expect(editorSchema.nodes.listItem.isInGroup('block')).toBe(false);
+    for (const name of ['paragraph', 'list', 'definitionList'] as const) {
+      expect(editorSchema.nodes[name].isInGroup('block')).toBe(true);
+    }
+  });
+
+  // Uncited on purpose. CNT-124 - "a component must always hold at least one block ... a newly
+  // created component must hold exactly one empty paragraph" - is a rule of the content model and is
+  // already `Covered` where the model holds it. This body shows only that widening `doc` to `block+`
+  // did not change what ProseMirror puts in an empty document, which is a regression guard on the
+  // change this task makes.
+  it('still fills an empty document with a paragraph, not a list', () => {
+    expect(editorSchema.nodes.doc.spec.content).toBe('block+');
+    // `paragraph` is declared first among the block group, and that order is what ProseMirror fills
+    // from. `Schema.node` would throw here rather than fill: `createAndFill` is the API that answers
+    // what an empty document becomes.
+    expect(editorSchema.nodes.paragraph.spec.group).toBe('block');
+    const doc = editorSchema.nodes.doc.createAndFill({
+      title: 'T',
+      language: 'en-GB',
+      direction: 'ltr',
+    })!;
+    expect(doc.childCount).toBe(1);
+    expect(doc.firstChild!.type.name).toBe('paragraph');
+  });
+
+  it('renders a numbered list as an ordered list and a bulleted one as unordered', () => {
+    const item = () =>
+      editorSchema.node('listItem', null, [editorSchema.node('paragraph', { id: 'b1' })]);
+    const ordered = editorSchema.node(
+      'list',
+      { id: 'L1', kind: 'ordered', start: 5, format: 'alphabetic' },
+      [item()],
+    );
+    // The start and the numbering reach the element, because a stylesheet can only style what the
+    // element carries: without them the surface shows `1.` where the PDF shows `e.`.
+    expect(editorSchema.nodes.list.spec.toDOM!(ordered)).toEqual([
+      'ol',
+      { start: '5', 'data-format': 'alphabetic' },
+      0,
+    ]);
+    const bulleted = editorSchema.node('list', { id: 'L2' }, [item()]);
+    expect(editorSchema.nodes.list.spec.toDOM!(bulleted)).toEqual(['ul', {}, 0]);
+  });
+
+  it('reads a numbered list back with the start and the numbering it was rendered with', () => {
+    // `parseDOM` is not decoration here either (see `markSpec`): prosemirror-view reads typed input
+    // back out of the DOM, so a rule that dropped `start` and `format` would reset an author's
+    // numbering as they typed in the list.
+    const rule = editorSchema.nodes.list.spec
+      .parseDOM!.filter(isTagRule)
+      .find((r) => r.tag === 'ol');
+    expect(rule?.getAttrs?.(element({ start: '5', 'data-format': 'alphabetic' }))).toEqual({
+      kind: 'ordered',
+      start: 5,
+      format: 'alphabetic',
+    });
+    expect(rule?.getAttrs?.(element({}))).toEqual({ kind: 'ordered', start: null, format: null });
+  });
+
+  it('reads back no start and no numbering from an element carrying neither', () => {
+    // `Number('five')` is `NaN` and `Number('')` is 0, and `data-format` would otherwise come
+    // through whatever it said. `listNodeSchema` refuses both, and a document that reaches
+    // `saveIteration` carrying one is answered with a fixed message that names nothing - so
+    // anything the store would refuse reads as absent here, which is always storable.
+    const rule = editorSchema.nodes.list.spec
+      .parseDOM!.filter(isTagRule)
+      .find((r) => r.tag === 'ol');
+    expect(rule?.getAttrs?.(element({ start: 'five', 'data-format': 'bullets' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    expect(rule?.getAttrs?.(element({ start: '2.5' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    expect(rule?.getAttrs?.(element({ start: '-1' }))).toEqual({
+      kind: 'ordered',
+      start: null,
+      format: null,
+    });
+    // A start of 0 is one a decimal list may have, so it is read rather than dropped (CNT-153,
+    // held in `checkBlock` and in `setListAttributes`).
+    expect(rule?.getAttrs?.(element({ start: '0' }))).toEqual({
+      kind: 'ordered',
+      start: 0,
+      format: null,
+    });
+  });
+
+  it('lets every kind of item hold every kind of list, so any mixture nests', () => {
+    // Uncited on purpose. CNT-118 asks that a list nests to at least six levels in every kind and in
+    // any mixture of kinds; this body asserts content expressions and makes no levels at all. It
+    // shows the schema permits the mixture, which is a precondition and not the requirement.
+    for (const item of items)
+      for (const list of lists)
+        expect(
+          opens(item).matchType(editorSchema.nodes[list]),
+          `${item} -> ${list}`,
+        ).not.toBeNull();
+  });
+});
+
 describe('the editor stylesheet', () => {
   it('styles every mark the schema can render', () => {
     const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
@@ -223,5 +384,79 @@ describe('the editor stylesheet', () => {
       const selector = `.ProseMirror ${selectorOf(name)}`;
       expect(ruleSelectors, selector).toContain(selector);
     }
+  });
+
+  it('styles a list at every level it can nest', () => {
+    // Read from disk and parsed the same way as the mark test above, and for the same reason: this
+    // also proves the file still parses as CSS once the list rules are added, not merely that some
+    // text occurs in it.
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
+    const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const ruleSelectors = [...withoutComments.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((match) =>
+      match[1]!.split(',').map((selector) => selector.trim()),
+    );
+    const expectSelector = (selector: string) =>
+      expect(ruleSelectors, selector).toContain(selector);
+
+    // The tag a rendered node carries, read from its own `toDOM` output rather than typed as a
+    // literal string: a selector below is built out of this, so a tag `toDOM` stops rendering fails
+    // here first, on the selector it changes, rather than leaving a rule silently unreachable.
+    const tagOf = (domOutput: unknown): string => (domOutput as [string, ...unknown[]])[0];
+    const formatOf = (domOutput: unknown): string | undefined => {
+      const [, attrs] = domOutput as [string, Record<string, string>, 0];
+      return attrs['data-format'];
+    };
+
+    const paragraph = (id: string) => editorSchema.node('paragraph', { id });
+    const listItem = (id: string) => editorSchema.node('listItem', null, [paragraph(id)]);
+    const list = (attrs: Record<string, unknown>, child: ReturnType<typeof listItem>) =>
+      editorSchema.node('list', attrs, [child]);
+
+    const ulTag = tagOf(editorSchema.nodes.list.spec.toDOM!(list({ id: 'L1' }, listItem('b1'))));
+    const liTag = tagOf(editorSchema.nodes.listItem.spec.toDOM!(listItem('b2')));
+
+    // The template pins three markers - disc, circle, square - and **cycles** them, so a fourth
+    // level takes the disc again (docs/plans/2026-09-21-editor-04-lists-and-quotations.md; the
+    // marker set belongs in a theme and not a template, which is issue #158 and not this task's
+    // fix). CSS cannot say "every three", and a selector of three `ul`s matches three levels **or
+    // more** - so left at three the surface was square from the third level down while the
+    // publication cycled, which is the opposite of what the stylesheet claimed. The cycle is written
+    // out to six levels, CNT-118's floor and the depth the template's own note confirms; a list
+    // nested inside itself is that many copies of its own tag, chained by descendant combinators,
+    // because that is what a real nested list looks like in the DOM.
+    for (let depth = 1; depth <= 6; depth += 1) {
+      expectSelector(`.ProseMirror ${Array(depth).fill(ulTag).join(' ')}`);
+    }
+
+    // A list item holding another list is `li` inside `li` in the DOM: the selector a nested list's
+    // indentation step needs.
+    expectSelector(`.ProseMirror ${liTag}`);
+    expectSelector(`.ProseMirror ${liTag} ${liTag}`);
+
+    // An ordered list takes its marker from the node's own `format`, not from the browser's default
+    // numbering, so the surface and the PDF agree on what an author set in the panel.
+    const orderedList = (format: string | null) =>
+      list({ id: 'L2', kind: 'ordered', format }, listItem('b3'));
+    const olTag = tagOf(editorSchema.nodes.list.spec.toDOM!(orderedList(null)));
+    expectSelector(`.ProseMirror ${olTag}`);
+    for (const format of ['alphabetic', 'roman'] as const) {
+      const value = formatOf(editorSchema.nodes.list.spec.toDOM!(orderedList(format)));
+      expectSelector(`.ProseMirror ${olTag}[data-format='${value}']`);
+    }
+
+    // The term: set apart from its own definition without colour alone.
+    const dlTag = tagOf(
+      editorSchema.nodes.definitionList.spec.toDOM!(
+        editorSchema.node('definitionList', { id: 'D1' }, [
+          editorSchema.node('definitionItem', null, [
+            editorSchema.node('term', null),
+            paragraph('b4'),
+          ]),
+        ]),
+      ),
+    );
+    expectSelector(`.ProseMirror ${dlTag}`);
+    const dtTag = tagOf(editorSchema.nodes.term.spec.toDOM!(editorSchema.node('term', null)));
+    expectSelector(`.ProseMirror ${dtTag}`);
   });
 });

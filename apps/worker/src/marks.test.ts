@@ -8,9 +8,11 @@ import {
   parseOutlineDocument,
   PUBLISHING_SCHEMA,
   type AssembleInput,
+  type PublishedBlock,
   type PublishedDocument,
   type PublishedMark,
   type PublishedNode,
+  type PublishedRun,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
@@ -163,13 +165,28 @@ const assembled = (): PublishedDocument => {
 /** That document as the JSON text the template reads. */
 const markedDocument = () => JSON.stringify(assembled());
 
-/** Every kind of mark the document's runs carry. */
+/** Every kind of mark the document's runs carry, at any depth - a list item holds blocks too. */
 const kindsIn = (document: PublishedDocument) => {
   const kinds = new Set<string>();
-  const walk = (node: PublishedNode) => {
-    for (const block of node.blocks) {
-      for (const run of block.runs) for (const mark of run.marks) kinds.add(mark.kind);
+  const marksIn = (runs: readonly PublishedRun[]) => {
+    for (const run of runs) for (const mark of run.marks) kinds.add(mark.kind);
+  };
+  // The paragraph branch is the positive test, so a third published block kind fails to compile
+  // here rather than being read as a list and quietly contributing no marks.
+  const inBlocks = (blocks: readonly PublishedBlock[]) => {
+    for (const block of blocks) {
+      if (block.type === 'paragraph') {
+        marksIn(block.runs);
+        continue;
+      }
+      for (const item of block.items) {
+        marksIn(item.term ?? []);
+        inBlocks(item.blocks);
+      }
     }
+  };
+  const walk = (node: PublishedNode) => {
+    inBlocks(node.blocks);
     for (const child of node.children) walk(child);
   };
   for (const node of document.nodes) walk(node);
@@ -182,7 +199,7 @@ const compileOne = (data: string) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[3].file, data, at);
+      const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at);
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);
@@ -236,7 +253,7 @@ describe('the PDF a marked document makes', () => {
     expect(spoken(read.taggedText[0]!)).toContain(CODE);
 
     // `assemble` writes a run's marks in one fixed order and `inlineCode` is last in it, so the
-    // fold in template 3 could not lose the emphasis whatever it did. The template's own rule is
+    // fold in template 4 could not lose the emphasis whatever it did. The template's own rule is
     // wider than that: it reads the document as data, and no order of a run's marks may silence
     // one. So the same document is compiled again with this run's two marks the other way round -
     // the order `assemble` does not write today, and the one a later order could - and the two PDFs

@@ -5,6 +5,7 @@ import {
   EDITOR_COMMANDS,
   fromEditor,
   headerOf,
+  listAt,
   mountEditor,
   newBlockIdentifier,
   removeMarkCommand,
@@ -14,7 +15,6 @@ import {
   somewhereToPutMark,
   toEditor,
   type ComponentHeader as Header,
-  type EditorCommand,
   type EditorView,
   type Selection,
 } from '@alloy-works/editor';
@@ -24,8 +24,9 @@ import { createPortal } from 'react-dom';
 
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
+import { ListPanel } from './ListPanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
-import { askAndApply, pressCommand, type AskForValue } from './press.js';
+import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { editingSessionFor, sessionService } from './service.js';
 import {
@@ -83,7 +84,7 @@ const isEditablePhase = (phase: SessionView['phase']) =>
 
 /** One dialog, open, and the press waiting on what the author does with it. */
 interface Asking {
-  readonly command: EditorCommand;
+  readonly command: MarkCommand;
   /** What to put in the boxes: the mark that is there, or what was typed and then refused. */
   readonly values: Record<string, unknown> | null;
   /** Why the last press came back with nothing done, or null where none has. */
@@ -129,11 +130,15 @@ export function ComponentEditor({
   // of it: nothing of it is rendered until a press asks for a value.
   const [asking, setAsking] = useState<Asking | null>(null);
   const place = useRef<HTMLDivElement | null>(null);
-  // The other two regions of the view; `place` is the third. Held as elements rather than as a list
-  // of selectors, so a region that is not rendered at all - a component that failed to open - is
-  // simply absent from the ring rather than a query that quietly finds nothing.
+  // The other regions of the view; `place` is the last. Held as elements rather than as a list of
+  // selectors, so a region that is not rendered at all - a component that failed to open, or the
+  // list panel with the cursor outside a list - is simply absent from the ring rather than a query
+  // that quietly finds nothing.
   const headerRegion = useRef<HTMLElement | null>(null);
   const toolbarRegion = useRef<HTMLDivElement | null>(null);
+  // The list panel's, which is null for most of a session: it is the one region of this view that
+  // comes and goes, because it exists only while the cursor stands in a counted list.
+  const listRegion = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
@@ -201,7 +206,7 @@ export function ComponentEditor({
    * Answers whether the press was taken up, which is what lets a shortcut with nowhere to put its
    * mark hand the key back rather than swallow it.
    */
-  const runPrompting = (view: EditorView, command: EditorCommand): boolean =>
+  const runPrompting = (view: EditorView, command: MarkCommand): boolean =>
     pressCommand({
       view,
       command,
@@ -215,7 +220,7 @@ export function ComponentEditor({
    * moved out from under the dialog, or else it is the value the author typed. Asked of the state
    * the command itself just read, so the answer is about the press that failed.
    */
-  const whyRefused = (view: EditorView, command: EditorCommand): Refused =>
+  const whyRefused = (view: EditorView, command: MarkCommand): Refused =>
     somewhereToPutMark(view.state, command.mark) ? 'value' : 'gone';
 
   /**
@@ -231,7 +236,7 @@ export function ComponentEditor({
    * It must not throw. The press that calls it wraps the continuation and the prompt in one
    * `catch`, so a handler that threw would be reported as a second refusal of the same value.
    */
-  function askAgain(view: EditorView, command: EditorCommand, because: Refused) {
+  function askAgain(view: EditorView, command: MarkCommand, because: Refused) {
     if (view.isDestroyed) {
       // Nothing will open to carry it, so it must not be left standing over a later dialog.
       refusal.current = null;
@@ -335,8 +340,10 @@ export function ComponentEditor({
         // did something with it: a component being read, or a selection with nowhere to put the
         // mark, hands the key back rather than swallowing it.
         onPrompt: (mark) => {
-          const command = EDITOR_COMMANDS.find((each) => each.mark === mark);
-          if (command === undefined) return false;
+          const command = EDITOR_COMMANDS.find(
+            (each) => each.kind === 'mark' && each.mark === mark,
+          );
+          if (command === undefined || command.kind !== 'mark') return false;
           // Restated, not a case this catches: it is the same expression `editable` below is, and
           // ProseMirror hands a keydown to a keymap only while the view is editable - so a reader
           // never reaches here at all. It stays because the two must agree, and a later `editable`
@@ -505,9 +512,9 @@ export function ComponentEditor({
       (surface?.dom ?? region).focus();
       return;
     }
-    // The other two regions hold form controls and nothing else - the header's three fields, the
-    // toolbar's nine buttons - so the first in document order that a Tab would reach is the first
-    // one this finds. A disabled control is excluded by its attribute rather than by `tabIndex`,
+    // The other regions hold form controls and nothing else - the header's three fields, the
+    // toolbar's fourteen buttons, the list panel's kind, start and numbering - so the first in
+    // document order that a Tab would reach is the first one this finds. A disabled control is excluded by its attribute rather than by `tabIndex`,
     // which reports 0 for one all the same; without that, F6 would land a reader on a header field
     // they cannot type into.
     const inside = [
@@ -518,18 +525,27 @@ export function ComponentEditor({
 
   /**
    * `F6` and `Shift-F6` move the focus between the regions of the view and wrap (CNT-077): the
-   * component header, the formatting toolbar, the surface. The design names a fourth, the metadata
-   * panel, which is not built; the **Component** toolbar - Save version and Done editing - is
-   * deliberately not one of them and keeps its own ordinary tab stops.
+   * component header, the formatting toolbar, the list panel, the surface. The design names one
+   * more, the metadata panel, which is not built; the **Component** toolbar - Save version and
+   * Done editing - is deliberately not one of them and keeps its own ordinary tab stops.
+   *
+   * **The list panel comes and goes with the selection**, which is new in this ring: it is there
+   * only while the cursor stands in a counted list, so the ring is three regions most of the time
+   * and four inside a list. That is why the ring is built from elements each time the key is
+   * pressed rather than from a fixed list of selectors - a region that is not rendered is simply
+   * absent, and the wrap is over whatever is really there.
    *
    * Pressed from somewhere that is no region at all, it enters the ring at the first region going
    * forwards and at the last going backwards, rather than guessing which region the author meant.
    */
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
-    const ring = [headerRegion.current, toolbarRegion.current, place.current].filter(
-      (region) => region !== null,
-    );
+    const ring = [
+      headerRegion.current,
+      toolbarRegion.current,
+      listRegion.current,
+      place.current,
+    ].filter((region) => region !== null);
     if (ring.length === 0) return;
     event.preventDefault();
     const at = ring.findIndex((region) => region.contains(document.activeElement));
@@ -591,6 +607,10 @@ export function ComponentEditor({
   const lock = staleLockKnown.current ? null : shown.lock;
   const held = session?.holder ?? null;
   const phase = session?.phase ?? 'reading';
+  // Read during render from `view.state`, exactly as the toolbar's answers are: moving the caret
+  // is the change the panel has to hear about, and `dispatch` re-renders on every transaction.
+  const list = surface === null ? null : listAt(surface.state);
+  const mayFormat = shown.mayEdit && isEditablePhase(phase);
 
   return (
     <>
@@ -672,13 +692,20 @@ export function ComponentEditor({
             <EditorToolbar
               ref={toolbarRegion}
               view={surface}
-              enabled={shown.mayEdit && isEditablePhase(phase)}
+              enabled={mayFormat}
               newIdentifier={newBlockIdentifier}
               prompt={askFor}
               onRefused={(command) =>
                 surface && askAgain(surface, command, whyRefused(surface, command))
               }
             />
+            {/* Beside the toolbar, and only while the cursor stands in a counted list. A
+                definition list carries no start and no numbering and its kind is the button that
+                made it, so nothing is shown for one - a deliberate absence rather than an empty
+                box. */}
+            {surface !== null && list !== null && list.kind !== 'definition' && (
+              <ListPanel ref={listRegion} view={surface} list={list} enabled={mayFormat} />
+            )}
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}
             <div ref={place} tabIndex={-1} />

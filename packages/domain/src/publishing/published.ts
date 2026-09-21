@@ -5,11 +5,12 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/3` is the document under a layout whose runs carry their marks, which
- * `apps/worker/templates/publication/3/` reads. It is never stored - only its digest is, on the
- * publication - so a later shape is a new schema string and a new template version, not a migration.
+ * `publishing/4` is the document under a layout whose runs carry their marks and whose blocks may be
+ * lists, which `apps/worker/templates/publication/4/` reads. It is never stored - only its digest is,
+ * on the publication - so a later shape is a new schema string and a new template version, not a
+ * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/3';
+export const PUBLISHING_SCHEMA = 'publishing/4';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -25,6 +26,14 @@ export const PUBLISHING_SCHEMA_1 = 'publishing/1';
  * and the publications made with it, are a record rather than something to migrate.
  */
 export const PUBLISHING_SCHEMA_2 = 'publishing/2';
+
+/**
+ * The document under a layout as it stood when a block could only be a paragraph, frozen. Nothing
+ * makes one now - every request under a layout is assembled as `publishing/4` - and the string is
+ * kept for the reason `publishing/2`'s is: `apps/worker/templates/publication/3/` asserts it, and a
+ * template version and the publications made with it are a record rather than something to migrate.
+ */
+export const PUBLISHING_SCHEMA_3 = 'publishing/3';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -84,7 +93,7 @@ export const PUBLISHED_MARK_ORDER = [
   'inlineCode',
 ] as const satisfies readonly PublishedMark['kind'][];
 
-/** A run of `publishing/3`: its text, and the marks over it in `PUBLISHED_MARK_ORDER`. */
+/** A run of `publishing/4`: its text, and the marks over it in `PUBLISHED_MARK_ORDER`. */
 export interface PublishedRun {
   readonly text: string;
   readonly marks: readonly PublishedMark[];
@@ -96,7 +105,38 @@ export interface PublishedParagraph {
   readonly runs: readonly PublishedRun[];
 }
 
-export type PublishedBlock = PublishedParagraph;
+/**
+ * One item of a published list. It carries **no identifier**, because a stored item carries none
+ * either: an item is a position in its list, and the list is what a failure inside one names.
+ *
+ * `term` is the term this item defines, as runs, on a definition list's item and on no other - where
+ * a term may stand at all is `checkBlock`'s rule, in `content/model/document.ts`, rather than a
+ * second copy of it here. It is **null where the author has not typed one yet**, which is a state
+ * the model deliberately admits (an author writing the definition before the word is mid-edit, not
+ * in error, as CNT-124's empty paragraph is), so **a template maps it guarded**: an item with no
+ * term prints an empty label, which is honest about an item nobody has finished.
+ */
+export interface PublishedItem {
+  readonly term: readonly PublishedRun[] | null;
+  readonly blocks: readonly PublishedBlock[];
+}
+
+/**
+ * A list of `publishing/4`, in the three kinds CNT-117 names. `start` and `format` are an ordered
+ * list's alone (`checkBlock` again) and are **null rather than absent** where there are none, so the
+ * template branches on one spelling. An item holds blocks, so nesting is by construction and
+ * CNT-118's six levels is a floor.
+ */
+export interface PublishedList {
+  readonly type: 'list';
+  readonly id: string;
+  readonly kind: 'ordered' | 'unordered' | 'definition';
+  readonly start: number | null;
+  readonly format: 'decimal' | 'alphabetic' | 'roman' | null;
+  readonly items: readonly PublishedItem[];
+}
+
+export type PublishedBlock = PublishedParagraph | PublishedList;
 
 /**
  * A run of `publishing/1` and `publishing/2`, before a run carried its marks: its text and nothing

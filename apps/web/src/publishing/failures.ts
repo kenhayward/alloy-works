@@ -31,8 +31,12 @@ export function failureWords(failure: Failure): string {
       return 'This title holds something that cannot be published yet.';
     case 'block_not_publishable':
       return `${BLOCKS[failure.detail ?? ''] ?? 'This block'} cannot be published yet.`;
+    // "This text", not "this paragraph": `assemble` raises this code for a definition list's **term**
+    // as well as for a paragraph, and names the LIST in that case, because a term carries no
+    // identifier of its own. A sentence that said paragraph while pointing at a list would send an
+    // author looking for something that is not there.
     case 'inline_not_publishable':
-      return 'This paragraph holds formatting or an inline item that cannot be published yet.';
+      return 'This text holds formatting or an inline item that cannot be published yet.';
     case 'style_missing':
       return 'This paragraph uses a style the publication template does not set.';
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and

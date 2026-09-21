@@ -3,6 +3,65 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.33.0 - 2026-09-21 (PR #161)
+
+### Added
+
+- **An author can make lists.** Bulleted, numbered and definition lists, from the toolbar or the
+  keyboard, over the paragraph the cursor is in. Pressing **Bulleted list** or **Numbered list**
+  again takes the list off, or, where the item is nested, lifts it one level.
+- **Lists nest.** Nest item and Lift item move an item in and out, with Tab and Shift Tab as well as
+  Ctrl or Cmd and the square brackets, to six levels and well past them, mixing all three kinds
+  freely. Enter in an item you have written nothing in leaves the list, one level at a time.
+- **A definition list holds the term it defines**, written as ordinary text, so it can be
+  emphasised, linked or marked as being in another language like any other phrase.
+- **A numbered list can start where you want and count how you want.** Set it to start at any number
+  and to count 1, 2, 3 or a, b, c or i, ii, iii, from the List panel beside the toolbar. The panel
+  is there while the cursor is in a numbered list and F6 reaches it like the other regions.
+- **A publication prints all of it.** A PDF now carries lists at every level, with the numbering and
+  the start the author chose, and a screen reader is told it is a list rather than a row of
+  characters. It still passes every PDF/UA-1 rule the checker applies.
+
+### Fixed
+
+- **Content can no longer be saved nested more deeply than the product allows.** The limit that
+  applied when content was pasted or imported now applies on every path that stores content,
+  including an editing session. Before, content nested past it was accepted, and content nested
+  deeper still failed in a way that said nothing at all; now nothing past it is stored. What an
+  author is told is still thin: from the editor, that the text cannot be saved as it stands and to
+  undo the change that caused it; from anywhere else, only that the content is not a document this
+  product can store.
+
+### Changed
+
+- A numbered list counting in letters or roman numerals now starts at 1 or more. Only a list
+  counting 1, 2, 3 can start at 0, where a zero means something.
+- A publication made from now on uses publication template 4. Publications already made are
+  unchanged and still open exactly as they were.
+
+### Known limits
+
+- A definition list is published as a list whose item label is the term. A screen reader announces
+  the term and then its definition, which is the right order and the right emphasis, but PDF has a
+  definition-list structure of its own and the engine the product uses cannot yet produce it, so a
+  reader is told "list" where you wrote "definition list".
+- The markers beside a bulleted list - a disc, then a circle, then a square - are fixed by the
+  product rather than set by a style, and they repeat after three levels of nesting. They belong in
+  a named style and will move there.
+- A list stops nesting at thirty levels. Every control that would build one - **Nest item**, and the
+  three list buttons where they would make a list inside a list - becomes unavailable there, `Tab`
+  moves the focus on instead, and the two keys that can nest a definition item under the one above
+  it, `Backspace` at the start of a term and `Delete` at the end of the definition before it, do
+  nothing. A list deeper than thirty levels is not a document the product can store. A list of
+  exactly thirty is stored and can never be published: the publish fails, and the only thing you are
+  told is that it failed. A single stated limit, in levels rather than in the language of a file
+  format, and below the depth a publication can carry as well as the depth the store takes, is still
+  to come.
+- A footnote written inside a definition list's term would take no number. Nothing can put one there
+  today; it is named so that whatever makes it possible starts from knowing.
+- Block quotations and preformatted text are still not writable, and a document holding one still
+  cannot be published.
+
 ## 0.32.0 - 2026-09-20 (PR #157)
 
 ### Added

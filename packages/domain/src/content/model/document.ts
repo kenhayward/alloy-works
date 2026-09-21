@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
+import { exceedsLimits } from '../admission/limits.js';
 import { canonicalJson } from '../../stored/canonical.js';
 
-import { blockNodeSchema, footnoteContentSchema, type BlockNode } from './blocks.js';
+import {
+  blockNodeSchema,
+  footnoteContentSchema,
+  startsOutsideItsNumbering,
+  type BlockNode,
+} from './blocks.js';
 import { marksAsASet } from './canonical.js';
 import type { InlineNode } from './inline.js';
 import type { Mark } from './marks.js';
@@ -395,12 +401,82 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
     case 'paragraph':
       return { ...block, content: checkInlineContent(block.content, 'component', claimed) };
     case 'list':
+      // Four narrowings the schema deliberately does not hold, because `listNodeSchema` is an
+      // insert-only stored shape and a rule in the walk can be added while nothing has stored a
+      // list, where a tightening of the shape could never be taken back.
+      //
+      // **A term belongs to a definition list and to nothing else.** The shape puts `term` on every
+      // item, because it is one item type; a term on an ordered or unordered item means nothing,
+      // and the published half would have nowhere to print it.
+      //
+      // **A start and a numbering belong to an ordered list and to nothing else**, which is the
+      // same rule reaching the other way: the shape puts `start` and `format` on every list,
+      // because it is one node type, and neither means anything on a bulleted or a definition list.
+      // Held here rather than by opening such a component read-only in the editor, for three
+      // reasons. It closes the hole for **every producer** - read-only tells the one author who
+      // happens to open the component, while a rule here refuses an import, a paste and a future
+      // API client too, which is the argument that put the start rule below here rather than in
+      // `assemble` alone. It is safe now and would not be later: nothing has stored a list, and
+      // this is the last slice in which that sentence is true, exactly as it was for the term. And
+      // the editor's read-only path is for what the editor cannot **hold** - a table, a comment
+      // mark - rather than for content that should never have been storable; using it here would
+      // blur the difference between "not built yet" and "not allowed", which is the one thing that
+      // path tells an author.
+      //
+      // **A definition item need not have one yet.** An author who presses Enter in a definition
+      // body and writes the definition before its term is mid-edit, not in error, and
+      // `saveIteration` parses through this function and answers a refusal with a fixed message
+      // that names nothing - so a required term would refuse an ordinary iteration save and tell
+      // the author nothing about why. CNT-124 admits one empty paragraph for the same reason: that
+      // is where a cursor stands. The cost is that the publishing template maps over `item.term`
+      // **guarded**; an item with no term prints an empty label, which is honest about an item
+      // nobody has finished.
+      //
+      // **A term that is there holds text**, because an empty term is a second spelling of a term
+      // that is absent, and two spellings of one thing are two digests of one document. `min(1)`
+      // refuses the empty array on the way in and the rule below refuses what the walk empties.
+      //
+      // **A list starts at 0 only where its numbering is decimal** (CNT-153) - a zeroth item is a
+      // convention decimal has and letters and roman numerals do not. Held here rather than in
+      // `assemble` alone: `assemble` refuses at publish time, which is weeks after the author wrote
+      // it, and any producer that is not the editor's own panel - an import, a paste, a future API
+      // client - would otherwise store content publishing declines without the author ever being
+      // told at the time.
+      if (block.kind !== 'ordered' && (block.start !== undefined || block.format !== undefined)) {
+        throw new Error(
+          `List ${block.id} carries a start or a numbering, which only an ordered list may`,
+        );
+      }
+      // Asked of `startsOutsideItsNumbering`, which `assemble` asks too: the rule is held here and
+      // backstopped at publish time, and one spelling is what keeps the two from drifting apart.
+      if (startsOutsideItsNumbering(block)) {
+        throw new Error(`List ${block.id} starts at 0, which only decimal numbering permits`);
+      }
       return {
         ...block,
-        items: block.items.map((item) => ({
-          ...item,
-          content: checkBlocks(item.content, claimed),
-        })),
+        items: block.items.map((item) => {
+          if (item.term !== undefined && block.kind !== 'definition') {
+            throw new Error(
+              `List ${block.id} has an item carrying a term, which only a definition list's item may`,
+            );
+          }
+          // A term is inline content in the component's one scope, so a mark in one claims its
+          // identifier exactly as a mark in a paragraph does - and it is walked before the item's
+          // body, which is the order a reader meets the two in.
+          const term = item.term && checkInlineContent(item.term, 'component', claimed);
+          // **Judged on what the walk returned, never on what arrived.** A term holding one empty
+          // run passes `min(1)` on the way in and is nothing once `mergeRuns` has dropped it, so a
+          // rule reading the input would store a term the same schema refuses on read-back - a 500
+          // for an author whose work could never become a version.
+          if (term !== undefined && term.length === 0) {
+            throw new Error(`List ${block.id} has an item whose term holds no text`);
+          }
+          return {
+            ...item,
+            ...(term === undefined ? {} : { term }),
+            content: checkBlocks(item.content, claimed),
+          };
+        }),
       };
     case 'blockquote': {
       const attribution =
@@ -446,20 +522,34 @@ export type InlineHome = 'component' | 'title';
  * The one entry point. Validates on creation, on change and on read-back (CNT-010); nothing else
  * constructs a document.
  *
- * Seven rules the schema cannot express on its own, because each is about a document rather than a
+ * Eleven rules the schema cannot express on its own, because each is about a document rather than a
  * node: identifiers are unique within the component (CNT-002), two adjacent empty paragraphs are
  * refused (CNT-023), a footnote's content is a restricted block sequence (CNT-129), a
  * cross-reference in a component never targets an outline node, a mark identifier carries one value
- * (CNT-004) over one contiguous range of runs, and a sequence of inline content comes back with its
- * runs merged (issue #154). One walk holds all seven: the block
+ * (CNT-004) over one contiguous range of runs, a sequence of inline content comes back with its
+ * runs merged (issue #154), a term stands only on a definition list's item, a term that is there
+ * holds visible text, a start and a numbering stand only on an ordered list, and a list starts at 0
+ * only where its numbering is decimal (CNT-153).
+ * One walk holds all eleven: the block
  * half here, and `checkInlineContent` for inline content, sharing one set of claimed identifiers, with
  * adjacency held in every sequence of blocks either half reaches, a footnote's among them, **over
  * what that sequence became** rather than over what arrived. A single empty paragraph is admitted,
  * because CNT-124 requires a new component to be one. What is returned is what the walk parsed, and
  * nothing else - and parsing that again returns it unchanged, which is the invariant every caller
  * here relies on, because the service parses a request body and `packages/db` parses it again.
+ *
+ * **Held to the same nesting limit as admission (issue #125), before either the schema or the walk
+ * below recurses over it.** Admission checks `exceedsLimits` on the candidate it sanitises, but a
+ * component already admitted is edited and saved again through this function alone, with nothing
+ * upstream measuring its depth - so a document too deep to admit was, until this call, storable by
+ * every other path. Run first and iteratively, so a document built to exhaust the call stack is
+ * refused rather than crashing the schema parse it would otherwise recurse into.
  */
 export function parseContentDocument(value: unknown): ContentDocument {
+  const exceeded = exceedsLimits(value);
+  if (exceeded !== undefined) {
+    throw new Error(`Content is ${exceeded}`);
+  }
   const parsed = contentDocumentSchema.parse(value);
   return { ...parsed, content: checkBlocks(parsed.content, newScope()) };
 }

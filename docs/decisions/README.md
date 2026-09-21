@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                   | One renderer, two deliveries                                              | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                    | Brand assets and desktop packaging                                        | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                     | A purpose-built node-and-mark content model                               | Accepted           |
+| [0025](0025-the-editor-schema-is-not-the-stored-model-one-for-one.md)         | The editor schema is not the stored model one for one                     | Accepted           |
 | [0024](0024-a-version-digest-over-the-whole-version.md)                       | A version digest over the whole version, and a content hash beside it     | Accepted           |
 | [0023](0023-prosemirror-as-the-editor-and-its-model.md)                       | ProseMirror as the editor, and one view per component                     | Accepted           |
 | [0022](0022-the-desktop-window-loads-the-service.md)                          | The desktop window loads the service                                      | Accepted           |

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { BlockNode } from '../content/model/blocks.js';
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { markTypes } from '../content/model/marks.js';
 import {
@@ -15,7 +16,12 @@ import { defaultLayout, parseLayout, type Layout } from './layout.js';
 import {
   DRAFT_NOTICE,
   PUBLISHED_MARK_ORDER,
+  PUBLISHING_SCHEMA,
+  PUBLISHING_SCHEMA_3,
+  type PublishedBlock,
   type PublishedDocument,
+  type PublishedItem,
+  type PublishedList,
   type PublishedRun,
 } from './published.js';
 
@@ -104,12 +110,41 @@ const inMatter = <T extends object>(matter: 'front' | 'body' | 'appendix', node:
   matter,
 });
 
-/** One occurrence of one component, holding one paragraph `b1` of these inlines, under a layout. */
-const oneParagraph = (...inlines: unknown[]) =>
+/** A paragraph in a style the template does not set, which is every style but `body` until themes. */
+const styled = (name: string, style: string, ...inlines: unknown[]) => ({
+  type: 'paragraph',
+  id: name,
+  style,
+  content: inlines,
+});
+
+/** A paragraph holding nothing, which is where a cursor stands and so is storable (CNT-124). */
+const blank = (name: string) => styled(name, 'body');
+
+/**
+ * A stored list: one node for all three kinds, its items given as the model holds them - a body, and
+ * a `term` only on a definition list's item. `start` and `format` are passed in `over` so that a
+ * fixture writes only what it is about.
+ */
+const storedList = (
+  name: string,
+  kind: 'ordered' | 'unordered' | 'definition',
+  items: readonly object[],
+  over: object = {},
+) => ({ type: 'list', id: name, kind, ...over, items });
+
+/** One occurrence of one component, under a layout. */
+const oneOccurrence = (content: ContentDocument) =>
   input({
     outline: outline([reference('calib')]),
-    occurrences: new Map([[id('calib'), component([paragraph('b1', ...inlines)])]]),
+    occurrences: new Map([[id('calib'), content]]),
   });
+
+/** One occurrence of one component holding exactly these blocks, under a layout. */
+const oneComponent = (...blocks: unknown[]) => oneOccurrence(component(blocks));
+
+/** One occurrence of one component, holding one paragraph `b1` of these inlines, under a layout. */
+const oneParagraph = (...inlines: unknown[]) => oneComponent(paragraph('b1', ...inlines));
 
 /** Every failure, or none where the document published: what a refusal is read from. */
 const failuresOf = (assembled: Assembled): readonly PublishFailure[] =>
@@ -121,16 +156,42 @@ const failuresOf = (assembled: Assembled): readonly PublishFailure[] =>
  * something other than what it wrote.
  */
 const runsOf = (assembled: Assembled<PublishedDocument>): readonly PublishedRun[] => {
+  const [block, ...otherBlocks] = blocksOf(assembled);
+  if (block === undefined || otherBlocks.length > 0) {
+    throw new Error(`${blocksOf(assembled).length} blocks, not one`);
+  }
+  return paragraphRuns(block);
+};
+
+/**
+ * The blocks of the one node the input publishes. A refusal, or a second node, throws naming what it
+ * found, so a test can never read the blocks of something other than what it wrote.
+ */
+const blocksOf = (assembled: Assembled<PublishedDocument>): readonly PublishedBlock[] => {
   if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
   const [node, ...otherNodes] = assembled.document.nodes;
   if (node === undefined || otherNodes.length > 0) {
     throw new Error(`${assembled.document.nodes.length} nodes, not one`);
   }
-  const [block, ...otherBlocks] = node.blocks;
-  if (block === undefined || otherBlocks.length > 0) {
-    throw new Error(`${node.blocks.length} blocks, not one`);
+  return node.blocks;
+};
+
+/** The runs of a block that must be a paragraph, naming what it was where it is not. */
+const paragraphRuns = (block: PublishedBlock | undefined): readonly PublishedRun[] => {
+  if (block?.type !== 'paragraph') {
+    throw new Error(`${block?.type ?? 'nothing'} is not a paragraph`);
   }
   return block.runs;
+};
+
+/** The items of the one list the input publishes, wherever among the blocks it stands. */
+const itemsOf = (assembled: Assembled<PublishedDocument>): readonly PublishedItem[] => {
+  const lists = blocksOf(assembled).filter(
+    (block): block is PublishedList => block.type === 'list',
+  );
+  const [list, ...others] = lists;
+  if (list === undefined || others.length > 0) throw new Error(`${lists.length} lists, not one`);
+  return list.items;
 };
 
 describe('assemble', () => {
@@ -880,6 +941,335 @@ describe('assemble', () => {
       },
     ]);
   });
+
+  it('assembles under a layout as publishing/4, keeping publishing/3 as the shape template 3 reads', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/4');
+    // Frozen with template 3 and the publications made by it, exactly as `publishing/2` was frozen
+    // when a run began to carry its marks: a template version is a record, not something to migrate.
+    expect(PUBLISHING_SCHEMA_3).toBe('publishing/3');
+    const assembled = assemble(oneParagraph(text('Check the readings')));
+    expect(assembled.ok && assembled.document.schema).toBe(PUBLISHING_SCHEMA);
+  });
+
+  it('carries a list, its start and its numbering, and its items in order', () => {
+    const assembled = assemble(
+      oneComponent(
+        storedList(
+          'L1',
+          'ordered',
+          [
+            { content: [paragraph('b1', text('Check the readings'))] },
+            { content: [paragraph('b2', text('Note the serial'))] },
+          ],
+          { start: 5, format: 'alphabetic' },
+        ),
+      ),
+    );
+
+    expect(blocksOf(assembled)).toEqual([
+      {
+        type: 'list',
+        id: 'L1',
+        kind: 'ordered',
+        start: 5,
+        format: 'alphabetic',
+        items: [
+          {
+            term: null,
+            blocks: [
+              { type: 'paragraph', id: 'b1', runs: [{ text: 'Check the readings', marks: [] }] },
+            ],
+          },
+          {
+            term: null,
+            blocks: [
+              { type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('carries a start and a numbering a list does not have as null, never as an absent member', () => {
+    // The stored shape leaves both out where there are none; the published one writes null, because
+    // the template branches on them and Typst reads a missing key and a null differently.
+    const assembled = assemble(
+      oneComponent(
+        storedList('L1', 'unordered', [{ content: [paragraph('b1', text('Check the readings'))] }]),
+      ),
+    );
+    expect(blocksOf(assembled)[0]).toMatchObject({ kind: 'unordered', start: null, format: null });
+  });
+
+  it('carries a definition list, each item with the term it defines and its marks', () => {
+    const assembled = assemble(
+      oneComponent(
+        storedList('D1', 'definition', [
+          {
+            term: [marked('Tensile strength', { type: 'emphasis', id: 'm1' })],
+            content: [paragraph('b1', text('The stress a sample takes before it parts.'))],
+          },
+        ]),
+      ),
+    );
+
+    expect(itemsOf(assembled)[0]!.term).toEqual([
+      { text: 'Tensile strength', marks: [{ kind: 'emphasis' }] },
+    ]);
+  });
+
+  it('carries an item whose term nobody has typed yet as an item with no term, not a refusal', () => {
+    // A definition item may have no term: an author who writes the definition before the word is
+    // mid-edit, not in error, and `checkBlock` admits it for CNT-124's reason. So the template
+    // guards `item.term` and an unfinished item prints an empty label, which is honest.
+    const assembled = assemble(
+      oneComponent(
+        storedList('D1', 'definition', [
+          { content: [paragraph('b1', text('The stress a sample takes before it parts.'))] },
+        ]),
+      ),
+    );
+
+    expect(itemsOf(assembled)).toEqual([
+      {
+        term: null,
+        blocks: [
+          {
+            type: 'paragraph',
+            id: 'b1',
+            runs: [{ text: 'The stress a sample takes before it parts.', marks: [] }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('CNT-118 carries a list nested six levels deep, in a mixture of all three kinds', () => {
+    const kinds = [
+      'ordered',
+      'unordered',
+      'definition',
+      'unordered',
+      'definition',
+      'ordered',
+    ] as const;
+    // Six lists, each the only block of the one item of the list above it, the innermost holding the
+    // one paragraph. `reduceRight` builds from the bottom up, so `L1` is outermost and `L6` innermost.
+    const nested = kinds.reduceRight<unknown>(
+      (inner, kind, level) =>
+        storedList(`L${level + 1}`, kind, [
+          kind === 'definition'
+            ? { term: [text(`Level ${level + 1}`)], content: [inner] }
+            : { content: [inner] },
+        ]),
+      paragraph('b1', text('The innermost step')),
+    );
+
+    const assembled = assemble(oneComponent(nested));
+    const descended: string[] = [];
+    let block = blocksOf(assembled)[0];
+    while (block !== undefined && block.type === 'list') {
+      descended.push(block.kind);
+      block = block.items[0]!.blocks[0];
+    }
+
+    expect(descended).toEqual([...kinds]);
+    expect(block).toEqual({
+      type: 'paragraph',
+      id: 'b1',
+      runs: [{ text: 'The innermost step', marks: [] }],
+    });
+  });
+
+  it('carries the marks over a run inside a list item exactly as in a paragraph', () => {
+    const link = (mark: string, emphasis: string) => [
+      text('see '),
+      marked(
+        'the report',
+        { type: 'hyperlink', id: mark, href: 'https://example.test/report' },
+        { type: 'emphasis', id: emphasis },
+      ),
+    ];
+    // The same two runs twice, once at the top level and once at the bottom of a list. Only the mark
+    // identifiers differ, because CNT-002 makes them unique within the component, and a published
+    // mark carries no identifier - so the two must come out equal.
+    const assembled = assemble(
+      oneComponent(
+        paragraph('b1', ...link('m1', 'm2')),
+        storedList('L1', 'unordered', [{ content: [paragraph('b2', ...link('m3', 'm4'))] }]),
+      ),
+    );
+
+    const expected = [
+      { text: 'see ', marks: [] },
+      {
+        text: 'the report',
+        marks: [{ kind: 'hyperlink', href: 'https://example.test/report' }, { kind: 'emphasis' }],
+      },
+    ];
+    expect(paragraphRuns(blocksOf(assembled)[0])).toEqual(expected);
+    expect(paragraphRuns(itemsOf(assembled)[0]!.blocks[0])).toEqual(expected);
+  });
+
+  it('names a character outside the pinned faces in a term, with the list the term stands in', () => {
+    // A stored item carries no identifier of its own, so a failure in its term names the **list**:
+    // the nearest real thing to point an author at, and the detail already names the code point.
+    // `packages/editor/src/mapping.ts` names the same place, for the same reason.
+    const result = assemble(
+      oneComponent(
+        storedList('D1', 'definition', [
+          { term: [text('Arabic \u{627}')], content: [paragraph('b2', text('A letter.'))] },
+        ]),
+      ),
+    );
+
+    expect(failuresOf(result)).toEqual([
+      { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'D1', detail: 'U+0627' },
+    ]);
+  });
+
+  it('refuses a lettered or a roman list that starts at zero, naming it', () => {
+    // A zeroth item is a convention decimal numbering has and letters and roman numerals do not
+    // (the requirement task 13 files). `checkBlock` refuses the shape outright, so no author, no
+    // import and no paste can store one - this is the publish-time backstop, and the fixture is
+    // built past that one door on purpose, exactly as the layout tests above build a layout past
+    // `parseLayout`. Content assembled by any path is refused by name here, never numbered from
+    // something the author did not write.
+    const decimal = component([
+      storedList('L1', 'ordered', [{ content: [paragraph('b1', text('Check the readings'))] }], {
+        start: 0,
+        format: 'decimal',
+      }),
+    ]);
+    expect(blocksOf(assemble(oneOccurrence(decimal)))[0]).toMatchObject({
+      start: 0,
+      format: 'decimal',
+    });
+
+    // The same start with **no** numbering at all, which is equally storable because decimal is the
+    // default. It publishes as a falsy 0 beside a null format, and a template has to read both at
+    // once - a 0 as a start the author set, and a null as decimal - so the pair is pinned here
+    // rather than left for the template to discover one of them.
+    const unstated = component([
+      storedList('L1', 'ordered', [{ content: [paragraph('b1', text('Check the readings'))] }], {
+        start: 0,
+      }),
+    ]);
+    expect(blocksOf(assemble(oneOccurrence(unstated)))[0]).toMatchObject({
+      start: 0,
+      format: null,
+    });
+
+    for (const format of ['alphabetic', 'roman'] as const) {
+      const lettered: ContentDocument = {
+        ...decimal,
+        content: decimal.content.map((block) =>
+          block.type === 'list' ? { ...block, format } : block,
+        ),
+      };
+      expect(failuresOf(assemble(oneOccurrence(lettered)))).toEqual([
+        {
+          stage: 'compose',
+          code: 'block_not_publishable',
+          node: id('calib'),
+          block: 'L1',
+          detail: 'list:start',
+        },
+      ]);
+    }
+  });
+
+  it('names every refusal a list holds at any depth, not the first', () => {
+    const result = assemble(
+      oneComponent(
+        storedList('D1', 'definition', [
+          {
+            term: [marked('Tensile strength', { type: 'comment', id: 'm1', threadId: 'thread-1' })],
+            content: [
+              styled('b1', 'quote', text('Arabic \u{627}')),
+              { type: 'preformatted', id: 'pre1', text: 'x' },
+              storedList('L2', 'unordered', [
+                { content: [paragraph('b2', text('Then \u{4e2d}'))] },
+              ]),
+            ],
+          },
+        ]),
+      ),
+    );
+
+    // The term before the body, which is the order a reader meets the two in, and then each block of
+    // the body in turn - the glyph check and the style check reaching a paragraph at any depth
+    // because both are asked in the paragraph branch the recursion arrives at.
+    expect(failuresOf(result)).toEqual([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: id('calib'),
+        block: 'D1',
+        detail: 'comment',
+      },
+      { stage: 'compose', code: 'style_missing', node: id('calib'), block: 'b1', detail: 'quote' },
+      { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b1', detail: 'U+0627' },
+      {
+        stage: 'compose',
+        code: 'block_not_publishable',
+        node: id('calib'),
+        block: 'pre1',
+        detail: 'preformatted',
+      },
+      { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b2', detail: 'U+4E2D' },
+    ]);
+  });
+
+  it('names a block kind it has no shape for, rather than leaving a hole among the blocks', () => {
+    // Unreachable by construction - `parseContentDocument` refuses the kind, and every occurrence
+    // reaches `assemble` through it - so this fixture is built past that door, as the start-rule one
+    // above is. What it demonstrates is the shape of the answer: a kind nothing here knows is
+    // **named**, at the first gate that meets it. Left to fall through, each of the two switches it
+    // passes returns `undefined`, and the caller's `flatMap` folds that straight into the blocks a
+    // reader is shown - a hole in the published document that no failure accounts for.
+    //
+    // `contributionsOf` runs before the projection, so it answers first; `publishable`'s own branch
+    // stands behind it and says the same thing in its own words.
+    const stored = component([paragraph('b1', text('Check the readings'))]);
+    const newerSchema: ContentDocument = {
+      ...stored,
+      content: [{ type: 'callout', id: 'b1' } as unknown as BlockNode],
+    };
+
+    expect(() => assemble(oneOccurrence(newerSchema))).toThrow(
+      /No contribution rule for a block of kind callout/,
+    );
+  });
+
+  it('keeps an item that came out empty, and publishes nothing for a list where every one did', () => {
+    // An item holding one empty paragraph is storable - that is where a cursor stands after Enter,
+    // for CNT-124's reason - and it publishes as an item with nothing in it. It is not dropped:
+    // an item that vanished would renumber every item below it, so a reader would be shown numbers
+    // the author never wrote. A list with nothing at all in it is another matter, and contributes
+    // nothing rather than an empty `L` for the template to set.
+    const partly = assemble(
+      oneComponent(
+        storedList('L1', 'ordered', [
+          { content: [blank('b1')] },
+          { content: [paragraph('b2', text('Note the serial'))] },
+        ]),
+      ),
+    );
+    expect(itemsOf(partly)).toEqual([
+      { term: null, blocks: [] },
+      {
+        term: null,
+        blocks: [{ type: 'paragraph', id: 'b2', runs: [{ text: 'Note the serial', marks: [] }] }],
+      },
+    ]);
+
+    const nothing = assemble(
+      oneComponent(storedList('L1', 'unordered', [{ content: [blank('b1')] }])),
+    );
+    expect(blocksOf(nothing)).toEqual([]);
+  });
 });
 
 describe('assemble for a request made before layouts', () => {
@@ -940,6 +1330,28 @@ describe('assemble for a request made before layouts', () => {
         node: id('calib'),
         block: 'b1',
         detail: 'emphasis',
+      },
+    ]);
+  });
+
+  it('refuses a list outright where there is no layout, as publishing/1 and /2 are frozen', () => {
+    // `publishing/1` and `publishing/2` hold paragraphs alone and their bytes are frozen, so a list
+    // is refused by name rather than flattened into the paragraphs of its items - which would
+    // publish, under the author's name, a document that has lost every marker and every level.
+    const withoutLayout = assemble({
+      ...oneComponent(
+        storedList('L1', 'unordered', [{ content: [paragraph('b1', text('Check the readings'))] }]),
+      ),
+      layout: null,
+    });
+
+    expect(failuresOf(withoutLayout)).toEqual([
+      {
+        stage: 'compose',
+        code: 'block_not_publishable',
+        node: id('calib'),
+        block: 'L1',
+        detail: 'list',
       },
     ]);
   });

@@ -32,8 +32,10 @@ tenant), [structure.md](structure.md) (the outline, `number`, `contents` and `li
 > running heads and feet, page numbering per matter and a contents tagged as one, and the layout's
 > scheme reaching the routes, the outline panel and its lists. The marks plan then took slice 3's
 > first piece: `publishing/3` carrying a run's marks, and template `publication/3` setting them, so
-> what the editor now writes is what the PDF carries. Every block
-> but a paragraph, the defined term, condition, suggestion and comment marks, the lists of figures and
+> what the editor now writes is what the PDF carries. The lists plan then took the next piece:
+> `publishing/4` carrying a list of any of the three kinds, nested, and template `publication/4`
+> setting it. Every block
+> but a paragraph and a list, the defined term, condition, suggestion and comment marks, the lists of figures and
 > tables, the theme, veraPDF on every
 > publication, preview and Word are later slices' ([Build order](#build-order)), and nothing chooses
 > or edits a layout yet. [`../architecture.md`](../architecture.md) describes what is built, and
@@ -278,16 +280,16 @@ not enough for a writer: a writer also needs the numbers, the bound references, 
 and the layout, and must decide none of them. So the intermediate is one type in `packages/domain`,
 **`PublishedDocument`**, and both writers read it:
 
-| Member   | Holds                                                                                                                                                                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema` | `publishing/3`, the version of this shape the template reads. `publishing/2` is the same document before a run carried its marks and is made no longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
-| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                          |
-| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                |
-| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                        |
-| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                          |
-| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                           |
-| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                          |
-| `back`   | Generated back matter                                                                                                                                                                                                                 |
+| Member   | Holds                                                                                                                                                                                                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema` | `publishing/4`, the version of this shape the template reads. `publishing/3` is the same document before a block could be a list and `publishing/2` before a run carried its marks, and neither is made any longer; `publishing/1` is slice 1's, still made for a request recorded before layouts |
+| Identity | Title as plain text and as inline content, language, direction, `revision` (`0.7`), `publishedAt`, `status` (`draft`, `preview`, `approved`)                                                                                                                                                      |
+| `words`  | The layout's own words with the language they are set in - the contents' title and the draft notice - which need not be the document's                                                                                                                                                            |
+| `format` | The layout's member for this format, in points, with its words                                                                                                                                                                                                                                    |
+| `theme`  | The theme's projection for this writer (themes.md): `TypstTheme` for the PDF                                                                                                                                                                                                                      |
+| `front`  | Generated front matter the layout declares - cover, contents, lists - each already computed                                                                                                                                                                                                       |
+| `nodes`  | The outline as a tree: each node's anchor, depth, matter, number or none, title, `pageBreak`, language and direction where they differ, blocks, and children                                                                                                                                      |
+| `back`   | Generated back matter                                                                                                                                                                                                                                                                             |
 
 **A language tag the engine cannot carry is refused, naming it, never shortened - decision K,
 reversed.** Typst's `text(lang:)` takes two or three letters and `text(region:)` exactly two, so a
@@ -369,8 +371,9 @@ so neither is ever named as a section.
 **A publication is recorded with template 1 exactly when it has no layout, and with a later template
 under one.** A request made before migration 0018 carries no layout version, is assembled as
 `publishing/1` and compiled by template 1, exactly as it would have been before layouts; every request
-since carries one, is assembled as `publishing/3` and compiled by template 3 - and was `publishing/2`
-and template 2 before a run carried its marks, which the publications made then keep. The database
+since carries one, is assembled as `publishing/4` and compiled by template 4 - and was `publishing/3`
+and template 3 before a block could be a list, and `publishing/2` and template 2 before a run carried
+its marks, which the publications made then keep. The database
 holds the rule rather than trusting the job: `publication`'s check constraint is
 `(template_version = 1) = (layout_version_id is null)`, so neither a template 1 publication under a
 layout nor a laid-out publication without one can be recorded at all.
@@ -1074,8 +1077,11 @@ Each slice is a plan, lands into something that runs, and cites only what its te
 3. **The rest of the content.** Marks, hyperlinks and language marks came early, with the editor that
    writes them
    ([the marks plan](../plans/2026-09-20-editor-03-marks-and-links.md), `publishing/3` and template
-   `publication/3`), because there is no point in an author writing what a publication drops. What is
-   left to this slice: lists, quotations, preformatted
+   `publication/3`), because there is no point in an author writing what a publication drops. Lists
+   came the same way and for the same reason
+   ([the lists plan](../plans/2026-09-21-editor-04-lists-and-quotations.md), `publishing/4` and
+   template `publication/4`), in all three kinds and nested. What is
+   left to this slice: quotations, preformatted
    text, tables with captions and header rows, footnotes, equations through the maths tree, figures
    with assets, citations failing, and cross-references once structure 4 has built `references`. With
    figures come the layout's `lists` - by layout schema 2 and a second version of the default layout -

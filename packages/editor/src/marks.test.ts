@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { fromEditor, toEditor } from './mapping.js';
 import {
   applyMarkCommand,
+  commandKeymap,
   EDITOR_COMMANDS,
   markAt,
-  markKeymap,
   markThroughout,
   removeMarkCommand,
   somewhereToPutMark,
@@ -123,25 +123,44 @@ function textAndMarks(state: EditorState): { text: string; marks: string[] }[] {
 describe('the command registry', () => {
   // Uncited on purpose. CNT-077 asks that every editing action is reachable from the keyboard
   // alone, and this body asserts strings and presses no key: it shows the registry is well formed,
-  // which is a precondition and not the requirement. The citation lives where a key is pressed -
-  // `EditorToolbar.test.tsx` for the toolbar's own row, and `ComponentEditor.test.tsx` for F6 and
-  // Shift-F6 between the regions of the view.
+  // which is a precondition and not the requirement. That holds for a block action exactly as it
+  // holds for a mark - a row naming `bulletedList` with no shortcut is the same failure - so the
+  // citation still lives where a key is pressed: `the keymap` below, which presses one of these
+  // rows through the real chain, `EditorToolbar.test.tsx` for the toolbar's own row, and
+  // `ComponentEditor.test.tsx` for F6 and Shift-F6 between the regions of the view.
   it('gives every command a shortcut and one label, with no shortcut used twice', () => {
-    expect(EDITOR_COMMANDS).toHaveLength(9);
+    expect(EDITOR_COMMANDS).toHaveLength(14);
     for (const command of EDITOR_COMMANDS) {
-      expect(command.label, command.mark).toMatch(/^[A-Z][a-z ]+$/);
+      expect(command.label, command.label).toMatch(/^[A-Z][a-z ]+$/);
       // No fancy dashes in anything an author reads; a plain hyphen would be allowed. Written by
       // code point rather than as a character, so the rule cannot be broken by the rule's own test.
       const fancy = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`);
       expect(command.label + command.shortcutSaid).not.toMatch(fancy);
-      expect(editorSchema.marks[command.mark]).toBeDefined();
+      if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
     }
-    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(9);
+    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(14);
+  });
+
+  it('names every block action once, in the order the toolbar shows them', () => {
+    expect(EDITOR_COMMANDS.filter((c) => c.kind === 'block').map((c) => c.action)).toEqual([
+      'bulletedList',
+      'numberedList',
+      'definitionList',
+      'nestItem',
+      'liftItem',
+    ]);
   });
 
   it('asks for a value only where a mark has one the author must supply', () => {
-    const prompting = EDITOR_COMMANDS.filter((command) => command.prompts).map((c) => c.mark);
+    const prompting = EDITOR_COMMANDS.filter(
+      (command) => command.kind === 'mark' && command.prompts,
+    ).map((c) => (c.kind === 'mark' ? c.mark : c.action));
     expect(prompting).toEqual(['hyperlink', 'language']);
+    // A block action never prompts. Nothing about making a list is a value only the author can
+    // give; a list's start and its numbering are set in the list panel, over a list that exists.
+    expect(
+      EDITOR_COMMANDS.filter((command) => command.kind === 'block' && command.prompts),
+    ).toEqual([]);
   });
 });
 
@@ -558,18 +577,88 @@ describe('taking a mark off', () => {
   });
 });
 
-describe('the keymap', () => {
-  it('binds every command in the registry into the state keymap', () => {
-    const bound = markKeymap(counter());
-    expect(Object.keys(bound)).toHaveLength(9);
-    for (const command of EDITOR_COMMANDS) {
-      expect(Object.keys(bound), command.mark).toContain(command.shortcut);
+/**
+ * A chord, driven through **the real keymap chain** - every `handleKeyDown` the state's own plugins
+ * carry, in the order `createEditorState` put them in, which is the order `EditorView` consults.
+ *
+ * `prosemirror-keymap` normalises `Mod-` to `Meta-` on macOS and `Ctrl-` everywhere else, from
+ * `navigator.platform`, so a fabricated event has to carry the modifier it normalised to. It also
+ * finds a shifted binding by **key code** rather than by name: a browser reports `Shift` and the `8`
+ * key as `*`, and `Mod-Shift-8` is reached only because `56` says which key that was. So the event
+ * carries what a browser would really report, not the name the registry spells.
+ */
+function pressChord(state: EditorState, key: string, keyCode: number, shift = false) {
+  const platform = (globalThis as { navigator?: { platform?: string } }).navigator?.platform ?? '';
+  const mac = /Mac|iP(hone|[oa]d)/.test(platform);
+  const event = { key, keyCode, ctrlKey: !mac, metaKey: mac, altKey: false, shiftKey: shift };
+  let next = state;
+  const view = {
+    get state() {
+      return next;
+    },
+    dispatch: (tr: Transaction) => {
+      next = next.apply(tr);
+    },
+  };
+  for (const plugin of state.plugins) {
+    const handler = plugin.props.handleKeyDown;
+    if (handler === undefined) continue;
+    if (handler.call(plugin, view as unknown as EditorView, event as never)) {
+      return { handled: true, next };
     }
+  }
+  return { handled: false, next };
+}
+
+/** Just inside the nth paragraph of the document, wherever the nesting has put it. */
+function inParagraph(state: EditorState, nth: number): number {
+  const found: number[] = [];
+  state.doc.descendants((node, pos) => {
+    if (node.type.name === 'paragraph') found.push(pos + 1);
+  });
+  return found[nth]!;
+}
+
+describe('the keymap', () => {
+  it('CNT-077 binds every command in the registry, and makes and nests a list from the keyboard alone', () => {
+    const bound = commandKeymap(counter());
+    expect(Object.keys(bound)).toHaveLength(14);
+    for (const command of EDITOR_COMMANDS) {
+      expect(Object.keys(bound), command.label).toContain(command.shortcut);
+    }
+
+    // Reachable is not the whole of it. Two paragraphs, selected across, become a bulleted list on
+    // `Mod-Shift-8`; the second item nests under the first on `Mod-]` and comes back out on
+    // `Mod-[`. Nothing here touches a toolbar, and every answer is taken from what the store would
+    // be sent. The three block shortcuts were declared by the registry and bound by nobody until
+    // this keymap read them, which is the whole reason `EDITOR_COMMANDS` is one list.
+    const two = run(stateWith('alpha beta'), 6, 6, splitBlock);
+    const made = pressChord(select(two, 2, 9), '*', 56, true);
+    expect(made.handled).toBe(true);
+    expect(fromEditor(made.next.doc).content[0]).toMatchObject({
+      type: 'list',
+      kind: 'unordered',
+      items: [{ content: [{ type: 'paragraph' }] }, { content: [{ type: 'paragraph' }] }],
+    });
+
+    const nested = pressChord(select(made.next, inParagraph(made.next, 1)), ']', 221);
+    expect(nested.handled).toBe(true);
+    expect(fromEditor(nested.next.doc).content[0]).toMatchObject({
+      type: 'list',
+      items: [{ content: [{ type: 'paragraph' }, { type: 'list', kind: 'unordered' }] }],
+    });
+
+    const lifted = pressChord(select(nested.next, inParagraph(nested.next, 1)), '[', 219);
+    expect(lifted.handled).toBe(true);
+    expect(fromEditor(lifted.next.doc).content[0]).toMatchObject({
+      type: 'list',
+      items: [{ content: [{ type: 'paragraph' }] }, { content: [{ type: 'paragraph' }] }],
+    });
   });
 
   it('hands a shortcut that prompts to the renderer, and does nothing when none is listening', () => {
     const asked: string[] = [];
-    const listening = markKeymap(counter(), (mark) => {
+    const listening = commandKeymap(counter(), (mark) => {
       asked.push(mark);
       return true;
     });
@@ -577,36 +666,11 @@ describe('the keymap', () => {
     expect(listening['Mod-k']!(state, () => undefined)).toBe(true);
     expect(listening['Mod-Shift-l']!(state, () => undefined)).toBe(true);
     expect(asked).toEqual(['hyperlink', 'language']);
-    expect(markKeymap(counter())['Mod-k']!(state, () => undefined)).toBe(false);
+    expect(commandKeymap(counter())['Mod-k']!(state, () => undefined)).toBe(false);
   });
 
   it('applies a mark from the keyboard alone, through the state the view is built with', () => {
-    // `prosemirror-keymap` normalises `Mod-` to `Meta-` on macOS and `Ctrl-` everywhere else, from
-    // `navigator.platform`, so a fabricated event has to carry the modifier it normalised to.
-    const platform =
-      (globalThis as { navigator?: { platform?: string } }).navigator?.platform ?? '';
-    const mac = /Mac|iP(hone|[oa]d)/.test(platform);
-    const event = {
-      key: 'b',
-      keyCode: 66,
-      ctrlKey: !mac,
-      metaKey: mac,
-      altKey: false,
-      shiftKey: false,
-    };
-    const state = select(stateWith('alpha'), 1, 6);
-    let next = state;
-    const view = {
-      state,
-      dispatch: (tr: Transaction) => {
-        next = state.apply(tr);
-      },
-    };
-    const handled = state.plugins.some((plugin) =>
-      Boolean(
-        plugin.props.handleKeyDown?.call(plugin, view as unknown as EditorView, event as never),
-      ),
-    );
+    const { handled, next } = pressChord(select(stateWith('alpha'), 1, 6), 'b', 66);
     expect(handled).toBe(true);
     expect(textAndMarks(next)).toEqual([{ text: 'alpha', marks: ['strong'] }]);
     expect(idsIn(next, 'strong')).toEqual(['b1']);

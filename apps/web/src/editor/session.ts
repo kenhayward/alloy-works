@@ -267,6 +267,41 @@ export function createSession(options: SessionOptions): Session {
   /** The notice a refusal set while editing goes on, so a later successful save can clear it. */
   let refusalNotice: string | null = null;
 
+  /**
+   * What the author is told when `snapshot` cannot make a document of what is on screen. It says
+   * what is true and no more: the session knows only that the editor refused, not which change did
+   * it. Undoing is what makes saving possible again, and the next change is what starts it - which
+   * is how a refusal the service gave behaves too.
+   */
+  const unstorableMessage =
+    'This text cannot be saved as it stands, so it was not saved. ' +
+    'Undo the change that caused it and saving starts again.';
+
+  /**
+   * `options.snapshot()` - `fromEditor`, which parses through `parseContentDocument` - threw, so
+   * there is nothing to send and a retry would take the same snapshot and throw again (final
+   * review, critical 1).
+   *
+   * **The change stays `dirty`.** Every other path out of a failed save keeps it, and this one is
+   * the same kind of failure: the text is still on screen and still unwritten. Clearing it, as the
+   * old order did by taking the snapshot after `dirty = false`, left the indicator saying "Saving"
+   * for ever, stopped `dispose` sending anything, and made **Save version** and **Done editing**
+   * reject into a button that then waited for ever - with everything typed afterwards lost.
+   *
+   * Editing goes on, as it does for a `signed_out` or an `invalid` refusal, because the author's way
+   * out of this one is to undo in the editor that is still in front of them.
+   */
+  const cannotSnapshot = () => {
+    stopTimers();
+    failures = 0;
+    hasFailed = false;
+    save = 'stopped';
+    phase = 'editing';
+    notice = unstorableMessage;
+    refusalNotice = unstorableMessage;
+    publish();
+  };
+
   /** What the author is told for a refusal no retry will change, with or without unsaved text. */
   const refusalMessage = (code: Refusal, unsaved: boolean): string => {
     switch (code) {
@@ -339,6 +374,17 @@ export function createSession(options: SessionOptions): Session {
     // linger to fire a redundant retry later (finding 3).
     cancel(retry);
     retry = null;
+    // **Before anything else is moved.** The snapshot is the one step here that can throw, and
+    // everything below it - the sequence, `dirty`, the indicator - is bookkeeping this attempt owns.
+    // Taken first, a throw leaves all of it exactly as it was and `cannotSnapshot` can say so; taken
+    // after, as it was, it left the session claiming to be saving a change it had already forgotten.
+    let content: ContentDocument;
+    try {
+      content = options.snapshot();
+    } catch {
+      cannotSnapshot();
+      return false;
+    }
     sequence += 1;
     const sent = sequence;
     dirty = false;
@@ -353,7 +399,7 @@ export function createSession(options: SessionOptions): Session {
       }, timing.claimMs);
     });
     const result = await Promise.race([
-      service.save(sent, version.id, options.snapshot(), controller.signal),
+      service.save(sent, version.id, content, controller.signal),
       timedOut,
     ]);
     cancel(timer);
@@ -681,31 +727,45 @@ export function createSession(options: SessionOptions): Session {
       ) {
         // The snapshot must be taken now, synchronously: the caller destroys the view the instant
         // this returns, and `options.snapshot()` reads it.
-        const content = options.snapshot();
-        const openedFrom = version.id;
-        const alreadyInFlight = inFlight;
-        dirty = false;
-        if (alreadyInFlight) {
-          // A save is already on the wire, sent from an earlier snapshot - this typing arrived after
-          // that one was taken, so it is not in that request and must not be dropped just because
-          // another is already running (fix round 2, finding 4). Queued after it settles, over the
-          // next sequence, rather than sent alongside it: never two requests for one session at once,
-          // and never more than this one follow-up, since nothing can arrive after the view is
-          // destroyed.
-          //
-          // This holds during `cutting`/`releasing` too (fix round 3): `finish`, above, is also
-          // waiting on this same in-flight save through its own `flush`, but once it notices this
-          // disposal (`if (disposed) return;`, its very next checkpoint) it returns without cutting a
-          // version or sending anything of its own - it does not queue this follow-up itself, so
-          // skipping it here, as an earlier attempt at this fix did, dropped the typing silently
-          // instead of racing anything.
-          void alreadyInFlight.then(() => {
+        //
+        // **And it can throw** (final review, critical 1), where the editor holds content the model
+        // refuses. Best effort means best effort: there is nothing to send, `dirty` stays true, and
+        // `dispose` returns rather than throwing out of the unmount that called it. Sending an
+        // earlier snapshot instead is not the safer answer - it would record text the author has
+        // since changed as their latest, under their name, with nothing left on screen to say so.
+        let content: ContentDocument | null;
+        try {
+          content = options.snapshot();
+        } catch {
+          content = null;
+        }
+        if (content !== null) {
+          const body = content;
+          const openedFrom = version.id;
+          const alreadyInFlight = inFlight;
+          dirty = false;
+          if (alreadyInFlight) {
+            // A save is already on the wire, sent from an earlier snapshot - this typing arrived
+            // after that one was taken, so it is not in that request and must not be dropped just
+            // because another is already running (fix round 2, finding 4). Queued after it settles,
+            // over the next sequence, rather than sent alongside it: never two requests for one
+            // session at once, and never more than this one follow-up, since nothing can arrive
+            // after the view is destroyed.
+            //
+            // This holds during `cutting`/`releasing` too (fix round 3): `finish`, above, is also
+            // waiting on this same in-flight save through its own `flush`, but once it notices this
+            // disposal (`if (disposed) return;`, its very next checkpoint) it returns without
+            // cutting a version or sending anything of its own - it does not queue this follow-up
+            // itself, so skipping it here, as an earlier attempt at this fix did, dropped the
+            // typing silently instead of racing anything.
+            void alreadyInFlight.then(() => {
+              sequence += 1;
+              void service.save(sequence, openedFrom, body).catch(() => {});
+            });
+          } else {
             sequence += 1;
-            void service.save(sequence, openedFrom, content).catch(() => {});
-          });
-        } else {
-          sequence += 1;
-          void service.save(sequence, openedFrom, content).catch(() => {});
+            void service.save(sequence, openedFrom, body).catch(() => {});
+          }
         }
       }
       disposed = true;

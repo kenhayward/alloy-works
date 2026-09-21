@@ -120,7 +120,8 @@ report cannot be written without it.
 | **CNT-015** | Lists must be supported - **ordered (numbered)**, unordered, and definition - nestable to at least six levels, with an author-settable start number and numbering format (decimal, alphabetic, roman) on an ordered list                                                                   | T1         | Superseded by CNT-117 |
 | **CNT-117** | Lists must be supported, in three kinds - **ordered (numbered)**, unordered and definition                                                                                                                                                                                                 | T1         | Specified             |
 | **CNT-118** | A list must nest to at least six levels, in every kind and in any mixture of kinds                                                                                                                                                                                                         | T1         | Specified             |
-| **CNT-119** | An ordered list must carry an author-settable start number and numbering format - decimal, alphabetic or roman - local to that list and independent of the outline's numbering (**STR**)                                                                                                   | T1         | Specified             |
+| **CNT-119** | An ordered list must carry an author-settable start number and numbering format - decimal, alphabetic or roman - local to that list and independent of the outline's numbering (**STR**)                                                                                                   | T1         | Superseded by CNT-153 |
+| **CNT-153** | An ordered list must carry an author-settable start number and numbering format - decimal, alphabetic or roman - local to that list and independent of the outline's numbering (**STR**). The start number must be 1 or more, and 0 where the format is decimal                            | T1         | Specified             |
 | **CNT-016** | Authored tables must be supported, with header rows and columns, merged cells, and a caption                                                                                                                                                                                               | T1         | Specified             |
 | **CNT-017** | Figures must be supported, carrying a caption and alternative text, and referencing a managed asset rather than embedding one                                                                                                                                                              | T1         | Specified             |
 | **CNT-018** | Preformatted blocks must be supported, with an optional language label, preserving whitespace exactly                                                                                                                                                                                      | T1         | Specified             |
@@ -147,6 +148,15 @@ report cannot be written without it.
 to that list and independent of the outline's numbering of headings, figures, tables and equations -
 a numbered list restarts at 1 wherever it appears, which is exactly why it cannot be the same
 mechanism.
+
+**CNT-153 says what a start number may be, which CNT-119 left open.** A zeroth item is a convention
+1, 2, 3 has and letters and roman numerals do not. Building the editor's lists found that the
+publishing engine sets a roman zero as `n.`, so a lettered or roman list starting at 0 prints
+`n., i., ii.` - a numbering no author asked for, arrived at silently. The rule is stated here rather
+than left to whichever engine renders it, because a product quietly stricter than its own
+requirement is a product whose requirement nobody can check it against. Constraining what CNT-119
+permitted changes what may be stored rather than how it is worded, which is why CNT-119 is
+superseded and not edited.
 
 **CNT-081 keeps numbering out of the component while making it possible.** Captions are authored
 here; numbers are not, because a figure that is figure 3 in one report and figure 11 in another
@@ -756,5 +766,23 @@ language tag may be, and that nothing said what an author should be told about i
 | Counts           | Before                      | After                       |
 | ---------------- | --------------------------- | --------------------------- |
 | Requirements     | 151, of which 15 superseded | 152, of which 15 superseded |
+| Non-requirements | 10                          | 10                          |
+| Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |
+
+### From building the editor's lists, 2026-09-20
+
+Not a review. Building the editor's lists found that this area permitted a start number no numbering
+can express, and that the only thing refusing it was the publishing engine, weeks later and in its
+own words.
+
+| What was found                                                                                                                                                                                                                                                        | Change                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CNT-119 put a start number and a numbering format on an ordered list and said nothing about what the number may be. The publishing engine sets a roman zero as `n.`, so a lettered or roman list starting at 0 prints `n., i., ii.` - a numbering no author asked for | **CNT-119 superseded by CNT-153**, which carries the same first sentence and adds the rule: the start number must be 1 or more, and 0 where the format is decimal. Narrowing what may be stored is a change to what the product must do rather than a rewording, so it is a new identifier and CNT-119's statement is untouched                  |
+| Where the rule is held mattered as much as stating it. A stored shape is insert-only, so tightening `listNodeSchema`'s `min(0)` would refuse a document nobody has stored and could never be taken back                                                               | Stated here as one rule, and answered in [content-model.md](../../design/content-model.md) as the shape plus a narrowing in the walk every producer passes through - so an import, a paste or an API client is refused on the way in rather than at a publish somebody else asked for. The publisher asks the same predicate again as a backstop |
+| Declined: leaving it permitted and printing `n.`                                                                                                                                                                                                                      | It makes the product's output depend on which engine renders it, and an author who set a start of 0 on a lettered list would learn what the product decided from the PDF                                                                                                                                                                         |
+
+| Counts           | Before                      | After                       |
+| ---------------- | --------------------------- | --------------------------- |
+| Requirements     | 152, of which 15 superseded | 153, of which 16 superseded |
 | Non-requirements | 10                          | 10                          |
 | Open questions   | 15, of which 9 settled      | 15, of which 9 settled      |

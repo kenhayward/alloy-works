@@ -29,6 +29,36 @@ const stored = (...inlines: unknown[]) => ({
 
 const run = (value: string, ...marks: Mark[]) => ({ type: 'text', value, marks });
 
+/** A stored document of whole blocks, where `stored` above makes one paragraph of runs. */
+const storedBlocks = (...content: unknown[]) => ({
+  schemaVersion: 1,
+  title: 'Install the printer',
+  language: 'en-GB',
+  direction: 'ltr',
+  content,
+});
+
+const paragraph = (id: string, text: string) => ({
+  type: 'paragraph',
+  id,
+  style: 'body',
+  content: [{ type: 'text', value: text, marks: [] }],
+});
+
+const listOf = (kind: 'ordered' | 'unordered', ...texts: string[]) => ({
+  type: 'list',
+  id: 'L1',
+  kind,
+  items: texts.map((text, at) => ({ content: [paragraph(`i${at + 1}`, text)] })),
+});
+
+const definitionListOf = (word: string, meaning: string) => ({
+  type: 'list',
+  id: 'D1',
+  kind: 'definition',
+  items: [{ term: [run(word)], content: [paragraph('d1', meaning)] }],
+});
+
 /** The paragraph's runs as the stored model spells them, which is what a save would send. */
 const runsOf = (view: EditorView) => {
   const [block] = fromEditor(view.state.doc).content;
@@ -45,10 +75,21 @@ const LABELS = [
   'Quoted phrase',
   'Link',
   'Language',
+  'Bulleted list',
+  'Numbered list',
+  'Definition list',
+  'Nest item',
+  'Lift item',
 ];
 
-/** The seven that apply a mark where they stand; the other two open a dialog first. */
+/** The seven marks that apply where they stand; the two after them open a dialog first. */
 const TOGGLES = LABELS.slice(0, 7);
+
+/** The three block buttons that say which kind of list the cursor stands in. */
+const KINDS = ['Bulleted list', 'Numbered list', 'Definition list'];
+
+/** The two that move an item a level, which are not toggles and have no state to be in. */
+const MOVES = ['Nest item', 'Lift item'];
 
 interface ToolbarOptions {
   readonly document?: unknown;
@@ -59,6 +100,11 @@ interface ToolbarOptions {
   readonly asks?: EditorToolbarProps['prompt'];
   /** A cursor at this position before the toolbar renders. */
   readonly caret?: number;
+  /**
+   * A cursor inside the block carrying this identifier, or inside the first term where it is
+   * `term`: a position in a nested document is not a number anybody should be counting by hand.
+   */
+  readonly caretIn?: string;
   /** A selection over this range before the toolbar renders. */
   readonly range?: readonly [number, number];
   /** False mounts no view at all, which is what the first render of a page holds. */
@@ -92,6 +138,7 @@ function renderToolbar(options: ToolbarOptions = {}) {
     answer = null,
     asks,
     caret,
+    caretIn,
     range,
     mounted = true,
   } = options;
@@ -104,13 +151,26 @@ function renderToolbar(options: ToolbarOptions = {}) {
     const opened = toEditor(parseContentDocument(content));
     if (!opened.editable) throw new Error('the fixture must open for editing');
     let blocks = 0;
+    let at = -1;
+    if (caretIn !== undefined) {
+      opened.doc.descendants((node, pos) => {
+        if (at !== -1) return false;
+        if (node.attrs.id === caretIn || (caretIn === 'term' && node.type.name === 'term')) {
+          at = pos + 1;
+        }
+        return true;
+      });
+      if (at === -1) throw new Error(`no ${caretIn} in this fixture`);
+    }
     // `Selection.fromJSON` is the only route to a range selection through the editor package's own
     // exports, which are what a renderer may import: `TextSelection` is not among them.
     const selection = range
       ? Selection.fromJSON(opened.doc, { type: 'text', anchor: range[0], head: range[1] })
-      : caret === undefined
-        ? undefined
-        : Selection.near(opened.doc.resolve(caret));
+      : at !== -1
+        ? Selection.near(opened.doc.resolve(at))
+        : caret === undefined
+          ? undefined
+          : Selection.near(opened.doc.resolve(caret));
     place = document.createElement('div');
     document.body.append(place);
     view = mountEditor(place, {
@@ -156,14 +216,14 @@ describe('the formatting toolbar', () => {
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
     expect(document.activeElement).toBe(buttons[2]);
     await userEvent.keyboard('{End}');
-    expect(document.activeElement).toBe(buttons[8]);
+    expect(document.activeElement).toBe(buttons[13]);
     await userEvent.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(buttons[0]);
     // Both ways, and both wraps: a row a key can only be walked one way along is half a row.
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[8]);
+    expect(document.activeElement).toBe(buttons[13]);
     await userEvent.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(buttons[7]);
+    expect(document.activeElement).toBe(buttons[12]);
     await userEvent.keyboard('{Home}');
     expect(document.activeElement).toBe(buttons[0]);
     expect(buttons[0]).toHaveAttribute('title', 'Ctrl or Cmd and B');
@@ -217,6 +277,95 @@ describe('the formatting toolbar', () => {
     }
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
     expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it('says which kind of list the cursor stands in, and says nothing about the two that move an item', () => {
+    renderToolbar({
+      document: storedBlocks(listOf('unordered', 'Unbox the printer.', 'Keep the box.')),
+      caretIn: 'i1',
+    });
+
+    expect(screen.getByRole('button', { name: 'Bulleted list' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    for (const label of ['Numbered list', 'Definition list']) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'false');
+    }
+    // Nest item and Lift item move an item a level in one direction: neither is a toggle, so
+    // neither has a state to be in, and announcing one as pressed would promise a second press
+    // that undid it. Neither opens anything either.
+    for (const label of MOVES) {
+      const button = screen.getByRole('button', { name: label });
+      expect(button).not.toHaveAttribute('aria-pressed');
+      expect(button).not.toHaveAttribute('aria-haspopup');
+    }
+  });
+
+  it('announces a block command as unavailable wherever pressing it would do nothing', () => {
+    // The defect this toolbar has now been fixed for twice, in its third shape. `blockCommand`
+    // declines to unmake a definition list - there is no lossless way to, because a term has no
+    // home outside one - so a **Definition list** button that read its pressed state from `listAt`
+    // alone would announce itself as available and pressed, inside the one place pressing it does
+    // nothing at all. The answer is taken from the command itself, asked with no dispatch.
+    renderToolbar({
+      document: storedBlocks(definitionListOf('Creep', 'Slow strain under a steady load.')),
+      caretIn: 'd1',
+    });
+
+    const definition = screen.getByRole('button', { name: 'Definition list' });
+    expect(definition).toHaveAttribute('aria-pressed', 'true');
+    expect(definition).toHaveAttribute('aria-disabled', 'true');
+    // Nest item declines on the first item of a list, and Lift item declines at the top level of a
+    // definition list, which is the limit `blockCommand` names in full rather than an oversight.
+    for (const label of MOVES) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
+    }
+    // A counted list nested in the definition being written is a real thing to want, so those two
+    // stay available: this is a negative control, not a toolbar that has simply gone quiet.
+    for (const label of ['Bulleted list', 'Numbered list']) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'false');
+    }
+  });
+
+  it('offers no list command at all with the cursor in a term', () => {
+    // A term is inline content with no home outside its item, so there is no block there to wrap,
+    // to unwrap or to lift. All three list commands decline, and the toolbar says so.
+    renderToolbar({
+      document: storedBlocks(definitionListOf('Creep', 'Slow strain under a steady load.')),
+      caretIn: 'term',
+    });
+
+    for (const label of KINDS) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
+    }
+  });
+
+  it('makes a list when a block button is pressed, and takes it off when it is pressed again', async () => {
+    const { view: mounted } = renderToolbar({ caret: 3 });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
+
+    expect(fromEditor(mounted.state.doc).content[0]).toMatchObject({
+      type: 'list',
+      kind: 'unordered',
+      items: [{ content: [{ type: 'paragraph', id: 'b1' }] }],
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
+
+    // Back out again, under the identifier it went in with: the press wraps the paragraph rather
+    // than rebuilding it, so nothing hanging on that identifier is renamed by a toolbar press.
+    expect(fromEditor(mounted.state.doc).content).toMatchObject([{ type: 'paragraph', id: 'b1' }]);
+  });
+
+  it('runs no block command while the component may not be changed', async () => {
+    const { view: mounted } = renderToolbar({ enabled: false, caret: 3 });
+    const before = mounted.state.doc;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
+
+    expect(mounted.state.doc.eq(before)).toBe(true);
   });
 
   it('keeps the focus on the surface when a button is pressed', async () => {
@@ -433,7 +582,12 @@ describe('the formatting toolbar', () => {
       buttons
         .filter((button) => button.hasAttribute('aria-pressed'))
         .map((button) => button.getAttribute('aria-pressed')),
-    ).toEqual(TOGGLES.map(() => 'false'));
+    ).toEqual([...TOGGLES, ...KINDS].map(() => 'false'));
+    // No state to read, so every block command is unavailable too: a press before the surface
+    // exists has no document to act on, exactly as the two dialogs have nowhere to put a mark.
+    for (const label of [...KINDS, ...MOVES]) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
+    }
     // There is no state to ask where a mark could go, so the two dialogs are unavailable rather than
     // available-and-inert: a press before the surface exists opens nothing either.
     for (const label of ['Link', 'Language']) {

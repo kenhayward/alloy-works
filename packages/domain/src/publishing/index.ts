@@ -25,13 +25,18 @@ export {
   // Frozen by the editor's marks slice, which made `publishing/3`: the schema template 2 reads, and
   // the schema of every publication made before a run carried its marks.
   PUBLISHING_SCHEMA_2,
+  // Frozen by the editor's lists slice, which made `publishing/4`: the schema template 3 reads, and
+  // the schema of every publication made before a block could be a list.
+  PUBLISHING_SCHEMA_3,
 } from './published.js';
 export type {
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,
   PublishedDocument1,
+  PublishedItem,
   PublishedLanguage,
+  PublishedList,
   PublishedMark,
   PublishedNode,
   PublishedNode1,
