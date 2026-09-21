@@ -5,12 +5,12 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/4` is the document under a layout whose runs carry their marks and whose blocks may be
- * lists, which `apps/worker/templates/publication/4/` reads. It is never stored - only its digest is,
+ * `publishing/5` is the document under a layout whose runs carry their marks and whose blocks may be
+ * lists, quotations and preformatted text, which `apps/worker/templates/publication/5/` reads. It is never stored - only its digest is,
  * on the publication - so a later shape is a new schema string and a new template version, not a
  * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/4';
+export const PUBLISHING_SCHEMA = 'publishing/5';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -34,6 +34,13 @@ export const PUBLISHING_SCHEMA_2 = 'publishing/2';
  * template version and the publications made with it are a record rather than something to migrate.
  */
 export const PUBLISHING_SCHEMA_3 = 'publishing/3';
+
+/**
+ * The document under a layout as it stood when a block could be a paragraph or a list and nothing
+ * else, frozen by editor 5 for the reason `publishing/3` is: `apps/worker/templates/publication/4/`
+ * asserts it, and a template version and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_4 = 'publishing/4';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -136,7 +143,33 @@ export interface PublishedList {
   readonly items: readonly PublishedItem[];
 }
 
-export type PublishedBlock = PublishedParagraph | PublishedList;
+/**
+ * Preformatted text of `publishing/5` (CNT-018): its lines, **each tab already expanded** to the
+ * stops the surface shows, because the engine ignores `tab-size` without a language and a language
+ * would delete whitespace. `label` is the author's language label, printed above the block, and
+ * **null rather than absent** where there is none, so a template has one spelling to branch on.
+ */
+export interface PublishedPreformatted {
+  readonly type: 'preformatted';
+  readonly id: string;
+  readonly label: string | null;
+  readonly lines: readonly string[];
+}
+
+/**
+ * A quotation of `publishing/5` (CNT-019): the blocks it quotes, and its attribution as runs, or null
+ * where it has none. The template sets the attribution itself, with **no character before it** - never
+ * through the engine's own attribution, which writes an em dash the author never typed (decision D).
+ */
+export interface PublishedQuotation {
+  readonly type: 'blockquote';
+  readonly id: string;
+  readonly blocks: readonly PublishedBlock[];
+  readonly attribution: readonly PublishedRun[] | null;
+}
+
+export type PublishedBlock =
+  PublishedParagraph | PublishedList | PublishedPreformatted | PublishedQuotation;
 
 /**
  * A run of `publishing/1` and `publishing/2`, before a run carried its marks: its text and nothing

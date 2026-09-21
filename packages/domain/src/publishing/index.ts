@@ -30,6 +30,9 @@ export {
   // Frozen by the editor's lists slice, which made `publishing/4`: the schema template 3 reads, and
   // the schema of every publication made before a block could be a list.
   PUBLISHING_SCHEMA_3,
+  // Frozen by editor 5, which made `publishing/5`: the schema template 4 reads, and the schema of
+  // every publication made before a block could be a quotation or preformatted text.
+  PUBLISHING_SCHEMA_4,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -39,6 +42,8 @@ export type {
   PublishedItem,
   PublishedLanguage,
   PublishedList,
+  PublishedPreformatted,
+  PublishedQuotation,
   PublishedMark,
   PublishedNode,
   PublishedNode1,

@@ -27,6 +27,12 @@ export const publishFailureCodes = [
   // set, and a layout language it cannot carry. Named apart so that neither reads as the document's.
   'layout_glyph_missing',
   'layout_language_not_publishable',
+  // compose, from editor 5: a character the monospace face cannot set, in preformatted text or an
+  // inline code run - named apart from `glyph_missing` because the body face could set it, so the
+  // author is not told the character is in no typeface at all - and a preformatted line wider than
+  // the page, which would otherwise be wrapped or cut off.
+  'code_glyph_missing',
+  'line_too_wide',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

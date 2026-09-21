@@ -15,7 +15,8 @@ import type { OutlineDocument, OutlineMatter, OutlineNode } from '../structure/o
 import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
 
 import type { PublishFailure } from './failures.js';
-import { characterProblems, codePointName, type Covers } from './glyphs.js';
+import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
+import { columnsAt, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
 import {
@@ -117,9 +118,13 @@ export function assemble(input: AssembleInput): Assembled {
 
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
-  const check = (text: string, node: string | null, block: string | null) => {
-    for (const { problem, codePoint } of characterProblems(text, input.covers, 'body')) {
-      failures.push(failure('compose', problem, node, block, codePointName(codePoint)));
+  // Asked of the family the text will be set in (decision A): preformatted text and an inline code
+  // run are set in the monospace face, everything else in the body face, and a character missing
+  // from the monospace alone is `code_glyph_missing`, so the author is not told no face has it.
+  const check = (text: string, node: string | null, block: string | null, face: Face = 'body') => {
+    for (const { problem, codePoint } of characterProblems(text, input.covers, face)) {
+      const code = problem === 'glyph_missing' && face === 'code' ? 'code_glyph_missing' : problem;
+      failures.push(failure('compose', code, node, block, codePointName(codePoint)));
     }
   };
 
@@ -190,7 +195,8 @@ export function assemble(input: AssembleInput): Assembled {
       }
       // Only what will be set is checked against the faces, exactly as an unmarked run is: a run
       // already refused is not set, and a second complaint about it would say nothing new.
-      check(inline.value, node, block);
+      const code = outcome.marks.some((mark) => mark.kind === 'inlineCode');
+      check(inline.value, node, block, code ? 'code' : 'body');
       runs.push({ text: inline.value, marks: outcome.marks });
     }
     return runs;
@@ -208,7 +214,7 @@ export function assemble(input: AssembleInput): Assembled {
    * the glyph check reach a paragraph at any depth because both are asked in the paragraph branch
    * the recursion arrives at.
    */
-  const publishable = (block: BlockNode, node: string): PublishedBlock[] => {
+  const publishable = (block: BlockNode, node: string, indent = 0): PublishedBlock[] => {
     switch (block.type) {
       case 'paragraph': {
         if (block.style !== BODY) {
@@ -255,7 +261,9 @@ export function assemble(input: AssembleInput): Assembled {
           const term = item.term === undefined ? [] : publishedRuns(item.term, node, block.id);
           return {
             term: term.length === 0 ? null : term,
-            blocks: item.content.flatMap((each) => publishable(each, node)),
+            blocks: item.content.flatMap((each) =>
+              publishable(each, node, indent + listIndent(block)),
+            ),
           };
         });
         // An item that came out empty is **kept**: it is storable because that is where a cursor
@@ -275,10 +283,57 @@ export function assemble(input: AssembleInput): Assembled {
               },
             ];
       }
+      case 'preformatted': {
+        // Refused by name without a layout, as a list is: the frozen shapes hold paragraphs alone.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        // An empty block is where a cursor stands, as an empty paragraph is (decision P).
+        if (block.text === '') return [];
+        const lines = block.text.split('\n').map(expandTabs);
+        const most = columnsAt(publishedPdf(layout.formats.pdf), indent);
+        lines.forEach((line, index) => {
+          check(line, node, block.id, 'code');
+          const width = [...line].length;
+          if (width > most) {
+            failures.push(
+              failure(
+                'compose',
+                'line_too_wide',
+                node,
+                block.id,
+                `line ${index + 1}, ${width} of ${most} columns`,
+              ),
+            );
+          }
+        });
+        return [{ type: 'preformatted', id: block.id, label: block.language ?? null, lines }];
+      }
+      case 'blockquote': {
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        const blocks = block.content.flatMap((each) =>
+          publishable(each, node, indent + QUOTATION_INDENT),
+        );
+        const attribution =
+          block.attribution === undefined ? [] : publishedRuns(block.attribution, node, block.id);
+        // Nothing to show and nothing to attribute contributes nothing, rather than an empty
+        // `BlockQuote` (decision P).
+        if (blocks.length === 0 && attribution.length === 0) return [];
+        return [
+          {
+            type: 'blockquote',
+            id: block.id,
+            blocks,
+            attribution: attribution.length === 0 ? null : attribution,
+          },
+        ];
+      }
       case 'table':
       case 'figure':
-      case 'preformatted':
-      case 'blockquote':
       case 'equation':
         failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
         return [];
@@ -455,7 +510,12 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
         runs: block.runs.map((run) => ({ text: run.text })),
       };
     case 'list':
-      throw new Error(`publishing/1 holds paragraphs alone, and block ${block.id} is a list`);
+    case 'preformatted':
+    case 'blockquote':
+      // Unreachable for the same reason as a list: without a layout both are refused by name first.
+      throw new Error(
+        `publishing/1 holds paragraphs alone, and block ${block.id} is a ${block.type}`,
+      );
     default: {
       // As in `publishable`: the assignment keeps the compile failure and the throw names what
       // arrived, so a third published kind can never be folded into the frozen shape as `undefined`.
@@ -468,7 +528,7 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
 }
 
 /** The layout's PDF member as the template reads it: the page in points, numbering as patterns. */
-function publishedPdf(pdf: PdfFormat): PublishedPdfFormat {
+export function publishedPdf(pdf: PdfFormat): PublishedPdfFormat {
   const numbered = (matter: OutlineMatter) => ({
     pattern: PATTERNS[pdf.pageNumbering[matter].format],
     restart: pdf.pageNumbering[matter].restart,

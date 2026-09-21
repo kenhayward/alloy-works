@@ -6195,6 +6195,8 @@
                               "nothing_to_publish",
                               "layout_glyph_missing",
                               "layout_language_not_publishable",
+                              "code_glyph_missing",
+                              "line_too_wide",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -8651,6 +8653,8 @@
                               "nothing_to_publish",
                               "layout_glyph_missing",
                               "layout_language_not_publishable",
+                              "code_glyph_missing",
+                              "line_too_wide",
                               "engine_failed",
                               "store_failed"
                             ]

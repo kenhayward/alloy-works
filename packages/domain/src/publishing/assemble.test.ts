@@ -18,6 +18,7 @@ import {
   PUBLISHED_MARK_ORDER,
   PUBLISHING_SCHEMA,
   PUBLISHING_SCHEMA_3,
+  PUBLISHING_SCHEMA_4,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedItem,
@@ -612,7 +613,12 @@ describe('assemble', () => {
                 marked('Tray', { type: 'definedTerm', id: 'm1', term: 'tray' }),
                 marked('Reworded', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
               ),
-              { type: 'preformatted', id: 'pre1', text: 'x' },
+              {
+                type: 'equation',
+                id: 'eq1',
+                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+                numbered: false,
+              },
               paragraph('p2', text('Arabic \u{627} and \u{4e2d} here')),
             ]),
           ],
@@ -642,8 +648,8 @@ describe('assemble', () => {
         stage: 'compose',
         code: 'block_not_publishable',
         node: id('calib'),
-        block: 'pre1',
-        detail: 'preformatted',
+        block: 'eq1',
+        detail: 'equation',
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+0627' },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'p2', detail: 'U+4E2D' },
@@ -942,11 +948,13 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/4, keeping publishing/3 as the shape template 3 reads', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/4');
-    // Frozen with template 3 and the publications made by it, exactly as `publishing/2` was frozen
-    // when a run began to carry its marks: a template version is a record, not something to migrate.
+  it('assembles under a layout as publishing/5, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/5');
+    // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
+    // frozen when a run began to carry its marks: a template version is a record, not something to
+    // migrate.
     expect(PUBLISHING_SCHEMA_3).toBe('publishing/3');
+    expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     const assembled = assemble(oneParagraph(text('Check the readings')));
     expect(assembled.ok && assembled.document.schema).toBe(PUBLISHING_SCHEMA);
   });
@@ -1188,7 +1196,12 @@ describe('assemble', () => {
             term: [marked('Tensile strength', { type: 'comment', id: 'm1', threadId: 'thread-1' })],
             content: [
               styled('b1', 'quote', text('Arabic \u{627}')),
-              { type: 'preformatted', id: 'pre1', text: 'x' },
+              {
+                type: 'equation',
+                id: 'eq1',
+                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
+                numbered: false,
+              },
               storedList('L2', 'unordered', [
                 { content: [paragraph('b2', text('Then \u{4e2d}'))] },
               ]),
@@ -1215,8 +1228,8 @@ describe('assemble', () => {
         stage: 'compose',
         code: 'block_not_publishable',
         node: id('calib'),
-        block: 'pre1',
-        detail: 'preformatted',
+        block: 'eq1',
+        detail: 'equation',
       },
       { stage: 'compose', code: 'glyph_missing', node: id('calib'), block: 'b2', detail: 'U+4E2D' },
     ]);
@@ -1367,5 +1380,103 @@ describe('assemble for a request made before layouts', () => {
       notice: DRAFT_NOTICE,
       nodes: [],
     });
+  });
+});
+
+describe('a quotation and preformatted text, published (editor 5)', () => {
+  /** Latin, and U+2016 in the body face but not the code face, as the pinned faces are. */
+  const faces = (codePoint: number, face: 'body' | 'code') =>
+    codePoint < 0x250 || (face === 'body' && codePoint === 0x2016);
+  const underFaces = (...blocks: unknown[]) => ({ ...oneComponent(...blocks), covers: faces });
+  const pre = (name: string, value: string, language?: string) => ({
+    type: 'preformatted',
+    id: name,
+    text: value,
+    ...(language === undefined ? {} : { language }),
+  });
+  const quotation = (name: string, content: unknown[], attribution?: unknown[]) => ({
+    type: 'blockquote',
+    id: name,
+    content,
+    ...(attribution === undefined ? {} : { attribution }),
+  });
+  const failed = (code: string, block: string, detail: string) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+
+  it('publishes preformatted text line by line, its tabs expanded and its label kept', () => {
+    expect(blocksOf(assemble(underFaces(pre('p1', '\u{9}a\u{A}\u{A}  b', 'sql'))))).toEqual([
+      { type: 'preformatted', id: 'p1', label: 'sql', lines: [`${' '.repeat(8)}a`, '', '  b'] },
+    ]);
+    expect(blocksOf(assemble(underFaces(pre('p1', 'x'))))[0]).toMatchObject({ label: null });
+  });
+
+  it('holds a line to 83 columns under the default layout, and to 81 inside a quotation', () => {
+    expect(failuresOf(assemble(underFaces(pre('p1', 'x'.repeat(83)))))).toEqual([]);
+    expect(failuresOf(assemble(underFaces(pre('p1', `ok\u{A}${'x'.repeat(84)}`))))).toEqual([
+      failed('line_too_wide', 'p1', 'line 2, 84 of 83 columns'),
+    ]);
+    expect(failuresOf(assemble(underFaces(quotation('q1', [pre('p1', 'x'.repeat(83))]))))).toEqual([
+      failed('line_too_wide', 'p1', 'line 1, 83 of 81 columns'),
+    ]);
+  });
+
+  it('asks the code face of preformatted text and of an inline code run, and the body face of the rest', () => {
+    expect(failuresOf(assemble(underFaces(paragraph('b1', text('a\u{2016}b')))))).toEqual([]);
+    expect(failuresOf(assemble(underFaces(pre('p1', 'a\u{2016}b'))))).toEqual([
+      failed('code_glyph_missing', 'p1', 'U+2016'),
+    ]);
+    expect(
+      failuresOf(
+        assemble(
+          underFaces(paragraph('b1', marked('a\u{2016}b', { type: 'inlineCode', id: 'm1' }))),
+        ),
+      ),
+    ).toEqual([failed('code_glyph_missing', 'b1', 'U+2016')]);
+  });
+
+  it('publishes a quotation holding a list, with its attribution, and nothing for an empty one', () => {
+    const quoted = quotation(
+      'q1',
+      [
+        paragraph('b1', text('Quoted.')),
+        storedList('L1', 'unordered', [{ content: [paragraph('b2', text('A point'))] }]),
+      ],
+      [text('Ada')],
+    );
+    expect(blocksOf(assemble(underFaces(quoted)))).toEqual([
+      {
+        type: 'blockquote',
+        id: 'q1',
+        blocks: [
+          { type: 'paragraph', id: 'b1', runs: [{ text: 'Quoted.', marks: [] }] },
+          expect.objectContaining({ type: 'list', id: 'L1' }),
+        ],
+        attribution: [{ text: 'Ada', marks: [] }],
+      },
+    ]);
+    expect(
+      blocksOf(assemble(underFaces(quotation('q2', [paragraph('b3')]), pre('p1', '')))),
+    ).toEqual([]);
+  });
+
+  it('refuses both without a layout, as it refuses a list', () => {
+    const before = {
+      ...oneComponent(pre('p1', 'x'), quotation('q1', [paragraph('b1', text('y'))])),
+    };
+    const result = assemble({ ...before, layout: null });
+    expect(failuresOf(result)).toEqual([
+      failed('block_not_publishable', 'p1', 'preformatted'),
+      failed('block_not_publishable', 'q1', 'blockquote'),
+    ]);
+  });
+
+  it('makes publishing/5, and publishing/4 is frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/5');
+    expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
   });
 });

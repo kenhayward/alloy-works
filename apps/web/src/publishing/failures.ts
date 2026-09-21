@@ -56,6 +56,12 @@ export function failureWords(failure: Failure): string {
       return `This publication's layout uses a character, ${failure.detail ?? ''}, that no typeface it can use has. The layout has to change before this document can be published.`;
     case 'layout_language_not_publishable':
       return `This publication's layout is in the language ${failure.detail ?? ''}, which cannot be published. The layout has to change before this document can be published.`;
+    // Named apart from `glyph_missing`: the body face has this character, so "in no typeface" would
+    // be untrue, and the author needs to know it is the code that cannot carry it.
+    case 'code_glyph_missing':
+      return `The character ${failure.detail ?? ''} is not in the monospace typeface that preformatted text and inline code are set in.`;
+    case 'line_too_wide':
+      return `A line of this preformatted text is too wide for the page, so it would be cut off: ${failure.detail ?? ''}. Shorten the line or break it.`;
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
