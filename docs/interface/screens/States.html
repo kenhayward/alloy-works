@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States and messages</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 1120px; box-sizing: border-box; padding: 24px; background: #f6f7f9; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; align-items: baseline; gap: 14px;">
+    <h1 style="margin: 0; font-size: 22px; font-weight: 700;">States and messages</h1>
+    <p style="margin: 0; font-size: 13px; color: #6b7280;">Every screen has these. The wording is the product's, not the framework's: it says what happened and what to do, and it never blames the person.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; flex-grow: 1;">
+
+    <!-- Saving -->
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Saving</h2>
+      
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; flex: none; background: #16a34a;"></span>
+          <span style="color: #1c2024;">Saved at 14:02</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; flex: none; background: #2563eb;"></span>
+          <span style="color: #1c2024;">Saving</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; flex: none; background: #d97706;"></span>
+          <span style="color: #1c2024;">Not saved, retrying</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; flex: none; background: #b91c1c;"></span>
+          <span style="color: #b91c1c;">Not saved</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; flex: none; background: #cbd2d9;"></span>
+          <span style="color: #6b7280;">No unsaved changes</span>
+        </div>
+      
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Changes save a moment after you stop typing. A version is cut only by Save version or Done editing.</p>
+    </section>
+
+    <!-- Empty -->
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Nothing there yet</h2>
+      
+        <div style="border: 1px dashed #cbd2d9; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px;">There are no components you may read.</span>
+          
+            <button type="button" style="align-self: flex-start; background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;">New component</button>
+          
+        </div>
+      
+        <div style="border: 1px dashed #cbd2d9; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px;">This document has no sections yet.</span>
+          
+            <button type="button" style="align-self: flex-start; background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;">Add section</button>
+          
+        </div>
+      
+        <div style="border: 1px dashed #cbd2d9; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px;">Nothing has been published from this document.</span>
+          
+            <button type="button" style="align-self: flex-start; background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;">Publish as PDF</button>
+          
+        </div>
+      
+        <div style="border: 1px dashed #cbd2d9; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px;">Nobody is waiting to accept an invitation.</span>
+          
+        </div>
+      
+    </section>
+
+    <!-- Could not / signed out -->
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Could not, and signed out</h2>
+      <div style="border: 1px solid #b91c1c; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px; color: #b91c1c;">The components could not be loaded.</span>
+        <button type="button" style="align-self: flex-start; background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;">Try again</button>
+      </div>
+      <div style="border: 1px solid #cbd2d9; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px;">You are signed out. Sign in again to see your documents.</span>
+        <a href="#sign-in" style="font-size: 13px;">Sign in</a>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Signed out never offers Try again: trying again cannot help. What you had typed is kept, and saves on your next change once you are back.</p>
+    </section>
+
+    <!-- Read-only and locked -->
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Not yours to change</h2>
+      
+        <div style="background: #fbfcfd; border-left: 3px solid #cbd2d9; border-radius: 3px; padding: 9px 12px; font-size: 13px; color: #1c2024;">You may read this document but not change it.</div>
+      
+        <div style="background: #ffedd5; border-left: 3px solid #d97706; border-radius: 3px; padding: 9px 12px; font-size: 13px; color: #9a3412;">You may not change this document.</div>
+      
+        <div style="background: #fee2e2; border-left: 3px solid #b91c1c; border-radius: 3px; padding: 9px 12px; font-size: 13px; color: #7f1d1d;">This document is no longer open to you.</div>
+      
+        <div style="background: #f3e8ff; border-left: 3px solid #6b21a8; border-radius: 3px; padding: 9px 12px; font-size: 13px; color: #6b21a8;">Grace Rowe is editing this until 16:40.</div>
+      
+    </section>
+
+    <!-- Conflict -->
+    <section style="grid-column: span 2; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Somebody else got there first</h2>
+      <div style="background: #ffedd5; border: 1px solid #d97706; border-radius: 6px; padding: 12px; display: flex; gap: 10px; align-items: flex-start;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a3412" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px;" aria-hidden="true"><path d="M12 9v5"></path><circle cx="12" cy="17.5" r="0.6"></circle><path d="M10.3 3.9 2.6 17.3A2 2 0 0 0 4.3 20.3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 13px; color: #9a3412;">Somebody else changed this document. This is how it stands now.</span>
+          <span style="font-size: 12px; color: #9a3412;">Nobody locks a document. Your change was refused rather than written over theirs, and what you could undo has been cleared so an undo cannot overwrite it either.</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div style="flex-grow: 1; background: #fee2e2; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #7f1d1d; text-decoration: line-through;">2.3 Replace the inlet filter</div>
+        <div style="flex-grow: 1; background: #dcfce7; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #14532d;">2.3 Replace the inlet filter and seal</div>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">A component is different: the first change starts editing, and nobody else can change it while you are. A pause longer than fifteen minutes lets somebody else in.</p>
+    </section>
+
+    <!-- Refused publish -->
+    <section style="grid-column: span 2; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Refused, with every reason at once</h2>
+      <p style="margin: 0; font-size: 13px;">The document could not be published. Put these right and publish again:</p>
+      <ul aria-label="Why it could not be published" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;">
+        
+          <li style="display: flex; gap: 10px; font-size: 13px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px;">
+            <span style="color: #2563eb; font-weight: 600; width: 58px; flex: none; font-variant-numeric: tabular-nums;">2.2</span>
+            <span style="flex-grow: 1; min-width: 0;">A table. Tables cannot be published yet.</span>
+          </li>
+        
+          <li style="display: flex; gap: 10px; font-size: 13px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px;">
+            <span style="color: #2563eb; font-weight: 600; width: 58px; flex: none; font-variant-numeric: tabular-nums;">4.3</span>
+            <span style="flex-grow: 1; min-width: 0;">A component you may not read.</span>
+          </li>
+        
+          <li style="display: flex; gap: 10px; font-size: 13px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px;">
+            <span style="color: #2563eb; font-weight: 600; width: 58px; flex: none; font-variant-numeric: tabular-nums;">4.1</span>
+            <span style="flex-grow: 1; min-width: 0;">A defined term, which has no published form yet.</span>
+          </li>
+        
+          <li style="display: flex; gap: 10px; font-size: 13px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px;">
+            <span style="color: #2563eb; font-weight: 600; width: 58px; flex: none; font-variant-numeric: tabular-nums;">A.1</span>
+            <span style="flex-grow: 1; min-width: 0;">The language tag zh-Hans, which a publication cannot carry.</span>
+          </li>
+        
+      </ul>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Each failure is said at its place in the outline. A failure that is the product's own is said separately, so nobody hunts through their own document for it.</p>
+    </section>
+
+    <!-- Chips -->
+    <section style="grid-column: span 2; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Lozenges, chips and marks</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #93c5fd; color: #1e3a8a;">Draft</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #ffedd5; color: #9a3412;">In review</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #f3e8ff; color: #6b21a8;">In approval</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #dcfce7; color: #166534;">Approved</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #e5e7eb; color: #4b5563;">Superseded</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #4b5563; color: #f9fafb;">Archived</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #ffedd5; color: #9a3412;">Not approved</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #dcfce7; color: #166534;">Published</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #ffedd5; color: #9a3412;">Changed since</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #e5e7eb; color: #4b5563;">Never published</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #f3e8ff; color: #6b21a8;">Being edited</span>
+        
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 3px 9px; background: #f3e8ff; color: #6b21a8;">Not yours to read</span>
+        
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13px;">
+        <span style="background: #ecfeff; color: #0e7490; border-radius: 3px; padding: 2px 7px;">Figure 2.1</span>
+        <span style="background: #ecfeff; color: #0e7490; border-radius: 3px; padding: 2px 7px;">C0011849</span>
+        <span style="border-bottom: 1px dotted #0e7490; color: #0e7490;">seating pass</span>
+        <code style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f1f5f9; border-radius: 3px; padding: 2px 7px;">HT-400</code>
+        <span lang="fr" style="background: #eff6ff; border-radius: 3px; padding: 2px 7px;">fr</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: #2563eb; border-radius: 999px; padding: 3px 10px; font-size: 12px;">torque</span>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Cross-references and defined terms carry the clinical-concept pair, because they are the same idea: a mark in the text that points at something the system knows.</p>
+    </section>
+
+    <!-- Confirm and loading -->
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Asking first</h2>
+      <div role="group" aria-label="Confirm removal" style="border: 1px solid #b91c1c; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 13px;">Remove 2 Installation and everything beneath it? This cannot be undone, and nothing before it can be undone afterwards.</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" style="background: #ffffff; color: #b91c1c; border: 1px solid #b91c1c; border-radius: 6px; padding: 5px 14px; font: inherit; font-size: 13px; cursor: pointer;">Remove</button>
+          <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 14px; font: inherit; font-size: 13px; cursor: pointer;">Keep</button>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Only a removal asks. Every other act is its own version and undoes with Ctrl+Z.</p>
+    </section>
+
+    <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Waiting</h2>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #6b7280;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 0 1 9 9" opacity="0.9"></path><circle cx="12" cy="12" r="9" opacity="0.18"></circle></svg>
+          Opening...
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #6b7280;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 0 1 9 9" opacity="0.9"></path><circle cx="12" cy="12" r="9" opacity="0.18"></circle></svg>
+          Publishing...
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #6b7280;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 0 1 9 9" opacity="0.9"></path><circle cx="12" cy="12" r="9" opacity="0.18"></circle></svg>
+          Reading the components you may add...
+        </div>
+      
+      <div style="height: 1px; background: #e3e6ea;"></div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Spinners run at 0.7 to 0.9 seconds, linear. Rows keep their height while they load, so nothing jumps when the answer arrives.</p>
+    </section>
+  </div>
+</div>
+</body>
+</html>

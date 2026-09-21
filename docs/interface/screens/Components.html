@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Components</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #f6f7f9; overflow: hidden;">
+
+  <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+    <button type="button" title="Switch module" aria-label="Switch module" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 3px 8px; color: #ffffff; font: inherit; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2.5 3.5 7v10L12 21.5 20.5 17V7L12 2.5Z" stroke="#63aea2"></path>
+        <path d="M12 12 3.5 7" stroke="#49888e"></path>
+        <path d="M12 12l8.5-5" stroke="#63aea2"></path>
+        <path d="M12 12v9.5" stroke="#49888e"></path>
+        <circle cx="12" cy="12" r="1.7" fill="#f3f9f8"></circle>
+      </svg>
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+    </button>
+    <span style="width: 1px; height: 18px; background: #475569;"></span>
+    <span style="font-size: 13px; opacity: 0.7;">Components</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" style="background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">Acme Regulatory</button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 999px; padding: 3px 10px 3px 3px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: #32647b; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">LM</span>
+      <span>Lin Moreau</span>
+    </button>
+  </header>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0; padding-top: 4px; box-sizing: border-box;">
+
+    <!-- Filter pane -->
+    <aside style="width: 240px; flex: none; background: #fbfcfd; border-right: 1px solid #e3e6ea; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; flex-grow: 1;">Filter</h2>
+        <button type="button" style="background: transparent; border: none; color: #2563eb; font: inherit; font-size: 12px; cursor: pointer; padding: 0;">Clear</button>
+        <button type="button" title="Collapse the filter pane" aria-label="Collapse the filter pane" style="display: flex; background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px; color: #6b7280; cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+      </div>
+
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Space</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: #eff6ff;">
+              <input type="checkbox" checked="true" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">General</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">286</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: #eff6ff;">
+              <input type="checkbox" checked="true" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Regulatory</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">74</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Product docs</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">38</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Training</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">14</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Component type</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Topic</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">121</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Concept</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">96</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Task</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">133</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Reference</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">62</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Base language</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">en-GB</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">352</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">fr</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">31</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">pt-BR</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">29</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Changed</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Today</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">9</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">This week</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">41</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">By me</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">77</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Being edited now</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">3</span>
+            </label>
+          
+        </div>
+      
+    </aside>
+
+    <!-- List -->
+    <main style="flex-grow: 1; min-width: 0; padding: 0 14px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 10px 10px 10px;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25;">Components</h1>
+        <span style="flex-grow: 1;"></span>
+        <label style="display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px; width: 280px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.3-4.3"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Search components</span>
+          <input type="search" placeholder="Search titles and text" style="border: none; outline: none; font: inherit; font-size: 13px; flex-grow: 1; min-width: 0; background: transparent; color: #1c2024;">
+        </label>
+        <button type="button" style="display: flex; align-items: center; gap: 6px; background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          New component
+        </button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; padding: 0 10px 8px 10px; font-size: 12px; color: #6b7280;">
+        <span>412 components you may read. Showing 1 to 25.</span>
+        <span style="width: 1px; height: 12px; background: #e3e6ea;"></span>
+        <span>Space: General, Regulatory</span>
+        <span style="flex-grow: 1;"></span>
+        <label style="display: flex; align-items: center; gap: 6px;">
+          Sort
+          <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 4px 8px;">
+            <option>Changed, newest first</option>
+            <option>Title</option>
+            <option>Version</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #ffffff;">
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Title</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 110px;">Type</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 120px;">Space</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 86px;">Version</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 78px;">Language</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 150px;">Changed</th>
+              <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 130px;">By</th>
+              <th style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; width: 44px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            
+              <tr style="background: #eff6ff; box-shadow: inset 3px 0 0 0 #2563eb;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Torque values for the pump housing</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Reference</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">0.7</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">14 minutes ago</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">You</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #eff6ff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Safety precautions</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Concept</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">0.3</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">2 hours ago</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">You</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Install the coolant pump</a>
+                  
+                    <span title="Grace is editing this until 16:40" style="margin-left: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #6b21a8; background: #f3e8ff; border-radius: 10px; padding: 1px 6px;">Being edited</span>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Task</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">1.4</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Yesterday, 16:20</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Grace Rowe</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">What the model 400 is for</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Concept</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">2.0</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Yesterday, 11:05</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Ada Nolan</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Declaration of conformity</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Topic</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Regulatory</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">3.1</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">18 Sep, 09:48</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Alice Byrne</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Consignes de securite</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Concept</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Regulatory</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">1.0</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">fr</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">17 Sep, 15:02</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Ada Nolan</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Replace the inlet filter</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Task</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">0.9</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">17 Sep, 10:31</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Grace Rowe</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Electrical ratings</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Reference</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">1.2</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">16 Sep, 17:44</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">You</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Before you begin</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Concept</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Training</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">0.5</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">16 Sep, 08:12</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Alice Byrne</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Commissioning checklist</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Task</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">2.3</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">15 Sep, 14:19</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Grace Rowe</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Storage and transport</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Topic</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">1.1</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">15 Sep, 09:03</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Ada Nolan</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Fault codes 100 to 199</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Reference</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">General</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">4.6</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">12 Sep, 16:57</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">You</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Instrucoes de seguranca</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Concept</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Regulatory</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">1.0</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">pt-BR</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">12 Sep, 11:22</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Alice Byrne</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+              <tr style="background: #ffffff; box-shadow: none;">
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                  <a href="ComponentEditor.dc.html" style="font-weight: 600; text-decoration: none;">Annual service</a>
+                  
+                </td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Task</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Training</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-variant-numeric: tabular-nums;">0.2</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7280;">en-GB</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">11 Sep, 13:40</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Grace Rowe</td>
+                <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right;">
+                  <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: none; color: #6b7280; cursor: pointer; padding: 2px; display: inline-flex;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; justify-content: center; padding: 12px; border-top: 1px solid #e3e6ea;">
+          <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;">Show more</button>
+        </div>
+      </div>
+
+      <div style="height: 14px; flex: none;"></div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

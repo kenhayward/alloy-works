@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Administration</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; position: relative; background: #f6f7f9; overflow: hidden;">
+
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column;">
+    <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; font-size: 13px;">Acme Regulatory</span>
+      <span style="border: 1px solid #475569; border-radius: 999px; padding: 4px 10px; font-size: 13px;">Lin Moreau</span>
+    </header>
+    <div style="flex-grow: 1; background: #0b0e14;"></div>
+  </div>
+
+  <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45);"></div>
+
+  <div role="dialog" aria-labelledby="admin-title" aria-modal="true" style="position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 1100px; height: 800px; box-sizing: border-box; background: #ffffff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); overflow: hidden; display: flex; flex-direction: column;">
+
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #e3e6ea;">
+      <h2 id="admin-title" style="margin: 0; font-size: 16px; font-weight: 700; flex-grow: 1;">Administration</h2>
+      <span style="font-size: 13px; color: #6b7280;">Acme Regulatory</span>
+      <button type="button" title="Close" aria-label="Close" style="display: flex; background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 4px; color: #6b7280; cursor: pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+      </button>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+      <nav aria-label="Administration" style="width: 230px; flex: none; background: #fbfcfd; border-right: 1px solid #e3e6ea; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px;">
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Environment
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">Name, address, sign-in</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Spaces
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">4 spaces</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            People and invitations
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">31 people, 2 waiting</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Roles
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">9 roles</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Groups
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">5 groups</span>
+          </button>
+        
+          <button type="button" aria-pressed="true" style="text-align: left; background: #eff6ff; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #2563eb; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Component types
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">4 types</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            Layouts
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">2 layouts</span>
+          </button>
+        
+          <button type="button" aria-pressed="false" style="text-align: left; background: transparent; border: none; border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; color: #1c2024; font-weight: 400; cursor: pointer; display: flex; flex-direction: column; gap: 2px;">
+            About and release notes
+            <span style="font-size: 12px; color: #6b7280; font-weight: 400;">Version 0.13.0</span>
+          </button>
+        
+      </nav>
+
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;">
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px 10px 18px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700;">Component types</h3>
+          <span style="flex-grow: 1;"></span>
+          <button type="button" style="background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;">New type</button>
+        </div>
+
+        <p style="margin: 0; padding: 0 18px 10px 18px; font-size: 13px; color: #6b7280;">A type fixes what a component of that type may hold and what it must carry. Changing a type does not change components already written against it; they keep the schema version they were written with.</p>
+
+        <div style="padding: 0 18px; flex-grow: 1; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Name</th>
+                <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">What it may hold</th>
+                <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 150px;">Attributes</th>
+                <th style="text-align: right; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 110px;">In use</th>
+                <th style="text-align: left; padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 100px;">Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+                <tr style="background: #eff6ff;">
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-weight: 600;">Topic</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Any block the content model admits</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">None required</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right; font-variant-numeric: tabular-nums;">121</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                    
+                      <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #eff6ff; color: #2563eb; border-radius: 10px; padding: 2px 8px;">Default</span>
+                    
+                  </td>
+                </tr>
+              
+                <tr style="background: #ffffff;">
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-weight: 600;">Concept</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Paragraphs, lists, figures</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Audience</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right; font-variant-numeric: tabular-nums;">96</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                    
+                  </td>
+                </tr>
+              
+                <tr style="background: #ffffff;">
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-weight: 600;">Task</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Paragraphs, numbered lists, figures, tables</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Audience, Product</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right; font-variant-numeric: tabular-nums;">133</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                    
+                  </td>
+                </tr>
+              
+                <tr style="background: #ffffff;">
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; font-weight: 600;">Reference</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Paragraphs, tables, definition lists</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Product, Applies from release</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea; text-align: right; font-variant-numeric: tabular-nums;">62</td>
+                  <td style="padding: 9px 12px; border-bottom: 1px solid #e3e6ea;">
+                    
+                  </td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          <div style="display: flex; gap: 16px; margin-top: 16px;">
+            <section style="flex-grow: 1; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Layouts</h4>
+              <p style="margin: 0 0 10px 0; font-size: 13px; color: #6b7280;">Every document publishes under one. A publication records the exact version of the layout that made it.</p>
+              
+                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid #e3e6ea;">
+                  <span style="font-weight: 600; width: 150px;">A4, English</span>
+                  <span style="color: #6b7280; flex-grow: 1;">Inch margin, contents three deep, appendix on a new page</span>
+                  <span style="color: #6b7280; font-variant-numeric: tabular-nums;">Version 3</span>
+                </div>
+              
+                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid #e3e6ea;">
+                  <span style="font-weight: 600; width: 150px;">A4, French</span>
+                  <span style="color: #6b7280; flex-grow: 1;">Inch margin, contents two deep</span>
+                  <span style="color: #6b7280; font-variant-numeric: tabular-nums;">Version 1</span>
+                </div>
+              
+            </section>
+
+            <section style="width: 300px; flex: none; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">This environment</h4>
+              
+                <div style="display: flex; gap: 10px; font-size: 13px; padding: 4px 0;">
+                  <span style="color: #6b7280; width: 104px; flex: none;">Address</span>
+                  <span style="flex-grow: 1; min-width: 0;">acme.alloy.example</span>
+                </div>
+              
+                <div style="display: flex; gap: 10px; font-size: 13px; padding: 4px 0;">
+                  <span style="color: #6b7280; width: 104px; flex: none;">Sign-in</span>
+                  <span style="flex-grow: 1; min-width: 0;">Acme identity provider, and Google</span>
+                </div>
+              
+                <div style="display: flex; gap: 10px; font-size: 13px; padding: 4px 0;">
+                  <span style="color: #6b7280; width: 104px; flex: none;">Spaces</span>
+                  <span style="flex-grow: 1; min-width: 0;">General, Regulatory, Product docs, Training</span>
+                </div>
+              
+                <div style="display: flex; gap: 10px; font-size: 13px; padding: 4px 0;">
+                  <span style="color: #6b7280; width: 104px; flex: none;">Storage</span>
+                  <span style="flex-grow: 1; min-width: 0;">14.2 GB in objects, 812 MB in the database</span>
+                </div>
+              
+            </section>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid #e3e6ea;">
+          <span style="font-size: 12px; color: #6b7280;">Changes here take effect for everybody in this environment.</span>
+          <span style="flex-grow: 1;"></span>
+          <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer;">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

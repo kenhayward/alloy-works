@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Alloy Works app structure</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1600px; height: 1120px; box-sizing: border-box; padding: 40px; background: #f6f7f9; display: flex; flex-direction: column; gap: 24px;">
+
+  <div style="display: flex; align-items: flex-end; gap: 16px;">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2.5 3.5 7v10L12 21.5 20.5 17V7L12 2.5Z" stroke="#32647b"></path>
+      <path d="M12 12 3.5 7" stroke="#49888e"></path>
+      <path d="M12 12l8.5-5" stroke="#63aea2"></path>
+      <path d="M12 12v9.5" stroke="#11325f"></path>
+      <circle cx="12" cy="12" r="1.7" fill="#11325f"></circle>
+    </svg>
+    <h1 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25;">Alloy Works - app structure</h1>
+    <p style="margin: 0 0 2px 0; font-size: 13px; color: #6b7280;">One renderer, two deliveries. Three modules, four layouts, one hash route per screen. Drawn in the Protocol Authoring design system.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; flex-grow: 1;">
+
+    <!-- Shell anatomy -->
+    <section style="grid-column: span 7; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">The shell</h2>
+
+      <div style="border: 1px solid #e3e6ea; border-radius: 8px; overflow: hidden;">
+        <div style="height: 30px; background: #0f172a; color: #ffffff; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 11px;">
+          <span style="font-weight: 600;">Alloy Works</span>
+          <span style="width: 1px; height: 12px; background: #475569;"></span>
+          <span style="opacity: 0.7;">module name</span>
+          <span style="flex-grow: 1;"></span>
+          <span style="border: 1px solid #475569; border-radius: 6px; padding: 1px 7px; opacity: 0.85;">environment</span>
+          <span style="border: 1px solid #475569; border-radius: 999px; padding: 1px 7px; opacity: 0.85;">account</span>
+        </div>
+        <div style="padding: 10px 12px; font-size: 12px; color: #6b7280; background: #fbfcfd;">
+          Always dark, in both themes. The mark is the module switcher. Environment name, then the account chip, which holds Administration, Theme and Sign out.
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+
+        <div style="border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 600;">A. List layout</div>
+          <div style="display: flex; gap: 4px; height: 92px;">
+            <div style="width: 58px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Filter pane<br>240px<br>rail 40</div>
+            <div style="flex-grow: 1; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Page title, search, New. Dense table, 13px rows, Show more.</div>
+          </div>
+          <div style="font-size: 12px; color: #6b7280;">Components, Documents, Publications, Search results.</div>
+        </div>
+
+        <div style="border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 600;">B. Editor triptych</div>
+          <div style="display: flex; gap: 4px; height: 92px;">
+            <div style="width: 48px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Space pane 260, rail 46</div>
+            <div style="flex-grow: 1; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Component header, Formatting toolbar, surface, List panel</div>
+            <div style="width: 20px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px;"></div>
+            <div style="width: 54px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Facet dock 38 rail + 320</div>
+          </div>
+          <div style="font-size: 12px; color: #6b7280;">Component editor. The dock holds Attributes, Where used, Versions, Review, Access.</div>
+        </div>
+
+        <div style="border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 600;">C. Document triptych</div>
+          <div style="display: flex; gap: 4px; height: 92px;">
+            <div style="width: 54px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Outline 300, dragged 220-520, rail 46</div>
+            <div style="flex-grow: 1; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">The document's own text, each component edited in place under its number</div>
+            <div style="width: 20px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px;"></div>
+            <div style="width: 54px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Dock: this part, figures, publications, access, history</div>
+          </div>
+          <div style="font-size: 12px; color: #6b7280;">The same three-pane shape as B, so structure and content are never two screens.</div>
+        </div>
+
+        <div style="border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 600;">D. Reading layout</div>
+          <div style="display: flex; gap: 4px; height: 92px;">
+            <div style="width: 48px; background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 6px; font-size: 10px; color: #6b7280; padding: 6px; box-sizing: border-box;">Contents</div>
+            <div style="flex-grow: 1; background: #f3f3f3; border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px; box-sizing: border-box;">
+              <div style="height: 100%; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 2px; font-size: 10px; color: #555555; padding: 6px; box-sizing: border-box;">Page on doc-canvas, document palette</div>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #6b7280;">A publication, read. The only place the document palette is used.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Routes -->
+    <section style="grid-column: span 5; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Routes</h2>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Hash routes, kept as the code has them so the desktop shell can load over file://. Every screen is addressable; every outline node too.</p>
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Route</th>
+            <th style="text-align: left; padding: 5px 0; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Screen</th>
+            <th style="text-align: left; padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Layout</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Home</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Module cards</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/components</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Components</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">A</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/components/{id}</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Component editor</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">B</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/components/{id}/access</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Access to a component</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">B, dock open</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/documents</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Documents</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">A</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/documents/{id}</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Document, outline and text</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">C</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/documents/{id}/{node}</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">The same, at that part</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">C</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/publications</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Publications</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">A</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/publications/{id}</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">A publication</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">D</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/search?q=</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Search results</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">A</td>
+            </tr>
+          
+            <tr>
+              <td style="padding: 5px 8px 5px 0; border-bottom: 1px solid #e3e6ea; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: nowrap;">#/sign-in</td>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e3e6ea;">Sign in</td>
+              <td style="padding: 5px 0 5px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Frosted panel</td>
+            </tr>
+          
+        </tbody>
+      </table>
+      <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">Administration, New component, New document, Give access and Remove are modals over the screen that asked for them, never routes of their own.</p>
+    </section>
+
+    <!-- Modules -->
+    <section style="grid-column: span 4; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Modules</h2>
+      
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="width: 10px; height: 10px; border-radius: 999px; margin-top: 4px; flex: none; background: #2563eb;"></span>
+          <div>
+            <div style="font-size: 14px; font-weight: 600;">Components</div>
+            <div style="font-size: 12px; color: #6b7280;">Author and version the typed pieces. The editor lives here.</div>
+          </div>
+        </div>
+      
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="width: 10px; height: 10px; border-radius: 999px; margin-top: 4px; flex: none; background: #0e7490;"></span>
+          <div>
+            <div style="font-size: 14px; font-weight: 600;">Documents</div>
+            <div style="font-size: 12px; color: #6b7280;">Assemble outlines from components, number them, publish them.</div>
+          </div>
+        </div>
+      
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="width: 10px; height: 10px; border-radius: 999px; margin-top: 4px; flex: none; background: #7c3aed;"></span>
+          <div>
+            <div style="font-size: 14px; font-weight: 600;">Publications</div>
+            <div style="font-size: 12px; color: #6b7280;">Read what was published. Never edited, never changed.</div>
+          </div>
+        </div>
+      
+      <div style="height: 1px; background: #e3e6ea;"></div>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">Administration is not a module. It is a modal from the account chip, as Tenant Administration is in the source system: spaces, roles, people and invitations, component types, layouts.</p>
+    </section>
+
+    <!-- Tokens -->
+    <section style="grid-column: span 5; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Tokens, by surface</h2>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #f6f7f9;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">bg</span>
+          <span style="color: #6b7280;">The page behind every module</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #ffffff;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">surface</span>
+          <span style="color: #6b7280;">Cards, tables, editor body, modals</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #fbfcfd;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">surface-2</span>
+          <span style="color: #6b7280;">Filter pane, space pane, facet dock</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #2563eb;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">accent</span>
+          <span style="color: #6b7280;">Primary button, links, selection, section numbers</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #eff6ff;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">accent-weak</span>
+          <span style="color: #6b7280;">Row hover, selected row, active tab</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #0f172a;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">header-bg</span>
+          <span style="color: #6b7280;">The header band, dark in both themes</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #d97706;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">warn</span>
+          <span style="color: #6b7280;">Unsaved dot, not approved, refused publish</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #ecfeff;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">concept-bg</span>
+          <span style="color: #6b7280;">Cross-references and defined terms in text</span>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 22px; height: 22px; border-radius: 6px; flex: none; border: 1px solid #e3e6ea; background: #ffffff;"></span>
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 132px; flex: none;">doc-page</span>
+          <span style="color: #6b7280;">A publication, on doc-canvas</span>
+        </div>
+      
+      <p style="margin: 2px 0 0 0; font-size: 12px; color: #6b7280;">Write var(--token), never a hex. Light, Dark and Auto set data-theme on the html element; the header band stays dark in both.</p>
+    </section>
+
+    <!-- Rules -->
+    <section style="grid-column: span 3; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 8px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Rules these screens follow</h2>
+      <ul style="margin: 0; padding-left: 16px; font-size: 12px; color: #1c2024; line-height: 1.55;">
+        <li>One action colour. Nothing else is a button fill.</li>
+        <li>Hairlines, not shadow. Shadow only on what floats.</li>
+        <li>Sentence case everywhere; module names Title Case.</li>
+        <li>Plain hyphens, straight quotes, ASCII only.</li>
+        <li>Every control is a real button, a, input or label.</li>
+        <li>Icon-only buttons carry a title and an aria-label.</li>
+        <li>Version numbers and counters use tabular-nums.</li>
+        <li>Nothing animates but a 120ms card lift and spinners.</li>
+      </ul>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>

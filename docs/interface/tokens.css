@@ -1,0 +1,160 @@
+/*
+ * Alloy Works interface tokens.
+ *
+ * Taken from the Protocol Authoring design system, which is the visual language the
+ * screens in docs/design/interface/ are drawn in. Light theme only for the first
+ * release: the system also carries a dark value for every colour token below, and the
+ * day dark mode is built, this file gains a [data-theme="dark"] block and an
+ * @media (prefers-color-scheme: dark) mapping for Auto. Nothing else changes, because
+ * nothing outside this file writes a colour.
+ *
+ * Rules:
+ *   - Write var(--token). Never a hex, anywhere else in the codebase.
+ *   - The header band is dark in both themes. It is not "the dark theme's surface".
+ *   - The document palette (--doc-*) is for rendered publications only. Keep it away
+ *     from the interface palette; they are two vocabularies that happen to share a page.
+ */
+
+:root {
+  /* Ground and text */
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #fbfcfd;
+  --text: #1c2024;
+  --muted: #6b7280;
+  --border: #e3e6ea;
+  --input-border: #cbd2d9;
+
+  /* The one action colour */
+  --accent: #2563eb;
+  --accent-weak: #eff6ff;
+  --on-accent: #ffffff;
+  --ring: #93c5fd;
+
+  /* The header band, dark in both themes */
+  --header-bg: #0f172a;
+  --header-text: #ffffff;
+  --header-btn-border: #475569;
+
+  /* State */
+  --danger: #b91c1c;
+  --warn: #d97706;
+  --chip-bg: #f1f5f9;
+  --concept-bg: #ecfeff;
+  --concept-text: #0e7490;
+  --overlay: rgba(15, 23, 42, 0.45);
+  --panel-translucent: rgba(255, 255, 255, 0.66);
+
+  /* Modules. Home cards, switcher dots, and inside their own module only. */
+  --module-components: #2563eb;
+  --module-documents: #0e7490;
+  --module-publications: #7c3aed;
+
+  /* Publishing state */
+  --state-published-bg: #dcfce7;
+  --state-published-fg: #166534;
+  --state-behind-bg: #ffedd5;
+  --state-behind-fg: #9a3412;
+  --state-never-bg: #e5e7eb;
+  --state-never-fg: #4b5563;
+  --state-private-bg: #f3e8ff;
+  --state-private-fg: #6b21a8;
+
+  /* Version diffs */
+  --status-added: #16a34a;
+  --status-removed: #dc2626;
+  --status-modified: #d97706;
+  --diff-add-bg: #dcfce7;
+  --diff-add-fg: #14532d;
+  --diff-del-bg: #fee2e2;
+  --diff-del-fg: #7f1d1d;
+
+  /* The mark. Brand moments only, never UI state. */
+  --mark-navy: #11325f;
+  --mark-slate: #32647b;
+  --mark-teal: #49888e;
+  --mark-sea: #63aea2;
+  --mark-mint: #f3f9f8;
+
+  /* A rendered publication */
+  --doc-canvas: #f3f3f3;
+  --doc-page: #ffffff;
+  --doc-ink: #1a1a1a;
+  --doc-heading: #1f3864;
+  --doc-rule: #8a8a8a;
+  --doc-th-bg: #f2f2f2;
+  --doc-caption: #555555;
+
+  /* Type. No web fonts are loaded; the platform's own face is the face. */
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --document: Calibri, 'Segoe UI', Arial, sans-serif;
+
+  --size-greeting: 24px;
+  --size-page-title: 22px;
+  --size-doc-title: 20px;
+  --size-release-title: 17px;
+  --size-modal-title: 16px;
+  --size-card-title: 16px;
+  --size-brand: 15px;
+  --size-body: 14px;
+  --size-body-small: 13px;
+  --size-label: 12px;
+  --size-overline: 11px;
+  --size-micro: 10px;
+  --size-code: 12px;
+
+  /* Space. Literal px on a loose 2px rhythm, as the source system has it. */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-18: 18px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-40: 40px;
+
+  /* Shape */
+  --radius-3: 3px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-7: 7px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-14: 14px;
+  --radius-pill: 999px;
+
+  /* Elevation. Only things that float get one. */
+  --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-raised: 0 6px 18px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.08);
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-document: 0 1px 8px rgba(0, 0, 0, 0.18);
+
+  /* Stacking */
+  --z-popover: 30;
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-suggest: 3000;
+
+  --opacity-disabled: 0.5;
+  --opacity-secondary: 0.7;
+
+  /* Pane geometry, so two components cannot disagree about a rail width */
+  --pane-filter: 240px;
+  --pane-filter-rail: 40px;
+  --pane-space: 260px;
+  --pane-outline: 300px;
+  --pane-outline-min: 220px;
+  --pane-outline-max: 520px;
+  --pane-collapsed-rail: 46px;
+  --dock-rail: 38px;
+  --dock-panel: 320px;
+  --header-height: 44px;
+}

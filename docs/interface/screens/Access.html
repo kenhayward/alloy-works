@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Manage access</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #f6f7f9; overflow: hidden;">
+
+  <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+    <button type="button" title="Switch module" aria-label="Switch module" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 3px 8px; color: #ffffff; font: inherit; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2.5 3.5 7v10L12 21.5 20.5 17V7L12 2.5Z" stroke="#63aea2"></path>
+        <path d="M12 12 3.5 7" stroke="#49888e"></path>
+        <path d="M12 12l8.5-5" stroke="#63aea2"></path>
+        <path d="M12 12v9.5" stroke="#49888e"></path>
+        <circle cx="12" cy="12" r="1.7" fill="#f3f9f8"></circle>
+      </svg>
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+    </button>
+    <span style="width: 1px; height: 18px; background: #475569;"></span>
+    <span style="font-size: 13px; opacity: 0.7;">Components</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" style="background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">Acme Regulatory</button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 999px; padding: 3px 10px 3px 3px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: #32647b; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">LM</span>
+      <span>Lin Moreau</span>
+    </button>
+  </header>
+
+  <div style="flex-grow: 1; min-height: 0; padding: 4px 24px 0 24px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 12px 0;">
+      <a href="ComponentEditor.dc.html" style="font-size: 13px; text-decoration: none;">Back to the component</a>
+      <span style="color: #6b7280;">/</span>
+      <h1 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25;">Access to Torque values for the pump housing</h1>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; gap: 16px; min-height: 0; padding-bottom: 16px;">
+
+      <!-- Grants, by level -->
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+        
+          <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #e3e6ea;">
+              <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">On this component</h2>
+              <span style="font-size: 12px; color: #6b7280;">Granted here, and only here</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">2 grants</span>
+            </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">AB</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Alice Byrne</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Reviewer: read, comment. From outside the organisation.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #dcfce7; color: #166534;">Allowed</span>
+                <button type="button" aria-label="Remove: Alice Byrne, Reviewer, on this component" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">NH</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Noor Haddad</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Author: read, edit, create. Invited and not signed in yet.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #dcfce7; color: #166534;">Allowed</span>
+                <button type="button" aria-label="Remove: Noor Haddad, Author, on this component" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+            
+          </section>
+        
+          <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #e3e6ea;">
+              <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">On the space General</h2>
+              <span style="font-size: 12px; color: #6b7280;">Inherited by everything in it</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">3 grants</span>
+            </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">GR</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Grace Rowe</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Publisher: read, publish.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #dcfce7; color: #166534;">Allowed</span>
+                <button type="button" aria-label="Remove: Grace Rowe, Publisher, on General" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">AN</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Ada Nolan</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Author: read, edit, create.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #dcfce7; color: #166534;">Allowed</span>
+                <button type="button" aria-label="Remove: Ada Nolan, Author, on General" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">TT</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Contract translators</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Author: read, edit, create.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #fee2e2; color: #7f1d1d;">Denied</span>
+                <button type="button" aria-label="Remove: Contract translators, Author, on General" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+            
+          </section>
+        
+          <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #e3e6ea;">
+              <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">On the whole environment</h2>
+              <span style="font-size: 12px; color: #6b7280;">Acme Regulatory</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">1 grant</span>
+            </div>
+            
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #e3e6ea;">
+                <span style="width: 24px; height: 24px; border-radius: 999px; flex: none; background: #f1f5f9; color: #1c2024; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">LM</span>
+                <span style="font-size: 13px; font-weight: 600; width: 160px; flex: none;">Lin Moreau</span>
+                <span style="font-size: 13px; color: #6b7280; flex-grow: 1; min-width: 0;">Administrator: everything, including access.</span>
+                <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; background: #dcfce7; color: #166534;">Allowed</span>
+                <button type="button" aria-label="Remove: Lin Moreau, Administrator, on the environment" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Remove</button>
+              </div>
+            
+            
+          </section>
+        
+
+        <section style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">What someone may do here</h2>
+          <div style="display: flex; align-items: flex-end; gap: 10px;">
+            <label style="display: flex; flex-direction: column; gap: 4px; width: 280px;">
+              <span style="font-size: 12px; color: #6b7280;">Whose access</span>
+              <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 8px;">
+                <option>Grace Rowe (grace@acme.example)</option>
+                <option>Ada Nolan (ada@acme.example)</option>
+              </select>
+            </label>
+            <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;">Show</button>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <caption style="text-align: left; font-size: 12px; color: #6b7280; padding-bottom: 6px;">What Grace Rowe may do with this component</caption>
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Permission</th>
+                <th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; width: 110px;">Answer</th>
+                <th style="text-align: left; padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td style="padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea;">Read this component</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #e3e6ea; color: #166534; font-weight: 600;">Allowed</td>
+                  <td style="padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Publisher on the space General</td>
+                </tr>
+              
+                <tr>
+                  <td style="padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea;">Edit this component</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #e3e6ea; color: #b91c1c; font-weight: 600;">Refused</td>
+                  <td style="padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">No role granting edit, at any level</td>
+                </tr>
+              
+                <tr>
+                  <td style="padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea;">Publish a document holding it</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #e3e6ea; color: #166534; font-weight: 600;">Allowed</td>
+                  <td style="padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Publisher on the space General</td>
+                </tr>
+              
+                <tr>
+                  <td style="padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea;">Manage access to it</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #e3e6ea; color: #b91c1c; font-weight: 600;">Refused</td>
+                  <td style="padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Only Administrator, and only on the environment</td>
+                </tr>
+              
+                <tr>
+                  <td style="padding: 6px 8px 6px 0; border-bottom: 1px solid #e3e6ea;">Delete it</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #e3e6ea; color: #b91c1c; font-weight: 600;">Refused</td>
+                  <td style="padding: 6px 0 6px 8px; border-bottom: 1px solid #e3e6ea; color: #6b7280;">Nothing deletes a component yet</td>
+                </tr>
+              
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- Give access and invitations -->
+      <aside style="width: 400px; flex: none; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+
+        <section style="background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Give access</h2>
+
+          <label style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 12px; color: #6b7280;">Person</span>
+            <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 8px;">
+              <option>Choose a person</option>
+              <option>Alice Byrne (alice@partner.example), from outside the organisation</option>
+              <option>Noor Haddad (noor@acme.example), invited and not signed in yet</option>
+            </select>
+          </label>
+
+          <label style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 12px; color: #6b7280;">Role</span>
+            <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 8px;">
+              <option>Choose a role</option>
+              <option>Author: read, edit, create</option>
+              <option>Reviewer: read, comment</option>
+              <option>Publisher: read, publish</option>
+            </select>
+          </label>
+
+          <label style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 12px; color: #6b7280;">Where</span>
+            <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 8px;">
+              <option>Choose where</option>
+              <option>This component</option>
+              <option>The space General</option>
+              <option>The whole environment</option>
+            </select>
+          </label>
+
+          <fieldset style="border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px 10px; margin: 0; display: flex; align-items: center; gap: 16px;">
+            <legend style="font-size: 12px; color: #6b7280; padding: 0 4px;">Allow or deny</legend>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;"><input type="radio" name="allow" checked="true" style="margin: 0; accent-color: #2563eb;"> Allow</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;"><input type="radio" name="allow" style="margin: 0; accent-color: #2563eb;"> Deny</label>
+          </fieldset>
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" style="background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 7px 18px; font: inherit; font-size: 14px; cursor: pointer;">Give</button>
+            <span style="font-size: 12px; color: #6b7280;">A denial beats an allow at the same level.</span>
+          </div>
+        </section>
+
+        <section style="background: #fbfcfd; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Invite someone</h2>
+          <p style="margin: 0; font-size: 12px; color: #6b7280;">Invite somebody who has not signed in yet, then give them access above. What they are given is theirs the first time they sign in with that address.</p>
+          <div style="display: flex; gap: 8px;">
+            <label style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: #6b7280;">Address</span>
+              <input type="email" placeholder="name@example.com" style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 6px 8px;">
+            </label>
+            <button type="button" style="align-self: flex-end; background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 16px; font: inherit; font-size: 14px; cursor: pointer;">Invite</button>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+            From outside the organisation
+          </label>
+
+          <h3 style="margin: 4px 0 0 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Waiting invitations</h3>
+          
+            <div style="display: flex; align-items: center; gap: 10px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 8px 10px;">
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 13px;">noor@acme.example</span>
+                <span style="font-size: 12px; color: #6b7280;">Invited 16 September, waiting until 30 September</span>
+              </span>
+              <button type="button" aria-label="Withdraw the invitation to noor@acme.example" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Withdraw</button>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 10px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 8px 10px;">
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 13px;">sam@partner.example</span>
+                <span style="font-size: 12px; color: #6b7280;">Invited 12 September, waiting until 26 September. From outside the organisation.</span>
+              </span>
+              <button type="button" aria-label="Withdraw the invitation to sam@partner.example" style="background: #ffffff; color: #b91c1c; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;">Withdraw</button>
+            </div>
+          
+        </section>
+
+        <p style="margin: 0; font-size: 12px; color: #6b7280; background: #eff6ff; border-radius: 6px; padding: 10px 12px;">Removing the last grant that lets anyone administer the whole environment is refused.</p>
+      </aside>
+    </div>
+  </div>
+</div>
+</body>
+</html>
