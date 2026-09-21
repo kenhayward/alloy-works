@@ -1,6 +1,8 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
+import { Notice } from '../states/Notice.js';
+import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -72,11 +74,17 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     };
   }, [client, id, attempt]);
 
-  if (shown === null) return <p>Opening...</p>;
-  if (shown === 'missing') return <p>There is nothing here, or nothing you may read.</p>;
+  if (shown === null) return <Waiting>Opening...</Waiting>;
+  if (shown === 'missing') {
+    return (
+      <Notice tone="refused">
+        <p>There is nothing here, or nothing you may read.</p>
+      </Notice>
+    );
+  }
   if (shown === 'failed') {
     return (
-      <>
+      <Notice tone="failed">
         <p>The publication could not be opened.</p>
         <button
           type="button"
@@ -87,7 +95,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         >
           Try again
         </button>
-      </>
+      </Notice>
     );
   }
   return (

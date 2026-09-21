@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
+import { Empty } from '../states/Empty.js';
+import { Notice } from '../states/Notice.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -86,14 +88,16 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
       <section aria-labelledby="documents-heading">
         <h2 id="documents-heading">Documents</h2>
         {problem === 'signedOut' ? (
-          <p>You are signed out. Sign in again to see your documents.</p>
+          <Notice tone="signedOut">
+            <p>You are signed out. Sign in again to see your documents.</p>
+          </Notice>
         ) : (
-          <>
+          <Notice tone="failed">
             <p>The documents could not be loaded.</p>
             <button type="button" disabled={loading} onClick={() => void load()}>
               Try again
             </button>
-          </>
+          </Notice>
         )}
       </section>
     );
@@ -104,7 +108,9 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
       <h2 id="documents-heading">Documents</h2>
       <NewDocument client={client} onCreated={onOpen} />
       {items.length === 0 ? (
-        <p>There are no documents you may read.</p>
+        <Empty>
+          <p>There are no documents you may read.</p>
+        </Empty>
       ) : (
         <ul>
           {items.map((item) => (

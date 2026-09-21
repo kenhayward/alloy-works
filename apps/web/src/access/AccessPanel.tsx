@@ -22,6 +22,9 @@ import {
   type ShownPerson,
   type ShownRole,
 } from './describe.js';
+import { Empty } from '../states/Empty.js';
+import { Notice } from '../states/Notice.js';
+import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -80,12 +83,14 @@ function FailedListing({
   readonly onRetry: () => void;
 }) {
   return (
-    <p>
-      {text} could not be loaded.{' '}
-      <button type="button" disabled={reading} onClick={onRetry}>
-        {reading ? 'Reading...' : 'Try again'}
-      </button>
-    </p>
+    <Notice tone="failed">
+      <p>
+        {text} could not be loaded.{' '}
+        <button type="button" disabled={reading} onClick={onRetry}>
+          {reading ? 'Reading...' : 'Try again'}
+        </button>
+      </p>
+    </Notice>
   );
 }
 
@@ -301,18 +306,38 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
     void loadComponent();
   }, [loadComponent]);
 
-  if (opened.state === 'loading') return <p>Opening...</p>;
-  if (opened.state === 'missing') return <p>There is nothing here, or nothing you may read.</p>;
-  if (opened.state === 'unauthorized') return <p>{SIGNED_OUT}</p>;
-  if (opened.state === 'unmanaged') return <p>You may not manage access to this component.</p>;
+  if (opened.state === 'loading') return <Waiting>Opening...</Waiting>;
+  if (opened.state === 'missing') {
+    return (
+      <Notice tone="refused">
+        <p>There is nothing here, or nothing you may read.</p>
+      </Notice>
+    );
+  }
+  if (opened.state === 'unauthorized') {
+    return (
+      <Notice tone="signedOut">
+        <p>{SIGNED_OUT}</p>
+      </Notice>
+    );
+  }
+  if (opened.state === 'unmanaged') {
+    return (
+      <Notice tone="refused">
+        <p>You may not manage access to this component.</p>
+      </Notice>
+    );
+  }
   if (opened.state === 'failed') {
     return (
-      <p>
-        Access to this component could not be loaded.{' '}
-        <button type="button" onClick={() => void loadComponent()}>
-          Try again
-        </button>
-      </p>
+      <Notice tone="failed">
+        <p>
+          Access to this component could not be loaded.{' '}
+          <button type="button" onClick={() => void loadComponent()}>
+            Try again
+          </button>
+        </p>
+      </Notice>
     );
   }
 
@@ -478,9 +503,17 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
         return (
           <section key={place.target} aria-labelledby={heading}>
             <h3 id={heading}>{place.label}</h3>
-            {listing.state === 'loading' && <p>Loading...</p>}
-            {listing.state === 'unmanaged' && <p>You may not manage access here.</p>}
-            {listing.state === 'unauthorized' && <p>{SIGNED_OUT}</p>}
+            {listing.state === 'loading' && <Waiting>Loading...</Waiting>}
+            {listing.state === 'unmanaged' && (
+              <Notice tone="refused">
+                <p>You may not manage access here.</p>
+              </Notice>
+            )}
+            {listing.state === 'unauthorized' && (
+              <Notice tone="signedOut">
+                <p>{SIGNED_OUT}</p>
+              </Notice>
+            )}
             {listing.state === 'failed' && (
               <FailedListing
                 text="What is granted here"
@@ -607,7 +640,9 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             </button>
           </form>
           {invitations.waiting.length === 0 ? (
-            <p>Nobody is waiting to accept an invitation.</p>
+            <Empty>
+              <p>Nobody is waiting to accept an invitation.</p>
+            </Empty>
           ) : (
             <ul aria-label="Waiting invitations">
               {invitations.waiting.map((invitation) => (

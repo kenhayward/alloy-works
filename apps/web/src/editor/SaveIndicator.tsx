@@ -1,3 +1,4 @@
+import styles from '../states/States.module.css';
 import type { SaveState } from './session.js';
 
 export interface SaveIndicatorProps {
@@ -30,5 +31,12 @@ export function SaveIndicator({ save, savedAt, formatTime = localTime }: SaveInd
           : savedAt === null
             ? 'No unsaved changes'
             : `Saved at ${formatTime(savedAt)}`;
-  return <p data-save={save}>{text}</p>;
+  // Saved with nothing ever saved is idle, not a success, and is coloured as such.
+  const dot = save === 'saved' && savedAt === null ? 'idle' : save;
+  return (
+    <p className={styles['save']} data-save={save}>
+      <span className={styles['dot']} data-dot={dot} aria-hidden="true" />
+      {text}
+    </p>
+  );
 }
