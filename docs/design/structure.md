@@ -845,14 +845,14 @@ table in any tenant migration, so migration 0016 widens three checks and adds no
 Every route follows [service-foundations.md](service-foundations.md) and declares the permission and
 target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 
-| Route                                  | Permission     | Carries                         | Does                                                                                                                   |
-| -------------------------------------- | -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/documents`                    | Signed in      | `cursor`, `limit`               | The documents the caller may read, filtered by the readable set inside the query                                       |
-| `POST /v1/spaces/{space}/documents`    | Create, space  | Title, base language, direction | Creates a document and its version `0.1`, with an empty outline (STR-054)                                              |
-| `GET /v1/documents/{id}`               | Read, artifact | -                               | The latest version: the outline and its version, as the caller is shown it                                             |
-| `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The latest version's numbering table, as the caller is shown it, and the component version each occurrence resolved to |
-| `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version                                      |
-| `GET /v1/documents/{id}/contributions` | Read, artifact | -                               | What each occurrence of the latest version contributes to the sequences, as the caller is shown it                     |
+| Route                                  | Permission     | Carries                         | Does                                                                                                                                                                                            |
+| -------------------------------------- | -------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/documents`                    | Signed in      | `cursor`, `limit`               | The documents the caller may read, filtered by the readable set inside the query, each with its last change, its outline's section and reference counts and its publishing state. Not yet paged |
+| `POST /v1/spaces/{space}/documents`    | Create, space  | Title, base language, direction | Creates a document and its version `0.1`, with an empty outline (STR-054)                                                                                                                       |
+| `GET /v1/documents/{id}`               | Read, artifact | -                               | The latest version: the outline and its version, as the caller is shown it                                                                                                                      |
+| `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The latest version's numbering table, as the caller is shown it, and the component version each occurrence resolved to                                                                          |
+| `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version                                                                                                               |
+| `GET /v1/documents/{id}/contributions` | Read, artifact | -                               | What each occurrence of the latest version contributes to the sequences, as the caller is shown it                                                                                              |
 
 **All six are built.** `GET /v1/documents` carries neither `cursor` nor `limit` and answers everything
 the caller may read at once, which is correct and linear in the number of documents. `GET

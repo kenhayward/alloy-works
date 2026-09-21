@@ -170,6 +170,10 @@ export function documentHandlers(
           title: item.title,
           space: item.space,
           version: `${item.revision}.${item.version}`,
+          changedAt: item.changedAt.toISOString(),
+          sections: item.sections,
+          components: item.components,
+          publishing: item.publishing,
         })),
       };
     },

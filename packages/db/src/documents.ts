@@ -69,7 +69,20 @@ export interface DocumentSummary {
   readonly space: { readonly id: string; readonly name: string };
   readonly revision: number;
   readonly version: number;
+  /** When the latest version was made. */
+  readonly changedAt: Date;
+  /** The sections and the component references in the latest outline, at every depth. */
+  readonly sections: number;
+  readonly components: number;
+  /** The reader's own view: whether the latest publication they may read is of the latest version. */
+  readonly publishing: PublishingState;
 }
+
+/**
+ * Where a document stands against what has been published of it, as one reader may see it: a
+ * publication's readership is its own, so this is said of the publications the reader may read.
+ */
+export type PublishingState = 'published' | 'changedSince' | 'neverPublished';
 
 /**
  * Creates a document and its version 0.1, an outline holding no nodes (STR-054): a document has a
@@ -161,7 +174,20 @@ export async function listReadableDocuments(
       (eb) =>
         eb
           .selectFrom('artifact_version as v')
-          .select(['v.revision_no', 'v.version_no', sql<string>`v.content ->> 'title'`.as('title')])
+          .select([
+            'v.id as version_id',
+            'v.revision_no',
+            'v.version_no',
+            'v.created_at',
+            sql<string>`v.content ->> 'title'`.as('title'),
+            // Every node's type, at any depth: the outline holds nothing else with one.
+            sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "section")'))`.as(
+              'sections',
+            ),
+            sql<number>`jsonb_array_length(jsonb_path_query_array(v.content, 'strict $.**.type ? (@ == "reference")'))`.as(
+              'components',
+            ),
+          ])
           .whereRef('v.artifact_id', '=', 'a.id')
           .orderBy('v.revision_no', 'desc')
           .orderBy('v.version_no', 'desc')
@@ -170,20 +196,58 @@ export async function listReadableDocuments(
       (join) => join.onTrue(),
     )
     .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.title'])
-    .select(['latest.revision_no', 'latest.version_no'])
+    .select(['latest.revision_no', 'latest.version_no', 'latest.version_id', 'latest.created_at'])
+    .select(['latest.sections', 'latest.components'])
     .where('a.kind', '=', 'document')
     .where((eb) => readableArtifacts(eb, readable))
     .orderBy('a.id')
     .execute();
 
+  // The latest publication the reader may read of each, by the one readable-set predicate: which
+  // version it was made from is all the state needs.
+  const published =
+    rows.length === 0
+      ? []
+      : await trx
+          .selectFrom('publication as p')
+          .innerJoin('artifact as a', 'a.id', 'p.id')
+          .select(['p.document_id', 'p.document_version_id'])
+          .where(
+            'p.document_id',
+            'in',
+            rows.map((row) => row.id),
+          )
+          .where((eb) => readableArtifacts(eb, readable))
+          .orderBy('p.published_at', 'desc')
+          .orderBy('a.created_at', 'desc')
+          .execute();
+  const latestPublished = new Map<string, string>();
+  for (const row of published) {
+    if (!latestPublished.has(row.document_id)) {
+      latestPublished.set(row.document_id, row.document_version_id);
+    }
+  }
+
   return {
-    items: rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      space: { id: row.space_id, name: row.space_name },
-      revision: row.revision_no,
-      version: row.version_no,
-    })),
+    items: rows.map((row) => {
+      const from = latestPublished.get(row.id);
+      return {
+        id: row.id,
+        title: row.title,
+        space: { id: row.space_id, name: row.space_name },
+        revision: row.revision_no,
+        version: row.version_no,
+        changedAt: row.created_at,
+        sections: Number(row.sections),
+        components: Number(row.components),
+        publishing:
+          from === undefined
+            ? 'neverPublished'
+            : from === row.version_id
+              ? 'published'
+              : 'changedSince',
+      };
+    }),
   };
 }
 

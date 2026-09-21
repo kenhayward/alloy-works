@@ -1833,8 +1833,11 @@ describe('the documents', () => {
 
     const link = await screen.findByRole('link', { name: 'The dosing report' });
     expect(link).toHaveAttribute('href', `#/documents/${DOCUMENT}`);
-    expect(link.closest('li')).toHaveTextContent('The dosing report - version 0.4 in General');
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    // A row of the table since interface slice 7, its space and version in their own cells.
+    const row = link.closest('tr')!;
+    expect(within(row).getByRole('cell', { name: 'General' })).toBeInTheDocument();
+    expect(within(row).getByRole('cell', { name: '0.4' })).toBeInTheDocument();
+    expect(row.parentElement!.querySelectorAll('tr')).toHaveLength(1);
   });
 
   it('says so when there are no documents to read', async () => {

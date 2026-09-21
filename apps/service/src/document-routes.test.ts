@@ -197,6 +197,16 @@ describe('documents through the service', () => {
     await db?.drop();
   });
 
+  it("lists each document with its last change, its outline's counts and its publishing state", async () => {
+    const made = (await create('ada', general, 'The counted report')).json<DocumentBody>();
+    const listed = (await call('ada', 'GET', '/v1/documents')).json<{
+      items: { id: string; changedAt: string }[];
+    }>();
+    const row = listed.items.find((item) => item.id === made.id);
+    expect(row).toMatchObject({ sections: 0, components: 0, publishing: 'neverPublished' });
+    expect(Number.isNaN(Date.parse(row!.changedAt))).toBe(false);
+  });
+
   it('STR-061 makes a document a named, versioned artifact in exactly one space, with its own title', async () => {
     const made = await create('ada', general, 'The dosing report');
     expect(made.statusCode).toBe(200);

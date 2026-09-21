@@ -2665,13 +2665,42 @@
                           "version": {
                             "type": "string",
                             "description": "`revision.version` of the latest version"
+                          },
+                          "changedAt": {
+                            "type": "string",
+                            "description": "When its latest version was made"
+                          },
+                          "sections": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The sections in its latest outline, at every depth"
+                          },
+                          "components": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The component references in its latest outline, at every depth"
+                          },
+                          "publishing": {
+                            "type": "string",
+                            "enum": [
+                              "published",
+                              "changedSince",
+                              "neverPublished"
+                            ],
+                            "description": "Whether the latest publication the caller may read is of the latest version, an earlier one, or there is none they may read"
                           }
                         },
                         "required": [
                           "id",
                           "title",
                           "space",
-                          "version"
+                          "version",
+                          "changedAt",
+                          "sections",
+                          "components",
+                          "publishing"
                         ]
                       }
                     }

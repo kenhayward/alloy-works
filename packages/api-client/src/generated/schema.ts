@@ -1792,6 +1792,17 @@ export interface operations {
                             };
                             /** @description `revision.version` of the latest version */
                             version: string;
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                            /** @description The sections in its latest outline, at every depth */
+                            sections: number;
+                            /** @description The component references in its latest outline, at every depth */
+                            components: number;
+                            /**
+                             * @description Whether the latest publication the caller may read is of the latest version, an earlier one, or there is none they may read
+                             * @enum {string}
+                             */
+                            publishing: "published" | "changedSince" | "neverPublished";
                         }[];
                     };
                 };
