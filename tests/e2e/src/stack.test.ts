@@ -316,13 +316,18 @@ describe('the whole system', () => {
     const { data: kept } = await api.GET('/v1/publications/{id}', {
       params: { path: { id: publication! } },
     });
-    // The API exposes no field naming the layout's own version directly; a template above 1 is set
-    // only for a request made under a layout (`publication_layout`), so the publication carries the
-    // layout's record the one way this suite can read from outside the database - and every
-    // assertion below is only reachable through that template's own composition. The version is the
-    // newest template, which moves whenever the published schema does: it was 2 until a run could
-    // carry marks, and `PUBLICATION_TEMPLATE` in `apps/worker/src/template.ts` is where it is set.
-    expect(kept).toMatchObject({ template: { name: 'publication', version: 3 } });
+    // The API exposes no field naming the layout's own version directly; a template **above 1** is
+    // set only for a request made under a layout (`publication_layout`), so the publication carries
+    // the layout's record the one way this suite can read from outside the database - and every
+    // assertion below is only reachable through that template's own composition.
+    //
+    // Asserted as "above 1" rather than as a number, deliberately. This line pinned the exact
+    // version three times and went stale three times: the newest template moves whenever the
+    // published schema does, and each slice that moved it found out here, on CI, after the branch
+    // was green everywhere else - because a build agent cannot run this suite locally. What the
+    // test is for is that the request was made under a layout, and that is what it now says.
+    expect(kept!.template.name).toBe('publication');
+    expect(kept!.template.version).toBeGreaterThan(1);
 
     const pdf = await followSignedLink(new URL(kept!.outputs[0]!.download));
     expect(pdf.status).toBe(200);
