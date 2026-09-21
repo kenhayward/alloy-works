@@ -1339,7 +1339,9 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
     };
     const at = (levels: number) => stateOf(documentOf(chain(levels)), 'b2');
     expect(blockCommand('quotation', counter())(at(MOST_NESTED_LEVELS))).toBe(false);
-    const room = run(at(MOST_NESTED_LEVELS - 1), blockCommand('quotation', counter()));
+    // A quotation counts two levels, so it needs two of room (final review, finding 3).
+    expect(blockCommand('quotation', counter())(at(MOST_NESTED_LEVELS - 1))).toBe(false);
+    const room = run(at(MOST_NESTED_LEVELS - 2), blockCommand('quotation', counter()));
     expect(room.handled).toBe(true);
     expect(() => stored(room.next.doc)).not.toThrow();
   });
@@ -1353,6 +1355,76 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
       expect(found).not.toContain(null);
       expect(new Set(found).size).toBe(found.length);
     }
+  });
+
+  it('stops a chain of quotations at fifteen, the most the engine sets inside one another', () => {
+    // The one route that deepens a chain: a selection from a paragraph outside into the quotation
+    // after it, which the command wraps together, one level deeper. Inside a quotation it unwraps.
+    const chainOf = (levels: number) => {
+      let chain: Node = paragraph('b2', 'deep');
+      for (let level = levels; level >= 1; level -= 1) chain = quotation(`q${level}`, [chain]);
+      return documentOf(paragraph('b1', 'before'), chain);
+    };
+    const wrapping = (levels: number) => {
+      const doc = chainOf(levels);
+      const state = createEditorState({ doc, newIdentifier: counter() });
+      return state.apply(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, inside(doc, 'b1'), inside(doc, 'b2')),
+        ),
+      );
+    };
+    const room = run(wrapping(14), blockCommand('quotation', counter()));
+    expect(room.handled).toBe(true);
+    expect(() => stored(room.next.doc)).not.toThrow();
+    expect(blockCommand('quotation', counter())(wrapping(15))).toBe(false);
+  });
+
+  it('makes preformatted text of a paragraph holding a second spelling of a line break, and it saves', () => {
+    const doc = documentOf(paragraph('b1', 'a\u{2028}b\u{D}\u{A}c\u{1B}d'));
+    const made = run(stateOf(doc, 'b1'), blockCommand('preformatted', counter()));
+    expect(shapeOf(made.next.doc)).toEqual(['doc', ['preformatted', 'a\nb\ncd']]);
+    expect(() => stored(made.next.doc)).not.toThrow();
+  });
+
+  it('declines a definition list in an attribution or preformatted text, rather than throwing', () => {
+    const quoted = documentOf(quotation('q1', [paragraph('b1', 'a')], 'Ada'));
+    const inAttribution = atEndOf(quoted, 'attribution');
+    expect(blockCommand('definitionList', counter())(inAttribution)).toBe(false);
+    expect(() => run(inAttribution, blockCommand('definitionList', counter()))).not.toThrow();
+    expect(
+      blockCommand('definitionList', counter())(atEndOf(documentOf(pre('p1', 'x')), 'p1')),
+    ).toBe(false);
+  });
+
+  it('splits a quotation paragraph into two paragraphs on Enter, at its end and at its start', () => {
+    const doc = documentOf(quotation('q1', [paragraph('b1', 'Words.')], 'Ada'));
+    const atEnd = chord(atEndOf(doc, 'b1'), 'Enter');
+    expect(atEnd.handled).toBe(true);
+    expect(shapeOf(atEnd.next.doc)).toEqual([
+      'doc',
+      ['blockquote', ['paragraph', 'Words.'], 'paragraph', ['attribution', 'Ada']],
+    ]);
+    const atStart = chord(stateOf(doc, 'b1'), 'Enter');
+    expect(shapeOf(atStart.next.doc)).toEqual([
+      'doc',
+      ['blockquote', 'paragraph', ['paragraph', 'Words.'], ['attribution', 'Ada']],
+    ]);
+    expect(() => stored(atStart.next.doc)).not.toThrow();
+  });
+
+  it('keeps an attribution line when Backspace folds the attribution into the body', () => {
+    const doc = documentOf(quotation('q1', [paragraph('b1', 'Words.')], 'Ada'));
+    let start = -1;
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'attribution') start = pos + 1;
+    });
+    const state = createEditorState({ doc, newIdentifier: counter() });
+    const at = state.apply(state.tr.setSelection(TextSelection.create(state.doc, start)));
+    const pressed = chord(at, 'Backspace');
+    const quotedNow = pressed.next.doc.firstChild!;
+    expect(quotedNow.lastChild!.type.name).toBe('attribution');
+    expect(() => stored(pressed.next.doc)).not.toThrow();
   });
 
   it('draws no identifier when only asked whether it could run, as the toolbar asks on every render', () => {

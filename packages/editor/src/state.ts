@@ -240,6 +240,30 @@ export function spellcheckDecorations(doc: Node): DecorationSet {
   return DecorationSet.create(doc, decorations);
 }
 
+/**
+ * Every quotation ends with an attribution line, empty where nobody has typed one, so an author always
+ * has somewhere to type it. `toEditor` and the Quotation command make one, but Backspace at its start
+ * or Delete at the end of the body fold its text into the paragraph before and take the node with it
+ * (final review, finding 6); this puts an empty one back after any transaction that left a quotation
+ * without. The text the key folded stays where the key put it.
+ */
+export const attributionAlwaysThere = new Plugin({
+  appendTransaction(transactions, _old, state) {
+    if (!transactions.some((transaction) => transaction.docChanged)) return null;
+    const missing: number[] = [];
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'blockquote' && node.lastChild?.type.name !== 'attribution') {
+        missing.push(pos + node.nodeSize - 1);
+      }
+    });
+    if (missing.length === 0) return null;
+    const tr = state.tr;
+    // From the last to the first, so an insertion never moves a position still to be used.
+    for (const at of missing.reverse()) tr.insert(at, state.schema.nodes.attribution!.create());
+    return tr;
+  },
+});
+
 /** `Enter`: nothing in an empty paragraph, which would otherwise make a second; a split elsewhere. */
 export const enterWithoutEmpties: Command = (state, dispatch) => {
   const { $from, empty } = state.selection;
@@ -348,6 +372,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // worth the line it takes to say so.
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
+      attributionAlwaysThere,
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
       // One decorations plugin, holding both the spellcheck rule and the empty attribution's

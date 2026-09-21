@@ -79,7 +79,15 @@ export function characterProblems(
     if (seen.has(codePoint)) continue;
     seen.add(codePoint);
     if (disallowed(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
-    else if (!setWithoutAGlyph(codePoint) && !covers(codePoint, face)) {
+    // **No exemption in the code face.** Inside `raw` the pinned engine drops the character BEFORE
+    // an invisible format character - `ab` then U+200B then `cd` prints `acd` - so what the body
+    // face sets without a glyph loses a letter in code, silently. Refused there instead, with the
+    // code the author meets for any character the monospace face cannot set (final review, finding 1).
+    else if (
+      face === 'code'
+        ? setWithoutAGlyph(codePoint) || !covers(codePoint, face)
+        : !setWithoutAGlyph(codePoint) && !covers(codePoint, face)
+    ) {
       found.push({ problem: 'glyph_missing', codePoint });
     }
   }

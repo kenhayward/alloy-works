@@ -16,7 +16,7 @@ import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.j
 
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
-import { columnsAt, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
+import { columnsAt, columnsOf, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
 import {
@@ -295,7 +295,7 @@ export function assemble(input: AssembleInput): Assembled {
         const most = columnsAt(publishedPdf(layout.formats.pdf), indent);
         lines.forEach((line, index) => {
           check(line, node, block.id, 'code');
-          const width = [...line].length;
+          const width = columnsOf(line);
           if (width > most) {
             failures.push(
               failure(

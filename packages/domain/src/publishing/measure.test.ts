@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ListNode } from '../content/model/blocks.js';
 
 import { defaultLayout } from './layout.js';
-import { columnsAt, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
+import { columnsAt, columnsOf, expandTabs, listIndent, QUOTATION_INDENT } from './measure.js';
 import { publishedPdf } from './assemble.js';
 
 const pdf = publishedPdf(defaultLayout.formats.pdf);
@@ -22,6 +22,9 @@ describe('the measure a preformatted line is held to', () => {
     expect(expandTabs('abc\u{9}b').indexOf('b', 3)).toBe(8);
     expect(expandTabs('a\u{9}\u{9}b').indexOf('b')).toBe(16);
     expect(expandTabs('\u{1F600}\u{9}x')).toBe(`\u{1F600}${' '.repeat(7)}x`);
+    // A letter and the accent over it are one column, as a reader sees them.
+    expect(expandTabs('q\u{307}\u{9}b')).toBe(`q\u{307}${' '.repeat(7)}b`);
+    expect(columnsOf('q\u{307}b')).toBe(2);
   });
 
   it('sets 83 columns on the default page and 79 inside a quotation, which is indented on both sides', () => {

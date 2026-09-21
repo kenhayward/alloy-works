@@ -33,22 +33,33 @@ export const QUOTATION_INDENT = 11;
 /** A definition hangs two ems beneath its term. */
 export const DEFINITION_INDENT = 22;
 
+const graphemes = new Intl.Segmenter('en', { granularity: 'grapheme' });
+
 /**
- * One line with each tab expanded to the next stop, counting **code points** rather than UTF-16
- * units, as the column measure below counts them. The stored text keeps its tabs; only what is set
+ * How many columns a line takes: one per **grapheme cluster**, which is what a reader sees as a
+ * character - a letter and the combining accent over it are one column, not two (final review,
+ * finding 8). The surface counts the same way, so the two agree on where a tab lands.
+ */
+export function columnsOf(line: string): number {
+  return [...graphemes.segment(line)].length;
+}
+
+/**
+ * One line with each tab expanded to the next stop, counting **grapheme clusters**, as the column
+ * measure below counts them. The stored text keeps its tabs; only what is set
  * is expanded, because the engine ignores `tab-size` without a language and a language deletes
  * whitespace (spike 2).
  */
 export function expandTabs(line: string): string {
   let column = 0;
   let out = '';
-  for (const character of line) {
-    if (character === '\t') {
+  for (const { segment } of graphemes.segment(line)) {
+    if (segment === '\t') {
       const pad = TAB_STOP - (column % TAB_STOP);
       out += ' '.repeat(pad);
       column += pad;
     } else {
-      out += character;
+      out += segment;
       column += 1;
     }
   }

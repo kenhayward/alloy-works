@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.34.0 - 2026-09-21 (PR #166)
+## 0.34.0 - 2026-09-21 (PR #167)
 
 ### Added
 
@@ -21,7 +21,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   that is not letters, digits and + # . _ - is refused with a sentence beside the box.
 - **A publication prints both.** A quotation is indented on both sides with its attribution at its
   end and nothing added before it, and preformatted text is set in its own panel in Liberation Mono,
-  every space where you put it, with its label above it. A screen reader is told which is a
+  every space and tab where you put it, with its label above it. A screen reader is told which is a
   quotation and which is code. Inline code is now printed in Liberation Mono too. It still passes
   every PDF/UA-1 rule the checker applies.
 
@@ -37,7 +37,14 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   cut off: 83 columns under the default layout, and 79 inside a quotation. Much ordinary code is
   wider than that; a layout that sets code smaller is what will fix it (#165).
 - A character the fixed-width typeface does not have, such as a handful of typographic spaces, is
-  refused in preformatted text and inline code, although a paragraph can print it.
+  refused in preformatted text and inline code, although a paragraph can print it. So is an invisible
+  character such as a zero-width space or a soft hyphen, because in fixed-width text the engine would
+  drop the letter before it.
+- Blank lines at the very end of preformatted text are not printed.
+- Quotations can be put inside one another fifteen deep, which is the most a publication can set.
+- Turning a paragraph into preformatted text turns any line separator in it into a line break, and
+  leaves out other invisible control characters, which preformatted text cannot hold. One undo brings
+  them back.
 
 ## 0.33.0 - 2026-09-21 (PR #161)
 

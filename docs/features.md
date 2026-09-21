@@ -214,8 +214,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the style you chose; and a definition list with each term beside its definition - and a screen
   reader is told each one is a list rather than a row of characters. **A quotation prints indented
   on both sides**, with its attribution at its end and nothing added before it, and **preformatted
-  text prints in its own panel** with every space, tab and blank line where you put it and its label
-  above it; a reader is told which is a quotation and which is code. **Every publication says it is
+  text prints in its own panel** with every space, tab and blank line where you put it, except blank
+  lines at its very end, and its label above it; a reader is told which is a quotation and which is code. **Every publication says it is
   not approved** - at the top of every page, and once where a screen reader reads it - because nothing
   can approve one yet. Publications are kept and never changed: publishing again makes another. The
   document lists its publications beneath the outline, each with the version, who published it and
@@ -241,8 +241,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   - is refused the same way.
 
   **Four things about formatting in a PDF, said plainly rather than left to be found.** Inline code
-  prints in the same face as the text around it, because only one typeface is pinned today - a screen
-  reader is still told it is code, and a monospace face arrives with themes. A quoted phrase is marked
+  prints in Liberation Mono, the fixed-width typeface preformatted text uses, and a screen reader is
+  told it is code; a character that typeface lacks, or an invisible one such as a zero-width space,
+  is refused in it. A quoted phrase is marked
   as a quotation for assistive technology and is given no quotation marks of its own, so the
   characters on the page are the ones you typed and no others. Of the nine marks, only a link,
   inline code and a quoted phrase reach a screen reader as something it names: strong, emphasis,
@@ -284,7 +285,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   tables, figures, footnotes or equations - a document holding any of them is refused. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
-  only that the publish failed.
+  only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
+  the most a publication can set.
   There is no list of figures or tables, no caption labels and no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as

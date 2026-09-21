@@ -13,4 +13,11 @@ describe('characterProblems', () => {
     ]);
     expect(characterProblems('a\u{2016}', covers, 'body')).toEqual([]);
   });
+
+  it('exempts nothing in the code face, where the engine drops the letter before an invisible character', () => {
+    expect(characterProblems('ab\u{200B}cd', covers, 'code')).toEqual([
+      { problem: 'glyph_missing', codePoint: 0x200b },
+    ]);
+    expect(characterProblems('ab\u{200B}cd', covers, 'body')).toEqual([]);
+  });
 });

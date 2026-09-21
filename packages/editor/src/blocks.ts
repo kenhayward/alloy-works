@@ -1,5 +1,5 @@
-import { isLanguageLabel } from '@alloy-works/domain';
-import { chainCommands, newlineInCode } from 'prosemirror-commands';
+import { forbiddenInPreformatted, isLanguageLabel } from '@alloy-works/domain';
+import { chainCommands, newlineInCode, splitBlockAs } from 'prosemirror-commands';
 import { Fragment, Slice, type Node, type NodeType } from 'prosemirror-model';
 import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirror-schema-list';
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
@@ -22,9 +22,9 @@ const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
 
 /**
  * How many lists and quotations may stand inside one another before the stored model refuses the
- * document. A quotation counts as a level from editor 5 (decision L): it costs two of the JSON depth
- * a list level costs four of, so counting it as a whole level is conservative, and thirty levels of
- * any mixture stay under the model's limit.
+ * document, counted in `levelsOf`'s units: a list one, a quotation two, which is the engine's cost
+ * rather than the store's - a quotation costs the store half what a list does, and the engine about
+ * twice (final review, finding 3).
  *
  * **Measured, not chosen.** `parseContentDocument` refuses content nested past a JSON depth of 128
  * (issue #125), and one list level costs four of those - the list, its items, an item, its content -
@@ -48,15 +48,21 @@ const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
  */
 export const MOST_NESTED_LEVELS = 30;
 
-/** Whether a node is a level of nesting: a list of either type, or a quotation. */
-const isLevel = (type: NodeType) =>
-  type === listNode || type === definitionListNode || type === blockquoteNode;
+/**
+ * How many levels a node counts as: a list of either type one, a quotation **two**. Measured against
+ * the pinned engine (final review, finding 3): fifteen quotations inside one another compile and
+ * sixteen do not, and lists and quotations alternating compile to twenty levels and not twenty-one -
+ * both exactly thirty at these weights. Thirty plain lists fail too, which predates quotations and is
+ * issue #159's, where the ceiling itself is decided.
+ */
+const levelsOf = (type: NodeType): number =>
+  type === blockquoteNode ? 2 : type === listNode || type === definitionListNode ? 1 : 0;
 
 /** The longest chain of lists and quotations inside one another anywhere here, in levels. */
 function deepestNesting(node: Node, within = 0): number {
   let deepest = within;
   node.forEach((child) => {
-    const inside = isLevel(child.type) ? within + 1 : within;
+    const inside = within + levelsOf(child.type);
     const below = deepestNesting(child, inside);
     if (below > deepest) deepest = below;
   });
@@ -109,7 +115,7 @@ function listsAbove(state: EditorState): number {
   const { $from } = state.selection;
   let count = 0;
   for (let depth = $from.depth; depth > 0; depth -= 1) {
-    if (isLevel($from.node(depth).type)) count += 1;
+    count += levelsOf($from.node(depth).type);
   }
   return count;
 }
@@ -345,7 +351,9 @@ function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string)
 function makeDefinitionList(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const { $from, $to } = state.selection;
-    if (!$from.sameParent($to) || !$from.parent.isTextblock) return false;
+    // A paragraph, and no other textblock: a term, an attribution or preformatted text cannot be
+    // made into a definition, and the wrap below throws over one (final review, finding 5).
+    if (!$from.sameParent($to) || $from.parent.type !== paragraphNode) return false;
     // Already in one: see above. A term is not a block, so wrapping from inside one is meaningless
     // as well as lossy.
     if (innermostList(state)?.node.type === definitionListNode) return false;
@@ -737,8 +745,30 @@ const leaveQuotation: Command = (state, dispatch) => {
  * does not apply, so the order is safe in both directions.
  */
 export function codeAwareEnter(newIdentifier: () => string): Command {
-  return chainCommands(newlineInCode, exitAttribution(newIdentifier), leaveQuotation);
+  return chainCommands(
+    newlineInCode,
+    exitAttribution(newIdentifier),
+    leaveQuotation,
+    splitInQuotation,
+  );
 }
+
+/**
+ * `Enter` in a quotation's own paragraph splits it into two **paragraphs**. Left to `splitBlock`,
+ * the default type after a body paragraph is the `attribution` the content expression allows next,
+ * so Enter at the end of the last paragraph did nothing and Enter at its start threw (final review,
+ * finding 4). An empty paragraph is left to the rest of the chain, which does nothing there.
+ */
+const splitInQuotation: Command = (state, dispatch) => {
+  const { $from, empty } = state.selection;
+  if ($from.depth < 2 || $from.parent.type !== paragraphNode) return false;
+  if ($from.node(-1).type !== blockquoteNode) return false;
+  if (empty && $from.parent.content.size === 0) return false;
+  return splitBlockAs(() => ({ type: paragraphNode, attrs: { id: null, style: 'body' } }))(
+    state,
+    dispatch,
+  );
+};
 
 /** The block range the selection covers, when every block in it is in the `block` group. */
 function blockRangeOf(state: EditorState) {
@@ -821,7 +851,7 @@ function preformatted(newIdentifier: () => string): Command {
     for (let index = range.startIndex; index < range.endIndex; index += 1) {
       const block = range.parent.child(index);
       if (block.type !== paragraphNode) return false;
-      lines.push(block.textContent);
+      lines.push(asPreformatted(block.textContent));
     }
     if (dispatch) {
       const text = lines.join('\n');
@@ -835,6 +865,23 @@ function preformatted(newIdentifier: () => string): Command {
     }
     return true;
   };
+}
+
+/**
+ * A paragraph's text as preformatted text may hold it. A paragraph may carry characters preformatted
+ * text may not (`checkBlock`), and a block made holding one could never be saved (final review,
+ * finding 2). The second spellings of a line break become the line break they are - the engine
+ * breaks a line on each - and the other controls, which print as nothing, are left out. Like the
+ * marks, visible in what the command did and put back by one undo.
+ */
+function asPreformatted(text: string): string {
+  let kept = '';
+  for (const character of text.replace(/\r\n/g, '\n')) {
+    const codePoint = character.codePointAt(0)!;
+    if ([0xb, 0xc, 0xd, 0x85, 0x2028, 0x2029].includes(codePoint)) kept += '\n';
+    else if (!forbiddenInPreformatted(codePoint)) kept += character;
+  }
+  return kept;
 }
 
 /** The preformatted block the cursor stands in, with its label and where it stands, or null. */

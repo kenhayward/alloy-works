@@ -244,12 +244,34 @@ describe('the publishing regression corpus', () => {
     }
   }, 120_000);
 
-  it('sets every character the check exempts inside preformatted text too, in the monospace face with no fallback', async () => {
-    // `setWithoutAGlyph` was measured against Liberation Serif. Inside preformatted text the engine
-    // sets in Liberation Mono with its fallback off, so were the exemption face-dependent, a
-    // character `assemble` lets through would stop the compile. Each range's first and last code
-    // point, found through the predicate itself so a range added later is probed too - less the
-    // line feed, which is a line break, and what preformatted text may not hold at all.
+  it('refuses in preformatted text every character the body face sets without a glyph, because the engine drops the letter before one in code', async () => {
+    // Measured, and a tripwire: inside `raw` the pinned engine drops the character BEFORE an
+    // invisible format character, so `ab` then U+200B then `cd` is set and tagged as `acd`. The
+    // day it stops, this goes red, and the code face's refusal in `characterProblems` can be relaxed.
+    const probe = assemble({
+      ...holding('x'),
+      occurrences: new Map([
+        [
+          [...holding('x').occurrences.keys()][0]!,
+          {
+            ...[...holding('x').occurrences.values()][0]!,
+            content: [{ type: 'preformatted', id: 'p1', text: 'PROBE' }],
+          },
+        ],
+      ]),
+    });
+    if (!probe.ok) throw new Error('The stand-in did not assemble');
+    const data = JSON.stringify(probe.document).replace('"PROBE"', JSON.stringify('ab\u{200B}cd'));
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      data,
+      at,
+    );
+    expect((await readPdf(pdf)).taggedText.flat()).toContain('acd');
+
+    // So every one of them is refused there, found through the predicate itself so that a range
+    // added later is covered too - less the line feed, a line break, and what the model already
+    // keeps out of preformatted text.
     const exempt: number[] = [];
     let previous = false;
     for (let codePoint = 0; codePoint <= 0xe1000; codePoint += 1) {
@@ -261,22 +283,25 @@ describe('the publishing regression corpus', () => {
       (codePoint) => codePoint !== 0xa && !forbiddenInPreformatted(codePoint),
     );
     expect(probed.length).toBeGreaterThan(20);
-    const text = probed.map((codePoint) => `a${String.fromCodePoint(codePoint)}b`).join('\n');
-    const input = holding('x');
-    const [node, document] = [...input.occurrences.entries()][0]!;
-    const made = assemble({
-      ...input,
-      occurrences: new Map([
-        [node, { ...document, content: [{ type: 'preformatted', id: 'p1', text }] }],
-      ]),
-    });
-    if (!made.ok) throw new Error(JSON.stringify(made.failures));
-    await expect(
-      typst.compile(
-        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
-        JSON.stringify(made.document),
-        at,
-      ),
-    ).resolves.toBeInstanceOf(Buffer);
+    for (const codePoint of probed) {
+      const input = holding('x');
+      const [node, document] = [...input.occurrences.entries()][0]!;
+      const made = assemble({
+        ...input,
+        occurrences: new Map([
+          [
+            node,
+            {
+              ...document,
+              content: [
+                { type: 'preformatted', id: 'p1', text: `a${String.fromCodePoint(codePoint)}b` },
+              ],
+            },
+          ],
+        ]),
+      });
+      // A tab is expanded to spaces before the check, so it is the one exempt character code keeps.
+      expect(made.ok, codePoint.toString(16)).toBe(codePoint === 0x9);
+    }
   }, 120_000);
 });
