@@ -13,6 +13,8 @@ export type ComponentList =
   paths['/v1/components']['get']['responses']['200']['content']['application/json'];
 export type ComponentView =
   paths['/v1/components/{id}']['get']['responses']['200']['content']['application/json'];
+export type PublicationList =
+  paths['/v1/publications']['get']['responses']['200']['content']['application/json'];
 
 /**
  * The one way a client calls the service (API-001): generated from the committed document, so a

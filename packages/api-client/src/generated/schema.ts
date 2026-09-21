@@ -377,6 +377,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every publication the caller may read, of every document, newest first */
+        get: operations["listPublicationsEverywhere"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/publications/{id}": {
         parameters: {
             query?: never;
@@ -4292,6 +4309,84 @@ export interface operations {
             };
         };
     };
+    listPublicationsEverywhere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The publications */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            document: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The document's title at the version published */
+                            title: string;
+                            publisher: {
+                                id: string;
+                                displayName: string | null;
+                            };
+                            publishedAt: string;
+                            /**
+                             * @description `none`: a draft. Nothing in T1 can approve a publication
+                             * @constant
+                             */
+                            approval: "none";
+                            formats: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getPublication: {
         parameters: {
             query?: never;
@@ -4349,6 +4444,8 @@ export interface operations {
                             standard: "ua-1";
                             /** @description A link to the bytes, valid for five minutes, named by the publication id */
                             download: string;
+                            /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
+                            view: string;
                         }[];
                     };
                 };

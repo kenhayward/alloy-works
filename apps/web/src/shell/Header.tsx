@@ -8,10 +8,11 @@ import type { ModuleName } from './moduleOf.js';
 /** The mark, drawn for a dark ground; served beside the page from `public/`. */
 export const MARK = 'mark-dark.svg';
 
-/** Where the switcher can take a person: the modules with a screen of their own so far. */
+/** Where the switcher can take a person: each module's own list. */
 const MODULES: readonly { readonly name: ModuleName; readonly href: string }[] = [
   { name: 'Components', href: '#/' },
   { name: 'Documents', href: '#/documents' },
+  { name: 'Publications', href: '#/publications' },
 ];
 
 interface Person {

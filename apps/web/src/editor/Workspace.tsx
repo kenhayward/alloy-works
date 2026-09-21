@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
+import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
@@ -27,7 +28,8 @@ const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
 function Places() {
   return (
     <nav aria-label="Workspace">
-      <a href="#/">Components</a> <a href="#/documents">Documents</a>
+      <a href="#/">Components</a> <a href="#/documents">Documents</a>{' '}
+      <a href="#/publications">Publications</a>
     </nav>
   );
 }
@@ -196,6 +198,14 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           />
         </div>
       </div>
+    );
+  }
+  if (hash === '#/publications') {
+    return (
+      <>
+        <Places />
+        <PublicationList client={client} />
+      </>
     );
   }
   const publication = PUBLICATION.exec(hash)?.[1];

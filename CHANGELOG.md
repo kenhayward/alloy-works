@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.44.0 - 2026-09-21 (PR #185)
+
+### Added
+
+- **Publications have a list of their own.** Publications, from the module switcher or at
+  `#/publications`, lists every publication you may read, of every document, newest first: its
+  title, the version it was made from, when and by whom, and that it is not approved. Tick documents
+  in the filter pane to narrow it.
+- **A publication shows itself.** Its page now holds the PDF, in the browser's own viewer on the
+  grey desk it was drawn on, with what it was made from beside it. Download the PDF still saves it.
+
+### Changed
+
+- The service lists every publication you may read at `GET /v1/publications`, and a publication
+  gives a second link to its PDF, `view`, that a browser shows rather than saves.
+
 ## 0.43.0 - 2026-09-21 (PR #184)
 
 ### Added

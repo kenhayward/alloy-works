@@ -542,6 +542,42 @@ describe('publishing a document through the service', () => {
     expect(hers.items.map((each) => each.id)).toEqual([last, hidden, first]);
   });
 
+  it('lists every publication the caller may read, across documents, newest first', async () => {
+    const one = await documentReferencing([]);
+    const other = await documentReferencing([]);
+    const first = await published(await requested('grace', one));
+    const hidden = await published(await requested('grace', other));
+    const last = await published(await requested('grace', other));
+    await grantAt(ids.alice!, 'Reader', hidden, 'deny');
+
+    const answer = await call('alice', 'GET', '/v1/publications');
+    expect(answer.statusCode, answer.body).toBe(200);
+    const listed = answer.json<{ items: { id: string; document: string; approval: string }[] }>();
+    const mine = listed.items.filter((each) => [first, hidden, last].includes(each.id));
+    expect(mine.map((each) => each.id)).toEqual([last, first]);
+    expect(mine.find((each) => each.id === last)).toMatchObject({
+      document: other.id,
+      approval: 'none',
+    });
+    expect(answer.body).not.toContain(hidden);
+    expect((await call(undefined, 'GET', '/v1/publications')).statusCode).toBe(401);
+  });
+
+  it('opens a publication with a link that shows the PDF in place, beside the one that saves it', async () => {
+    const id = await published(await requested('grace', await documentReferencing([])));
+    const body = (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
+      outputs: { download: string; view: string }[];
+    }>();
+    const { download, view } = body.outputs[0]!;
+    const shown = await fetch(view);
+    expect(shown.status).toBe(200);
+    expect(shown.headers.get('content-disposition')).toBeNull();
+    expect(await shown.text()).toBe('%PDF-1.7 a stand-in');
+    expect((await fetch(download)).headers.get('content-disposition')).toBe(
+      `attachment; filename="${id}.pdf"`,
+    );
+  });
+
   it('answers a listing asked of anything but a document as there being no such document', async () => {
     const scope = await componentIn(general, 'Scope');
     const document = await documentReferencing([]);

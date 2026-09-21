@@ -1,0 +1,50 @@
+/* Layout D, drawn in docs/interface/screens/Publication.html: the page on the document's desk, and
+ * what it was made from beside it. The only place the document palette is used. */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dock-panel);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.canvas {
+  min-height: 70vh;
+  padding: var(--space-16);
+  border-radius: var(--radius-8);
+  background: var(--doc-canvas);
+}
+
+.viewer {
+  display: block;
+  width: 100%;
+  height: 78vh;
+  border: 0;
+  background: var(--doc-page);
+  box-shadow: var(--shadow-document);
+}
+
+.record {
+  padding: var(--space-14) var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  font-size: var(--size-body-small);
+}
+
+.record h2 {
+  margin: 0 0 var(--space-6);
+  font-size: var(--size-release-title);
+}
+
+.notApproved {
+  color: var(--warn);
+  font-weight: 700;
+  font-size: var(--size-label);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 1000px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

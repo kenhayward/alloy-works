@@ -500,6 +500,20 @@ describe('the workspace', () => {
     expect(screen.queryByRole('heading', { name: 'Components' })).toBeNull();
   });
 
+  it('lists the publications at their own address', async () => {
+    window.location.hash = '#/publications';
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === '/v1/publications') return json(200, { items: [] });
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+    render(<Workspace fetch={fetching} />);
+    expect(await screen.findByRole('heading', { name: 'Publications' })).toBeInTheDocument();
+    expect(screen.getByText('Nothing has been published that you may read.')).toBeInTheDocument();
+  });
+
   it('opens the document the address names, with a way back to the documents', async () => {
     window.location.hash = '#/documents/eeeeeeee-0000-4000-8000-000000000001';
     render(<Workspace fetch={serviceThat({})} />);

@@ -82,6 +82,11 @@ export const PublicationView = PublicationSummary.extend({
       download: z
         .string()
         .describe('A link to the bytes, valid for five minutes, named by the publication id'),
+      view: z
+        .string()
+        .describe(
+          'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
+        ),
     }),
   ),
 });
@@ -164,6 +169,18 @@ export const publishingRoutes = {
         description: 'No such document in this environment, or none the caller may read',
         schema: ErrorBody,
       },
+    },
+  },
+  listPublicationsEverywhere: {
+    operationId: 'listPublicationsEverywhere',
+    method: 'GET',
+    path: '/v1/publications',
+    summary: 'Every publication the caller may read, of every document, newest first',
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The publications', schema: PublicationList },
+      401: unauthenticated,
     },
   },
   getPublication: {
