@@ -63,7 +63,10 @@ CMD ["node", "dist/server.js"]
 FROM base AS worker
 ENV NODE_ENV=production TYPST_BINARY=/usr/local/bin/typst
 # The version the worker is pinned to, and the hash of each architecture's release. Keep these in
-# step with apps/worker/src/typst-release.ts, which the tests and `fetch-typst` use.
+# step with apps/worker/src/typst-release.ts, which the tests and `fetch-typst` use. The download
+# retries a release host that answers with an error for up to five minutes (issue #181) - GitHub has
+# answered runners with 504s for longer than half a minute at a time - and the checksum still refuses
+# a wrong file.
 ARG TYPST_VERSION=0.15.1
 ARG TYPST_SHA256_X86_64=a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c
 ARG TYPST_SHA256_AARCH64=5aa8d74a3d906e60ea12a66ac2f37f8eef1b14cbad7182a745e393a10c23dcee
@@ -75,7 +78,7 @@ RUN apt-get update \
       arm64) arch=aarch64; sha256=$TYPST_SHA256_AARCH64 ;; \
       *) arch=x86_64; sha256=$TYPST_SHA256_X86_64 ;; \
     esac \
- && curl -fsSL -o /tmp/typst.tar.xz \
+ && curl -fsSL --retry 12 --retry-all-errors --retry-delay 20 --retry-max-time 300 -o /tmp/typst.tar.xz \
       "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${arch}-unknown-linux-musl.tar.xz" \
  && echo "${sha256}  /tmp/typst.tar.xz" | sha256sum -c - \
  && tar -xJf /tmp/typst.tar.xz -C /tmp \
