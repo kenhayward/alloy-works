@@ -29,6 +29,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { bindingBudget } from './test/budget.js';
 import { signIn } from './test/sign-in.js';
 
 const HOST = 'acme.alloy.test';
@@ -42,7 +43,9 @@ const COMPONENTS = 150;
 const BLOCKS_PER_COMPONENT = 40;
 const WARM_UP = 5;
 const SAMPLES = 40;
-const BUDGET = { p95: 250, max: 500 };
+// Held to the p95 and the maximum on a named machine, and to the maximum alone on a shared CI runner,
+// whose speed varies by more than the budget's margin (issue #179). The p95 is recorded either way.
+const BUDGET = bindingBudget(process.env);
 
 const percentile = (samples: readonly number[], p: number) => {
   const sorted = [...samples].sort((a, b) => a - b);
@@ -134,6 +137,9 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     node: process.version,
     // Always [0, 0, 0] on Windows, which is still a value.
     loadavg: loadavg().map((load) => Number(load.toFixed(2))),
+    // Which bounds this run was held to, so a result read later says what it proved (issue #179).
+    held:
+      BUDGET.p95 === null ? 'the maximum alone, on a shared CI runner' : 'the p95 and the maximum',
   };
   const report: Record<string, unknown> = { configuration };
 
@@ -294,7 +300,9 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     for (let index = 0; index < SAMPLES; index += 1) samples.push((await work()).elapsed);
     report[name] = summary(samples);
     Object.assign(meta, { navigationBudget: { configuration, [name]: report[name] } });
-    expect(percentile(samples, 95), name).toBeLessThanOrEqual(BUDGET.p95);
+    if (BUDGET.p95 !== null) {
+      expect(percentile(samples, 95), name).toBeLessThanOrEqual(BUDGET.p95);
+    }
     expect(Math.max(...samples), name).toBeLessThanOrEqual(BUDGET.max);
   };
 
