@@ -132,6 +132,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_4',
         'assemble',
         'publishFailureCodes',
+        'setWithoutAGlyph',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',

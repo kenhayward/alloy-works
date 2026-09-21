@@ -11,6 +11,7 @@ import {
   PUBLISHING_SCHEMA_1,
   PUBLISHING_SCHEMA_2,
   PUBLISHING_SCHEMA_3,
+  PUBLISHING_SCHEMA_4,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -50,6 +51,7 @@ describe('the publication template', () => {
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
       3: '682840cb57284deec3ccfd2c29a7c738f5013b2cc233971d177c34c3f4ac5381',
       4: '13b8f620f4b7bc4c627360aa30ea48d595745df5d01290558d57cf6677f6ba43',
+      5: 'a45e76bc12b182bc473682adae2e49a5fa5826b276f5e26b352cf42e809ccb3e',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -68,7 +70,14 @@ describe('the publication template', () => {
     // the value stays behind - and `satisfies Record<PublishedSchema, ...>` cannot catch it, since
     // `PublishedSchema` is derived from the same constant. Asserted through the constants this row
     // would move with them and say nothing. It has now cost three slices; it stops here.
-    expect(TEMPLATE_READING).toEqual({ 'publishing/1': 1, 'publishing/4': 4 });
+    expect(TEMPLATE_READING).toEqual({ 'publishing/1': 1, 'publishing/5': 5 });
+  });
+
+  it("never sets an attribution through the engine's own parameter, which writes a dash the author never typed", async () => {
+    // Decision D, as a guard a reader can see: Typst's `quote` takes an attribution and prints an em
+    // dash before it. Template 5 sets the attribution itself, so the parameter's name never appears.
+    const source = await readFile(PUBLICATION_TEMPLATE[5].file, 'utf8');
+    expect(source).not.toContain('attribution:');
   });
 
   it('reads the schema it was written for, and a frozen schema stays frozen', async () => {
@@ -81,7 +90,8 @@ describe('the publication template', () => {
       1: PUBLISHING_SCHEMA_1,
       2: PUBLISHING_SCHEMA_2,
       3: PUBLISHING_SCHEMA_3,
-      4: PUBLISHING_SCHEMA,
+      4: PUBLISHING_SCHEMA_4,
+      5: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -169,6 +179,7 @@ describe('the pipeline version', () => {
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
     '3': '1f3c5abc9b8b013b66fa691f73678994f3c3a891c146d63cc08d657dbeb8e9bf',
     '4': 'c23e9fc3e9b230f17a0bdda4763e712f3f295a490b5db866688d408b2a44217a',
+    '5': '388ba756e4d6ac9c891e9f94ba056fc65371810f340407cdf945498385e446af',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')
@@ -180,7 +191,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/4': '4' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/5': '5' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -201,7 +212,7 @@ describe('the pipeline version', () => {
     const assembled = assemble(fixed((await loadPinnedFonts()).covers, defaultLayout));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('4');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('5');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,
@@ -276,7 +287,11 @@ describe('the published list shapes that are easy to read past', () => {
       format: null,
     });
     const read = await readPdf(
-      await typst.compile(PUBLICATION_TEMPLATE[4].file, JSON.stringify(document), at),
+      await typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        JSON.stringify(document),
+        at,
+      ),
     );
     const said = read.taggedText.flat().join(' ').replace(/\s+/g, ' ');
     expect(said).toContain('0. Check the readings');
@@ -312,7 +327,11 @@ describe('the published list shapes that are easy to read past', () => {
       { term: null, blocks: [] },
       { term: null, blocks: [] },
     ]);
-    const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, JSON.stringify(document), at);
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(document),
+      at,
+    );
     expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
     const read = await readPdf(pdf);
     // Every role from the first list to the end of the document: the two lists and nothing after
@@ -357,7 +376,11 @@ describe('the published list shapes that are easy to read past', () => {
       },
     ]);
     const read = await readPdf(
-      await typst.compile(PUBLICATION_TEMPLATE[4].file, JSON.stringify(document), at),
+      await typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        JSON.stringify(document),
+        at,
+      ),
     );
     const said = read.taggedText.flat().join(' ').replace(/\s+/g, ' ');
     // Disc at the top level and circle below it, as the template's comment names them. Written as

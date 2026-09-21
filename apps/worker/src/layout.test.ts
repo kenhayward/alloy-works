@@ -13,10 +13,11 @@ import {
   type ContentDocument,
   type Layout,
   type OutlineMatter,
+  PUBLISHING_SCHEMA,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
@@ -241,7 +242,11 @@ const compiled = (nodes: readonly Node[], layout: Layout) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at);
+      const pdf = await typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        data,
+        at,
+      );
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);

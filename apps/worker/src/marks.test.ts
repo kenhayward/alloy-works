@@ -16,7 +16,7 @@ import {
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, typstBinaryPath } from './typst.js';
@@ -179,6 +179,12 @@ const kindsIn = (document: PublishedDocument) => {
         marksIn(block.runs);
         continue;
       }
+      if (block.type === 'preformatted') continue;
+      if (block.type === 'blockquote') {
+        marksIn(block.attribution ?? []);
+        inBlocks(block.blocks);
+        continue;
+      }
       for (const item of block.items) {
         marksIn(item.term ?? []);
         inBlocks(item.blocks);
@@ -199,7 +205,11 @@ const compileOne = (data: string) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at);
+      const pdf = await typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        data,
+        at,
+      );
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);

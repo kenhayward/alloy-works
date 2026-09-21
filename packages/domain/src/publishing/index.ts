@@ -4,6 +4,9 @@ export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
 // The question the worker's pinned fonts answer, asked of one family at a time (editor 5).
 export type { Covers, Face } from './glyphs.js';
+// Promoted by editor 5 so the worker's regression corpus probes the exemption with the predicate
+// `assemble` asks, rather than a copy of its ranges.
+export { setWithoutAGlyph } from './glyphs.js';
 // Promoted by the editor's marks slice: the editor warns an author, at the time they give it, about
 // a language tag a publication could not carry, and the rule it asks is this one rather than a
 // second copy of it kept in the renderer (CNT-152).
