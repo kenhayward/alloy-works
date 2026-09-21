@@ -396,6 +396,7 @@ describe('scanning the repository for test files', () => {
     // 8, from 7: structure/DocumentPage.test.tsx, which cites STR-008 and STR-059.
     // 10, from 8: publishing/Publishing.test.tsx and publishing/PublicationPage.test.tsx, which cite nothing.
     // 11, from 10: editor/EditorToolbar.test.tsx, which cites CNT-077.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(11);
+    // 12, from 11: shell/Header.test.tsx, which cites nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(12);
   });
 });

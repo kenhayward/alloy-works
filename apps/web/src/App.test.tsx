@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App.js';
 import type { PlatformBridge } from './platform/bridge.js';
@@ -12,15 +12,51 @@ const desktopBridge: PlatformBridge = {
 const noPanel = <p>the environment</p>;
 const noWorkspace = <p>the workspace</p>;
 
-afterEach(() => vi.restoreAllMocks());
+/** Nobody is signed in, as far as the header band asks. */
+const signedOut = () =>
+  new Response('{"code":"unauthenticated"}', {
+    status: 401,
+    headers: { 'content-type': 'application/json' },
+  });
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => signedOut()),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  window.location.hash = '';
+});
 
 describe('App', () => {
-  it('shows the environment and the workspace under the product name', async () => {
+  it('shows the header band, and the workspace and the environment under it', async () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
-    expect(await screen.findByRole('heading', { name: 'Alloy Works' })).toBeInTheDocument();
+    const band = screen.getByRole('banner');
+    expect(within(band).getByRole('button', { name: /Alloy Works/ })).toBeInTheDocument();
+    expect(within(band).getByText('Components')).toBeInTheDocument();
+    const main = screen.getByRole('main');
+    expect(within(main).getByText('the workspace')).toBeInTheDocument();
+    expect(within(main).getByText('the environment')).toBeInTheDocument();
+    expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('shows the environment under the components list only, not on a document', async () => {
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
     expect(screen.getByText('the environment')).toBeInTheDocument();
-    expect(screen.getByText('the workspace')).toBeInTheDocument();
+
+    act(() => {
+      window.location.hash = '#/documents';
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+
+    expect(screen.queryByText('the environment')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByText('Documents')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('names the delivery it is running under', async () => {

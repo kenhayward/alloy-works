@@ -141,7 +141,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         Direction
         <DirectionSelect value={direction} onChange={setDirection} />
       </label>
-      <button type="button" disabled={sending} onClick={() => void create()}>
+      <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
         Create
       </button>
       {status}

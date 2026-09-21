@@ -5,7 +5,8 @@ screen is one of, the routes, the words, and the states. It is the visual half o
 [`../design/`](../design/) - `structure.md` says what a document outline _is_, this says what it
 looks like and what a person does to it.
 
-> **Not true yet.** Nothing in `apps/web` looks like this today; the renderer is unstyled markup
+> **Partly true.** The header band, the Light theme's tokens and the base look of every control
+> are built (interface slice 1); no screen has its own layout yet
 > ([`../features.md`](../features.md) is the honest account). This document and the screens beside
 > it are the target, drawn before the work so that thirteen screens agree with each other rather
 > than converging by accident.
@@ -61,12 +62,12 @@ from `tokens.css` and take the geometry from the drawing.
 
 ## Light only, for now
 
-`docs/interface/tokens.css` is the whole palette as custom properties, light theme.
+[`apps/web/src/theme/tokens.css`](../../apps/web/src/theme/tokens.css) is the whole palette as custom properties, light theme.
 
 The design system these screens come from carries a dark value for every colour token, and the
 intention is Light, Dark and Auto, chosen by the person and applied as `data-theme` on `<html>`.
 That is a later pass. It costs almost nothing **provided nothing outside `tokens.css` ever writes a
-colour**: the day dark mode is built, this file gains a `[data-theme="dark"]` block and a
+colour**: the day dark mode is built, that file gains a `[data-theme="dark"]` block and a
 `prefers-color-scheme` mapping, and no component changes. A single hard-coded hex in a component is
 the thing that makes it expensive, so treat one as a bug.
 
