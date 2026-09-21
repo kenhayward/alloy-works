@@ -40,6 +40,8 @@ import {
   type SessionView,
   type Timing,
 } from './session.js';
+import { Notice } from '../states/Notice.js';
+import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -580,13 +582,17 @@ export function ComponentEditor({
     return headerOf(view.state.doc);
   };
 
-  if (loaded.state === 'loading') return <p>Opening...</p>;
+  if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
   if (loaded.state === 'missing') {
-    return <p>There is nothing here, or nothing you may read.</p>;
+    return (
+      <Notice tone="refused">
+        <p>There is nothing here, or nothing you may read.</p>
+      </Notice>
+    );
   }
   if (loaded.state === 'failed') {
     return (
-      <>
+      <Notice tone={loaded.signedOut ? 'signedOut' : 'failed'}>
         <p>
           {loaded.signedOut
             ? 'You are signed out. Sign in again to open this component.'
@@ -601,7 +607,7 @@ export function ComponentEditor({
         >
           Try again
         </button>
-      </>
+      </Notice>
     );
   }
   const { component: shown } = loaded;
@@ -644,19 +650,31 @@ export function ComponentEditor({
             Version {session?.version.number ?? shown.version.number} in {shown.space.name}
           </p>
         </header>
-        {loaded.state === 'unreadable' && <p>This component could not be read.</p>}
+        {loaded.state === 'unreadable' && (
+          <Notice tone="failed">
+            <p>This component could not be read.</p>
+          </Notice>
+        )}
         {loaded.state === 'readOnly' && (
-          <p>
-            This component holds content this editor cannot change yet (
-            {loaded.unsupported.join(', ')}
-            ), so it is shown for reading only.
-          </p>
+          <Notice tone="readOnly">
+            <p>
+              This component holds content this editor cannot change yet (
+              {loaded.unsupported.join(', ')}
+              ), so it is shown for reading only.
+            </p>
+          </Notice>
         )}
         {loaded.state === 'open' && (
           <>
-            {!shown.mayEdit && <p>You may read this component but not edit it.</p>}
+            {!shown.mayEdit && (
+              <Notice tone="readOnly">
+                <p>You may read this component but not edit it.</p>
+              </Notice>
+            )}
             {lock && !lock.yours && phase === 'reading' && !held && (
-              <p>{lock.holder.name ?? 'Someone else'} is editing this component.</p>
+              <Notice tone="editing">
+                <p>{lock.holder.name ?? 'Someone else'} is editing this component.</p>
+              </Notice>
             )}
             {held?.yours && (
               <button type="button" onClick={() => controls.current?.claimAgain(true)}>

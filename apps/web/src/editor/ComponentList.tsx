@@ -2,6 +2,8 @@ import type { ComponentList as Page, createApiClient } from '@alloy-works/api-cl
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { NewComponent } from './NewComponent.js';
+import { Empty } from '../states/Empty.js';
+import { Notice } from '../states/Notice.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -61,10 +63,12 @@ export function ComponentList({ client }: ComponentListProps) {
     return (
       <section aria-labelledby="components-heading">
         <h2 id="components-heading">Components</h2>
-        <p>The components could not be loaded.</p>
-        <button type="button" disabled={loading} onClick={() => void load(failed)}>
-          Try again
-        </button>
+        <Notice tone="failed">
+          <p>The components could not be loaded.</p>
+          <button type="button" disabled={loading} onClick={() => void load(failed)}>
+            Try again
+          </button>
+        </Notice>
       </section>
     );
   }
@@ -81,7 +85,9 @@ export function ComponentList({ client }: ComponentListProps) {
         }}
       />
       {items.length === 0 ? (
-        <p>There are no components you may read.</p>
+        <Empty>
+          <p>There are no components you may read.</p>
+        </Empty>
       ) : (
         <ul>
           {items.map((item) => (
@@ -93,12 +99,12 @@ export function ComponentList({ client }: ComponentListProps) {
         </ul>
       )}
       {failed !== undefined ? (
-        <>
+        <Notice tone="failed">
           <p>The components could not be loaded.</p>
           <button type="button" disabled={loading} onClick={() => void load(failed)}>
             Try again
           </button>
-        </>
+        </Notice>
       ) : (
         next !== null && (
           <button type="button" disabled={loading} onClick={() => void load(next)}>

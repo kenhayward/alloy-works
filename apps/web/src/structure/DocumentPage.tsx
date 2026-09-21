@@ -26,6 +26,8 @@ import {
   type ComponentChoices,
 } from './OutlinePanel.js';
 import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.js';
+import { Notice } from '../states/Notice.js';
+import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -540,12 +542,24 @@ export function DocumentPage({
     [client, id, names, opened, show],
   );
 
-  if (loaded.state === 'loading') return <p>Opening...</p>;
-  if (loaded.state === 'missing') return <p>There is nothing here, or nothing you may read.</p>;
-  if (loaded.state === 'failed') {
-    if (loaded.signedOut) return <p>You are signed out. Sign in again to open this document.</p>;
+  if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
+  if (loaded.state === 'missing') {
     return (
-      <>
+      <Notice tone="refused">
+        <p>There is nothing here, or nothing you may read.</p>
+      </Notice>
+    );
+  }
+  if (loaded.state === 'failed') {
+    if (loaded.signedOut) {
+      return (
+        <Notice tone="signedOut">
+          <p>You are signed out. Sign in again to open this document.</p>
+        </Notice>
+      );
+    }
+    return (
+      <Notice tone="failed">
         <p>The document could not be opened.</p>
         <button
           type="button"
@@ -556,10 +570,16 @@ export function DocumentPage({
         >
           Try again
         </button>
-      </>
+      </Notice>
     );
   }
-  if (loaded.state === 'unreadable') return <p>This document could not be read.</p>;
+  if (loaded.state === 'unreadable') {
+    return (
+      <Notice tone="failed">
+        <p>This document could not be read.</p>
+      </Notice>
+    );
+  }
 
   const { document } = loaded;
   return (

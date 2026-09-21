@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { failureWords, isProductsOwn, type Failure } from './failures.js';
+import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -237,7 +238,7 @@ export function Publishing({
         </p>
       )}
       <div aria-live="polite">
-        {publish.state === 'working' && <p>Publishing...</p>}
+        {publish.state === 'working' && <Waiting>Publishing...</Waiting>}
         {publish.state === 'done' && (
           <p>
             Published. <a href={`#/publications/${publish.publication}`}>Open the publication</a>

@@ -15,6 +15,20 @@ describe('the save indicator', () => {
     expect(screen.getByText('Not saved, retrying')).toBeInTheDocument();
   });
 
+  it('shows a dot beside the words, hidden from assistive technology', () => {
+    const { container, rerender } = render(
+      <SaveIndicator save="saved" savedAt={null} formatTime={at} />,
+    );
+    const dot = () => container.querySelector('[data-dot]');
+    expect(dot()).toHaveAttribute('aria-hidden', 'true');
+    expect(dot()).toHaveAttribute('data-dot', 'idle');
+    rerender(<SaveIndicator save="saved" savedAt={1_000} formatTime={at} />);
+    expect(dot()).toHaveAttribute('data-dot', 'saved');
+    rerender(<SaveIndicator save="stopped" savedAt={1_000} formatTime={at} />);
+    expect(dot()).toHaveAttribute('data-dot', 'stopped');
+    expect(screen.getByText('Not saved')).toBeInTheDocument();
+  });
+
   it('claims no save before there has been one', () => {
     render(<SaveIndicator save="saved" savedAt={null} formatTime={at} />);
     expect(screen.getByText('No unsaved changes')).toBeInTheDocument();

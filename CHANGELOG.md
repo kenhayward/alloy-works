@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.36.0 - 2026-09-21 (PR #173)
+
+### Added
+
+- **Every state has its own look.** Each kind of message now looks different:
+  - something that could not be loaded has a red edge, with Try again beside it;
+  - being signed out, reading only, being refused and someone else editing each have their own
+    colour;
+  - an empty list sits in a dashed box;
+  - waiting shows a small spinner beside its words;
+  - the save state has a coloured dot: green for saved, blue for saving, amber for retrying, red
+    for not saved.
+
+  Every sentence is worded exactly as before.
+
 ## 0.35.0 - 2026-09-21 (PR #172)
 
 ### Added

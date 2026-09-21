@@ -9,6 +9,7 @@ import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
+import { Notice } from '../states/Notice.js';
 
 export interface WorkspaceProps {
   /** Given in tests; the browser's own otherwise. */
@@ -138,7 +139,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
 
   if (failed) {
     return (
-      <section>
+      <Notice tone="failed">
         <p>The workspace could not be loaded.</p>
         <button
           type="button"
@@ -149,7 +150,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         >
           Try again
         </button>
-      </section>
+      </Notice>
     );
   }
   if (me === null) return null;
