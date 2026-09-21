@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.46.1 - 2026-09-21 (PR #189)
+
+### Fixed
+
+- **A pull request no longer fails its checks because the build machine was slow, at any limit.**
+  The timing test for large documents had already stopped holding shared build machines to its
+  250 ms target (0.40.3). It still failed one when a single request took 535 ms against the 500 ms
+  maximum, on code nothing had changed. On a shared build machine the timings are now recorded
+  beside the result and fail nothing. On a named machine both limits still hold.
+
 ## 0.46.0 - 2026-09-21 (PR #187)
 
 ### Added

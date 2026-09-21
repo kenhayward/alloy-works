@@ -43,8 +43,8 @@ const COMPONENTS = 150;
 const BLOCKS_PER_COMPONENT = 40;
 const WARM_UP = 5;
 const SAMPLES = 40;
-// Held to the p95 and the maximum on a named machine, and to the maximum alone on a shared CI runner,
-// whose speed varies by more than the budget's margin (issue #179). The p95 is recorded either way.
+// Held to the p95 and the maximum on a named machine, and recorded only on a shared CI runner, whose
+// speed varies by more than the budget itself (issues #179 and #188). Both are recorded either way.
 const BUDGET = bindingBudget(process.env);
 
 const percentile = (samples: readonly number[], p: number) => {
@@ -139,7 +139,9 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     loadavg: loadavg().map((load) => Number(load.toFixed(2))),
     // Which bounds this run was held to, so a result read later says what it proved (issue #179).
     held:
-      BUDGET.p95 === null ? 'the maximum alone, on a shared CI runner' : 'the p95 and the maximum',
+      BUDGET.max === null
+        ? 'neither bound: recorded only, on a shared CI runner'
+        : 'the p95 and the maximum',
   };
   const report: Record<string, unknown> = { configuration };
 
@@ -303,7 +305,9 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
     if (BUDGET.p95 !== null) {
       expect(percentile(samples, 95), name).toBeLessThanOrEqual(BUDGET.p95);
     }
-    expect(Math.max(...samples), name).toBeLessThanOrEqual(BUDGET.max);
+    if (BUDGET.max !== null) {
+      expect(Math.max(...samples), name).toBeLessThanOrEqual(BUDGET.max);
+    }
   };
 
   it('opens the document within the budget', async ({ task }) => {
