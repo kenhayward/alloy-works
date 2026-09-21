@@ -3,6 +3,14 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.40.2 - 2026-09-21 (PR #182)
+
+### Fixed
+
+- **Building the images no longer fails when GitHub answers the Typst download with a momentary
+  error.** The download is tried up to five more times, five seconds apart. A file that does not
+  match its checksum is still refused.
+
 ## 0.40.0 - 2026-09-21 (PR #177)
 
 ### Added
