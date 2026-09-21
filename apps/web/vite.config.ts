@@ -1,8 +1,12 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+// The canonical version (CLAUDE.md), so About cannot drift from it.
+import { version } from '../../version.json';
+
 export default defineConfig({
   plugins: [react()],
+  define: { __APP_VERSION__: JSON.stringify(version) },
   // The desktop shell loads this build from disk with a file:// URL, so every asset reference
   // has to be relative. An absolute /assets/... path resolves to the filesystem root there.
   base: './',

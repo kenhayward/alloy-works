@@ -5,11 +5,13 @@ screen is one of, the routes, the words, and the states. It is the visual half o
 [`../design/`](../design/) - `structure.md` says what a document outline _is_, this says what it
 looks like and what a person does to it.
 
-> **Partly true.** The header band, the Light theme's tokens and the base look of every control
-> are built (interface slice 1); no screen has its own layout yet
-> ([`../features.md`](../features.md) is the honest account). This document and the screens beside
-> it are the target, drawn before the work so that thirteen screens agree with each other rather
-> than converging by accident.
+> **Built as a first draft.** Every screen here has a first build (interface slices 1 to 12, listed
+> in [`../plans/README.md`](../plans/README.md)), except Search, which waits for the search
+> subsystem. Each one leaves out what the service cannot answer yet: facets beyond space and
+> publishing, sorting, metadata, where-used, preview, delete, and Administration's groups,
+> component types and layouts. [`../features.md`](../features.md) is the honest account. The
+> screens beside this are still the target, drawn before the work so that thirteen screens agree
+> with each other rather than converging by accident.
 
 ## Why this is not in `docs/design/`
 

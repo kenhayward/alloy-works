@@ -1,0 +1,93 @@
+/* The Administration modal, drawn in docs/interface/screens/Administration.html. */
+.administration {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  gap: var(--space-14) var(--space-20);
+  min-height: 420px;
+}
+
+.head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-14);
+  padding-inline-end: var(--space-40);
+}
+
+.head h2 {
+  margin: 0;
+  font-size: var(--size-modal-title);
+}
+
+.environment {
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.section {
+  justify-content: flex-start;
+  padding: var(--space-8) var(--space-10);
+  border: 0;
+  border-radius: var(--radius-6);
+  background: transparent;
+  font-size: var(--size-body);
+  text-align: start;
+}
+
+.section[aria-current='true'] {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+.shown {
+  min-width: 0;
+  font-size: var(--size-body-small);
+}
+
+.shown h3 {
+  margin-top: 0;
+  font-size: var(--size-card-title);
+}
+
+.shown h4 {
+  margin: var(--space-16) 0 var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-overline);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.shown table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.foot {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+
+@media (max-width: 720px) {
+  .administration {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
