@@ -29,6 +29,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and loaded unchanged by the Electron shell in `apps/desktop`. There is no per-delivery fork of the
   UI, and the running app names which delivery and runtime it is on.
 
+- **An interface in one theme.** Every screen sits under a dark header band with:
+  - the mark, which switches module between Components and Documents;
+  - the module's name;
+  - the environment's name;
+  - an account chip that signs out, or offers Sign in to somebody signed out.
+
+  Controls, tables and messages are drawn in the Light theme from the tokens in
+  `apps/web/src/theme/tokens.css`, the only file that writes a colour. A test fails the build if
+  any other file writes one, and another fails it if a second theme misses a token. There is one
+  theme, so there is no theme choice, and no screen has the layout the drawings in
+  `docs/interface/` give it yet.
+
 - **A platform bridge.** The single seam between the renderer and its host. In a browser it answers
   locally; in the desktop shell it answers over an enumerated IPC channel from a sandboxed preload.
   The renderer never branches on which one it got.

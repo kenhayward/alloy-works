@@ -1,0 +1,169 @@
+/* The header band: dark in every theme, 44px, the mark left and the account right. */
+.band {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-popover);
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  height: var(--header-height);
+  padding-inline: var(--space-20);
+  background: var(--header-bg);
+  color: var(--header-text);
+  font-size: var(--size-body-small);
+  white-space: nowrap;
+}
+
+.menuHolder {
+  position: relative;
+}
+
+.brand,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: 28px;
+  padding-inline: var(--space-10);
+  border: 1px solid var(--header-btn-border);
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--header-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.brand {
+  font-size: var(--size-brand);
+  font-weight: 600;
+}
+
+.chip {
+  border-radius: var(--radius-pill);
+  padding-inline-start: var(--space-4);
+}
+
+a.chip {
+  padding-inline-start: var(--space-10);
+}
+
+.brand:hover,
+.chip:hover {
+  border-color: var(--header-text);
+}
+
+.mark {
+  display: block;
+}
+
+.initials {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--mark-slate);
+  color: var(--header-text);
+  font-size: var(--size-micro);
+  font-weight: 600;
+}
+
+.hairline {
+  width: 1px;
+  height: 18px;
+  background: var(--header-btn-border);
+}
+
+.module {
+  opacity: var(--opacity-secondary);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.environment {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding-inline: var(--space-10);
+  border: 1px solid var(--header-btn-border);
+  border-radius: var(--radius-6);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-6));
+  z-index: var(--z-dropdown);
+  min-width: 200px;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+  color: var(--text);
+}
+
+.start {
+  left: 0;
+}
+
+.end {
+  right: 0;
+}
+
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-8) var(--space-10);
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--size-body);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover,
+.item[aria-current='page'] {
+  background: var(--accent-weak);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+}
+
+.item[data-module='Components'] .dot {
+  background: var(--module-components);
+}
+
+.item[data-module='Documents'] .dot {
+  background: var(--module-documents);
+}
+
+.item[data-module='Publications'] .dot {
+  background: var(--module-publications);
+}
+
+/* Narrow windows keep the mark and the account; the module and the environment give way first. */
+@media (max-width: 640px) {
+  .hairline,
+  .module,
+  .environment {
+    display: none;
+  }
+}

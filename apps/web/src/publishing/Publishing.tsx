@@ -226,7 +226,12 @@ export function Publishing({
       <h3 id="publications-title">Publications</h3>
       {mayPublish && (
         <p>
-          <button type="button" disabled={publish.state === 'working'} onClick={() => void start()}>
+          <button
+            className="primary"
+            type="button"
+            disabled={publish.state === 'working'}
+            onClick={() => void start()}
+          >
             Publish as PDF
           </button>
         </p>

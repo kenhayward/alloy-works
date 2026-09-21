@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.35.0 - 2026-09-21 (PR #172)
+
+### Added
+
+- **The interface has its look.** Every screen now sits under a dark header band. The band holds:
+  - the mark, which switches between Components and Documents;
+  - the name of the module you are in;
+  - the environment's name;
+  - an account chip, with Sign out.
+
+  Buttons, fields, tables and messages take the Light theme's colours and type, and each screen's
+  main action is the one blue button. The words on every screen are unchanged. This is a first
+  draft: no screen has its own layout yet.
+
+### Changed
+
+- The sample panel and the line naming the delivery now sit under the components list, and nowhere
+  else.
+
 ## 0.34.3 - 2026-09-21 (PR #171)
 
 ### Added

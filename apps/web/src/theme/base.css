@@ -1,0 +1,244 @@
+/*
+ * The interface's ground, type and controls, on elements only, so every screen built before its own
+ * layout arrives already looks like the rest. A screen's own look lives in its CSS module beside it.
+ * Every value is a token from tokens.css.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0 0 var(--space-16);
+  font-size: var(--size-page-title);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: var(--space-24) 0 var(--space-12);
+  font-size: var(--size-modal-title);
+  font-weight: 600;
+}
+
+h3 {
+  margin: var(--space-16) 0 var(--space-8);
+  font-size: var(--size-body);
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 var(--space-10);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--mono);
+  font-size: var(--size-code);
+}
+
+/* Controls */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 30px;
+  padding: var(--space-4) var(--space-12);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-body-small);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-weak);
+}
+
+button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+/* The one action colour: a screen's single primary button opts in by class. */
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(0.93);
+}
+
+input:not([type='checkbox'], [type='radio']),
+select,
+textarea {
+  min-height: 32px;
+  padding: var(--space-4) var(--space-10);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+  background: var(--surface);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent);
+}
+
+label {
+  color: var(--text);
+  font-size: var(--size-body-small);
+}
+
+fieldset {
+  margin: 0 0 var(--space-16);
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+legend {
+  padding-inline: var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+
+form {
+  margin-block: var(--space-12);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+/* Lists and tables */
+
+ul,
+ol {
+  padding-inline-start: var(--space-20);
+}
+
+nav ul,
+nav ol {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+nav[aria-label='Workspace'] {
+  display: flex;
+  gap: var(--space-16);
+  margin-bottom: var(--space-16);
+  font-size: var(--size-body-small);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  font-size: var(--size-body-small);
+}
+
+th {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: start;
+  text-transform: uppercase;
+}
+
+td {
+  padding: var(--space-10) var(--space-12);
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:hover {
+  background: var(--accent-weak);
+}
+
+td,
+time {
+  font-variant-numeric: tabular-nums;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-6) var(--space-16);
+  margin: 0 0 var(--space-12);
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+}
+
+/* What went wrong, said where it happened. */
+[role='alert'] {
+  margin-block: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--danger);
+  border-inline-start-width: 3px;
+  border-radius: var(--radius-6);
+  background: var(--surface);
+  color: var(--danger);
+}
+
+[role='status'] {
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}
+
+section {
+  margin-bottom: var(--space-24);
+}

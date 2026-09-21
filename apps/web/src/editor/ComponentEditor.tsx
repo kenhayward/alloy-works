@@ -676,6 +676,7 @@ export function ComponentEditor({
             {shown.mayEdit && (
               <div role="toolbar" aria-label="Component">
                 <button
+                  className="primary"
                   type="button"
                   disabled={phase !== 'editing'}
                   onClick={() => void controls.current?.saveVersion()}

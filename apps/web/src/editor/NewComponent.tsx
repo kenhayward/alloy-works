@@ -289,7 +289,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           </button>
         </>
       )}
-      <button type="button" disabled={sending} onClick={() => void create()}>
+      <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
         Create
       </button>
       {status}

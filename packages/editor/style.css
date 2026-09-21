@@ -65,13 +65,12 @@
 
 /*
  * `a[href]`, never a bare `a`: the schema only ever renders an anchor with a target (schema.ts), and
- * matching only what it can render keeps this file honest about what the mark is. The colour is
- * `--data` from the brand's design tokens (assets/brand/README.md); there is no app stylesheet yet
- * for it to live in as a custom property, so the hex value is used directly, as that table itself
- * says to do until one exists.
+ * matching only what it can render keeps this file honest about what the mark is. Every colour here
+ * is a custom property from the renderer's apps/web/src/theme/tokens.css, the only file that writes
+ * one.
  */
 .ProseMirror a[href] {
-  color: #2e6f9e;
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -167,8 +166,8 @@
   overflow-x: auto;
   margin-block: 0.5em;
   padding: 0.5em;
-  border: 1px solid #767676;
-  background: #f4f4f4;
+  border: 1px solid var(--input-border);
+  background: var(--chip-bg);
 }
 
 /* The label is shown above the text it names, read from the attribute the node renders. */
@@ -183,7 +182,7 @@
   margin-block: 0.5em;
   margin-inline: 0;
   padding-inline-start: 1em;
-  border-inline-start: 3px solid #767676;
+  border-inline-start: 3px solid var(--input-border);
 }
 
 /* The attribution closes its quotation, aligned to the end as the PDF sets it, and carries no
@@ -197,5 +196,5 @@
  * matches one. */
 .ProseMirror footer.aw-empty::before {
   content: 'Attribution';
-  color: #595959;
+  color: var(--muted);
 }

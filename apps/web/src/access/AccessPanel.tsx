@@ -564,7 +564,7 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
             Deny
           </label>
         </fieldset>
-        <button type="submit" disabled={busy || manageable.length === 0}>
+        <button className="primary" type="submit" disabled={busy || manageable.length === 0}>
           Give
         </button>
       </form>
