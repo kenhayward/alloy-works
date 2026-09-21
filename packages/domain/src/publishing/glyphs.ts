@@ -49,17 +49,28 @@ export const disallowed = (codePoint: number) => DISALLOWED.has(codePoint);
 
 export type CharacterProblem = 'glyph_missing' | 'character_disallowed';
 
+/**
+ * Which pinned family a character is set in: the body text's serif, or the monospace that
+ * preformatted text and inline code are set in. The two cover different characters, so the question
+ * is always asked of one of them - a union would pass a character one of them cannot set.
+ */
+export type Face = 'body' | 'code';
+
+/** Whether every face of one family can set this character. */
+export type Covers = (codePoint: number, face: Face) => boolean;
+
 /** `U+0627`, the spelling a failure's detail uses: never the character itself. */
 export const codePointName = (codePoint: number) =>
   `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
 
 /**
  * Each character of `text` the engine would refuse, once each, in the order they first appear:
- * disallowed anywhere, or missing from every face the template sets it in (`covers`).
+ * disallowed anywhere, or missing from the family the template sets it in (`covers`, asked of `face`).
  */
 export function characterProblems(
   text: string,
-  covers: (codePoint: number) => boolean,
+  covers: Covers,
+  face: Face,
 ): { readonly problem: CharacterProblem; readonly codePoint: number }[] {
   const seen = new Set<number>();
   const found: { problem: CharacterProblem; codePoint: number }[] = [];
@@ -68,7 +79,7 @@ export function characterProblems(
     if (seen.has(codePoint)) continue;
     seen.add(codePoint);
     if (disallowed(codePoint)) found.push({ problem: 'character_disallowed', codePoint });
-    else if (!setWithoutAGlyph(codePoint) && !covers(codePoint)) {
+    else if (!setWithoutAGlyph(codePoint) && !covers(codePoint, face)) {
       found.push({ problem: 'glyph_missing', codePoint });
     }
   }

@@ -103,7 +103,7 @@ describe('the publication template', () => {
  * the layout given, or none, as a request made before layouts is assembled.
  */
 const fixed = <Under extends Layout | null>(
-  covers: (codePoint: number) => boolean,
+  covers: AssembleInput['covers'],
   layout: Under,
 ): AssembleInput & { readonly layout: Under } => ({
   outline: parseOutlineDocument({

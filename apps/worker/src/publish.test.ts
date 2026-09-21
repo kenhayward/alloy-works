@@ -400,6 +400,10 @@ describe('publishing a document, from the request to the stored PDF', () => {
       'LiberationSerif-BoldItalic.ttf',
       'LiberationSerif-Italic.ttf',
       'LiberationSerif-Regular.ttf',
+      'LiberationMono-Bold.ttf',
+      'LiberationMono-BoldItalic.ttf',
+      'LiberationMono-Italic.ttf',
+      'LiberationMono-Regular.ttf',
     ]);
     expect(await requestRow(request)).toMatchObject({ state: 'done', failures: [] });
   });

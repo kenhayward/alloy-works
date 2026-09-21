@@ -15,7 +15,7 @@ import type { OutlineDocument, OutlineMatter, OutlineNode } from '../structure/o
 import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.js';
 
 import type { PublishFailure } from './failures.js';
-import { characterProblems, codePointName } from './glyphs.js';
+import { characterProblems, codePointName, type Covers } from './glyphs.js';
 import { publishedLanguage } from './language.js';
 import type { Layout, PdfFormat } from './layout.js';
 import {
@@ -57,7 +57,7 @@ export interface AssembleInput {
   readonly layout: Layout | null;
   /** The document version as `revision.version` (VER-009). Ignored where `layout` is null. */
   readonly revision: string;
-  readonly covers: (codePoint: number) => boolean;
+  readonly covers: Covers;
 }
 
 export type Assembled<
@@ -118,7 +118,7 @@ export function assemble(input: AssembleInput): Assembled {
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
   const check = (text: string, node: string | null, block: string | null) => {
-    for (const { problem, codePoint } of characterProblems(text, input.covers)) {
+    for (const { problem, codePoint } of characterProblems(text, input.covers, 'body')) {
       failures.push(failure('compose', problem, node, block, codePointName(codePoint)));
     }
   };
@@ -149,7 +149,7 @@ export function assemble(input: AssembleInput): Assembled {
       .flatMap((part) => (part.kind === 'words' ? [part.text] : []));
     const { contents: title, notice, noticeSentence } = layout.words;
     for (const words of [title, notice, noticeSentence, ...slotWords]) {
-      for (const { codePoint } of characterProblems(words, input.covers)) {
+      for (const { codePoint } of characterProblems(words, input.covers, 'body')) {
         failures.push(
           failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)),
         );
