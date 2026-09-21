@@ -247,3 +247,9 @@ dd {
 section {
   margin-bottom: var(--space-24);
 }
+
+/* An act that takes something away - Remove, Withdraw - outlined in the danger colour. */
+button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}

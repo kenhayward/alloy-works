@@ -228,6 +228,29 @@ describe('access to a component', () => {
     );
   });
 
+  it('lays out what is granted and why on the left, and giving and inviting on the right', async () => {
+    const { fetching } = service({
+      grants: [grantOf('g1', `space:${GENERAL}`, roles[0]!, people[1]!)],
+    });
+    panel(fetching);
+
+    const column = (element: HTMLElement) =>
+      element.closest('[data-column]')?.getAttribute('data-column');
+    await waitFor(() =>
+      expect(within(section('The space General')).getByRole('listitem')).toBeInTheDocument(),
+    );
+    expect(column(section('The space General'))).toBe('granted');
+    expect(column(screen.getByRole('heading', { name: 'What someone may do here' }))).toBe(
+      'granted',
+    );
+    expect(column(screen.getByRole('heading', { name: 'Give access' }))).toBe('giving');
+    expect(column(await screen.findByRole('heading', { name: 'Invite someone' }))).toBe('giving');
+    expect(within(section('The space General')).getByRole('listitem')).toHaveAttribute(
+      'data-effect',
+      'allow',
+    );
+  });
+
   it('says where the person may not manage access, and offers only the levels they may', async () => {
     const { fetching } = service({ levels: [`artifact:${COMPONENT}`, `space:${GENERAL}`] });
     panel(fetching);

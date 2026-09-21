@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
+import styles from './AccessPanel.module.css';
 import {
   describeGrant,
   describeInvitation,
@@ -495,220 +496,231 @@ export function AccessPanel({ componentId, client }: AccessPanelProps) {
   ));
 
   return (
-    <section aria-labelledby="access-heading">
-      <h2 id="access-heading">Access to {opened.title}</h2>
-      {places.map((place) => {
-        const listing = listings.get(place.target) ?? { state: 'loading' };
-        const heading = `access-${place.target.replace(':', '-')}`;
-        return (
-          <section key={place.target} aria-labelledby={heading}>
-            <h3 id={heading}>{place.label}</h3>
-            {listing.state === 'loading' && <Waiting>Loading...</Waiting>}
-            {listing.state === 'unmanaged' && (
-              <Notice tone="refused">
-                <p>You may not manage access here.</p>
-              </Notice>
-            )}
-            {listing.state === 'unauthorized' && (
-              <Notice tone="signedOut">
-                <p>{SIGNED_OUT}</p>
-              </Notice>
-            )}
-            {listing.state === 'failed' && (
-              <FailedListing
-                text="What is granted here"
-                reading={readingGrants}
-                onRetry={() => void readGrants(places)}
-              />
-            )}
-            {listing.state === 'loaded' &&
-              (listing.grants.length === 0 ? (
-                <p>Nothing is granted here.</p>
-              ) : (
-                <ul>
-                  {listing.grants.map((grant) => (
-                    <li key={grant.id}>
-                      {describeGrant(grant)}{' '}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label={`Remove: ${describeGrant(grant)}`}
-                        onClick={() => remove(grant)}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ))}
-          </section>
-        );
-      })}
+    <section aria-labelledby="access-heading" className={styles['page']}>
+      <h2 id="access-heading" className={styles['title']}>
+        Access to {opened.title}
+      </h2>
+      <div data-column="granted" className={styles['granted']}>
+        {places.map((place) => {
+          const listing = listings.get(place.target) ?? { state: 'loading' };
+          const heading = `access-${place.target.replace(':', '-')}`;
+          return (
+            <section key={place.target} aria-labelledby={heading} className={styles['card']}>
+              <h3 id={heading}>{place.label}</h3>
+              {listing.state === 'loading' && <Waiting>Loading...</Waiting>}
+              {listing.state === 'unmanaged' && (
+                <Notice tone="refused">
+                  <p>You may not manage access here.</p>
+                </Notice>
+              )}
+              {listing.state === 'unauthorized' && (
+                <Notice tone="signedOut">
+                  <p>{SIGNED_OUT}</p>
+                </Notice>
+              )}
+              {listing.state === 'failed' && (
+                <FailedListing
+                  text="What is granted here"
+                  reading={readingGrants}
+                  onRetry={() => void readGrants(places)}
+                />
+              )}
+              {listing.state === 'loaded' &&
+                (listing.grants.length === 0 ? (
+                  <p>Nothing is granted here.</p>
+                ) : (
+                  <ul className={styles['rows']}>
+                    {listing.grants.map((grant) => (
+                      <li key={grant.id} data-effect={grant.effect}>
+                        {describeGrant(grant)}{' '}
+                        <button
+                          type="button"
+                          className="danger"
+                          disabled={busy}
+                          aria-label={`Remove: ${describeGrant(grant)}`}
+                          onClick={() => remove(grant)}
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+            </section>
+          );
+        })}
 
-      <form aria-labelledby="give-heading" onSubmit={give}>
-        <h3 id="give-heading">Give access</h3>
-        <label>
-          Person{' '}
-          <select value={effectivePerson} onChange={(event) => setPerson(event.target.value)}>
-            <option value="">Choose a person</option>
-            {personOptions}
-          </select>
-        </label>{' '}
-        <label>
-          Role{' '}
-          <select value={role} onChange={(event) => setRole(event.target.value)}>
-            <option value="">Choose a role</option>
-            {roles.map((each) => (
-              <option key={each.id} value={each.id}>
-                {each.name}: {each.permissions.map(permissionName).join(', ')}
-              </option>
-            ))}
-          </select>
-        </label>{' '}
-        <label>
-          Where{' '}
-          <select value={effectiveWhere} onChange={(event) => setWhere(event.target.value)}>
-            {effectiveWhere === '' && <option value="">Choose where</option>}
-            {manageable.map((place) => (
-              <option key={place.target} value={place.target}>
-                {place.label}
-              </option>
-            ))}
-          </select>
-        </label>{' '}
-        <fieldset>
-          <legend>Allow or deny</legend>
+        <section aria-labelledby="explain-heading" className={styles['card']}>
+          <h3 id="explain-heading">What someone may do here</h3>
           <label>
-            <input
-              type="radio"
-              name="effect"
-              checked={effect === 'allow'}
-              onChange={() => setEffect('allow')}
-            />{' '}
-            Allow
+            Whose access{' '}
+            <select
+              value={effectiveExplainFor}
+              onChange={(event) => {
+                explaining.current += 1;
+                setExplanation(null);
+                setExplainMessage(null);
+                setExplainFor(event.target.value);
+              }}
+            >
+              <option value="">Choose a person</option>
+              {personOptions}
+            </select>
           </label>{' '}
-          <label>
-            <input
-              type="radio"
-              name="effect"
-              checked={effect === 'deny'}
-              onChange={() => setEffect('deny')}
-            />{' '}
-            Deny
-          </label>
-        </fieldset>
-        <button className="primary" type="submit" disabled={busy || manageable.length === 0}>
-          Give
-        </button>
-      </form>
-      {message !== null && <p role="status">{message}</p>}
-
-      {invitations.state === 'unauthorized' && <p>{SIGNED_OUT}</p>}
-      {invitations.state === 'failed' && (
-        <FailedListing
-          text="Invitations"
-          reading={readingInvitations}
-          onRetry={() => void readInvitations()}
-        />
-      )}
-      {invitations.state === 'loaded' && (
-        <section aria-labelledby="invite-heading">
-          <h3 id="invite-heading">Invite someone</h3>
-          <p>
-            Invite somebody who has not signed in yet, then give them access above. What they are
-            given is theirs the first time they sign in with that address.
-          </p>
-          <form aria-labelledby="invite-heading" onSubmit={inviteSomeone}>
-            <label>
-              Address{' '}
-              <input
-                type="email"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-              />
-            </label>{' '}
-            <label>
-              <input
-                type="checkbox"
-                checked={outside}
-                onChange={(event) => setOutside(event.target.checked)}
-              />{' '}
-              From outside the organisation
-            </label>{' '}
-            <button type="submit" disabled={busy}>
-              Invite
-            </button>
-          </form>
-          {invitations.waiting.length === 0 ? (
-            <Empty>
-              <p>Nobody is waiting to accept an invitation.</p>
-            </Empty>
-          ) : (
-            <ul aria-label="Waiting invitations">
-              {invitations.waiting.map((invitation) => (
-                <li key={invitation.id}>
-                  {describeInvitation(invitation)}{' '}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={`Withdraw the invitation to ${invitation.email}`}
-                    onClick={() => withdraw(invitation)}
-                  >
-                    Withdraw
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <button
+            type="button"
+            disabled={effectiveExplainFor === ''}
+            onClick={() => void explain()}
+          >
+            Show
+          </button>
+          {explainMessage !== null && <p role="status">{explainMessage}</p>}
+          {explanation && (
+            <table>
+              <caption>
+                What {personName(byId.get(explanation.principal) ?? { name: null, email: null })}{' '}
+                may do with this component
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Permission</th>
+                  <th scope="col">Answer</th>
+                  <th scope="col">Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                {explanation.answers.map((answer) => (
+                  <tr key={answer.permission}>
+                    <th scope="row">{permissionName(answer.permission)}</th>
+                    <td>{answer.allowed ? 'Allowed' : 'Refused'}</td>
+                    <td>{explainAnswer(answer, places, byId)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </section>
-      )}
-
-      <section aria-labelledby="explain-heading">
-        <h3 id="explain-heading">What someone may do here</h3>
-        <label>
-          Whose access{' '}
-          <select
-            value={effectiveExplainFor}
-            onChange={(event) => {
-              explaining.current += 1;
-              setExplanation(null);
-              setExplainMessage(null);
-              setExplainFor(event.target.value);
-            }}
-          >
-            <option value="">Choose a person</option>
-            {personOptions}
-          </select>
-        </label>{' '}
-        <button type="button" disabled={effectiveExplainFor === ''} onClick={() => void explain()}>
-          Show
-        </button>
-        {explainMessage !== null && <p role="status">{explainMessage}</p>}
-        {explanation && (
-          <table>
-            <caption>
-              What {personName(byId.get(explanation.principal) ?? { name: null, email: null })} may
-              do with this component
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Permission</th>
-                <th scope="col">Answer</th>
-                <th scope="col">Why</th>
-              </tr>
-            </thead>
-            <tbody>
-              {explanation.answers.map((answer) => (
-                <tr key={answer.permission}>
-                  <th scope="row">{permissionName(answer.permission)}</th>
-                  <td>{answer.allowed ? 'Allowed' : 'Refused'}</td>
-                  <td>{explainAnswer(answer, places, byId)}</td>
-                </tr>
+      </div>
+      <div data-column="giving" className={styles['giving']}>
+        <form aria-labelledby="give-heading" onSubmit={give} className={styles['card']}>
+          <h3 id="give-heading">Give access</h3>
+          <label>
+            Person{' '}
+            <select value={effectivePerson} onChange={(event) => setPerson(event.target.value)}>
+              <option value="">Choose a person</option>
+              {personOptions}
+            </select>
+          </label>{' '}
+          <label>
+            Role{' '}
+            <select value={role} onChange={(event) => setRole(event.target.value)}>
+              <option value="">Choose a role</option>
+              {roles.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}: {each.permissions.map(permissionName).join(', ')}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </label>{' '}
+          <label>
+            Where{' '}
+            <select value={effectiveWhere} onChange={(event) => setWhere(event.target.value)}>
+              {effectiveWhere === '' && <option value="">Choose where</option>}
+              {manageable.map((place) => (
+                <option key={place.target} value={place.target}>
+                  {place.label}
+                </option>
+              ))}
+            </select>
+          </label>{' '}
+          <fieldset>
+            <legend>Allow or deny</legend>
+            <label>
+              <input
+                type="radio"
+                name="effect"
+                checked={effect === 'allow'}
+                onChange={() => setEffect('allow')}
+              />{' '}
+              Allow
+            </label>{' '}
+            <label>
+              <input
+                type="radio"
+                name="effect"
+                checked={effect === 'deny'}
+                onChange={() => setEffect('deny')}
+              />{' '}
+              Deny
+            </label>
+          </fieldset>
+          <button className="primary" type="submit" disabled={busy || manageable.length === 0}>
+            Give
+          </button>
+        </form>
+        {message !== null && <p role="status">{message}</p>}
+
+        {invitations.state === 'unauthorized' && <p>{SIGNED_OUT}</p>}
+        {invitations.state === 'failed' && (
+          <FailedListing
+            text="Invitations"
+            reading={readingInvitations}
+            onRetry={() => void readInvitations()}
+          />
         )}
-      </section>
+        {invitations.state === 'loaded' && (
+          <section aria-labelledby="invite-heading" className={styles['card']}>
+            <h3 id="invite-heading">Invite someone</h3>
+            <p>
+              Invite somebody who has not signed in yet, then give them access above. What they are
+              given is theirs the first time they sign in with that address.
+            </p>
+            <form aria-labelledby="invite-heading" onSubmit={inviteSomeone}>
+              <label>
+                Address{' '}
+                <input
+                  type="email"
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                />
+              </label>{' '}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={outside}
+                  onChange={(event) => setOutside(event.target.checked)}
+                />{' '}
+                From outside the organisation
+              </label>{' '}
+              <button type="submit" disabled={busy}>
+                Invite
+              </button>
+            </form>
+            {invitations.waiting.length === 0 ? (
+              <Empty>
+                <p>Nobody is waiting to accept an invitation.</p>
+              </Empty>
+            ) : (
+              <ul aria-label="Waiting invitations" className={styles['rows']}>
+                {invitations.waiting.map((invitation) => (
+                  <li key={invitation.id}>
+                    {describeInvitation(invitation)}{' '}
+                    <button
+                      type="button"
+                      className="danger"
+                      disabled={busy}
+                      aria-label={`Withdraw the invitation to ${invitation.email}`}
+                      onClick={() => withdraw(invitation)}
+                    >
+                      Withdraw
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+      </div>
     </section>
   );
 }
