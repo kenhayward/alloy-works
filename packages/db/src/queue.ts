@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect, sql } from 'kysely';
-import pg from 'pg';
+import { createPool } from './pool.js';
 import type { PlatformTables, TenantTransaction } from './tables.js';
 
 /** The kinds of work there are. A worker refuses a kind it does not know. */
@@ -71,7 +71,7 @@ const asJob = (row: JobRow): Job => ({
 /** The queue as a worker sees it. It logs in as `aw_worker`, which can reach no tenant table. */
 export function createJobQueue(url: string): JobQueue {
   const db = new Kysely<PlatformTables>({
-    dialect: new PostgresDialect({ pool: new pg.Pool({ connectionString: url, max: 4 }) }),
+    dialect: new PostgresDialect({ pool: createPool({ connectionString: url, max: 4 }) }),
   });
 
   return {

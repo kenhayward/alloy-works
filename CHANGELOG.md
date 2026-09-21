@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.34.1 - 2026-09-21 (PR #170)
+
+### Fixed
+
+- **The service and the worker no longer stop when the database drops an idle connection.** A
+  database restart, a failover or an idle timeout ends connections the product is holding open but
+  not using, and until now that took the whole process down with it, along with anything it was
+  doing. The connection is now simply replaced the next time one is needed.
+
 ## 0.34.0 - 2026-09-21 (PR #167)
 
 ### Added
