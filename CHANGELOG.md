@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.34.3 - 2026-09-21 (PR #171)
+
+### Added
+
+- **A build order for the interface.** A plan in `docs/plans/` says which of the thirteen drawn
+  screens is built first and what each needs from the service. It also sets out how the one Light
+  theme is built so a second theme is only new colour values, and which assumptions on the drawings
+  have to be settled before the work reaches them. Nothing in the application changes yet.
+
 ## 0.34.2 - 2026-09-21 (PR #168)
 
 ### Added

@@ -579,3 +579,13 @@ could never be saved; and the engine sets fifteen quotations inside one another 
 quotation counts two levels against `MOST_NESTED_LEVELS` (#159 keeps the ceiling itself). Enter in a
 quotation's paragraph now splits it into paragraphs rather than reaching for the attribution, and a
 quotation keeps an attribution line after any key that folds one into the body.
+
+## The interface
+
+Building `apps/web` to the visual specification in [`../interface/`](../interface/README.md), one
+screen per pull request. The first plan is an ordering, not a task plan: each slice it names gets its
+own sketch plan when its turn comes.
+
+| #   | Plan                                                      | Builds                                                                                                                                               | Status   |
+| --- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 0   | [The build order](2026-09-21-interface-00-build-order.md) | Twelve slices in order, what each needs from the service, the theme mechanism with one theme in it, and the assumptions each slice must settle first | Proposed |
