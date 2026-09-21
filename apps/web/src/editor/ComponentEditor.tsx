@@ -20,6 +20,7 @@ import {
   type Selection,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
+import styles from './ComponentEditor.module.css';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -56,6 +57,8 @@ export interface ComponentEditorProps {
   readonly sessionId?: string;
   /** Given in tests, which drive the view by transaction because jsdom cannot type into it. */
   readonly onView?: (view: EditorView) => void;
+  /** Told the space of the component once it has opened, for the space pane beside the editor. */
+  readonly onSpace?: (space: { readonly id: string; readonly name: string }) => void;
 }
 
 type Loaded =
@@ -106,6 +109,16 @@ interface Asking {
  * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on its
  * own.
  */
+/** How much a component holds, as the status strip says it: its top-level blocks and its words. */
+function sizeOf(doc: EditorView['state']['doc']): string {
+  const blocks = doc.childCount;
+  const words = doc
+    .textBetween(0, doc.content.size, ' ', ' ')
+    .split(/\s+/)
+    .filter((word) => word !== '').length;
+  return `${blocks} ${blocks === 1 ? 'block' : 'blocks'}, ${words} ${words === 1 ? 'word' : 'words'}`;
+}
+
 export function ComponentEditor({
   componentId,
   client,
@@ -114,8 +127,19 @@ export function ComponentEditor({
   clock = browserClock,
   sessionId,
   onView,
+  onSpace,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
+  // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.
+  const toldSpace = useRef(onSpace);
+  toldSpace.current = onSpace;
+  const spaceId = 'component' in loaded ? loaded.component.space.id : null;
+  const spaceName = 'component' in loaded ? loaded.component.space.name : null;
+  useEffect(() => {
+    if (spaceId !== null && spaceName !== null) {
+      toldSpace.current?.({ id: spaceId, name: spaceName });
+    }
+  }, [spaceId, spaceName]);
   // Bumped by Try again after opening failed, to ask for the component once more.
   const [attempt, setAttempt] = useState(0);
   const [session, setSession] = useState<SessionView | null>(null);
@@ -630,12 +654,23 @@ export function ComponentEditor({
           `aria-modal` promises: a keyboard is held inside the dialog by its own trap, and a mouse
           by this. Without it the surface behind still takes clicks, so the selection the command
           is about to act on moves out from under the author while they type a target for it. */}
-      <article aria-labelledby="component-title" inert={asking !== null} onKeyDown={moveRegion}>
+      <article
+        aria-labelledby="component-title"
+        className={styles['card']}
+        inert={asking !== null}
+        onKeyDown={moveRegion}
+      >
         {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
             inside it are disabled, and an element with no role and no name announces nothing at
             all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
             a new stop in the tab order. */}
-        <header ref={headerRegion} role="group" aria-label="Component header" tabIndex={-1}>
+        <header
+          ref={headerRegion}
+          className={styles['header']}
+          role="group"
+          aria-label="Component header"
+          tabIndex={-1}
+        >
           {header ? (
             <ComponentHeader
               header={header}
@@ -646,7 +681,7 @@ export function ComponentEditor({
           ) : (
             <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
           )}
-          <p>
+          <p className={styles['version']}>
             Version {session?.version.number ?? shown.version.number} in {shown.space.name}
           </p>
         </header>
@@ -692,7 +727,7 @@ export function ComponentEditor({
               </button>
             )}
             {shown.mayEdit && (
-              <div role="toolbar" aria-label="Component">
+              <div className={styles['actions']} role="toolbar" aria-label="Component">
                 <button
                   className="primary"
                   type="button"
@@ -710,7 +745,11 @@ export function ComponentEditor({
                 </button>
               </div>
             )}
-            {session && <SaveIndicator save={session.save} savedAt={session.savedAt} />}
+            {session && (
+              <div className={styles['save']}>
+                <SaveIndicator save={session.save} savedAt={session.savedAt} />
+              </div>
+            )}
             {/* Above the surface, which is the order the regions are named in
               (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
               than absent, so what the editor can do with the text is visible before the lock is. */}
@@ -743,7 +782,13 @@ export function ComponentEditor({
             )}
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}
-            <div ref={place} tabIndex={-1} />
+            <div ref={place} className={styles['surface']} tabIndex={-1} />
+            {surface !== null && (
+              <div className={styles['strip']} role="note" aria-label="About this component">
+                <span>F6 moves between the header, the toolbar, the list panel and the text</span>
+                <span>{sizeOf(surface.state.doc)}</span>
+              </div>
+            )}
             {kept !== null && (
               <label>
                 Text that was not saved

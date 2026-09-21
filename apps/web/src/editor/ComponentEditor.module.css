@@ -1,0 +1,116 @@
+/*
+ * The editor in layout B, drawn in docs/interface/screens/ComponentEditor.html. The markup keeps the
+ * order the F6 ring and the tab order need; this grid is what puts the header, the save state and
+ * the Component toolbar on one strip.
+ */
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: start;
+  gap: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  padding: var(--space-16) var(--space-20) 0;
+}
+
+/* Everything the strip does not place spans the card, in the order it comes. */
+.card > * {
+  grid-column: 1 / -1;
+  margin-block: 0;
+}
+
+.header {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}
+
+.header:focus {
+  outline: none;
+}
+
+.header h2 {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--size-doc-title);
+  font-weight: 650;
+}
+
+.header label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0;
+  color: var(--muted);
+}
+
+.version {
+  order: -1;
+  flex-basis: 100%;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.save {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
+.actions {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: var(--space-8);
+}
+
+/* The Formatting toolbar and the panels beside it: controls in a wrapping row under the strip. */
+.card :global([role='toolbar'][aria-label='Formatting']) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  padding-block: var(--space-10);
+  border-top: 1px solid var(--border);
+}
+
+.surface {
+  min-height: 360px;
+  margin-inline: calc(-1 * var(--space-20));
+  padding: var(--space-20) var(--space-28);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.surface:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.surface :global(.ProseMirror) {
+  min-height: 320px;
+  outline: none;
+  font-size: var(--size-body);
+  line-height: 1.6;
+}
+
+.strip {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-inline: calc(-1 * var(--space-20));
+  padding: var(--space-8) var(--space-20);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-8) var(--radius-8);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--size-label);
+  font-variant-numeric: tabular-nums;
+}

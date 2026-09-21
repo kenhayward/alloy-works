@@ -129,6 +129,36 @@ describe('the component editor', () => {
     expect(screen.getByText('Version 0.1 in General')).toBeInTheDocument();
   });
 
+  it('says how many blocks and words it holds, and how F6 moves between regions', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () =>
+        json(200, opened({ content: content('Unbox the printer.', 'Plug it in now.') })),
+    });
+    await surface();
+    const strip = screen.getByRole('note', { name: 'About this component' });
+    expect(strip).toHaveTextContent(
+      'F6 moves between the header, the toolbar, the list panel and the text',
+    );
+    expect(strip).toHaveTextContent('2 blocks, 7 words');
+  });
+
+  it('tells the workspace which space the component it opened is in', async () => {
+    const { client } = service({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    const onSpace = vi.fn();
+    render(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onSpace={onSpace}
+      />,
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    expect(onSpace).toHaveBeenCalledWith({ id: 's1', name: 'General' });
+  });
+
   it('claims the lock with the first change, saves it, and cuts a version when asked', async () => {
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),

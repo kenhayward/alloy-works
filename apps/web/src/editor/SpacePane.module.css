@@ -1,0 +1,58 @@
+/* The space pane of layout B: the space's components, the open one marked with the accent edge. */
+.pane {
+  padding: var(--space-12) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface-2);
+  font-size: var(--size-body-small);
+}
+
+.overline {
+  margin: 0 var(--space-8) var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-10);
+  border-inline-start: 3px solid transparent;
+  border-radius: var(--radius-4);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.item:hover {
+  background: var(--accent-weak);
+  text-decoration: none;
+}
+
+.item[aria-current='page'] {
+  border-inline-start-color: var(--accent);
+  background: var(--accent-weak);
+  font-weight: 600;
+}
+
+.title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.number {
+  color: var(--muted);
+  font-size: var(--size-label);
+  font-variant-numeric: tabular-nums;
+}

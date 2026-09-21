@@ -189,6 +189,39 @@ describe('the workspace', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the components of its space beside an open component, the open one marked', async () => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === `/v1/components/${COMPONENT}`) {
+        return json(200, componentBody(COMPONENT, 'Install the printer'));
+      }
+      if (url.pathname === '/v1/components' && url.searchParams.get('spaces') === 's1') {
+        return json(200, {
+          items: [
+            {
+              id: COMPONENT,
+              title: 'Install the printer',
+              space: { id: 's1', name: 'General' },
+              version: '0.1',
+            },
+          ],
+          next: null,
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+    render(<Workspace fetch={fetching} />);
+
+    const pane = await screen.findByRole('navigation', { name: 'General' });
+    expect(await within(pane).findByRole('link', { name: /Install the printer/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
   it('offers Manage access beside an open component only to someone who may administer it', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     const { unmount } = render(<Workspace fetch={serviceThat({ access: answers(true) })} />);

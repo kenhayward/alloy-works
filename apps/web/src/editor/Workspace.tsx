@@ -9,6 +9,8 @@ import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink } from '../structure/links.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { ComponentList } from './ComponentList.js';
+import { SpacePane } from './SpacePane.js';
+import styles from './Workspace.module.css';
 import { Notice } from '../states/Notice.js';
 
 export interface WorkspaceProps {
@@ -118,6 +120,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   // finding 5): a server error or no answer, which Try again asks about once more.
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // The space the open component turned out to be in, for the pane beside the editor; kept with the
+  // component it belongs to, so the pane never shows one component's space beside another.
+  const [placed, setPlaced] = useState<{
+    readonly component: string;
+    readonly space: { readonly id: string; readonly name: string };
+  } | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -168,13 +176,26 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   }
   if (opened) {
     return (
-      <>
-        <p>
-          <a href="#">Back to components</a>
-          <ManageAccessLink client={client} componentId={opened} />
-        </p>
-        <ComponentEditor key={opened} componentId={opened} client={client} principalId={me} />
-      </>
+      <div className={styles['triptych']}>
+        {placed?.component === opened ? (
+          <SpacePane client={client} space={placed.space} current={opened} />
+        ) : (
+          <div />
+        )}
+        <div className={styles['editor']}>
+          <p>
+            <a href="#">Back to components</a>
+            <ManageAccessLink client={client} componentId={opened} />
+          </p>
+          <ComponentEditor
+            key={opened}
+            componentId={opened}
+            client={client}
+            principalId={me}
+            onSpace={(space) => setPlaced({ component: opened, space })}
+          />
+        </div>
+      </div>
     );
   }
   const publication = PUBLICATION.exec(hash)?.[1];
