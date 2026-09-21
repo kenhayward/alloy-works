@@ -1,0 +1,18 @@
+/* The edge a reader drags to size a pane, and the button that hides it to a rail. */
+.separator {
+  width: 6px;
+  cursor: col-resize;
+  border-radius: var(--radius-3);
+  background: transparent;
+  touch-action: none;
+}
+
+.separator:hover,
+.separator:focus-visible {
+  background: var(--border);
+}
+
+.toggle {
+  min-height: 24px;
+  padding: 0 var(--space-6);
+}
