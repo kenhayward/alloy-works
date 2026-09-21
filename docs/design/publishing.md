@@ -632,13 +632,14 @@ drop the one it was made under.
 
 ## Routes
 
-| Route                                  | Permission        | Does                                                                                                                    |
-| -------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/documents/{id}/publications` | Publish, artifact | `version`, `formats`. Decides, resolves and queues; answers the request                                                 |
-| `POST /v1/documents/{id}/previews`     | Read, artifact    | `version`. The same, as a preview                                                                                       |
-| `GET /v1/publication-requests/{id}`    | Its requester     | State and failures, and a preview's signed link while it lasts. Anybody else is answered `404`                          |
-| `GET /v1/documents/{id}/publications`  | Read, artifact    | The document's publications the caller may read, newest first, each with publisher, time, version, formats and approval |
-| `GET /v1/publications/{id}`            | Read, artifact    | The record, and a signed link per output, valid five minutes                                                            |
+| Route                                  | Permission        | Does                                                                                                                           |
+| -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /v1/documents/{id}/publications` | Publish, artifact | `version`, `formats`. Decides, resolves and queues; answers the request                                                        |
+| `POST /v1/documents/{id}/previews`     | Read, artifact    | `version`. The same, as a preview                                                                                              |
+| `GET /v1/publication-requests/{id}`    | Its requester     | State and failures, and a preview's signed link while it lasts. Anybody else is answered `404`                                 |
+| `GET /v1/documents/{id}/publications`  | Read, artifact    | The document's publications the caller may read, newest first, each with publisher, time, version, formats and approval        |
+| `GET /v1/publications`                 | Signed in         | Every publication the caller may read, of every document, newest first, filtered by the readable set; unpaged                  |
+| `GET /v1/publications/{id}`            | Read, artifact    | The record, and two signed links per output, valid five minutes: `download`, which saves it, and `view`, which a browser shows |
 
 `format_unsupported`, `layout_language` and `page_citation_without_pdf` are refused at the door, before
 anything is queued; everything else is the job's. A signed link's file name is the publication's id,

@@ -660,6 +660,27 @@ export async function listPublications(
   documentId: string,
   principalId: string,
 ): Promise<readonly PublicationSummary[] | undefined> {
+  return readablePublications(trx, principalId, documentId);
+}
+
+/**
+ * Every publication the principal may read, of every document, newest first: the per-document
+ * listing's query without the document (interface slice 10), filtered by the same readable set over
+ * the publication artifacts. Unpaged, as the document listing is. Undefined when the tenant holds no
+ * such principal.
+ */
+export async function listReadablePublications(
+  trx: TenantTransaction,
+  principalId: string,
+): Promise<readonly PublicationSummary[] | undefined> {
+  return readablePublications(trx, principalId, null);
+}
+
+async function readablePublications(
+  trx: TenantTransaction,
+  principalId: string,
+  documentId: string | null,
+): Promise<readonly PublicationSummary[] | undefined> {
   const readable = await loadReadableSet(trx, principalId);
   if (!readable) return undefined;
   const rows = await trx
@@ -668,7 +689,7 @@ export async function listPublications(
     .innerJoin('principal as pr', 'pr.id', 'p.publisher')
     .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
     .select([...publicationColumns, sql<string>`v.content ->> 'title'`.as('title')])
-    .where('p.document_id', '=', documentId)
+    .$if(documentId !== null, (query) => query.where('p.document_id', '=', documentId!))
     .where((eb) => readableArtifacts(eb, readable))
     .orderBy('p.published_at', 'desc')
     .orderBy('a.created_at', 'desc')

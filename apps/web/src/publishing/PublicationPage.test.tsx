@@ -83,6 +83,31 @@ describe('a publication at its own address', () => {
     );
   });
 
+  it('shows the publication itself in the page, and what it was made from beside it', async () => {
+    const VIEW = 'http://store.example.test/t_acme/sha256/abc?X-Amz-Signature=v';
+    open(
+      json(200, {
+        ...record,
+        outputs: [
+          {
+            format: 'pdf',
+            bytes: 30_000,
+            sha256: 'a'.repeat(64),
+            standard: 'ua-1',
+            download: LINK,
+            view: VIEW,
+          },
+        ],
+      }),
+    );
+    const frame = await screen.findByTitle('The dosing report');
+    expect(frame.tagName).toBe('IFRAME');
+    expect(frame).toHaveAttribute('src', VIEW);
+    const record_ = screen.getByRole('complementary', { name: 'What it was made from' });
+    expect(record_).toHaveTextContent(/Version 0\.3, published by Ada/);
+    expect(record_).toHaveTextContent('Typst 0.15.1');
+  });
+
   it('says a publication could not be opened when the store is away, and opens it when asked again', async () => {
     const answers = [
       json(503, { code: 'storage_unavailable', message: 'x', traceId: 't' }),

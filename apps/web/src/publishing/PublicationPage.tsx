@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 import { Notice } from '../states/Notice.js';
+import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -15,6 +16,8 @@ interface Shown {
   readonly engine: string;
   readonly template: number;
   readonly download: string | null;
+  /** The same bytes, signed to be shown rather than saved; absent from an older service's answer. */
+  readonly view: string | null;
   readonly bytes: number | null;
 }
 
@@ -43,6 +46,7 @@ function shownIn(data: unknown): Shown | undefined {
     engine: data.engine.version,
     template: data.template.version,
     download: isRecord(pdf) && typeof pdf.download === 'string' ? pdf.download : null,
+    view: isRecord(pdf) && typeof pdf.view === 'string' ? pdf.view : null,
     bytes: isRecord(pdf) && typeof pdf.bytes === 'number' ? pdf.bytes : null,
   };
 }
@@ -99,29 +103,38 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     );
   }
   return (
-    <article aria-labelledby="publication-title">
-      <h2 id="publication-title">{shown.title}</h2>
-      <p>{DRAFT_NOTICE.text}</p>
-      <p>
-        Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
-        {new Date(shown.publishedAt).toLocaleString(undefined, {
-          dateStyle: 'long',
-          timeStyle: 'short',
-        })}
-        .
-      </p>
-      <p>
-        Made with Typst {shown.engine} and publication template {shown.template}.
-      </p>
-      {shown.download !== null && (
+    <article aria-labelledby="publication-title" className={styles['page']}>
+      {/* Layout D: the publication itself, on the desk its pages sit on, shown by the browser's own
+          PDF viewer - whose bookmarks, from the tagged PDF, are its contents. Nothing is editable. */}
+      <div className={styles['canvas']}>
+        {shown.view !== null && (
+          <iframe className={styles['viewer']} src={shown.view} title={shown.title} />
+        )}
+      </div>
+      <aside className={styles['record']} aria-label="What it was made from">
+        <h2 id="publication-title">{shown.title}</h2>
+        <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
         <p>
-          <a href={shown.download}>Download the PDF</a>
-          {shown.bytes !== null && ` (${Math.max(1, Math.round(shown.bytes / 1024))} KB)`}
+          Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
+          {new Date(shown.publishedAt).toLocaleString(undefined, {
+            dateStyle: 'long',
+            timeStyle: 'short',
+          })}
+          .
         </p>
-      )}
-      <p>
-        <a href={`#/documents/${shown.document}`}>Open the document</a>
-      </p>
+        <p>
+          Made with Typst {shown.engine} and publication template {shown.template}.
+        </p>
+        {shown.download !== null && (
+          <p>
+            <a href={shown.download}>Download the PDF</a>
+            {shown.bytes !== null && ` (${Math.max(1, Math.round(shown.bytes / 1024))} KB)`}
+          </p>
+        )}
+        <p>
+          <a href={`#/documents/${shown.document}`}>Open the document</a>
+        </p>
+      </aside>
     </article>
   );
 }

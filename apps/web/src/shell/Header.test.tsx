@@ -85,6 +85,10 @@ describe('the header band', () => {
     expect(mark).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute('href', '#/');
     expect(screen.getByRole('link', { name: 'Documents' })).toHaveAttribute('href', '#/documents');
+    expect(screen.getByRole('link', { name: 'Publications' })).toHaveAttribute(
+      'href',
+      '#/publications',
+    );
   });
 
   it('closes a menu on Escape, returning focus to its button', async () => {

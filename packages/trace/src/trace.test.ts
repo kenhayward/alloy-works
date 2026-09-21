@@ -403,6 +403,7 @@ describe('scanning the repository for test files', () => {
     // 17, from 16: editor/SpacePane.test.tsx, which cites nothing.
     // 18, from 17: structure/DocumentList.test.tsx, which cites nothing.
     // 20, from 18: layouts/PaneWidth.test.tsx and structure/DocumentText.test.tsx, which cite nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(20);
+    // 21, from 20: publishing/PublicationList.test.tsx, which cites nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(21);
   });
 });

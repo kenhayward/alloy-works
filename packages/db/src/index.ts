@@ -19,6 +19,7 @@ export { DEFAULT_LAYOUT_ID, defaultLayout, type StoredLayout } from './layouts.j
 export {
   failPublicationRequest,
   listPublications,
+  listReadablePublications,
   publicationInputs,
   readPublication,
   readPublicationRequest,

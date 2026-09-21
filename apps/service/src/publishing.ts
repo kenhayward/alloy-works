@@ -10,6 +10,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   listPublications,
+  listReadablePublications,
   readDocument,
   readPublication,
   readPublicationRequest,
@@ -154,6 +155,15 @@ export function publishingHandlers(
       return { items: listed.map(summaryView) };
     },
 
+    /** Every publication the caller may read, of every document (interface slice 10). */
+    listPublicationsEverywhere: async (request: FastifyRequest): Promise<PublicationList> => {
+      const listed = await db.withTenant(tenantOf(request), (trx) =>
+        listReadablePublications(trx, principalOf(request).principalId),
+      );
+      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      return { items: listed.map(summaryView) };
+    },
+
     /**
      * `read` was decided on the publication artifact itself, so a grant on its document reaches none
      * of it (decision D). A document's or a component's id authorises, and is then no publication. Each
@@ -185,6 +195,9 @@ export function publishingHandlers(
               DOWNLOAD_SECONDS,
               `${publication.id}.${output.format}`,
             ),
+            // Signed with no name, and so no `attachment`: stored as application/pdf, the bytes
+            // open in the browser's own viewer, which is how the publication page shows them.
+            view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
           })),
         ),
       };
