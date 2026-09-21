@@ -1,4 +1,5 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
+import { isLanguageLabel } from '@alloy-works/domain';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -50,11 +51,12 @@ function markSpec(
 }
 
 /**
- * The editor's schema for this slice: the content root, paragraphs, text, lists in three kinds, and
- * the ten marks a T1 author or the mapping needs
+ * The editor's schema for this slice: the content root, paragraphs, text, lists in three kinds,
+ * quotations and preformatted text, and the ten marks a T1 author or the mapping needs
  * (docs/plans/2026-09-16-editor-01-open-edit-and-save.md, decision 5;
  * docs/plans/2026-09-20-editor-03-marks-and-links.md;
- * docs/plans/2026-09-21-editor-04-lists-and-quotations.md). Every other node in content-model.md arrives
+ * docs/plans/2026-09-21-editor-04-lists-and-quotations.md;
+ * docs/plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). Every other node in content-model.md arrives
  * with the plan that makes it editable; until then `toEditor` refuses to open a component holding one
  * for editing, so the mapping is never lossy.
  *
@@ -200,6 +202,57 @@ export const editorSchema = new Schema({
       defining: true,
       parseDOM: [{ tag: 'dt' }],
       toDOM: () => ['dt', 0],
+    },
+    /**
+     * Text whose whitespace is the content (CNT-018): `code: true` is what makes ProseMirror's
+     * `newlineInCode` and `exitCode` treat it as code, and `marks: ''` is the stored model's shape -
+     * a preformatted block holds a string, not runs. The label is judged on the way back from the
+     * DOM, as a list's start is, because the walk refuses anything that is not a token and a save
+     * refused there is told nothing.
+     */
+    preformatted: {
+      group: 'block',
+      content: 'text*',
+      marks: '',
+      code: true,
+      defining: true,
+      attrs: { id: { default: null }, language: { default: null } },
+      parseDOM: [
+        {
+          tag: 'pre',
+          preserveWhitespace: 'full',
+          getAttrs: (node: HTMLElement) => {
+            const language = node.getAttribute('data-language');
+            return { language: language !== null && isLanguageLabel(language) ? language : null };
+          },
+        },
+      ],
+      toDOM: (node) => [
+        'pre',
+        node.attrs.language === null ? {} : { 'data-language': node.attrs.language as string },
+        ['code', 0],
+      ],
+    },
+    /**
+     * `attribution?` rather than required: `wrapIn` cannot make a node whose content needs a child
+     * it does not have. The mapping and the Quotation command always add one, empty where nothing is
+     * stored, so an author always has somewhere to type it; an empty one stores as no attribution.
+     */
+    blockquote: {
+      group: 'block',
+      content: 'block+ attribution?',
+      defining: true,
+      attrs: { id: { default: null } },
+      parseDOM: [{ tag: 'blockquote' }],
+      toDOM: () => ['blockquote', 0],
+    },
+    /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
+    attribution: {
+      content: 'text*',
+      marks: '_',
+      defining: true,
+      parseDOM: [{ tag: 'footer' }],
+      toDOM: () => ['footer', { class: 'aw-attribution' }, 0],
     },
   },
   marks: {

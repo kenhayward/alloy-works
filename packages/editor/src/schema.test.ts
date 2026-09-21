@@ -460,3 +460,67 @@ describe('the editor stylesheet', () => {
     expectSelector(`.ProseMirror ${dtTag}`);
   });
 });
+
+describe('quotations and preformatted text in the editor schema (editor 5)', () => {
+  const rule = (name: 'preformatted' | 'blockquote' | 'attribution') => {
+    const found = editorSchema.nodes[name].spec.parseDOM?.filter(isTagRule)[0];
+    if (!found) throw new Error(`${name} has no tag rule`);
+    return found;
+  };
+
+  it('renders each of the three as its own element', () => {
+    const labelled = editorSchema.node('preformatted', { id: 'p1', language: 'sql' });
+    expect(editorSchema.nodes.preformatted.spec.toDOM!(labelled)).toEqual([
+      'pre',
+      { 'data-language': 'sql' },
+      ['code', 0],
+    ]);
+    const bare = editorSchema.node('preformatted', { id: 'p2' });
+    expect(editorSchema.nodes.preformatted.spec.toDOM!(bare)).toEqual(['pre', {}, ['code', 0]]);
+    const quoted = editorSchema.node('blockquote', { id: 'q1' }, [
+      editorSchema.node('paragraph', { id: 'b1' }),
+    ]);
+    expect(editorSchema.nodes.blockquote.spec.toDOM!(quoted)).toEqual(['blockquote', 0]);
+    const attribution = editorSchema.node('attribution');
+    expect(editorSchema.nodes.attribution.spec.toDOM!(attribution)).toEqual([
+      'footer',
+      { class: 'aw-attribution' },
+      0,
+    ]);
+  });
+
+  it('keeps an attribution out of the block group, as a term is', () => {
+    expect(editorSchema.nodes.attribution.isInGroup('block')).toBe(false);
+    expect(editorSchema.nodes.preformatted.isInGroup('block')).toBe(true);
+    expect(editorSchema.nodes.blockquote.isInGroup('block')).toBe(true);
+  });
+
+  it('lets an attribution carry every mark and preformatted text none', () => {
+    const marks = Object.values(editorSchema.marks);
+    for (const mark of marks) {
+      expect(editorSchema.nodes.attribution.allowsMarkType(mark), mark.name).toBe(true);
+      expect(editorSchema.nodes.preformatted.allowsMarkType(mark), mark.name).toBe(false);
+    }
+    expect(editorSchema.nodes.preformatted.spec.code).toBe(true);
+  });
+
+  it('reads a language label back only where it is a token', () => {
+    const pre = rule('preformatted');
+    expect(pre.tag).toBe('pre');
+    expect(pre.preserveWhitespace).toBe('full');
+    expect(pre.getAttrs?.(element({ 'data-language': 'c++' }))).toEqual({ language: 'c++' });
+    expect(pre.getAttrs?.(element({ 'data-language': 'a b' }))).toEqual({ language: null });
+    expect(pre.getAttrs?.(element({}))).toEqual({ language: null });
+    expect(rule('blockquote').tag).toBe('blockquote');
+    expect(rule('attribution').tag).toBe('footer');
+  });
+
+  it('still fills an empty document with a paragraph, not a preformatted block', () => {
+    const doc = editorSchema.nodes.doc.createAndFill({
+      title: 'T',
+      language: 'en-GB',
+      direction: 'ltr',
+    })!;
+    expect(doc.firstChild!.type.name).toBe('paragraph');
+  });
+});
