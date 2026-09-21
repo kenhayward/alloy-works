@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.40.0 - 2026-09-21 (PR #177)
+
+### Added
+
+- **The access page has its layout.** What is granted, and what someone may do and why, fill the
+  left. Each level is a card of rows, and a denial is edged in red. Giving access and inviting
+  someone sit in their own cards on the right. Remove and Withdraw are outlined in red. Nothing on
+  the page is reworded.
+
 ## 0.39.0 - 2026-09-21 (PR #176)
 
 ### Added

@@ -130,7 +130,7 @@ shell loads the renderer over `file://` and a path route breaks there.
 | `#/`                       | Home                       | Module cards  |
 | `#/components`             | Components                 | A             |
 | `#/components/{id}`        | Component editor           | B             |
-| `#/components/{id}/access` | Access to a component      | B, dock open  |
+| `#/components/{id}/access` | Access to a component      | Page          |
 | `#/documents`              | Documents                  | A             |
 | `#/documents/{id}`         | Document: outline and text | C             |
 | `#/documents/{id}/{node}`  | The same, at that part     | C             |
