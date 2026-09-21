@@ -1,13 +1,16 @@
 import type { Node } from 'prosemirror-model';
+import { undo } from 'prosemirror-history';
 import { Selection, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
 import {
-  MOST_NESTED_LIST_LEVELS,
+  MOST_NESTED_LEVELS,
   blockCommand,
   listAt,
   listAwareEnter,
+  preformattedAt,
   setListAttributes,
+  setPreformattedLanguage,
 } from './blocks.js';
 import { fromEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
@@ -792,12 +795,12 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
   };
 
   it('pins the depth against the model itself, rather than trusting a number somebody chose', () => {
-    // MOST_NESTED_LIST_LEVELS is a measurement, not a preference: `fromEditor` parses through
+    // MOST_NESTED_LEVELS is a measurement, not a preference: `fromEditor` parses through
     // `parseContentDocument`, whose nesting limit is counted in JSON depth, and a list level costs
     // four of those. This is the arithmetic, done by running it - so a change to either the limit or
     // the mapping's shape fails here rather than at an author's keyboard.
-    expect(() => stored(documentOf(nested(MOST_NESTED_LIST_LEVELS)))).not.toThrow();
-    expect(() => stored(documentOf(nested(MOST_NESTED_LIST_LEVELS + 1)))).toThrow(
+    expect(() => stored(documentOf(nested(MOST_NESTED_LEVELS)))).not.toThrow();
+    expect(() => stored(documentOf(nested(MOST_NESTED_LEVELS + 1)))).toThrow(
       /nested more than 128 deep/,
     );
   });
@@ -809,7 +812,7 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
     // session, with everything typed after it lost. Refused when it is asked, in this family's own
     // doctrine: the command declines, the toolbar reads the decline and says **Nest item** is
     // unavailable, and Tab hands the key back to the browser rather than swallowing it.
-    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS)), 'b2');
+    const state = stateOf(documentOf(nested(MOST_NESTED_LEVELS)), 'b2');
     expect(blockCommand('nestItem', ids())(state, undefined)).toBe(false);
     const { handled, next } = run(state, blockCommand('nestItem', ids()));
     expect(handled).toBe(false);
@@ -821,7 +824,7 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
   it('nests the item one level short of the limit, and what it makes is storable', () => {
     // The other side of the boundary, so the rule is a cliff at a measured place rather than a
     // refusal that has quietly swallowed a level of headroom.
-    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const state = stateOf(documentOf(nested(MOST_NESTED_LEVELS - 1)), 'b2');
     const { handled, next } = run(state, blockCommand('nestItem', ids()));
     expect(handled).toBe(true);
     expect(() => stored(next.doc)).not.toThrow();
@@ -833,12 +836,12 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
     // the innermost item wraps it in a list of its own, and at the limit that is the thirty-first -
     // measured, not reasoned: before this rule the command took the press and `fromEditor` threw on
     // what came back. The same answer as Tab's, because it is the same mistake.
-    const state = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS)), 'b2');
+    const state = stateOf(documentOf(nested(MOST_NESTED_LEVELS)), 'b2');
     expect(blockCommand('definitionList', ids())(state, undefined)).toBe(false);
     expect(run(state, blockCommand('definitionList', ids())).handled).toBe(false);
 
     // One level short it is taken, and what it makes is storable.
-    const room = stateOf(documentOf(nested(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const room = stateOf(documentOf(nested(MOST_NESTED_LEVELS - 1)), 'b2');
     const { handled, next } = run(room, blockCommand('definitionList', ids()));
     expect(handled).toBe(true);
     expect(() => stored(next.doc)).not.toThrow();
@@ -859,13 +862,13 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
       }
       return built;
     };
-    expect(() => stored(documentOf(deepest(MOST_NESTED_LIST_LEVELS)))).not.toThrow();
+    expect(() => stored(documentOf(deepest(MOST_NESTED_LEVELS)))).not.toThrow();
 
-    const state = stateOf(documentOf(deepest(MOST_NESTED_LIST_LEVELS)), 'b2');
+    const state = stateOf(documentOf(deepest(MOST_NESTED_LEVELS)), 'b2');
     expect(blockCommand('bulletedList', ids())(state, undefined)).toBe(false);
     expect(run(state, blockCommand('bulletedList', ids())).handled).toBe(false);
 
-    const room = stateOf(documentOf(deepest(MOST_NESTED_LIST_LEVELS - 1)), 'b2');
+    const room = stateOf(documentOf(deepest(MOST_NESTED_LEVELS - 1)), 'b2');
     const { handled, next } = run(room, blockCommand('numberedList', ids()));
     expect(handled).toBe(true);
     expect(() => stored(next.doc)).not.toThrow();
@@ -876,7 +879,7 @@ describe('the depth the model admits, which Tab may not carry an item past (issu
     // component must not freeze Tab in another: the deepest chain is unchanged by a nesting that
     // happens somewhere shallower.
     const doc = documentOf(
-      nested(MOST_NESTED_LIST_LEVELS),
+      nested(MOST_NESTED_LEVELS),
       list('S1', 'unordered', [item(paragraph('s1', 'One')), item(paragraph('s2', 'Two'))]),
     );
     const { handled, next } = run(stateOf(doc, 's2'), blockCommand('nestItem', ids()));
@@ -1053,7 +1056,7 @@ describe('a delete key that would deepen a list past what the model admits (issu
   };
 
   it('takes Backspace at the start of a term rather than wrapping the item a level deeper', () => {
-    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const doc = documentOf(definitionAt(MOST_NESTED_LEVELS));
     expect(() => stored(doc)).not.toThrow();
     const state = caretAt(doc, termAt(doc, 2));
     const { handled, next } = press(state, 'Backspace');
@@ -1067,7 +1070,7 @@ describe('a delete key that would deepen a list past what the model admits (issu
   });
 
   it('takes Delete at the end of the item before it, which is the same barrier from the other side', () => {
-    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const doc = documentOf(definitionAt(MOST_NESTED_LEVELS));
     const state = caretAt(doc, endOf(doc, 'b1'));
     const { handled, next } = press(state, 'Delete');
     expect(handled).toBe(true);
@@ -1078,7 +1081,7 @@ describe('a delete key that would deepen a list past what the model admits (issu
   it('lets both keys through one level short of the limit, where what they make is storable', () => {
     // The other side of the boundary. What they do there is the defect #160 is about and not this
     // rule's business; what matters here is that the guard has not swallowed a level of headroom.
-    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS - 1));
+    const doc = documentOf(definitionAt(MOST_NESTED_LEVELS - 1));
     const back = press(caretAt(doc, termAt(doc, 2)), 'Backspace');
     expect(back.handled).toBe(true);
     expect(back.next.doc.eq(doc)).toBe(false);
@@ -1094,7 +1097,7 @@ describe('a delete key that would deepen a list past what the model admits (issu
     // A Backspace that deletes a character is not handled by any keymap at all - every command in
     // the base chain declines and the browser does it, which ProseMirror reads back. A guard that
     // swallowed that would make the deepest list in a component unwritable.
-    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const doc = documentOf(definitionAt(MOST_NESTED_LEVELS));
     const state = caretAt(doc, termAt(doc, 2) + 1);
     const { handled, next } = press(state, 'Backspace');
     expect(handled).toBe(false);
@@ -1107,7 +1110,7 @@ describe('a delete key that would deepen a list past what the model admits (issu
     // otherwise, a probe asking without the view answers a different question from the press - it
     // finds no join, declines to refuse, and `baseKeymap` then builds the level with the view in
     // hand. Deleting the view from the probe leaves every other test in this file green.
-    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const doc = documentOf(definitionAt(MOST_NESTED_LEVELS));
     const state = caretAt(doc, termAt(doc, 2) + 1);
     const { handled, next } = press(state, 'Backspace', true);
     expect(handled).toBe(true);
@@ -1127,5 +1130,239 @@ describe('a delete key that would deepen a list past what the model admits (issu
     expect(back.handled).toBe(true);
     expect(back.next.doc.eq(doc)).toBe(false);
     expect(() => stored(back.next.doc)).not.toThrow();
+  });
+});
+
+describe('quotations and preformatted text: the commands and the keys (editor 5)', () => {
+  const pre = (id: string, text: string) =>
+    editorSchema.node(
+      'preformatted',
+      { id, language: null },
+      text === '' ? [] : [editorSchema.text(text)],
+    );
+  const attribution = (text = '') =>
+    editorSchema.node('attribution', null, text === '' ? [] : [editorSchema.text(text)]);
+  const quotation = (id: string, blocks: Node[], by = '') =>
+    editorSchema.node('blockquote', { id }, [...blocks, attribution(by)]);
+
+  /** A key with modifiers, through the real keymap chain, as `press` drives one without. */
+  function chord(
+    state: EditorState,
+    key: string,
+    modifiers: { ctrl?: boolean; shift?: boolean } = {},
+  ): { handled: boolean; next: EditorState } {
+    let next = state;
+    const view = {
+      get state() {
+        return next;
+      },
+      dispatch: (tr: Transaction) => {
+        next = next.apply(tr);
+      },
+      ...endOfTextblock(() => next),
+    };
+    const event = {
+      key,
+      keyCode: KEY_CODES[key] ?? 0,
+      shiftKey: modifiers.shift ?? false,
+      ctrlKey: modifiers.ctrl ?? false,
+      altKey: false,
+      metaKey: false,
+    };
+    for (const plugin of state.plugins) {
+      const handler = plugin.props.handleKeyDown;
+      if (handler === undefined) continue;
+      if (handler.call(plugin, view as never, event as never)) return { handled: true, next };
+    }
+    return { handled: false, next };
+  }
+
+  /** The cursor at the end of the textblock carrying that identifier, or of the first of a type. */
+  const atEndOf = (doc: Node, what: string) => {
+    const state = createEditorState({ doc, newIdentifier: counter() });
+    let end = -1;
+    doc.descendants((node, pos) => {
+      if (end === -1 && (node.attrs.id === what || node.type.name === what)) {
+        end = pos + node.nodeSize - 1;
+      }
+    });
+    return state.apply(state.tr.setSelection(TextSelection.create(state.doc, end)));
+  };
+
+  /** A selection from the start of the first block to the end of the last. */
+  const across = (doc: Node, first: string, last: string) => {
+    const state = createEditorState({ doc, newIdentifier: counter() });
+    const end = atEndOf(doc, last).selection.from;
+    return state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, inside(doc, first), end)),
+    );
+  };
+
+  const inAList = (...blocks: Node[]) => list('L1', 'unordered', [item(...blocks)]);
+
+  it('inserts a line break for Enter in preformatted text, in a list or out of one, and splits nothing', () => {
+    const top = chord(atEndOf(documentOf(pre('p1', 'a')), 'p1'), 'Enter');
+    expect(top.handled).toBe(true);
+    expect(shapeOf(top.next.doc)).toEqual(['doc', ['preformatted', 'a\n']]);
+    const nested = chord(atEndOf(documentOf(inAList(pre('p1', 'a'))), 'p1'), 'Enter');
+    expect(shapeOf(nested.next.doc)).toEqual([
+      'doc',
+      ['list', ['listItem', ['preformatted', 'a\n']]],
+    ]);
+  });
+
+  it('inserts a tab for Tab in preformatted text inside a list item, and nests nothing', () => {
+    const doc = documentOf(
+      list('L1', 'unordered', [item(paragraph('b1', 'x')), item(pre('p1', 'a'))]),
+    );
+    const pressed = chord(atEndOf(doc, 'p1'), 'Tab');
+    expect(pressed.handled).toBe(true);
+    expect(shapeOf(pressed.next.doc)).toEqual([
+      'doc',
+      ['list', ['listItem', ['paragraph', 'x']], ['listItem', ['preformatted', 'a\t']]],
+    ]);
+    // Outside a list and outside code Tab is still the browser's, so focus can move on (CNT-077).
+    expect(chord(atEndOf(documentOf(paragraph('b1', 'x')), 'b1'), 'Tab').handled).toBe(false);
+  });
+
+  it('never takes Shift-Tab in preformatted text, so focus can always leave backwards, even in a nested item', () => {
+    const doc = documentOf(
+      list('L1', 'unordered', [
+        item(paragraph('b1', 'x'), list('L2', 'unordered', [item(pre('p1', 'a'))])),
+      ]),
+    );
+    const pressed = chord(atEndOf(doc, 'p1'), 'Tab', { shift: true });
+    expect(pressed.handled).toBe(false);
+    expect(pressed.next.doc.eq(doc)).toBe(true);
+  });
+
+  it('leaves preformatted text for a paragraph after it on Mod-Enter', () => {
+    const pressed = chord(atEndOf(documentOf(pre('p1', 'a')), 'p1'), 'Enter', { ctrl: true });
+    expect(pressed.handled).toBe(true);
+    expect(shapeOf(pressed.next.doc)).toEqual(['doc', ['preformatted', 'a'], 'paragraph']);
+    expect(pressed.next.selection.$from.parent.type.name).toBe('paragraph');
+  });
+
+  it('leaves a quotation for a paragraph after it on Enter in its attribution', () => {
+    const doc = documentOf(quotation('q1', [paragraph('b1', 'Words.')], 'Ada'));
+    const pressed = chord(atEndOf(doc, 'attribution'), 'Enter');
+    expect(pressed.handled).toBe(true);
+    expect(shapeOf(pressed.next.doc)).toEqual([
+      'doc',
+      ['blockquote', ['paragraph', 'Words.'], ['attribution', 'Ada']],
+      'paragraph',
+    ]);
+    expect(pressed.next.selection.$from.parent.type.name).toBe('paragraph');
+    expect(pressed.next.selection.$from.depth).toBe(1);
+  });
+
+  it('moves an empty last paragraph out of a quotation on Enter, and does nothing in its only one', () => {
+    const doc = documentOf(quotation('q1', [paragraph('b1', 'Words.'), paragraph('b2', '')]));
+    const pressed = chord(stateOf(doc, 'b2'), 'Enter');
+    expect(pressed.handled).toBe(true);
+    expect(shapeOf(pressed.next.doc)).toEqual([
+      'doc',
+      ['blockquote', ['paragraph', 'Words.'], 'attribution'],
+      'paragraph',
+    ]);
+    const only = documentOf(quotation('q1', [paragraph('b1', '')]));
+    const stays = chord(stateOf(only, 'b1'), 'Enter');
+    expect(stays.next.doc.eq(only)).toBe(true);
+  });
+
+  it('makes one preformatted block of several paragraphs, a line each, and three paragraphs of three lines', () => {
+    const doc = documentOf(paragraph('b1', 'a'), paragraph('b2', 'b'), paragraph('b3', 'c'));
+    const made = run(across(doc, 'b1', 'b3'), blockCommand('preformatted', counter()));
+    expect(made.handled).toBe(true);
+    expect(shapeOf(made.next.doc)).toEqual(['doc', ['preformatted', 'a\nb\nc']]);
+    const back = run(made.next, blockCommand('preformatted', counter()));
+    expect(shapeOf(back.next.doc)).toEqual([
+      'doc',
+      ['paragraph', 'a'],
+      ['paragraph', 'b'],
+      ['paragraph', 'c'],
+    ]);
+    expect(() => stored(back.next.doc)).not.toThrow();
+  });
+
+  it('drops the marks of a paragraph it makes preformatted, and one undo brings them back', () => {
+    const strong = editorSchema.marks.strong!.create({ id: 'm1' });
+    const link = editorSchema.marks.hyperlink!.create({
+      id: 'm2',
+      href: 'https://example.com/',
+      title: null,
+    });
+    const doc = documentOf(
+      editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+        editorSchema.text('Bold', [strong]),
+        editorSchema.text(' and a link', [link]),
+      ]),
+    );
+    const state = stateOf(doc, 'b1');
+    // Offered, not declined: the toolbar shows it over formatted text (Ken, at plan review).
+    expect(blockCommand('preformatted', counter())(state)).toBe(true);
+    const made = run(state, blockCommand('preformatted', counter()));
+    expect(shapeOf(made.next.doc)).toEqual(['doc', ['preformatted', 'Bold and a link']]);
+    const undone = run(made.next, undo);
+    expect(undone.handled).toBe(true);
+    // The text, both marks and the marks' identifiers come back exactly. The paragraph itself
+    // takes a new block identifier, as every block an undo reinserts does under ADR-0023's descent
+    // rule - nothing outside the session can have pointed at it in between.
+    const back = undone.next.doc.firstChild!;
+    expect(back.type.name).toBe('paragraph');
+    expect(back.content.eq(doc.firstChild!.content)).toBe(true);
+    expect(() => stored(undone.next.doc)).not.toThrow();
+  });
+
+  it('wraps blocks in a quotation with an empty attribution, and unwraps one keeping its attribution', () => {
+    const doc = documentOf(paragraph('b1', 'a'), paragraph('b2', 'b'));
+    const wrapped = run(across(doc, 'b1', 'b2'), blockCommand('quotation', counter()));
+    expect(shapeOf(wrapped.next.doc)).toEqual([
+      'doc',
+      ['blockquote', ['paragraph', 'a'], ['paragraph', 'b'], 'attribution'],
+    ]);
+    const attributed = documentOf(quotation('q1', [paragraph('b1', 'a')], 'Ada'));
+    const unwrapped = run(stateOf(attributed, 'b1'), blockCommand('quotation', counter()));
+    expect(shapeOf(unwrapped.next.doc)).toEqual(['doc', ['paragraph', 'a'], ['paragraph', 'Ada']]);
+    expect(() => stored(unwrapped.next.doc)).not.toThrow();
+  });
+
+  it('declines a quotation that would stand deeper than the model admits', () => {
+    // A paragraph at the bottom of a chain of lists: at the limit a quotation round it would be the
+    // level past it, and one short of the limit it is the last level there is room for.
+    const chain = (levels: number): Node => {
+      let built: Node = list(`L${levels}`, 'unordered', [item(paragraph('b2', 'x'))]);
+      for (let level = levels - 1; level >= 1; level -= 1) {
+        built = list(`L${level}`, 'unordered', [item(built)]);
+      }
+      return built;
+    };
+    const at = (levels: number) => stateOf(documentOf(chain(levels)), 'b2');
+    expect(blockCommand('quotation', counter())(at(MOST_NESTED_LEVELS))).toBe(false);
+    const room = run(at(MOST_NESTED_LEVELS - 1), blockCommand('quotation', counter()));
+    expect(room.handled).toBe(true);
+    expect(() => stored(room.next.doc)).not.toThrow();
+  });
+
+  it('names the quotation and the preformatted block the commands make, uniquely in the component', () => {
+    const doc = documentOf(paragraph('b1', 'a'), paragraph('b2', 'b'));
+    const quoted = transactionOf(stateOf(doc, 'b1'), blockCommand('quotation', counter()));
+    const code = transactionOf(stateOf(doc, 'b2'), blockCommand('preformatted', counter()));
+    for (const made of [quoted.doc, code.doc]) {
+      const found = identifiers(made);
+      expect(found).not.toContain(null);
+      expect(new Set(found).size).toBe(found.length);
+    }
+  });
+
+  it('sets and clears a preformatted block label, and refuses one that is not a token', () => {
+    const state = stateOf(documentOf(pre('p1', 'a')), 'p1');
+    expect(preformattedAt(state)).toEqual({ language: null, pos: 0 });
+    const labelled = run(state, setPreformattedLanguage('sql'));
+    expect(preformattedAt(labelled.next)?.language).toBe('sql');
+    expect(setPreformattedLanguage('a b')(labelled.next)).toBe(false);
+    const cleared = run(labelled.next, setPreformattedLanguage(null));
+    expect(preformattedAt(cleared.next)?.language).toBeNull();
+    expect(preformattedAt(stateOf(documentOf(paragraph('b1', 'x')), 'b1'))).toBeNull();
   });
 });

@@ -2,7 +2,10 @@ export {
   blockCommand,
   listAt,
   listAwareEnter,
+  MOST_NESTED_LEVELS,
+  preformattedAt,
   setListAttributes,
+  setPreformattedLanguage,
   type BlockAction,
 } from './blocks.js';
 export { editorSchema } from './schema.js';

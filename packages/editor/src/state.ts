@@ -5,7 +5,14 @@ import type { MarkType, Node } from 'prosemirror-model';
 import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-import { blockCommand, listAwareEnter, refusePastTheLimit } from './blocks.js';
+import {
+  blockCommand,
+  codeAwareEnter,
+  insertTabInCode,
+  listAwareEnter,
+  outsideCode,
+  refusePastTheLimit,
+} from './blocks.js';
 import { identityPlugin } from './identity.js';
 import { commandKeymap, spansOf } from './marks.js';
 
@@ -266,16 +273,28 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // list with no key that leaves it. Every command in `listAwareEnter` returns false outside a
         // list, so the order is safe in both directions. `blocks.test.ts` presses the key through
         // this keymap rather than reasoning about which binding wins.
-        Enter: chainCommands(listAwareEnter(options.newIdentifier), enterWithoutEmpties),
+        //
+        // **And the code-aware links come first of all** (editor 5): in preformatted text Enter
+        // types a line break, which `splitListItem` and `splitBlock` would otherwise answer by
+        // splitting the item or the block around it; in an attribution it leaves the quotation.
+        Enter: chainCommands(
+          codeAwareEnter(options.newIdentifier),
+          listAwareEnter(options.newIdentifier),
+          enterWithoutEmpties,
+        ),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
         // to prevent. Both return false outside a list, so Tab still moves focus everywhere else,
         // which CNT-077 needs: a Tab that is always swallowed is a keyboard trap.
-        Tab: blockCommand('nestItem', options.newIdentifier),
-        'Shift-Tab': blockCommand('liftItem', options.newIdentifier),
+        //
+        // In preformatted text Tab types a tab, the character CNT-018 keeps, and Shift-Tab is **never
+        // taken** - not even to lift the item a preformatted block stands in - so focus can always
+        // leave backwards by keyboard and the tab is not a trap (decision I).
+        Tab: chainCommands(insertTabInCode, blockCommand('nestItem', options.newIdentifier)),
+        'Shift-Tab': outsideCode(blockCommand('liftItem', options.newIdentifier)),
       }),
-      // Every command the toolbar offers - nine marks and five block actions - from the one
+      // Every command the toolbar offers - nine marks and seven block actions - from the one
       // registry, so the two cannot drift (CNT-077). A mark's identifier is drawn from the same
       // source a block's is: both are allocated by the editor, and both have to be unique within
       // the component (ADR-0023, CNT-004).

@@ -1,4 +1,5 @@
-import { chainCommands } from 'prosemirror-commands';
+import { isLanguageLabel } from '@alloy-works/domain';
+import { chainCommands, newlineInCode } from 'prosemirror-commands';
 import { Fragment, Slice, type Node, type NodeType } from 'prosemirror-model';
 import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirror-schema-list';
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
@@ -11,12 +12,19 @@ const listItemNode = editorSchema.nodes.listItem;
 const definitionListNode = editorSchema.nodes.definitionList;
 const definitionItemNode = editorSchema.nodes.definitionItem;
 const termNode = editorSchema.nodes.term;
+const paragraphNode = editorSchema.nodes.paragraph;
+const preformattedNode = editorSchema.nodes.preformatted;
+const blockquoteNode = editorSchema.nodes.blockquote;
+const attributionNode = editorSchema.nodes.attribution;
 
 /** What the stored model's `format` may say, and nothing else (CNT-153, and the start rule below). */
 const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
 
 /**
- * How many lists may stand inside one another before the stored model refuses the document.
+ * How many lists and quotations may stand inside one another before the stored model refuses the
+ * document. A quotation counts as a level from editor 5 (decision L): it costs two of the JSON depth
+ * a list level costs four of, so counting it as a whole level is conservative, and thirty levels of
+ * any mixture stay under the model's limit.
  *
  * **Measured, not chosen.** `parseContentDocument` refuses content nested past a JSON depth of 128
  * (issue #125), and one list level costs four of those - the list, its items, an item, its content -
@@ -38,14 +46,17 @@ const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
  * toggle, the kind change and both lifts cannot make a document deeper than the one they were
  * handed, so they do not ask.
  */
-export const MOST_NESTED_LIST_LEVELS = 30;
+export const MOST_NESTED_LEVELS = 30;
 
-/** The longest chain of lists inside one another anywhere in this document, in levels. */
+/** Whether a node is a level of nesting: a list of either type, or a quotation. */
+const isLevel = (type: NodeType) =>
+  type === listNode || type === definitionListNode || type === blockquoteNode;
+
+/** The longest chain of lists and quotations inside one another anywhere here, in levels. */
 function deepestNesting(node: Node, within = 0): number {
   let deepest = within;
   node.forEach((child) => {
-    const inside =
-      child.type === listNode || child.type === definitionListNode ? within + 1 : within;
+    const inside = isLevel(child.type) ? within + 1 : within;
     const below = deepestNesting(child, inside);
     if (below > deepest) deepest = below;
   });
@@ -61,7 +72,7 @@ function deepestNesting(node: Node, within = 0): number {
  * `parseContentDocument`.
  */
 const tooDeep = (doc: Node | undefined): boolean =>
-  doc === undefined || deepestNesting(doc) > MOST_NESTED_LIST_LEVELS;
+  doc === undefined || deepestNesting(doc) > MOST_NESTED_LEVELS;
 
 /**
  * A key that would make the document deeper than the model admits, **taken and not passed on**.
@@ -93,13 +104,12 @@ export function refusePastTheLimit(command: Command): Command {
   };
 }
 
-/** How many lists the cursor stands inside, itself included where it stands in one. */
+/** How many levels - lists and quotations - the cursor stands inside. */
 function listsAbove(state: EditorState): number {
   const { $from } = state.selection;
   let count = 0;
   for (let depth = $from.depth; depth > 0; depth -= 1) {
-    const type = $from.node(depth).type;
-    if (type === listNode || type === definitionListNode) count += 1;
+    if (isLevel($from.node(depth).type)) count += 1;
   }
   return count;
 }
@@ -113,7 +123,13 @@ function listsAbove(state: EditorState): number {
  * reason `makeDefinitionList` gives.
  */
 export type BlockAction =
-  'bulletedList' | 'numberedList' | 'definitionList' | 'nestItem' | 'liftItem';
+  | 'bulletedList'
+  | 'numberedList'
+  | 'definitionList'
+  | 'nestItem'
+  | 'liftItem'
+  | 'quotation'
+  | 'preformatted';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -284,7 +300,7 @@ export function setListAttributes(attrs: Record<string, unknown>): Command {
  * In a **definition** list the command wraps as usual, which nests a counted list in the definition
  * being written. That is a real thing to want and it is what the author asked for; the definition
  * list itself is left alone. **That is also the one branch here that builds a level**, so it is the
- * one that has to answer `MOST_NESTED_LIST_LEVELS`: the toggle lifts and the kind change rewrites
+ * one that has to answer `MOST_NESTED_LEVELS`: the toggle lifts and the kind change rewrites
  * an attribute, and neither can make a document deeper than the one it was handed.
  */
 function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string): Command {
@@ -339,11 +355,11 @@ function makeDefinitionList(newIdentifier: () => string): Command {
     if (!$from.node($from.depth - 1).canReplaceWith(index, index + 1, definitionListNode)) {
       return false;
     }
-    // One more level than the cursor already stands in, and `MOST_NESTED_LIST_LEVELS` is the most
+    // One more level than the cursor already stands in, and `MOST_NESTED_LEVELS` is the most
     // the store will take. Counting the ancestry is exact here where `nestItem` has to probe:
     // the guards above admit one textblock and nothing else, and a textblock holds no lists, so
     // the new list's own level is the deepest thing this can make.
-    if (listsAbove(state) + 1 > MOST_NESTED_LIST_LEVELS) return false;
+    if (listsAbove(state) + 1 > MOST_NESTED_LEVELS) return false;
     if (dispatch) {
       const term = termNode.create();
       const wrapper = definitionListNode.create(
@@ -544,7 +560,7 @@ export function listAwareEnter(newIdentifier: () => string): Command {
  * by a press of Tab.
  *
  * **It declines when the level it would build is deeper than the stored model admits**
- * (`MOST_NESTED_LIST_LEVELS`). Until it did, the thirty-first Tab took the key and built the level,
+ * (`MOST_NESTED_LEVELS`). Until it did, the thirty-first Tab took the key and built the level,
  * and `fromEditor` then threw on every save for the rest of the session - so the author kept typing
  * into a page that said it was saving and lost all of it. Asked and answered here instead, in the
  * doctrine this family holds everywhere else: the command declines, the toolbar reads the decline
@@ -632,5 +648,214 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
         if (itemType === null) return false;
         return liftListItem(itemType)(state, dispatch ?? (() => undefined));
       };
+    case 'quotation':
+      return quotation(newIdentifier);
+    case 'preformatted':
+      return preformatted(newIdentifier);
   }
+}
+
+/** Whether the cursor stands in a node whose text is code, as `newlineInCode` asks it. */
+const inCode = (state: EditorState): boolean =>
+  state.selection.$head.parent.type.spec.code === true;
+
+/** A command that declines wherever the cursor stands in code, and runs anywhere else. */
+export function outsideCode(command: Command): Command {
+  return (state, dispatch, view) => (inCode(state) ? false : command(state, dispatch, view));
+}
+
+/**
+ * `Tab` in preformatted text types a tab, which is the character CNT-018 exists to keep; anywhere
+ * else it declines, so the list's Tab and the browser's still answer (decision I). `Shift-Tab` is
+ * never taken in code, which is what keeps this from being a trap (CNT-077).
+ */
+export const insertTabInCode: Command = (state, dispatch) => {
+  if (!inCode(state)) return false;
+  dispatch?.(state.tr.insertText('\t').scrollIntoView());
+  return true;
+};
+
+/** The innermost quotation the cursor stands in, with where it stands, or null. */
+function innermostQuotation(state: EditorState): { node: Node; pos: number } | null {
+  const { $from } = state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type === blockquoteNode) {
+      return { node: $from.node(depth), pos: $from.before(depth) };
+    }
+  }
+  return null;
+}
+
+/**
+ * `Enter` in an attribution leaves the quotation for a paragraph after it: an attribution is one
+ * line, and there is nothing it could split into.
+ */
+function exitAttribution(newIdentifier: () => string): Command {
+  return (state, dispatch) => {
+    const { $from } = state.selection;
+    if ($from.parent.type !== attributionNode) return false;
+    if (dispatch) {
+      const after = $from.after(-1);
+      const tr = state.tr.insert(after, paragraphNode.create({ id: newIdentifier() }));
+      tr.setSelection(TextSelection.create(tr.doc, after + 1));
+      dispatch(tr.scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/**
+ * `Enter` in an empty last body paragraph of a quotation that holds another block moves that
+ * paragraph out, after the quotation - the way out of a quotation by keyboard, as an empty item is
+ * the way out of a list. In the only body paragraph it declines, and `enterWithoutEmpties` then
+ * does nothing: a quotation cannot be emptied from inside.
+ */
+const leaveQuotation: Command = (state, dispatch) => {
+  const { $from, empty } = state.selection;
+  if (!empty || $from.depth < 2) return false;
+  if ($from.parent.type !== paragraphNode || $from.parent.content.size !== 0) return false;
+  const quoted = $from.node(-1);
+  if (quoted.type !== blockquoteNode) return false;
+  const body =
+    quoted.lastChild!.type === attributionNode ? quoted.childCount - 1 : quoted.childCount;
+  if (body < 2 || $from.index(-1) !== body - 1) return false;
+  if (dispatch) {
+    const paragraph = $from.parent;
+    const tr = state.tr.delete($from.before(), $from.after());
+    const after = tr.mapping.map($from.after(-1));
+    tr.insert(after, paragraph);
+    tr.setSelection(TextSelection.create(tr.doc, after + 1));
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+};
+
+/**
+ * Every `Enter` preformatted text and a quotation answer, chained **ahead of** the list's. In code
+ * `newlineInCode` types a line break; without it first, `splitListItem` would split the item around
+ * a preformatted block inside one and `splitBlock` would split the block. Each declines where it
+ * does not apply, so the order is safe in both directions.
+ */
+export function codeAwareEnter(newIdentifier: () => string): Command {
+  return chainCommands(newlineInCode, exitAttribution(newIdentifier), leaveQuotation);
+}
+
+/** The block range the selection covers, when every block in it is in the `block` group. */
+function blockRangeOf(state: EditorState) {
+  const { $from, $to } = state.selection;
+  const range = $from.blockRange($to);
+  if (range === null) return null;
+  for (let index = range.startIndex; index < range.endIndex; index += 1) {
+    if (!range.parent.child(index).type.isInGroup('block')) return null;
+  }
+  return range;
+}
+
+/**
+ * **Quotation** wraps the selected blocks in a quotation with an empty attribution to type into; in
+ * a quotation it unwraps the innermost one, and an attribution with text becomes a paragraph after
+ * the unwrapped blocks rather than being discarded (decision K). It declines where the quotation
+ * would stand deeper than the model admits, asked of the document the wrap would make (decision L).
+ */
+function quotation(newIdentifier: () => string): Command {
+  return (state, dispatch) => {
+    const inside = innermostQuotation(state);
+    if (inside !== null) {
+      if (dispatch) {
+        const blocks: Node[] = [];
+        inside.node.forEach((child) => {
+          if (child.type !== attributionNode) blocks.push(child);
+          else if (child.content.size > 0) {
+            blocks.push(paragraphNode.create({ id: newIdentifier() }, child.content));
+          }
+        });
+        const end = inside.pos + inside.node.nodeSize;
+        dispatch(state.tr.replaceWith(inside.pos, end, blocks).scrollIntoView());
+      }
+      return true;
+    }
+    const range = blockRangeOf(state);
+    if (range === null) return false;
+    const tr = state.tr.wrap(range, [{ type: blockquoteNode, attrs: { id: newIdentifier() } }]);
+    const wrapped = tr.doc.nodeAt(range.start);
+    if (wrapped === null) return false;
+    tr.insert(range.start + wrapped.nodeSize - 1, attributionNode.create());
+    if (tooDeep(tr.doc)) return false;
+    dispatch?.(tr.scrollIntoView());
+    return true;
+  };
+}
+
+/**
+ * **Preformatted text** over paragraphs of one parent joins them into one block, a line each; in a
+ * preformatted block it turns it back into paragraphs, one per line. The paragraphs' marks are
+ * **dropped**: the loss is visible, it answers the author's own command, and one undo restores them
+ * exactly, the marks' identifiers included (Ken, at plan review; decision K) - the paragraph takes a
+ * new block identifier, as every block an undo reinserts does under ADR-0023's descent rule. A paragraph here holds `text*` and
+ * nothing else, so there is no inline node that is not text for it to meet - the day one can hold a
+ * footnote or a cross-reference, this must decline over it, because that is content, not formatting.
+ */
+function preformatted(newIdentifier: () => string): Command {
+  return (state, dispatch) => {
+    const { $from } = state.selection;
+    if ($from.parent.type === preformattedNode) {
+      if (dispatch) {
+        const paragraphs = $from.parent.textContent
+          .split('\n')
+          .map((line) =>
+            paragraphNode.create(
+              { id: newIdentifier() },
+              line === '' ? [] : [editorSchema.text(line)],
+            ),
+          );
+        dispatch(state.tr.replaceWith($from.before(), $from.after(), paragraphs).scrollIntoView());
+      }
+      return true;
+    }
+    const range = blockRangeOf(state);
+    if (range === null) return false;
+    const lines: string[] = [];
+    for (let index = range.startIndex; index < range.endIndex; index += 1) {
+      const block = range.parent.child(index);
+      if (block.type !== paragraphNode) return false;
+      lines.push(block.textContent);
+    }
+    if (dispatch) {
+      const text = lines.join('\n');
+      const made = preformattedNode.create(
+        { id: newIdentifier(), language: null },
+        text === '' ? [] : [editorSchema.text(text)],
+      );
+      const tr = state.tr.replaceWith(range.start, range.end, made);
+      tr.setSelection(TextSelection.create(tr.doc, range.start + 1));
+      dispatch(tr.scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/** The preformatted block the cursor stands in, with its label and where it stands, or null. */
+export function preformattedAt(
+  state: EditorState,
+): { language: string | null; pos: number } | null {
+  const { $from } = state.selection;
+  if ($from.parent.type !== preformattedNode) return null;
+  return { language: ($from.parent.attrs.language as string | null) ?? null, pos: $from.before() };
+}
+
+/**
+ * Sets or clears the label of the preformatted block the cursor stands in. It declines a label that
+ * is not a token, which the walk would refuse on save with a message that names nothing.
+ */
+export function setPreformattedLanguage(language: string | null): Command {
+  return (state, dispatch) => {
+    const at = preformattedAt(state);
+    if (at === null) return false;
+    if (language !== null && !isLanguageLabel(language)) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(at.pos)!;
+      dispatch(state.tr.setNodeMarkup(at.pos, undefined, { ...node.attrs, language }));
+    }
+    return true;
+  };
 }
