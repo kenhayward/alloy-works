@@ -34,3 +34,7 @@ packages/trace/trace.json
 # different file. Reformatting it in place would misrepresent it as the document it was written
 # from, rather than the run it actually was.
 docs/trace/
+
+# The interface screens, exported from a design canvas and kept exactly as drawn: formatting their
+# HTML could change the whitespace a browser renders, and the PNG beside each is a picture of it.
+docs/interface/screens/

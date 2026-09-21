@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New component</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; position: relative; background: #f6f7f9; overflow: hidden;">
+
+  <!-- The page behind the modal -->
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column;">
+    <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+      <span style="width: 1px; height: 18px; background: #475569;"></span>
+      <span style="font-size: 13px; opacity: 0.7;">Components</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; font-size: 13px;">Acme Regulatory</span>
+      <span style="border: 1px solid #475569; border-radius: 999px; padding: 4px 10px; font-size: 13px;">Lin Moreau</span>
+    </header>
+    <div style="flex-grow: 1; display: flex; padding-top: 4px;">
+      <div style="width: 240px; background: #fbfcfd; border-right: 1px solid #e3e6ea;"></div>
+      <div style="flex-grow: 1; padding: 14px 24px;">
+        <div style="font-size: 22px; font-weight: 700; margin-bottom: 14px;">Components</div>
+        <div style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 0 12px;">
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Before you begin</span>
+              <span style="color: #6b7280; width: 110px;">Concept</span>
+              <span style="color: #6b7280; width: 110px;">Training</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">0.5</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Commissioning checklist</span>
+              <span style="color: #6b7280; width: 110px;">Task</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">2.3</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Declaration of conformity</span>
+              <span style="color: #6b7280; width: 110px;">Topic</span>
+              <span style="color: #6b7280; width: 110px;">Regulatory</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">3.1</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Electrical ratings</span>
+              <span style="color: #6b7280; width: 110px;">Reference</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">1.2</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Fault codes 100 to 199</span>
+              <span style="color: #6b7280; width: 110px;">Reference</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">4.6</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Install the coolant pump</span>
+              <span style="color: #6b7280; width: 110px;">Task</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">1.4</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Replace the inlet filter</span>
+              <span style="color: #6b7280; width: 110px;">Task</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">0.9</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Safety precautions</span>
+              <span style="color: #6b7280; width: 110px;">Concept</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">0.3</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Storage and transport</span>
+              <span style="color: #6b7280; width: 110px;">Topic</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">1.1</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Torque values for the pump housing</span>
+              <span style="color: #6b7280; width: 110px;">Reference</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">0.7</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">What the model 400 is for</span>
+              <span style="color: #6b7280; width: 110px;">Concept</span>
+              <span style="color: #6b7280; width: 110px;">General</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">2.0</span>
+            </div>
+          
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e3e6ea; font-size: 13px; color: #1c2024;">
+              <span style="flex-grow: 1;">Annual service</span>
+              <span style="color: #6b7280; width: 110px;">Task</span>
+              <span style="color: #6b7280; width: 110px;">Training</span>
+              <span style="color: #6b7280; width: 60px; font-variant-numeric: tabular-nums;">0.2</span>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrim -->
+  <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45);"></div>
+
+  <!-- Modal -->
+  <div role="dialog" aria-labelledby="new-component-title" aria-modal="true" style="position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 600px; background: #ffffff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); overflow: hidden;">
+
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #e3e6ea;">
+      <h2 id="new-component-title" style="margin: 0; font-size: 16px; font-weight: 700; flex-grow: 1;">New component</h2>
+      <button type="button" title="Close" aria-label="Close" style="display: flex; background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 4px; color: #6b7280; cursor: pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+      </button>
+    </div>
+
+    <div style="padding: 18px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px;">
+
+      <label style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; color: #6b7280;">Where</span>
+        <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 8px;">
+          <option>General</option>
+          <option>Regulatory</option>
+          <option>Training</option>
+        </select>
+        <span style="font-size: 12px; color: #6b7280;">The spaces you may create in.</span>
+      </label>
+
+      <label style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; color: #6b7280;">Component type</span>
+        <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 8px;">
+          <option>Reference</option>
+          <option>Concept</option>
+          <option>Task</option>
+          <option>Topic</option>
+        </select>
+        <span style="font-size: 12px; color: #6b7280;">What the environment offers.</span>
+      </label>
+
+      <label style="grid-column: span 4; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; color: #6b7280;">Title</span>
+        <input type="text" value="Torque values for the pump housing" style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 8px;">
+      </label>
+
+      <label style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; color: #6b7280;">Base language</span>
+        <input type="text" value="en-GB" style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #b91c1c; border-radius: 6px; padding: 7px 8px;">
+        <span style="font-size: 12px; color: #b91c1c;">A language tag looks like en-GB.</span>
+      </label>
+
+      <label style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; color: #6b7280;">Direction</span>
+        <select style="font: inherit; font-size: 14px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 8px;">
+          <option>Left to right</option>
+          <option>Right to left</option>
+        </select>
+        <span style="font-size: 12px; color: #6b7280;">Taken from the language unless you change it.</span>
+      </label>
+
+      <p style="grid-column: span 4; margin: 0; font-size: 13px; color: #6b7280; background: #eff6ff; border-radius: 6px; padding: 10px 12px;">Creating makes version 0.1 with one empty paragraph and opens it. The title, the language and the direction can all be changed as you work.</p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-top: 1px solid #e3e6ea;">
+      <span style="flex-grow: 1;"></span>
+      <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer;">Cancel</button>
+      <button type="button" style="background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 7px 18px; font: inherit; font-size: 14px; cursor: pointer;">Create</button>
+    </div>
+  </div>
+
+  <!-- The same shape, as a menu study -->
+  <div style="position: absolute; left: 50%; top: 556px; transform: translateX(-50%); width: 600px; display: flex; gap: 16px;">
+
+    <div style="flex-grow: 1; background: #ffffff; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); border: 1px solid #e3e6ea; padding: 6px;">
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; padding: 6px 10px;">Row menu</div>
+      
+        <button type="button" style="width: 100%; text-align: left; background: #eff6ff; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #1c2024; cursor: pointer;">Open</button>
+      
+        <button type="button" style="width: 100%; text-align: left; background: transparent; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #1c2024; cursor: pointer;">Copy link</button>
+      
+        <button type="button" style="width: 100%; text-align: left; background: transparent; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #1c2024; cursor: pointer;">Where this is used</button>
+      
+        <button type="button" style="width: 100%; text-align: left; background: transparent; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #1c2024; cursor: pointer;">Version history</button>
+      
+        <button type="button" style="width: 100%; text-align: left; background: transparent; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #1c2024; cursor: pointer;">Manage access</button>
+      
+        <button type="button" style="width: 100%; text-align: left; background: transparent; border: none; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 14px; color: #b91c1c; cursor: pointer;">Delete</button>
+      
+    </div>
+
+    <div style="width: 250px; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Modal rules</div>
+      <ul style="margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.55; color: #1c2024;">
+        <li>Scrim is overlay; the modal is surface at radius-10 with shadow-modal.</li>
+        <li>40px from the top, never centred vertically.</li>
+        <li>Form grid: four columns, two under 720px.</li>
+        <li>A refusal sits beside its own field, in danger, and nothing is applied.</li>
+        <li>Escape closes. Focus starts on the first field, and returns to what opened it.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

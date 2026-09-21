@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search results</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+mark{background:#eff6ff;color:#1c2024;border-radius:3px;padding:0 2px}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #f6f7f9; overflow: hidden;">
+
+  <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+    <button type="button" title="Switch module" aria-label="Switch module" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 3px 8px; color: #ffffff; font: inherit; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2.5 3.5 7v10L12 21.5 20.5 17V7L12 2.5Z" stroke="#63aea2"></path>
+        <path d="M12 12 3.5 7" stroke="#49888e"></path>
+        <path d="M12 12l8.5-5" stroke="#63aea2"></path>
+        <path d="M12 12v9.5" stroke="#49888e"></path>
+        <circle cx="12" cy="12" r="1.7" fill="#f3f9f8"></circle>
+      </svg>
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+    </button>
+    <span style="width: 1px; height: 18px; background: #475569;"></span>
+    <span style="font-size: 13px; opacity: 0.7;">Search</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" style="background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">Acme Regulatory</button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 999px; padding: 3px 10px 3px 3px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: #32647b; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">LM</span>
+      <span>Lin Moreau</span>
+    </button>
+  </header>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0; padding-top: 4px; box-sizing: border-box;">
+
+    <aside style="width: 240px; flex: none; background: #fbfcfd; border-right: 1px solid #e3e6ea; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+      <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Narrow this</h2>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Kind</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: #eff6ff;">
+              <input type="checkbox" checked="true" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Components</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">26</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: #eff6ff;">
+              <input type="checkbox" checked="true" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Documents</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">7</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: #eff6ff;">
+              <input type="checkbox" checked="true" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Publications</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">4</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Space</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">General</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">28</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Regulatory</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">6</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Training</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">3</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Matched on</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Words</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">31</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Meaning</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">14</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">Title only</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">5</span>
+            </label>
+          
+        </div>
+      
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Base language</h3>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">en-GB</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">32</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">fr</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">3</span>
+            </label>
+          
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 6px; border-radius: 6px; background: transparent;">
+              <input type="checkbox" style="margin: 0; accent-color: #2563eb;">
+              <span style="flex-grow: 1;">pt-BR</span>
+              <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">2</span>
+            </label>
+          
+        </div>
+      
+    </aside>
+
+    <main style="flex-grow: 1; min-width: 0; padding: 0 14px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 10px 8px 10px;">
+        <label style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 7px 10px; flex-grow: 1; max-width: 640px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.3-4.3"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Search everything you may read</span>
+          <input type="search" value="torque sequence gasket" style="border: none; outline: none; font: inherit; font-size: 15px; flex-grow: 1; min-width: 0; background: transparent; color: #1c2024;">
+        </label>
+        <span style="flex-grow: 1;"></span>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;">
+          Sort
+          <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 4px 8px;">
+            <option>Best match</option>
+            <option>Changed, newest first</option>
+          </select>
+        </label>
+      </div>
+
+      <p style="margin: 0; padding: 0 10px 10px 10px; font-size: 12px; color: #6b7280;">37 results you may read, in 0.08 seconds. Words and meaning together: a result can match the words you typed, or say the same thing in other words.</p>
+
+      <div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 0 10px 14px 10px;">
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #eff6ff; color: #2563eb;">Component</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Torque values for the pump housing</a>
+              <span style="font-size: 12px; color: #6b7280;">General</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Words and meaning</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Tighten the housing bolts in the order shown in Figure 2.1, in two passes. A <mark>seating pass</mark> at half the final value prevents the gasket from creeping.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 0.7, changed 14 minutes ago by you</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>In 3 documents</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #eff6ff; color: #2563eb;">Component</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Install the coolant pump</a>
+              <span style="font-size: 12px; color: #6b7280;">General</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Words</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Fit the gasket dry, then run every bolt down in the <mark>tightening sequence</mark> shown on the housing face.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 1.4, changed yesterday by Grace Rowe</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>In 2 documents</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #ecfeff; color: #0e7490;">Document</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Service manual, model 400</a>
+              <span style="font-size: 12px; color: #6b7280;">General</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Words in 4 components</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Section 5.3 Fitting the pump, holding <mark>torque</mark> values for every bolt size on the model 400 housing.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 2.4, changed 18 Sep</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>61 sections, 164 components</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #eff6ff; color: #2563eb;">Component</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Commissioning checklist</a>
+              <span style="font-size: 12px; color: #6b7280;">General</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Meaning</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Check that every fastener has been <mark>tightened to specification</mark> and countersigned before the first run.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 2.3, changed 15 Sep by Grace Rowe</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>In 2 documents</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #f3e8ff; color: #6b21a8;">Publication</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Operator manual, model 400, version 1.9</a>
+              <span style="font-size: 12px; color: #6b7280;">Published 18 Sep</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Words</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Repeat the sequence at 85 Nm, then check each bolt once more. Use a calibrated <mark>torque wrench</mark>.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Published by Grace Rowe, not approved</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>PDF, 1.8 MB</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #eff6ff; color: #2563eb;">Component</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Consignes de securite</a>
+              <span style="font-size: 12px; color: #6b7280;">Regulatory</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Meaning, in French</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Ne pas utiliser de produit d etancheite sur la face d appui; respecter l <mark>ordre de serrage</mark> indique.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 1.0, changed 17 Sep by Ada Nolan</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>In 1 document</span>
+            </div>
+          </article>
+        
+          <article style="background: #ffffff; border: 1px solid #e3e6ea; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: #eff6ff; color: #2563eb;">Component</span>
+              <a href="ComponentEditor.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Fault codes 100 to 199</a>
+              <span style="font-size: 12px; color: #6b7280;">General</span>
+              <span style="flex-grow: 1;"></span>
+              <span style="font-size: 12px; color: #6b7280;">Words</span>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #1c2024;">
+              Code 142 is raised where a bolt turns past its <mark>final torque</mark> without the reading rising.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6b7280;">
+              <span>Version 4.6, changed 12 Sep by you</span>
+              <span style="width: 1px; height: 11px; background: #e3e6ea;"></span>
+              <span>In 2 documents</span>
+            </div>
+          </article>
+        
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

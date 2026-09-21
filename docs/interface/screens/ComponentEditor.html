@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component editor</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#1c2024}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #f6f7f9; overflow: hidden;">
+
+  <header style="height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #0f172a; color: #ffffff;">
+    <button type="button" title="Switch module" aria-label="Switch module" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 3px 8px; color: #ffffff; font: inherit; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2.5 3.5 7v10L12 21.5 20.5 17V7L12 2.5Z" stroke="#63aea2"></path>
+        <path d="M12 12 3.5 7" stroke="#49888e"></path>
+        <path d="M12 12l8.5-5" stroke="#63aea2"></path>
+        <path d="M12 12v9.5" stroke="#49888e"></path>
+        <circle cx="12" cy="12" r="1.7" fill="#f3f9f8"></circle>
+      </svg>
+      <span style="font-size: 15px; font-weight: 600;">Alloy Works</span>
+    </button>
+    <span style="width: 1px; height: 18px; background: #475569;"></span>
+    <span style="font-size: 13px; opacity: 0.7;">Components</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" style="background: transparent; border: 1px solid #475569; border-radius: 6px; padding: 4px 10px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">Acme Regulatory</button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #475569; border-radius: 999px; padding: 3px 10px 3px 3px; color: #ffffff; font: inherit; font-size: 13px; cursor: pointer;">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: #32647b; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;">LM</span>
+      <span>Lin Moreau</span>
+    </button>
+  </header>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0; padding-top: 4px; box-sizing: border-box;">
+
+    <!-- Space pane -->
+    <aside style="width: 260px; flex: none; background: #fbfcfd; border-right: 1px solid #e3e6ea; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px 8px 16px; display: flex; align-items: center; gap: 6px;">
+        <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; flex-grow: 1;">General</h2>
+        <button type="button" title="Collapse this pane" aria-label="Collapse this pane" style="display: flex; background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px; color: #6b7280; cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+      </div>
+      <div style="padding: 0 16px 10px 16px;">
+        <label style="display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.3-4.3"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Search this space</span>
+          <input type="search" placeholder="Search this space" style="border: none; outline: none; font: inherit; font-size: 13px; flex-grow: 1; min-width: 0; background: transparent; color: #1c2024;">
+        </label>
+      </div>
+      <nav aria-label="Components in General" style="flex-grow: 1; overflow: hidden; padding: 0 8px 12px 8px;">
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Before you begin</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">0.5</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Commissioning checklist</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">2.3</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Electrical ratings</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">1.2</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Fault codes 100 to 199</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">4.6</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: #6b21a8;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Install the coolant pump</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">1.4</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Replace the inlet filter</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">0.9</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: #d97706;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Safety precautions</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">0.3</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">Storage and transport</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">1.1</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: #eff6ff; box-shadow: inset 2px 0 0 0 #2563eb;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: #2563eb;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600;">Torque values for the pump housing</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">0.7</span>
+          </a>
+        
+          <a href="ComponentEditor.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #1c2024; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: transparent; box-shadow: none;">
+            <span style="width: 6px; height: 6px; border-radius: 999px; flex: none; background: transparent;"></span>
+            <span style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;">What the model 400 is for</span>
+            <span style="font-size: 12px; color: #6b7280; font-variant-numeric: tabular-nums;">2.0</span>
+          </a>
+        
+      </nav>
+    </aside>
+
+    <!-- Editor -->
+    <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #f6f7f9;">
+
+      <div style="background: #ffffff; border-bottom: 1px solid #e3e6ea; padding: 12px 28px 10px 28px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label style="flex-grow: 1; min-width: 0;">
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Title</span>
+            <input type="text" value="Torque values for the pump housing" style="width: 100%; box-sizing: border-box; font: inherit; font-size: 20px; font-weight: 700; color: #1c2024; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 8px;">
+          </label>
+          <button type="button" style="background: #f1f5f9; color: #1c2024; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; flex: none; white-space: nowrap;">Done editing</button>
+          <button type="button" style="background: #2563eb; color: #ffffff; border: 1px solid #2563eb; border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; flex: none; white-space: nowrap;">Save version</button>
+          <button type="button" title="More for this component" aria-label="More for this component" style="background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px; color: #6b7280; cursor: pointer; display: flex; flex: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+          </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 13px; color: #6b7280;">
+          <span style="font-variant-numeric: tabular-nums; white-space: nowrap;">Version 0.7 in General</span>
+          <span style="background: #f1f5f9; border-radius: 4px; padding: 1px 7px; color: #1c2024;">Reference</span>
+          <label style="display: flex; align-items: center; gap: 6px;">
+            Language
+            <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 8px;">
+              <option>en-GB</option>
+              <option>fr</option>
+            </select>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px;">
+            Direction
+            <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px 8px;">
+              <option>Left to right</option>
+              <option>Right to left</option>
+            </select>
+          </label>
+          <span style="flex-grow: 1;"></span>
+          <span style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <span style="width: 7px; height: 7px; border-radius: 999px; background: #d97706;"></span>
+            Not saved, retrying
+          </span>
+        </div>
+      </div>
+
+      <div role="toolbar" aria-label="Formatting" style="background: #ffffff; border-bottom: 1px solid #e3e6ea; padding: 6px 28px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        
+          <button type="button" title="Strong, Ctrl+B" aria-label="Strong" aria-pressed="true" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #eff6ff; border: 1px solid #2563eb; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">B</button>
+        
+          <button type="button" title="Emphasis, Ctrl+I" aria-label="Emphasis" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">I</button>
+        
+          <button type="button" title="Underline, Ctrl+U" aria-label="Underline" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">U</button>
+        
+          <button type="button" title="Subscript, Ctrl+," aria-label="Subscript" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Sub</button>
+        
+          <button type="button" title="Superscript, Ctrl+." aria-label="Superscript" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Sup</button>
+        
+          <button type="button" title="Inline code, Ctrl+E" aria-label="Inline code" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Code</button>
+        
+          <button type="button" title="Quoted phrase, Ctrl+Q" aria-label="Quoted phrase" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Quote</button>
+        
+          <button type="button" title="Link, Ctrl+K" aria-label="Link" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Link</button>
+        
+          <button type="button" title="Language of this run" aria-label="Language" aria-pressed="false" style="min-width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 7px; cursor: pointer;">Language</button>
+        
+        <span style="width: 1px; height: 20px; background: #cbd2d9; margin: 0 2px;"></span>
+        
+          <button type="button" title="Bulleted list, Ctrl+Shift+8" aria-label="Bulleted list" aria-pressed="false" style="height: 28px; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 9px; cursor: pointer;">Bulleted list</button>
+        
+          <button type="button" title="Numbered list, Ctrl+Shift+7" aria-label="Numbered list" aria-pressed="true" style="height: 28px; display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #2563eb; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 9px; cursor: pointer;">Numbered list</button>
+        
+          <button type="button" title="Definition list, Ctrl+Shift+9" aria-label="Definition list" aria-pressed="false" style="height: 28px; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 9px; cursor: pointer;">Definition list</button>
+        
+          <button type="button" title="Nest item, Tab" aria-label="Nest item" aria-pressed="false" style="height: 28px; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 9px; cursor: pointer;">Nest item</button>
+        
+          <button type="button" title="Lift item, Shift+Tab" aria-label="Lift item" aria-pressed="false" style="height: 28px; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; color: #1c2024; font: inherit; font-size: 13px; padding: 0 9px; cursor: pointer;">Lift item</button>
+        
+        <span style="flex-grow: 1;"></span>
+        <div role="group" aria-label="List" style="display: flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #2563eb; border-radius: 7px; padding: 4px 8px;">
+          <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #2563eb;">List</span>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280;">
+            Kind
+            <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 2px 6px;">
+              <option>Numbered</option>
+              <option>Bulleted</option>
+            </select>
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280;">
+            Start at
+            <input type="number" value="1" style="width: 52px; font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 2px 6px;">
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280;">
+            Numbering
+            <select style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 2px 6px;">
+              <option>1, 2, 3</option>
+              <option>a, b, c</option>
+              <option>i, ii, iii</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; overflow: hidden; padding: 16px 28px; box-sizing: border-box;">
+        <div style="height: 100%; box-sizing: border-box; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; outline: 2px solid #93c5fd; outline-offset: -1px; padding: 24px 32px; overflow: hidden;">
+          <div style="max-width: 720px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.55;">
+            <p style="margin: 0;">Tighten the housing bolts in the order shown in <span style="background: #ecfeff; color: #0e7490; border-radius: 3px; padding: 1px 5px;">Figure 2</span>, in two passes. Use a calibrated torque wrench; a <span style="border-bottom: 1px dotted #0e7490; color: #0e7490;">seating pass</span> at half the final value prevents the gasket from creeping.</p>
+            <ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px;">
+              <li>Fit the gasket dry. Do <strong>not</strong> use sealant on the mating face.</li>
+              <li>Run every bolt down to <em>40 Nm</em> in the sequence shown.</li>
+              <li>Repeat the sequence at 85 Nm, then check each bolt once more.
+                <ol style="margin: 6px 0 0 0; padding-left: 22px; list-style-type: lower-alpha; display: flex; flex-direction: column; gap: 4px; color: #1c2024;">
+                  <li>Hold the wrench square to the head.</li>
+                  <li>Where a bolt turns further, stop and read <a href="#fault">Fault codes 100 to 199</a>.</li>
+                </ol>
+              </li>
+            </ol>
+            <dl style="margin: 0; display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 6px 16px;">
+              <dt style="font-weight: 600;">Seating pass</dt>
+              <dd style="margin: 0;">A first pass at half the final torque, in sequence.</dd>
+              <dt style="font-weight: 600;">Final torque</dt>
+              <dd style="margin: 0;">85 Nm, measured on a clean, dry thread.</dd>
+            </dl>
+            <p style="margin: 0;">Where the housing is marked <code style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f1f5f9; border-radius: 3px; padding: 1px 5px;">HT-400</code>, the values above do not apply. <span lang="fr" style="background: #eff6ff; border-radius: 3px; padding: 1px 4px;">Voir la notice du fabricant.</span></p>
+            <p style="margin: 0; color: #6b7280;">A quoted phrase, a language run and a cross-reference each keep their own identifier, so a comment on one survives the text around it being rewritten.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; border-top: 1px solid #e3e6ea; background: #ffffff; padding: 6px 28px; display: flex; align-items: center; gap: 14px; font-size: 12px; color: #6b7280;">
+        <span>Paragraph, in a numbered list, item 3</span>
+        <span style="width: 1px; height: 12px; background: #e3e6ea;"></span>
+        <span>F6 moves between the header, the toolbar, the list panel and the text</span>
+        <span style="flex-grow: 1;"></span>
+        <span>4 blocks, 168 words</span>
+      </div>
+    </main>
+
+    <!-- Facet dock -->
+    <div style="flex: none; display: flex; border-left: 1px solid #e3e6ea;">
+      <nav aria-label="Panels" style="width: 38px; background: #fbfcfd; border-right: 1px solid #e3e6ea; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 8px;">
+        
+          <button type="button" title="Attributes" aria-label="Attributes" aria-pressed="true" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #2563eb; background: #eff6ff; color: #2563eb; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">At</span>
+          </button>
+        
+          <button type="button" title="Where used" aria-label="Where used" aria-pressed="false" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #6b7280; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">Wu</span>
+          </button>
+        
+          <button type="button" title="Version history" aria-label="Version history" aria-pressed="false" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #6b7280; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">Vn</span>
+          </button>
+        
+          <button type="button" title="Review" aria-label="Review" aria-pressed="false" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #6b7280; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">Rv</span>
+          </button>
+        
+          <button type="button" title="Access" aria-label="Access" aria-pressed="false" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #6b7280; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">Ac</span>
+          </button>
+        
+          <button type="button" title="Assistant" aria-label="Assistant" aria-pressed="false" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #6b7280; cursor: pointer;">
+            <span style="font-size: 11px; font-weight: 700;">Ai</span>
+          </button>
+        
+      </nav>
+
+      <section style="width: 320px; background: #fbfcfd; box-sizing: border-box; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280; flex-grow: 1;">Attributes</h2>
+          <button type="button" title="Close this panel" aria-label="Close this panel" style="display: flex; background: transparent; border: 1px solid #cbd2d9; border-radius: 6px; padding: 3px; color: #6b7280; cursor: pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          
+            <label style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: #6b7280;">Component type</span>
+              <input type="text" value="Reference" style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px;">
+            </label>
+          
+            <label style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: #6b7280;">Audience</span>
+              <input type="text" value="Service engineer" style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px;">
+            </label>
+          
+            <label style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: #6b7280;">Product</span>
+              <input type="text" value="Model 400" style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px;">
+            </label>
+          
+            <label style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12px; color: #6b7280;">Applies from release</span>
+              <input type="text" value="4.0" style="font: inherit; font-size: 13px; color: #1c2024; background: #ffffff; border: 1px solid #cbd2d9; border-radius: 6px; padding: 5px 8px;">
+            </label>
+          
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 12px; color: #6b7280;">Keywords</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              
+                <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: #eff6ff; color: #2563eb; border-radius: 999px; padding: 2px 8px;">
+                  torque
+                  <button type="button" title="Remove torque" aria-label="Remove torque" style="background: transparent; border: none; color: inherit; cursor: pointer; padding: 0; display: flex;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                  </button>
+                </span>
+              
+                <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: #eff6ff; color: #2563eb; border-radius: 999px; padding: 2px 8px;">
+                  pump housing
+                  <button type="button" title="Remove pump housing" aria-label="Remove pump housing" style="background: transparent; border: none; color: inherit; cursor: pointer; padding: 0; display: flex;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                  </button>
+                </span>
+              
+                <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: #eff6ff; color: #2563eb; border-radius: 999px; padding: 2px 8px;">
+                  assembly
+                  <button type="button" title="Remove assembly" aria-label="Remove assembly" style="background: transparent; border: none; color: inherit; cursor: pointer; padding: 0; display: flex;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                  </button>
+                </span>
+              
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 1px; background: #e3e6ea;"></div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <h3 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #6b7280;">Where this is used</h3>
+          
+            <a href="DocumentOutline.dc.html" style="display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 7px; padding: 8px 10px;">
+              <span style="font-size: 13px; font-weight: 600;">Operator manual, model 400</span>
+              <span style="font-size: 12px; color: #6b7280;">5.2.1 Torque values, body</span>
+            </a>
+          
+            <a href="DocumentOutline.dc.html" style="display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 7px; padding: 8px 10px;">
+              <span style="font-size: 13px; font-weight: 600;">Service manual, model 400</span>
+              <span style="font-size: 12px; color: #6b7280;">B.3 Reference values, appendix</span>
+            </a>
+          
+            <a href="DocumentOutline.dc.html" style="display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 7px; padding: 8px 10px;">
+              <span style="font-size: 13px; font-weight: 600;">Commissioning pack</span>
+              <span style="font-size: 12px; color: #6b7280;">2.4 Fitting the pump, body</span>
+            </a>
+          
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</body>
+</html>

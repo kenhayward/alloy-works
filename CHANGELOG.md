@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.34.2 - 2026-09-21 (PR #168)
+
+### Added
+
+- **The interface has a specification.** `docs/interface/` says what the product looks like: the
+  dark header band and the three modules, the four layouts every screen is one of, the route each
+  screen answers, the words on its controls, and the states it can be in. Thirteen screens are drawn
+  in full beside it - as HTML you can open and read the real values off, and as a picture for an
+  issue or a review.
+- **One palette, in one file.** `docs/interface/tokens.css` carries every colour, type size, spacing
+  step, corner, shadow and pane width as a custom property. Nothing else writes a colour, which is
+  what makes a dark theme an afternoon later rather than a project later.
+
+### Known limits
+
+- **Light theme only.** The design system these screens come from carries a dark value for every
+  colour token. The `[data-theme="dark"]` block and the Auto mapping are a later pass, and they land
+  in `tokens.css` alone if no component has written a hex in the meantime.
+- **Eight things are drawn ahead of the code** - among them a document view, search, metadata,
+  Preview, and component types beyond Topic. `docs/interface/README.md` lists every one of them
+  rather than leaving them to be found in a diff.
+- **The folder is not in `docs/design/`, and it claims no requirement.** A design document there owns
+  what it answers in full, and these screens have not been read against CNT, STR, PUB and IAM one by
+  one. Each screen moves into its subsystem's design document, with its claims, as that subsystem is
+  built; what should be left here at the end is the shell, the tokens and the layouts.
+
 ## 0.34.1 - 2026-09-21 (PR #170)
 
 ### Fixed
