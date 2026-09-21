@@ -2,7 +2,7 @@ import { defaultLayout, OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace.js';
 
@@ -132,6 +132,12 @@ function accessService(titles: Record<string, string>) {
   }) as unknown as typeof fetch;
 }
 
+// The components list is at #/components since Home took #/ (interface slice 11); a test about some
+// other address sets its own.
+beforeEach(() => {
+  window.location.hash = '#/components';
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
   window.location.hash = '';
@@ -173,6 +179,21 @@ describe('the workspace', () => {
     expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Install the printer' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull();
+  });
+
+  it('greets the reader on Home, at #/ and the empty hash', async () => {
+    for (const hash of ['#/', '']) {
+      window.location.hash = hash;
+      const { unmount } = render(
+        <Workspace fetch={serviceThat({ first: { items: [], next: null } })} />,
+      );
+      expect(await screen.findByRole('heading', { name: 'Welcome back, Ada' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /^Components/ })).toHaveAttribute(
+        'href',
+        '#/components',
+      );
+      unmount();
+    }
   });
 
   it('says so when there is nothing to read', async () => {
@@ -489,7 +510,10 @@ describe('the workspace', () => {
     render(<Workspace fetch={fetching} />);
     const documents = await screen.findByRole('link', { name: 'Documents' });
     expect(documents).toHaveAttribute('href', '#/documents');
-    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute('href', '#/');
+    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute(
+      'href',
+      '#/components',
+    );
 
     window.location.hash = '#/documents';
     fireEvent(window, new HashChangeEvent('hashchange'));

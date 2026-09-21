@@ -49,6 +49,15 @@ describe('the header band', () => {
     expect(await within(band).findByRole('button', { name: /Ada Lovelace/ })).toBeInTheDocument();
   });
 
+  it('names no module on Home', async () => {
+    render(<Header module={null} fetch={serviceThat(signedIn)} />);
+    const band = screen.getByRole('banner');
+    expect(await within(band).findByText('Development')).toBeInTheDocument();
+    for (const name of ['Components', 'Documents', 'Publications']) {
+      expect(within(band).queryByText(name)).not.toBeInTheDocument();
+    }
+  });
+
   it('offers Sign in when nobody is signed in', async () => {
     render(<Header module="Components" fetch={serviceThat(signedOut)} />);
 
@@ -83,7 +92,10 @@ describe('the header band', () => {
     await userEvent.click(mark);
 
     expect(mark).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute('href', '#/');
+    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute(
+      'href',
+      '#/components',
+    );
     expect(screen.getByRole('link', { name: 'Documents' })).toHaveAttribute('href', '#/documents');
     expect(screen.getByRole('link', { name: 'Publications' })).toHaveAttribute(
       'href',

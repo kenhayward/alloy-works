@@ -26,8 +26,8 @@ function useHash(): string {
   return hash;
 }
 
-/** The addresses that show the components list, under which the scaffolding's panel still sits. */
-const LIST = new Set(['', '#', '#/']);
+/** Home's addresses, under which the scaffolding's panel still sits until Administration takes it. */
+const HOME = new Set(['', '#', '#/']);
 
 export function App({
   bridge = resolveBridge(),
@@ -52,7 +52,7 @@ export function App({
       <Header module={moduleOf(hash)} />
       <main className={styles['page']}>
         {workspace}
-        {LIST.has(hash) && (
+        {HOME.has(hash) && (
           <aside className={styles['scaffolding']}>
             {environment}
             <p>
