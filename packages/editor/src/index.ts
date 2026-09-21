@@ -37,6 +37,7 @@ export {
   type ComponentHeader,
 } from './header.js';
 export { mountEditor, type MountOptions } from './view.js';
+export { renderContent } from './render.js';
 export { Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';

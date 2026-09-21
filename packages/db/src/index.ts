@@ -99,6 +99,7 @@ export { createSpace, listSpacesFor, type Space, type SpaceForPrincipal } from '
 export {
   createArtifact,
   latestVersion,
+  versionContents,
   readVersion,
   recordVersion,
   substanceOf,

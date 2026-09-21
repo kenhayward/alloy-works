@@ -2431,6 +2431,84 @@ describe('the address of every node', () => {
     expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
   });
 
+  it("reads the document's text in one call and edits one component in place at a time", async () => {
+    const user = userEvent.setup();
+    const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
+    const fake = service(outline([{ ...reference(REFERENCE, 'latest') }]));
+    const printer = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    let textsAsked = 0;
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        textsAsked += 1;
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [{ node: REFERENCE, version: 'vvvvvvvv-0000-4000-8000-000000000001' }],
+          versions: [{ id: 'vvvvvvvv-0000-4000-8000-000000000001', content: printer }],
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: printer,
+          mayEdit: false,
+          lock: null,
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+
+    const text = await screen.findByRole('region', { name: "The document's text" });
+    expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
+    const reads = textsAsked;
+
+    await user.click(within(text).getByRole('button', { name: 'Edit Install the printer' }));
+    // The component's own editor, in its card: the surface it edits on, and what it says to a reader.
+    expect(
+      await within(text).findByRole('textbox', { name: 'Content of Install the printer' }),
+    ).toBeInTheDocument();
+    expect(
+      within(text).getByText('You may read this component but not edit it.'),
+    ).toBeInTheDocument();
+    expect(textsAsked).toBe(reads);
+
+    await user.click(within(text).getByRole('button', { name: 'Close Install the printer' }));
+    expect(
+      within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
+    ).not.toBeInTheDocument();
+    // Read again on closing, so the card shows what was saved.
+    await waitFor(() => expect(textsAsked).toBeGreaterThan(reads));
+    expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
+  });
+
   it("puts the outline, the document's text and the chosen part's details in three columns", async () => {
     const user = userEvent.setup();
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));

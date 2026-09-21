@@ -853,6 +853,7 @@ target it checks, as `packages/api-contract`'s `RouteAccess` already requires.
 | `GET /v1/documents/{id}/numbering`     | Read, artifact | -                               | The latest version's numbering table, as the caller is shown it, and the component version each occurrence resolved to                                                                          |
 | `POST /v1/documents/{id}/outline`      | Edit, artifact | `openedFrom`, one operation     | Applies one operation and cuts a version; answers the new outline and its version                                                                                                               |
 | `GET /v1/documents/{id}/contributions` | Read, artifact | -                               | What each occurrence of the latest version contributes to the sequences, as the caller is shown it                                                                                              |
+| `GET /v1/documents/{id}/texts`         | Read, artifact | -                               | Each occurrence's resolved version, and each such version's content once, resolved as the contributions route resolves them: null, and never read, where the caller may not read the component  |
 
 **All six are built.** `GET /v1/documents` carries neither `cursor` nor `limit` and answers everything
 the caller may read at once, which is correct and linear in the number of documents. `GET
