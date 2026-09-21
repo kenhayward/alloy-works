@@ -251,6 +251,56 @@ describe('what each occurrence contributes, through the service', () => {
     }
   });
 
+  it("answers each readable occurrence's version with its content, and null for one the caller may not read", async () => {
+    const shared = await componentWith(general, 'Install the printer', [
+      figure('f1', 'The paper tray'),
+    ]);
+    const secret = await componentWith(quality, 'Calibration', [figure('s1', 'The secret bench')]);
+    let doc = await create('The printed report');
+    for (const [position, component] of [shared.id, secret.id].entries()) {
+      const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      doc = answer.json<DocumentBody>();
+    }
+    const [first, hidden] = doc.outline.nodes.map((node) => node.id);
+    const route = `/v1/documents/${doc.id}/texts`;
+
+    const forAlice = await call('alice', 'GET', route);
+    expect(forAlice.statusCode, forAlice.body).toBe(200);
+    const body = forAlice.json<{
+      document: string;
+      occurrences: { node: string; version: string | null }[];
+      versions: { id: string; content: { title: string } }[];
+    }>();
+    expect(body.document).toBe(doc.id);
+    expect(body.occurrences).toEqual([
+      { node: first, version: shared.version },
+      { node: hidden, version: null },
+    ]);
+    expect(body.versions).toHaveLength(1);
+    expect(body.versions[0]).toMatchObject({
+      id: shared.version,
+      content: { title: 'Install the printer' },
+    });
+    expect(forAlice.body).not.toContain('Calibration');
+    expect(forAlice.body).not.toContain(secret.version);
+
+    const forGrace = (await call('grace', 'GET', route)).json<{ versions: { id: string }[] }>();
+    expect(forGrace.versions.map((version) => version.id).sort()).toEqual(
+      [shared.version, secret.version].sort(),
+    );
+    expect((await call('grace', 'GET', `/v1/documents/${UNKNOWN}/texts`)).statusCode).toBe(404);
+    expect((await call(undefined, 'GET', route)).statusCode).toBe(401);
+  });
+
   it('answers an empty outline with no occurrences, and 404 for what is not a readable document', async () => {
     const doc = await create('Empty');
     const empty = await call('alice', 'GET', `/v1/documents/${doc.id}/contributions`);

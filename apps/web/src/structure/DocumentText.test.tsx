@@ -5,6 +5,7 @@ import {
   type OutlineViewNode,
 } from '@alloy-works/domain';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { DocumentText } from './DocumentText.js';
@@ -70,6 +71,59 @@ describe("the document's text", () => {
     // Withheld from this reader: named neutrally, marked, and nothing to open.
     expect(within(text).getByText('Not yours to read')).toBeInTheDocument();
     expect(within(text).getAllByRole('link')).toHaveLength(1);
+  });
+
+  it("shows each component's text in its card, and a component's editor in place of its text when asked", async () => {
+    const printerText = {
+      schemaVersion: 1,
+      title: 'Install the printer',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+        },
+      ],
+    };
+    const texts = new Map<string, unknown>([['cccccccccccccccccccccccccc', printerText]]);
+    const asked: (string | null)[] = [];
+    const names = new Map([[PRINTER, 'Install the printer']]);
+    const { rerender } = render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={names}
+        texts={texts}
+        editing={null}
+        onEdit={(node) => asked.push(node)}
+        editor={(component) => <p>the editor for {component}</p>}
+      />,
+    );
+
+    expect(screen.getByText('Unbox the printer.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Install the printer' }));
+    expect(asked).toEqual(['cccccccccccccccccccccccccc']);
+    // Nothing to edit where the component is withheld.
+    expect(screen.getAllByRole('button', { name: /^Edit / })).toHaveLength(1);
+
+    rerender(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={names}
+        texts={texts}
+        editing="cccccccccccccccccccccccccc"
+        onEdit={(node) => asked.push(node)}
+        editor={(component) => <p>the editor for {component}</p>}
+      />,
+    );
+    expect(screen.getByText(`the editor for ${PRINTER}`)).toBeInTheDocument();
+    expect(screen.queryByText('Unbox the printer.')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Close Install the printer' }));
+    expect(asked.at(-1)).toBeNull();
   });
 
   it('numbers nothing when the scheme could not be read', () => {

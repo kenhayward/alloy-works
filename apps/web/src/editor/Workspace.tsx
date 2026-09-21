@@ -217,6 +217,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         <DocumentPage
           key={documents.document}
           client={client}
+          principalId={me}
           id={documents.document}
           linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
           onArriveAgain={again}

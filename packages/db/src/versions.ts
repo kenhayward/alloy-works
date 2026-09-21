@@ -233,6 +233,24 @@ export async function readVersion(
 }
 
 /** The latest version of an artifact, or undefined when this tenant holds no such artifact. */
+/**
+ * The content of each of these versions, by id, in one query: for a caller that has already decided
+ * which versions may be read - the text of a document, resolved by `numberingInputs` - and needs
+ * nothing of each but what it holds. An id that names no version is simply absent.
+ */
+export async function versionContents(
+  trx: TenantTransaction,
+  ids: readonly string[],
+): Promise<ReadonlyMap<string, unknown>> {
+  if (ids.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('artifact_version')
+    .select(['id', 'content'])
+    .where('id', 'in', [...ids])
+    .execute();
+  return new Map(rows.map((row) => [row.id, row.content]));
+}
+
 export async function latestVersion(
   trx: TenantTransaction,
   artifactId: string,

@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.43.0 - 2026-09-21 (PR #184)
+
+### Added
+
+- **A document shows its components' text, and you can edit any one of them where it stands.** Each
+  component's card in the middle of a document now holds its text, formatted as it is when you
+  open it. Edit puts that component's own editor in the card, and Close puts the text back, showing
+  what you saved. One component is open for editing at a time. Opening another closes the first,
+  keeping what you typed. A component you may not read still shows only that it is there.
+
+### Changed
+
+- The service answers the text of every component a document places in one call,
+  `GET /v1/documents/{id}/texts`. A component you may not read is never read for it.
+
 ## 0.42.0 - 2026-09-21 (PR #183)
 
 ### Added

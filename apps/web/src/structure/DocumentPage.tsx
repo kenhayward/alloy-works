@@ -19,6 +19,7 @@ import { everyPage } from '../paging.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import styles from './DocumentPage.module.css';
+import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { DocumentText } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
@@ -283,6 +284,9 @@ function announce(
   }
 }
 
+/** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
+const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
+
 export interface DocumentPageProps {
   readonly client: Client;
   readonly id: string;
@@ -295,6 +299,8 @@ export interface DocumentPageProps {
   readonly onArriveAgain?: () => void;
   /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
   readonly followMs?: number;
+  /** The reader, for a component edited in place; without one, the text is read only. */
+  readonly principalId?: string;
 }
 
 /**
@@ -312,18 +318,46 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
-/** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
-const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
-
 export function DocumentPage({
   client,
   id,
   linked = null,
   onArriveAgain,
   followMs = FOLLOW_MS,
+  principalId,
 }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const outlinePane = usePaneWidth(OUTLINE_PANE);
+  // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
+  // read again for every version the page shows and whenever a component edited in place closes.
+  const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
+  const [textsAttempt, setTextsAttempt] = useState(0);
+  // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
+  const [editing, setEditing] = useState<string | null>(null);
+  const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
+  useEffect(() => {
+    if (shownVersion === null) return undefined;
+    let current = true;
+    client
+      .GET('/v1/documents/{id}/texts', { params: { path: { id } } })
+      .then(({ data }) => {
+        if (!current || !data) return;
+        const contents = new Map(data.versions.map((version) => [version.id, version.content]));
+        const byNode = new Map<string, unknown>();
+        for (const occurrence of data.occurrences) {
+          if (occurrence.version === null) continue;
+          const content = contents.get(occurrence.version);
+          if (content !== undefined) byNode.set(occurrence.node, content);
+        }
+        setTexts(byNode);
+      })
+      // The text is the reading view beside the outline: where it cannot be read, the cards show
+      // their titles alone, which is what they showed before it existed.
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, id, shownVersion, textsAttempt]);
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -646,7 +680,30 @@ export function DocumentPage({
           </div>
         )}
         <div className={styles['text']}>
-          <DocumentText outline={document.outline} scheme={document.scheme} names={names} />
+          <DocumentText
+            outline={document.outline}
+            scheme={document.scheme}
+            names={names}
+            texts={texts}
+            editing={editing}
+            {...(principalId === undefined
+              ? {}
+              : {
+                  onEdit: (node: string | null) => {
+                    setEditing(node);
+                    // Closing reads the text again, so the card shows what was saved.
+                    if (node === null) setTextsAttempt((count) => count + 1);
+                  },
+                  editor: (component: string) => (
+                    <ComponentEditor
+                      key={component}
+                      componentId={component}
+                      client={client}
+                      principalId={principalId}
+                    />
+                  ),
+                })}
+          />
         </div>
         <div className={styles['side']}>
           <GeneratedLists

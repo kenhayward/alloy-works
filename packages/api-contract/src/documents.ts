@@ -135,6 +135,31 @@ export type NumberingView = z.infer<typeof NumberingView>;
  * "Numbering"), as the caller is shown it: enough for the renderer to number every caption itself,
  * with the same function the numbering route calls, and to list each with its caption.
  */
+/**
+ * The text of every component the document places, as the caller is shown it (interface slice 9):
+ * each occurrence and the version it resolved to - null exactly where the contributions route answers
+ * null - and each such version once, with its content.
+ */
+export const DocumentTextsView = z.object({
+  document: z.string(),
+  version: z.object({ id: z.string(), number: z.string() }),
+  occurrences: z
+    .array(z.object({ node: z.string(), version: z.string().nullable() }))
+    .describe(
+      'Each component reference, in outline order, and the version it resolved to: null where the ' +
+        'caller may not read the component, where it waits on revisions, or where its content does not read',
+    ),
+  versions: z
+    .array(
+      z.object({
+        id: z.string(),
+        content: z.record(z.string(), z.unknown()).describe("The version's content document"),
+      }),
+    )
+    .describe('Each version an occurrence resolved to, once, however many occurrences name it'),
+});
+export type DocumentTextsView = z.infer<typeof DocumentTextsView>;
+
 export const ContributionsView = z.object({
   document: z.string(),
   version: z.object({ id: z.string(), number: z.string() }),
@@ -270,6 +295,28 @@ export const documentRoutes = {
       403: {
         description:
           'Never answered: a document the caller may read is one whose contributions they may read',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  getDocumentTexts: {
+    operationId: 'getDocumentTexts',
+    method: 'GET',
+    path: '/v1/documents/{id}/texts',
+    summary: 'The text of every component the latest version places, as the caller is shown it',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    responses: {
+      200: {
+        description: 'Each occurrence, and each version it resolved to with its content',
+        schema: DocumentTextsView,
+      },
+      401: unauthenticated,
+      403: {
+        description:
+          'Never answered: a document the caller may read is one whose text they may read, as far as they may read it',
         schema: ErrorBody,
       },
       404: notFound,

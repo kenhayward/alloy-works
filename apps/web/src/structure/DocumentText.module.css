@@ -31,10 +31,6 @@
 }
 
 .card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
   padding: var(--space-10) var(--space-14);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
@@ -59,4 +55,43 @@
 .open:hover {
   background: var(--accent-weak);
   text-decoration: none;
+}
+
+.card[data-editing='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--space-6);
+}
+
+.body {
+  margin-top: var(--space-10);
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.body > :first-child {
+  margin-top: 0;
+}
+
+.cannot {
+  margin: var(--space-10) 0 0;
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}
+
+.editor {
+  margin-top: var(--space-10);
 }

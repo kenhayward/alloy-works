@@ -11,6 +11,7 @@ import {
   editOutline,
   listReadableDocuments,
   numberingInputs,
+  versionContents,
   readableComponents,
   readDocument,
   type StoredDocument,
@@ -264,6 +265,37 @@ export function documentHandlers(
             caption: each.caption ?? null,
           })),
         })),
+      };
+    },
+
+    /**
+     * The text of every component the latest version places, as this caller is shown it (interface
+     * slice 9): resolved by the same `numberingInputs` as the contributions route, so a component they
+     * may not read is never read and its occurrence answers `null`, and each resolved version's
+     * content read once, in one query.
+     */
+    getDocumentTexts: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as DocumentParams;
+      const { document, outline } = await latestOutline(trx, id);
+      const inputs = await numberingInputs(trx, outline, principalId);
+      const resolved = [
+        ...new Set(
+          inputs.occurrences.flatMap((occurrence) =>
+            occurrence.version === null ? [] : [occurrence.version],
+          ),
+        ),
+      ];
+      const contents = await versionContents(trx, resolved);
+      return {
+        document: id,
+        version: { id: document.version.id, number: versionView(document.version).number },
+        occurrences: inputs.occurrences.map((occurrence) => ({ ...occurrence })),
+        versions: resolved.flatMap((version) => {
+          const content = contents.get(version);
+          return content === undefined
+            ? []
+            : [{ id: version, content: content as Record<string, unknown> }];
+        }),
       };
     },
 

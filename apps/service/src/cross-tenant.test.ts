@@ -75,6 +75,7 @@ const OTHER_TENANT_IDS: Readonly<
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getNumbering: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getContributions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getDocumentTexts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestPublication: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getPublicationRequest: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).request }),
   listPublications: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
