@@ -1415,13 +1415,13 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(blocksOf(assemble(underFaces(pre('p1', 'x'))))[0]).toMatchObject({ label: null });
   });
 
-  it('holds a line to 83 columns under the default layout, and to 81 inside a quotation', () => {
+  it('holds a line to 83 columns under the default layout, and to 79 inside a quotation', () => {
     expect(failuresOf(assemble(underFaces(pre('p1', 'x'.repeat(83)))))).toEqual([]);
     expect(failuresOf(assemble(underFaces(pre('p1', `ok\u{A}${'x'.repeat(84)}`))))).toEqual([
       failed('line_too_wide', 'p1', 'line 2, 84 of 83 columns'),
     ]);
     expect(failuresOf(assemble(underFaces(quotation('q1', [pre('p1', 'x'.repeat(83))]))))).toEqual([
-      failed('line_too_wide', 'p1', 'line 1, 83 of 81 columns'),
+      failed('line_too_wide', 'p1', 'line 1, 83 of 79 columns'),
     ]);
   });
 

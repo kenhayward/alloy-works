@@ -236,9 +236,16 @@
     // with no character of any kind before it - never through the engine's own attribution
     // parameter, which writes an em dash before the name that the author never typed and tags it a
     // bare Span (editor 5, decision D). The author types whatever they want before a name.
+    //
+    // In a block of the FULL width, because the engine sizes a quotation to its content: aligned to
+    // the end of the quotation alone, the attribution ended where the quotation's longest line did,
+    // which is the page's edge only when a paragraph happens to wrap. Measured by task 9's test, which
+    // quotes two short paragraphs.
     quote(block: true, {
       b.blocks.map(block-of).join()
-      if b.attribution != none { align(end, par(b.attribution.map(run).join())) }
+      if b.attribution != none {
+        block(width: 100%, align(end, par(b.attribution.map(run).join())))
+      }
     })
   } else {
     panic("unknown block type: " + b.type)

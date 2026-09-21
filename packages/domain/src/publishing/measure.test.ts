@@ -24,9 +24,9 @@ describe('the measure a preformatted line is held to', () => {
     expect(expandTabs('\u{1F600}\u{9}x')).toBe(`\u{1F600}${' '.repeat(7)}x`);
   });
 
-  it('sets 83 columns on the default page and 81 inside a quotation, as measured', () => {
+  it('sets 83 columns on the default page and 79 inside a quotation, which is indented on both sides', () => {
     expect(columnsAt(pdf, 0)).toBe(83);
-    expect(columnsAt(pdf, QUOTATION_INDENT)).toBe(81);
+    expect(columnsAt(pdf, 2 * QUOTATION_INDENT)).toBe(79);
   });
 
   it('indents a list by its widest marker, at or above what the engine was measured to take', () => {

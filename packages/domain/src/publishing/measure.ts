@@ -24,7 +24,11 @@ export const CODE_SIZE = 8.8;
 export const CODE_ADVANCE = (CODE_SIZE * 1229) / 2048;
 /** The panel a preformatted block is set in insets its text this much on each side. */
 export const PANEL_INSET = 6;
-/** A quotation indents its body by one em of the body text. */
+/**
+ * A quotation indents its body by one em of the body text **on each side**: the engine pads a block
+ * quotation horizontally, so it costs twice this of the width a line inside it has. Measured by task
+ * 9's PDF test, where an attribution aligned to a quotation's end stood one em short of the page's.
+ */
 export const QUOTATION_INDENT = 11;
 /** A definition hangs two ems beneath its term. */
 export const DEFINITION_INDENT = 22;

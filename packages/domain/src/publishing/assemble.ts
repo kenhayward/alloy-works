@@ -316,7 +316,8 @@ export function assemble(input: AssembleInput): Assembled {
           return [];
         }
         const blocks = block.content.flatMap((each) =>
-          publishable(each, node, indent + QUOTATION_INDENT),
+          // Both sides: the engine pads a block quotation by an em left and right.
+          publishable(each, node, indent + 2 * QUOTATION_INDENT),
         );
         const attribution =
           block.attribution === undefined ? [] : publishedRuns(block.attribution, node, block.id);
