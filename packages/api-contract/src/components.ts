@@ -59,6 +59,16 @@ export const ComponentListQuery = z.object({
     .regex(/^(?:[1-9]|[1-9][0-9]|100)$/, 'Expected a whole number from 1 to 100')
     .optional()
     .describe('At most this many, 50 when absent'),
+  spaces: z
+    .string()
+    .regex(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$/,
+      'Expected 1 to 50 space ids, separated by commas',
+    )
+    .optional()
+    .describe(
+      'Only the components in these spaces, by id, separated by commas; every space when absent',
+    ),
 });
 export type ComponentListQuery = z.infer<typeof ComponentListQuery>;
 
@@ -84,9 +94,23 @@ export const ComponentList = z.object({
       title: z.string(),
       space: z.object({ id: z.string(), name: z.string() }),
       version: z.string().describe('`revision.version` of the latest version'),
+      type: z
+        .string()
+        .nullable()
+        .describe('The component type it was written against, by name; null for none'),
+      language: z.string().describe('Its base language, a BCP 47 tag'),
+      changedAt: z.string().describe('When its latest version was made'),
+      changedBy: z
+        .object({ id: z.string(), name: z.string().nullable() })
+        .nullable()
+        .describe('Who made its latest version; null for a version nobody authored'),
     }),
   ),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+  total: z.number().int().describe('How many there are in all, in the spaces asked for'),
+  spaces: z
+    .array(z.object({ id: z.string(), name: z.string(), count: z.number().int() }))
+    .describe('Every space the caller may read a component in, with how many: what to filter by'),
 });
 export type ComponentList = z.infer<typeof ComponentList>;
 
@@ -120,7 +144,8 @@ export const componentRoutes = {
     responses: {
       200: { description: 'A page of components', schema: ComponentList },
       400: {
-        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        description:
+          'A cursor this listing did not give out, a limit outside 1 to 100, or spaces that are not a list of ids',
         schema: ErrorBody,
       },
       401: unauthenticated,

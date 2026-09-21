@@ -8,6 +8,7 @@ import {
   createComponent,
   latestVersion,
   listComponentTypes,
+  countReadableComponents,
   listReadableComponents,
   listSpacesFor,
   readLock,
@@ -141,21 +142,34 @@ export function componentHandlers(
     listComponents: async (request: FastifyRequest) => {
       const query = request.query as ComponentListQuery;
       const after = afterCursor(query.cursor);
-      const page = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableComponents(trx, principalOf(request).principalId, {
-          ...(after === undefined ? {} : { after }),
-          limit: pageLimit(query.limit),
-        }),
-      );
-      if (!page) throw new Error('A signed-in principal is not in its own tenant');
+      const principal = principalOf(request).principalId;
+      const spaces = query.spaces?.split(',');
+      const [page, counts] = await db.withTenant(tenantOf(request), async (trx) => [
+        await listReadableComponents(
+          trx,
+          principal,
+          { ...(after === undefined ? {} : { after }), limit: pageLimit(query.limit) },
+          spaces === undefined ? {} : { spaces },
+        ),
+        await countReadableComponents(trx, principal),
+      ]);
+      if (!page || !counts) throw new Error('A signed-in principal is not in its own tenant');
+      const counted =
+        spaces === undefined ? counts : counts.filter((one) => spaces.includes(one.id));
       return {
         items: page.items.map((item) => ({
           id: item.id,
           title: item.title,
           space: item.space,
           version: `${item.revision}.${item.version}`,
+          type: item.type,
+          language: item.language,
+          changedAt: item.changedAt.toISOString(),
+          changedBy: item.changedBy,
         })),
         next: cursorAfter(page.after),
+        total: counted.reduce((sum, one) => sum + one.count, 0),
+        spaces: counts.map((one) => ({ id: one.id, name: one.name, count: one.count })),
       };
     },
 

@@ -625,6 +625,16 @@
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -664,13 +674,58 @@
                           "version": {
                             "type": "string",
                             "description": "`revision.version` of the latest version"
+                          },
+                          "type": {
+                            "description": "The component type it was written against, by name; null for none",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "description": "Its base language, a BCP 47 tag"
+                          },
+                          "changedAt": {
+                            "type": "string",
+                            "description": "When its latest version was made"
+                          },
+                          "changedBy": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who made its latest version; null for a version nobody authored"
                           }
                         },
                         "required": [
                           "id",
                           "title",
                           "space",
-                          "version"
+                          "version",
+                          "type",
+                          "language",
+                          "changedAt",
+                          "changedBy"
                         ]
                       }
                     },
@@ -680,18 +735,51 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are in all, in the spaces asked for"
+                    },
+                    "spaces": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "count"
+                        ]
+                      },
+                      "description": "Every space the caller may read a component in, with how many: what to filter by"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total",
+                    "spaces"
                   ]
                 }
               }
             }
           },
           "400": {
-            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "description": "A cursor this listing did not give out, a limit outside 1 to 100, or spaces that are not a list of ids",
             "content": {
               "application/json": {
                 "schema": {
@@ -6489,6 +6577,16 @@
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -7431,6 +7529,16 @@
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -8338,6 +8446,16 @@
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
             }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
           }
         ],
         "responses": {
@@ -9198,6 +9316,16 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
             }
           }
         ],

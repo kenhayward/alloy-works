@@ -918,6 +918,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                spaces?: string;
             };
             header?: never;
             path?: never;
@@ -941,13 +942,32 @@ export interface operations {
                             };
                             /** @description `revision.version` of the latest version */
                             version: string;
+                            /** @description The component type it was written against, by name; null for none */
+                            type: string | null;
+                            /** @description Its base language, a BCP 47 tag */
+                            language: string;
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                            /** @description Who made its latest version; null for a version nobody authored */
+                            changedBy: {
+                                id: string;
+                                name: string | null;
+                            } | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
+                        /** @description How many there are in all, in the spaces asked for */
+                        total: number;
+                        /** @description Every space the caller may read a component in, with how many: what to filter by */
+                        spaces: {
+                            id: string;
+                            name: string;
+                            count: number;
+                        }[];
                     };
                 };
             };
-            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            /** @description A cursor this listing did not give out, a limit outside 1 to 100, or spaces that are not a list of ids */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3078,6 +3098,7 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                spaces?: string;
             };
             header?: never;
             path?: never;
@@ -3484,6 +3505,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                spaces?: string;
             };
             header?: never;
             path?: never;
@@ -3910,6 +3932,7 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                spaces?: string;
             };
             header?: never;
             path?: never;
@@ -4287,6 +4310,7 @@ export interface operations {
                 level: string;
                 cursor?: string;
                 limit?: string;
+                spaces?: string;
             };
             header?: never;
             path?: never;

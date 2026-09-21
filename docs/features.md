@@ -37,7 +37,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
   Controls, tables and messages are drawn in the Light theme from the tokens in
   `apps/web/src/theme/tokens.css`, the only file that writes a colour. A test fails the build if
-  any other file writes one, and another fails it if a second theme misses a token. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
+  any other file writes one, and another fails it if a second theme misses a token. The components list is a table - title,
+  type, space, version, language, when changed and by whom - beside a filter pane of spaces with
+  their counts, which hides to a rail; there is no search, sort, or filter by type, language or
+  date yet. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
   editing, empty and waiting, and the save state carries a coloured dot. There is one
   theme, so there is no theme choice, and no screen has the layout the drawings in
   `docs/interface/` give it yet.

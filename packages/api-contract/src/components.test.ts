@@ -22,6 +22,8 @@ describe('the routes that find and open components', () => {
     ).toEqual([
       ['cursor', 'query', false],
       ['limit', 'query', false],
+      // The space facet's filter (interface slice 3): narrows what is paged, never an offset into it.
+      ['spaces', 'query', false],
     ]);
   });
 });

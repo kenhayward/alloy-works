@@ -177,13 +177,51 @@ describe('finding and opening components through the service', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json<{ items: { id: string; title: string }[]; next: unknown }>();
       expect(body.items.map((item) => item.id)).not.toContain(hidden);
-      expect(body.items).toContainEqual({
-        id: expect.any(String),
-        title: 'Install the printer',
-        space: { id: expect.any(String), name: 'General' },
-        version: '0.1',
-      });
+      expect(body.items).toContainEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          title: 'Install the printer',
+          space: { id: expect.any(String), name: 'General' },
+          version: '0.1',
+        }),
+      );
       expect(body.next).toBeNull();
+    });
+
+    it("lists with each component's type, language and last change, a total and the spaces it may filter by", async () => {
+      const response = await call('ada', 'GET', '/v1/components');
+      const body = response.json<{
+        items: { title: string; changedAt: string }[];
+        total: number;
+        spaces: { id: string; name: string; count: number }[];
+      }>();
+      const printer = body.items.find((item) => item.title === 'Install the printer');
+      expect(printer).toMatchObject({
+        type: 'Topic',
+        language: 'en-GB',
+        changedBy: expect.anything(),
+      });
+      expect(Number.isNaN(Date.parse(printer!.changedAt))).toBe(false);
+      expect(body.total).toBe(body.items.length);
+      expect(body.spaces.reduce((sum, space) => sum + space.count, 0)).toBe(body.total);
+      expect(body.spaces.map((space) => space.name)).toContain('General');
+    });
+
+    it('narrows to the spaces named, and refuses a space list that is not one', async () => {
+      const whole = (await call('ada', 'GET', '/v1/components')).json<{
+        spaces: { id: string; name: string; count: number }[];
+      }>();
+      const general = whole.spaces.find((space) => space.name === 'General')!;
+      const narrowed = await call('ada', 'GET', `/v1/components?spaces=${general.id}`);
+      expect(narrowed.statusCode).toBe(200);
+      const body = narrowed.json<{ items: { space: { id: string } }[]; total: number }>();
+      expect(body.items.every((item) => item.space.id === general.id)).toBe(true);
+      expect(body.total).toBe(general.count);
+      for (const bad of ['not-a-space', '', `${general.id},`]) {
+        const refused = await call('ada', 'GET', `/v1/components?spaces=${bad}`);
+        expect(refused.statusCode).toBe(400);
+        expect(refused.json()).toMatchObject({ code: 'invalid_request' });
+      }
     });
 
     it('pages with a cursor it gave out, and refuses one it did not', async () => {

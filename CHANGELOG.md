@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.37.0 - 2026-09-21 (PR #174)
+
+### Added
+
+- **The components list is a table.**
+  - Each component is a row: its title, its component type, its space, its version, its base
+    language, when it last changed, and who changed it. It says You when that was you.
+  - A filter pane beside the table lists the spaces you may read, each with how many components it
+    holds.
+  - Tick spaces to narrow the list, or Clear to see everything again.
+  - Hide the filter to a thin rail when you want the room. The list remembers that.
+  - A line above the table says how many components you may read and how many are shown.
+
+### Changed
+
+- The service's list of components now also gives each component's type, language and last change,
+  a total, and the spaces it can be narrowed to (`spaces=` takes their ids).
+
 ## 0.36.0 - 2026-09-21 (PR #173)
 
 ### Added

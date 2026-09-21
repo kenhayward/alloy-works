@@ -1,5 +1,5 @@
 import { defaultLayout, OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -16,8 +16,40 @@ const LAYOUT = {
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 
+/**
+ * A listing as the service answers it since the components list gained its columns (interface
+ * slice 3): a total and the spaces to filter by beside the page, and each component's type,
+ * language and last change. These tests are about the workspace around the list, so the fakes
+ * below name only what each is about and this fills in the rest.
+ */
+function asListed(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || !('items' in body) || !('next' in body)) {
+    return body;
+  }
+  const { items } = body as { items: Record<string, unknown>[] };
+  return {
+    total: items.length,
+    spaces: [],
+    ...body,
+    items: items.map((item) =>
+      'space' in item && 'version' in item
+        ? {
+            type: 'Topic',
+            language: 'en-GB',
+            changedAt: '2026-09-01T09:00:00.000Z',
+            changedBy: null,
+            ...item,
+          }
+        : item,
+    ),
+  };
+}
+
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  new Response(JSON.stringify(asListed(body)), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 
 const me = { id: 'p1', displayName: 'Ada', email: null, environment: 'Development' };
 
@@ -134,7 +166,8 @@ describe('the workspace', () => {
     render(<Workspace fetch={fetching} />);
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     expect(link).toHaveAttribute('href', `#/components/${COMPONENT}`);
-    expect(screen.getByText(/version 0\.2 in/)).toBeInTheDocument();
+    // The version is its own column since the list became a table (interface slice 3).
+    expect(within(link.closest('tr')!).getByRole('cell', { name: '0.2' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
     expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();

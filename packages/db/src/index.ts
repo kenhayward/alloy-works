@@ -190,7 +190,14 @@ export {
   type ReleaseAnswer,
 } from './promotion.js';
 export { seedDevelopmentContent, type SeededContent } from './dev-content.js';
-export { listReadableComponents, type ComponentPage, type ComponentSummary } from './components.js';
+export {
+  countReadableComponents,
+  listReadableComponents,
+  type ComponentFilter,
+  type ComponentPage,
+  type ComponentSummary,
+  type SpaceCount,
+} from './components.js';
 export {
   createDocument,
   editOutline,

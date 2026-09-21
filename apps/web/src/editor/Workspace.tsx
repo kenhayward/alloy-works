@@ -219,7 +219,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   return (
     <>
       <Places />
-      <ComponentList client={client} />
+      <ComponentList client={client} principalId={me} />
     </>
   );
 }
