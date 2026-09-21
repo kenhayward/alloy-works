@@ -7,8 +7,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Fixed
 
-- **Building the images no longer fails when GitHub answers the Typst download with a momentary
-  error.** The download is tried up to five more times, five seconds apart. A file that does not
+- **Building the images no longer fails when GitHub answers the Typst download with an error for
+  a while.** The download is tried again every twenty seconds for up to five minutes. A file that does not
   match its checksum is still refused.
 
 ## 0.40.0 - 2026-09-21 (PR #177)
