@@ -399,6 +399,7 @@ describe('scanning the repository for test files', () => {
     // 12, from 11: shell/Header.test.tsx, which cites nothing.
     // 13, from 12: states/states.test.tsx, which cites nothing.
     // 15, from 13: editor/ComponentList.test.tsx and layouts/ListLayout.test.tsx, which cite nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(15);
+    // 16, from 15: layouts/Modal.test.tsx, which cites nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(16);
   });
 });

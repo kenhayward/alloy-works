@@ -108,3 +108,27 @@
   justify-content: center;
   margin-top: var(--space-12);
 }
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.titleRow h1 {
+  margin: 0;
+}
+
+.status {
+  margin: 0 0 var(--space-8);
+}
+
+.status:empty {
+  display: none;
+}
+
+.actions {
+  width: 1%;
+  padding-block: var(--space-4);
+}

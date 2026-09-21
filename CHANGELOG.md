@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.38.0 - 2026-09-21 (PR #175)
+
+### Added
+
+- **New component opens as a dialog.** The components list has one blue New component button. It
+  opens the same form as before, in a dialog over the list, with each field's label above it.
+  Escape or Close puts it away, and focus goes back to the button.
+- **Each component has a row menu.** It offers Open, Copy link and, if you may administer that
+  component, Manage access. Copy link says when it has copied the link.
+
+### Changed
+
+- The New component form is no longer always open above the list, and the button is offered only
+  to somebody who may create a component somewhere.
+
+### Fixed
+
+- The list says "1 component you may read" rather than "1 components".
+
 ## 0.37.0 - 2026-09-21 (PR #174)
 
 ### Added

@@ -1,0 +1,56 @@
+/* A row's menu: a quiet kebab, and a floating list of what can be done. */
+.holder {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.kebab {
+  min-height: 24px;
+  padding: 0 var(--space-6);
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.kebab:hover:not(:disabled),
+.kebab[aria-expanded='true'] {
+  border-color: var(--input-border);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-4));
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 190px;
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+  list-style: none;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-8) var(--space-10);
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--size-body);
+  text-align: start;
+  text-decoration: none;
+}
+
+.item:hover,
+.item:hover:not(:disabled) {
+  background: var(--accent-weak);
+  text-decoration: none;
+}

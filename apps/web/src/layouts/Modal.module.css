@@ -1,0 +1,88 @@
+/* A modal: the scrim, and the surface 40px from the top, never centred vertically. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-40) var(--space-16);
+  overflow-y: auto;
+  background: var(--overlay);
+}
+
+.dialog {
+  position: relative;
+  width: min(600px, 100%);
+  border-radius: var(--radius-10);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.body {
+  padding: var(--space-18) var(--space-20) var(--space-20);
+}
+
+/* A form inside takes the drawn grid - two columns, each field's label above it - without the form
+ * itself knowing it is in a modal. */
+.body > section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12) var(--space-16);
+  margin: 0;
+}
+
+.body > section > h2 {
+  grid-column: 1 / -1;
+  margin: 0 0 var(--space-4);
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-modal-title);
+}
+
+.body > section > label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.body > section > p,
+.body > section > [role='status'] {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.body > section > [role='status']:empty {
+  display: none;
+}
+
+.body > section > button {
+  justify-self: start;
+}
+
+.body > section > button.primary {
+  grid-column: 2;
+  justify-self: end;
+}
+
+.close {
+  position: absolute;
+  top: var(--space-14);
+  right: var(--space-14);
+  min-height: 26px;
+  padding: 0 var(--space-8);
+}
+
+@media (max-width: 720px) {
+  .body > section {
+    grid-template-columns: 1fr;
+  }
+
+  .body > section > button.primary {
+    grid-column: 1;
+  }
+}

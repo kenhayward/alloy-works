@@ -2,11 +2,14 @@ import type { ComponentList as Page, createApiClient } from '@alloy-works/api-cl
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ListLayout } from '../layouts/ListLayout.js';
+import { useCreatableSpaces } from '../spaces.js';
+import { Modal } from '../layouts/Modal.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { whenChanged } from './changed.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
+import { RowMenu } from './RowMenu.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -30,6 +33,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [total, setTotal] = useState(0);
   const [spaces, setSpaces] = useState<readonly SpaceCount[]>([]);
   const [chosen, setChosen] = useState<readonly string[]>([]);
+  const [creating, setCreating] = useState(false);
+  const creatable = useCreatableSpaces(client);
+  const [notice, setNotice] = useState<string | null>(null);
   // undefined: nothing has failed. Otherwise the cursor whose page did not arrive (null for the
   // first), so "Try again" retries exactly that page rather than starting over.
   const [failed, setFailed] = useState<string | null | undefined>(undefined);
@@ -93,6 +99,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     );
   }
 
+  // New component is offered only to somebody with somewhere to create one, as the inline form used to
+  // say nothing at all to them. A read that failed still offers it: the form says what went wrong and
+  // offers Try again.
+  const mayCreate = creatable.problem !== null || (creatable.spaces ?? []).length > 0;
+
   const toggle = (id: string) =>
     setChosen((held) => (held.includes(id) ? held.filter((one) => one !== id) : [...held, id]));
   const named = spaces.filter((space) => chosen.includes(space.id)).map((space) => space.name);
@@ -127,21 +138,36 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   return (
     <ListLayout filter={filter}>
       <section aria-labelledby="components-heading">
-        <h1 id="components-heading">Components</h1>
+        <div className={styles['titleRow']}>
+          <h1 id="components-heading">Components</h1>
+          {mayCreate && (
+            <button type="button" className="primary" onClick={() => setCreating(true)}>
+              New component
+            </button>
+          )}
+        </div>
         {/* Inside the loaded section, not above the whole list (S27): this component returns null
             while the list itself is still loading or has failed, and a form above all of that would
-            only ever appear once the listing had already resolved anyway. */}
-        <NewComponent
-          client={client}
-          onCreated={(id) => {
-            window.location.hash = `#/components/${id}`;
-          }}
-        />
+            only ever appear once the listing had already resolved anyway. A modal since interface
+            slice 4, opened by the button above rather than always open. */}
+        {creating && (
+          <Modal labelledBy="new-component-heading" onClose={() => setCreating(false)}>
+            <NewComponent
+              client={client}
+              onCreated={(id) => {
+                window.location.hash = `#/components/${id}`;
+              }}
+            />
+          </Modal>
+        )}
         <p className={styles['summary']}>
-          {`${total} components you may read. Showing 1 to ${items.length}.`}
+          {`${total} ${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
           {named.length > 0 && (
             <span className={styles['scope']}>{`Space: ${named.join(', ')}`}</span>
           )}
+        </p>
+        <p role="status" className={styles['status']}>
+          {notice}
         </p>
         {items.length === 0 ? (
           <Empty>
@@ -159,6 +185,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                   <th scope="col">Language</th>
                   <th scope="col">Changed</th>
                   <th scope="col">By</th>
+                  <td aria-hidden="true" />
                 </tr>
               </thead>
               <tbody>
@@ -182,6 +209,14 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                         : item.changedBy.id === principalId
                           ? 'You'
                           : (item.changedBy.name ?? '')}
+                    </td>
+                    <td className={styles['actions']}>
+                      <RowMenu
+                        client={client}
+                        id={item.id}
+                        title={item.title}
+                        onNotice={setNotice}
+                      />
                     </td>
                   </tr>
                 ))}
