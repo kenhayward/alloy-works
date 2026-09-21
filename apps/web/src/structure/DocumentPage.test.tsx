@@ -488,8 +488,8 @@ describe('the outline panel', () => {
     // A drop onto a node makes the dragged node its last child.
     fireEvent.dragStart(item('Introduction'));
     await screen.findByText('Move to the end of the document');
-    fireEvent.dragOver(screen.getByText('Method'));
-    fireEvent.drop(screen.getByText('Method'));
+    fireEvent.dragOver(within(screen.getByRole('tree')).getByText('Method'));
+    fireEvent.drop(within(screen.getByRole('tree')).getByText('Method'));
     await waitFor(() =>
       expect(
         within(item('Method')).getByRole('treeitem', { name: 'Introduction' }),
@@ -2158,8 +2158,8 @@ describe('an appendix in the outline panel', () => {
     fireEvent.dragStart(item('Results'));
     await screen.findByText('Move to the end of the document');
     // Not taken: a drop place the browser is not told it may drop on.
-    expect(fireEvent.dragOver(screen.getByText('Method'))).toBe(true);
-    fireEvent.drop(screen.getByText('Method'));
+    expect(fireEvent.dragOver(within(screen.getByRole('tree')).getByText('Method'))).toBe(true);
+    fireEvent.drop(within(screen.getByRole('tree')).getByText('Method'));
     fireEvent.dragEnd(item('Results'));
     await waitFor(() => expect(screen.queryByText('Move to the end of the document')).toBeNull());
     expect(fake.edits()).toEqual([]);
@@ -2429,6 +2429,22 @@ describe('the address of every node', () => {
     openAt(fake.fetch, SCOPE);
     expect(await screen.findByText('The linked part is not in this document.')).toBeInTheDocument();
     expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it("puts the outline, the document's text and the chosen part's details in three columns", async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    const tree = await screen.findByRole('tree', { name: 'Outline' });
+    await user.click(screen.getByRole('treeitem', { name: 'Introduction' }));
+
+    const part = (element: HTMLElement) =>
+      element.closest('[data-part]')?.getAttribute('data-part');
+    expect(part(tree)).toBe('outline');
+    expect(part(screen.getByRole('button', { name: 'Copy link' }))).toBe('details');
+    const text = screen.getByRole('region', { name: "The document's text" });
+    expect(within(text).getByRole('heading', { name: /Introduction/ })).toBeInTheDocument();
+    expect(screen.getByRole('separator', { name: 'Resize the outline' })).toBeInTheDocument();
   });
 
   it("copies the chosen node's address, and says it did", async () => {

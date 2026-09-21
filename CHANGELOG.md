@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.42.0 - 2026-09-21 (PR #183)
+
+### Added
+
+- **A document is one page: its outline, its text and the part you have chosen, side by side.**
+  - The outline sits on the left. Drag its edge to make it wider or narrower, or move the edge with
+    the arrow keys. Hide it to a thin rail when you want the room. The page remembers both.
+  - In the middle, the document reads in order: each section a heading under its number, and each
+    component a card under its own, with Open to go to it. A component you may not read says so.
+  - On the right is what is said of the part you have chosen: its settings, its link and, when you
+    remove it, the question that asks first. The figures, tables and equations and the
+    publications sit beneath.
+  - Editing a component in place, in the middle, comes next.
+
 ## 0.41.0 - 2026-09-21 (PR #178)
 
 ### Added

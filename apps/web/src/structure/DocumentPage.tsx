@@ -17,6 +17,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
+import { PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
+import styles from './DocumentPage.module.css';
+import { DocumentText } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import {
@@ -309,6 +312,9 @@ export interface DocumentPageProps {
  * one onto theirs is the silent overwrite STR-059 forbids. An act that changes nothing (decision K)
  * is neither a refusal nor an entry: the page says nothing and pushes nothing.
  */
+/** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
+const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
+
 export function DocumentPage({
   client,
   id,
@@ -317,6 +323,7 @@ export function DocumentPage({
   followMs = FOLLOW_MS,
 }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
+  const outlinePane = usePaneWidth(OUTLINE_PANE);
   const [attempt, setAttempt] = useState(0);
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -583,60 +590,84 @@ export function DocumentPage({
 
   const { document } = loaded;
   return (
-    <article aria-labelledby="document-title">
-      <header>
+    <article aria-labelledby="document-title" className={styles['page']}>
+      <header className={styles['strip']}>
         <h2 id="document-title">{document.outline.title}</h2>
-        <p>
+        <p className={styles['version']}>
           Version {document.version.number} in {document.space.name}
         </p>
       </header>
       {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
       {document.scheme === null && <p>This document's numbering could not be read.</p>}
-      <OutlinePanel
-        outline={document.outline}
-        scheme={document.scheme}
-        editable={document.mayEdit}
-        busy={busy}
-        onOperation={(operation) => apply(operation, false)}
-        notice={notice}
-        onNotice={setNotice}
-        canUndo={undo.length > 0}
-        refusals={refusals}
-        signedOuts={signedOuts}
-        onUndo={async () => {
-          const top = undo[undo.length - 1];
-          return top === undefined ? 'unsent' : apply(top, true);
-        }}
-        names={names}
-        components={components}
-        onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
-        linked={linked}
-        linkOf={(node) =>
-          `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
-        }
-        onSelected={(node) => {
-          // The address follows what is chosen, without a history entry per arrow key and without a
-          // `hashchange`, so a reload or a copy of the address comes back to it.
-          window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
-        }}
-      />
-      <GeneratedLists
-        document={document.id}
-        outline={document.outline}
-        scheme={document.scheme}
-        known={known}
-        names={names}
-        onRetry={() => setKnownAttempt((count) => count + 1)}
-        onArriveAgain={onArriveAgain}
-      />
-      <Publishing
-        client={client}
-        document={document.id}
-        version={document.version.id}
-        mayPublish={document.mayPublish}
-        placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
-        followMs={followMs}
-      />
+      <div
+        className={styles['layout']}
+        data-collapsed={outlinePane.collapsed}
+        style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
+      >
+        <div className={styles['paneHead']}>
+          <PaneToggle label="outline" pane={outlinePane} />
+          {outlinePane.collapsed && (
+            <span className={styles['railLabel']} aria-hidden="true">
+              Outline
+            </span>
+          )}
+        </div>
+        <OutlinePanel
+          outline={document.outline}
+          scheme={document.scheme}
+          editable={document.mayEdit}
+          busy={busy}
+          onOperation={(operation) => apply(operation, false)}
+          notice={notice}
+          onNotice={setNotice}
+          canUndo={undo.length > 0}
+          refusals={refusals}
+          signedOuts={signedOuts}
+          onUndo={async () => {
+            const top = undo[undo.length - 1];
+            return top === undefined ? 'unsent' : apply(top, true);
+          }}
+          names={names}
+          components={components}
+          onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
+          linked={linked}
+          linkOf={(node) =>
+            `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
+          }
+          onSelected={(node) => {
+            // The address follows what is chosen, without a history entry per arrow key and without a
+            // `hashchange`, so a reload or a copy of the address comes back to it.
+            window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+          }}
+        />
+        {!outlinePane.collapsed && (
+          <div className={styles['separator']}>
+            <PaneSeparator label="outline" pane={outlinePane} />
+          </div>
+        )}
+        <div className={styles['text']}>
+          <DocumentText outline={document.outline} scheme={document.scheme} names={names} />
+        </div>
+        <div className={styles['side']}>
+          <GeneratedLists
+            document={document.id}
+            outline={document.outline}
+            scheme={document.scheme}
+            known={known}
+            names={names}
+            onRetry={() => setKnownAttempt((count) => count + 1)}
+            onArriveAgain={onArriveAgain}
+          />
+          <Publishing
+            client={client}
+            document={document.id}
+            version={document.version.id}
+            mayPublish={document.mayPublish}
+            placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
+            followMs={followMs}
+          />
+        </div>
+      </div>
     </article>
   );
 }

@@ -685,150 +685,156 @@ export function OutlinePanel({
   const endTarget: DropTarget = { kind: 'end', parent: null };
 
   return (
-    <div onKeyDown={onPanelKeyDown}>
-      {editable && (
-        <div role="toolbar" aria-label="Outline">
-          {/* Nothing here is disabled while an act is in flight, because a control that is disabled
+    // Two parts, in the order they always had: the outline itself, and what is said of the node
+    // chosen in it. The document page lays them out in columns of their own (interface slice 8).
+    <div data-panel="outline" onKeyDown={onPanelKeyDown}>
+      <div data-part="outline">
+        {editable && (
+          <div role="toolbar" aria-label="Outline">
+            {/* Nothing here is disabled while an act is in flight, because a control that is disabled
               under the focus drops it to the page body in a real browser: each waits instead, and
               Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
-          <button type="button" onClick={() => !busy && openAdding('section')}>
-            Add section
-          </button>
-          <button type="button" onClick={() => !busy && openAdding('component')}>
-            Add component
-          </button>
-          <button
-            type="button"
-            aria-disabled={!canUndo}
-            onClick={() => {
-              if (!busy && canUndo) void onUndo?.();
+            <button type="button" onClick={() => !busy && openAdding('section')}>
+              Add section
+            </button>
+            <button type="button" onClick={() => !busy && openAdding('component')}>
+              Add component
+            </button>
+            <button
+              type="button"
+              aria-disabled={!canUndo}
+              onClick={() => {
+                if (!busy && canUndo) void onUndo?.();
+              }}
+            >
+              Undo
+            </button>
+          </div>
+        )}
+        {editable && adding?.kind === 'section' && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const text = newTitle.trim();
+              if (!hasText(text)) {
+                setAttempted(true);
+                return;
+              }
+              void insert({ type: 'section', title: sectionTitle(text) });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') cancelAdding();
             }}
           >
-            Undo
-          </button>
-        </div>
-      )}
-      {editable && adding?.kind === 'section' && (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const text = newTitle.trim();
-            if (!hasText(text)) {
-              setAttempted(true);
-              return;
+            <label>
+              New section title
+              {/* Focus goes where the author asked to type: they opened this form themselves. */}
+              <input
+                autoFocus
+                value={newTitle}
+                onChange={(event) => setNewTitle(event.target.value)}
+              />
+            </label>
+            {/* Said about the field as it stands, so it goes the moment the field is fine. */}
+            {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
+            <button type="submit">Add</button>
+            <button type="button" onClick={cancelAdding}>
+              Cancel
+            </button>
+          </form>
+        )}
+        {editable && adding?.kind === 'component' && (
+          <ComponentChooser
+            components={components}
+            chosen={chosen}
+            onChoose={setChosen}
+            onAdd={(component) =>
+              void insert({ type: 'reference', component, mode: { kind: 'latest' } })
             }
-            void insert({ type: 'section', title: sectionTitle(text) });
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') cancelAdding();
-          }}
-        >
-          <label>
-            New section title
-            {/* Focus goes where the author asked to type: they opened this form themselves. */}
-            <input
-              autoFocus
-              value={newTitle}
-              onChange={(event) => setNewTitle(event.target.value)}
-            />
-          </label>
-          {/* Said about the field as it stands, so it goes the moment the field is fine. */}
-          {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
-          <button type="submit">Add</button>
-          <button type="button" onClick={cancelAdding}>
-            Cancel
-          </button>
-        </form>
-      )}
-      {editable && adding?.kind === 'component' && (
-        <ComponentChooser
-          components={components}
-          chosen={chosen}
-          onChoose={setChosen}
-          onAdd={(component) =>
-            void insert({ type: 'reference', component, mode: { kind: 'latest' } })
-          }
-          onCancel={cancelAdding}
-          onReload={onReloadComponents}
-        />
-      )}
-      <p id={`${prefix}-keys`}>{editable ? KEYS : 'Move between items with the arrow keys.'}</p>
-      {nodes.length === 0 ? (
-        <p>This document has no sections yet.</p>
-      ) : (
-        <ul
-          role="tree"
-          aria-label="Outline"
-          aria-describedby={`${prefix}-keys`}
-          aria-busy={busy}
-          onKeyDown={onTreeKeyDown}
-          onClick={onTreeClick}
-          onDragStart={(event) => {
-            const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
-            const id = item?.dataset.node;
-            if (!may || id === undefined) return;
-            // A tick later, not now: the drop places this renders change the page under the drag,
-            // and Chromium ends a drag whose source changes in the same task it started in.
-            clearTimeout(dragTimer.current);
-            dragTimer.current = setTimeout(() => setDragging(id), 0);
-            // Firefox starts no drag without data; the node's identifier is what is being moved.
-            event.dataTransfer?.setData('text/plain', id);
-            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-          }}
-          onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
-          onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
-          onDragEnd={() => {
-            clearTimeout(dragTimer.current);
-            setDragging(null);
-          }}
-        >
-          {renderNodes(nodes, 1)}
-        </ul>
-      )}
-      {dragging !== null && (
-        <p
-          onDragOver={(event) => allowDrop(event, endTarget)}
-          onDrop={(event) => dropOnto(event, endTarget)}
-        >
-          Move to the end of the document
-        </p>
-      )}
-      {editable && selected && confirming === null && (
-        <NodeDetails
-          key={selected.id}
-          node={selected}
-          topLevel={placeOf(nodes, selected.id)?.parent === null}
-          frontOffered={mayBeFront(nodes, selected.id)}
-          frontAfter={frontAfter(nodes, selected.id)}
-          unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
-          names={names}
-          busy={busy}
-          onOperation={(operation) => send(operation, null)}
-          onRetitle={retitle}
-          openField={openField}
-          onNotice={onNotice}
-          onRemove={() => setConfirming(selected.id)}
-        />
-      )}
-      {editable && confirming !== null && (
-        <ConfirmRemoval
-          node={placeOf(nodes, confirming)?.node}
-          names={names}
-          onRemove={() => void remove(confirming)}
-          onKeep={() => {
-            setConfirming(null);
-            setFocusTarget(confirming);
-          }}
-        />
-      )}
-      {selected && linkOf && confirming === null && (
-        <NodeLink
-          address={linkOf(selected.id)}
-          name={nodeName(selected, names)}
-          onNotice={onNotice}
-        />
-      )}
-      <p role="status">{notice}</p>
+            onCancel={cancelAdding}
+            onReload={onReloadComponents}
+          />
+        )}
+        <p id={`${prefix}-keys`}>{editable ? KEYS : 'Move between items with the arrow keys.'}</p>
+        {nodes.length === 0 ? (
+          <p>This document has no sections yet.</p>
+        ) : (
+          <ul
+            role="tree"
+            aria-label="Outline"
+            aria-describedby={`${prefix}-keys`}
+            aria-busy={busy}
+            onKeyDown={onTreeKeyDown}
+            onClick={onTreeClick}
+            onDragStart={(event) => {
+              const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+              const id = item?.dataset.node;
+              if (!may || id === undefined) return;
+              // A tick later, not now: the drop places this renders change the page under the drag,
+              // and Chromium ends a drag whose source changes in the same task it started in.
+              clearTimeout(dragTimer.current);
+              dragTimer.current = setTimeout(() => setDragging(id), 0);
+              // Firefox starts no drag without data; the node's identifier is what is being moved.
+              event.dataTransfer?.setData('text/plain', id);
+              if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+            }}
+            onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
+            onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
+            onDragEnd={() => {
+              clearTimeout(dragTimer.current);
+              setDragging(null);
+            }}
+          >
+            {renderNodes(nodes, 1)}
+          </ul>
+        )}
+        {dragging !== null && (
+          <p
+            onDragOver={(event) => allowDrop(event, endTarget)}
+            onDrop={(event) => dropOnto(event, endTarget)}
+          >
+            Move to the end of the document
+          </p>
+        )}
+        <p role="status">{notice}</p>
+      </div>
+      <div data-part="details">
+        {editable && selected && confirming === null && (
+          <NodeDetails
+            key={selected.id}
+            node={selected}
+            topLevel={placeOf(nodes, selected.id)?.parent === null}
+            frontOffered={mayBeFront(nodes, selected.id)}
+            frontAfter={frontAfter(nodes, selected.id)}
+            unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
+            names={names}
+            busy={busy}
+            onOperation={(operation) => send(operation, null)}
+            onRetitle={retitle}
+            openField={openField}
+            onNotice={onNotice}
+            onRemove={() => setConfirming(selected.id)}
+          />
+        )}
+        {editable && confirming !== null && (
+          <ConfirmRemoval
+            node={placeOf(nodes, confirming)?.node}
+            names={names}
+            onRemove={() => void remove(confirming)}
+            onKeep={() => {
+              setConfirming(null);
+              setFocusTarget(confirming);
+            }}
+          />
+        )}
+        {selected && linkOf && confirming === null && (
+          <NodeLink
+            address={linkOf(selected.id)}
+            name={nodeName(selected, names)}
+            onNotice={onNotice}
+          />
+        )}
+      </div>
     </div>
   );
 }
