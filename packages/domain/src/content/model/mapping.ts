@@ -52,7 +52,7 @@ export const outputMapping: {
     },
     preformatted: {
       ooxml: 'w:p in a fixed-pitch style, with xml:space="preserve" on its runs',
-      tagged: 'P holding Code',
+      tagged: 'Code holding a P per line',
     },
     blockquote: {
       ooxml: 'w:p in the quote style, the attribution a w:p in the attribution style',

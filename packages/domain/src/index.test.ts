@@ -22,6 +22,11 @@ describe('the domain package', () => {
         'outputMapping',
         'parseContentDocument',
         'readContent',
+        // What preformatted text may hold, promoted by editor 5 so the editor's panel asks the
+        // walk's own rule.
+        'LANGUAGE_LABEL',
+        'forbiddenInPreformatted',
+        'isLanguageLabel',
         // The admission pipeline, promoted in the plan that built it.
         'admissionLimits',
         'admit',
