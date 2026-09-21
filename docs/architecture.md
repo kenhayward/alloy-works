@@ -590,16 +590,23 @@ the real keymap rather than by reasoning about precedence. Tab and Shift-Tab are
 carry no registry row, because they are a second route to Nest item and Lift item rather than their
 named shortcut, and Tab outside a list still lets the focus leave.
 
-**Every command that would build a level declines past the depth the content model admits.** Thirty
+**Everything that would build a level declines past the depth the content model admits.** Thirty
 levels, measured against `fromEditor` rather than chosen, and asked of the document the command would
 make rather than of the cursor's ancestry - so a deep list in one part of a component does not freeze
-Tab in a shallow one. Three commands can build one: **Nest item**, **Definition list** over any
-paragraph, and **Bulleted list** or **Numbered list** over a paragraph inside a definition item,
-where they wrap instead of toggling. Each then declines, Tab hands the key back to the browser, and
-the toolbar shows the control unavailable - the same shape every other control here takes: ask the
-command, show what it said. The alternative was what the editor did until the final whole-branch
-review: the thirty-first level was built, `fromEditor` threw on every save afterwards, and the author
-kept typing into a page that said it was saving.
+Tab in a shallow one. **Five routes can build one**, found by sweeping every textblock of five
+fixtures at both ends with every keymap: **Nest item**; **Definition list** over any paragraph;
+**Bulleted list** or **Numbered list** over a paragraph inside a definition item, where they wrap
+instead of toggling; and **`Backspace` at the start of a definition item's term** or **`Delete` at the
+end of the item before it**, which cannot join two items - `definitionItem` is `term block+`, so
+`deleteBarrier` wraps the following item in a new definition list inside the previous one - and so
+nest where an author expected a deletion. The three commands decline, the toolbar shows the control
+unavailable and Tab hands the key back to the browser; the two keys are **taken and do nothing**,
+because handing them on is handing them to the binding that would build the level. Every deleting
+binding in `baseKeymap` is guarded, found by identity against its own commands rather than typed out,
+so a platform alias cannot be missed. What those two keys should do between two definition items at
+ordinary depth is a defect of its own and is issue #160. The alternative was what the editor did
+until the final whole-branch review: the thirty-first level was built, `fromEditor` threw on every
+save afterwards, and the author kept typing into a page that said it was saving.
 
 **Both descending plugins descend.** Identity walks every block at any depth, so a block made inside
 a list item is named like any other; adjacency is held in every sequence of blocks the editor can

@@ -48,14 +48,15 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - The markers beside a bulleted list - a disc, then a circle, then a square - are fixed by the
   product rather than set by a style, and they repeat after three levels of nesting. They belong in
   a named style and will move there.
-- A list stops nesting at thirty levels. Every control that would build a level - **Nest item**, and
-  the three list buttons where they would make a list inside one - becomes unavailable there, and
-  `Tab` moves the focus on instead, because a list deeper than that is not a document the product
-  can store. A list
-  of exactly thirty levels is stored and can never be published: the publish fails, and the only
-  thing you are told is that it failed. A single stated limit, in levels rather than in the language
-  of a file format, and below the depth a publication can carry as well as the depth the store
-  takes, is still to come.
+- A list stops nesting at thirty levels. Every control that would build one - **Nest item**, and the
+  three list buttons where they would make a list inside a list - becomes unavailable there, `Tab`
+  moves the focus on instead, and the two keys that can nest a definition item under the one above
+  it, `Backspace` at the start of a term and `Delete` at the end of the definition before it, do
+  nothing. A list deeper than thirty levels is not a document the product can store. A list of
+  exactly thirty is stored and can never be published: the publish fails, and the only thing you are
+  told is that it failed. A single stated limit, in levels rather than in the language of a file
+  format, and below the depth a publication can carry as well as the depth the store takes, is still
+  to come.
 - A footnote written inside a definition list's term would take no number. Nothing can put one there
   today; it is named so that whatever makes it possible starts from knowing.
 - Block quotations and preformatted text are still not writable, and a document holding one still

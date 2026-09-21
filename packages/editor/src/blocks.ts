@@ -30,10 +30,13 @@ const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
  * is issue #159, which carries the measurement. Refusing here at the engine's number would refuse
  * content the store holds, which is a different and worse kind of wrong.
  *
- * **Three commands answer to it, because three can build a level**: `nestItem`, `makeDefinitionList`
- * over any paragraph, and `countedList` over a paragraph inside a definition item, where it wraps
- * rather than toggling. The toggle, the kind change and both lifts cannot make a document deeper
- * than the one they were handed, so they do not ask.
+ * **Five routes answer to it, because five can build a level.** Three are commands: `nestItem`,
+ * `makeDefinitionList` over any paragraph, and `countedList` over a paragraph inside a definition
+ * item, where it wraps rather than toggling. Two are keys nobody would guess at - `Backspace` at the
+ * start of a definition item's term and `Delete` at the end of the one before it, which cannot join
+ * two items and nest one inside the other instead (`refusePastTheLimit`, and issue #160). The
+ * toggle, the kind change and both lifts cannot make a document deeper than the one they were
+ * handed, so they do not ask.
  */
 export const MOST_NESTED_LIST_LEVELS = 30;
 
@@ -49,9 +52,46 @@ function deepestNesting(node: Node, within = 0): number {
   return deepest;
 }
 
-/** Whether a document nests lists deeper than the store will take. */
+/**
+ * Whether a document nests lists deeper than the store will take.
+ *
+ * It asks of the **whole** document, so a chain already past the limit would refuse a nesting
+ * anywhere else in the component too. Nothing can be in that state: every command and every key
+ * that could build a level asks this first, and what the editor opened came through
+ * `parseContentDocument`.
+ */
 const tooDeep = (doc: Node | undefined): boolean =>
   doc === undefined || deepestNesting(doc) > MOST_NESTED_LIST_LEVELS;
+
+/**
+ * A key that would make the document deeper than the model admits, **taken and not passed on**.
+ *
+ * `Backspace` and `Delete` build a list level, which nothing about either key suggests. Two
+ * `definitionItem`s cannot merge - the content is `term block+` - so `deleteBarrier`, which the base
+ * chain reaches through `joinBackward` and `joinForward`, wraps the following item in a new
+ * definition list inside the previous one instead of joining them. At the limit that is a document
+ * `fromEditor` throws on, reached by one press of a key an author thinks of as destructive.
+ *
+ * **It returns true to refuse and false to allow**, which is the opposite of every other command
+ * here and is the whole point. This stands **ahead of** the binding that does the work: returning
+ * false hands the key on to `baseKeymap`, which stays the only implementation of either key, and
+ * returning true consumes the press so that nothing runs and the author is left where they were -
+ * the same answer Tab gives at the limit, and the same conservative direction.
+ *
+ * It probes the document the command would make, exactly as `nestItem` does, and it passes the view
+ * through: `joinBackward` asks `view.endOfTextblock`, and without it the probe would answer a
+ * different question from the press.
+ *
+ * What these keys should do between two definition items at **ordinary** depth is a real defect -
+ * a destructive key that nests - and it is issue #160. It is not answered here.
+ */
+export function refusePastTheLimit(command: Command): Command {
+  return (state, _dispatch, view) => {
+    const would: Node[] = [];
+    if (!command(state, (tr) => would.push(tr.doc), view)) return false;
+    return tooDeep(would[0]);
+  };
+}
 
 /** How many lists the cursor stands inside, itself included where it stands in one. */
 function listsAbove(state: EditorState): number {

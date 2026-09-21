@@ -108,9 +108,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Lists, in three kinds.** **Bulleted list**, **Numbered list** and **Definition list** sit on the
   same toolbar, each with a shortcut, and each turns the paragraph the cursor is in into a list of
   that kind. Pressing **Bulleted list** or **Numbered list** again takes the list off, or, where the
-  item is nested, lifts it one level. **Nest item**
-  and **Lift item** move an item in and out a level, with `Tab` and `Shift-Tab` as a second route, and
-  a list nests as deep as the content model admits, mixing all three kinds freely. `Enter` at the end of an item makes
+  item is nested, lifts it one level. **Nest item** and **Lift item** move an item in and out a
+  level, with `Tab` and `Shift-Tab` as a second route, and a list nests as deep as the content model
+  admits, mixing all three kinds freely. `Enter` at the end of an item makes
   the next one; `Enter` in an item where you have written nothing leaves the list, coming up one level
   if you are nested and out of the list altogether if you are not. A definition list's term is a piece
   of the document like any other, so it can be emphasised, linked or marked with its own language, and
@@ -127,11 +127,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   pastes, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
-  there and `Tab` moves the
-  focus on, because a list deeper than that is not a document the product can store. Content that
-  gets deeper by some other route is not saved, and what you are told is thin - that the text cannot
-  be saved as it stands and to undo the change that caused it, without the page being able to say
-  which change that was.
+  there, `Tab` moves the focus on, and the two keys that can nest one definition item under another,
+  `Backspace` at the start of a term and `Delete` at the end of the definition before it, do nothing.
+  A list deeper than that is not a document the product can store. Content that gets deeper by some
+  other route is not saved, and what you are told is thin - that the text cannot be saved as it
+  stands and to undo the change that caused it, without the page being able to say which change that
+  was.
 
 - **Making a component.** On the list of components, **New component** offers the spaces you may create
   in, a title, a base language such as `en-GB`, a direction, and the component type the environment

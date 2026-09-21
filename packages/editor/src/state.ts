@@ -5,7 +5,7 @@ import type { MarkType, Node } from 'prosemirror-model';
 import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-import { blockCommand, listAwareEnter } from './blocks.js';
+import { blockCommand, listAwareEnter, refusePastTheLimit } from './blocks.js';
 import { identityPlugin } from './identity.js';
 import { commandKeymap, spansOf } from './marks.js';
 
@@ -280,6 +280,29 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // source a block's is: both are allocated by the editor, and both have to be unique within
       // the component (ADR-0023, CNT-004).
       keymap(commandKeymap(options.newIdentifier, options.onPrompt)),
+      // **Every deleting binding answers the depth rule, ahead of the one that does the work.**
+      // Backspace and Delete build a list level, which nothing about either key suggests: two
+      // `definitionItem`s cannot merge, because the content is `term block+`, so `deleteBarrier`
+      // wraps the following item in a new definition list inside the previous one rather than
+      // joining them. At the limit that is a document the store refuses, from one press.
+      //
+      // The bindings are found by **identity** against `baseKeymap`'s own commands rather than
+      // typed out, because the same command is bound under several names and they differ by
+      // platform - `Mod-Backspace` and `Shift-Backspace` everywhere, `Ctrl-h`, `Alt-Backspace`,
+      // `Ctrl-d`, `Alt-Delete` and `Alt-d` on macOS - and a list typed here would be a list that
+      // goes stale on the platform nobody ran. Where the press would not deepen anything, the guard
+      // returns false and `baseKeymap` below does the work, so there is one implementation of each
+      // key and not two. What these keys should do between two definition items at ordinary depth
+      // is issue #160.
+      keymap(
+        Object.fromEntries(
+          Object.entries(baseKeymap)
+            .filter(
+              ([, command]) => command === baseKeymap.Backspace || command === baseKeymap.Delete,
+            )
+            .map(([key, command]) => [key, refusePastTheLimit(command)]),
+        ),
+      ),
       keymap(baseKeymap),
       // **Identity before adjacency, and it is a preference rather than a rule.** ProseMirror
       // re-runs every `appendTransaction` over whatever any of them appends, so each of these two

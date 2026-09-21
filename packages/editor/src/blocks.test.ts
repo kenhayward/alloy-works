@@ -117,6 +117,23 @@ function run(
   return { handled, next };
 }
 
+const KEY_CODES: Record<string, number> = { Enter: 13, Tab: 9, Backspace: 8, Delete: 46 };
+
+/**
+ * What a real `EditorView` answers from the DOM, answered from the document instead: the caret is at
+ * the start or the end of its textblock. `joinBackward` and `joinForward` ask it - a Backspace is
+ * only a join when there is nothing before the caret in its own block - and they throw without it, so
+ * a fake view that leaves it out cannot press either key at all.
+ */
+const endOfTextblock = (now: () => EditorState) => ({
+  endOfTextblock: (dir: string) => {
+    const { $head } = now().selection;
+    return dir === 'backward' || dir === 'up'
+      ? $head.parentOffset === 0
+      : $head.parentOffset === $head.parent.content.size;
+  },
+});
+
 /**
  * A key, driven through **the real keymap chain** - every `handleKeyDown` the state's own plugins
  * carry, in the order `createEditorState` put them in, which is the order `EditorView` consults.
@@ -126,7 +143,16 @@ function run(
  * after it would never run and the author would be trapped in the list with no key that leaves it.
  * The only way to know is to press the key.
  */
-function press(state: EditorState, key: string): { handled: boolean; next: EditorState } {
+function press(
+  state: EditorState,
+  key: string,
+  /**
+   * Forces `endOfTextblock` to say yes wherever the caret stands, which is **not** a contrivance: it
+   * is the view's answer from the DOM, and in bidirectional text it says yes at an offset the
+   * document alone says no at. It is what makes passing the view into a probe load-bearing.
+   */
+  alwaysAtEdge = false,
+): { handled: boolean; next: EditorState } {
   let next = state;
   const view = {
     get state() {
@@ -135,10 +161,11 @@ function press(state: EditorState, key: string): { handled: boolean; next: Edito
     dispatch: (tr: Transaction) => {
       next = next.apply(tr);
     },
+    ...(alwaysAtEdge ? { endOfTextblock: () => true } : endOfTextblock(() => next)),
   };
   const event = {
     key,
-    keyCode: key === 'Enter' ? 13 : 9,
+    keyCode: KEY_CODES[key] ?? 0,
     shiftKey: false,
     ctrlKey: false,
     altKey: false,
@@ -162,10 +189,11 @@ function pressShiftTab(state: EditorState): { handled: boolean; next: EditorStat
     dispatch: (tr: Transaction) => {
       next = next.apply(tr);
     },
+    ...endOfTextblock(() => next),
   };
   const event = {
     key: 'Tab',
-    keyCode: 9,
+    keyCode: KEY_CODES.Tab!,
     shiftKey: true,
     ctrlKey: false,
     altKey: false,
@@ -968,5 +996,136 @@ describe('what a list panel reads and changes', () => {
     expect(setListAttributes({ kind: 'ordered' })(stateOf(definition, 'b1'), undefined)).toBe(
       false,
     );
+  });
+});
+
+describe('a delete key that would deepen a list past what the model admits (issue #160)', () => {
+  /**
+   * Counted lists down to the level below, and a **definition list of two items** as the last one -
+   * which is the shape the route needs. Two `definitionItem`s cannot merge, because the content is
+   * `term block+`, so `deleteBarrier` wraps the following item in a new definition list inside the
+   * previous one rather than joining them: one more level, from a key nobody thinks of as one that
+   * builds anything.
+   */
+  const definitionAt = (levels: number): Node => {
+    let built: Node = definitionList(
+      'D1',
+      definitionItem('Creep', paragraph('b1', 'Slow strain.')),
+      definitionItem('Fatigue', paragraph('b2', 'Failure under cycles.')),
+    );
+    for (let level = levels - 1; level >= 1; level -= 1) {
+      built = list(`L${level}`, 'unordered', [item(built)]);
+    }
+    return built;
+  };
+
+  /** The position just inside the nth term, counting from one. */
+  const termAt = (doc: Node, nth: number): number => {
+    let seen = 0;
+    let at = -1;
+    doc.descendants((node, pos) => {
+      if (at !== -1) return false;
+      if (node.type.name === 'term') {
+        seen += 1;
+        if (seen === nth) at = pos + 1;
+      }
+      return true;
+    });
+    if (at === -1) throw new Error(`no term ${nth} in this document`);
+    return at;
+  };
+
+  /** The position at the end of the textblock carrying that identifier. */
+  const endOf = (doc: Node, id: string): number => {
+    let at = -1;
+    doc.descendants((node, pos) => {
+      if (at !== -1) return false;
+      if (node.attrs.id === id) at = pos + 1 + node.content.size;
+      return true;
+    });
+    if (at === -1) throw new Error(`no ${id} in this document`);
+    return at;
+  };
+
+  const caretAt = (doc: Node, pos: number): EditorState => {
+    const state = createEditorState({ doc, newIdentifier: counter() });
+    return state.apply(state.tr.setSelection(TextSelection.create(state.doc, pos)));
+  };
+
+  it('takes Backspace at the start of a term rather than wrapping the item a level deeper', () => {
+    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    expect(() => stored(doc)).not.toThrow();
+    const state = caretAt(doc, termAt(doc, 2));
+    const { handled, next } = press(state, 'Backspace');
+    // The key is taken and nothing happens, which is where the author already was - the
+    // conservative direction this family takes everywhere, and the same answer Tab gives at the
+    // limit. What these keys should do between two definition items at ordinary depth is issue
+    // #160: the route turns a destructive key into a nesting, which needs a product decision.
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+    expect(next.doc.eq(state.doc)).toBe(true);
+  });
+
+  it('takes Delete at the end of the item before it, which is the same barrier from the other side', () => {
+    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const state = caretAt(doc, endOf(doc, 'b1'));
+    const { handled, next } = press(state, 'Delete');
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+    expect(next.doc.eq(state.doc)).toBe(true);
+  });
+
+  it('lets both keys through one level short of the limit, where what they make is storable', () => {
+    // The other side of the boundary. What they do there is the defect #160 is about and not this
+    // rule's business; what matters here is that the guard has not swallowed a level of headroom.
+    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS - 1));
+    const back = press(caretAt(doc, termAt(doc, 2)), 'Backspace');
+    expect(back.handled).toBe(true);
+    expect(back.next.doc.eq(doc)).toBe(false);
+    expect(() => stored(back.next.doc)).not.toThrow();
+
+    const forward = press(caretAt(doc, endOf(doc, 'b1')), 'Delete');
+    expect(forward.handled).toBe(true);
+    expect(forward.next.doc.eq(doc)).toBe(false);
+    expect(() => stored(forward.next.doc)).not.toThrow();
+  });
+
+  it('leaves an ordinary Backspace alone at the limit, so only the deepening press is taken', () => {
+    // A Backspace that deletes a character is not handled by any keymap at all - every command in
+    // the base chain declines and the browser does it, which ProseMirror reads back. A guard that
+    // swallowed that would make the deepest list in a component unwritable.
+    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const state = caretAt(doc, termAt(doc, 2) + 1);
+    const { handled, next } = press(state, 'Backspace');
+    expect(handled).toBe(false);
+    expect(next.doc.eq(state.doc)).toBe(true);
+  });
+
+  it('asks the view, so a caret the DOM calls the edge of its block is refused too', () => {
+    // The probe passes the view through to the command, and this is the case that needs it: where
+    // the view says the caret is at the start of its textblock and the document's own offset says
+    // otherwise, a probe asking without the view answers a different question from the press - it
+    // finds no join, declines to refuse, and `baseKeymap` then builds the level with the view in
+    // hand. Deleting the view from the probe leaves every other test in this file green.
+    const doc = documentOf(definitionAt(MOST_NESTED_LIST_LEVELS));
+    const state = caretAt(doc, termAt(doc, 2) + 1);
+    const { handled, next } = press(state, 'Backspace', true);
+    expect(handled).toBe(true);
+    expect(() => stored(next.doc)).not.toThrow();
+    expect(next.doc.eq(state.doc)).toBe(true);
+  });
+
+  it('leaves both keys alone where no list is near the limit at all', () => {
+    const doc = documentOf(
+      definitionList(
+        'D1',
+        definitionItem('Creep', paragraph('b1', 'Slow strain.')),
+        definitionItem('Fatigue', paragraph('b2', 'Failure under cycles.')),
+      ),
+    );
+    const back = press(caretAt(doc, termAt(doc, 2)), 'Backspace');
+    expect(back.handled).toBe(true);
+    expect(back.next.doc.eq(doc)).toBe(false);
+    expect(() => stored(back.next.doc)).not.toThrow();
   });
 });
