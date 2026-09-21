@@ -12,6 +12,7 @@ import {
 import { marksAsASet } from './canonical.js';
 import type { InlineNode } from './inline.js';
 import type { Mark } from './marks.js';
+import { codePointSpelling, forbiddenInPreformatted, isLanguageLabel } from './preformatted.js';
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
@@ -479,13 +480,45 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
         }),
       };
     case 'blockquote': {
+      // **Walked in reading order, its body before its attribution** - the order the editor holds
+      // them and a reader meets them. Walked the other way, an annotation running from the paragraph
+      // before a quotation into its body was two ranges to this walk and one to the editor, so a
+      // save the editor made was refused (editor 5, narrowing 2).
+      const content = checkBlocks(block.content, claimed);
       const attribution =
         block.attribution && checkInlineContent(block.attribution, 'component', claimed);
-      return {
-        ...block,
-        ...(attribution === undefined ? {} : { attribution }),
-        content: checkBlocks(block.content, claimed),
-      };
+      // **An attribution that is there holds text**, judged on what the walk returned, as a term
+      // is: one holding a single empty run passes `min(1)` and is nothing once merged.
+      if (attribution !== undefined && attribution.length === 0) {
+        throw new Error(`Quotation ${block.id} has an attribution that holds no text`);
+      }
+      return { ...block, content, ...(attribution === undefined ? {} : { attribution }) };
+    }
+    case 'preformatted': {
+      // Three narrowings, held here while nothing has stored a preformatted block (editor 5,
+      // decision G). **Its text is in NFC**, because the digest is taken over every string in NFC
+      // and what is stored must be what the digest covers; NFC changes no whitespace, which is all
+      // CNT-018 promises to keep. **It holds no control character but a tab and a line feed**,
+      // named by code point and never by the character, since the text is the author's. **A label
+      // is a token.**
+      const text = block.text.normalize('NFC');
+      for (const character of text) {
+        const codePoint = character.codePointAt(0)!;
+        if (forbiddenInPreformatted(codePoint)) {
+          throw new Error(
+            `Preformatted block ${block.id} holds ${codePointSpelling(codePoint)}, which preformatted text may not`,
+          );
+        }
+      }
+      if (block.language !== undefined && !isLanguageLabel(block.language)) {
+        throw new Error(
+          `Preformatted block ${block.id} carries a language label that is not a token`,
+        );
+      }
+      // **A block holding text closes an annotation's range**, as readable text between two runs
+      // does; an empty one is where a cursor stands and closes nothing, as an empty paragraph is.
+      if (text !== '') claimed.carried.clear();
+      return { ...block, text };
     }
     case 'table': {
       const note = block.note && checkInlineContent(block.note, 'component', claimed);

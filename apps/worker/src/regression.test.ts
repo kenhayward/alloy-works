@@ -11,10 +11,13 @@ import {
   parseOutlineDocument,
   type AssembleInput,
   type OutlineNode,
+  forbiddenInPreformatted,
+  PUBLISHING_SCHEMA,
+  setWithoutAGlyph,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type Bookmark } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, TypstRefused, typstBinaryPath } from './typst.js';
@@ -98,7 +101,7 @@ describe('the publishing regression corpus', () => {
     // Under the default layout, so `publishing/4` through template 4: what every request made since
     // layouts publishes, with its cover and its contents.
     const pdf = await typst.compile(
-      PUBLICATION_TEMPLATE[4].file,
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
       JSON.stringify(assembled.document),
       at,
     );
@@ -212,13 +215,15 @@ describe('the publishing regression corpus', () => {
         '"text":"PROBE"',
         `"text":${JSON.stringify(text)}`,
       );
-      const typstRefuses = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at).then(
-        () => false,
-        (error: unknown) => {
-          if (error instanceof TypstRefused) return true;
-          throw error;
-        },
-      );
+      const typstRefuses = await typst
+        .compile(PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file, data, at)
+        .then(
+          () => false,
+          (error: unknown) => {
+            if (error instanceof TypstRefused) return true;
+            throw error;
+          },
+        );
       verdicts[name] = { assemble: !assemble(holding(text)).ok, typst: typstRefuses };
     }
 
@@ -236,6 +241,67 @@ describe('the publishing regression corpus', () => {
     // the pinned Typst refuses between capitals and not between small letters, as measured above.
     for (const [name, verdict] of Object.entries(verdicts)) {
       expect(verdict.assemble, name).toBe(verdict.typst || name.startsWith('a byte-order mark'));
+    }
+  }, 120_000);
+
+  it('refuses in preformatted text every character the body face sets without a glyph, because the engine drops the letter before one in code', async () => {
+    // Measured, and a tripwire: inside `raw` the pinned engine drops the character BEFORE an
+    // invisible format character, so `ab` then U+200B then `cd` is set and tagged as `acd`. The
+    // day it stops, this goes red, and the code face's refusal in `characterProblems` can be relaxed.
+    const probe = assemble({
+      ...holding('x'),
+      occurrences: new Map([
+        [
+          [...holding('x').occurrences.keys()][0]!,
+          {
+            ...[...holding('x').occurrences.values()][0]!,
+            content: [{ type: 'preformatted', id: 'p1', text: 'PROBE' }],
+          },
+        ],
+      ]),
+    });
+    if (!probe.ok) throw new Error('The stand-in did not assemble');
+    const data = JSON.stringify(probe.document).replace('"PROBE"', JSON.stringify('ab\u{200B}cd'));
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      data,
+      at,
+    );
+    expect((await readPdf(pdf)).taggedText.flat()).toContain('acd');
+
+    // So every one of them is refused there, found through the predicate itself so that a range
+    // added later is covered too - less the line feed, a line break, and what the model already
+    // keeps out of preformatted text.
+    const exempt: number[] = [];
+    let previous = false;
+    for (let codePoint = 0; codePoint <= 0xe1000; codePoint += 1) {
+      const now = setWithoutAGlyph(codePoint);
+      if (now !== previous) exempt.push(now ? codePoint : codePoint - 1);
+      previous = now;
+    }
+    const probed = exempt.filter(
+      (codePoint) => codePoint !== 0xa && !forbiddenInPreformatted(codePoint),
+    );
+    expect(probed.length).toBeGreaterThan(20);
+    for (const codePoint of probed) {
+      const input = holding('x');
+      const [node, document] = [...input.occurrences.entries()][0]!;
+      const made = assemble({
+        ...input,
+        occurrences: new Map([
+          [
+            node,
+            {
+              ...document,
+              content: [
+                { type: 'preformatted', id: 'p1', text: `a${String.fromCodePoint(codePoint)}b` },
+              ],
+            },
+          ],
+        ]),
+      });
+      // A tab is expanded to spaces before the check, so it is the one exempt character code keeps.
+      expect(made.ok, codePoint.toString(16)).toBe(codePoint === 0x9);
     }
   }, 120_000);
 });

@@ -120,7 +120,7 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
   },
-  // The five block actions, after the nine marks. None of them prompts: nothing about making a list
+  // The block actions, after the nine marks. None of them prompts: nothing about making a list
   // is a value only the author can give, and a list's start and numbering are set over a list that
   // already exists, in the renderer's own list panel, rather than asked for before one is made.
   {
@@ -161,6 +161,25 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     label: 'Lift item',
     shortcut: 'Mod-[',
     shortcutSaid: 'Ctrl or Cmd and left square bracket',
+    prompts: false,
+  },
+  // Editor 5's two, decision J. Punctuation rather than letters: Ctrl-Shift-B, -C, -E, -K and -U
+  // each belong to a browser, a developer tool or an input method on at least one platform, and
+  // Ctrl-Alt is AltGr on Windows.
+  {
+    kind: 'block',
+    action: 'quotation',
+    label: 'Quotation',
+    shortcut: 'Mod-Shift-.',
+    shortcutSaid: 'Ctrl or Cmd, Shift and full stop',
+    prompts: false,
+  },
+  {
+    kind: 'block',
+    action: 'preformatted',
+    label: 'Preformatted text',
+    shortcut: 'Mod-Shift-,',
+    shortcutSaid: 'Ctrl or Cmd, Shift and comma',
     prompts: false,
   },
 ];

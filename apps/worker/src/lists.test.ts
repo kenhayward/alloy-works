@@ -12,7 +12,7 @@ import {
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
-import { PUBLICATION_TEMPLATE } from './template.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, TypstRefused, typstBinaryPath } from './typst.js';
@@ -340,7 +340,11 @@ const compileOne = (data: string) => {
   let compiling = made.get(data);
   if (compiling === undefined) {
     compiling = (async () => {
-      const pdf = await typst.compile(PUBLICATION_TEMPLATE[4].file, data, at);
+      const pdf = await typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        data,
+        at,
+      );
       return { pdf, read: await readPdf(pdf) };
     })();
     made.set(data, compiling);
@@ -575,7 +579,11 @@ describe('the PDF a list makes', () => {
     const { read } = await compileOne(deeplyDocument(29));
     expect(spoken(read.taggedText[0]!)).toContain('The deepest thing here');
     await expect(
-      typst.compile(PUBLICATION_TEMPLATE[4].file, deeplyDocument(30), at),
+      typst.compile(
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+        deeplyDocument(30),
+        at,
+      ),
     ).rejects.toThrow(TypstRefused);
   }, 120_000);
 
@@ -601,7 +609,7 @@ describe('the PDF a list makes', () => {
     expect(data).toContain(BLOCK);
     await expect(
       typst.compile(
-        PUBLICATION_TEMPLATE[4].file,
+        PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
         data.replace(BLOCK, '"type":"sonnet","id":"b1"'),
         at,
       ),

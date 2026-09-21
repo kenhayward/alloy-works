@@ -56,7 +56,7 @@ export interface EditorToolbarProps {
  * Which button is the stop is state; which button a key came from is read off the event's own target,
  * so a burst of keys arriving before React renders again cannot move by the wrong number.
  *
- * **Nine marks and five block actions**, from that one registry, so a list the keyboard can make is
+ * **Nine marks and seven block actions**, from that one registry, so a list the keyboard can make is
  * one the toolbar shows. A block button is not a mark button wearing a different label: what it can
  * do depends on where the cursor stands and not on what the selection carries, so its two
  * announcements come from two different places - `listAt` for which kind of list this is, and the

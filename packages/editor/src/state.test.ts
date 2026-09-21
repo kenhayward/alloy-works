@@ -652,3 +652,81 @@ describe('spelling, over a run in another language', () => {
     expect(throughThePlugin(state)).toEqual(['Check the colour.']);
   });
 });
+
+describe('the plugins inside a quotation and around preformatted text (editor 5)', () => {
+  const empty = () => editorSchema.node('paragraph', { id: null, style: 'body' });
+  const pre = (text: string) =>
+    editorSchema.node('preformatted', { id: null }, text === '' ? [] : [editorSchema.text(text)]);
+  const component = (blocks: readonly Node[]) =>
+    createEditorState({
+      doc: editorSchema.node(
+        'doc',
+        { title: 'Install the printer', language: 'en-GB', direction: 'ltr' },
+        blocks,
+      ),
+      newIdentifier: counter(),
+    });
+  const typed = (state: EditorState) => state.apply(state.tr.insertText('X', 1, 1));
+  const names = (doc: Node) => {
+    const found: string[] = [];
+    doc.descendants((node) => {
+      if (node.isBlock) found.push(node.type.name);
+    });
+    return found;
+  };
+
+  it('removes the second of two adjacent empty paragraphs inside a quotation', () => {
+    const state = component([
+      editorSchema.node('paragraph', { id: null, style: 'body' }, [editorSchema.text('Unbox')]),
+      editorSchema.node('blockquote', { id: null }, [empty(), editorSchema.node('attribution')]),
+    ]);
+    let quoted = -1;
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'blockquote') quoted = pos;
+    });
+    const after = state.apply(state.tr.insert(quoted + 1, empty()));
+    expect(names(after.doc)).toEqual(['paragraph', 'blockquote', 'paragraph', 'attribution']);
+    expect(() => fromEditor(after.doc)).not.toThrow();
+  });
+
+  it('takes a preformatted block for what separates two empty paragraphs', () => {
+    const after = typed(
+      component([
+        editorSchema.node('paragraph', { id: null, style: 'body' }, [editorSchema.text('Unbox')]),
+        empty(),
+        pre(''),
+        empty(),
+      ]),
+    );
+    expect(names(after.doc)).toEqual(['paragraph', 'paragraph', 'preformatted', 'paragraph']);
+  });
+
+  it('renames the second piece of an annotation that preformatted text now stands inside, and not across an empty one', () => {
+    const emphasis = editorSchema.marks.emphasis!.create({ id: 'm1' });
+    const piece = (text: string) =>
+      editorSchema.node('paragraph', { id: null, style: 'body' }, [
+        editorSchema.text(text, [emphasis]),
+      ]);
+    const state = typed(component([piece('one'), pre(''), piece('two')]));
+    const carried = (doc: Node) => {
+      const found: string[] = [];
+      doc.descendants((node) => {
+        const mark = node.isText ? node.marks.find((one) => one.type.name === 'emphasis') : null;
+        if (mark) found.push(mark.attrs.id as string);
+      });
+      return found;
+    };
+    // Across an empty preformatted block the annotation is one piece, as the model reads it.
+    expect(carried(state.doc)).toEqual(['m1', 'm1']);
+    expect(() => fromEditor(state.doc)).not.toThrow();
+    let inside = -1;
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'preformatted') inside = pos + 1;
+    });
+    const written = state.apply(state.tr.insertText('x', inside, inside));
+    const [first, second] = carried(written.doc);
+    expect(first).toBe('m1');
+    expect(second).not.toBe('m1');
+    expect(() => fromEditor(written.doc)).not.toThrow();
+  });
+});

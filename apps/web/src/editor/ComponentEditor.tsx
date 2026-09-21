@@ -6,6 +6,7 @@ import {
   fromEditor,
   headerOf,
   listAt,
+  preformattedAt,
   mountEditor,
   newBlockIdentifier,
   removeMarkCommand,
@@ -25,6 +26,7 @@ import { createPortal } from 'react-dom';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
 import { ListPanel } from './ListPanel.js';
+import { PreformattedPanel } from './PreformattedPanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
@@ -139,6 +141,8 @@ export function ComponentEditor({
   // The list panel's, which is null for most of a session: it is the one region of this view that
   // comes and goes, because it exists only while the cursor stands in a counted list.
   const listRegion = useRef<HTMLDivElement | null>(null);
+  // The preformatted panel's, which comes and goes the same way, with a preformatted block.
+  const preformattedRegion = useRef<HTMLDivElement | null>(null);
   const controls = useRef<Session | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
@@ -544,6 +548,7 @@ export function ComponentEditor({
       headerRegion.current,
       toolbarRegion.current,
       listRegion.current,
+      preformattedRegion.current,
       place.current,
     ].filter((region) => region !== null);
     if (ring.length === 0) return;
@@ -610,6 +615,7 @@ export function ComponentEditor({
   // Read during render from `view.state`, exactly as the toolbar's answers are: moving the caret
   // is the change the panel has to hear about, and `dispatch` re-renders on every transaction.
   const list = surface === null ? null : listAt(surface.state);
+  const preformatted = surface === null ? null : preformattedAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
 
   return (
@@ -705,6 +711,16 @@ export function ComponentEditor({
                 box. */}
             {surface !== null && list !== null && list.kind !== 'definition' && (
               <ListPanel ref={listRegion} view={surface} list={list} enabled={mayFormat} />
+            )}
+            {/* And only while the cursor stands in a preformatted block: its one field is the
+                language label, which nothing else in the view can set. */}
+            {surface !== null && preformatted !== null && (
+              <PreformattedPanel
+                ref={preformattedRegion}
+                view={surface}
+                block={preformatted}
+                enabled={mayFormat}
+              />
             )}
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}

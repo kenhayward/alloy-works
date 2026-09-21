@@ -35,7 +35,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA]: '4',
+  [PUBLISHING_SCHEMA]: '5',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -102,8 +102,8 @@ export function publishJob(deps: {
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
       // Chosen by what `assemble` made, so a document is never handed to a template that cannot read
-      // it: template 1 and pipeline 1 for `publishing/1`, template 4 and pipeline 4 for `publishing/4`.
-      // A publication under template 4 must name a layout, which only a request made under one has.
+      // it: template 1 and pipeline 1 for `publishing/1`, template 5 and pipeline 5 for `publishing/5`.
+      // A publication under template 5 must name a layout, which only a request made under one has.
       const { schema } = assembled.document;
       const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // The digest is of the bytes Typst reads, so a reproduction can tell input from engine.

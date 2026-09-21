@@ -14,6 +14,8 @@ export { blockIdentifierFrom } from './identifier.js';
 
 export { hasText } from './text.js';
 
+export { forbiddenInPreformatted, isLanguageLabel, LANGUAGE_LABEL } from './preformatted.js';
+
 export { canonicalise } from './canonical.js';
 export { migrate, readContent } from './migrate.js';
 export type { ReadOutcome } from './migrate.js';

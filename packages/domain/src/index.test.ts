@@ -22,6 +22,11 @@ describe('the domain package', () => {
         'outputMapping',
         'parseContentDocument',
         'readContent',
+        // What preformatted text may hold, promoted by editor 5 so the editor's panel asks the
+        // walk's own rule.
+        'LANGUAGE_LABEL',
+        'forbiddenInPreformatted',
+        'isLanguageLabel',
         // The admission pipeline, promoted in the plan that built it.
         'admissionLimits',
         'admit',
@@ -122,8 +127,12 @@ describe('the domain package', () => {
         // The document under a layout before a block could be a list: frozen, and nothing makes one
         // now (the editor's lists slice).
         'PUBLISHING_SCHEMA_3',
+        // And the schema template 4 reads, frozen by editor 5 when quotations and preformatted text
+        // made `publishing/5`.
+        'PUBLISHING_SCHEMA_4',
         'assemble',
         'publishFailureCodes',
+        'setWithoutAGlyph',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication
         // could not carry without keeping a second copy of the rule (CNT-152).
         'publishedLanguage',

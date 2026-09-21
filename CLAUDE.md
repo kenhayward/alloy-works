@@ -17,7 +17,8 @@ a web application and a desktop application**.
 > quoted phrase, a link and a language - applied from a toolbar or the keyboard, with a dialog for
 > the two that need a value. Its blocks can be bulleted, numbered or definition lists, nesting to
 > any depth the model admits, made and nested and lifted from a toolbar, a list panel or the
-> keyboard. A
+> keyboard; and they can be quotations with an attribution, or preformatted text whose whitespace is
+> kept exactly, with a language label set in a panel of its own. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -25,10 +26,11 @@ a web application and a desktop application**.
 > figures, tables and equations beneath the outline. Its latest version can be published from that
 > page to a tagged PDF laid out by that layout - a cover, a contents, running heads and feet, and
 > pages numbered per matter, a run's marks set and linked and tagged for a reader, and a list
-> carrying its own numbering and read to assistive technology as a list - marked
+> carrying its own numbering and read to assistive technology as a list, a quotation tagged as one
+> and preformatted text as code, set in a pinned Liberation Mono beside Liberation Serif - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no table, block quotation, preformatted text or equation can be written, no
+> publishes content: no table, footnote or equation can be written, no
 > paste, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of figures, no

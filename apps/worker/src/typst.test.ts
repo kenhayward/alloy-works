@@ -222,7 +222,11 @@ describe('the pinned fonts (issue #145)', () => {
         '{}',
         at,
       );
-      expect(families(pdf)).toEqual(['LiberationSerif']);
+      // Which pinned face Typst falls back to is its own choice (Liberation Mono, since editor 5
+      // pinned it); what matters is that the planted one is never it.
+      const set = families(pdf);
+      expect(set.length).toBeGreaterThan(0);
+      for (const family of set) expect(family).toMatch(/^Liberation(Serif|Mono)(-|$)/);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -269,8 +273,32 @@ describe('the pinned fonts (issue #145)', () => {
   });
 
   it('knows which characters every face can set', () => {
-    expect(fonts.covers('A'.codePointAt(0)!)).toBe(true);
-    expect(fonts.covers(0x05d0)).toBe(true); // Hebrew alef
-    expect(fonts.covers(0x0627)).toBe(false); // Arabic alef
+    expect(fonts.covers('A'.codePointAt(0)!, 'body')).toBe(true);
+    expect(fonts.covers(0x05d0, 'body')).toBe(true); // Hebrew alef
+    expect(fonts.covers(0x0627, 'body')).toBe(false); // Arabic alef
+  });
+
+  it('knows which characters the monospace faces can set, apart from the body faces', async () => {
+    // Liberation Mono is a strict subset of Liberation Serif: sixteen code points fewer, among them
+    // U+2016, which a paragraph can carry and preformatted text cannot.
+    expect(fonts.covers(0x2016, 'body')).toBe(true);
+    expect(fonts.covers(0x2016, 'code')).toBe(false);
+    expect(fonts.covers('A'.codePointAt(0)!, 'code')).toBe(true);
+    const counted = (face: 'body' | 'code') =>
+      Array.from({ length: 0x10000 }, (_, codePoint) => codePoint).filter((codePoint) =>
+        fonts.covers(codePoint, face),
+      ).length;
+    expect(counted('body')).toBe(2321);
+    expect(counted('code')).toBe(2305);
+  });
+
+  it('refuses to start when a monospace face is missing, as it does for a serif one', async () => {
+    const directory = await copyOfTheFaces('aw-missing-mono-');
+    try {
+      await rm(join(directory, 'LiberationMono-Italic.ttf'));
+      await expect(loadPinnedFonts(directory)).rejects.toBeInstanceOf(FontsUnavailable);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

@@ -350,7 +350,7 @@ describe('the citations in the committed model', () => {
   // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
   // already there, because a citation is kept once per identifier per kind per file.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(223);
+    expect(model.citations).toHaveLength(226);
   });
 
   it('cites no identifier the corpus does not hold', () => {

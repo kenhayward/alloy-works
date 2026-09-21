@@ -217,6 +217,28 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Publish again');
   });
 
+  it('says what a preformatted line and the monospace face need, in words an author can act on', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'code_glyph_missing', node: null, block: 'p1', detail: 'U+2016' },
+      {
+        stage: 'compose',
+        code: 'line_too_wide',
+        node: null,
+        block: 'p1',
+        detail: 'line 2, 84 of 83 columns',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'The character U+2016 is not in the monospace typeface that preformatted text and inline code are set in.',
+    );
+    expect(why).toHaveTextContent(
+      'A line of this preformatted text is too wide for the page, so it would be cut off: line 2, 84 of 83 columns. Shorten the line or break it.',
+    );
+  });
+
   it("blames the layout, not the document, for the layout's own words and language", async () => {
     const fake = failing([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },

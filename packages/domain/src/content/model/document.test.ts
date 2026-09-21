@@ -1543,3 +1543,112 @@ describe('a mark identifier, whose runs are one range and not two', () => {
     ).toThrow(/two separate ranges/);
   });
 });
+
+describe('a quotation and a preformatted block, held before anything stores one (editor 5)', () => {
+  // Deliberately uncited: each is a narrowing of what may be stored, not CNT-018's or CNT-019's
+  // statement, and CNT-018's citation in this file already exists.
+  const plain = (value: string) => ({ type: 'text', value, marks: [] });
+  const emphasised = (value: string) => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'emphasis', id: 'm1' }],
+  });
+  const para = (id: string, ...content: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+  const quotation = (content: unknown[], attribution?: unknown[]) => ({
+    type: 'blockquote',
+    id: 'q1',
+    content,
+    ...(attribution === undefined ? {} : { attribution }),
+  });
+  const pre = (text: string, language?: string) => ({
+    type: 'preformatted',
+    id: 'p1',
+    text,
+    ...(language === undefined ? {} : { language }),
+  });
+
+  it('refuses an attribution that is there but holds nothing, before and after the merge', () => {
+    expect(() => parseContentDocument(doc([quotation([paragraph('b1')], [])]))).toThrow();
+    const emptied = () => parseContentDocument(doc([quotation([paragraph('b1')], [plain('')])]));
+    expect(emptied).toThrow(/q1/);
+    expect(emptied).toThrow(/attribution that holds no text/);
+    expect(
+      parseContentDocument(doc([quotation([paragraph('b1')], [plain('Ada')])])).content[0],
+    ).toMatchObject({ attribution: [{ type: 'text', value: 'Ada' }] });
+  });
+
+  it('walks a quotation in reading order, its body before its attribution', () => {
+    // One annotation from the paragraph before the quotation into its first paragraph: one range,
+    // however the quotation is attributed.
+    const document = doc([
+      para('b1', plain('Before '), emphasised('into')),
+      quotation([para('b2', emphasised(' the quotation'), plain(' and on'))], [plain('Ada')]),
+    ]);
+    expect(parseContentDocument(document).content).toHaveLength(2);
+  });
+
+  it('refuses one identifier in a quotation body and again in its attribution, with text between', () => {
+    const attempt = () =>
+      parseContentDocument(
+        doc([quotation([para('b1', emphasised('quoted'), plain(' words'))], [emphasised('Ada')])]),
+      );
+    expect(attempt).toThrow(/two separate ranges/);
+  });
+
+  it('stores preformatted text in NFC, and a second parse returns it unchanged', () => {
+    const once = parseContentDocument(doc([pre('e\u{301}')]));
+    expect(once.content[0]).toMatchObject({ text: '\u{E9}' });
+    expect(parseContentDocument(once)).toEqual(once);
+  });
+
+  it('refuses every control character in preformatted text but a tab and a line feed, naming its code point alone', () => {
+    const cases: [string, string][] = [
+      ['a\u{D}\u{A}b', 'U+000D'],
+      ['\u{B}', 'U+000B'],
+      ['\u{C}', 'U+000C'],
+      ['\u{85}', 'U+0085'],
+      ['\u{2028}', 'U+2028'],
+      ['\u{0}', 'U+0000'],
+      ['\u{7F}', 'U+007F'],
+    ];
+    for (const [text, named] of cases) {
+      const attempt = () => parseContentDocument(doc([pre(`secret ${text}`)]));
+      expect(attempt, named).toThrow(
+        `Preformatted block p1 holds ${named}, which preformatted text may not`,
+      );
+      expect(attempt, named).not.toThrow(/secret/);
+    }
+    const kept = '\u{9}x\u{A}\u{A}  y\u{A}';
+    expect(parseContentDocument(doc([pre(kept)])).content[0]).toMatchObject({ text: kept });
+  });
+
+  it('holds a language label to a token', () => {
+    for (const label of ['sql', 'c++', 'c#', 'objective-c', 'x']) {
+      expect(parseContentDocument(doc([pre('x', label)])).content[0], label).toMatchObject({
+        language: label,
+      });
+    }
+    expect(() => contentDocumentSchema.parse(doc([pre('x', '')]))).toThrow();
+    for (const label of [' sql', 'sql ', 'plain text', '-sql', 'a'.repeat(33), 's\u{E9}l']) {
+      expect(() => parseContentDocument(doc([pre('x', label)])), label).toThrow(
+        'Preformatted block p1 carries a language label that is not a token',
+      );
+    }
+  });
+
+  it('closes an annotation at a preformatted block holding text, and not at an empty one', () => {
+    const across = (between: string) =>
+      doc([
+        para('b1', plain('One '), emphasised('run')),
+        { ...pre(between), id: 'p2' },
+        para('b3', emphasised('again'), plain(' after')),
+      ]);
+    expect(() => parseContentDocument(across('x'))).toThrow(/two separate ranges/);
+    expect(parseContentDocument(across('')).content).toHaveLength(3);
+  });
+});

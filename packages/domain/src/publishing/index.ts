@@ -2,6 +2,11 @@ export { assemble } from './assemble.js';
 export type { Assembled, AssembleInput } from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
+// The question the worker's pinned fonts answer, asked of one family at a time (editor 5).
+export type { Covers, Face } from './glyphs.js';
+// Promoted by editor 5 so the worker's regression corpus probes the exemption with the predicate
+// `assemble` asks, rather than a copy of its ranges.
+export { setWithoutAGlyph } from './glyphs.js';
 // Promoted by the editor's marks slice: the editor warns an author, at the time they give it, about
 // a language tag a publication could not carry, and the rule it asks is this one rather than a
 // second copy of it kept in the renderer (CNT-152).
@@ -28,6 +33,9 @@ export {
   // Frozen by the editor's lists slice, which made `publishing/4`: the schema template 3 reads, and
   // the schema of every publication made before a block could be a list.
   PUBLISHING_SCHEMA_3,
+  // Frozen by editor 5, which made `publishing/5`: the schema template 4 reads, and the schema of
+  // every publication made before a block could be a quotation or preformatted text.
+  PUBLISHING_SCHEMA_4,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -37,6 +45,8 @@ export type {
   PublishedItem,
   PublishedLanguage,
   PublishedList,
+  PublishedPreformatted,
+  PublishedQuotation,
   PublishedMark,
   PublishedNode,
   PublishedNode1,

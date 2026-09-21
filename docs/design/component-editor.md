@@ -29,9 +29,11 @@ the outline (STR) and the publishing pipeline are.
 > numbered and definition, from the toolbar, the keyboard or Tab and Shift-Tab, nesting to any depth
 > the content model admits, with a **List** panel carrying a numbered list's start and numbering, by
 > [the lists plan](../plans/2026-09-21-editor-04-lists-and-quotations.md), which also carried them into
-> the PDF. What is still design here: every
-> block but the paragraph and the list - block quotations, preformatted text, tables, footnotes,
-> equations and figures - paste,
+> the PDF. **Block quotations and preformatted text are built too** - a quotation with its
+> attribution, and preformatted text with its whitespace kept exactly and a **Preformatted text**
+> panel for its language label, in the `F6` ring while the cursor is in one - by
+> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). What is still design
+> here: tables, footnotes, equations and figures, paste,
 > the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 
@@ -233,6 +235,13 @@ block cannot keep its identifier merely because the receiving component did not 
   - in a list it leaves the list - and an `appendTransaction` removes the second of two adjacent empty
     paragraphs however they arose, from a join, a deletion or an undo. Blank lines in pasted content are
     normalised by the pipeline and reported.
+- **Preformatted text keeps every character typed into it.** `Enter` inserts a line feed and never
+  splits the block - in a list item or out of one - and `Tab` inserts a tab rather than nesting an
+  item. `Shift-Tab` is never taken there, so focus can always leave backwards, and `Mod-Enter` leaves
+  the block for a paragraph after it. The surface sets tab stops every 8 columns, which is what the
+  publication prints. A quotation's attribution is its own line after the quotation's blocks, always
+  offered, stored only when it holds text; `Enter` in it leaves the quotation
+  ([editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md), decisions H and I).
 - **What the editor holds is always storable.** Every iteration is `fromEditor` then
   `parseContentDocument`, in the renderer; the service parses it again and refuses content that does not
   parse, so an invariant broken by a bug is a refused save rather than a stored defect.
@@ -533,7 +542,8 @@ undo, a refusal putting the surface back, or a version cut, and never this field
 
 ## Accessibility
 
-- **Regions.** The view has five: component header, **formatting** toolbar, **list** panel, surface,
+- **Regions.** The view has six: component header, **formatting** toolbar, **list** panel,
+  **preformatted text** panel, surface,
   metadata panel. `F6` and `Shift-F6` cycle them; inside a nested editor they leave it for the region
   that holds it. The view holds a second toolbar, Save version and Done editing, and that one is
   deliberately not a region: it is two buttons, reached by a Tab from the header as any two buttons
@@ -543,7 +553,9 @@ undo, a refusal putting the surface back, or a version cut, and never this field
   go with the selection: it stands between the toolbar and the surface while the cursor is inside a
   counted list, holding that list's kind, start and numbering, and is absent everywhere else -
   including inside a definition list, which carries none of the three and whose kind is the button
-  that made it. So the ring is built from the regions actually rendered, and the wrap is over those.
+  that made it. The **preformatted text** panel is the second: it holds a preformatted block's
+  language label, stands after the list panel while the cursor is in such a block, and is absent
+  everywhere else. So the ring is built from the regions actually rendered, and the wrap is over those.
 - **Nested and transient editors are inline, not modal.** Opening an equation or a footnote moves focus
   into it; `Escape` closes it and returns focus to the node it was opened from. The symbol palette is a
   popup grid: `Escape` or inserting a symbol returns focus to where the cursor was.

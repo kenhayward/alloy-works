@@ -5,7 +5,14 @@ import type { MarkType, Node } from 'prosemirror-model';
 import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-import { blockCommand, listAwareEnter, refusePastTheLimit } from './blocks.js';
+import {
+  blockCommand,
+  codeAwareEnter,
+  insertTabInCode,
+  listAwareEnter,
+  outsideCode,
+  refusePastTheLimit,
+} from './blocks.js';
 import { identityPlugin } from './identity.js';
 import { commandKeymap, spansOf } from './marks.js';
 
@@ -206,6 +213,21 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
  * The comparison is exact. `fr` and `fr-CA` are different languages here, which is what CNT-140's
  * "carrying a region wherever the region changes the content" asks for.
  */
+/**
+ * An empty attribution, marked so the stylesheet can show a placeholder in it. A class on the node
+ * rather than `:empty` in the stylesheet, because ProseMirror puts a trailing break into an empty
+ * textblock and `:empty` never matches one.
+ */
+export function placeholderDecorations(doc: Node): DecorationSet {
+  const decorations: Decoration[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'attribution' && node.content.size === 0) {
+      decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'aw-empty' }));
+    }
+  });
+  return DecorationSet.create(doc, decorations);
+}
+
 export function spellcheckDecorations(doc: Node): DecorationSet {
   const base: unknown = doc.attrs.language;
   const decorations: Decoration[] = [];
@@ -217,6 +239,30 @@ export function spellcheckDecorations(doc: Node): DecorationSet {
   });
   return DecorationSet.create(doc, decorations);
 }
+
+/**
+ * Every quotation ends with an attribution line, empty where nobody has typed one, so an author always
+ * has somewhere to type it. `toEditor` and the Quotation command make one, but Backspace at its start
+ * or Delete at the end of the body fold its text into the paragraph before and take the node with it
+ * (final review, finding 6); this puts an empty one back after any transaction that left a quotation
+ * without. The text the key folded stays where the key put it.
+ */
+export const attributionAlwaysThere = new Plugin({
+  appendTransaction(transactions, _old, state) {
+    if (!transactions.some((transaction) => transaction.docChanged)) return null;
+    const missing: number[] = [];
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'blockquote' && node.lastChild?.type.name !== 'attribution') {
+        missing.push(pos + node.nodeSize - 1);
+      }
+    });
+    if (missing.length === 0) return null;
+    const tr = state.tr;
+    // From the last to the first, so an insertion never moves a position still to be used.
+    for (const at of missing.reverse()) tr.insert(at, state.schema.nodes.attribution!.create());
+    return tr;
+  },
+});
 
 /** `Enter`: nothing in an empty paragraph, which would otherwise make a second; a split elsewhere. */
 export const enterWithoutEmpties: Command = (state, dispatch) => {
@@ -266,16 +312,28 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // list with no key that leaves it. Every command in `listAwareEnter` returns false outside a
         // list, so the order is safe in both directions. `blocks.test.ts` presses the key through
         // this keymap rather than reasoning about which binding wins.
-        Enter: chainCommands(listAwareEnter(options.newIdentifier), enterWithoutEmpties),
+        //
+        // **And the code-aware links come first of all** (editor 5): in preformatted text Enter
+        // types a line break, which `splitListItem` and `splitBlock` would otherwise answer by
+        // splitting the item or the block around it; in an attribution it leaves the quotation.
+        Enter: chainCommands(
+          codeAwareEnter(options.newIdentifier),
+          listAwareEnter(options.newIdentifier),
+          enterWithoutEmpties,
+        ),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
         // to prevent. Both return false outside a list, so Tab still moves focus everywhere else,
         // which CNT-077 needs: a Tab that is always swallowed is a keyboard trap.
-        Tab: blockCommand('nestItem', options.newIdentifier),
-        'Shift-Tab': blockCommand('liftItem', options.newIdentifier),
+        //
+        // In preformatted text Tab types a tab, the character CNT-018 keeps, and Shift-Tab is **never
+        // taken** - not even to lift the item a preformatted block stands in - so focus can always
+        // leave backwards by keyboard and the tab is not a trap (decision I).
+        Tab: chainCommands(insertTabInCode, blockCommand('nestItem', options.newIdentifier)),
+        'Shift-Tab': outsideCode(blockCommand('liftItem', options.newIdentifier)),
       }),
-      // Every command the toolbar offers - nine marks and five block actions - from the one
+      // Every command the toolbar offers - nine marks and seven block actions - from the one
       // registry, so the two cannot drift (CNT-077). A mark's identifier is drawn from the same
       // source a block's is: both are allocated by the editor, and both have to be unique within
       // the component (ADR-0023, CNT-004).
@@ -314,9 +372,20 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // worth the line it takes to say so.
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
+      attributionAlwaysThere,
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
-      new Plugin({ props: { decorations: (state) => spellcheckDecorations(state.doc) } }),
+      // One decorations plugin, holding both the spellcheck rule and the empty attribution's
+      // placeholder: the view merges every plugin's set anyway, and one set is one thing to test.
+      new Plugin({
+        props: {
+          decorations: (state) =>
+            DecorationSet.create(state.doc, [
+              ...spellcheckDecorations(state.doc).find(),
+              ...placeholderDecorations(state.doc).find(),
+            ]),
+        },
+      }),
     ],
   });
 }

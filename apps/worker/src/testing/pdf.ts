@@ -58,6 +58,20 @@ export interface ReadPdf {
   readonly pageSizes: readonly (readonly [number, number])[];
   readonly textLeft: readonly (number | null)[];
   readonly textBaselines: readonly ({ readonly top: number; readonly bottom: number } | null)[];
+  /**
+   * Every run of tagged text with where it stands: its page, its start from the left edge, its
+   * baseline from the bottom edge and its width, all in points. For a column to be asserted by
+   * position rather than parsed out of a page's text in the test (editor 5, task 9).
+   */
+  readonly items: readonly TextItem[];
+}
+
+export interface TextItem {
+  readonly page: number;
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
 }
 
 interface StructNode {
@@ -145,6 +159,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     const pageSizes: (readonly [number, number])[] = [];
     const textLeft: (number | null)[] = [];
     const textBaselines: ({ top: number; bottom: number } | null)[] = [];
+    const items: TextItem[] = [];
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const page = await pdf.getPage(number);
       const content = await page.getTextContent({ includeMarkedContent: true });
@@ -192,6 +207,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
             left = left === null ? x : Math.min(left, x);
             // And its vertical translation: the run's baseline, from the bottom edge.
             const y = item.transform[5] as number;
+            items.push({ page: number, text: item.str, x, y, width: item.width });
             baselines =
               baselines === null
                 ? { top: y, bottom: y }
@@ -254,6 +270,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       pageSizes,
       textLeft,
       textBaselines,
+      items,
     };
   } finally {
     // The loading task, not the document: in pdf.js 6 it is the task that owns the worker.

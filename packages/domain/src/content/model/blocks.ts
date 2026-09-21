@@ -161,7 +161,8 @@ export const blockquoteNodeSchema = z.strictObject({
   type: z.literal('blockquote'),
   ...identified,
   content: z.array(blockNodeSchema).min(1),
-  attribution: z.array(inlineNodeSchema).optional(),
+  // `min(1)`: an empty attribution is a second spelling of an absent one (editor 5, decision G).
+  attribution: z.array(inlineNodeSchema).min(1).optional(),
 });
 
 export const blockEquationNodeSchema = z.strictObject({

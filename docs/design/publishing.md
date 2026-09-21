@@ -1080,9 +1080,20 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    `publication/3`), because there is no point in an author writing what a publication drops. Lists
    came the same way and for the same reason
    ([the lists plan](../plans/2026-09-21-editor-04-lists-and-quotations.md), `publishing/4` and
-   template `publication/4`), in all three kinds and nested. What is
-   left to this slice: quotations, preformatted
-   text, tables with captions and header rows, footnotes, equations through the maths tree, figures
+   template `publication/4`), in all three kinds and nested. Block quotations and preformatted text
+   are built the same way
+   ([editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md), `publishing/5`
+   and template `publication/5`): `BlockQuote` and `Code`, measured; Liberation Mono pinned beside
+   Liberation Serif, so the glyph check asks **which face** sets a character - `covers(codePoint,
+'body' | 'code')` - because `raw` would otherwise fall back to Serif for a character Mono lacks and
+   put it in the wrong column; `raw` set with `fallback: false` and never given a language; the
+   attribution set by the template and never by `quote(attribution:)`, which writes an em dash the
+   author did not type; and a preformatted line wider than its place refused by `assemble` as
+   `line_too_wide`, because the engine neither clips nor reports one - it runs off the page. Building
+   it found that the engine pads a block quotation by an em on **both** sides, so a quotation costs two
+   ems of a line's width, not one (79 columns inside one under the default layout, not 81), and that a
+   quotation is sized to its content, so the attribution is aligned within a block of the full width. What is
+   left to this slice: tables with captions and header rows, footnotes, equations through the maths tree, figures
    with assets, citations failing, and cross-references once structure 4 has built `references`. With
    figures come the layout's `lists` - by layout schema 2 and a second version of the default layout -
    and caption labels, which slice 2 deliberately left out because every list of a document of

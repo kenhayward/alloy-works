@@ -607,3 +607,93 @@ describe('the mapping carries a list, both ways', () => {
     expect(() => fromEditor(doc)).toThrow(/Block 0 has no identifier/);
   });
 });
+
+describe('quotations and preformatted text through the mapping (editor 5)', () => {
+  const pre = (id: string, text: string, language?: string): BlockNode => ({
+    type: 'preformatted',
+    id,
+    text,
+    ...(language === undefined ? {} : { language }),
+  });
+  const quotation = (
+    id: string,
+    content: BlockNode[],
+    attribution?: Extract<BlockNode, { type: 'blockquote' }>['attribution'],
+  ): BlockNode => ({
+    type: 'blockquote',
+    id,
+    content,
+    ...(attribution === undefined ? {} : { attribution }),
+  });
+  const bulleted = (id: string, content: BlockNode[]): BlockNode => ({
+    type: 'list',
+    id,
+    kind: 'unordered',
+    items: [{ content }],
+  });
+  const roundTrip = (stored: ContentDocument) => fromEditor(openedDoc(stored));
+
+  it('CNT-018 carries a preformatted block through the mapping both ways with its leading spaces, tabs, blank lines and language label byte for byte', () => {
+    const text = '\u{9}if x:\u{A}\u{A}    y = 1\u{A}';
+    const stored = parseContentDocument(document([pre('p1', text, 'python'), pre('p2', 'plain')]));
+    const back = roundTrip(stored);
+    expect(back).toEqual(stored);
+    expect(back.content[0]).toEqual({ type: 'preformatted', id: 'p1', text, language: 'python' });
+    expect(back.content[1]).not.toHaveProperty('language');
+  });
+
+  it('round-trips a quotation holding a paragraph and a list, attributed with a mark', () => {
+    const stored = parseContentDocument(
+      document([
+        quotation(
+          'q1',
+          [paragraph('b1', 'Quoted words.'), bulleted('L1', [paragraph('b2', 'A point.')])],
+          [run('Ada, ', []), run('Notes', [{ type: 'emphasis', id: 'm1' }])],
+        ),
+      ]),
+    );
+    expect(roundTrip(stored)).toEqual(stored);
+  });
+
+  it('opens a quotation with no attribution with an empty one, and saves it with none', () => {
+    const stored = parseContentDocument(document([quotation('q1', [paragraph('b1', 'Words.')])]));
+    const quoted = openedDoc(stored).firstChild!;
+    expect(quoted.lastChild!.type.name).toBe('attribution');
+    expect(quoted.lastChild!.childCount).toBe(0);
+    expect(roundTrip(stored).content[0]).not.toHaveProperty('attribution');
+  });
+
+  it('round-trips a quotation inside a list item and a list inside a quotation', () => {
+    const stored = parseContentDocument(
+      document([
+        bulleted('L1', [quotation('q1', [paragraph('b1', 'In an item.')])]),
+        quotation('q2', [bulleted('L2', [paragraph('b2', 'In a quotation.')])]),
+      ]),
+    );
+    expect(roundTrip(stored)).toEqual(stored);
+  });
+
+  it('opens read-only a quotation whose attribution holds a citation, naming it', () => {
+    const stored = document([
+      quotation('q1', [paragraph('b1', 'Words.')], [{ type: 'citation', entry: 'ada-1843' }]),
+    ]);
+    expect(toEditor(stored)).toEqual({ editable: false, unsupported: ['citation'] });
+  });
+
+  it('refuses to store a preformatted block or a quotation the editor has not identified', () => {
+    const unidentified = (node: Node) => editorSchema.node('doc', root, [node]);
+    expect(() =>
+      fromEditor(unidentified(editorSchema.node('preformatted', null, [editorSchema.text('x')]))),
+    ).toThrow('Block 0 has no identifier');
+    expect(() =>
+      fromEditor(
+        unidentified(
+          editorSchema.node('blockquote', null, [
+            editorSchema.node('paragraph', { id: 'b1' }),
+            editorSchema.node('attribution'),
+          ]),
+        ),
+      ),
+    ).toThrow('Block 0 has no identifier');
+  });
+});

@@ -336,6 +336,24 @@ as a publish-time backstop, so content assembled by any path is refused by name 
 from something nobody wrote. Two spellings of one rule would be two rules; there is one, and each
 side's comment points at the other.
 
+**What a quotation and preformatted text are held to, beyond their shapes.** The editor quotations
+and preformatted plan
+([editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md), decision G) adds six
+rules to the walk, for the reason the list's rules sit there: nothing has stored either block yet, and
+after the first one is stored a narrowing is a migration. **An attribution that is there holds
+text** - `[]` and an absent attribution would be two digests of one quotation - judged after
+`mergeRuns`, as a term is. **A quotation's content is walked before its attribution**, which is
+reading order and the order the editor holds them: walked the other way, an annotation running from
+the paragraph before a quotation into its body was one piece to the editor and two to `claimRange`,
+refused on save. **Preformatted text is put in NFC**, because the canonical form digests every string
+in NFC and the stored text must be what the digest covers; NFC changes no whitespace. **It holds no
+control character but tab and line feed** - a carriage return would make `\r\n` a second spelling of
+a line break, and the pinned engine breaks a line at U+000B, U+000C, U+0085 and U+2028 as it does at
+U+000A. **A language label is a token** of letters, digits and `+ # . _ -`, at most 32 characters,
+one exported predicate the editor asks too. And **a preformatted block with text closes a mark's
+range**, which is what the editor's `spansOf` already says: readable text stands between the two
+pieces.
+
 **Two spellings of one visible list, chosen rather than missed.** `{kind: 'ordered'}` and
 `{kind: 'ordered', start: 1, format: 'decimal'}` publish identically, because the template defaults an
 absent start to 1 and an absent numbering to decimal - but they canonicalise to different strings, so

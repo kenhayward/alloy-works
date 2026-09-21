@@ -15974,6 +15974,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-018",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 2691,
+      "kind": "title"
+    },
+    {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
       "line": 2505,
@@ -16000,7 +16006,7 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 206,
+      "line": 208,
       "kind": "title"
     },
     {
@@ -16072,31 +16078,31 @@
     {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 291,
+      "line": 296,
       "kind": "title"
     },
     {
       "id": "PUB-008",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 438,
+      "line": 443,
       "kind": "title"
     },
     {
       "id": "PUB-009",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 340,
+      "line": 345,
       "kind": "title"
     },
     {
       "id": "PUB-037",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 474,
+      "line": 479,
       "kind": "title"
     },
     {
       "id": "PUB-088",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 525,
+      "line": 530,
       "kind": "title"
     },
     {
@@ -16108,7 +16114,7 @@
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 539,
+      "line": 543,
       "kind": "title"
     },
     {
@@ -16132,7 +16138,7 @@
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 557,
+      "line": 561,
       "kind": "title"
     },
     {
@@ -16144,7 +16150,13 @@
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 484,
+      "line": 488,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-018",
+      "file": "apps/worker/src/quotations.test.ts",
+      "line": 153,
       "kind": "title"
     },
     {
@@ -16624,7 +16636,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 145,
+      "line": 154,
       "kind": "title"
     },
     {
@@ -16852,31 +16864,31 @@
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1048,
+      "line": 1056,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 588,
+      "line": 589,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 777,
+      "line": 783,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 661,
+      "line": 667,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 750,
+      "line": 756,
       "kind": "title"
     },
     {
@@ -17114,6 +17126,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-018",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 636,
+      "kind": "title"
+    },
+    {
       "id": "CNT-031",
       "file": "packages/editor/src/mapping.test.ts",
       "line": 153,
@@ -17140,19 +17158,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 184,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 623,
+      "line": 625,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 302,
+      "line": 304,
       "kind": "title"
     },
     {
