@@ -6,9 +6,14 @@ const COMPONENT = '0b5e2c8e-6f5b-4a8e-9d3c-2a1b0c9d8e7f';
 const NODE = 'abcdefghijklmnopqrstuvwxyz';
 
 describe('the module an address belongs to', () => {
-  it('names Components for the empty hash, #/ and a component', () => {
-    expect(moduleOf('')).toBe('Components');
-    expect(moduleOf('#/')).toBe('Components');
+  it('names no module for Home: the empty hash, # and #/', () => {
+    expect(moduleOf('')).toBeNull();
+    expect(moduleOf('#')).toBeNull();
+    expect(moduleOf('#/')).toBeNull();
+  });
+
+  it('names Components for the list and a component', () => {
+    expect(moduleOf('#/components')).toBe('Components');
     expect(moduleOf(`#/components/${COMPONENT}`)).toBe('Components');
     expect(moduleOf(`#/components/${COMPONENT}/access`)).toBe('Components');
   });

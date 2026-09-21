@@ -10,7 +10,7 @@ export const MARK = 'mark-dark.svg';
 
 /** Where the switcher can take a person: each module's own list. */
 const MODULES: readonly { readonly name: ModuleName; readonly href: string }[] = [
-  { name: 'Components', href: '#/' },
+  { name: 'Components', href: '#/components' },
   { name: 'Documents', href: '#/documents' },
   { name: 'Publications', href: '#/publications' },
 ];
@@ -30,7 +30,8 @@ export function initialsOf({ displayName, email }: Person): string {
 }
 
 export interface HeaderProps {
-  readonly module: ModuleName;
+  /** The module the page is in; null on Home, which is none. */
+  readonly module: ModuleName | null;
   /** Given in tests; the browser's own otherwise. */
   readonly fetch?: typeof fetch;
   /** After the session has ended; the page reloads, signed out, unless a test says otherwise. */
@@ -161,8 +162,12 @@ export function Header({
           </ul>
         )}
       </Menu>
-      <span className={styles['hairline']} aria-hidden="true" />
-      <span className={styles['module']}>{module}</span>
+      {module !== null && (
+        <>
+          <span className={styles['hairline']} aria-hidden="true" />
+          <span className={styles['module']}>{module}</span>
+        </>
+      )}
       <span className={styles['spacer']} />
       {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
       {who === 'nobody' && (

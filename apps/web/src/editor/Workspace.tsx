@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { isAccessAnswers } from '../access/describe.js';
+import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
@@ -28,7 +29,7 @@ const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
 function Places() {
   return (
     <nav aria-label="Workspace">
-      <a href="#/">Components</a> <a href="#/documents">Documents</a>{' '}
+      <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
       <a href="#/publications">Publications</a>
     </nav>
   );
@@ -164,6 +165,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     );
   }
   if (me === null) return null;
+  if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
   const address = OPEN.exec(hash);
   const opened = address?.[1];
   if (opened && address?.[2]) {
@@ -186,7 +188,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         )}
         <div className={styles['editor']}>
           <p>
-            <a href="#">Back to components</a>
+            <a href="#/components">Back to components</a>
             <ManageAccessLink client={client} componentId={opened} />
           </p>
           <ComponentEditor

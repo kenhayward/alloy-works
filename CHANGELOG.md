@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.45.0 - 2026-09-21 (PR #186)
+
+### Added
+
+- **Home.** The application now opens on a greeting and a card for each of Components, Documents
+  and Publications. Each card says what the module is for, what you can do there today, and how many
+  there are for you to read, and opens its list.
+
+### Changed
+
+- The components list is now at `#/components`, and the module switcher and every "Back to
+  components" link go there. `#/` is Home.
+
 ## 0.44.0 - 2026-09-21 (PR #185)
 
 ### Added

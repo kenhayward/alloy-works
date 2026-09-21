@@ -38,14 +38,15 @@ describe('App', () => {
 
     const band = screen.getByRole('banner');
     expect(within(band).getByRole('button', { name: /Alloy Works/ })).toBeInTheDocument();
-    expect(within(band).getByText('Components')).toBeInTheDocument();
+    // Home is no module, so the band names none.
+    expect(within(band).queryByText('Components')).not.toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(within(main).getByText('the workspace')).toBeInTheDocument();
     expect(within(main).getByText('the environment')).toBeInTheDocument();
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 
-  it('shows the environment under the components list only, not on a document', async () => {
+  it('shows the environment under Home only, not on a list or a document', async () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
     expect(screen.getByText('the environment')).toBeInTheDocument();
 
@@ -56,6 +57,13 @@ describe('App', () => {
 
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
     expect(within(screen.getByRole('banner')).getByText('Documents')).toBeInTheDocument();
+
+    act(() => {
+      window.location.hash = '#/components';
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(screen.queryByText('the environment')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByText('Components')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 

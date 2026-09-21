@@ -3,10 +3,11 @@ export type ModuleName = 'Components' | 'Documents' | 'Publications';
 
 /**
  * The module an address belongs to, which the header band names. Only the first segment counts:
- * everything under `#/documents` is Documents, and an address nothing claims - the empty hash, `#/`
- * - is Components, which is what the workspace shows there until Home exists.
+ * everything under `#/documents` is Documents. Home - the empty hash, `#` and `#/` - is no module,
+ * and the band names none there; anything else is Components.
  */
-export function moduleOf(hash: string): ModuleName {
+export function moduleOf(hash: string): ModuleName | null {
+  if (hash === '' || hash === '#' || hash === '#/') return null;
   if (/^#\/documents(?:\/|$)/.test(hash)) return 'Documents';
   if (/^#\/publications(?:\/|$)/.test(hash)) return 'Publications';
   return 'Components';
