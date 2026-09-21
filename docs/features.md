@@ -121,8 +121,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   refused with a sentence beside the box rather than taken silently: only a `1, 2, 3` list can start
   at 0, and a start is a whole number.
 
-  **This is formatted paragraphs and lists, not the editor.** A component holding a table, an equation,
-  a footnote, a block quotation or preformatted text opens for reading only. There is no control for a
+  **Quotations and preformatted text.** **Quotation** on the toolbar (`Ctrl` or `Cmd`, `Shift` and
+  full stop) sets the paragraphs you have selected as a quotation, with a line beneath for its
+  attribution - who said it, formatted like any other text - which you can leave empty. Pressing it
+  inside a quotation takes the quotation off again and keeps any attribution as a paragraph after it.
+  **Preformatted text** (`Ctrl` or `Cmd`, `Shift` and comma) turns the paragraphs you have
+  selected into one block of text whose spaces, tabs and blank lines are kept exactly as you type
+  them, in a fixed-width typeface with tab stops every eight columns. Formatting such as bold or a
+  link is dropped when a paragraph becomes preformatted text, and one undo brings it back. Inside it,
+  `Enter` starts a new line and `Tab` types a tab; `Ctrl` or `Cmd` and `Enter` leaves it for a
+  new paragraph after it, and `Shift-Tab` always moves the focus back out of it. While the cursor is
+  in preformatted text a **Preformatted text** panel offers a **Language label** - `sql`, `python`,
+  `c++` - which says what the text is without colouring it; a label that is not letters, digits and
+  `+ # . _ -` is refused with a sentence beside the box.
+
+  **This is formatted paragraphs, lists, quotations and preformatted text, not the editor.** A
+  component holding a table, an equation or a footnote opens for reading only. There is no control for a
   defined term or a citation, nothing
   pastes, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
@@ -191,13 +205,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Ada and Grace hold on General in development - has **Publish as PDF** beneath its outline, and a
   second or two later the page says it is published. The publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
-  component's paragraphs and lists beneath its heading, set in Liberation Serif, with everything you
+  component's paragraphs, lists, quotations and preformatted text beneath its heading, set in
+  Liberation Serif, with inline code and preformatted text in Liberation Mono, and everything you
   formatted
   carried into it: strong, emphasis, underline, subscript, superscript, inline code, quoted phrases,
   links a reader can follow, and each run's own language. **Lists print as you made them** - bulleted
   at every level, with a different marker for the first three depths; numbered from the number and in
   the style you chose; and a definition list with each term beside its definition - and a screen
-  reader is told each one is a list rather than a row of characters. **Every publication says it is
+  reader is told each one is a list rather than a row of characters. **A quotation prints indented
+  on both sides**, with its attribution at its end and nothing added before it, and **preformatted
+  text prints in its own panel** with every space, tab and blank line where you put it and its label
+  above it; a reader is told which is a quotation and which is code. **Every publication says it is
   not approved** - at the top of every page, and once where a screen reader reads it - because nothing
   can approve one yet. Publications are kept and never changed: publishing again makes another. The
   document lists its publications beneath the outline, each with the version, who published it and
@@ -241,6 +259,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the distinction simply does not reach the file. The markers beside a bulleted list are fixed by the
   product for now rather than chosen by a style, and repeat after three levels of nesting.
 
+  **What preformatted text and a quotation reach a reader as.** Preformatted text is set exactly,
+  but a reader who copies it out of the PDF, or has it read aloud, loses its indentation and hears a
+  tab as spaces: the engine does not carry leading whitespace into the text a reader extracts
+  (issue #162). A quotation's attribution is read as its last paragraph, and a preformatted block's
+  label as a stray word before it, because PDF has no structure of its own for either (issue #163).
+  **A line of preformatted text wider than the page refuses the publish** rather than being wrapped
+  - which a reader could not tell from a line you broke - or cut off. Under the default layout that
+    is 83 columns, 79 inside a quotation and fewer inside a list; inside a numbered list the limit is
+    worked out cautiously, so a line that would just have fitted may be refused (issue #164). Much
+    ordinary code is wider than 83 columns, and a layout that sets code smaller is what will fix that
+    (issue #165). A character the fixed-width typeface does not have - a handful of typographic
+    spaces and `‖` among them - is refused in preformatted text and inline code although a paragraph
+    can print it.
+
   **A language tag a publication cannot carry.** The model keeps any well-formed tag, and the PDF
   engine carries a language and, where there is one, a region of exactly two letters. So `zh-Hans` or
   `es-419` can be stored and cannot be published; the editor says so when you apply it **to a run**,
@@ -248,8 +280,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A component's own base language, in the header, is not warned about: one of these tags typed there
   is taken without comment and refused only when the document is published (issue #156).
 
-  **This is a PDF of paragraphs and lists, not publishing.** No tables, figures, footnotes, equations,
-  block quotations or preformatted text - a document holding any of them is refused. A list nested
+  **This is a PDF of paragraphs, lists, quotations and preformatted text, not publishing.** No
+  tables, figures, footnotes or equations - a document holding any of them is refused. A citation
+  in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed.
   There is no list of figures or tables, no caption labels and no theme; nothing chooses, makes or
@@ -262,11 +295,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 Named explicitly so nobody has to read the source to find out:
 
-- No way to author anything but formatted paragraphs and lists of them: a component holding a table, a
-  footnote, an equation, a block quotation or preformatted text still opens for reading only, and
+- No way to author anything but formatted paragraphs, lists, quotations and preformatted text: a
+  component holding a table, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
   citation. Nothing pastes. Nothing imports content from a Word file, and nothing exports it but a
-  published PDF of a document's paragraphs and lists. The one sample document is a fixed template with
+  published PDF of a document's paragraphs, lists, quotations and preformatted text. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.

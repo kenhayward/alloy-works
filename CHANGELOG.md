@@ -3,6 +3,42 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.34.0 - 2026-09-21 (PR #166)
+
+### Added
+
+- **An author can quote.** **Quotation** on the toolbar, or Ctrl or Cmd, Shift and full stop, sets
+  the selected paragraphs as a quotation, with a line beneath for who said it, formatted like any
+  other text. Leave it empty if there is nobody to name. Press it again inside a quotation to take
+  the quotation off; an attribution you wrote stays, as a paragraph after it.
+- **An author can write preformatted text.** **Preformatted text**, or Ctrl or Cmd, Shift and comma,
+  turns the selected paragraphs into one block whose spaces, tabs and blank lines are kept exactly,
+  in a fixed-width typeface with tab stops every eight columns. Enter starts a new line and Tab types
+  a tab; Ctrl or Cmd and Enter leaves the block, and Shift Tab always moves the focus back out of it.
+  Formatting is dropped when a paragraph becomes preformatted text, and one undo brings it back.
+- **Preformatted text can say what it is.** While the cursor is in it, a **Preformatted text** panel
+  offers a **Language label** such as sql or python, which F6 reaches like the other regions. A label
+  that is not letters, digits and + # . _ - is refused with a sentence beside the box.
+- **A publication prints both.** A quotation is indented on both sides with its attribution at its
+  end and nothing added before it, and preformatted text is set in its own panel in Liberation Mono,
+  every space where you put it, with its label above it. A screen reader is told which is a
+  quotation and which is code. Inline code is now printed in Liberation Mono too. It still passes
+  every PDF/UA-1 rule the checker applies.
+
+### Known limits
+
+- Preformatted text copied out of a PDF, or read aloud, loses its indentation, and a tab is read as
+  spaces (#162).
+- A quotation's attribution is read aloud as its last paragraph, and a preformatted block's label as
+  a stray word before it, because a PDF has no structure of its own for either (#163).
+- A line of preformatted text inside a numbered list may be refused although it would just have fit,
+  because the limit there is worked out cautiously (#164).
+- A line of preformatted text wider than the page refuses the publish rather than being wrapped or
+  cut off: 83 columns under the default layout, and 79 inside a quotation. Much ordinary code is
+  wider than that; a layout that sets code smaller is what will fix it (#165).
+- A character the fixed-width typeface does not have, such as a handful of typographic spaces, is
+  refused in preformatted text and inline code, although a paragraph can print it.
+
 ## 0.33.0 - 2026-09-21 (PR #161)
 
 ### Added

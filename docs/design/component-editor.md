@@ -29,9 +29,11 @@ the outline (STR) and the publishing pipeline are.
 > numbered and definition, from the toolbar, the keyboard or Tab and Shift-Tab, nesting to any depth
 > the content model admits, with a **List** panel carrying a numbered list's start and numbering, by
 > [the lists plan](../plans/2026-09-21-editor-04-lists-and-quotations.md), which also carried them into
-> the PDF. What is still design here: every
-> block but the paragraph and the list - block quotations, preformatted text, tables, footnotes,
-> equations and figures - paste,
+> the PDF. **Block quotations and preformatted text are built too** - a quotation with its
+> attribution, and preformatted text with its whitespace kept exactly and a **Preformatted text**
+> panel for its language label, in the `F6` ring while the cursor is in one - by
+> [editor 5](../plans/2026-09-21-editor-05-quotations-and-preformatted-text.md). What is still design
+> here: tables, footnotes, equations and figures, paste,
 > the metadata panel, undo across a reload, Recovery, lock events on the stream, the desktop's checker
 > languages, and the accessibility suite.
 

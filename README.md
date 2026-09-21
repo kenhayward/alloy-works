@@ -6,12 +6,12 @@ application and a desktop application**.
 
 > **Status: research, and scaffolding.** One path runs end to end - open an environment, sign in,
 > ask for a sample document, watch a worker make it. Beside it, a component can be made and its
-> paragraphs edited, formatted, linked, arranged into bulleted, numbered and definition lists, and
-> versioned, and a document can be made and its outline of
+> paragraphs edited, formatted, linked, arranged into bulleted, numbered and definition lists,
+> quoted and set as preformatted text, and versioned, and a document can be made and its outline of
 > sections and components restructured, a version at a time, its sections numbered, and its
-> paragraphs and lists published as a laid-out PDF with a cover, a contents and numbered pages that
+> paragraphs, lists, quotations and preformatted text published as a laid-out PDF with a cover, a contents and numbered pages that
 > carries
-> that formatting. Nothing is arranged beyond paragraphs and lists - no table, footnote or equation -
+> that formatting. Nothing is arranged beyond those - no table, footnote or equation -
 > and nothing is cross-referenced yet.
 > [`docs/features.md`](docs/features.md) is explicit about what does and does not exist.
 
@@ -85,9 +85,10 @@ bar needs themes, templates, assets and tables as well as an editor. **The first
 | Editing a component          | Open a component's paragraphs, edit them under a lock, saved as you type, and make a version with Save version or Done editing                                                                                                                                                                                                         |
 | Formatting, links, languages | Strong, emphasis, underline, subscript, superscript, inline code and quoted phrases from a toolbar or the keyboard; a link whose address is checked before it is applied; and a run marked with its own language, which the spelling checker then leaves alone                                                                         |
 | Lists                        | Bulleted, numbered and definition lists from the toolbar or the keyboard, nesting as deep as the content model admits and mixing kinds freely, with a definition list's term formatted like any other text and a panel for where a numbered list starts counting and how it counts                                                     |
+| Quotations and code          | A quotation with an optional attribution, and preformatted text whose spaces, tabs and blank lines are kept exactly, with a language label, from the toolbar or the keyboard                                                                                                                                                           |
 | Making a component           | Create one in a space you may create in, with a title, a base language and a direction, and change them afterwards above the surface                                                                                                                                                                                                   |
 | Documents and outlines       | Make a document in a space, build its outline out of sections and components, and restructure it a version at a time. Sections are numbered as you go, with the scheme the document publishes with; a top-level part can be front matter, the body or an appendix; every part has a link, and figures, tables and equations are listed |
-| Publishing a document        | Publish a document as a tagged PDF of its outline, its formatted paragraphs and its lists, laid out with a cover, a contents, running heads and feet and pages numbered per part, marked not approved on every page, kept, listed beneath the outline and downloaded from its own page                                                 |
+| Publishing a document        | Publish a document as a tagged PDF of its outline, its formatted paragraphs, its lists, its quotations and its preformatted text, laid out with a cover, a contents, running heads and feet and pages numbered per part, marked not approved on every page, kept, listed beneath the outline and downloaded from its own page          |
 | Brand identity               | The Alloy Works mark wired into the favicon, the installed web app, the desktop window, Dock, tray and installer                                                                                                                                                                                                                       |
 
 Full prose list: [`docs/features.md`](docs/features.md).
