@@ -1,0 +1,17 @@
+/* Layout B around an open component: the space pane, then the editor. */
+.triptych {
+  display: grid;
+  grid-template-columns: var(--pane-space) minmax(0, 1fr);
+  gap: var(--space-14);
+  align-items: start;
+}
+
+.editor {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .triptych {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

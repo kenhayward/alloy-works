@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.39.0 - 2026-09-21 (PR #176)
+
+### Added
+
+- **The component editor has its layout.**
+  - A pane on the left lists the components of the open one's space, with their versions and the
+    open one marked. Go to another in one click.
+  - The editor is a card:
+    - a strip across the top holds the title, the version, the language and the direction, with
+      the save state, Done editing and Save version on the right;
+    - the formatting toolbar sits under it;
+    - the text sits under that in a framed surface.
+  - A status line at the foot says how F6 moves between the header, the toolbar, the list panel and
+    the text, and how many blocks and words the component holds.
+
 ## 0.38.0 - 2026-09-21 (PR #175)
 
 ### Added
