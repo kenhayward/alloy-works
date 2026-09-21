@@ -31,7 +31,8 @@ RUN pnpm install --frozen-lockfile \
       --filter "@alloy-works/worker..." \
       --filter "@alloy-works/stand-in-idp..." \
       --filter "@alloy-works/web..."
-COPY tsconfig.base.json ./
+# version.json too: the renderer's build reads the canonical version from it for Administration's About.
+COPY tsconfig.base.json version.json ./
 COPY packages/ packages/
 COPY apps/service/ apps/service/
 COPY apps/web/ apps/web/
