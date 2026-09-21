@@ -6,6 +6,21 @@ import { createTenant, type Tenant } from './provision.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
+/**
+ * Ends every other client connection to this test database from outside, as a database restart,
+ * a failover or an operator's `pg_terminate_backend` would, and gives the pool a moment to hear it.
+ */
+async function endIdleConnections(db: TestDatabase): Promise<number> {
+  const ended = await queryAs(
+    db.adminUrl,
+    `select pg_terminate_backend(pid) from pg_stat_activity
+      where datname = $1 and pid <> pg_backend_pid() and backend_type = 'client backend'`,
+    [db.name],
+  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return ended.rowCount ?? 0;
+}
+
 describe('the tenant database', () => {
   let db: TestDatabase;
   let production: Tenant;
@@ -34,6 +49,14 @@ describe('the tenant database', () => {
   afterAll(async () => {
     await service.close();
     await db.drop();
+  });
+
+  it('carries on when the server ends a connection idle in its pool, rather than crashing the process (issue #169)', async () => {
+    // One query so a connection is idle in the pool, then that connection ended from outside. With
+    // no listener on the pool, its `error` event is an uncaught exception and fails this run.
+    await service.tenants();
+    expect(await endIdleConnections(db)).toBeGreaterThan(0);
+    expect(await service.tenants()).toEqual(expect.any(Array));
   });
 
   it('finds the tenant a hostname belongs to, whatever its case', async () => {

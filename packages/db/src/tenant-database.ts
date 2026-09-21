@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
-import pg from 'pg';
+import { createPool } from './pool.js';
 import { assertTenantRole } from './names.js';
 import type { Tenant } from './provision.js';
 import type { PlatformTables, TenantTables } from './tables.js';
@@ -29,7 +29,7 @@ export function createTenantDatabase(
   // Never exported: holding the pool would be a way round withTenant.
   const db = new Kysely<PlatformTables & TenantTables>({
     dialect: new PostgresDialect({
-      pool: new pg.Pool({ connectionString: url, max: options.max ?? 10 }),
+      pool: createPool({ connectionString: url, max: options.max ?? 10 }),
     }),
   });
 

@@ -9,6 +9,21 @@ import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './tes
 
 const SUBJECT = '11111111-2222-3333-4444-555555555555';
 
+/**
+ * Ends every other client connection to this test database from outside, as a database restart,
+ * a failover or an operator's `pg_terminate_backend` would, and gives the pool a moment to hear it.
+ */
+async function endIdleConnections(db: TestDatabase): Promise<number> {
+  const ended = await queryAs(
+    db.adminUrl,
+    `select pg_terminate_backend(pid) from pg_stat_activity
+      where datname = $1 and pid <> pg_backend_pid() and backend_type = 'client backend'`,
+    [db.name],
+  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return ended.rowCount ?? 0;
+}
+
 describe('the job queue', () => {
   let db: TestDatabase;
   let service: TenantDatabase;
@@ -44,6 +59,12 @@ describe('the job queue', () => {
   const enqueue = (tenant: Tenant) =>
     service.withTenant(tenant, (trx) => enqueueJob(trx, 'sample_pdf', SUBJECT));
   const claim = () => queue.claim({ workerId: 'worker-1', leaseMs: 60_000 });
+
+  it('carries on when the server ends a connection idle in its pool, rather than crashing the process (issue #169)', async () => {
+    await claim();
+    expect(await endIdleConnections(db)).toBeGreaterThan(0);
+    await expect(claim()).resolves.toBeUndefined();
+  });
 
   it("hands a tenant's work to a worker, once", async () => {
     await enqueue(a);
