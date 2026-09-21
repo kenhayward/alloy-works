@@ -26,9 +26,6 @@ function useHash(): string {
   return hash;
 }
 
-/** Home's addresses, under which the scaffolding's panel still sits until Administration takes it. */
-const HOME = new Set(['', '#', '#/']);
-
 export function App({
   bridge = resolveBridge(),
   environment = <Environment />,
@@ -49,20 +46,22 @@ export function App({
 
   return (
     <>
-      <Header module={moduleOf(hash)} />
-      <main className={styles['page']}>
-        {workspace}
-        {HOME.has(hash) && (
-          <aside className={styles['scaffolding']}>
+      {/* The scaffolding's environment panel and the delivery line live in Administration's About
+          (interface slice 12), off every page. */}
+      <Header
+        module={moduleOf(hash)}
+        about={
+          <div className={styles['scaffolding']}>
             {environment}
             <p>
               {platform === null
                 ? 'Checking which delivery this is...'
                 : `Running as ${platform.delivery} on ${platform.runtime}`}
             </p>
-          </aside>
-        )}
-      </main>
+          </div>
+        }
+      />
+      <main className={styles['page']}>{workspace}</main>
     </>
   );
 }

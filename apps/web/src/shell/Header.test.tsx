@@ -115,6 +115,20 @@ describe('the header band', () => {
     expect(chip).toHaveFocus();
   });
 
+  it('opens Administration from the account chip, and closes it', async () => {
+    render(
+      <Header module="Components" fetch={serviceThat(signedIn)} about={<p>the scaffolding</p>} />,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Administration' }));
+    expect(screen.getByRole('dialog', { name: 'Administration' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^About/ }));
+    expect(screen.getByText('the scaffolding')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('offers no Theme while there is one theme', async () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 

@@ -1,4 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App.js';
@@ -12,12 +13,27 @@ const desktopBridge: PlatformBridge = {
 const noPanel = <p>the environment</p>;
 const noWorkspace = <p>the workspace</p>;
 
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
 /** Nobody is signed in, as far as the header band asks. */
-const signedOut = () =>
-  new Response('{"code":"unauthenticated"}', {
-    status: 401,
-    headers: { 'content-type': 'application/json' },
-  });
+const signedOut = () => json(401, { code: 'unauthenticated' });
+
+/** Ada is signed in, in Development, and every listing is empty. */
+const signedIn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+  const request = input instanceof Request ? input : new Request(String(input), init);
+  const path = new URL(request.url, 'http://app.test').pathname;
+  if (path === '/v1/me') return json(200, { id: 'p1', displayName: 'Ada', email: null });
+  if (path === '/v1/tenant') return json(200, { name: 'Development' });
+  return json(200, { items: [], next: null });
+});
+
+/** Opens Administration's About from the account chip, where the scaffolding's panel now sits. */
+async function openAbout() {
+  await userEvent.click(await screen.findByRole('button', { name: /Ada/ }));
+  await userEvent.click(screen.getByRole('button', { name: 'Administration' }));
+  await userEvent.click(screen.getByRole('button', { name: /^About/ }));
+}
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -33,7 +49,7 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('shows the header band, and the workspace and the environment under it', async () => {
+  it('shows the header band, and the workspace under it', async () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
     const band = screen.getByRole('banner');
@@ -42,59 +58,53 @@ describe('App', () => {
     expect(within(band).queryByText('Components')).not.toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(within(main).getByText('the workspace')).toBeInTheDocument();
-    expect(within(main).getByText('the environment')).toBeInTheDocument();
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 
-  it('shows the environment under Home only, not on a list or a document', async () => {
+  it("keeps the environment panel off every page, for Administration's About", async () => {
+    vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
-    expect(screen.getByText('the environment')).toBeInTheDocument();
+    expect(screen.queryByText('the environment')).not.toBeInTheDocument();
 
     act(() => {
       window.location.hash = '#/documents';
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
-
-    expect(screen.queryByText('the environment')).not.toBeInTheDocument();
     expect(within(screen.getByRole('banner')).getByText('Documents')).toBeInTheDocument();
-
-    act(() => {
-      window.location.hash = '#/components';
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
-    expect(within(screen.getByRole('banner')).getByText('Components')).toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+
+    await openAbout();
+    expect(
+      within(screen.getByRole('dialog', { name: 'Administration' })).getByText('the environment'),
+    ).toBeInTheDocument();
   });
 
-  it('names the delivery it is running under', async () => {
+  it('names the delivery it is running under, in About', async () => {
+    vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
+    await openAbout();
     expect(await screen.findByText(/desktop/i)).toBeInTheDocument();
     expect(screen.getByText(/Electron 44\.3\.0/)).toBeInTheDocument();
   });
 
-  it('shows the environment beside it, asking the service where it stands', async () => {
+  it('shows the environment panel in About, asking the service where it stands', async () => {
     // The panel's own behaviour is Environment.test.tsx's business; what is proved here is that
     // the page renders it, which is the only reason a person sees it at all.
-    const asked = vi.fn(
-      async () =>
-        new Response('{"code":"unauthenticated"}', {
-          status: 401,
-          headers: { 'content-type': 'application/json' },
-        }),
-    );
-    vi.stubGlobal('fetch', asked);
+    vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} workspace={noWorkspace} />);
 
+    await openAbout();
     expect(await screen.findByRole('heading', { name: 'Environment' })).toBeInTheDocument();
-    expect(asked).toHaveBeenCalled();
+    expect(signedIn).toHaveBeenCalled();
   });
 
-  it('says so while the bridge has not answered yet', () => {
+  it('says so while the bridge has not answered yet', async () => {
+    vi.stubGlobal('fetch', signedIn);
     const pending: PlatformBridge = { getPlatformInfo: () => new Promise(() => {}) };
     render(<App bridge={pending} environment={noPanel} workspace={noWorkspace} />);
 
+    await openAbout();
     expect(screen.getByText(/checking/i)).toBeInTheDocument();
   });
 });

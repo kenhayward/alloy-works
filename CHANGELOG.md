@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.46.0 - 2026-09-21 (PR #187)
+
+### Added
+
+- **Administration.** Open it from your account chip. It is a dialog with a section for each part
+  of the environment the service can show today:
+  - its name and address;
+  - its spaces, and where you may create;
+  - its people, and the invitations still waiting;
+  - its roles, with what each holds;
+  - About, which says which version this is.
+
+  Where you may not manage the environment, the section says so and the rest still show.
+
+### Changed
+
+- The sample panel and the line naming the delivery have moved from Home into About.
+
 ## 0.45.0 - 2026-09-21 (PR #186)
 
 ### Added

@@ -1,6 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { Administration } from '../admin/Administration.js';
 import { THEMES } from '../theme/themes.js';
 import styles from './Header.module.css';
 import type { ModuleName } from './moduleOf.js';
@@ -36,6 +37,8 @@ export interface HeaderProps {
   readonly fetch?: typeof fetch;
   /** After the session has ended; the page reloads, signed out, unless a test says otherwise. */
   readonly onSignedOut?: () => void;
+  /** What Administration's About holds beside the version. */
+  readonly about?: React.ReactNode;
 }
 
 /**
@@ -96,6 +99,7 @@ export function Header({
   module,
   fetch: given,
   onSignedOut = () => window.location.reload(),
+  about = null,
 }: HeaderProps) {
   const origin = window.location.origin;
   const client = useMemo(
@@ -104,6 +108,7 @@ export function Header({
   );
   const [environment, setEnvironment] = useState<string | undefined>();
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
+  const [administering, setAdministering] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -190,6 +195,18 @@ export function Header({
         >
           {(close) => (
             <ul className={styles['items']}>
+              <li>
+                <button
+                  type="button"
+                  className={styles['item']}
+                  onClick={() => {
+                    close();
+                    setAdministering(true);
+                  }}
+                >
+                  Administration
+                </button>
+              </li>
               {THEMES.length > 1 && (
                 <li>
                   <button type="button" className={styles['item']} onClick={close}>
@@ -212,6 +229,9 @@ export function Header({
             </ul>
           )}
         </Menu>
+      )}
+      {administering && (
+        <Administration client={client} about={about} onClose={() => setAdministering(false)} />
       )}
     </header>
   );
