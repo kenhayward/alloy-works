@@ -263,7 +263,7 @@ describe('the publishing regression corpus', () => {
     expect(probed.length).toBeGreaterThan(20);
     const text = probed.map((codePoint) => `a${String.fromCodePoint(codePoint)}b`).join('\n');
     const input = holding('x');
-    const [[node, document]] = [...input.occurrences.entries()];
+    const [node, document] = [...input.occurrences.entries()][0]!;
     const made = assemble({
       ...input,
       occurrences: new Map([
