@@ -1,7 +1,7 @@
 // packages/db/src/components.test.ts
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { listReadableComponents } from './components.js';
+import { countReadableComponents, listReadableComponents } from './components.js';
 import { seedDevelopmentContent } from './dev-content.js';
 import { grant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
@@ -117,7 +117,7 @@ describe('listing the components a principal may read', () => {
       listReadableComponents(trx, ada, { limit: 50 }),
     );
     expect(page?.items.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
-    expect(page?.items.find((item) => item.id === seeded)).toEqual({
+    expect(page?.items.find((item) => item.id === seeded)).toMatchObject({
       id: seeded,
       title: 'Install the printer',
       space: { id: expect.any(String), name: 'General' },
@@ -125,6 +125,65 @@ describe('listing the components a principal may read', () => {
       version: 1,
     });
     expect(page?.after).toBeNull();
+  });
+
+  it('says of each its component type, its base language, and who changed it last and when', async () => {
+    const page = await service.withTenant(production, (trx) =>
+      listReadableComponents(trx, ada, { limit: 50 }),
+    );
+    const adaName = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('principal')
+        .select(['display_name', 'email'])
+        .where('id', '=', ada)
+        .executeTakeFirstOrThrow(),
+    );
+    const one = page?.items.find((item) => item.id === others[1]);
+    expect(one).toMatchObject({
+      type: 'Topic',
+      language: 'en-GB',
+      changedBy: { id: ada, name: adaName.display_name ?? adaName.email },
+    });
+    expect(one?.changedAt).toBeInstanceOf(Date);
+    expect(Date.now() - one!.changedAt.getTime()).toBeLessThan(10 * 60_000);
+  });
+
+  it('narrows to the spaces asked for, and to nothing for a space it may not read', async () => {
+    const quality = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('artifact')
+        .select('space_id')
+        .where('id', '=', hidden)
+        .executeTakeFirstOrThrow(),
+    );
+    const general = await service.withTenant(production, (trx) =>
+      trx
+        .selectFrom('artifact')
+        .select('space_id')
+        .where('id', '=', seeded)
+        .executeTakeFirstOrThrow(),
+    );
+    const inGeneral = await service.withTenant(production, (trx) =>
+      listReadableComponents(trx, ada, { limit: 50 }, { spaces: [general.space_id!] }),
+    );
+    expect(inGeneral?.items.map((item) => item.id).sort()).toEqual([seeded, ...others].sort());
+    const inQuality = await service.withTenant(production, (trx) =>
+      listReadableComponents(trx, grace, { limit: 50 }, { spaces: [quality.space_id!] }),
+    );
+    expect(inQuality?.items).toEqual([]);
+  });
+
+  it('counts what a principal may read in each space, leaving out what is refused it', async () => {
+    const forAda = await service.withTenant(production, (trx) => countReadableComponents(trx, ada));
+    const forGrace = await service.withTenant(production, (trx) =>
+      countReadableComponents(trx, grace),
+    );
+    expect(forAda?.find((space) => space.name === 'General')?.count).toBe(4);
+    expect(forGrace).toEqual([{ id: expect.any(String), name: 'General', count: 3 }]);
+    const nobody = await service.withTenant(production, (trx) =>
+      countReadableComponents(trx, '00000000-0000-4000-8000-000000000000'),
+    );
+    expect(nobody).toBeUndefined();
   });
 
   it('leaves out what a grant on the component itself refuses, and every space not granted', async () => {

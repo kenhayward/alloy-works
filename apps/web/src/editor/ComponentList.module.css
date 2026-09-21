@@ -1,0 +1,110 @@
+/* The components list, drawn in docs/interface/screens/Components.html. */
+.filterHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 var(--space-28) var(--space-10) 0;
+}
+
+.overline {
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.clear {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--size-label);
+}
+
+.clear:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.facet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.facet legend {
+  margin-bottom: var(--space-6);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-4);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  background: var(--accent-weak);
+}
+
+.optionName {
+  flex: 1;
+}
+
+.count {
+  color: var(--muted);
+  font-size: var(--size-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  margin: var(--space-12) 0 var(--space-10);
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+
+.scope {
+  padding-inline-start: var(--space-12);
+  border-inline-start: 1px solid var(--border);
+}
+
+.table {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.title {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.code {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-code);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-12);
+}
