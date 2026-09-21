@@ -30,12 +30,28 @@ const SPACES = [
 ];
 
 /** The service: both components unfiltered, and only a space's own when the filter names it. */
-function service() {
+function service({ creatable = true } = {}) {
   const asked: string[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
-    if (url.pathname === '/v1/spaces') return json(200, { items: [] });
+    if (url.pathname === '/v1/spaces') {
+      return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: creatable }] });
+    }
+    if (url.pathname === `/v1/spaces/${GENERAL}/component-types`) {
+      return json(200, { items: [{ id: 't1', name: 'Topic', isDefault: true }] });
+    }
+    if (url.pathname === '/v1/access') {
+      // The reader administers the printer, and only reads the toner.
+      const target = url.searchParams.get('target') ?? '';
+      return json(200, {
+        target,
+        permissions: [
+          { permission: 'read', allowed: true },
+          { permission: 'administer', allowed: target === `artifact:${PRINTER}` },
+        ],
+      });
+    }
     if (url.pathname !== '/v1/components') return json(404, {});
     const spaces = url.searchParams.get('spaces');
     asked.push(spaces ?? 'all');
@@ -59,7 +75,8 @@ describe('the components list', () => {
     const link = await screen.findByRole('link', { name: 'Replace the toner' });
     expect(link).toHaveAttribute('href', `#/components/${TONER}`);
     const cells = within(link.closest('tr')!).getAllByRole('cell');
-    expect(cells.map((cell) => cell.textContent)).toEqual([
+    // The eighth cell holds the row menu.
+    expect(cells.slice(0, 7).map((cell) => cell.textContent)).toEqual([
       'Replace the toner',
       'Topic',
       'Training',
@@ -84,10 +101,77 @@ describe('the components list', () => {
     expect(screen.getByRole('link', { name: 'Install the printer' })).toBeInTheDocument();
     expect(asked).toContain(GENERAL);
     expect(screen.getByText(/Space: General/)).toBeInTheDocument();
+    expect(screen.getByText(/^1 component you may read\. Showing 1 to 1\./)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /General/ })).not.toBeChecked();
+  });
+
+  it('opens New component as a dialog from the primary button', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'New component' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'New component' });
+    expect(await within(dialog).findByRole('combobox', { name: 'Where' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Create' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('offers no New component to a reader with nowhere to create one', async () => {
+    const { client } = service({ creatable: false });
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'New component' })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('offers Open and Copy link in a row menu, and Manage access only where it is allowed', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
+    expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute(
+      'href',
+      `#/components/${PRINTER}`,
+    );
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
+      'href',
+      `#/components/${PRINTER}/access`,
+    );
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('link', { name: 'Open' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actions for Install the printer' })).toHaveFocus();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
+    expect(screen.getByRole('link', { name: 'Open' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('link', { name: 'Manage access' })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("copies a component's link, and says so", async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+
+    expect(await screen.findByText('Copied the link to Replace the toner.')).toBeInTheDocument();
+    expect(await navigator.clipboard.readText()).toBe(
+      `${window.location.origin}${window.location.pathname}#/components/${TONER}`,
+    );
   });
 
   it("says You for the reader's own change", async () => {
@@ -96,6 +180,6 @@ describe('the components list', () => {
 
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     const cells = within(link.closest('tr')!).getAllByRole('cell');
-    expect(cells.at(-1)).toHaveTextContent('You');
+    expect(cells[6]).toHaveTextContent('You');
   });
 });
