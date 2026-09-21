@@ -206,6 +206,7 @@ export {
   readDocument,
   type CreateDocumentAnswer,
   type DocumentSummary,
+  type PublishingState,
   type NewDocument,
   type OutlineAnswer,
   type StoredDocument,

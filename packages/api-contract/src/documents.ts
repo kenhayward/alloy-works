@@ -39,6 +39,17 @@ export const DocumentList = z.object({
       title: z.string(),
       space: z.object({ id: z.string(), name: z.string() }),
       version: z.string().describe('`revision.version` of the latest version'),
+      changedAt: z.string().describe('When its latest version was made'),
+      sections: z.number().int().describe('The sections in its latest outline, at every depth'),
+      components: z
+        .number()
+        .int()
+        .describe('The component references in its latest outline, at every depth'),
+      publishing: z
+        .enum(['published', 'changedSince', 'neverPublished'])
+        .describe(
+          'Whether the latest publication the caller may read is of the latest version, an earlier one, or there is none they may read',
+        ),
     }),
   ),
 });

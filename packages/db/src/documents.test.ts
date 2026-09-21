@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  defaultNumberingScheme,
   OUTLINE_SCHEMA_VERSION,
   type OutlineDocument,
   type OutlineOperation,
@@ -17,6 +18,7 @@ import {
   type OutlineAnswer,
 } from './documents.js';
 import { grant } from './grants.js';
+import { recordPublication, requestPublication } from './publishing.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -709,7 +711,7 @@ describe('a document in the version chain, and its outline edited a version at a
     const adas = await listed(ada);
     expect(adas?.items.map((item) => item.id)).toContain(inGeneral.artifactId);
     expect(adas?.items.map((item) => item.id)).not.toContain(inQuality.artifactId);
-    expect(adas?.items.find((item) => item.id === inGeneral.artifactId)).toEqual({
+    expect(adas?.items.find((item) => item.id === inGeneral.artifactId)).toMatchObject({
       id: inGeneral.artifactId,
       title: 'The dosing report',
       space: { id: general, name: 'General' },
@@ -737,6 +739,78 @@ describe('a document in the version chain, and its outline edited a version at a
     await expect(listed(ada, development)).resolves.toBeUndefined();
     await expect(listed(ivy, development)).resolves.toEqual({ items: [] });
   });
+  it('says of each document when it changed and how many sections and component references its outline holds', async () => {
+    const first = await created(general, 'The counted report');
+    const component = await service.withTenant(production, (trx) =>
+      createComponent(trx, {
+        spaceId: general,
+        title: 'Install the printer',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      }),
+    );
+    if (component.answer !== 'created') throw new Error('Expected a component');
+    const withMethod = await recorded(first, section('Method'));
+    const withResults = await recorded(withMethod, section('Results', null, 1));
+    const method = (withResults.content as { nodes: { id: string }[] }).nodes[0]!.id;
+    // A reference nested inside a section, so the count reaches below the top level.
+    const nested = await recorded(withResults, {
+      operation: 'insert',
+      parent: method,
+      position: 0,
+      node: {
+        type: 'reference',
+        component: component.version.artifactId,
+        mode: { kind: 'latest' },
+      },
+    } as OutlineOperation);
+
+    const listed = await service.withTenant(production, (trx) => listReadableDocuments(trx, ada));
+    const counted = listed?.items.find((item) => item.id === first.artifactId);
+    expect(counted).toMatchObject({ sections: 2, components: 1 });
+    expect(counted?.changedAt.getTime()).toBe(nested.createdAt.getTime());
+  });
+
+  it("says whether the reader's latest publication of a document is of its latest version, an earlier one, or none", async () => {
+    const never = await created(general, 'The unpublished report');
+    const current = await created(general, 'The current report');
+    const behind = await created(general, 'The report changed since');
+    await service.withTenant(production, async (trx) => {
+      for (const version of [current, behind]) {
+        const asked = await requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats: ['pdf'],
+          requester: ada,
+        });
+        if (asked.answer !== 'requested') throw new Error(asked.answer);
+        const made = await recordPublication(trx, {
+          requestId: asked.request.id,
+          engineVersion: '0.15.1',
+          templateVersion: 5,
+          pipelineVersion: '5',
+          fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+          dataSha256: 'b'.repeat(64),
+          numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+          output: {
+            key: `${production.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1000,
+          },
+        });
+        if (!made) throw new Error('Expected a publication');
+      }
+    });
+    await recorded(behind, section('Added after it was published'));
+
+    const listed = await service.withTenant(production, (trx) => listReadableDocuments(trx, ada));
+    const stateOf = (id: string) => listed?.items.find((item) => item.id === id)?.publishing;
+    expect(stateOf(never.artifactId)).toBe('neverPublished');
+    expect(stateOf(current.artifactId)).toBe('published');
+    expect(stateOf(behind.artifactId)).toBe('changedSince');
+  });
+
   it('leaves out a document a grant on it refuses, and lists one a grant on it allows outside every granted space', async () => {
     const denied = await created(general, 'The withdrawn report');
     const allowed = await created(general, 'The shared report');

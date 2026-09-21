@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.41.0 - 2026-09-21 (PR #178)
+
+### Added
+
+- **The documents list is a table.**
+  - Each document is a row: its title, its space, its version, how many sections and component
+    references its outline holds, whether it is published, and when it last changed.
+  - Publishing says Published when the latest publication you may read is of the latest version,
+    Changed since when the document has moved on, and Never published when you may read none.
+  - A filter pane counts the documents by space and by publishing state. Tick to narrow, Clear to
+    see everything again.
+  - New document is a blue button that opens the same form in a dialog, offered only where you may
+    create one.
+
+### Changed
+
+- The service's list of documents now also gives each document's last change, its outline's
+  section and component counts, and its publishing state.
+
 ## 0.40.3 - 2026-09-21 (PR #180)
 
 ### Fixed
