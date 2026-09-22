@@ -1,0 +1,45 @@
+/* The formatting toolbar: one row of 26px icon buttons, marks | lists | blocks. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--text);
+}
+
+.button:hover {
+  border-color: var(--input-border);
+  background: var(--accent-weak);
+}
+
+.button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+.button[aria-disabled='true'] {
+  color: var(--muted);
+  cursor: default;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  margin-inline: var(--space-4);
+  background: var(--border);
+}

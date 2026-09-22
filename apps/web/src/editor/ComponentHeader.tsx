@@ -1,7 +1,8 @@
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { titleAccepted, type ComponentHeader as Header } from '@alloy-works/editor';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import styles from './ComponentHeader.module.css';
 import { DirectionSelect } from './DirectionSelect.js';
 
 /** The same tag rule the model applies (see `NewComponent.tsx`, which reuses it for the same reason). */
@@ -28,11 +29,64 @@ export interface ComponentHeaderProps {
    */
   readonly onChange: <K extends keyof Header>(member: K, value: Header[K]) => Header | null;
   readonly onRefused: (message: string) => void;
+  /** What stands between the title and the chips on the strip: the version and the space. */
+  readonly children?: ReactNode;
+}
+
+/** A direction as a chip's name says it. */
+const SAID = { ltr: 'left to right', rtl: 'right to left' } as const;
+
+/**
+ * A chip on the title strip showing a value, and the popover it opens holding the field that edits
+ * it (interface slice 13). Open on click, with the focus on the field; closed by Escape (the focus
+ * back on the chip) or by the focus leaving both, the way the header band's menus close.
+ */
+function Chip({ name, text, children }: { name: string; text: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const chip = useRef<HTMLButtonElement>(null);
+  const popover = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) popover.current?.querySelector<HTMLElement>('input, select')?.focus();
+  }, [open]);
+  return (
+    <span
+      className={styles['holder']}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && open) {
+          event.stopPropagation();
+          setOpen(false);
+          chip.current?.focus();
+        }
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        ref={chip}
+        type="button"
+        className={styles['chip']}
+        aria-label={name}
+        title={name}
+        aria-expanded={open}
+        onClick={() => setOpen((was) => !was)}
+      >
+        {text}
+      </button>
+      {open && (
+        <div ref={popover} className={styles['popover']} role="group" aria-label={name}>
+          {children}
+        </div>
+      )}
+    </span>
+  );
 }
 
 /**
- * The component's title, base language and base direction, above the surface
+ * The component's title, base language and base direction, on the editor's title strip
  * (component-editor.md, "Creating a component": each is edited afterwards in the component header).
+ * Since interface slice 13 the title is one borderless field, said once, and the language and
+ * direction are chips whose popovers hold their fields.
  * A fragment, not its own `<header>` (S24): `ComponentEditor` already renders one, holding the
  * `Version … in …` paragraph beside the title, and this replaces only the heading inside it. Nesting
  * a second `<header>` there, or a second `id="component-title"`, would strand that paragraph and break
@@ -81,7 +135,13 @@ export interface ComponentHeaderProps {
  * input would then survive a version cut and the surface going read-only, sitting beside a heading
  * showing the real title with nothing in the page able to correct it.
  */
-export function ComponentHeader({ header, editable, onChange, onRefused }: ComponentHeaderProps) {
+export function ComponentHeader({
+  header,
+  editable,
+  onChange,
+  onRefused,
+  children,
+}: ComponentHeaderProps) {
   const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
   const [tag, setTag] = useState<Field>({ typed: header.language, inModel: header.language });
 
@@ -97,75 +157,89 @@ export function ComponentHeader({ header, editable, onChange, onRefused }: Compo
 
   return (
     <>
-      <h2 id="component-title">{header.title}</h2>
-      <label>
-        Title
-        <input
-          value={title.typed}
-          disabled={!editable}
-          onChange={(event) => {
-            const value = event.target.value;
-            // Only a title the model would take is offered to it; a field on its way to a new title -
-            // cleared, or nothing but spaces yet - is shown as typed and leaves the document alone,
-            // exactly as an unfinished language tag does, so `inModel` stays what the document holds.
-            // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
-            const answered = titleAccepted(value) ? onChange('title', value) : null;
-            setTitle((previous) => ({
-              typed: value,
-              inModel: answered?.title ?? previous.inModel,
-            }));
-          }}
-          onBlur={() => {
-            // Reverting while not editable is never wrong - a field that cannot be edited should show
-            // what the document holds, and for a reader it already does, so this never fires for one.
-            // Only the notice is read-only-safe, as the language field's is (finding H): reporting a
-            // refusal while the surface just went read-only under the author would write over the
-            // notice that explained why. Clearing never reaches the document, so `header.title` never
-            // changes and the comparison above never resyncs this field on its own: left un-reverted
-            // here, an empty input would stay empty through a version cut and through the surface going
-            // read-only, sitting beside a heading that still shows the real title with nothing left in
-            // the page able to correct it (final re-review).
-            if (titleAccepted(title.typed)) return;
-            if (editable) onRefused('A component needs a title.');
-            setTitle({ typed: header.title, inModel: header.title });
-          }}
-        />
-      </label>
-      <label>
-        Language
-        <input
-          value={tag.typed}
-          disabled={!editable}
-          onChange={(event) => {
-            const value = event.target.value;
-            // Only a complete tag is offered to the model; what is on the way there is shown as typed
-            // and leaves the document alone, so `inModel` stays what the document still holds.
-            const answered = language.safeParse(value).success ? onChange('language', value) : null;
-            setTag((previous) => ({
-              typed: value,
-              inModel: answered?.language ?? previous.inModel,
-            }));
-          }}
-          onBlur={() => {
-            // Disabling a focused field blurs it in a real browser, and the header goes read-only
-            // exactly when the surface does - the session lost, a version being cut. That blur is the
-            // page changing under the author, not the author leaving an unfinished tag behind, and
-            // reporting a refusal there writes over the notice that just said what happened.
-            if (!editable) return;
-            if (!language.safeParse(tag.typed).success) {
-              onRefused('A language tag looks like en-GB.');
-            }
-          }}
-        />
-      </label>
-      <label>
-        Direction
-        <DirectionSelect
-          value={header.direction}
-          disabled={!editable}
-          onChange={(direction) => onChange('direction', direction)}
-        />
-      </label>
+      {/* The heading names the article and keeps the component in the page's outline; the field
+          beside it is the one title a sighted author sees, so the heading is visually hidden. */}
+      <h2 id="component-title" className={styles['hidden']}>
+        {header.title}
+      </h2>
+      <input
+        className={styles['title']}
+        aria-label="Title"
+        title="Click to rename"
+        value={title.typed}
+        disabled={!editable}
+        onChange={(event) => {
+          const value = event.target.value;
+          // Only a title the model would take is offered to it; a field on its way to a new title -
+          // cleared, or nothing but spaces yet - is shown as typed and leaves the document alone,
+          // exactly as an unfinished language tag does, so `inModel` stays what the document holds.
+          // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
+          const answered = titleAccepted(value) ? onChange('title', value) : null;
+          setTitle((previous) => ({
+            typed: value,
+            inModel: answered?.title ?? previous.inModel,
+          }));
+        }}
+        onBlur={() => {
+          // Reverting while not editable is never wrong - a field that cannot be edited should show
+          // what the document holds, and for a reader it already does, so this never fires for one.
+          // Only the notice is read-only-safe, as the language field's is (finding H): reporting a
+          // refusal while the surface just went read-only under the author would write over the
+          // notice that explained why. Clearing never reaches the document, so `header.title` never
+          // changes and the comparison above never resyncs this field on its own: left un-reverted
+          // here, an empty input would stay empty through a version cut and through the surface going
+          // read-only, sitting beside a heading that still shows the real title with nothing left in
+          // the page able to correct it (final re-review).
+          if (titleAccepted(title.typed)) return;
+          if (editable) onRefused('A component needs a title.');
+          setTitle({ typed: header.title, inModel: header.title });
+        }}
+      />
+      {children}
+      <Chip name={`Base language: ${header.language}`} text={header.language}>
+        <label>
+          Language
+          <input
+            value={tag.typed}
+            disabled={!editable}
+            onChange={(event) => {
+              const value = event.target.value;
+              // Only a complete tag is offered to the model; what is on the way there is shown as typed
+              // and leaves the document alone, so `inModel` stays what the document still holds.
+              const answered = language.safeParse(value).success
+                ? onChange('language', value)
+                : null;
+              setTag((previous) => ({
+                typed: value,
+                inModel: answered?.language ?? previous.inModel,
+              }));
+            }}
+            onBlur={() => {
+              // Disabling a focused field blurs it in a real browser, and the header goes read-only
+              // exactly when the surface does - the session lost, a version being cut. That blur is the
+              // page changing under the author, not the author leaving an unfinished tag behind, and
+              // reporting a refusal there writes over the notice that just said what happened.
+              if (!editable) return;
+              if (!language.safeParse(tag.typed).success) {
+                onRefused('A language tag looks like en-GB.');
+              }
+            }}
+          />
+        </label>
+      </Chip>
+      <Chip
+        name={`Base direction: ${SAID[header.direction]}`}
+        text={header.direction.toUpperCase()}
+      >
+        <label>
+          Direction
+          <DirectionSelect
+            value={header.direction}
+            disabled={!editable}
+            onChange={(direction) => onChange('direction', direction)}
+          />
+        </label>
+      </Chip>
     </>
   );
 }

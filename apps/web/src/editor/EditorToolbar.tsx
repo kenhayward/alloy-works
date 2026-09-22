@@ -8,9 +8,15 @@ import {
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
-import { useRef, useState, type KeyboardEvent, type Ref } from 'react';
+import { Fragment, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+
+import { Icon } from './Icon.js';
+import styles from './EditorToolbar.module.css';
 
 import { pressCommand, type AskForValue, type MarkCommand } from './press.js';
+
+/** The commands a divider follows: the last mark, and the last list action. */
+const GROUP_ENDS = new Set(['Language', 'Lift item']);
 
 /**
  * Which kind of list each of the three list buttons reports itself pressed inside, as `listAt`
@@ -187,32 +193,41 @@ export function EditorToolbar({
       ref={ref}
       role="toolbar"
       aria-label="Formatting"
+      className={styles['toolbar']}
       // So the region ring has somewhere to land even if the row were ever empty. One button always
       // carries the roving stop today, so this is the fallback and not the usual landing.
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
       {EDITOR_COMMANDS.map((command, index) => (
-        <button
-          // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each
-          // of them is a duplicate React key - a `console.error`, which the console gate turns into
-          // a failure with no obvious cause. The registry's own test proves the labels are unique.
-          key={command.label}
-          type="button"
-          ref={(element) => {
-            buttons.current[index] = element;
-          }}
-          aria-disabled={unavailable(command)}
-          tabIndex={index === tabStop ? 0 : -1}
-          // Spelled out rather than drawn with symbols, for the reason the registry gives: a screen
-          // reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has no glyph for it.
-          title={command.shortcutSaid}
-          {...announces(command)}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => press(command)}
-        >
-          {command.label}
-        </button>
+        // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each of
+        // them is a duplicate React key - a `console.error`, which the console gate turns into a
+        // failure with no obvious cause. The registry's own test proves the labels are unique.
+        <Fragment key={command.label}>
+          <button
+            type="button"
+            className={styles['button']}
+            // The registry's label is the only name a screen reader gets: the face is an icon.
+            aria-label={command.label}
+            ref={(element) => {
+              buttons.current[index] = element;
+            }}
+            aria-disabled={unavailable(command)}
+            tabIndex={index === tabStop ? 0 : -1}
+            // The shortcut spelled out rather than drawn with symbols, for the reason the registry
+            // gives: a screen reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has
+            // no glyph for it.
+            title={`${command.label} (${command.shortcutSaid})`}
+            {...announces(command)}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => press(command)}
+          >
+            <Icon name={command.label} />
+          </button>
+          {GROUP_ENDS.has(command.label) && (
+            <span className={styles['divider']} data-divider aria-hidden="true" />
+          )}
+        </Fragment>
       ))}
     </div>
   );

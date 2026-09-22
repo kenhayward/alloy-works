@@ -1,0 +1,46 @@
+/* The save chip on the editor's title strip: three words, a dot, and the colours of each. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 22px;
+  padding: 1px var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip[data-dot-state='notSaved'] {
+  background: var(--diff-del-bg);
+  color: var(--diff-del-fg);
+}
+
+.chip[data-dot-state='saving'] {
+  background: var(--chip-bg);
+  color: var(--muted);
+}
+
+.chip[data-dot-state='saved'] {
+  background: var(--state-published-bg);
+  color: var(--state-published-fg);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+}
+
+.dot[data-dot='notSaved'] {
+  background: var(--danger);
+}
+
+.dot[data-dot='saving'] {
+  background: var(--accent);
+}
+
+.dot[data-dot='saved'] {
+  background: var(--ok);
+}

@@ -4,7 +4,7 @@ import {
   type OutlineView,
   type OutlineViewNode,
 } from '@alloy-works/domain';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -46,6 +46,23 @@ const outline: OutlineView = {
   ],
 };
 
+const PRINTER_NODE = 'cccccccccccccccccccccccccc';
+
+const printerText = {
+  schemaVersion: 1,
+  title: 'Install the printer',
+  language: 'en-GB',
+  direction: 'ltr',
+  content: [
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
+    },
+  ],
+};
+
 describe("the document's text", () => {
   it('sets out the document in reading order: numbered sections, and each component reference under its number with a link to open it', () => {
     render(
@@ -73,57 +90,106 @@ describe("the document's text", () => {
     expect(within(text).getAllByRole('link')).toHaveLength(1);
   });
 
-  it("shows each component's text in its card, and a component's editor in place of its text when asked", async () => {
-    const printerText = {
-      schemaVersion: 1,
-      title: 'Install the printer',
-      language: 'en-GB',
-      direction: 'ltr',
-      content: [
-        {
-          type: 'paragraph',
-          id: 'b1',
-          style: 'body',
-          content: [{ type: 'text', value: 'Unbox the printer.', marks: [] }],
-        },
-      ],
-    };
-    const texts = new Map<string, unknown>([['cccccccccccccccccccccccccc', printerText]]);
+  it("shows each component's text in its card, and opens its editor in place when the text is clicked", async () => {
+    const texts = new Map<string, unknown>([[PRINTER_NODE, printerText]]);
     const asked: (string | null)[] = [];
+    const places: { number?: string | undefined; openAt?: number | undefined }[] = [];
     const names = new Map([[PRINTER, 'Install the printer']]);
+    const shown = (editing: string | null) => (
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={names}
+        texts={texts}
+        editing={editing}
+        onEdit={(node) => asked.push(node)}
+        editor={(component, place) => {
+          places.push({ number: place.number, openAt: place.openAt });
+          return (
+            <button type="button" onClick={place.onDone}>
+              the editor for {component}
+            </button>
+          );
+        }}
+      />
+    );
+    const { rerender } = render(shown(null));
+
+    // No Edit button: the text itself is the way in (interface slice 13).
+    expect(screen.queryByRole('button', { name: /^Edit / })).toBeNull();
+    await userEvent.click(screen.getByText('Unbox the printer.'));
+    expect(asked).toEqual([PRINTER_NODE]);
+
+    rerender(shown(PRINTER_NODE));
+    expect(screen.getByText(`the editor for ${PRINTER}`)).toBeInTheDocument();
+    expect(screen.queryByText('Unbox the printer.')).not.toBeInTheDocument();
+    // The editor's strip carries the number and the title, so the card's own head is not shown.
+    expect(screen.queryByRole('link', { name: 'Open Install the printer' })).toBeNull();
+    expect(places.at(-1)?.number).toBe('2.1');
+    expect(typeof places.at(-1)?.openAt).toBe('number');
+
+    await userEvent.click(screen.getByRole('button', { name: `the editor for ${PRINTER}` }));
+    expect(asked.at(-1)).toBeNull();
+  });
+
+  it('opens a card from the keyboard, with Enter on its text, the caret at the start', async () => {
+    const texts = new Map<string, unknown>([[PRINTER_NODE, printerText]]);
+    const asked: (string | null)[] = [];
+    let openAt: number | undefined;
     const { rerender } = render(
       <DocumentText
         outline={outline}
         scheme={defaultLayout.scheme}
-        names={names}
+        names={null}
         texts={texts}
         editing={null}
         onEdit={(node) => asked.push(node)}
-        editor={(component) => <p>the editor for {component}</p>}
+        editor={() => null}
       />,
     );
-
-    expect(screen.getByText('Unbox the printer.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Edit Install the printer' }));
-    expect(asked).toEqual(['cccccccccccccccccccccccccc']);
-    // Nothing to edit where the component is withheld.
-    expect(screen.getAllByRole('button', { name: /^Edit / })).toHaveLength(1);
-
+    const body = screen.getByText('Unbox the printer.').closest('[tabindex="0"]') as HTMLElement;
+    body.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(asked).toEqual([PRINTER_NODE]);
     rerender(
       <DocumentText
         outline={outline}
         scheme={defaultLayout.scheme}
-        names={names}
+        names={null}
         texts={texts}
-        editing="cccccccccccccccccccccccccc"
+        editing={PRINTER_NODE}
         onEdit={(node) => asked.push(node)}
-        editor={(component) => <p>the editor for {component}</p>}
+        editor={(_component, place) => {
+          openAt = place.openAt;
+          return null;
+        }}
       />,
     );
-    expect(screen.getByText(`the editor for ${PRINTER}`)).toBeInTheDocument();
-    expect(screen.queryByText('Unbox the printer.')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Close Install the printer' }));
-    expect(asked.at(-1)).toBeNull();
+    expect(openAt).toBe(0);
+  });
+
+  it('opens nothing where the click ended a selection of the text', () => {
+    const texts = new Map<string, unknown>([[PRINTER_NODE, printerText]]);
+    const asked: (string | null)[] = [];
+    render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={null}
+        texts={texts}
+        editing={null}
+        onEdit={(node) => asked.push(node)}
+        editor={() => null}
+      />,
+    );
+    const words = screen.getByText('Unbox the printer.');
+    const range = document.createRange();
+    range.selectNodeContents(words);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    fireEvent.click(words);
+    expect(asked).toEqual([]);
+    window.getSelection()!.removeAllRanges();
   });
 
   it('numbers nothing when the scheme could not be read', () => {
