@@ -1591,8 +1591,7 @@ describe('a table, published (tables 2)', () => {
   });
 
   it('refuses a table where there is no layout, since the frozen first shape holds paragraphs alone', () => {
-    const { layout: _, ...withoutLayout } = oneComponent(stored());
-    expect(failuresOf(assemble({ ...withoutLayout, layout: null }))).toEqual([
+    expect(failuresOf(assemble({ ...oneComponent(stored()), layout: null }))).toEqual([
       failed('block_not_publishable', 'table'),
     ]);
   });
