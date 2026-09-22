@@ -13,5 +13,5 @@ export { admissionLimits } from './limits.js';
 
 export type { Receiver } from './reidentify.js';
 
-export { readerEntry } from './report.js';
-export type { AdmissionStage, ReportAction, ReportEntry } from './report.js';
+export { createReport, readerEntry } from './report.js';
+export type { AdmissionStage, ReportAction, ReportCollector, ReportEntry } from './report.js';

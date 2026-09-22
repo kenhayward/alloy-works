@@ -349,8 +349,13 @@ describe('the citations in the committed model', () => {
   // The list tests beside it keep their words and no identifier: the start rule's requirement is
   // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
   // already there, because a citation is kept once per identifier per kind per file.
+  // 228, from 226: editor 7 cites CNT-130 once in packages/readers/src/html.test.ts, whose body
+  // runs hostile HTML through the reader and the pipeline and finds nothing that could run stored,
+  // and CNT-063 once in apps/web/src/editor/ComponentEditor.test.tsx, whose body pastes and reads the
+  // paste report beside the surface. CNT-060, CNT-061 and CNT-062 stay uncited: a paste keeps no
+  // table or footnote, and reads no Markdown.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(226);
+    expect(model.citations).toHaveLength(228);
   });
 
   it('cites no identifier the corpus does not hold', () => {

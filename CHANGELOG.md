@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.52.0 - 2026-09-22 (PR #197)
+
+### Added
+
+- **Copy and paste.** Paste into a component from a web page, Word, Google Docs, plain text or
+  another component, and its paragraphs, lists, quotations, preformatted text and formatting come
+  with it. Pasted text joins the paragraph you paste into, one undo takes a paste back, and a paste
+  into preformatted text keeps every character. A **Paste report** above the text says what was
+  changed or left out: a heading kept as a paragraph, a table kept as its text, an image or an
+  equation left out, a typeface or colour removed, a script or an unsafe link removed. Copying from
+  a component keeps everything the editor holds when you paste it into another. Markdown pastes as
+  plain text, and dragging content in is not available yet.
+
+### Fixed
+
+- A sentence the editor said in the status bar, such as a refused header field, was replaced by
+  **You are editing this component.** again at the next save. The session's own sentences now appear
+  only when they change (#196).
+
 ## 0.51.0 - 2026-09-22 (PR #195)
 
 ### Added

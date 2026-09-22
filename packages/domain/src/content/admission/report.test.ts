@@ -60,6 +60,24 @@ describe('the admission report', () => {
     expect(report.entries).toHaveLength(1);
   });
 
+  it('says in a sentence of its own each thing a reader keeps differently or leaves out', () => {
+    const report = createReport();
+    report.add('read', 'rewritten', 'heading', { count: 2 });
+    report.add('read', 'rewritten', 'table', { count: 1 });
+    report.add('read', 'discarded', 'image', { count: 3 });
+    report.add('read', 'discarded', 'mathematics', { count: 1 });
+    report.add('read', 'discarded', 'rule', { count: 1 });
+    report.add('read', 'discarded', 'control', { count: 4 });
+    expect(report.entries.map((entry) => entry.message)).toEqual([
+      "A heading was kept as a paragraph. A document's headings are its section titles.",
+      'A table was kept as its text, one paragraph for each cell. Tables cannot be pasted yet.',
+      'An image was left out. Images cannot be pasted yet.',
+      'An equation was left out. Equations cannot be pasted yet.',
+      'A horizontal line was left out.',
+      'Invisible control characters were removed.',
+    ]);
+  });
+
   it('writes every message with plain hyphens and no em or en dash', () => {
     const messages = Object.values(reportMessages).flatMap((group) => Object.values(group));
     expect(messages.length).toBeGreaterThan(30);

@@ -1,5 +1,5 @@
 {
-  "name": "@alloy-works/editor",
+  "name": "@alloy-works/readers",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,12 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./style.css": "./style.css"
+    }
   },
   "files": [
-    "dist",
-    "style.css"
+    "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -23,15 +21,7 @@
   },
   "dependencies": {
     "@alloy-works/domain": "workspace:^",
-    "@alloy-works/readers": "workspace:^",
-    "prosemirror-commands": "1.7.2",
-    "prosemirror-history": "1.5.0",
-    "prosemirror-keymap": "1.2.3",
-    "prosemirror-model": "1.25.11",
-    "prosemirror-schema-list": "1.5.1",
-    "prosemirror-state": "1.4.4",
-    "prosemirror-transform": "1.12.1",
-    "prosemirror-view": "1.42.3"
+    "parse5": "8.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",

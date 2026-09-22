@@ -1,5 +1,15 @@
+import type { ReportEntry } from '@alloy-works/domain';
 import type { EditorState, Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
+
+import {
+  pasteInto,
+  PRODUCT_CLIPBOARD_TYPE,
+  productClipboard,
+  readClipboard,
+  type ClipboardSource,
+} from './clipboard.js';
+import { newBlockIdentifier } from './identity.js';
 
 export interface MountOptions {
   readonly state: EditorState;
@@ -9,16 +19,28 @@ export interface MountOptions {
   readonly editable: () => boolean;
   /** Every transaction, before it is applied: the session decides what happens to it. */
   readonly dispatch: (transaction: Transaction, view: EditorView) => void;
-  /** Called instead of inserting anything pasted or dropped, which this slice refuses. */
-  readonly refused: (what: 'paste' | 'drop') => void;
+  /**
+   * After every paste, with what the admission pipeline reported (CNT-063): `ok` when it was placed,
+   * and when it was refused the report's last entry says why. Nothing is placed on a refusal.
+   */
+  readonly pasted: (outcome: {
+    readonly ok: boolean;
+    readonly report: readonly ReportEntry[];
+  }) => void;
+  /** Called instead of inserting anything dropped, which the view still refuses. */
+  readonly refused: (what: 'drop') => void;
+  /** Where a pasted block's and mark's identifiers come from; `newBlockIdentifier` outside tests. */
+  readonly newIdentifier?: () => string;
 }
 
 /**
  * One view over one component (ADR-0023). The surface checks spelling as the author types (CNT-098),
- * carries the component's language and direction, and **takes nothing pasted or dropped**: a paste must
- * reach ProseMirror only through the admission pipeline (component-editor.md, "Identity, by
- * operation"), which is the paste plan's to wire, so until then the view refuses it rather than letting
- * ProseMirror's own clipboard parser put unexamined content into a component.
+ * carries the component's language and direction, and **takes a paste only through the admission
+ * pipeline** (component-editor.md, "Identity, by operation"): the view reads the clipboard itself
+ * rather than letting ProseMirror's own clipboard parser put unexamined content into a component
+ * (`clipboard.ts`). Copy and cut write the product's own format beside HTML and plain text. Nothing
+ * dropped is taken yet: a drag within the surface moves text, which needs the paste's path and a
+ * deletion of the source together.
  */
 export function mountEditor(place: HTMLElement, options: MountOptions): EditorView {
   // The document is READ on every call, never captured. The header edits the root's own attributes
@@ -52,10 +74,33 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       ...(options.editable() ? {} : { tabindex: '-1' }),
     }),
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
-    handlePaste: () => {
-      options.refused('paste');
-      return true;
+    handleDOMEvents: {
+      paste: (target, event) => {
+        // Taken here, before ProseMirror parses anything, and never handed on: a surface being read
+        // takes nothing, and one being edited takes only what `admit` let through.
+        event.preventDefault();
+        if (!target.editable) return true;
+        const data = event.clipboardData;
+        const source: ClipboardSource = data
+          ? { types: [...data.types], getData: (type) => data.getData(type) }
+          : { types: [], getData: () => '' };
+        const into = target.state.selection.$from.parent.type.spec.code ? 'preformatted' : 'blocks';
+        const outcome = pasteInto(
+          target.state,
+          readClipboard(source, into),
+          options.newIdentifier ?? newBlockIdentifier,
+        );
+        if (outcome.ok) target.dispatch(outcome.transaction);
+        options.pasted({ ok: outcome.ok, report: outcome.report });
+        return true;
+      },
+      copy: (target, event) => writeClipboard(target, event, false),
+      cut: (target, event) => writeClipboard(target, event, target.editable),
     },
+    // Reached only by `pasteHTML` and `pasteText` called on the view, never by a paste the author
+    // makes, which the handler above has already taken. Refused rather than left to ProseMirror's own
+    // parser, so no path at all puts unexamined content into a component.
+    handlePaste: () => true,
     handleDrop: () => {
       options.refused('drop');
       return true;
@@ -63,4 +108,26 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
   });
   mounted = view;
   return view;
+}
+
+/**
+ * Copy, and cut when `remove` says the surface may lose the selection: the product's own format
+ * where the selection is a document on its own, and always HTML and plain text, which ProseMirror
+ * serialises as it would itself. A collapsed selection is left to the browser, which copies nothing.
+ */
+function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean): boolean {
+  const data = event.clipboardData;
+  if (!data || view.state.selection.empty) return false;
+  event.preventDefault();
+  const { from, to } = view.state.selection;
+  const { dom, text } = view.serializeForClipboard(view.state.selection.content());
+  data.clearData();
+  data.setData('text/html', dom.innerHTML);
+  data.setData('text/plain', text);
+  const product = productClipboard(view.state, from, to);
+  if (product !== undefined) data.setData(PRODUCT_CLIPBOARD_TYPE, product);
+  if (remove) {
+    view.dispatch(view.state.tr.deleteSelection().scrollIntoView().setMeta('uiEvent', 'cut'));
+  }
+  return true;
 }

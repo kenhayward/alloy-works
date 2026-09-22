@@ -187,6 +187,7 @@ function renderToolbar(options: ToolbarOptions = {}) {
         dispatched.push(transaction);
         target.updateState(target.state.apply(transaction));
       },
+      pasted: () => undefined,
       refused: () => undefined,
     });
   }

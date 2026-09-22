@@ -30,6 +30,9 @@ describe('the domain package', () => {
         // The admission pipeline, promoted in the plan that built it.
         'admissionLimits',
         'admit',
+        // Promoted by editor 7, so a reader in its own workspace says what it did in the report's
+        // own fixed sentences rather than in words of its own.
+        'createReport',
         'readProductClipboard',
         'readerEntry',
         'writeProductClipboard',
