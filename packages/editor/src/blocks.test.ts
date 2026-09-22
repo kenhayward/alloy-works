@@ -16,6 +16,12 @@ import { fromEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
 
+/**
+ * A minute, as structure's randomised tests have (issue #140): the seeded gesture run below takes a
+ * quarter of a second on a desktop and took six and a half on a CI runner busy with every other suite.
+ */
+const RANDOMISED_TEST_TIMEOUT_MS = 60_000;
+
 const counter = () => {
   let next = 0;
   return () => `n${(next += 1)}`;
@@ -1457,83 +1463,89 @@ describe('undo, and gestures over a range, never leave the author stuck (issue #
     expect(shapeOf(undone.doc)).toEqual(['doc', ['paragraph', 'The greatest stress.']]);
   });
 
-  it('survives a thousand seeded runs of random gestures, undo and redo among them', () => {
-    // The review that filed #166 found these by exactly this kind of run and kept no sequence, so the
-    // run is the regression test: a seeded generator, so a failure names a seed that replays it.
-    // Most of what it found was one cause - the identity plugin's renewals were recorded in the
-    // history, and undoing one later mapped it onto whatever had come to stand there.
-    const actions = [
-      'bulletedList',
-      'numberedList',
-      'definitionList',
-      'nestItem',
-      'liftItem',
-      'quotation',
-      'preformatted',
-    ] as const;
-    for (let seed = 1; seed <= 1000; seed += 1) {
-      let random = seed;
-      const next = () => {
-        random = (random * 1664525 + 1013904223) >>> 0;
-        return random / 4294967296;
-      };
-      let state = createEditorState({
-        doc: documentOf(
-          paragraph('b1', 'Alpha'),
-          paragraph('b2', 'Beta'),
-          paragraph('b3', 'Gamma'),
-        ),
-        newIdentifier: counter(),
-      });
-      const done: string[] = [];
-      try {
-        for (let step = 0; step < 16; step += 1) {
-          const roll = next();
-          const action = actions[Math.floor(next() * actions.length)]!;
-          if (roll < 0.15) {
-            const places: number[] = [];
-            state.doc.descendants((node, pos) => {
-              if (node.isTextblock) {
-                for (let at = 0; at <= node.content.size; at += 1) places.push(pos + 1 + at);
-              }
-            });
-            const one = places[Math.floor(next() * places.length)]!;
-            const two = next() < 0.3 ? places[Math.floor(next() * places.length)]! : one;
-            state = state.apply(
-              state.tr.setSelection(
-                TextSelection.create(state.doc, Math.min(one, two), Math.max(one, two)),
-              ),
-            );
-            done.push(`select ${Math.min(one, two)}-${Math.max(one, two)}`);
-          } else if (roll < 0.25) {
-            state = state.apply(state.tr.insertText('z'));
-            done.push('type');
-          } else if (roll < 0.55) {
-            const key = (['Enter', 'Tab', 'Backspace', 'Delete'] as const)[Math.floor(next() * 4)]!;
-            state = press(state, key).next;
-            done.push(key);
-          } else if (roll < 0.6) {
-            state = pressShiftTab(state).next;
-            done.push('Shift-Tab');
-          } else if (roll < 0.8) {
-            state = run(state, blockCommand(action, counter())).next;
-            done.push(action);
-          } else if (roll < 0.92) {
-            undo(state, (tr) => (state = state.apply(tr)));
-            done.push('undo');
-          } else {
-            redo(state, (tr) => (state = state.apply(tr)));
-            done.push('redo');
-          }
-          stored(state.doc);
-        }
-      } catch (error) {
-        throw new Error(`seed ${seed}, after ${done.join(', ')}: ${(error as Error).message}`, {
-          cause: error,
+  it(
+    'survives a thousand seeded runs of random gestures, undo and redo among them',
+    () => {
+      // The review that filed #166 found these by exactly this kind of run and kept no sequence, so the
+      // run is the regression test: a seeded generator, so a failure names a seed that replays it.
+      // Most of what it found was one cause - the identity plugin's renewals were recorded in the
+      // history, and undoing one later mapped it onto whatever had come to stand there.
+      const actions = [
+        'bulletedList',
+        'numberedList',
+        'definitionList',
+        'nestItem',
+        'liftItem',
+        'quotation',
+        'preformatted',
+      ] as const;
+      for (let seed = 1; seed <= 1000; seed += 1) {
+        let random = seed;
+        const next = () => {
+          random = (random * 1664525 + 1013904223) >>> 0;
+          return random / 4294967296;
+        };
+        let state = createEditorState({
+          doc: documentOf(
+            paragraph('b1', 'Alpha'),
+            paragraph('b2', 'Beta'),
+            paragraph('b3', 'Gamma'),
+          ),
+          newIdentifier: counter(),
         });
+        const done: string[] = [];
+        try {
+          for (let step = 0; step < 16; step += 1) {
+            const roll = next();
+            const action = actions[Math.floor(next() * actions.length)]!;
+            if (roll < 0.15) {
+              const places: number[] = [];
+              state.doc.descendants((node, pos) => {
+                if (node.isTextblock) {
+                  for (let at = 0; at <= node.content.size; at += 1) places.push(pos + 1 + at);
+                }
+              });
+              const one = places[Math.floor(next() * places.length)]!;
+              const two = next() < 0.3 ? places[Math.floor(next() * places.length)]! : one;
+              state = state.apply(
+                state.tr.setSelection(
+                  TextSelection.create(state.doc, Math.min(one, two), Math.max(one, two)),
+                ),
+              );
+              done.push(`select ${Math.min(one, two)}-${Math.max(one, two)}`);
+            } else if (roll < 0.25) {
+              state = state.apply(state.tr.insertText('z'));
+              done.push('type');
+            } else if (roll < 0.55) {
+              const key = (['Enter', 'Tab', 'Backspace', 'Delete'] as const)[
+                Math.floor(next() * 4)
+              ]!;
+              state = press(state, key).next;
+              done.push(key);
+            } else if (roll < 0.6) {
+              state = pressShiftTab(state).next;
+              done.push('Shift-Tab');
+            } else if (roll < 0.8) {
+              state = run(state, blockCommand(action, counter())).next;
+              done.push(action);
+            } else if (roll < 0.92) {
+              undo(state, (tr) => (state = state.apply(tr)));
+              done.push('undo');
+            } else {
+              redo(state, (tr) => (state = state.apply(tr)));
+              done.push('redo');
+            }
+            stored(state.doc);
+          }
+        } catch (error) {
+          throw new Error(`seed ${seed}, after ${done.join(', ')}: ${(error as Error).message}`, {
+            cause: error,
+          });
+        }
       }
-    }
-  });
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
 
   it('refuses a counted list over a range that begins in a definition inside a list, rather than throwing', () => {
     // Seed 3970 of the run above: `wrapInList` throws from inside `canSplit` over this range.
