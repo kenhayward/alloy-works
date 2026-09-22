@@ -66,6 +66,25 @@ It also carries a **list of tables** after the contents. A table with no caption
 - **R8. The web's sentence** for `table_without_caption`: "A table has no caption. Give it one: the
   caption names the table in the PDF and to a screen reader."
 
+## What the build changed
+
+Three things the plan did not say, each decided during the build and recorded here:
+
+- **R2 grew two fields.** A published table carries `columns`, its width, and each cell its
+  `scope`: `column` in a header row, `row` in a header column, `both` where they meet, null for
+  data. `assemble` already knows the grid is whole, so it places each cell once and the template sets
+  a cell without walking spans.
+- **R9, `table_header_spans_body`.** A cell that starts in the header rows and spans below them is
+  refused at publish, naming the table. Measured against the pinned engine: Typst grows the header to
+  take in the rows the cell reaches, so the data cell beside it is tagged a `TH` and veraPDF passes
+  it. Refusing costs an author a shorter span; publishing would say something they never wrote.
+- **The reader counts elements in the file, not per page.** pdf.js answers the structure tree a page
+  at a time, so a table crossing a page counted twice. `readPdf` gains `elements`, every structure
+  element counted once from the objects themselves, and the regression case asserts on it.
+
+The flag was measured too: templates 1 and 5 compile to the same bytes with and without
+`--features a11y-extras`, so it is passed to every compile rather than per template.
+
 ## Tasks
 
 1. **`packages/domain`, the layout.** Schema 2 with `matter.lists`, the migration from 1, words

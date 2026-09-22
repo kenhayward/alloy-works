@@ -3,6 +3,32 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.55.0 - 2026-09-22 (PR #204)
+
+### Added
+
+- **Tables are published.** A table prints under its caption, which begins with its number, such as
+  Table 1.1, and a screen reader is told the caption is the table's. Header rows repeat at the top of
+  every page the table reaches and are still heard once, as headers. Header columns are marked as
+  the headers of their rows, and merged cells print merged.
+- **A list of tables** follows the contents, on a page of its own, where a document has any tables.
+  Each entry leads to its table and names its page. The layout every environment starts with has a
+  new version, 0.2, that declares it; a publish requested before this keeps the layout it was
+  requested under.
+
+### Changed
+
+- A document is refused, naming the table, when a table's caption is empty, or when a header cell
+  is merged down into rows that are not header rows, which would make the PDF read a row of data as
+  more header.
+- A table's header column is a requirement only where the output can mark one: Word cannot, so a
+  Word publication will say which tables lost it (TAB-049, replacing TAB-031).
+
+### Known limits
+
+- A table too wide for the page is not turned, shrunk or split, and every table repeats its header
+  rows, until table styles arrive.
+
 ## 0.54.0 - 2026-09-22 (PR #203)
 
 ### Added

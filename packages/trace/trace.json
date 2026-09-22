@@ -11399,7 +11399,7 @@
       "area": "TAB",
       "statement": "Header cells must be associated with the cells they describe, in every output (**PUB-032**)",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by TAB-049",
       "document": "TAB-tabular-presentation.md",
       "line": 151
     },
@@ -11456,6 +11456,15 @@
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 157
+    },
+    {
+      "id": "TAB-049",
+      "area": "TAB",
+      "statement": "A table's header rows must be associated with the cells they describe in every output. Its header columns must be associated wherever the output format can express a header column, and where a format cannot, the publication's report must say which tables lost that association (**PUB-032**)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "TAB-tabular-presentation.md",
+      "line": 158
     },
     {
       "id": "TPL-001",
@@ -13110,25 +13119,25 @@
       "id": "TAB-N01",
       "statement": "**No pivot engine.** Pivoting belongs to the query (TAB-020)",
       "document": "TAB-tabular-presentation.md",
-      "line": 169
+      "line": 177
     },
     {
       "id": "TAB-N02",
       "statement": "**No cell formulas.** Computation belongs in the query layer; this is not a spreadsheet",
       "document": "TAB-tabular-presentation.md",
-      "line": 170
+      "line": 178
     },
     {
       "id": "TAB-N03",
       "statement": "**No per-document conditional formatting.** Emphasis rules live in a style (TAB-029)",
       "document": "TAB-tabular-presentation.md",
-      "line": 171
+      "line": 179
     },
     {
       "id": "TAB-N04",
       "statement": "**No interactive tables in published output.** Sorting and filtering a PDF is not a thing; a report is read, not queried",
       "document": "TAB-tabular-presentation.md",
-      "line": 172
+      "line": 180
     },
     {
       "id": "TPL-N01",
@@ -14039,28 +14048,28 @@
       "question": "**How narrow can the reshaping set stay (TAB-021)?** Every customer will ask for one more transformation, and each is reasonable alone",
       "settledBy": "The first request that cannot be met in the query. The answer is usually a better query",
       "document": "TAB-tabular-presentation.md",
-      "line": 178
+      "line": 186
     },
     {
       "id": "TAB-Q02",
       "question": "**Does an interactive table belong in an HTML output?** A read-only PDF cannot sort; a web reading view could",
       "settledBy": "Whether HTML output (PUB-056) becomes a real reading format or a convenience",
       "document": "TAB-tabular-presentation.md",
-      "line": 179
+      "line": 187
     },
     {
       "id": "TAB-Q03",
       "question": "**What is the strategy for a table too wide to fit (TAB-033)?** Rotation, scaling and splitting all have bad cases",
       "settledBy": "Real report shapes; wide tables of measurements are common in this market",
       "document": "TAB-tabular-presentation.md",
-      "line": 180
+      "line": 188
     },
     {
       "id": "TAB-Q04",
       "question": "**Should totals ever be computed here at all (TAB-009)?** Forbidding it removes the disagreement TAB-010 exists to disclose",
       "settledBy": "Whether sources can always be asked for a total. Often they can and sometimes they cannot",
       "document": "TAB-tabular-presentation.md",
-      "line": 181
+      "line": 189
     },
     {
       "id": "TPL-Q01",
@@ -14929,6 +14938,10 @@
         {
           "id": "TAB-040",
           "howItIsMet": "Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them"
+        },
+        {
+          "id": "TAB-049",
+          "howItIsMet": "Header rows are `TH`s of a column in the PDF and `w:tblHeader` rows in Word; a header column's cells are `pdf.header-cell(scope: \"row\")` `TH`s in the PDF - measured - and in Word, which has no header column, the publication's report names each table whose header column it could not mark (word-output.md)"
         }
       ]
     },
@@ -16178,6 +16191,18 @@
       "kind": "title"
     },
     {
+      "id": "PUB-032",
+      "file": "apps/worker/src/tables.test.ts",
+      "line": 120,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-040",
+      "file": "apps/worker/src/tables.test.ts",
+      "line": 120,
+      "kind": "title"
+    },
+    {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
       "line": 220,
@@ -16252,7 +16277,7 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 755,
+      "line": 756,
       "kind": "title"
     },
     {
@@ -16654,7 +16679,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 159,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -16882,37 +16907,37 @@
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1056,
+      "line": 1067,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 589,
+      "line": 596,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 783,
+      "line": 790,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 667,
+      "line": 674,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 756,
+      "line": 763,
       "kind": "title"
     },
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 25,
+      "line": 26,
       "kind": "title"
     },
     {

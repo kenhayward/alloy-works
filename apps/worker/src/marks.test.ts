@@ -185,6 +185,11 @@ const kindsIn = (document: PublishedDocument) => {
         inBlocks(block.blocks);
         continue;
       }
+      if (block.type === 'table') {
+        marksIn(block.caption);
+        for (const row of block.rows) for (const cell of row.cells) inBlocks(cell.blocks);
+        continue;
+      }
       for (const item of block.items) {
         marksIn(item.term ?? []);
         inBlocks(item.blocks);

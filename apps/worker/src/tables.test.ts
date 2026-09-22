@@ -107,7 +107,6 @@ const compile = async (content: unknown[]) => {
   );
 };
 
-
 /** The first page, counted from 0, whose tagged text holds this run exactly. */
 const pageOf = (read: ReadPdf, value: string) =>
   read.taggedText.findIndex((page) => page.some((run) => run.trim() === value));
