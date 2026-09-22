@@ -80,7 +80,7 @@ noticed and explained rather than discovered at a refusal.
 | **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                          |
 | **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                        |
 | **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                           |
-| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **Apply anyway** then applies it                          |
+| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                             |
 
 **What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
 a run whose language mark differs from the component's base language is rendered with
@@ -103,7 +103,7 @@ subtag to be kept where it changes the content; the publishing engine carries a 
 optional two-letter region and refuses the rest. The language prompt therefore calls
 `publishedLanguage` from the publishing design's own module, and where the answer is nothing it
 names the tag back to the author, in the dialog, before anything is applied. The button becomes
-**Apply anyway** while the warning stands, so a press that means something else is under a name that
+**OK anyway** while the warning stands, so a press that means something else is under a name that
 says so; pressing it applies the mark. Refusing here would narrow the model to one engine's limits,
 and saying nothing would leave the author to find out at a publish they may not be the one to ask
 for. The editor never shortens the tag to something the engine would take, for the reason

@@ -112,12 +112,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Formatting, links and languages.** Above the surface is a **Formatting** toolbar: **Strong**,
   **Emphasis**, **Underline**, **Subscript**, **Superscript**, **Inline code** and **Quoted phrase**,
   each with a keyboard shortcut, each applied over what you have selected or over the next thing you
-  type, and each taken off again by pressing the same button. **Link** asks for an address beginning
-  `http:`, `https:` or `mailto:` and an optional title; an address of any other kind is refused with a
+  type, and each taken off again by pressing the same button. **Link** opens a dialog over the editor, showing the text the link will go on, that asks for an address beginning
+  `http:`, `https:` or `mailto:` and an optional title, with **Cancel** and **OK**, and **Remove link** where there is one to take off; an address of any other kind is refused with a
   sentence saying why, and nothing is applied. **Language** marks a run with a BCP 47 tag such as `fr`
   or `pt-BR`, and the page stops asking the browser to check that run's spelling, so a passage in
   another language is no longer flagged as misspelt. Where you type a tag a publication cannot carry,
-  the dialog says so before anything is applied and the button becomes **Apply anyway**, so you decide
+  the dialog says so before anything is applied and the button becomes **OK anyway**, so you decide
   rather than finding out at a publish somebody else asked for. The whole toolbar is one tab stop with
   the arrow keys moving along it, and `F6` and `Shift-F6` move between the component header, the
   toolbar, any panel and the surface.

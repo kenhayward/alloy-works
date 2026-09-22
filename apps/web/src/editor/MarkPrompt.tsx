@@ -1,6 +1,9 @@
 import { markSchema, publishedLanguage } from '@alloy-works/domain';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
+import shell from '../layouts/Modal.module.css';
+import { Icon } from './Icon.js';
+import styles from './MarkPrompt.module.css';
 import type { MarkCommand } from './press.js';
 
 interface Field {
@@ -22,10 +25,14 @@ interface Shape {
   readonly absent: string;
   /** What Remove does, said before they press it rather than after. */
   readonly removes: string;
+  /** The Remove button's name, which says what it takes off. */
+  readonly remove: string;
+  /** What the mark goes on, said before the selected text it goes on. */
+  readonly goesOn: string;
   /**
    * What the author is told about a value the stored model takes and an output cannot carry, or
    * null where there is nothing to say. Not a refusal, so it never stops them: it is said once,
-   * before the mark goes in, and pressing Apply again with the same value applies it (CNT-152).
+   * before the mark goes in, and pressing OK again with the same value applies it (CNT-152).
    */
   readonly warn?: (value: string) => string | null;
 }
@@ -63,6 +70,8 @@ const SHAPES: Record<string, Shape> = {
     empty: 'Type an address, or press Cancel to leave the text as it is.',
     absent: 'There is no link here any more, so there is nothing to take off.',
     removes: 'Remove takes this link off and leaves the text it was on.',
+    remove: 'Remove link',
+    goesOn: 'The link goes on the selected text,',
   },
   language: {
     title: 'Language',
@@ -73,9 +82,11 @@ const SHAPES: Record<string, Shape> = {
     empty: 'Type a language tag, or press Cancel to leave the text as it is.',
     absent: 'There is no language tag here any more, so there is nothing to take off.',
     removes: 'Remove takes this language tag off and leaves the text it was on.',
+    remove: 'Remove language tag',
+    goesOn: 'The language tag goes on the selected text,',
     warn: (tag) =>
       wellFormedTag(tag) && publishedLanguage(tag) === null
-        ? `A publication cannot carry the tag ${tag}. Press Apply anyway to use it.`
+        ? `A publication cannot carry the tag ${tag}. Press OK anyway to use it.`
         : null,
   },
 };
@@ -110,6 +121,12 @@ export interface MarkPromptProps {
   readonly refused: Refused | null;
   /** Whether there is a mark of this type there to take off. */
   readonly removable: boolean;
+  /**
+   * The text the mark will go on, as it was when the dialog opened, or null where there is none to
+   * show: a caret, or a selection across blocks. Captured rather than read from the view, because the
+   * selection moving out from under the dialog is exactly what a refusal of `gone` is about.
+   */
+  readonly selected?: string | null;
   readonly onApply: (values: Record<string, string>) => void;
   readonly onRemove: () => void;
   readonly onCancel: () => void;
@@ -135,7 +152,7 @@ export interface MarkPromptProps {
  * too, because only they know what it was opened from.
  *
  * It is a form, so `Enter` in a box applies: that is the most ordinary gesture there is in a dialog
- * with one box in it, and reaching for Apply with the mouse or the Tab key is not a price worth
+ * with one box in it, and reaching for OK with the mouse or the Tab key is not a price worth
  * charging for it.
  *
  * **A value an output cannot carry is warned about here, before it is applied** (CNT-152). It is not
@@ -153,6 +170,7 @@ export function MarkPrompt({
   values,
   refused,
   removable,
+  selected = null,
   onApply,
   onRemove,
   onCancel,
@@ -200,7 +218,7 @@ export function MarkPrompt({
   // The button that is about to do something else is called something else. An alert is heard once,
   // in the instant it fires; an accessible name is heard on every focus, which is what a user who
   // tabbed to this button and is deciding whether to press it again actually has.
-  const applies = warning === null ? 'Apply' : 'Apply anyway';
+  const applies = warning === null ? 'OK' : 'OK anyway';
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -219,82 +237,142 @@ export function MarkPrompt({
     inside[event.shiftKey ? inside.length - 1 : 0]?.focus();
   };
 
+  // One line of the selection at most: a long one is cut short rather than growing the dialog.
+  const shown =
+    selected === null || selected.trim() === ''
+      ? null
+      : selected.length > 40
+        ? `${selected.slice(0, 40).trimEnd()}\u2026`
+        : selected;
+
+  // The app's modal shell - the scrim, the surface 40px from the top, the close button - worn rather
+  // than mounted: `Modal` would bring a second dialog role and a second focus trap, and this one
+  // already has both (interface slice 14).
   return (
-    <div
-      ref={dialog}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={id('heading')}
-      onKeyDown={onKeyDown}
-    >
-      <h3 id={id('heading')}>{shape.title}</h3>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          // Raised rather than applied, once, for this value: the author reads it and presses again
-          // if they meant it. Raising it a second time for a value already warned about would make
-          // Apply a button that never applies.
-          if (warning === null && (shape.warn?.(inFirst) ?? null) !== null) {
-            setWarnedAbout(inFirst);
-            return;
-          }
-          onApply(typed);
-        }}
+    <div className={shell['scrim']}>
+      <div
+        ref={dialog}
+        className={shell['dialog']}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={id('heading')}
+        onKeyDown={onKeyDown}
       >
-        {shape.fields.map((field, index) => (
-          <p key={field.name}>
-            <label htmlFor={id(`field-${field.name}`)}>{field.label}</label>
-            <input
-              id={id(`field-${field.name}`)}
-              ref={index === 0 ? first : undefined}
-              type="text"
-              value={typed[field.name] ?? ''}
-              {...(index === 0 && complaint !== null ? { 'aria-invalid': true } : {})}
-              aria-describedby={
-                [
-                  // The complaint first: what went wrong is read before what a good value looks
-                  // like, rather than after it.
-                  index === 0 && complaint !== null ? id('complaint') : null,
-                  index === 0 && warning !== null ? id('warning') : null,
-                  field.hint === undefined ? null : id(`hint-${field.name}`),
-                ]
-                  .filter((each) => each !== null)
-                  .join(' ') || undefined
-              }
-              onChange={(event) => {
-                setTyped((before) => ({ ...before, [field.name]: event.target.value }));
-                // Every keystroke, not only one that changes the first box: a warning is answered
-                // by a press and by nothing else, and the value it was raised over is gone the
-                // moment the author starts typing over it.
-                setWarnedAbout(null);
-              }}
-            />
-            {field.hint !== undefined && <span id={id(`hint-${field.name}`)}>{field.hint}</span>}
-          </p>
-        ))}
-        {complaint !== null && (
-          <p id={id('complaint')} role="alert">
-            {complaint}
-          </p>
-        )}
-        {warning !== null && (
-          <p id={id('warning')} role="alert">
-            {warning}
-          </p>
-        )}
-        {removable && <p id={id('removes')}>{shape.removes}</p>}
-        <button type="submit" {...(warning !== null ? { 'aria-describedby': id('warning') } : {})}>
-          {applies}
+        <form
+          className={styles['form']}
+          onSubmit={(event) => {
+            event.preventDefault();
+            // Raised rather than applied, once, for this value: the author reads it and presses
+            // again if they meant it. Raising it a second time for a value already warned about
+            // would make OK a button that never applies.
+            if (warning === null && (shape.warn?.(inFirst) ?? null) !== null) {
+              setWarnedAbout(inFirst);
+              return;
+            }
+            onApply(typed);
+          }}
+        >
+          {/* The same drawing as the toolbar button that opened it, so the dialog visibly belongs
+              to that button. */}
+          <h2 id={id('heading')} className={styles['heading']}>
+            <span className={styles['tile']} aria-hidden="true">
+              <Icon name={command.label} size={22} />
+            </span>
+            {shape.title}
+          </h2>
+          {shape.fields.map((field, index) => (
+            <div key={field.name} className={styles['field']}>
+              <label htmlFor={id(`field-${field.name}`)}>{field.label}</label>
+              <input
+                id={id(`field-${field.name}`)}
+                ref={index === 0 ? first : undefined}
+                type="text"
+                value={typed[field.name] ?? ''}
+                {...(index === 0 && complaint !== null ? { 'aria-invalid': true } : {})}
+                aria-describedby={
+                  [
+                    // The complaint first: what went wrong is read before what a good value looks
+                    // like, rather than after it.
+                    index === 0 && complaint !== null ? id('complaint') : null,
+                    index === 0 && warning !== null ? id('warning') : null,
+                    field.hint === undefined ? null : id(`hint-${field.name}`),
+                  ]
+                    .filter((each) => each !== null)
+                    .join(' ') || undefined
+                }
+                onChange={(event) => {
+                  setTyped((before) => ({ ...before, [field.name]: event.target.value }));
+                  // Every keystroke, not only one that changes the first box: a warning is answered
+                  // by a press and by nothing else, and the value it was raised over is gone the
+                  // moment the author starts typing over it.
+                  setWarnedAbout(null);
+                }}
+              />
+              {/* Directly under the box it is about, above the hint. */}
+              {index === 0 && complaint !== null && (
+                <p id={id('complaint')} className={styles['complaint']} role="alert">
+                  {complaint}
+                </p>
+              )}
+              {index === 0 && warning !== null && (
+                <p id={id('warning')} className={styles['warning']} role="alert">
+                  {warning}
+                </p>
+              )}
+              {field.hint !== undefined && (
+                <span id={id(`hint-${field.name}`)} className={styles['hint']}>
+                  {field.hint}
+                </span>
+              )}
+            </div>
+          ))}
+          {shown !== null && (
+            <p className={styles['note']}>
+              {shape.goesOn} <mark className={styles['selected']}>{shown}</mark>.
+            </p>
+          )}
+          {removable && (
+            <p id={id('removes')} className={styles['note']}>
+              {shape.removes}
+            </p>
+          )}
+          {/* One row: Cancel, and the destructive act beside it, at the left, so taking a mark off
+              can never be mistaken for the primary at the right. */}
+          <div className={styles['footer']}>
+            <span className={styles['left']}>
+              <button type="button" onClick={onCancel}>
+                Cancel
+              </button>
+              {removable && (
+                <button
+                  type="button"
+                  className="danger"
+                  aria-describedby={id('removes')}
+                  onClick={onRemove}
+                >
+                  {shape.remove}
+                </button>
+              )}
+            </span>
+            <button
+              type="submit"
+              className="primary"
+              {...(warning !== null ? { 'aria-describedby': id('warning') } : {})}
+            >
+              {applies}
+            </button>
+          </div>
+        </form>
+        <button
+          type="button"
+          className={shell['close']}
+          aria-label="Close"
+          title="Close"
+          onClick={onCancel}
+        >
+          <Icon name="Close" size={13} />
         </button>
-        {removable && (
-          <button type="button" aria-describedby={id('removes')} onClick={onRemove}>
-            Remove
-          </button>
-        )}
-        <button type="button" onClick={onCancel}>
-          Cancel
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

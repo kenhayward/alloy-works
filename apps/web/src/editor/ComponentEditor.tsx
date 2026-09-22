@@ -110,6 +110,8 @@ interface Asking {
   readonly refused: Refused | null;
   /** Whether there is a mark of that type there to take off. */
   readonly removable: boolean;
+  /** The text the mark will go on, as the selection held it when the dialog opened. */
+  readonly selected: string | null;
   /** Bumped every time one opens, so a dialog reopened over a refusal is a fresh set of boxes. */
   readonly opened: number;
   readonly settle: (answer: Record<string, unknown> | null) => void;
@@ -224,6 +226,17 @@ export function ComponentEditor({
    * A refusal standing over this mark reopens the dialog **filled with what was refused**, so that
    * a target the stored model would not take is corrected rather than typed again from nothing.
    */
+  /**
+   * The text the selection covers as a dialog opens, captured then rather than read while it stands:
+   * the selection moving is what a refusal of `gone` is about. Null for a caret, and for a
+   * selection across blocks, which is more than the one line the dialog says it in.
+   */
+  const selectedText = (): string | null => {
+    const selection = surface?.state.selection;
+    if (!selection || selection.empty || !selection.$from.sameParent(selection.$to)) return null;
+    return surface!.state.doc.textBetween(selection.from, selection.to);
+  };
+
   const askFor: AskForValue = (command, current) =>
     new Promise((settle) => {
       const standing = refusal.current?.mark === command.mark ? refusal.current : null;
@@ -241,6 +254,7 @@ export function ComponentEditor({
         refused: standing?.because ?? null,
         // What can be taken off is what is there now, never what was typed and refused.
         removable: current !== null,
+        selected: selectedText(),
         opened: openings.current,
         settle,
       });
@@ -883,6 +897,7 @@ export function ComponentEditor({
             values={asking.values}
             refused={asking.refused}
             removable={asking.removable}
+            selected={asking.selected}
             onApply={(values) => closeAsking(values)}
             onRemove={() => {
               const { command } = asking;
