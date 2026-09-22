@@ -111,12 +111,13 @@ field, and one primary button. Below it: `Show more`, never a pager. Rows are 13
 
 **B. Editor triptych.** A 260px space pane (the components of the space you are in, the open one
 marked), the editor, and the facet dock: a 38px icon rail plus a 320px panel, one panel at a time.
-The editor is a header strip (title, version, type, language, direction, save state, `Done editing`,
-`Save version`), the Formatting toolbar, the surface, and a status strip.
+The editor is a 34px title strip (section number in place, title, version and space, language and
+direction chips, the save chip, `Done`, `Save version`), one row of Formatting icons, and the
+surface: [the handoff](handoffs/component-editor/README.md), design 2a, built in interface slice 13.
 
 **C. Document triptych.** The same shape: a 300px outline pane, draggable between 220 and 520 and
 collapsing to a 46px rail; the document's own text in the middle, each component edited in place
-under its section number; the same facet dock on the right. **Structure and content are one screen,
+under its section number, opened by clicking its text and closed by Done; the same facet dock on the right. **Structure and content are one screen,
 never two.** The panes' widths and collapsed state are remembered per person.
 
 **D. Reading.** A 260px contents pane, then the publication on `--doc-canvas` with the page in

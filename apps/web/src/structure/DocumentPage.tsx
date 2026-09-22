@@ -20,7 +20,7 @@ import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
-import { DocumentText } from './DocumentText.js';
+import { DocumentText, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
 import {
@@ -694,12 +694,13 @@ export function DocumentPage({
                     // Closing reads the text again, so the card shows what was saved.
                     if (node === null) setTextsAttempt((count) => count + 1);
                   },
-                  editor: (component: string) => (
+                  editor: (component: string, place: Place) => (
                     <ComponentEditor
                       key={component}
                       componentId={component}
                       client={client}
                       principalId={principalId}
+                      {...place}
                     />
                   ),
                 })}

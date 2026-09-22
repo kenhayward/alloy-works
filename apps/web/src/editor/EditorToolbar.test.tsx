@@ -210,9 +210,13 @@ describe('the formatting toolbar', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
     const buttons = within(toolbar).getAllByRole('button');
 
-    expect(
-      buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent),
-    ).toEqual(LABELS);
+    // Each is named by the registry's own label, the only name a screen reader gets: the face is
+    // an icon, hidden from assistive technology, and no word may be dropped (interface slice 13).
+    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual(LABELS);
+    for (const button of buttons) {
+      expect(button.querySelector('[data-icon]')).toHaveAttribute('aria-hidden', 'true');
+      expect(button.textContent?.trim().length ?? 0).toBeLessThanOrEqual(2);
+    }
     expect(buttons.filter((button) => button.tabIndex === 0)).toHaveLength(1);
     buttons[0]!.focus();
     await userEvent.keyboard('{ArrowRight}{ArrowRight}');
@@ -228,7 +232,9 @@ describe('the formatting toolbar', () => {
     expect(document.activeElement).toBe(buttons[14]);
     await userEvent.keyboard('{Home}');
     expect(document.activeElement).toBe(buttons[0]);
-    expect(buttons[0]).toHaveAttribute('title', 'Ctrl or Cmd and B');
+    expect(buttons[0]).toHaveAttribute('title', 'Strong (Ctrl or Cmd and B)');
+    // Marks, then lists, then blocks, in the registry's order, a divider between each group.
+    expect(toolbar.querySelectorAll('[data-divider]')).toHaveLength(2);
 
     // Reachable is not the whole of it: the command has to run from the keyboard as well.
     await userEvent.keyboard('{Enter}');

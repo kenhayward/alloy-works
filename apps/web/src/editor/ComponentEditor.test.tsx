@@ -79,7 +79,12 @@ const quick = { ...designTiming, idleMs: 10, continuousMs: 50 };
  * bearings by counting renders, rather than by comparing values, behaves differently there than it
  * does in a test that leaves StrictMode off (fix round 2, findings A-C).
  */
-function open(answers: Record<string, Answer>, timing = quick, strict = false) {
+function open(
+  answers: Record<string, Answer>,
+  timing = quick,
+  strict = false,
+  extra: Partial<React.ComponentProps<typeof ComponentEditor>> = {},
+) {
   const { client, asked } = service(answers);
   let view: EditorView | undefined;
   const editor = (
@@ -90,6 +95,7 @@ function open(answers: Record<string, Answer>, timing = quick, strict = false) {
       sessionId={SESSION}
       timing={timing}
       onView={(mounted) => (view = mounted)}
+      {...extra}
     />
   );
   render(strict ? <StrictMode>{editor}</StrictMode> : editor);
@@ -116,6 +122,25 @@ const lock = {
 
 afterEach(() => vi.restoreAllMocks());
 
+/**
+ * The base language field, which lives in the language chip's popover: opened first if it is not.
+ * Found as an input, because the Formatting toolbar's Language mark is a button of the same name.
+ */
+async function languageField(): Promise<HTMLElement> {
+  const open = screen.queryByLabelText('Language', { selector: 'input' });
+  if (open) return open;
+  await userEvent.click(screen.getByRole('button', { name: /^Base language/ }));
+  return screen.getByLabelText('Language', { selector: 'input' });
+}
+
+/** The base direction select, in the direction chip's popover, opened first if it is not. */
+async function directionField(): Promise<HTMLElement> {
+  const open = screen.queryByLabelText('Direction');
+  if (open) return open;
+  await userEvent.click(screen.getByRole('button', { name: /^Base direction/ }));
+  return await directionField();
+}
+
 describe('the component editor', () => {
   it('opens the component on a spellchecked surface carrying its language and direction', async () => {
     const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
@@ -126,20 +151,102 @@ describe('the component editor', () => {
     expect(box).toHaveAttribute('lang', 'en-GB');
     expect(box).toHaveAttribute('dir', 'ltr');
     expect(screen.getByRole('heading', { name: 'Install the printer' })).toBeInTheDocument();
-    expect(screen.getByText('Version 0.1 in General')).toBeInTheDocument();
+    expect(screen.getByText('0.1 · General')).toBeInTheDocument();
   });
 
-  it('says how many blocks and words it holds, and how F6 moves between regions', async () => {
+  it('says how many blocks and words it holds as the tooltip of its version, and no F6 hint', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () =>
         json(200, opened({ content: content('Unbox the printer.', 'Plug it in now.') })),
     });
     await surface();
-    const strip = screen.getByRole('note', { name: 'About this component' });
-    expect(strip).toHaveTextContent(
-      'F6 moves between the header, the toolbar, the list panel and the text',
+    expect(screen.getByText('0.1 · General')).toHaveAttribute('title', '2 blocks, 7 words');
+    expect(screen.queryByRole('note')).toBeNull();
+    expect(screen.queryByText(/F6 moves/)).toBeNull();
+  });
+
+  it('in place, shows its section number carrying its size, and Done closes it without a claim', async () => {
+    const onDone = vi.fn();
+    const { asked, surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      { number: '3', onDone },
     );
-    expect(strip).toHaveTextContent('2 blocks, 7 words');
+    await surface();
+    expect(screen.getByText('3')).toHaveAttribute('title', '1 block, 3 words');
+    const done = screen.getByRole('button', { name: 'Done editing' });
+    expect(done).toBeEnabled();
+    await userEvent.click(done);
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+  });
+
+  it('in place, Done releases what was claimed and then closes', async () => {
+    const onDone = vi.fn();
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'DELETE /v1/components/{id}/lock': () =>
+          json(200, {
+            outcome: 'cut',
+            version: { id: 'v2', number: '0.2', author: ADA, createdAt: 't', note: null },
+          }),
+      },
+      quick,
+      false,
+      { onDone },
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Done editing' })).toBeEnabled());
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Done editing' }));
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
+    expect(asked.map((each) => each.route)).toContain('DELETE /v1/components/{id}/lock');
+  });
+
+  it('shows its base language and direction as chips, each opening its field', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    await surface();
+    const chip = screen.getByRole('button', { name: 'Base language: en-GB' });
+    expect(chip).toHaveTextContent('en-GB');
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByLabelText('Language', { selector: 'input' })).toBeNull();
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('Language', { selector: 'input' })).toHaveValue('en-GB');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByLabelText('Language', { selector: 'input' })).toBeNull();
+    expect(chip).toHaveFocus();
+
+    await userEvent.selectOptions(await directionField(), 'rtl');
+    expect(screen.getByRole('button', { name: 'Base direction: right to left' })).toHaveTextContent(
+      'RTL',
+    );
+  });
+
+  it('opened at a place in its text, puts the focus and the caret there', async () => {
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened()) },
+      quick,
+      false,
+      { openAt: 6 },
+    );
+    const view = await surface();
+    await waitFor(() => expect(view.hasFocus() || document.activeElement === view.dom).toBe(true));
+    // The paragraph opens at 1, so the sixth character of its text is at 7.
+    expect(view.state.selection.from).toBe(7);
   });
 
   it('tells the workspace which space the component it opened is in', async () => {
@@ -197,7 +304,7 @@ describe('the component editor', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Save version' }));
     expect(await screen.findByText('Version 0.2 saved.')).toBeInTheDocument();
-    expect(screen.getByText('Version 0.2 in General')).toBeInTheDocument();
+    expect(screen.getByText('0.2 · General')).toBeInTheDocument();
     expect(asked.at(-1)).toEqual({
       route: 'POST /v1/components/{id}/versions',
       body: { session: SESSION, openedFrom: 'v1' },
@@ -296,7 +403,7 @@ describe('the component editor', () => {
 
     signedIn = true;
     view.dispatch(view.state.tr.insertText('!', view.state.doc.content.size - 1));
-    await waitFor(() => expect(screen.getByText('Saved at', { exact: false })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTitle(/^Saved at/)).toBeInTheDocument());
     expect(screen.queryByRole('textbox', { name: 'Text that was not saved' })).toBeNull();
   });
 
@@ -714,7 +821,7 @@ describe('the component editor', () => {
     view.dispatch(view.state.tr.insertText(' Mine.', 19));
     await screen.findByRole('textbox', { name: 'Text that was not saved' });
     expect(screen.getByText('Not saved')).toBeInTheDocument();
-    expect(screen.queryByText('No unsaved changes')).toBeNull();
+    expect(screen.queryByText('Saved')).toBeNull();
   });
 
   it('warns before an unmount while a change is unsaved, and stops once it is not (fix round 1 finding 4)', async () => {
@@ -735,7 +842,7 @@ describe('the component editor', () => {
     handler(event);
     expect(event.defaultPrevented).toBe(true);
 
-    await waitFor(() => expect(screen.getByText('Saved at', { exact: false })));
+    await waitFor(() => expect(screen.getByTitle(/^Saved at/)));
     await waitFor(() => expect(removeSpy).toHaveBeenCalledWith('beforeunload', handler));
   });
 
@@ -790,7 +897,7 @@ describe('the component editor', () => {
     await screen.findByRole('textbox', { name: 'Content of Install the printer' });
     const addSpy = vi.spyOn(window, 'addEventListener');
     view!.dispatch(view!.state.tr.insertText(' Keep the box.', 19));
-    await screen.findByText('Not saved, retrying');
+    await screen.findByText('Not saved');
     await waitFor(() => expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function)));
   });
 
@@ -986,14 +1093,14 @@ describe('the component editor', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
     );
-    await userEvent.clear(screen.getByLabelText('Language'));
-    await userEvent.type(screen.getByLabelText('Language'), 'fr-CA');
-    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
+    await userEvent.clear(await languageField());
+    await userEvent.type(await languageField(), 'fr-CA');
+    await userEvent.selectOptions(await directionField(), 'rtl');
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Replace the toner');
     // The fields themselves, not only the document they end up producing (review round 1, item 10).
     expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
-    expect(screen.getByLabelText('Language')).toHaveValue('fr-CA');
+    expect(await languageField()).toHaveValue('fr-CA');
     // The document the session would send now carries all three, which is the whole of the header's
     // wiring - not only the title (review round 1, item 4).
     expect(fromEditor(view.state.doc)).toMatchObject({
@@ -1160,7 +1267,7 @@ describe('the component editor', () => {
       designTiming,
     );
     await surface();
-    const language = screen.getByLabelText('Language');
+    const language = await languageField();
 
     fireEvent.change(language, { target: { value: 'f' } });
     expect(screen.getByRole('status')).toHaveTextContent('');
@@ -1181,7 +1288,7 @@ describe('the component editor', () => {
       designTiming,
     );
     await surface();
-    const language = screen.getByLabelText('Language');
+    const language = await languageField();
 
     fireEvent.change(language, { target: { value: 'x' } });
     fireEvent.blur(language);
@@ -1356,9 +1463,9 @@ describe('the component editor', () => {
     );
     await surface();
 
-    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'f' } });
+    fireEvent.change(await languageField(), { target: { value: 'f' } });
 
-    expect(screen.getByLabelText('Language')).toHaveValue('f');
+    expect(await languageField()).toHaveValue('f');
   });
 
   it('does not revert a field being typed when something else re-renders the page', async () => {
@@ -1376,13 +1483,13 @@ describe('the component editor', () => {
     );
     const view = await surface();
 
-    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    fireEvent.change(await languageField(), { target: { value: 'fr-' } });
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.'),
     );
-    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+    expect(await languageField()).toHaveValue('fr-');
   });
 
   it('leaves the language alone while the title is edited, and the title alone while the language is', async () => {
@@ -1399,13 +1506,13 @@ describe('the component editor', () => {
     );
     await surface();
 
-    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-' } });
+    fireEvent.change(await languageField(), { target: { value: 'fr-' } });
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Replace the toner' } });
 
-    expect(screen.getByLabelText('Language')).toHaveValue('fr-');
+    expect(await languageField()).toHaveValue('fr-');
     expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
 
-    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr-CA' } });
+    fireEvent.change(await languageField(), { target: { value: 'fr-CA' } });
 
     expect(screen.getByLabelText('Title')).toHaveValue('Replace the toner');
     await waitFor(() =>
@@ -1431,7 +1538,7 @@ describe('the component editor', () => {
       quick,
     );
     const view = await surface();
-    const language = screen.getByLabelText('Language');
+    const language = await languageField();
     fireEvent.change(language, { target: { value: 'fr-' } });
 
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
@@ -1723,8 +1830,8 @@ describe('the link and language prompts', () => {
       [...box.querySelectorAll('[spellcheck="false"]')].map((each) => each.textContent),
     ).toEqual(['Unbox']);
 
-    await userEvent.clear(screen.getByLabelText('Language'));
-    await userEvent.type(screen.getByLabelText('Language'), 'fr-FR');
+    await userEvent.clear(await languageField());
+    await userEvent.type(await languageField(), 'fr-FR');
 
     // The surface reads the document it is showing, not the one it mounted with. Frozen at the
     // opening value, the browser would check the whole component as English while the decorations
@@ -1750,7 +1857,7 @@ describe('the link and language prompts', () => {
     const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
     expect(box).toHaveAttribute('dir', 'ltr');
 
-    await userEvent.selectOptions(screen.getByLabelText('Direction'), 'rtl');
+    await userEvent.selectOptions(await directionField(), 'rtl');
 
     // A component whose base direction is right to left and whose surface still renders left to
     // right shows the author the opposite of what the document says and of what a publish will do.
@@ -2656,8 +2763,10 @@ describe('the regions of the view', () => {
     expect(view.dom).not.toHaveAttribute('contenteditable', 'true');
     expect(view.dom).toHaveAttribute('tabindex', '-1');
 
+    // The header's fields are disabled for a reader, but its chips are not: they open to show
+    // the language and the direction, so the first of them is where the ring lands.
     await userEvent.keyboard('{F6}');
-    expect(screen.getByRole('group', { name: 'Component header' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Base language: en-GB' })).toHaveFocus();
 
     await userEvent.keyboard('{F6}');
     expect(formatting).toHaveFocus();
@@ -2791,8 +2900,8 @@ describe('quotations and preformatted text on the surface (editor 5)', () => {
     caretIn(view, 'b1');
     const quotation = await screen.findByRole('button', { name: 'Quotation' });
     const code = screen.getByRole('button', { name: 'Preformatted text' });
-    expect(quotation).toHaveAttribute('title', 'Ctrl or Cmd, Shift and full stop');
-    expect(code).toHaveAttribute('title', 'Ctrl or Cmd, Shift and comma');
+    expect(quotation).toHaveAttribute('title', 'Quotation (Ctrl or Cmd, Shift and full stop)');
+    expect(code).toHaveAttribute('title', 'Preformatted text (Ctrl or Cmd, Shift and comma)');
     // Offered, and the marks dropped when pressed (Ken, at plan review; decision K).
     expect(code).toHaveAttribute('aria-disabled', 'false');
   });

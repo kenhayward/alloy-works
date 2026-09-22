@@ -2490,7 +2490,7 @@ describe('the address of every node', () => {
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
     const reads = textsAsked;
 
-    await user.click(within(text).getByRole('button', { name: 'Edit Install the printer' }));
+    await user.click(within(text).getByText('Unbox the printer.'));
     // The component's own editor, in its card: the surface it edits on, and what it says to a reader.
     expect(
       await within(text).findByRole('textbox', { name: 'Content of Install the printer' }),
@@ -2500,7 +2500,7 @@ describe('the address of every node', () => {
     ).toBeInTheDocument();
     expect(textsAsked).toBe(reads);
 
-    await user.click(within(text).getByRole('button', { name: 'Close Install the printer' }));
+    await user.click(within(text).getByRole('button', { name: 'Done editing' }));
     expect(
       within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
     ).not.toBeInTheDocument();

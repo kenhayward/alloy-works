@@ -10,6 +10,7 @@ import {
   mountEditor,
   newBlockIdentifier,
   removeMarkCommand,
+  Selection as EditorSelection,
   setDirection,
   setLanguage,
   setTitle,
@@ -24,8 +25,10 @@ import styles from './ComponentEditor.module.css';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
+import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
+import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
@@ -59,6 +62,15 @@ export interface ComponentEditorProps {
   readonly onView?: (view: EditorView) => void;
   /** Told the space of the component once it has opened, for the space pane beside the editor. */
   readonly onSpace?: (space: { readonly id: string; readonly name: string }) => void;
+  /** Its section number, where it is open in place in a document; there is none standalone. */
+  readonly number?: string;
+  /**
+   * Given where it is open in place (interface slice 13): Done then closes it, releasing the lock
+   * first when this author holds one, and is offered to a reader as the way out.
+   */
+  readonly onDone?: () => void;
+  /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
+  readonly openAt?: number;
 }
 
 type Loaded =
@@ -103,13 +115,7 @@ interface Asking {
   readonly settle: (answer: Record<string, unknown> | null) => void;
 }
 
-/**
- * One component, open for editing (component-editor.md): its title, the surface, the save indicator,
- * Save version and Done editing, and one status region that says what happened. The surface is one
- * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on its
- * own.
- */
-/** How much a component holds, as the status strip says it: its top-level blocks and its words. */
+/** How much a component holds, as a tooltip says it: its top-level blocks and its words. */
 function sizeOf(doc: EditorView['state']['doc']): string {
   const blocks = doc.childCount;
   const words = doc
@@ -119,6 +125,13 @@ function sizeOf(doc: EditorView['state']['doc']): string {
   return `${blocks} ${blocks === 1 ? 'block' : 'blocks'}, ${words} ${words === 1 ? 'word' : 'words'}`;
 }
 
+/**
+ * One component, open for editing (component-editor.md): a title strip holding its number, title,
+ * version, language and direction, the save chip, Done and Save version; the formatting toolbar; the
+ * surface; and one status region that says what happened (interface slice 13). The surface is one
+ * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on
+ * its own.
+ */
 export function ComponentEditor({
   componentId,
   client,
@@ -128,6 +141,9 @@ export function ComponentEditor({
   sessionId,
   onView,
   onSpace,
+  number,
+  onDone,
+  openAt,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.
@@ -315,6 +331,8 @@ export function ComponentEditor({
   sessionIdRef.current = sessionId;
   const runPromptingRef = useRef(runPrompting);
   runPromptingRef.current = runPrompting;
+  const openAtRef = useRef(openAt);
+  openAtRef.current = openAt;
 
   useEffect(() => {
     let current = true;
@@ -495,6 +513,13 @@ export function ComponentEditor({
     });
     setSurface(view);
     setHeader(headerOf(view.state.doc));
+    // Opened by a click in its rendered text: the caret goes where the click was, and the focus with
+    // it, so the author types where they pointed. A selection changes nothing and claims nothing.
+    if (openAtRef.current !== undefined) {
+      const at = positionAtTextOffset(view.state.doc, openAtRef.current);
+      view.dispatch(view.state.tr.setSelection(EditorSelection.near(view.state.doc.resolve(at))));
+      view.focus();
+    }
     onViewRef.current?.(view);
     return () => {
       editing.dispose();
@@ -607,10 +632,17 @@ export function ComponentEditor({
   };
 
   if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
+  // In place, a component that did not open still needs a way out, the card head being gone.
+  const leave = onDone && (
+    <button type="button" onClick={onDone}>
+      Done
+    </button>
+  );
   if (loaded.state === 'missing') {
     return (
       <Notice tone="refused">
         <p>There is nothing here, or nothing you may read.</p>
+        {leave}
       </Notice>
     );
   }
@@ -631,6 +663,7 @@ export function ComponentEditor({
         >
           Try again
         </button>
+        {leave}
       </Notice>
     );
   }
@@ -647,6 +680,18 @@ export function ComponentEditor({
   const list = surface === null ? null : listAt(surface.state);
   const preformatted = surface === null ? null : preformattedAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  const size = surface === null ? undefined : sizeOf(surface.state.doc);
+  const mayCut = shown.mayEdit && loaded.state === 'open';
+  // Standalone, Done is Done editing and releases a lock only this session can hold. In place it is
+  // also the way out of the card, so it is offered while reading as well, and closes once released.
+  const doneDisabled = onDone ? !(phase === 'editing' || phase === 'reading') : phase !== 'editing';
+  const done = async () => {
+    if (phase === 'editing') {
+      await controls.current?.doneEditing();
+      if (controls.current?.view().phase !== 'reading') return;
+    }
+    onDone?.();
+  };
 
   return (
     <>
@@ -657,34 +702,86 @@ export function ComponentEditor({
       <article
         aria-labelledby="component-title"
         className={styles['card']}
+        data-in-place={onDone !== undefined}
         inert={asking !== null}
         onKeyDown={moveRegion}
       >
-        {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
-            inside it are disabled, and an element with no role and no name announces nothing at
-            all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
-            a new stop in the tab order. */}
-        <header
-          ref={headerRegion}
-          className={styles['header']}
-          role="group"
-          aria-label="Component header"
-          tabIndex={-1}
-        >
-          {header ? (
-            <ComponentHeader
-              header={header}
-              editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
-              onChange={changeHeader}
-              onRefused={setNotice}
-            />
-          ) : (
-            <h2 id="component-title">{typeof title === 'string' ? title : 'Untitled'}</h2>
+        <div className={styles['strip']}>
+          {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
+              inside it are disabled, and an element with no role and no name announces nothing at
+              all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
+              a new stop in the tab order. */}
+          <header
+            ref={headerRegion}
+            className={styles['header']}
+            role="group"
+            aria-label="Component header"
+            tabIndex={-1}
+          >
+            {number !== undefined && (
+              <span className={styles['number']} title={size}>
+                {number}
+              </span>
+            )}
+            {header ? (
+              <ComponentHeader
+                header={header}
+                editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
+                onChange={changeHeader}
+                onRefused={setNotice}
+              >
+                <span
+                  className={styles['version']}
+                  {...(number === undefined && size !== undefined ? { title: size } : {})}
+                >
+                  {session?.version.number ?? shown.version.number} · {shown.space.name}
+                </span>
+              </ComponentHeader>
+            ) : (
+              <>
+                <h2 id="component-title" className={styles['fallbackTitle']}>
+                  {typeof title === 'string' ? title : 'Untitled'}
+                </h2>
+                <span className={styles['version']}>
+                  {shown.version.number} · {shown.space.name}
+                </span>
+              </>
+            )}
+          </header>
+          {session && loaded.state === 'open' && (
+            <SaveIndicator save={session.save} savedAt={session.savedAt} />
           )}
-          <p className={styles['version']}>
-            Version {session?.version.number ?? shown.version.number} in {shown.space.name}
-          </p>
-        </header>
+          {(mayCut || onDone) && (
+            <>
+              <span className={styles['divider']} aria-hidden="true" />
+              <div className={styles['actions']} role="toolbar" aria-label="Component">
+                {mayCut && (
+                  <button
+                    className={`primary ${styles['act']}`}
+                    type="button"
+                    title="Save version"
+                    disabled={phase !== 'editing'}
+                    onClick={() => void controls.current?.saveVersion()}
+                  >
+                    <Icon name="Save version" />
+                    Save version
+                  </button>
+                )}
+                <button
+                  className={styles['act']}
+                  type="button"
+                  aria-label="Done editing"
+                  title="Done editing"
+                  disabled={doneDisabled}
+                  onClick={() => void done()}
+                >
+                  <Icon name="Done editing" />
+                  Done
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         {loaded.state === 'unreadable' && (
           <Notice tone="failed">
             <p>This component could not be read.</p>
@@ -701,6 +798,19 @@ export function ComponentEditor({
         )}
         {loaded.state === 'open' && (
           <>
+            {/* Above the surface, which is the order the regions are named in
+              (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
+              than absent, so what the editor can do with the text is visible before the lock is. */}
+            <EditorToolbar
+              ref={toolbarRegion}
+              view={surface}
+              enabled={mayFormat}
+              newIdentifier={newBlockIdentifier}
+              prompt={askFor}
+              onRefused={(command) =>
+                surface && askAgain(surface, command, whyRefused(surface, command))
+              }
+            />
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>You may read this component but not edit it.</p>
@@ -726,43 +836,6 @@ export function ComponentEditor({
                 Continue
               </button>
             )}
-            {shown.mayEdit && (
-              <div className={styles['actions']} role="toolbar" aria-label="Component">
-                <button
-                  className="primary"
-                  type="button"
-                  disabled={phase !== 'editing'}
-                  onClick={() => void controls.current?.saveVersion()}
-                >
-                  Save version
-                </button>
-                <button
-                  type="button"
-                  disabled={phase !== 'editing'}
-                  onClick={() => void controls.current?.doneEditing()}
-                >
-                  Done editing
-                </button>
-              </div>
-            )}
-            {session && (
-              <div className={styles['save']}>
-                <SaveIndicator save={session.save} savedAt={session.savedAt} />
-              </div>
-            )}
-            {/* Above the surface, which is the order the regions are named in
-              (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
-              than absent, so what the editor can do with the text is visible before the lock is. */}
-            <EditorToolbar
-              ref={toolbarRegion}
-              view={surface}
-              enabled={mayFormat}
-              newIdentifier={newBlockIdentifier}
-              prompt={askFor}
-              onRefused={(command) =>
-                surface && askAgain(surface, command, whyRefused(surface, command))
-              }
-            />
             {/* Beside the toolbar, and only while the cursor stands in a counted list. A
                 definition list carries no start and no numbering and its kind is the button that
                 made it, so nothing is shown for one - a deliberate absence rather than an empty
@@ -783,12 +856,6 @@ export function ComponentEditor({
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element
                 itself where what it holds cannot take the focus, such as a component being read. */}
             <div ref={place} className={styles['surface']} tabIndex={-1} />
-            {surface !== null && (
-              <div className={styles['strip']} role="note" aria-label="About this component">
-                <span>F6 moves between the header, the toolbar, the list panel and the text</span>
-                <span>{sizeOf(surface.state.doc)}</span>
-              </div>
-            )}
             {kept !== null && (
               <label>
                 Text that was not saved

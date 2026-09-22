@@ -1,91 +1,108 @@
 /*
- * The editor in layout B, drawn in docs/interface/screens/ComponentEditor.html. The markup keeps the
- * order the F6 ring and the tab order need; this grid is what puts the header, the save state and
- * the Component toolbar on one strip.
+ * The component editor, as the handoff in docs/interface/handoffs/component-editor/ draws it (design
+ * 2a): one box holding a 34px title strip, a row of icons, and the text. The markup keeps the order
+ * the F6 ring and the tab order need.
  */
 .card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: start;
-  gap: var(--space-8) var(--space-12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
-  padding: var(--space-16) var(--space-20) 0;
 }
 
-/* Everything the strip does not place spans the card, in the order it comes. */
+/* In place in a document, the box is the card being edited, with the ring that says so. */
+.card[data-in-place='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
 .card > * {
-  grid-column: 1 / -1;
   margin-block: 0;
 }
 
-.header {
-  grid-column: 1;
-  grid-row: 1;
+.strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-8) var(--space-12);
-  color: var(--muted);
-  font-size: var(--size-body-small);
+  gap: var(--space-4) var(--space-12);
+  min-height: 34px;
+  padding: 0 var(--space-12);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.header {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
 .header:focus {
   outline: none;
 }
 
-.header h2 {
-  flex-basis: 100%;
+.number {
+  margin-inline-end: var(--space-4);
+  color: var(--accent);
+  font-size: var(--size-brand);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.fallbackTitle {
   margin: 0;
-  color: var(--text);
-  font-size: var(--size-doc-title);
+  padding: var(--space-2) var(--space-6);
+  font-size: var(--size-brand);
   font-weight: 650;
 }
 
-.header label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-6);
-  margin: 0;
-  color: var(--muted);
-}
-
 .version {
-  order: -1;
-  flex-basis: 100%;
-  margin: 0;
+  margin-inline: var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-label);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.save {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
 }
 
 .actions {
-  grid-column: 3;
-  grid-row: 1;
   display: flex;
   flex-direction: row-reverse;
   gap: var(--space-8);
 }
 
-/* The Formatting toolbar and the panels beside it: controls in a wrapping row under the strip. */
-.card :global([role='toolbar'][aria-label='Formatting']) {
-  display: flex;
-  flex-wrap: wrap;
+.act {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-6);
-  padding-block: var(--space-10);
-  border-top: 1px solid var(--border);
+  min-height: 26px;
+  padding: var(--space-2) var(--space-10);
+  font-size: var(--size-label);
+  white-space: nowrap;
+}
+
+/* Notices, panels and the kept text sit between the toolbar and the text, inset from the box. */
+.card > :global(section),
+.card > :global(div[role='toolbar'][aria-label='List']),
+.card > label,
+.card > button {
+  margin: var(--space-8) var(--space-12) 0;
 }
 
 .surface {
-  min-height: 360px;
-  margin-inline: calc(-1 * var(--space-20));
-  padding: var(--space-20) var(--space-28);
-  border-top: 1px solid var(--border);
+  min-height: 300px;
+  padding: var(--space-8) var(--space-28) var(--space-14);
   background: var(--surface);
 }
 
@@ -95,22 +112,12 @@
 }
 
 .surface :global(.ProseMirror) {
-  min-height: 320px;
+  min-height: 280px;
   outline: none;
   font-size: var(--size-body);
   line-height: 1.6;
 }
 
-.strip {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-16);
-  margin-inline: calc(-1 * var(--space-20));
-  padding: var(--space-8) var(--space-20);
-  border-top: 1px solid var(--border);
-  border-radius: 0 0 var(--radius-8) var(--radius-8);
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: var(--size-label);
-  font-variant-numeric: tabular-nums;
+.surface :global(.ProseMirror p) {
+  margin: 0 0 var(--space-10);
 }

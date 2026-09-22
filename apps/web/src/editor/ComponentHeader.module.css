@@ -1,0 +1,85 @@
+/* The component header on the editor's title strip: the title field and the two chips. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Doubled, to outrank base.css's rule for every text input. */
+.title.title {
+  min-height: 0;
+  min-width: 8ch;
+  max-width: 100%;
+  field-sizing: content;
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--size-brand);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  outline: none;
+}
+
+.title.title:hover:not(:disabled) {
+  border-color: var(--input-border);
+  background: var(--surface);
+}
+
+.title.title:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.title:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.holder {
+  position: relative;
+  display: inline-flex;
+}
+
+.chip {
+  min-height: 22px;
+  padding: 1px var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--chip-bg);
+  color: var(--text);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--input-border);
+  background: var(--accent-weak);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + var(--space-6));
+  left: 0;
+  z-index: var(--z-dropdown);
+  padding: var(--space-10);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+  white-space: nowrap;
+}
+
+.popover label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-body-small);
+}

@@ -57,9 +57,11 @@
   text-decoration: none;
 }
 
+/* Being edited, the card is the editor's own box, which carries the ring that says so. */
 .card[data-editing='true'] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .cardHead {
@@ -86,12 +88,25 @@
   margin-top: 0;
 }
 
+/* Text that opens its component's editor when clicked (interface slice 13). */
+.body[data-opens='true'] {
+  margin-inline: calc(-1 * var(--space-6));
+  padding-inline: var(--space-6);
+  border-radius: var(--radius-4);
+  cursor: text;
+}
+
+.body[data-opens='true']:hover {
+  background: var(--accent-weak);
+}
+
+.body[data-opens='true']:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .cannot {
   margin: var(--space-10) 0 0;
   color: var(--muted);
   font-size: var(--size-body-small);
-}
-
-.editor {
-  margin-top: var(--space-10);
 }

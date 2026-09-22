@@ -3,6 +3,23 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.48.0 - 2026-09-22 (PR #192)
+
+### Changed
+
+- **The component editor takes far less room above the text.** The title, version, language,
+  direction, save state, Done and Save version now sit on one slim strip, and the formatting buttons
+  are a single row of icons. Hover over any icon to see what it does and its shortcut.
+- **The title is shown once and renamed by clicking it.** Language and direction are small chips;
+  click one to change it.
+- **The save state is a coloured chip: Saved, Saving or Not saved.** Hover over it for the time of the
+  last save.
+- **In a document, click a component's text to edit it there.** The caret goes where you clicked, and
+  **Done** closes it again. The Edit and Close buttons are gone.
+- **A component's block and word counts moved into a tooltip**, on its section number in a document
+  or on its version on its own page. The line under the text that said how to move around with F6 is
+  gone.
+
 ## 0.47.0 - 2026-09-22 (PR #191)
 
 ### Changed
