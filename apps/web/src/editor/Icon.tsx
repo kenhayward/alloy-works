@@ -33,14 +33,16 @@ const PATHS: Record<string, readonly string[]> = {
   'Preformatted text': ['M2.6 3.6h10.8v8.8H2.6z', 'M5 6.8h3M5 9.4h6'],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
+  Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],
 };
 
 /**
- * A 16px icon for an editor command or act, keyed by the command's own label. Always hidden from
+ * An icon for an editor command or act, keyed by the command's own label: 16px on the toolbar, and
+ * larger where a dialog shows the command that opened it. Always hidden from
  * assistive technology: the button it sits in carries the name. A label with no drawing renders
  * nothing, which the toolbar's test would catch.
  */
-export function Icon({ name }: { name: string }) {
+export function Icon({ name, size = 16 }: { name: string; size?: number }) {
   const letter = LETTERS[name];
   if (letter !== undefined) {
     return (
@@ -56,12 +58,13 @@ export function Icon({ name }: { name: string }) {
       className={styles['path']}
       data-icon={name}
       aria-hidden="true"
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"
-      strokeWidth={name === 'Done editing' ? 1.6 : 1.5}
+      // Heavier for the two single strokes; lighter where it is drawn larger than the toolbar's 16px.
+      strokeWidth={name === 'Done editing' || name === 'Close' ? 1.6 : size > 16 ? 1.4 : 1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

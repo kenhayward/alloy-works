@@ -1576,6 +1576,56 @@ const runs = (...inlines: unknown[]) => ({
 });
 
 describe('the link and language prompts', () => {
+  it("is a modal carrying the command's icon, the text it goes on, and Cancel beside OK", async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 6);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    // The toolbar's own drawing, not a second copy of it, hidden from assistive technology.
+    expect(
+      within(dialog).getByRole('heading', { name: 'Link' }).querySelector('[data-icon]'),
+    ).toHaveAttribute('data-icon', 'Link');
+    expect(within(dialog).getByText('Unbox').tagName).toBe('MARK');
+    expect(within(dialog).getByText(/The link goes on the selected text/)).toBeInTheDocument();
+    const buttons = within(dialog)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label') ?? button.textContent);
+    expect(buttons).toEqual(['Cancel', 'OK', 'Close']);
+    expect(within(dialog).getByLabelText('Title (optional)')).not.toHaveAttribute('placeholder');
+
+    // The close button is Cancel by another name: nothing is applied.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(runsOf(view)[0]).toMatchObject({ value: 'Unbox the printer.', marks: [] });
+  });
+
+  it('cuts a long selection short rather than growing the dialog', async () => {
+    const long = 'Unbox the printer, remove every piece of packing tape and keep the box.';
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: content(long) })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectRange(view, 1, 1 + long.length);
+    await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Link' });
+    expect(dialog.querySelector('mark')?.textContent).toBe(long.slice(0, 40).trimEnd() + '…');
+  });
+
   it('links a selection to an address the author gives', async () => {
     const { surface } = open(
       {
@@ -1591,7 +1641,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() =>
       expect(runsOf(view)[0]).toMatchObject({
@@ -1610,7 +1660,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await userEvent.type(await screen.findByLabelText('Address'), 'javascript:alert(1)');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     // Said where the author typed it, while the dialog is still open and the value still in the
     // box: a press that ended in nothing is the one thing they must not have to discover.
@@ -1628,7 +1678,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(
       await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),
@@ -1671,7 +1721,7 @@ describe('the link and language prompts', () => {
       screen.getByText('Remove takes this link off and leaves the text it was on.'),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove link' }));
 
     await waitFor(() =>
       expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]),
@@ -1732,7 +1782,7 @@ describe('the link and language prompts', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(await screen.findByLabelText('Address')).toHaveFocus();
     // Nothing there to take off, so nothing offers to.
-    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
 
     await userEvent.keyboard('{Escape}');
 
@@ -1748,14 +1798,15 @@ describe('the link and language prompts', () => {
     selectRange(view, 1, 6);
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await screen.findByLabelText('Address');
-    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    // The close button is the last stop, after the footer.
+    const close = screen.getByRole('button', { name: 'Close' });
 
-    cancel.focus();
+    close.focus();
     await userEvent.tab();
     expect(screen.getByLabelText('Address')).toHaveFocus();
 
     await userEvent.tab({ shift: true });
-    expect(cancel).toHaveFocus();
+    expect(close).toHaveFocus();
   });
 
   it('CNT-098 asks the delivery to check spelling as the author types', async () => {
@@ -1784,13 +1835,13 @@ describe('the link and language prompts', () => {
     selectRange(view, 1, 6);
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'fr');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     selectRange(view, 11, 18);
     await userEvent.click(screen.getByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'en-GB');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
@@ -1821,7 +1872,7 @@ describe('the link and language prompts', () => {
     selectRange(view, 1, 6);
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'fr-FR');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
@@ -1879,7 +1930,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/setup');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() =>
       expect(asked.map((each) => each.route)).toContain(
@@ -1916,7 +1967,7 @@ describe('the link and language prompts', () => {
       await screen.findByLabelText('Title (optional)'),
       'Setting the printer up',
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() =>
       expect(runsOf(view)[0]).toMatchObject({
@@ -1969,7 +2020,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await screen.findByLabelText('Address');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(
       await screen.findByText('Type an address, or press Cancel to leave the text as it is.'),
@@ -2005,7 +2056,7 @@ describe('the link and language prompts', () => {
     // A transaction from outside the dialog puts the cursor in unmarked text, so by the time the
     // command runs there is nowhere to put the mark.
     selectRange(view, 8, 8);
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(
       await screen.findByText(
@@ -2053,7 +2104,7 @@ describe('the link and language prompts', () => {
     await screen.findByLabelText('Address');
     // The linked text goes while the dialog stands over it, so there is nothing left to take off.
     act(() => view.dispatch(view.state.tr.delete(1, 6)));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove link' }));
 
     expect(
       await screen.findByText(
@@ -2138,7 +2189,7 @@ describe('the link and language prompts', () => {
     selectRange(view, 1, 7);
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await userEvent.type(await screen.findByLabelText('Address'), 'https://example.test/first');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     // A dialog over the other run's link, whose mark then goes while the dialog stands over it.
@@ -2146,7 +2197,7 @@ describe('the link and language prompts', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Link' }));
     expect(await screen.findByLabelText('Address')).toHaveValue('https://example.test/old');
     act(() => view.dispatch(view.state.tr.removeMark(7, 18, view.state.schema.marks.hyperlink!)));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove link' }));
 
     // The text is plainly still there, so saying it has gone would be telling the author something
     // they can see is untrue.
@@ -2172,13 +2223,13 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'zh-Hans');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     // Said at the time and naming the tag, with the dialog still standing and nothing written: the
     // alternative is a component that looks fine until a publish somebody else asks for is refused.
     expect(
       await screen.findByText(
-        'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
+        'A publication cannot carry the tag zh-Hans. Press OK anyway to use it.',
       ),
     ).toBeInTheDocument();
     expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
@@ -2186,10 +2237,10 @@ describe('the link and language prompts', () => {
     // The button that now does something else is called something else, and carries the warning as
     // its description: a name that changed with the behaviour is heard on focus, where an alert
     // fired once is heard only by whoever was listening in that instant.
-    expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
-    const anyway = screen.getByRole('button', { name: 'Apply anyway' });
+    expect(screen.queryByRole('button', { name: 'OK' })).toBeNull();
+    const anyway = screen.getByRole('button', { name: 'OK anyway' });
     expect(anyway).toHaveAccessibleDescription(
-      'A publication cannot carry the tag zh-Hans. Press Apply anyway to use it.',
+      'A publication cannot carry the tag zh-Hans. Press OK anyway to use it.',
     );
 
     // A warning, not a refusal. The content model takes any well-formed tag, so the author who
@@ -2221,7 +2272,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'pt-BR');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     // One press, nothing said: a warning every carriable tag also collected would be one nobody
     // reads by the third time they see it.
@@ -2246,7 +2297,7 @@ describe('the link and language prompts', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     const box = await screen.findByLabelText('Language tag');
     await userEvent.type(box, 'zh-Hans');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await screen.findByText(/cannot carry the tag zh-Hans/);
 
     await userEvent.clear(box);
@@ -2256,11 +2307,11 @@ describe('the link and language prompts', () => {
     // box now, and the press that follows is the first press of that value, under the button's
     // ordinary name again.
     expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(
       await screen.findByText(
-        'A publication cannot carry the tag es-419. Press Apply anyway to use it.',
+        'A publication cannot carry the tag es-419. Press OK anyway to use it.',
       ),
     ).toBeInTheDocument();
     expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
@@ -2277,14 +2328,14 @@ describe('the link and language prompts', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     const box = await screen.findByLabelText('Language tag');
     await userEvent.type(box, 'zh-Hans');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     await screen.findByText(/cannot carry the tag zh-Hans/);
 
     await userEvent.clear(box);
     await userEvent.type(box, 'zh-Hans');
 
     expect(screen.queryByText(/cannot carry the tag zh-Hans/)).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByText(/cannot carry the tag zh-Hans/)).toBeInTheDocument();
     expect(runsOf(view)).toEqual([{ type: 'text', value: 'Unbox the printer.', marks: [] }]);
@@ -2300,7 +2351,7 @@ describe('the link and language prompts', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
     await userEvent.type(await screen.findByLabelText('Language tag'), 'klingon');
-    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(
       await screen.findByText('That is not a language tag. Try one like fr or pt-BR.'),

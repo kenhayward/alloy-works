@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.49.0 - 2026-09-22 (PR #193)
+
+### Changed
+
+- **The Link and Language dialogs now open over the editor**, near the top of the window, instead
+  of at the foot of the page where you had to scroll to find them. Each shows the same icon as the
+  button that opened it, and says which text the link or tag will go on.
+- **Apply is now OK**, at the right of the dialog, with **Cancel** at the left. **Apply anyway** is
+  now **OK anyway**, and **Remove** says what it removes: **Remove link** or **Remove language tag**.
+- **Every dialog's close button** is now a drawn cross, matching the editor's icons.
+
 ## 0.48.0 - 2026-09-22 (PR #192)
 
 ### Changed

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 
+import { Icon } from '../editor/Icon.js';
 import styles from './Modal.module.css';
 
 const FOCUSABLE =
@@ -82,7 +83,7 @@ export function Modal({
           title="Close"
           onClick={onClose}
         >
-          <span aria-hidden="true">x</span>
+          <Icon name="Close" size={13} />
         </button>
       </div>
     </div>
