@@ -1550,24 +1550,28 @@ describe('a table, published (tables 2)', () => {
         ],
         headerRows: 1,
         headerColumns: 1,
+        columns: 3,
+        // Each cell's scope from its place in the grid: the header row's are column headers, the
+        // header column's row headers, and the one in both is both. c6 stands in the second column,
+        // since York spans two rows.
         rows: [
           {
             cells: [
-              { blocks: [published('c1')], colspan: 1, rowspan: 1 },
-              { blocks: [published('c2')], colspan: 2, rowspan: 1 },
+              { blocks: [published('c1')], colspan: 1, rowspan: 1, scope: 'both' },
+              { blocks: [published('c2')], colspan: 2, rowspan: 1, scope: 'column' },
             ],
           },
           {
             cells: [
-              { blocks: [published('c3')], colspan: 1, rowspan: 2 },
-              { blocks: [published('c4')], colspan: 1, rowspan: 1 },
-              { blocks: [published('c5')], colspan: 1, rowspan: 1 },
+              { blocks: [published('c3')], colspan: 1, rowspan: 2, scope: 'row' },
+              { blocks: [published('c4')], colspan: 1, rowspan: 1, scope: null },
+              { blocks: [published('c5')], colspan: 1, rowspan: 1, scope: null },
             ],
           },
           {
             cells: [
-              { blocks: [published('c6')], colspan: 1, rowspan: 1 },
-              { blocks: [published('c7')], colspan: 1, rowspan: 1 },
+              { blocks: [published('c6')], colspan: 1, rowspan: 1, scope: null },
+              { blocks: [published('c7')], colspan: 1, rowspan: 1, scope: null },
             ],
           },
         ],

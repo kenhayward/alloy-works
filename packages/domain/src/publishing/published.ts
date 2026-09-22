@@ -181,6 +181,12 @@ export interface PublishedCell {
   readonly blocks: readonly PublishedBlock[];
   readonly colspan: number;
   readonly rowspan: number;
+  /**
+   * What the cell heads, from where it starts in the grid: `column` in a header row, `row` in a
+   * header column, `both` in the corner where they meet, and null for a data cell. Worked out here,
+   * where the grid is already known to be whole, so a template sets a cell without placing spans.
+   */
+  readonly scope: 'column' | 'row' | 'both' | null;
 }
 
 /**
@@ -197,6 +203,8 @@ export interface PublishedTable {
   readonly caption: readonly PublishedRun[];
   readonly headerRows: number;
   readonly headerColumns: number;
+  /** How many columns the grid is wide, which a template gives its table as that many equal columns. */
+  readonly columns: number;
   readonly rows: readonly { readonly cells: readonly PublishedCell[] }[];
 }
 

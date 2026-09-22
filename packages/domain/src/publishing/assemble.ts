@@ -26,6 +26,7 @@ import {
   PUBLISHING_SCHEMA_1,
   type PublishedBlock,
   type PublishedBlock1,
+  type PublishedCell,
   type PublishedDocument,
   type PublishedDocument1,
   type PublishedItem,
@@ -357,6 +358,14 @@ export function assemble(input: AssembleInput): Assembled {
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
         if (label !== null) check(label, node, block.id);
+        const { columns, starts } = gridOf(block);
+        const scopeAt = (row: number, column: number): PublishedCell['scope'] => {
+          const heading = row < block.headerRows;
+          const leading = column < block.headerColumns;
+          if (heading && leading) return 'both';
+          if (heading) return 'column';
+          return leading ? 'row' : null;
+        };
         return [
           {
             type: 'table',
@@ -365,12 +374,14 @@ export function assemble(input: AssembleInput): Assembled {
             caption,
             headerRows: block.headerRows,
             headerColumns: block.headerColumns,
-            rows: block.rows.map((row) => ({
-              cells: row.cells.map((cell) => ({
+            columns,
+            rows: block.rows.map((row, rowIndex) => ({
+              cells: row.cells.map((cell, cellIndex) => ({
                 // Paragraphs and lists alone (decision T-D), each published as it is anywhere else.
                 blocks: cell.content.flatMap((each) => publishable(each, node, indent)),
                 colspan: cell.colspan,
                 rowspan: cell.rowspan,
+                scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
               })),
             })),
           },
@@ -577,6 +588,33 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
       );
     }
   }
+}
+
+/**
+ * A stored table's width and the column each cell starts in, placing a cell in the first place no
+ * cell above has spanned into - the walk `checkGrid` makes when the table is read, which is why the
+ * grid is known here to be whole and rectangular.
+ */
+function gridOf(table: Extract<BlockNode, { type: 'table' }>): {
+  columns: number;
+  starts: number[][];
+} {
+  const covered: boolean[][] = table.rows.map(() => []);
+  const starts = table.rows.map((row, rowIndex) => {
+    let column = 0;
+    return row.cells.map((cell) => {
+      while (covered[rowIndex]![column]) column += 1;
+      const start = column;
+      for (let down = 0; down < cell.rowspan; down += 1) {
+        for (let across = 0; across < cell.colspan; across += 1) {
+          covered[rowIndex + down]![start + across] = true;
+        }
+      }
+      column += cell.colspan;
+      return start;
+    });
+  });
+  return { columns: covered[0]!.length, starts };
 }
 
 /** The layout's PDF member as the template reads it: the page in points, numbering as patterns. */
