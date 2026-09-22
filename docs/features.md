@@ -9,8 +9,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > documents made, their
 > outlines restructured, their sections numbered and their paragraphs and lists published as a
 > laid-out PDF with
-> a cover, a contents and numbered pages that carries all of that formatting. Nothing is arranged
-> beyond paragraphs and lists - no table, footnote or equation - and nothing is cross-referenced.
+> a cover, a contents and numbered pages that carries all of that formatting. A component can hold a
+> table, which is not yet published; nothing holds a footnote or an equation, and nothing is
+> cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -158,7 +159,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the middle of a paragraph joins it, and one undo takes a paste back. Pasting into preformatted text
   keeps every character exactly. What could not be kept is said at the time: the status bar says the
   paste happened, and a **Paste report** above the text lists what was changed or left out - a
-  heading kept as a paragraph, a table kept as its text, an image or an equation left out, a typeface
+  heading kept as a paragraph, a table's rows made the same length, an image or an equation left out, a typeface
   or a colour removed because the theme decides how text looks, a script or a link that could run
   something removed - with a **Close** button; `F6` reaches it like the other regions. Copying from a
   component writes its own format beside HTML and plain text, so a copy into another component keeps
@@ -168,10 +169,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   same report. The browser may ask you first whether the page may see the clipboard, and if it is
   refused the status bar says so and nothing is pasted. Nothing can be dragged in yet.
 
-  **This is formatted paragraphs, lists, quotations and preformatted text, not the editor.** A
-  component holding a table, an equation or a footnote opens for reading only. There is no control for a
-  defined term or a citation, a table, an
-  image or an equation cannot be pasted, changes saved but never made into a version are
+  **Tables.** **Table** on the toolbar (`Ctrl` or `Cmd`, `Shift` and 0) puts a table of three columns
+  and three rows after the paragraph you are in, its first row a header row, with a caption line above
+  it that says **Caption** until you type one - a caption is formatted like any other text. A cell
+  holds paragraphs and lists. `Tab` moves to the next cell and `Shift-Tab` to the one before, and
+  from the last cell or the first the focus moves on out of the table. While the cursor is in a table
+  a **Table** panel offers how many **Header rows** and **Header columns** it has, and **Row above**,
+  **Row below**, **Column before**, **Column after**, **Delete row**, **Delete column**, **Merge cells**
+  (over cells you have selected by dragging), **Split cell** and **Delete table**; a button that would
+  do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
+  from a web page, Word, Google Docs or Markdown arrives as a table, with its caption, header rows and
+  columns and merged cells. **A table is not published yet**: publishing a document whose components
+  hold one is refused, naming it, until the next step builds it.
+
+  **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
+  component holding an equation, a figure or a footnote opens for reading only. There is no control for
+  a defined term or a citation, an image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
   there, and `Tab` moves the focus on. `Backspace` at the start of a definition's term, or `Delete`
@@ -331,10 +344,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 Named explicitly so nobody has to read the source to find out:
 
-- No way to author anything but formatted paragraphs, lists, quotations and preformatted text: a
-  component holding a table, a footnote or an equation still opens for reading only, and
+- No way to author anything but formatted paragraphs, lists, quotations, preformatted text and
+  tables: a component holding a figure, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
-  citation. A paste keeps no table, footnote, image or equation, reads Markdown only when **Paste as
+  citation. A table is not published. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations and preformatted text. The one sample document is a fixed template with
   no content of yours in it.

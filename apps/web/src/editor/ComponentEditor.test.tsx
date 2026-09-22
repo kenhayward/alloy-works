@@ -708,37 +708,21 @@ describe('the component editor', () => {
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
-    // A table: a list is carried now, and this is about the block the editor still has no node for.
-    const withTable = content('Before');
-    withTable.content.push({
-      type: 'table',
+    // A figure: lists and tables are carried now, and this is about a block the editor still has no
+    // node for.
+    const withFigure = content('Before');
+    withFigure.content.push({
+      type: 'figure',
       id: 't1',
+      asset: 'asset-1',
+      imageStyle: 'wide',
       caption: [{ type: 'text', value: 'Readings', marks: [] }],
-      headerRows: 1,
-      headerColumns: 0,
-      rows: [
-        {
-          cells: [
-            {
-              content: [
-                {
-                  type: 'paragraph',
-                  id: 'i1',
-                  style: 'body',
-                  content: [{ type: 'text', value: 'Ambient', marks: [] }],
-                },
-              ],
-              colspan: 1,
-              rowspan: 1,
-            },
-          ],
-        },
-      ],
+      alternative: { kind: 'decorative' },
     } as never);
-    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withTable })) });
+    open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withFigure })) });
     expect(
       await screen.findByText(
-        'This component holds content this editor cannot change yet (table), so it is shown for reading only.',
+        'This component holds content this editor cannot change yet (figure), so it is shown for reading only.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
@@ -3200,5 +3184,123 @@ describe('quotations and preformatted text on the surface (editor 5)', () => {
     await waitFor(() =>
       expect(fromEditor(view.state.doc).content[1]).not.toHaveProperty('language'),
     );
+  });
+});
+
+describe('the table panel (tables 1)', () => {
+  const openWith = (stored: unknown) =>
+    open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        ...saves,
+      },
+      quick,
+      true,
+    );
+
+  const cellOf = (id: string, value: string) => ({
+    content: [
+      { type: 'paragraph', id, style: 'body', content: [{ type: 'text', value, marks: [] }] },
+    ],
+    colspan: 1,
+    rowspan: 1,
+  });
+  /** One header row over one row of data, two columns. */
+  const aTable = blocksOf(para('b1', 'Before.'), {
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [{ type: 'text', value: 'Readings', marks: [] }],
+    headerRows: 1,
+    headerColumns: 0,
+    rows: [
+      { cells: [cellOf('h1', 'Site'), cellOf('h2', 'Value')] },
+      { cells: [cellOf('d1', 'York'), cellOf('d2', '1')] },
+    ],
+  });
+  const tableOf = (view: EditorView) =>
+    fromEditor(view.state.doc).content.find((block) => block.type === 'table') as
+      { headerRows: number; headerColumns: number; rows: { cells: unknown[] }[] } | undefined;
+  const caretIn = (view: EditorView, id: string) =>
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(Selection.near(view.state.doc.resolve(inside(view, id)))),
+      ),
+    );
+
+  it('inserts a table from the toolbar, and shows its panel only while the cursor is in one', async () => {
+    const { surface } = openWith(content('Unbox the printer.'));
+    const view = await surface();
+    expect(screen.queryByRole('group', { name: 'Table' })).toBeNull();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Table' }));
+
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    expect(within(panel).getByLabelText('Header rows')).toHaveValue(1);
+    expect(within(panel).getByLabelText('Header columns')).toHaveValue(0);
+    expect(tableOf(view)).toMatchObject({ headerRows: 1, headerColumns: 0 });
+    expect(tableOf(view)!.rows).toHaveLength(3);
+
+    caretIn(view, fromEditor(view.state.doc).content[0]!.id);
+    expect(screen.queryByRole('group', { name: 'Table' })).toBeNull();
+  });
+
+  it('sets header rows and columns, and adds and deletes rows and columns', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+
+    fireEvent.change(within(panel).getByLabelText('Header columns'), { target: { value: '1' } });
+    await waitFor(() => expect(tableOf(view)).toMatchObject({ headerRows: 1, headerColumns: 1 }));
+
+    await userEvent.click(within(panel).getByRole('button', { name: 'Row below' }));
+    expect(tableOf(view)!.rows).toHaveLength(3);
+    await userEvent.click(within(panel).getByRole('button', { name: 'Delete column' }));
+    expect(tableOf(view)!.rows[0]!.cells).toHaveLength(1);
+  });
+
+  it('says a button is unavailable where pressing it would do nothing', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    // Nothing is merged and no cells are selected, so neither has anything to act on.
+    expect(within(panel).getByRole('button', { name: 'Merge cells' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(within(panel).getByRole('button', { name: 'Split cell' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(within(panel).getByRole('button', { name: 'Row below' })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    );
+    const before = view.state.doc;
+    await userEvent.click(within(panel).getByRole('button', { name: 'Merge cells' }));
+    expect(view.state.doc.eq(before)).toBe(true);
+  });
+
+  it('deletes the table, caption and all', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd2');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    await userEvent.click(within(panel).getByRole('button', { name: 'Delete table' }));
+    expect(tableOf(view)).toBeUndefined();
+    expect(screen.queryByRole('group', { name: 'Table' })).toBeNull();
+  });
+
+  it('is a region F6 reaches while the cursor is in a table', async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    view.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(within(panel).getByLabelText('Header rows')).toHaveFocus();
   });
 });

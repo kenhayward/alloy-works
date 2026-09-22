@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.54.0 - 2026-09-22 (PR #203)
+
+### Added
+
+- **Tables in a component.** **Table** on the toolbar (Ctrl or Cmd, Shift and 0) adds a table of
+  three columns and three rows with a header row and a caption line above it. Cells hold paragraphs
+  and lists, and Tab moves between them. A **Table** panel sets how many header rows and header
+  columns there are, adds and deletes rows and columns, merges and splits cells, and deletes the
+  table. A table pasted from a web page, Word, Google Docs or Markdown arrives as a table. Tables
+  are not published yet: a document holding one is refused by name until the next step.
+
+### Changed
+
+- A figure's and a table's caption can now hold formatting, and will be able to hold an equation
+  or a cross-reference once those can be written.
+
 ## 0.53.2 - 2026-09-22 (PR #201)
 
 ### Changed

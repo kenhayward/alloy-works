@@ -7,6 +7,7 @@ import {
   headerOf,
   listAt,
   preformattedAt,
+  tableAt,
   mountEditor,
   pasteInto,
   readMarkdownText,
@@ -34,6 +35,7 @@ import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
+import { TablePanel } from './TablePanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { SaveIndicator } from './SaveIndicator.js';
@@ -224,6 +226,8 @@ export function ComponentEditor({
   const listRegion = useRef<HTMLDivElement | null>(null);
   // The preformatted panel's, which comes and goes the same way, with a preformatted block.
   const preformattedRegion = useRef<HTMLDivElement | null>(null);
+  // The table panel's, which comes and goes the same way, with a table (tables 1).
+  const tableRegion = useRef<HTMLDivElement | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -677,6 +681,7 @@ export function ComponentEditor({
       toolbarRegion.current,
       listRegion.current,
       preformattedRegion.current,
+      tableRegion.current,
       pasteRegion.current,
       place.current,
     ].filter((region) => region !== null);
@@ -757,6 +762,7 @@ export function ComponentEditor({
   // is the change the panel has to hear about, and `dispatch` re-renders on every transaction.
   const list = surface === null ? null : listAt(surface.state);
   const preformatted = surface === null ? null : preformattedAt(surface.state);
+  const table = surface === null ? null : tableAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
 
   /**
@@ -961,6 +967,10 @@ export function ComponentEditor({
                 block={preformatted}
                 enabled={mayFormat}
               />
+            )}
+            {/* And only while the cursor stands in a table: its header counts and its grid's acts. */}
+            {surface !== null && table !== null && (
+              <TablePanel ref={tableRegion} view={surface} table={table} enabled={mayFormat} />
             )}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
