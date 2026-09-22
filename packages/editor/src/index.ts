@@ -13,6 +13,7 @@ export {
   PRODUCT_CLIPBOARD_TYPE,
   productClipboard,
   readClipboard,
+  readMarkdownText,
   type ClipboardSource,
   type PasteOutcome,
 } from './clipboard.js';

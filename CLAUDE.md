@@ -20,7 +20,8 @@ a web application and a desktop application**.
 > keyboard; and they can be quotations with an attribution, or preformatted text whose whitespace is
 > kept exactly, with a language label set in a panel of its own. Text
 > pasted from a web page, Word, Google Docs, plain text or another component passes through the
-> admission pipeline, read by `packages/readers`, and what it changed is shown in a paste report. A
+> admission pipeline, read by `packages/readers`, and what it changed is shown in a paste report;
+> **Paste as Markdown** on the toolbar reads the clipboard as Markdown instead. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's

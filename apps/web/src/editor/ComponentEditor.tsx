@@ -8,6 +8,8 @@ import {
   listAt,
   preformattedAt,
   mountEditor,
+  pasteInto,
+  readMarkdownText,
   newBlockIdentifier,
   removeMarkCommand,
   Selection as EditorSelection,
@@ -108,6 +110,27 @@ const PASTED = 'Pasted.';
 const PASTED_WITH_REPORT =
   'Pasted. Some of it was changed or left out: the paste report says what.';
 const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
+const CLIPBOARD_UNREADABLE =
+  'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
+
+/**
+ * What a paste says: the report's entries worth an author's attention, beside the sentence for the
+ * status bar. A refusal's own sentence is the status bar's, so the report is for anything beside it.
+ * One answer for both ways in - a paste the browser delivered, and Paste as Markdown.
+ */
+function pasteSentence(
+  ok: boolean,
+  report: readonly ReportEntry[],
+): { readonly beside: readonly ReportEntry[]; readonly said: string } {
+  const shown = shownOfPaste(report);
+  const beside = ok ? shown : shown.slice(0, -1);
+  const said = ok
+    ? beside.length > 0
+      ? PASTED_WITH_REPORT
+      : PASTED
+    : (report.at(-1)?.message ?? '');
+  return { beside, said };
+}
 
 /** One dialog, open, and the press waiting on what the author does with it. */
 interface Asking {
@@ -558,15 +581,8 @@ export function ComponentEditor({
         }
       },
       pasted: ({ ok, report }) => {
-        const shown = shownOfPaste(report);
-        // A refusal's own sentence is the status bar's, so the report is for anything beside it.
-        const beside = ok ? shown : shown.slice(0, -1);
+        const { beside, said } = pasteSentence(ok, report);
         setPasteReport(beside.length > 0 ? beside : null);
-        const said = ok
-          ? beside.length > 0
-            ? PASTED_WITH_REPORT
-            : PASTED
-          : (report.at(-1)?.message ?? '');
         setNotice(said);
         if (ok && phase !== 'editing') pasteSaid.current = said;
       },
@@ -742,6 +758,36 @@ export function ComponentEditor({
   const list = surface === null ? null : listAt(surface.state);
   const preformatted = surface === null ? null : preformattedAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+
+  /**
+   * **Paste as Markdown**: the clipboard's plain text read as Markdown and placed as a paste is,
+   * through the admission pipeline and with the same report. The browser is asked for the text
+   * rather than handed it by a paste event, so it may ask the author first, or refuse; a refusal
+   * is said, and nothing is placed.
+   */
+  const pasteMarkdown = async () => {
+    const view = surface;
+    if (view === null || !mayFormat) return;
+    let text: string;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      // Refused, or no clipboard to ask at all outside a secure page.
+      setNotice(CLIPBOARD_UNREADABLE);
+      return;
+    }
+    const into = view.state.selection.$from.parent.type.spec.code ? 'preformatted' : 'blocks';
+    const reading = await readMarkdownText(text, into);
+    // The author may have closed the component while the clipboard or the parser was coming.
+    if (view.isDestroyed) return;
+    const outcome = pasteInto(view.state, reading, newBlockIdentifier);
+    if (outcome.ok) view.dispatch(outcome.transaction);
+    const { beside, said } = pasteSentence(outcome.ok, outcome.report);
+    setPasteReport(beside.length > 0 ? beside : null);
+    setNotice(said);
+    if (outcome.ok && controls.current?.view().phase !== 'editing') pasteSaid.current = said;
+    view.focus();
+  };
   const size = surface === null ? undefined : sizeOf(surface.state.doc);
   const mayCut = shown.mayEdit && loaded.state === 'open';
   // Standalone, Done is Done editing and releases a lock only this session can hold. In place it is
@@ -864,6 +910,7 @@ export function ComponentEditor({
               (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
               than absent, so what the editor can do with the text is visible before the lock is. */}
             <EditorToolbar
+              onPasteMarkdown={() => void pasteMarkdown()}
               ref={toolbarRegion}
               view={surface}
               enabled={mayFormat}
