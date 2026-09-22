@@ -8,6 +8,7 @@ import {
   pasteInto,
   productClipboard,
   readClipboard,
+  readMarkdownText,
   type ClipboardSource,
 } from './clipboard.js';
 import { fromEditor, toEditor } from './mapping.js';
@@ -178,6 +179,36 @@ describe('pasting', () => {
       { action: 'discarded', subject: 'unrepresentable', detail: 'table' },
       { action: 'refused', subject: 'invalid' },
     ]);
+  });
+});
+
+describe('pasting Markdown, when asked', () => {
+  it('reads the text as Markdown, keeping its structure', async () => {
+    const state = stateOf([paragraph('b1', '')]);
+    const outcome = pasteInto(
+      state,
+      await readMarkdownText('- **One**\n- Two\n', 'blocks'),
+      counter('p'),
+    );
+    if (!outcome.ok) throw new Error(outcome.report.at(-1)?.message);
+    expect(stored(state.apply(outcome.transaction))).toMatchObject([
+      {
+        type: 'list',
+        kind: 'unordered',
+        items: [
+          { content: [{ content: [{ value: 'One', marks: [{ type: 'strong' }] }] }] },
+          { content: [{ content: [{ value: 'Two' }] }] },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps it exactly in preformatted text, where Markdown means nothing', async () => {
+    const reading = await readMarkdownText('**not bold**', 'preformatted');
+    expect(reading.ok && reading.input.candidate).toEqual({
+      schemaVersion: 1,
+      content: [{ type: 'preformatted', text: '**not bold**' }],
+    });
   });
 });
 

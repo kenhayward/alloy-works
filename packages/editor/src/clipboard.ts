@@ -57,6 +57,24 @@ export function readClipboard(
   };
 }
 
+/**
+ * Text read as Markdown, which only an author's asking makes it (**Paste as Markdown**): a clipboard
+ * never says that it holds Markdown, and reading every plain paste as Markdown would turn asterisks
+ * into emphasis nobody asked for. Into preformatted text it is kept exactly, as any plain text is,
+ * because Markdown means nothing in code.
+ *
+ * **The parser is loaded the first time it is asked for**, from the readers' own entry point, so a
+ * renderer that never pastes Markdown never downloads it.
+ */
+export async function readMarkdownText(
+  text: string,
+  into: 'blocks' | 'preformatted',
+): Promise<ReaderResult> {
+  if (into === 'preformatted') return readPlainText(text, 'preformatted');
+  const { readMarkdown } = await import('@alloy-works/readers/markdown');
+  return readMarkdown(text);
+}
+
 export type PasteOutcome =
   | {
       readonly ok: true;

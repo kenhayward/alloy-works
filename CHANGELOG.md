@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.53.0 - 2026-09-22 (PR #199)
+
+### Added
+
+- **Paste as Markdown.** A new button at the end of the editor's toolbar pastes what the clipboard
+  holds as Markdown: emphasis, strong text, code, links, bulleted and numbered lists, quotations and
+  fenced code blocks with their language. A heading is kept as a paragraph and an image is left out,
+  and the paste report says so, as for any paste. The browser may ask whether the page may see the
+  clipboard; if it is refused, nothing is pasted and the status bar says why. An ordinary paste of
+  Markdown is still plain text.
+
+### Fixed
+
+- A pasted paragraph that held only an image was reported as an empty paragraph used for spacing. It
+  is now reported as the image that was left out (#198).
+
 ## 0.52.0 - 2026-09-22 (PR #197)
 
 ### Added

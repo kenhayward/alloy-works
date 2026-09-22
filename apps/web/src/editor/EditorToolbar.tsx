@@ -44,6 +44,12 @@ export interface EditorToolbarProps {
    */
   readonly onRefused?: (command: MarkCommand) => void;
   /**
+   * **Paste as Markdown**, offered as the last button where given. It is not a command in the
+   * editor's registry: it reads the clipboard, which only the page can ask the browser for, and it
+   * has no shortcut, because every key a browser leaves free for pasting is already its own.
+   */
+  readonly onPasteMarkdown?: () => void;
+  /**
    * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
    */
@@ -131,13 +137,16 @@ export function EditorToolbar({
   newIdentifier,
   prompt,
   onRefused,
+  onPasteMarkdown,
   ref,
 }: EditorToolbarProps) {
   const [tabStop, setTabStop] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  // The registry's buttons, then Paste as Markdown where it is offered: one ring either way.
+  const count = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0);
 
   const moveTo = (index: number) => {
-    const at = (index + EDITOR_COMMANDS.length) % EDITOR_COMMANDS.length;
+    const at = (index + count) % count;
     setTabStop(at);
     buttons.current[at]?.focus();
   };
@@ -148,7 +157,7 @@ export function EditorToolbar({
     if (event.key === 'ArrowRight') moveTo(from + 1);
     else if (event.key === 'ArrowLeft') moveTo(from - 1);
     else if (event.key === 'Home') moveTo(0);
-    else if (event.key === 'End') moveTo(EDITOR_COMMANDS.length - 1);
+    else if (event.key === 'End') moveTo(count - 1);
     else return;
     event.preventDefault();
   };
@@ -229,6 +238,28 @@ export function EditorToolbar({
           )}
         </Fragment>
       ))}
+      {onPasteMarkdown && (
+        <>
+          <span className={styles['divider']} data-divider aria-hidden="true" />
+          <button
+            type="button"
+            className={styles['button']}
+            aria-label="Paste as Markdown"
+            ref={(element) => {
+              buttons.current[EDITOR_COMMANDS.length] = element;
+            }}
+            aria-disabled={!enabled || view === null}
+            tabIndex={tabStop === EDITOR_COMMANDS.length ? 0 : -1}
+            title="Paste as Markdown"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (enabled && view !== null) onPasteMarkdown();
+            }}
+          >
+            <Icon name="Paste as Markdown" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

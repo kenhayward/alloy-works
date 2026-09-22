@@ -94,6 +94,8 @@ const KINDS = ['Bulleted list', 'Numbered list', 'Definition list'];
 const MOVES = ['Nest item', 'Lift item'];
 
 interface ToolbarOptions {
+  /** Offered as the toolbar's last button, as the editor offers it; absent everywhere else. */
+  readonly onPasteMarkdown?: () => void;
   readonly document?: unknown;
   readonly enabled?: boolean;
   /** What the prompt resolves with: null is the author cancelling. */
@@ -143,6 +145,7 @@ function renderToolbar(options: ToolbarOptions = {}) {
     caretIn,
     range,
     mounted = true,
+    onPasteMarkdown,
   } = options;
   const dispatched: Transaction[] = [];
   const prompt = vi.fn(asks ?? (() => Promise.resolve(answer)));
@@ -199,6 +202,7 @@ function renderToolbar(options: ToolbarOptions = {}) {
         newIdentifier={newIdentifier}
         prompt={prompt}
         onRefused={onRefused}
+        {...(onPasteMarkdown ? { onPasteMarkdown } : {})}
       />
     </StrictMode>,
   );
@@ -554,6 +558,32 @@ describe('the formatting toolbar', () => {
     // A dispatch into a destroyed view throws, which the catch below would then report to the author
     // as a refusal of a target that was perfectly good.
     expect(onRefused).not.toHaveBeenCalled();
+  });
+
+  it('offers Paste as Markdown last, in the same ring as the commands, and asks for it when pressed', async () => {
+    const onPasteMarkdown = vi.fn();
+    renderToolbar({ onPasteMarkdown });
+    const button = screen.getByRole('button', { name: 'Paste as Markdown' });
+    expect(button).toHaveAttribute('title', 'Paste as Markdown');
+    expect(button).toHaveAttribute('aria-disabled', 'false');
+
+    screen.getByRole('button', { name: 'Strong' }).focus();
+    await userEvent.keyboard('{End}');
+    expect(button).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('button', { name: 'Strong' })).toHaveFocus();
+
+    await userEvent.click(button);
+    expect(onPasteMarkdown).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers Paste as Markdown as unavailable while the component may not be changed', async () => {
+    const onPasteMarkdown = vi.fn();
+    renderToolbar({ onPasteMarkdown, enabled: false });
+    const button = screen.getByRole('button', { name: 'Paste as Markdown' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(button);
+    expect(onPasteMarkdown).not.toHaveBeenCalled();
   });
 
   it('is unavailable while the component may not be changed', async () => {

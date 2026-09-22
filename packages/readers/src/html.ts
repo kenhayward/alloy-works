@@ -412,12 +412,14 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
   if (name === 'p' || HEADINGS.has(name)) {
     sink.close(false);
     const before = sink.blocks.length;
+    const leftOut = tally.images + tally.mathematics;
     // The paragraph's own handlers are its own, not its first run's.
     walkChildren(node.childNodes, { ...inner, handlers: context.handlers }, sink, tally);
     const own = inner.handlers === context.handlers ? [] : (inner.handlers?.names ?? []);
     // Empty only if nothing at all came of it: a trailing `br` leaves an empty remainder that is
-    // nobody's spacing.
-    const made = sink.close(sink.blocks.length === before, own);
+    // nobody's spacing, and a paragraph that held only an image is reported as the image.
+    const spacing = sink.blocks.length === before && tally.images + tally.mathematics === leftOut;
+    const made = sink.close(spacing, own);
     if (HEADINGS.has(name) && (made || sink.blocks.length > before)) tally.headings += 1;
     return;
   }

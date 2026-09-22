@@ -162,7 +162,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   or a colour removed because the theme decides how text looks, a script or a link that could run
   something removed - with a **Close** button; `F6` reaches it like the other regions. Copying from a
   component writes its own format beside HTML and plain text, so a copy into another component keeps
-  everything the editor holds. Markdown pastes as plain text, and nothing can be dragged in yet.
+  everything the editor holds. An ordinary paste of Markdown is plain text, because a clipboard never
+  says it holds Markdown; **Paste as Markdown**, the last button on the toolbar, reads what the
+  clipboard holds as Markdown instead - emphasis, links, lists, quotations and fenced code - with the
+  same report. The browser may ask you first whether the page may see the clipboard, and if it is
+  refused the status bar says so and nothing is pasted. Nothing can be dragged in yet.
 
   **This is formatted paragraphs, lists, quotations and preformatted text, not the editor.** A
   component holding a table, an equation or a footnote opens for reading only. There is no control for a
@@ -329,8 +333,8 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations and preformatted text: a
   component holding a table, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
-  citation. A paste keeps no table, footnote, image or equation, reads Markdown as plain text, and
-  nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
+  citation. A paste keeps no table, footnote, image or equation, reads Markdown only when **Paste as
+  Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations and preformatted text. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and

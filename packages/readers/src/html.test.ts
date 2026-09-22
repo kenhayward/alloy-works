@@ -200,6 +200,13 @@ style='mso-list:Ignore'>2.<span>&nbsp;</span></span><![endif]><b>Alice</b><o:p><
     ]);
   });
 
+  it('reports a paragraph holding only an image as the image, not as spacing', () => {
+    const input = read('<p><img src="https://example.com/a.png"></p><p>After</p>');
+    expect(happened(input.report)).toEqual([
+      { stage: 'read', action: 'discarded', subject: 'image', count: 1 },
+    ]);
+  });
+
   it('hands a text style over as presentation on its paragraph, for the pipeline to remove', () => {
     expect(
       content(

@@ -569,6 +569,50 @@ describe('the component editor', () => {
     );
   });
 
+  it('pastes the clipboard as Markdown from the toolbar, keeping its structure', async () => {
+    const readText = vi.fn(async () => '**Keep** the box.');
+    Object.defineProperty(navigator, 'clipboard', { value: { readText }, configurable: true });
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Paste as Markdown' }));
+
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    expect(view.state.doc.textContent).toBe('Unbox the printer.Keep the box.');
+    expect(view.dom.querySelector('strong')).toHaveTextContent('Keep');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You are editing this component. Pasted.',
+      ),
+    );
+    expect(view.hasFocus()).toBe(true);
+  });
+
+  it('says so when the clipboard cannot be read for Paste as Markdown, and pastes nothing', async () => {
+    const readText = vi.fn(async () => {
+      throw new DOMException('Read permission denied.', 'NotAllowedError');
+    });
+    Object.defineProperty(navigator, 'clipboard', { value: { readText }, configurable: true });
+    const { asked, surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    const view = await surface();
+    await userEvent.click(screen.getByRole('button', { name: 'Paste as Markdown' }));
+    expect(
+      await screen.findByText(
+        'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.',
+      ),
+    ).toBeInTheDocument();
+    expect(view.state.doc.textContent).toBe('Unbox the printer.');
+    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+  });
+
   it('refuses a paste nothing can be read from, changing nothing and saying why', async () => {
     const { asked, surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
     const view = await surface();
