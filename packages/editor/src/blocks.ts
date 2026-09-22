@@ -321,7 +321,14 @@ function countedList(kind: 'ordered' | 'unordered', newIdentifier: () => string)
     // a level with it. The probe carries a null identifier so that a query, which is what the
     // toolbar asks to decide whether a button is available, still draws none.
     const would: Node[] = [];
-    wrapInList(listNode, { id: null, kind })(state, (tr) => would.push(tr.doc));
+    try {
+      wrapInList(listNode, { id: null, kind })(state, (tr) => would.push(tr.doc));
+    } catch {
+      // `prosemirror-schema-list` throws from inside `canSplit` over a range that begins in a
+      // definition standing in a counted list and ends in the item after it (issue #166). Declining
+      // is the answer: the press does nothing, and the button says it would do nothing.
+      return false;
+    }
     if (would.length === 0) return false;
     if (tooDeep(would[0])) return false;
     // The identifier is drawn only where the list is actually made: a query - which is what the
@@ -385,10 +392,76 @@ function makeDefinitionList(newIdentifier: () => string): Command {
           end,
           new Slice(Fragment.from(wrapper), 0, 0),
           insert,
-          true,
+          // **Not a structure step.** One checks that the range outside its gap holds no content,
+          // and the inverse's does - the empty term - so undoing a Definition list would fail that
+          // check, and the history drops a failing step without a word: the list stayed and only
+          // its identifier moved (issue #166). The forward step has nothing to overwrite anyway.
+          false,
         ),
       );
       dispatch(tr.setSelection(TextSelection.create(tr.doc, start + 3)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/**
+ * `Backspace` at the start of a definition item's term, or `Delete` at the end of the item before it:
+ * **the two items become one** (issue #160). Without this, `deleteBarrier` could not merge them - a
+ * definition item is `term block+`, so a join puts a paragraph where the term must be - and wrapped
+ * the second item in a new definition list inside the first instead, one level deeper, from a key an
+ * author thinks of as destructive.
+ *
+ * The join is the one a paragraph gets: the second term's text runs on at the end of the first
+ * item's last paragraph, and the second item's body follows it. **An empty term is taken away and
+ * the body's first paragraph joins instead**, which is exactly the inverse of `Enter` in a
+ * definition: that splits the paragraph and opens an empty term between the halves.
+ *
+ * One deletion over the boundary, so everything before it maps forward untouched and every block
+ * keeps its identifier. Where the text before the boundary is not a paragraph - the item ends in a
+ * quotation, a list or preformatted text - there is nothing a term's words can join, and the key is
+ * **taken and does nothing**, rather than handed on to the join that nests.
+ */
+export function joinDefinitionItems(direction: 'backward' | 'forward'): Command {
+  return (state, dispatch) => {
+    const { selection } = state;
+    if (!selection.empty) return false;
+    const $at = selection.$from;
+    let itemStart: number | null = null;
+    if (direction === 'backward') {
+      if ($at.parent.type !== termNode || $at.parentOffset !== 0) return false;
+      const itemDepth = $at.depth - 1;
+      // The first item's term has no item before it to join.
+      if ($at.index(itemDepth - 1) === 0) return false;
+      itemStart = $at.before(itemDepth);
+    } else {
+      if (!$at.parent.isTextblock || $at.parentOffset !== $at.parent.content.size) return false;
+      for (let depth = $at.depth - 1; depth > 0; depth -= 1) {
+        const node = $at.node(depth);
+        // Only from the very end of an item: the caret's block is the last thing in each level.
+        if ($at.index(depth) !== node.childCount - 1) return false;
+        if (node.type === definitionItemNode) {
+          if ($at.index(depth - 1) + 1 >= $at.node(depth - 1).childCount) return false;
+          itemStart = $at.after(depth);
+          break;
+        }
+      }
+      if (itemStart === null) return false;
+    }
+
+    const item = state.doc.resolve(itemStart).nodeAfter!;
+    const term = item.firstChild!;
+    const before = Selection.findFrom(state.doc.resolve(itemStart), -1, true);
+    if (before === null || before.$from.parent.type !== paragraphNode) return true;
+    const joinFrom = before.from;
+    const firstBody = item.child(1);
+    const joinTo =
+      term.content.size === 0 && firstBody.type === paragraphNode
+        ? itemStart + 1 + term.nodeSize + 1
+        : itemStart + 2;
+    if (dispatch) {
+      const tr = state.tr.delete(joinFrom, joinTo);
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, joinFrom)).scrollIntoView());
     }
     return true;
   };

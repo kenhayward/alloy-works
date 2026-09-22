@@ -79,7 +79,7 @@ export function identityPlugin(newIdentifier: () => string): Plugin {
         taken.add(id);
         tr.setNodeAttribute(pos, 'id', id);
       }
-      return tr;
+      return tr.setMeta('addToHistory', false);
     },
   });
 }

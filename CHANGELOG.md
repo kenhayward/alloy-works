@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.53.1 - 2026-09-22 (PR #200)
+
+### Fixed
+
+- **Undo after Definition list takes the list off again**, and no sequence of editing, list
+  commands, undo and redo makes the editor stop taking changes any more. Some undos after list
+  gestures used to fail inside the editor and leave it unable to take the next key (#166).
+- **Enter over a selection** deletes it and then starts a new paragraph or item, including over a
+  selection that runs out of a quotation, where it used to fail (#166). In a list it now makes a new
+  item, as Enter does anywhere in a list.
+- **Bulleted list and Numbered list** no longer fail over a selection that starts in a definition
+  inside a list; they do nothing there (#166).
+- **Backspace at the start of a definition's term, or Delete at the end of the definition before it**,
+  joins the two definitions into one, instead of tucking the second inside the first one level deeper
+  (#160).
+- **A title of nothing but spaces, or text holding a character the database cannot store**, is
+  refused as invalid content when a component is saved through the API, instead of storing a blank
+  title or answering with a server error (#116, #127).
+
 ## 0.53.0 - 2026-09-22 (PR #199)
 
 ### Added
