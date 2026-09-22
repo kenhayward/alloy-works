@@ -30,6 +30,11 @@ describe('the OpenID Connect client', () => {
     expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT);
   });
 
+  it('asks the provider to let the person choose an account, so a sign-out can switch users', async () => {
+    const start = await oidc.start(provider, REDIRECT);
+    expect(new URL(start.url).searchParams.get('prompt')).toBe('select_account');
+  });
+
   it('finishes a sign-in with who the provider says signed in', async () => {
     const start = await oidc.start(provider, REDIRECT);
     const back = await completeAtStandIn(start.url, 'ada', idp.issuer);

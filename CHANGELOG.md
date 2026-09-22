@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.47.0 - 2026-09-22 (PR #191)
+
+### Changed
+
+- **The Alloy Works mark at the top left now takes you to Home.** It no longer opens a menu of
+  modules; Home is where each module is chosen.
+
+### Fixed
+
+- **Signing out and back in can now switch to a different person.** Signing in always asks the
+  sign-in provider which account to use, so after signing out you are no longer taken straight back
+  in as whoever signed out.
+
 ## 0.46.1 - 2026-09-21 (PR #189)
 
 ### Fixed

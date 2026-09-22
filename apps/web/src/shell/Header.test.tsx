@@ -43,7 +43,7 @@ describe('the header band', () => {
     render(<Header module="Documents" fetch={serviceThat(signedIn)} />);
 
     const band = screen.getByRole('banner');
-    expect(within(band).getByRole('button', { name: /Alloy Works/ })).toBeInTheDocument();
+    expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
     expect(within(band).getByText('Documents')).toBeInTheDocument();
     expect(await within(band).findByText('Development')).toBeInTheDocument();
     expect(await within(band).findByRole('button', { name: /Ada Lovelace/ })).toBeInTheDocument();
@@ -84,23 +84,11 @@ describe('the header band', () => {
     expect(posted).toEqual(['/v1/sign-out']);
   });
 
-  it('switches module from the mark', async () => {
+  it('returns to Home from the mark, which opens no menu', () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 
-    const mark = screen.getByRole('button', { name: /Alloy Works/ });
-    expect(mark).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(mark);
-
-    expect(mark).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute(
-      'href',
-      '#/components',
-    );
-    expect(screen.getByRole('link', { name: 'Documents' })).toHaveAttribute('href', '#/documents');
-    expect(screen.getByRole('link', { name: 'Publications' })).toHaveAttribute(
-      'href',
-      '#/publications',
-    );
+    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveAttribute('href', '#/');
+    expect(screen.queryByRole('button', { name: /Alloy Works/ })).not.toBeInTheDocument();
   });
 
   it('closes a menu on Escape, returning focus to its button', async () => {

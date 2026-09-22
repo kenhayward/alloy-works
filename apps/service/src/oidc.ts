@@ -80,6 +80,8 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       const url = client.buildAuthorizationUrl(config, {
         redirect_uri: redirectUri,
         scope: SCOPES,
+        // Without it a provider still signed in skips straight back to whoever signed out.
+        prompt: 'select_account',
         code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
         code_challenge_method: 'S256',
         state,

@@ -105,10 +105,6 @@ a.chip {
   color: var(--text);
 }
 
-.start {
-  left: 0;
-}
-
 .end {
   right: 0;
 }
@@ -136,27 +132,8 @@ a.chip {
   cursor: pointer;
 }
 
-.item:hover,
-.item[aria-current='page'] {
+.item:hover {
   background: var(--accent-weak);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-}
-
-.item[data-module='Components'] .dot {
-  background: var(--module-components);
-}
-
-.item[data-module='Documents'] .dot {
-  background: var(--module-documents);
-}
-
-.item[data-module='Publications'] .dot {
-  background: var(--module-publications);
 }
 
 /* Narrow windows keep the mark and the account; the module and the environment give way first. */
