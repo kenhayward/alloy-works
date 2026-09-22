@@ -615,11 +615,13 @@ instead of toggling; and **`Backspace` at the start of a definition item's term*
 end of the item before it**, which cannot join two items - `definitionItem` is `term block+`, so
 `deleteBarrier` wraps the following item in a new definition list inside the previous one - and so
 nest where an author expected a deletion. The three commands decline, the toolbar shows the control
-unavailable and Tab hands the key back to the browser; the two keys are **taken and do nothing**,
-because handing them on is handing them to the binding that would build the level. Every deleting
-binding in `baseKeymap` is guarded, found by identity against its own commands rather than typed out,
-so a platform alias cannot be missed. What those two keys should do between two definition items at
-ordinary depth is a defect of its own and is issue #160. The alternative was what the editor did
+unavailable and Tab hands the key back to the browser. The two keys now **join the two items**, at any
+depth (`joinDefinitionItems`, issue #160): the second term runs on at the end of the first item's last
+paragraph and its body follows, or, after an empty term, the body's first paragraph joins instead,
+which is the inverse of `Enter` in a definition. A join makes nothing deeper, and where the item before
+ends in something that is not a paragraph the key is taken and does nothing. Every deleting binding in
+`baseKeymap` is guarded, found by identity against its own commands rather than typed out, so a
+platform alias cannot be missed. The alternative was what the editor did
 until the final whole-branch review: the thirty-first level was built, `fromEditor` threw on every
 save afterwards, and the author kept typing into a page that said it was saving.
 

@@ -174,8 +174,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
-  there, `Tab` moves the focus on, and the two keys that can nest one definition item under another,
-  `Backspace` at the start of a term and `Delete` at the end of the definition before it, do nothing.
+  there, and `Tab` moves the focus on. `Backspace` at the start of a definition's term, or `Delete`
+  at the end of the definition before it, joins the two definitions into one, the term's words running
+  on at the end of the definition before; after an empty term it undoes the `Enter` that made it.
   A list deeper than that is not a document the product can store. Content that gets deeper by some
   other route is not saved, and what you are told is thin - that the text cannot be saved as it
   stands and to undo the change that caused it, without the page being able to say which change that

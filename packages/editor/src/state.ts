@@ -2,13 +2,14 @@ import { baseKeymap, chainCommands, splitBlock } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import type { MarkType, Node } from 'prosemirror-model';
-import { EditorState, Plugin, type Command, type Selection } from 'prosemirror-state';
+import { EditorState, Plugin, Selection, TextSelection, type Command } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import {
   blockCommand,
   codeAwareEnter,
   insertTabInCode,
+  joinDefinitionItems,
   listAwareEnter,
   outsideCode,
   refusePastTheLimit,
@@ -271,6 +272,40 @@ export const enterWithoutEmpties: Command = (state, dispatch) => {
   return splitBlock(state, dispatch);
 };
 
+/**
+ * `Enter` over a range: the range deleted, then `enter` pressed at the caret the deletion leaves, in
+ * one transaction. It is what an author expects, and it is what the chain did anyway - `splitBlock`
+ * and `splitListItem` each delete the selection first - but they then split with positions read
+ * before the deletion, and over a range that ends outside the quotation it began in, `splitBlock`
+ * threw rather than split (issue #166). Pressing Enter at a caret is the case every command in the
+ * chain was written for.
+ *
+ * **The chain runs against the state the deletion leads to, plugins and all.** A deletion across the
+ * end of a quotation takes its attribution with it, which the schema does not allow and
+ * `attributionAlwaysThere` puts back - but only once the transaction is applied, and splitting the
+ * unrepaired document is what threw. So the deletion is applied, what the plugins appended is carried
+ * into the one transaction, and the chain presses Enter in the document they left. No view is handed
+ * on: its answers are about the document it shows, which is not this one yet.
+ */
+export function enterOverRange(enter: Command): Command {
+  return (state, dispatch) => {
+    if (state.selection.empty || !(state.selection instanceof TextSelection)) return false;
+    if (!dispatch) return true;
+    const tr = state.tr.deleteSelection();
+    const { state: deleted, transactions } = state.applyTransaction(tr);
+    for (const appended of transactions.slice(1)) {
+      for (const step of appended.steps) tr.step(step);
+    }
+    tr.setSelection(Selection.fromJSON(tr.doc, deleted.selection.toJSON()));
+    enter(deleted, (inner) => {
+      for (const step of inner.steps) tr.step(step);
+      tr.setSelection(Selection.fromJSON(tr.doc, inner.selection.toJSON()));
+    });
+    dispatch(tr.scrollIntoView());
+    return true;
+  };
+}
+
 export interface EditorStateOptions {
   readonly doc: Node;
   /** Where new block identifiers come from; `newBlockIdentifier` outside tests. */
@@ -297,6 +332,11 @@ export interface EditorStateOptions {
  * what the editor holds storable.
  */
 export function createEditorState(options: EditorStateOptions): EditorState {
+  const enterAtCaret = chainCommands(
+    codeAwareEnter(options.newIdentifier),
+    listAwareEnter(options.newIdentifier),
+    enterWithoutEmpties,
+  );
   return EditorState.create({
     doc: options.doc,
     ...(options.selection ? { selection: options.selection } : {}),
@@ -316,11 +356,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // **And the code-aware links come first of all** (editor 5): in preformatted text Enter
         // types a line break, which `splitListItem` and `splitBlock` would otherwise answer by
         // splitting the item or the block around it; in an attribution it leaves the quotation.
-        Enter: chainCommands(
-          codeAwareEnter(options.newIdentifier),
-          listAwareEnter(options.newIdentifier),
-          enterWithoutEmpties,
-        ),
+        Enter: chainCommands(enterOverRange(enterAtCaret), enterAtCaret),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
@@ -358,7 +394,15 @@ export function createEditorState(options: EditorStateOptions): EditorState {
             .filter(
               ([, command]) => command === baseKeymap.Backspace || command === baseKeymap.Delete,
             )
-            .map(([key, command]) => [key, refusePastTheLimit(command)]),
+            // Two definition items join as paragraphs do (issue #160), ahead of the guard and of
+            // `baseKeymap`, whose own join would nest one inside the other.
+            .map(([key, command]) => [
+              key,
+              chainCommands(
+                joinDefinitionItems(command === baseKeymap.Backspace ? 'backward' : 'forward'),
+                refusePastTheLimit(command),
+              ),
+            ]),
         ),
       ),
       keymap(baseKeymap),
