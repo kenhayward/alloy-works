@@ -53,7 +53,7 @@ describe('App', () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
     const band = screen.getByRole('banner');
-    expect(within(band).getByRole('button', { name: /Alloy Works/ })).toBeInTheDocument();
+    expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
     // Home is no module, so the band names none.
     expect(within(band).queryByText('Components')).not.toBeInTheDocument();
     const main = screen.getByRole('main');

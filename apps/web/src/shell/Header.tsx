@@ -9,13 +9,6 @@ import type { ModuleName } from './moduleOf.js';
 /** The mark, drawn for a dark ground; served beside the page from `public/`. */
 export const MARK = 'mark-dark.svg';
 
-/** Where the switcher can take a person: each module's own list. */
-const MODULES: readonly { readonly name: ModuleName; readonly href: string }[] = [
-  { name: 'Components', href: '#/components' },
-  { name: 'Documents', href: '#/documents' },
-  { name: 'Publications', href: '#/publications' },
-];
-
 interface Person {
   readonly displayName: string | null;
   readonly email: string | null;
@@ -49,12 +42,10 @@ function Menu({
   label,
   button,
   children,
-  align,
 }: {
   label: string;
   button: React.ReactNode;
   children: (close: () => void) => React.ReactNode;
-  align: 'start' | 'end';
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -76,14 +67,14 @@ function Menu({
       <button
         ref={trigger}
         type="button"
-        className={styles[label === 'Modules' ? 'brand' : 'chip']}
+        className={styles['chip']}
         aria-expanded={open}
         onClick={() => setOpen((was) => !was)}
       >
         {button}
       </button>
       {open && (
-        <div className={`${styles['menu']} ${styles[align]}`} aria-label={label} role="group">
+        <div className={`${styles['menu']} ${styles['end']}`} aria-label={label} role="group">
           {children(close)}
         </div>
       )}
@@ -92,7 +83,7 @@ function Menu({
 }
 
 /**
- * The band across the top of every screen, dark in every theme: the mark, which switches module;
+ * The band across the top of every screen, dark in every theme: the mark, which goes Home;
  * the module's name; then the environment and the account chip, which holds Sign out.
  */
 export function Header({
@@ -138,35 +129,10 @@ export function Header({
 
   return (
     <header className={styles['band']}>
-      <Menu
-        label="Modules"
-        align="start"
-        button={
-          <>
-            <img className={styles['mark']} src={MARK} alt="" width={18} height={18} />
-            Alloy Works
-          </>
-        }
-      >
-        {(close) => (
-          <ul className={styles['items']}>
-            {MODULES.map((each) => (
-              <li key={each.name}>
-                <a
-                  className={styles['item']}
-                  href={each.href}
-                  data-module={each.name}
-                  aria-current={each.name === module ? 'page' : undefined}
-                  onClick={close}
-                >
-                  <span className={styles['dot']} aria-hidden="true" />
-                  {each.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Menu>
+      <a className={styles['brand']} href="#/">
+        <img className={styles['mark']} src={MARK} alt="" width={18} height={18} />
+        Alloy Works
+      </a>
       {module !== null && (
         <>
           <span className={styles['hairline']} aria-hidden="true" />
@@ -183,7 +149,6 @@ export function Header({
       {who !== undefined && who !== 'nobody' && (
         <Menu
           label="Account"
-          align="end"
           button={
             <>
               <span className={styles['initials']} aria-hidden="true">

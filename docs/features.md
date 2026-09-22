@@ -30,10 +30,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   UI, and the running app names which delivery and runtime it is on.
 
 - **An interface in one theme.** Every screen sits under a dark header band with:
-  - the mark, which switches module between Components and Documents;
+  - the mark, which goes to Home, where each module is chosen;
   - the module's name;
   - the environment's name;
-  - an account chip that signs out, or offers Sign in to somebody signed out.
+  - an account chip that signs out, or offers Sign in to somebody signed out. Signing in always
+    asks the provider which account to use, so signing out and back in can switch person.
 
   Controls, tables and messages are drawn in the Light theme from the tokens in
   `apps/web/src/theme/tokens.css`, the only file that writes a colour. A test fails the build if

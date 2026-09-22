@@ -36,8 +36,10 @@ describe('the stand-in provider', () => {
   }
 
   /** Follows redirects the way a browser would, cookies and all, until one leaves the provider. */
-  async function follow(start: URL): Promise<{ landed?: URL; page?: string }> {
-    const jar = new Map<string, string>();
+  async function follow(
+    start: URL,
+    jar = new Map<string, string>(),
+  ): Promise<{ landed?: URL; page?: string }> {
     let next = start;
     for (let hop = 0; hop < 10; hop++) {
       if (next.origin !== idp.issuer) return { landed: next };
@@ -84,6 +86,15 @@ describe('the stand-in provider', () => {
     expect(page).toContain('Ada (ada@example.com)');
     expect(page).toContain('Grace (grace@example.com)');
     expect(page).toContain('Ivy (ivy@example.com)');
+  });
+
+  it('asks again who is signing in when told to, though someone already is', async () => {
+    const browser = new Map<string, string>();
+    const first = await follow((await authorise({ login_hint: 'ada' })).url, browser);
+    expect(first.landed?.href.startsWith(REDIRECT)).toBe(true);
+
+    const { page } = await follow((await authorise({ prompt: 'select_account' })).url, browser);
+    expect(page).toContain('Grace (grace@example.com)');
   });
 
   it('says which Workspace domain manages an account, as Google does, and nothing for a personal one', async () => {

@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { exportJWK, generateKeyPair } from 'jose';
-import Provider, { type Adapter, type AdapterPayload } from 'oidc-provider';
+import Provider, { interactionPolicy, type Adapter, type AdapterPayload } from 'oidc-provider';
 
 export interface StandInUser {
   readonly id: string;
@@ -125,6 +125,11 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     use: 'sig',
   };
 
+  // Google's `prompt=select_account`: asked for, it shows the users to pick from even to a browser
+  // already signed in here, which is how signing out and back in switches person.
+  const policy = interactionPolicy.base();
+  policy.add(new interactionPolicy.Prompt({ name: 'select_account', requestable: true }), 0);
+
   const provider = new Provider(issuer, {
     clients: options.clients.map((client) => ({
       client_id: client.clientId,
@@ -149,7 +154,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
       Session: 600,
     },
     features: { devInteractions: { enabled: false } },
-    interactions: { url: (_ctx, interaction) => `/interaction/${interaction.uid}` },
+    interactions: { policy, url: (_ctx, interaction) => `/interaction/${interaction.uid}` },
     findAccount: async (_ctx, sub) => {
       const user = users.find((candidate) => candidate.id === sub);
       return (
@@ -192,7 +197,8 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     await provider.interactionFinished(
       ctx.req,
       ctx.res,
-      { login: { accountId: user.id } },
+      // Naming `select_account` answers that prompt, when it was asked, so the flow goes on.
+      { login: { accountId: user.id }, select_account: {} },
       { mergeWithLastSubmission: false },
     );
   });
