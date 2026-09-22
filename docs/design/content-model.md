@@ -369,7 +369,7 @@ The table was designed with the rest of the model and stored by nothing, because
 Designing the editor and the publication that make one (publishing.md, [Tables](publishing.md#tables))
 found four things the shape does not yet say, and **every one of them is free to fix only until the
 first table is stored**: a version is insert-only, so after that each is a schema version and a
-migration. **Proposed on 2026-09-22 and not yet answered**, as decisions T-A to T-D of that section.
+migration. Decisions T-A to T-D of that section, **taken as recommended by Ken on 2026-09-22**.
 
 - **A caption is inline content (T-A).** `caption` is a string today, so a caption cannot hold a mark, a
   link, an equation (CNT-046) or a cross-reference - issue #88. It becomes inline content, walked as a

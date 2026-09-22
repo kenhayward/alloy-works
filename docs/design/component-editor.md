@@ -250,7 +250,7 @@ block cannot keep its identifier merely because the receiving component did not 
 
 A table's properties - header rows and columns, **key columns**, caption and note - are edited in a table
 panel reached from the table's toolbar and by keyboard. **What the tables slice builds of that
-(proposed 2026-09-22, with publishing.md's [Tables](publishing.md#tables)):**
+(Ken's answer 2026-09-22, with publishing.md's [Tables](publishing.md#tables)):**
 
 - **Table** on the toolbar inserts three columns by three rows, the first a header row, with the cursor
   in the first cell, and a caption line above it - edited in place, as a quotation's attribution is,
@@ -315,7 +315,7 @@ choice of engine does not decide whether this slice meets it.
 ### Captions
 
 A table's and a figure's caption is the model's `caption` member, a **plain string** today, edited as a
-text field in the table or figure panel. **Proposed (2026-09-22): inline content**, edited in place above
+text field in the table or figure panel. **Inline content, decided 2026-09-22**, edited in place above
 the table - content-model.md's [Tables, before the first is stored](content-model.md#tables-before-the-first-is-stored),
 which answers #88 below for both blocks. A caption-bearing block's identity is its block `id` (CNT-081), which
 every operation in the identity table above treats like any other.

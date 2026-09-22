@@ -340,8 +340,9 @@ section is the TAB area's design - TAB was the one T1 area nothing had designed 
 after measuring what the pinned engine does, because two of the three questions it had to answer were
 questions about Typst rather than about the product.
 
-**Proposed on 2026-09-22 and not yet answered.** The decisions are listed at the end of the section,
-each with the recommendation taken in the text above it.
+**Ken's answer (2026-09-22): decisions T-A to T-I taken as recommended.** They are listed at the end
+of the section; the build is [tables 1](../plans/2026-09-22-tables-01-the-table-in-a-component.md) and
+then tables 2. Decision T-G's requirement is filed as issue #202, which lands as TAB-049 with tables 2.
 
 ### What the pinned Typst does with a table, measured
 
