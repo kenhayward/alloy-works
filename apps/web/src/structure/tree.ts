@@ -44,9 +44,27 @@ export function placeOf(
   return undefined;
 }
 
-/** Every node, depth first, in document order: the order the arrow keys walk. */
-export function visibleOrder(nodes: readonly OutlineViewNode[]): string[] {
-  return nodes.flatMap((node) => [node.id, ...visibleOrder(node.children)]);
+/**
+ * Every node shown, depth first, in document order: the order the arrow keys walk. What a collapsed
+ * section holds is not shown, so it is not walked either.
+ */
+export function visibleOrder(
+  nodes: readonly OutlineViewNode[],
+  collapsed: ReadonlySet<string> = new Set(),
+): string[] {
+  return nodes.flatMap((node) => [
+    node.id,
+    ...(collapsed.has(node.id) ? [] : visibleOrder(node.children, collapsed)),
+  ]);
+}
+
+/** The sections a node sits inside, outermost first; none for a node at the top level or not found. */
+export function ancestorsOf(nodes: readonly OutlineViewNode[], id: string): string[] {
+  for (const node of nodes) {
+    if (node.id === id) return [];
+    if (contains(node, id)) return [node.id, ...ancestorsOf(node.children, id)];
+  }
+  return [];
 }
 
 function contains(node: OutlineViewNode, id: string): boolean {

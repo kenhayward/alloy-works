@@ -17,6 +17,7 @@ import {
   sectionTitle,
   titleText,
   visibleOrder,
+  ancestorsOf,
 } from './tree.js';
 
 const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
@@ -351,5 +352,22 @@ describe('titles and order', () => {
       section(METHOD, 'Method'),
     ]);
     expect(visibleOrder(document.nodes)).toEqual([INTRODUCTION, SCOPE, METHOD]);
+  });
+
+  it('skips what a collapsed section holds, which the arrow keys then pass over', () => {
+    const document = outline([
+      section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')]),
+      section(METHOD, 'Method'),
+    ]);
+    expect(visibleOrder(document.nodes, new Set([INTRODUCTION]))).toEqual([INTRODUCTION, METHOD]);
+  });
+
+  it('names the sections a node sits inside, outermost first', () => {
+    const document = outline([
+      section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope', [section(METHOD, 'Method')])]),
+    ]);
+    expect(ancestorsOf(document.nodes, METHOD)).toEqual([INTRODUCTION, SCOPE]);
+    expect(ancestorsOf(document.nodes, INTRODUCTION)).toEqual([]);
+    expect(ancestorsOf(document.nodes, 'nowhere')).toEqual([]);
   });
 });
