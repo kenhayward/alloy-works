@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   defaultLayout as productDefaultLayout,
+  FIRST_DEFAULT_LAYOUT,
   defaultNumberingScheme,
   type Layout,
   type PublishFailure,
@@ -200,7 +201,10 @@ describe('migration 0018, which gives every environment its default layout', () 
       return { toFail, toPublish, failed, done };
     });
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0018_layouts']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0018_layouts',
+      '0019_default_layout_lists',
+    ]);
 
     // No trigger was held off, and every one stands enabled.
     const { rows: triggers } = await queryAs(
@@ -470,11 +474,12 @@ describe('migration 0018, which gives every environment its default layout', () 
     const tenant = await atPublishing('Own layout');
     // Standing in for a store that already holds the artifact, as 0015's starter type allows for: the
     // kind check is widened by hand so the row can exist before 0018 runs, and 0018 widens it again.
-    const own: Layout = {
-      ...productDefaultLayout,
-      words: { ...productDefaultLayout.words, contents: 'Table of contents' },
+    // At layout schema 1, as a layout stored before 0018 would be.
+    const own = {
+      ...FIRST_DEFAULT_LAYOUT,
+      words: { ...FIRST_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
     };
-    const digests = versionDigests({ kind: 'layout', content: own });
+    const digests = versionDigests({ kind: 'layout', content: own as unknown as Layout });
     await queryAs(
       db.adminUrl,
       `alter table ${tenant.schema}.artifact drop constraint artifact_kind_check;
@@ -490,7 +495,11 @@ describe('migration 0018, which gives every environment its default layout', () 
          '${digests.versionDigest}');`,
     );
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0018_layouts']);
+    // 0019 runs and leaves it: its first version is not the product's 0.1, so no 0.2 goes on top.
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0018_layouts',
+      '0019_default_layout_lists',
+    ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -505,7 +514,8 @@ describe('migration 0018, which gives every environment its default layout', () 
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: versions[0]!.id,
       number: '0.1',
-      layout: own,
+      // Read at schema 2: the layout it stored, generating no lists.
+      layout: { ...own, schemaVersion: 2, matter: { ...own.matter, lists: [] } },
     });
   });
 });

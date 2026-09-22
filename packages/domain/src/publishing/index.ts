@@ -13,7 +13,9 @@ export { setWithoutAGlyph } from './glyphs.js';
 export { publishedLanguage } from './language.js';
 export {
   defaultLayout,
+  FIRST_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
+  LISTED_SEQUENCES,
   layoutMigrationChain,
   layoutSchema,
   parseLayout,
@@ -22,7 +24,14 @@ export {
   speaksFor,
   unsupportedFormats,
 } from './layout.js';
-export type { Layout, LayoutField, LayoutReadOutcome, PdfFormat, SlotPart } from './layout.js';
+export type {
+  Layout,
+  LayoutField,
+  LayoutList,
+  LayoutReadOutcome,
+  PdfFormat,
+  SlotPart,
+} from './layout.js';
 export {
   DRAFT_NOTICE,
   PUBLISHING_SCHEMA,

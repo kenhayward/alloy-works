@@ -1,4 +1,8 @@
-import { defaultLayout as productDefaultLayout, type Layout } from '@alloy-works/domain';
+import {
+  defaultLayout as productDefaultLayout,
+  FIRST_DEFAULT_LAYOUT,
+  type Layout,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
@@ -39,19 +43,20 @@ describe('the layout every environment starts with', () => {
     await db?.drop();
   });
 
-  /** The first version of the declared layout, as the chain holds it. */
-  const firstVersion = (tenant: Tenant) =>
+  /** One version of the declared layout, as the chain holds it. */
+  const versionOf = (tenant: Tenant, version: number) =>
     service.withTenant(tenant, (trx) =>
       trx
         .selectFrom('artifact_version')
         .selectAll()
         .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
         .where('revision_no', '=', 0)
-        .where('version_no', '=', 1)
+        .where('version_no', '=', version)
         .executeTakeFirstOrThrow(),
     );
+  const firstVersion = (tenant: Tenant) => versionOf(tenant, 1);
 
-  it('is declared in every environment, at 0.1, authored by nobody and in no space', async () => {
+  it('is declared in every environment, at 0.2, authored by nobody and in no space', async () => {
     for (const tenant of [acme, other]) {
       const { declared, artifact } = await service.withTenant(tenant, async (trx) => ({
         declared: await defaultLayout(trx),
@@ -61,30 +66,39 @@ describe('the layout every environment starts with', () => {
           .where('id', '=', DEFAULT_LAYOUT_ID)
           .executeTakeFirstOrThrow(),
       }));
-      const version = await firstVersion(tenant);
+      const first = await firstVersion(tenant);
+      const second = await versionOf(tenant, 2);
       expect(declared).toEqual({
         artifactId: DEFAULT_LAYOUT_ID,
-        versionId: version.id,
-        number: '0.1',
+        versionId: second.id,
+        number: '0.2',
         layout: productDefaultLayout,
       });
       expect(artifact).toMatchObject({ kind: 'layout', space_id: null });
-      expect(version).toMatchObject({
+      const unauthored = {
         kind: 'layout',
         author_id: null,
         note: null,
-        schema_version: 1,
         component_type_version_id: null,
-      });
+      };
+      expect(first).toMatchObject({ ...unauthored, schema_version: 1 });
+      expect(second).toMatchObject({ ...unauthored, schema_version: 2 });
     }
   });
 
-  it("is the domain's default layout exactly, with the digests the domain computes", async () => {
-    const version = await firstVersion(acme);
-    expect(version.content).toEqual(productDefaultLayout);
-    const digests = versionDigests({ kind: 'layout', content: productDefaultLayout });
-    expect(version.content_hash).toBe(digests.contentHash);
-    expect(version.version_digest).toBe(digests.versionDigest);
+  it("holds both of the domain's default layouts exactly, with the digests the domain computes", async () => {
+    // 0.1 as 0018 stored it, at layout schema 1, and 0.2 as 0019 stored it, with a list of tables.
+    const cases = [
+      [1, FIRST_DEFAULT_LAYOUT as unknown as Layout],
+      [2, productDefaultLayout],
+    ] as const;
+    for (const [number, layout] of cases) {
+      const version = await versionOf(acme, number);
+      expect(version.content, `0.${number}`).toEqual(layout);
+      const digests = versionDigests({ kind: 'layout', content: layout });
+      expect(version.content_hash, `0.${number}`).toBe(digests.contentHash);
+      expect(version.version_digest, `0.${number}`).toBe(digests.versionDigest);
+    }
   });
 
   it('gives the runtime role no update, delete or truncate on the declaration', async () => {
@@ -128,7 +142,7 @@ describe('the layout every environment starts with', () => {
           },
         }),
       ).rejects.toThrow(/lists/);
-      expect(await versions()).toBe(1);
+      expect(await versions()).toBe(2);
 
       const next: Layout = {
         ...productDefaultLayout,
@@ -143,11 +157,11 @@ describe('the layout every environment starts with', () => {
       return { recorded, declared: await defaultLayout(trx), next };
     });
     if (answer.recorded.answer !== 'recorded') throw new Error(answer.recorded.answer);
-    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 2 });
+    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 3 });
     expect(answer.declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: answer.recorded.version.id,
-      number: '0.2',
+      number: '0.3',
       layout: answer.next,
     });
   });

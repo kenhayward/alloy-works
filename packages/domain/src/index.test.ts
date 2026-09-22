@@ -150,6 +150,10 @@ describe('the domain package', () => {
         'readLayout',
         'layoutMigrationChain',
         'defaultLayout',
+        // The default layout's first version as 0018 stored it, and the sequences a layout lists,
+        // promoted by tables 2 for the store's own test and the worker's.
+        'FIRST_DEFAULT_LAYOUT',
+        'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
       ].sort(),
