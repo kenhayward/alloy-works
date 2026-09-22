@@ -115,6 +115,19 @@
   color: var(--muted);
 }
 
+/* A section's triangle: pointing down while open, turned to point at its title once collapsed. */
+.glyph[data-toggle] {
+  cursor: pointer;
+}
+
+.glyph[data-toggle] svg {
+  transition: transform 0.1s;
+}
+
+.glyph[data-collapsed='true'] svg {
+  transform: rotate(-90deg);
+}
+
 .number {
   flex-shrink: 0;
   color: var(--accent);

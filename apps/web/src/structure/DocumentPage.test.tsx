@@ -526,6 +526,70 @@ describe('the outline panel', () => {
     expect(fake.edits()).toEqual([]);
   });
 
+  it('collapses a section from its triangle, hiding what it holds, and expands it again', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')]),
+        section(METHOD, 'Method'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Scope' });
+    const triangle = (name: string) =>
+      item(name).querySelector<HTMLElement>(':scope > [data-row] [data-toggle]');
+
+    // Only a section holding something has a triangle to press.
+    expect(triangle('Method')).toBeNull();
+    expect(item('Introduction')).toHaveAttribute('aria-expanded', 'true');
+
+    await userEvent.click(triangle('Introduction')!);
+    expect(item('Introduction')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('treeitem', { name: 'Scope' })).toBeNull();
+
+    await userEvent.click(triangle('Introduction')!);
+    expect(item('Introduction')).toHaveAttribute('aria-expanded', 'true');
+    expect(item('Scope')).toBeInTheDocument();
+    // Nothing is sent: what is shown is the reader's, not the document's.
+    expect(fake.edits()).toEqual([]);
+  });
+
+  it('collapses and expands with the arrow keys, and walks past what is collapsed', async () => {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')]),
+        section(METHOD, 'Method'),
+      ]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Introduction' }));
+
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(item('Introduction')).toHaveAttribute('aria-expanded', 'false');
+    expect(item('Introduction')).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(item('Method')).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await userEvent.keyboard('{ArrowRight}');
+    expect(item('Introduction')).toHaveAttribute('aria-expanded', 'true');
+    expect(item('Introduction')).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(item('Scope')).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(item('Introduction')).toHaveFocus();
+  });
+
+  it('moves the choice to a section collapsed over it, rather than choosing something hidden', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')])]),
+    );
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('treeitem', { name: 'Scope' }));
+    await userEvent.click(
+      item('Introduction').querySelector<HTMLElement>(':scope > [data-row] [data-toggle]')!,
+    );
+    expect(item('Introduction')).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('inserts a section after the selected one, sending one operation and showing what came back', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction'), section(RESULTS, 'Results')]),

@@ -41,6 +41,7 @@ import {
   sectionTitle,
   titleText,
   visibleOrder,
+  ancestorsOf,
   type DropTarget,
   type Names,
 } from './tree.js';
@@ -329,6 +330,9 @@ export function OutlinePanel({
   const openField = useRef<string | null>(null);
   // The node a link took the reader to, marked until they choose another (STR-045's panel half).
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  // The sections the reader has collapsed: how the outline is shown to them, never part of the
+  // document, so nothing is sent and nothing is remembered past the page.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   // The arrival of a link already taken to its node: under `<StrictMode>` the effect below runs twice
   // on mount, and a ref survives the simulated unmount between, so one arrival is taken once.
   const taken = useRef<number | null>(null);
@@ -471,6 +475,23 @@ export function OutlinePanel({
     return answer;
   };
 
+  /**
+   * Collapses a section, or expands it. Collapsing one over the chosen node chooses the section
+   * instead, so the choice is never something the reader cannot see.
+   */
+  const toggle = (id: string) => {
+    const collapsing = !collapsed.has(id);
+    setCollapsed((before) => {
+      const after = new Set(before);
+      if (collapsing) after.add(id);
+      else after.delete(id);
+      return after;
+    });
+    if (collapsing && current !== null && ancestorsOf(nodes, current).includes(id)) {
+      choose(id, true);
+    }
+  };
+
   const choose = (id: string, focus: boolean) => {
     setActive(id);
     setHighlighted(null);
@@ -536,9 +557,19 @@ export function OutlinePanel({
     }
   };
 
+  // A node chosen or linked from elsewhere - a move, an insert, an undo, an address - that a
+  // collapsed section is hiding opens the sections over it, so what is chosen is always in view.
+  useEffect(() => {
+    const over = [current, highlighted]
+      .flatMap((id) => (id === null ? [] : ancestorsOf(nodes, id)))
+      .filter((id) => collapsed.has(id));
+    if (over.length === 0) return;
+    setCollapsed((before) => new Set([...before].filter((id) => !over.includes(id))));
+  }, [current, highlighted, nodes, collapsed]);
+
   const onTreeKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
     if (current === null || event.ctrlKey || event.metaKey) return;
-    const order = visibleOrder(nodes);
+    const order = visibleOrder(nodes, collapsed);
     const index = order.indexOf(current);
     const place = placeOf(nodes, current);
     if (event.altKey) {
@@ -571,13 +602,17 @@ export function OutlinePanel({
         if (previous !== undefined) choose(previous, true);
         break;
       }
+      // WAI-ARIA's tree: Right expands a collapsed section and otherwise goes to its first child;
+      // Left collapses an expanded one and otherwise goes to its parent.
       case 'ArrowRight': {
         const child = place?.node.children[0];
-        if (child) choose(child.id, true);
+        if (child && collapsed.has(current)) toggle(current);
+        else if (child) choose(child.id, true);
         break;
       }
       case 'ArrowLeft':
-        if (place?.parent) choose(place.parent.id, true);
+        if (place && place.node.children.length > 0 && !collapsed.has(current)) toggle(current);
+        else if (place?.parent) choose(place.parent.id, true);
         break;
       case 'Home': {
         const first = order[0];
@@ -663,7 +698,7 @@ export function OutlinePanel({
           aria-setsize={list.length}
           aria-posinset={index + 1}
           aria-selected={node.id === current}
-          aria-expanded={node.children.length > 0 ? true : undefined}
+          aria-expanded={node.children.length > 0 ? !collapsed.has(node.id) : undefined}
           aria-labelledby={labelId}
           // The number describes the item rather than naming it: a name is what typing a title finds
           // in a tree, and what every announcement says, and it stays put when a move renumbers it.
@@ -686,12 +721,27 @@ export function OutlinePanel({
             data-row
             style={{ paddingInlineStart: `${8 + (level - 1) * 18}px` }}
           >
-            <span className={styles['glyph']} data-kind={node.type}>
-              <Icon
-                name={node.type === 'section' ? 'Section' : 'Document'}
-                size={node.type === 'section' ? 10 : 13}
-              />
-            </span>
+            {node.type === 'section' ? (
+              // Pressed with a pointer; the keyboard's way is Left and Right. Not a button: a tree
+              // item's own row holds nothing else that takes the focus.
+              <span
+                className={styles['glyph']}
+                data-kind="section"
+                {...(node.children.length > 0
+                  ? {
+                      'data-toggle': true,
+                      'data-collapsed': collapsed.has(node.id),
+                      onClick: () => toggle(node.id),
+                    }
+                  : {})}
+              >
+                {node.children.length > 0 && <Icon name="Section" size={10} />}
+              </span>
+            ) : (
+              <span className={styles['glyph']} data-kind={node.type}>
+                <Icon name="Document" size={13} />
+              </span>
+            )}
             {shown !== undefined && (
               <>
                 <span id={numberId} className={styles['number']}>
@@ -707,7 +757,7 @@ export function OutlinePanel({
               )}
             </span>
           </div>
-          {node.children.length > 0 && (
+          {node.children.length > 0 && !collapsed.has(node.id) && (
             <ul role="group" className={styles['group']}>
               {renderNodes(node.children, level + 1)}
             </ul>

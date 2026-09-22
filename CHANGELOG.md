@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.51.0 - 2026-09-22 (PR #195)
+
+### Added
+
+- **A section in the outline collapses and expands.** Click the triangle beside a section to hide
+  what it holds and click it again to show it, or use the Left and Right arrow keys on the section.
+  The arrow keys skip what is collapsed. Collapsing a section over the item you had chosen chooses
+  the section instead. Collapsing only changes what you see; the document is not changed.
+
 ## 0.50.0 - 2026-09-22 (PR #194)
 
 ### Added
