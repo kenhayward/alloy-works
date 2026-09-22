@@ -64,8 +64,9 @@ export const reportMessages = {
     markIdentifier: 'Marks were given new identifiers.',
     // A reader's: kept, but not as what it was.
     heading: "A heading was kept as a paragraph. A document's headings are its section titles.",
-    table:
-      'A table was kept as its text, one paragraph for each cell. Tables cannot be pasted yet.',
+    table: 'A table inside a table cell was kept as its text, one paragraph for each cell.',
+    tableShape: "A table's rows were made the same length.",
+    cellBlocks: 'A quotation or preformatted text in a table cell was kept as paragraphs.',
   },
   /**
    * Kept exactly as it arrived, and worth the author knowing: nothing was removed or changed, so it

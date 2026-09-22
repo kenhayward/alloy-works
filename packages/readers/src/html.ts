@@ -28,6 +28,8 @@ interface Context {
   readonly presentation: Readonly<Record<string, string>>;
   readonly handlers: Handlers | null;
   readonly depth: number;
+  /** Inside a table's cell, where a table is kept as its text and an empty paragraph is no spacing. */
+  readonly inCell: boolean;
 }
 
 type Run = {
@@ -151,7 +153,12 @@ const MSO_MARKER = /mso-list:\s*ignore/i;
 /** What was read that the report has to mention, counted as the walk goes. */
 class Tally {
   headings = 0;
+  /** Tables inside a table's cell, kept as their text. */
   tables = 0;
+  /** Tables whose rows were made one length. */
+  reshaped = 0;
+  /** Quotations and preformatted text in a cell, kept as paragraphs. */
+  cellBlocks = 0;
   images = 0;
   mathematics = 0;
   rules = 0;
@@ -326,6 +333,7 @@ function within(element: Element, context: Context): Context {
     presentation,
     handlers: handlers.length > 0 ? { names: handlers, spent: false } : context.handlers,
     depth: context.depth + 1,
+    inCell: context.inCell,
   };
 }
 
@@ -418,7 +426,10 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
     const own = inner.handlers === context.handlers ? [] : (inner.handlers?.names ?? []);
     // Empty only if nothing at all came of it: a trailing `br` leaves an empty remainder that is
     // nobody's spacing, and a paragraph that held only an image is reported as the image.
-    const spacing = sink.blocks.length === before && tally.images + tally.mathematics === leftOut;
+    const spacing =
+      !context.inCell &&
+      sink.blocks.length === before &&
+      tally.images + tally.mathematics === leftOut;
     const made = sink.close(spacing, own);
     if (HEADINGS.has(name) && (made || sink.blocks.length > before)) tally.headings += 1;
     return;
@@ -445,6 +456,12 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
     sink.close(false);
     const block = readPreformatted(node, tally);
     if (block) sink.blocks.push(block);
+    return;
+  }
+  if (name === 'table' && !context.inCell) {
+    sink.close(false);
+    const table = readTable(node, inner, tally);
+    if (table) sink.blocks.push(table);
     return;
   }
   if (CONTAINERS.has(name)) {
@@ -496,6 +513,173 @@ function readList(element: Element, context: Context, tally: Tally): Block | und
     ...(Number.isInteger(start) && start >= 0 && start !== 1 ? { start } : {}),
     ...(format ? { format } : {}),
     items,
+  };
+}
+
+const isCell = (node: ChildNode): node is Element =>
+  isElement(node) && (node.tagName === 'td' || node.tagName === 'th');
+
+/** A span as HTML gives it: a whole number of at least one, and nothing absurd. */
+function spanOf(element: Element, name: string, most: number): number {
+  const value = Number(attribute(element, name) ?? '1');
+  return Number.isInteger(value) && value >= 1 ? Math.min(value, most) : 1;
+}
+
+/**
+ * What a cell may hold is paragraphs and lists (tables 1, decision T-D). A quotation's paragraphs
+ * are kept, and preformatted text becomes a paragraph for each of its lines - each counted - and a
+ * list keeps to the same rule inside its items. A cell left with nothing to type in gets an empty
+ * paragraph, as a new table's cells have.
+ */
+function fitCell(blocks: readonly Block[], tally: Tally): Block[] {
+  const fitted = blocks.flatMap((block): Block[] => {
+    if (block.type === 'blockquote') {
+      tally.cellBlocks += 1;
+      return fitCell((block.content as Block[] | undefined) ?? [], tally);
+    }
+    if (block.type === 'preformatted') {
+      tally.cellBlocks += 1;
+      return (block.text as string).split('\n').map((line) => ({
+        type: 'paragraph',
+        content: line === '' ? [] : [{ type: 'text', value: line, marks: [] }],
+      }));
+    }
+    if (block.type === 'list') {
+      const items = block.items as { term?: unknown; content: Block[] }[];
+      return [
+        {
+          ...block,
+          items: items.map((item) => ({ ...item, content: fitCell(item.content, tally) })),
+        },
+      ];
+    }
+    return [block];
+  });
+  return fitted.some((block) => block.type === 'paragraph' || block.type === 'list')
+    ? fitted
+    : [...fitted, EMPTY_PARAGRAPH];
+}
+
+/**
+ * An HTML table as the model's (tables 1, ruling R6). Its `caption` is the caption; `thead` rows and
+ * leading rows of nothing but `th` are header rows; the leading `th` cells every other row shares
+ * are header columns; spans are spans.
+ *
+ * **What it hands over is always a grid**, because the walk refuses anything else and a paste refused
+ * for one short row would lose the whole table. Cells are placed as HTML places them - each at the
+ * first place in its row nothing covers yet - with a span shrunk rather than let it cover a place
+ * already covered or reach past the last row; and a row that covers fewer columns than the widest is
+ * made up with empty cells, counted.
+ */
+function readTable(table: Element, context: Context, tally: Tally): Block | undefined {
+  const cellContext: Context = { ...context, inCell: true };
+  let caption: unknown[] = [];
+  const found: { cells: Element[]; head: boolean }[] = [];
+  const collect = (nodes: readonly ChildNode[], head: boolean) => {
+    for (const child of nodes) {
+      if (!isElement(child)) continue;
+      if (child.tagName === 'caption') {
+        caption = blocksOf(child.childNodes, within(child, context), tally).flatMap(
+          (block) => (block.content as unknown[] | undefined) ?? [],
+        );
+      } else if (child.tagName === 'thead') collect(child.childNodes, true);
+      else if (child.tagName === 'tbody' || child.tagName === 'tfoot') {
+        collect(child.childNodes, false);
+      } else if (child.tagName === 'tr') {
+        found.push({ cells: child.childNodes.filter(isCell), head });
+      }
+    }
+  };
+  collect(table.childNodes, false);
+  const rows = found.filter((row) => row.cells.length > 0);
+  if (rows.length === 0) return undefined;
+
+  interface Placed {
+    readonly content: Block[];
+    readonly colspan: number;
+    readonly rowspan: number;
+    readonly header: boolean;
+    readonly column: number;
+  }
+  const covered: (Placed | undefined)[][] = rows.map(() => []);
+  const placed: Placed[][] = rows.map(() => []);
+  rows.forEach((row, rowIndex) => {
+    let column = 0;
+    for (const element of row.cells) {
+      while (covered[rowIndex]![column]) column += 1;
+      let colspan = spanOf(element, 'colspan', 1000);
+      let rowspan = spanOf(element, 'rowspan', rows.length - rowIndex);
+      const free = (across: number, down: number) => {
+        for (let d = 0; d < down; d += 1) {
+          for (let a = 0; a < across; a += 1) {
+            if (covered[rowIndex + d]![column + a]) return false;
+          }
+        }
+        return true;
+      };
+      while (colspan > 1 && !free(colspan, 1)) colspan -= 1;
+      while (rowspan > 1 && !free(colspan, rowspan)) rowspan -= 1;
+      const cell: Placed = {
+        content: fitCell(blocksOf(element.childNodes, within(element, cellContext), tally), tally),
+        colspan,
+        rowspan,
+        header: element.tagName === 'th',
+        column,
+      };
+      for (let d = 0; d < rowspan; d += 1) {
+        for (let a = 0; a < colspan; a += 1) covered[rowIndex + d]![column + a] = cell;
+      }
+      placed[rowIndex]!.push(cell);
+      column += colspan;
+    }
+  });
+
+  const width = Math.max(...covered.map((row) => row.length));
+  covered.forEach((row, rowIndex) => {
+    let made = false;
+    for (let column = 0; column < width; column += 1) {
+      if (row[column]) continue;
+      const empty: Placed = {
+        content: [EMPTY_PARAGRAPH],
+        colspan: 1,
+        rowspan: 1,
+        header: false,
+        column,
+      };
+      row[column] = empty;
+      placed[rowIndex]!.push(empty);
+      made = true;
+    }
+    if (made) tally.reshaped += 1;
+  });
+
+  let headerRows = 0;
+  while (
+    headerRows < rows.length &&
+    (rows[headerRows]!.head || covered[headerRows]!.every((cell) => cell!.header))
+  ) {
+    headerRows += 1;
+  }
+  let headerColumns = 0;
+  if (headerRows < rows.length) {
+    headerColumns = width;
+    for (let rowIndex = headerRows; rowIndex < rows.length; rowIndex += 1) {
+      let leading = 0;
+      while (leading < width && covered[rowIndex]![leading]!.header) leading += 1;
+      headerColumns = Math.min(headerColumns, leading);
+    }
+  }
+
+  return {
+    type: 'table',
+    caption,
+    headerRows,
+    headerColumns,
+    rows: placed.map((cells) => ({
+      cells: [...cells]
+        .sort((one, other) => one.column - other.column)
+        .map(({ content, colspan, rowspan }) => ({ content, colspan, rowspan })),
+    })),
   };
 }
 
@@ -658,7 +842,13 @@ export function readHtml(html: string): ReaderResult {
   const refused = refuseOversized(html);
   if (refused) return refused;
   const tally = new Tally();
-  const context: Context = { marks: [], presentation: {}, handlers: null, depth: 0 };
+  const context: Context = {
+    marks: [],
+    presentation: {},
+    handlers: null,
+    depth: 0,
+    inCell: false,
+  };
   const content = blocksOf(parse(html).childNodes, context, tally);
 
   const report = createReport();
@@ -667,6 +857,8 @@ export function readHtml(html: string): ReaderResult {
   };
   say(tally.headings, (extra) => report.add('read', 'rewritten', 'heading', extra));
   say(tally.tables, (extra) => report.add('read', 'rewritten', 'table', extra));
+  say(tally.reshaped, (extra) => report.add('read', 'rewritten', 'tableShape', extra));
+  say(tally.cellBlocks, (extra) => report.add('read', 'rewritten', 'cellBlocks', extra));
   say(tally.images, (extra) => report.add('read', 'discarded', 'image', extra));
   say(tally.mathematics, (extra) => report.add('read', 'discarded', 'mathematics', extra));
   say(tally.rules, (extra) => report.add('read', 'discarded', 'rule', extra));

@@ -70,7 +70,7 @@ describe('the admission report', () => {
     report.add('read', 'discarded', 'control', { count: 4 });
     expect(report.entries.map((entry) => entry.message)).toEqual([
       "A heading was kept as a paragraph. A document's headings are its section titles.",
-      'A table was kept as its text, one paragraph for each cell. Tables cannot be pasted yet.',
+      'A table inside a table cell was kept as its text, one paragraph for each cell.',
       'An image was left out. Images cannot be pasted yet.',
       'An equation was left out. Equations cannot be pasted yet.',
       'A horizontal line was left out.',
