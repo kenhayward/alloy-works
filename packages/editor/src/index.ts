@@ -8,6 +8,14 @@ export {
   setPreformattedLanguage,
   type BlockAction,
 } from './blocks.js';
+export {
+  pasteInto,
+  PRODUCT_CLIPBOARD_TYPE,
+  productClipboard,
+  readClipboard,
+  type ClipboardSource,
+  type PasteOutcome,
+} from './clipboard.js';
 export { editorSchema } from './schema.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';

@@ -297,6 +297,9 @@ importers:
       '@alloy-works/domain':
         specifier: workspace:^
         version: link:../domain
+      '@alloy-works/readers':
+        specifier: workspace:^
+        version: link:../readers
       prosemirror-commands:
         specifier: 1.7.2
         version: 1.7.2

@@ -69,9 +69,9 @@ stays uncited: see ruling A.
   changed or left out: the paste report says what.** when there is anything to say. The **Paste
   report** is a region above the surface, in the `F6` ring while it is shown, listing each entry's
   message, how many times it happened and what arrived (as text, never markup), with a **Close**
-  button; the next paste replaces it, and leaving editing clears it. **New identifiers are not
-  listed**: the author cannot see or act on them, and they would fill every report. A refused paste
-  inserts nothing, and the status bar says why, in the report's own last sentence.
+  button; the next paste replaces it, and it is shown only while the surface takes changes.
+  **New identifiers are not listed**: the author cannot see or act on them, and they would fill every
+  report. A refused paste inserts nothing, and the status bar says why, in the report's own last sentence.
 - **J. Dropping content is still refused**, now in its own words: **Dragging content in is not
   available yet. Copy and paste it instead.** A drag within the surface moves text, which needs the
   same path as a paste plus deleting the source, and is a slice of its own.
@@ -100,3 +100,23 @@ stays uncited: see ruling A.
 5. The Dockerfile copies the new manifest; `docs/architecture.md` gains the readers workspace and the
    clipboard's type; `docs/features.md` and the README; the plans index; the version (Minor) and the
    changelog.
+
+## Found while building
+
+- **Word draws its second-level bullet as the letter `o`**, in Courier New. Read as a letter it made
+  every nested bulleted list from Word an alphabetic one starting at 15. A marker is numbering only
+  when it ends in `.` or `)`, which every numbered marker Word writes does.
+- **A slice is rooted at the deepest node its two ends share**, so a few words of one paragraph copy
+  as bare text, which is no document. `productClipboard` takes the two positions and wraps the range
+  in the blocks it stands in, so the words arrive as the paragraph they came from and join the text
+  they are pasted into.
+- **The text after the caret keeps the receiving paragraph's identifier until the identity plugin
+  renames it**, as it renames a split's second half: ProseMirror closes an open slice with the node it
+  cut. Every identifier stays unique, and the receiving paragraph keeps its own.
+- **The session's notice replaced the paste's sentence** (issue #196). The session publishes its
+  notice with every change of state, so a paste that was the first change was followed by **You are
+  editing this component.**, and so was any sentence the page said while editing - a refused header
+  field, a refused drop - at the next save. A session notice now reaches the status bar only when it
+  changes, and a paste made while the lock is being claimed is said after the claim's sentence.
+- **The HTML parser drops a NUL in text itself**, before any reader sees it, so the reader's count of
+  control characters never includes one.

@@ -18,7 +18,9 @@ a web application and a desktop application**.
 > the two that need a value. Its blocks can be bulleted, numbered or definition lists, nesting to
 > any depth the model admits, made and nested and lifted from a toolbar, a list panel or the
 > keyboard; and they can be quotations with an attribution, or preformatted text whose whitespace is
-> kept exactly, with a language label set in a panel of its own. A
+> kept exactly, with a language label set in a panel of its own. Text
+> pasted from a web page, Word, Google Docs, plain text or another component passes through the
+> admission pipeline, read by `packages/readers`, and what it changed is shown in a paste report. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -30,8 +32,7 @@ a web application and a desktop application**.
 > and preformatted text as code, set in a pinned Liberation Mono beside Liberation Serif - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no table, footnote or equation can be written, no
-> paste, no metadata panel,
+> publishes content: no table, footnote or equation can be written or pasted, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of figures, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
@@ -53,6 +54,7 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | Desktop shell (main + preload) | Electron, CommonJS - windows, and later fs, watching, credentials                                            | `apps/desktop`          |
 | Domain (pure library)          | TypeScript + zod - no React, no Electron, no `fs`                                                            | `packages/domain`       |
 | Editor                         | TypeScript + ProseMirror - schema, identity and the view; browser code, no React                             | `packages/editor`       |
+| Readers                        | TypeScript + parse5 - plain text and HTML read into the admission pipeline's input; platform-free            | `packages/readers`      |
 | Database library               | TypeScript + `pg` + Kysely - provisioning, migrations, `withTenant`, the version chain, access and documents | `packages/db`           |
 | API contract                   | TypeScript + zod - routes declared once; `openapi.json` generated and drift-checked                          | `packages/api-contract` |
 | Web service                    | TypeScript + Fastify on Node - hostname to tenant, the routes, and the renderer                              | `apps/service`          |

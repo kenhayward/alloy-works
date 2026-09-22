@@ -1,5 +1,5 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
-import { parseContentDocument } from '@alloy-works/domain';
+import { parseContentDocument, type ReportEntry } from '@alloy-works/domain';
 import {
   createEditorState,
   EDITOR_COMMANDS,
@@ -30,6 +30,7 @@ import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
 import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
+import { PasteReport, shownOfPaste } from './PasteReport.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
@@ -101,6 +102,12 @@ const textOf = (view: EditorView) => {
  */
 const isEditablePhase = (phase: SessionView['phase']) =>
   phase === 'reading' || phase === 'claiming' || phase === 'editing';
+
+/** What the status bar says after a paste: the report's own last sentence says why one was refused. */
+const PASTED = 'Pasted.';
+const PASTED_WITH_REPORT =
+  'Pasted. Some of it was changed or left out: the paste report says what.';
+const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
 
 /** One dialog, open, and the press waiting on what the author does with it. */
 interface Asking {
@@ -194,6 +201,17 @@ export function ComponentEditor({
   const listRegion = useRef<HTMLDivElement | null>(null);
   // The preformatted panel's, which comes and goes the same way, with a preformatted block.
   const preformattedRegion = useRef<HTMLDivElement | null>(null);
+  // The paste report's, which comes and goes too: it is there from a paste with something to say
+  // until it is closed or the next paste replaces it.
+  const pasteRegion = useRef<HTMLElement | null>(null);
+  const [pasteReport, setPasteReport] = useState<readonly ReportEntry[] | null>(null);
+  // What a paste said while the lock it is the first change for was still being claimed. The claim
+  // announces itself when it lands, in the one live region, and would otherwise replace it unheard.
+  const pasteSaid = useRef<string | null>(null);
+  // The session's notice as it last published it. The session publishes on every change of state,
+  // carrying its notice each time, so a notice is news only when it differs from this; repeating it
+  // would put it back over whatever the page said since - a paste, a refused header field.
+  const sessionNotice = useRef<string | null>(null);
   const controls = useRef<Session | null>(null);
   // A stale GET-time lock is only true until this session has claimed or released it itself (fix
   // round 1, minor): once that happens, the initial snapshot can no longer be trusted, so it is never
@@ -448,6 +466,9 @@ export function ComponentEditor({
         component.id,
         (stored) => component.lock?.yours === true && component.lock.session === stored,
       );
+    // A new session has published nothing yet, and no paste is waiting on its claim.
+    sessionNotice.current = null;
+    pasteSaid.current = null;
     const editing = createSession({
       service: sessionService(client, component.id, initialSession, principalId),
       clock: clockRef.current,
@@ -458,7 +479,13 @@ export function ComponentEditor({
         const previous = phase;
         phase = next.phase;
         setSession(next);
-        if (next.notice) setNotice(next.notice);
+        const news = next.notice !== sessionNotice.current;
+        sessionNotice.current = next.notice;
+        if (next.notice && news) {
+          const said = pasteSaid.current;
+          pasteSaid.current = null;
+          setNotice(said && next.phase === 'editing' ? `${next.notice} ${said}` : next.notice);
+        }
         if (next.phase !== 'reading') staleLockKnown.current = true;
         // Lost, or stopped while editing goes on - signed out, or content the service refused (final
         // review, finding 2): either way what is on screen is not saved and nothing is retrying it.
@@ -530,7 +557,20 @@ export function ComponentEditor({
           editing.changed();
         }
       },
-      refused: () => setNotice('Pasting is not available yet. Type the text instead.'),
+      pasted: ({ ok, report }) => {
+        const shown = shownOfPaste(report);
+        // A refusal's own sentence is the status bar's, so the report is for anything beside it.
+        const beside = ok ? shown : shown.slice(0, -1);
+        setPasteReport(beside.length > 0 ? beside : null);
+        const said = ok
+          ? beside.length > 0
+            ? PASTED_WITH_REPORT
+            : PASTED
+          : (report.at(-1)?.message ?? '');
+        setNotice(said);
+        if (ok && phase !== 'editing') pasteSaid.current = said;
+      },
+      refused: () => setNotice(NOT_DROPPED),
     });
     setSurface(view);
     setHeader(headerOf(view.state.doc));
@@ -621,6 +661,7 @@ export function ComponentEditor({
       toolbarRegion.current,
       listRegion.current,
       preformattedRegion.current,
+      pasteRegion.current,
       place.current,
     ].filter((region) => region !== null);
     if (ring.length === 0) return;
@@ -872,6 +913,18 @@ export function ComponentEditor({
                 view={surface}
                 block={preformatted}
                 enabled={mayFormat}
+              />
+            )}
+            {/* What the last paste changed, while the surface takes changes: a report about a paste
+                into a component that has since been lost to someone else is about nothing here. */}
+            {surface !== null && pasteReport !== null && mayFormat && (
+              <PasteReport
+                ref={pasteRegion}
+                entries={pasteReport}
+                onClose={() => {
+                  setPasteReport(null);
+                  surface.focus();
+                }}
               />
             )}
             {/* The surface's region: ProseMirror mounts into it, and F6 lands on this element

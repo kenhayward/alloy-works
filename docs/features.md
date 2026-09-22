@@ -152,10 +152,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `c++` - which says what the text is without colouring it; a label that is not letters, digits and
   `+ # . _ -` is refused with a sentence beside the box.
 
+  **Copy and paste.** Paste into a component from a web page, from Word or Google Docs, from plain
+  text, or from another component, and its paragraphs, lists, quotations, preformatted text and
+  formatting come with it; a link is kept when its address is a web or email address. Pasted text in
+  the middle of a paragraph joins it, and one undo takes a paste back. Pasting into preformatted text
+  keeps every character exactly. What could not be kept is said at the time: the status bar says the
+  paste happened, and a **Paste report** above the text lists what was changed or left out - a
+  heading kept as a paragraph, a table kept as its text, an image or an equation left out, a typeface
+  or a colour removed because the theme decides how text looks, a script or a link that could run
+  something removed - with a **Close** button; `F6` reaches it like the other regions. Copying from a
+  component writes its own format beside HTML and plain text, so a copy into another component keeps
+  everything the editor holds. Markdown pastes as plain text, and nothing can be dragged in yet.
+
   **This is formatted paragraphs, lists, quotations and preformatted text, not the editor.** A
   component holding a table, an equation or a footnote opens for reading only. There is no control for a
-  defined term or a citation, nothing
-  pastes, changes saved but never made into a version are
+  defined term or a citation, a table, an
+  image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
   there, `Tab` moves the focus on, and the two keys that can nest one definition item under another,
@@ -317,7 +329,8 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations and preformatted text: a
   component holding a table, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
-  citation. Nothing pastes. Nothing imports content from a Word file, and nothing exports it but a
+  citation. A paste keeps no table, footnote, image or equation, reads Markdown as plain text, and
+  nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations and preformatted text. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and

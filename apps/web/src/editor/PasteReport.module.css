@@ -1,0 +1,44 @@
+/* The paste report: a quiet box between the toolbar and the text, like the list panel beside it. */
+
+.report {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-6) var(--space-12);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-6);
+  background: var(--surface-2);
+  font-size: var(--size-body-small);
+}
+
+.heading {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--size-label);
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entries {
+  flex: 1;
+  margin: 0;
+  padding-inline-start: var(--space-18);
+}
+
+.entries > li + li {
+  margin-top: var(--space-2);
+}
+
+.count {
+  color: var(--muted);
+}
+
+.detail {
+  font-family: var(--mono);
+  font-size: var(--size-code);
+  overflow-wrap: anywhere;
+}

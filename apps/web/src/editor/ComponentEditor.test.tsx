@@ -123,6 +123,26 @@ const lock = {
 
 afterEach(() => vi.restoreAllMocks());
 
+/** A paste event carrying exactly these types, as a browser's `clipboardData` holds them. */
+function pasteEvent(data: Record<string, string>): Event {
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', {
+    value: { types: Object.keys(data), getData: (type: string) => data[type] ?? '' },
+  });
+  return event;
+}
+
+/** Selects from `anchor` to `head`, or puts the caret there when they are one position. */
+function selectText(view: EditorView, anchor: number, head: number): void {
+  act(() =>
+    view.dispatch(
+      view.state.tr.setSelection(
+        Selection.fromJSON(view.state.doc, { type: 'text', anchor, head }),
+      ),
+    ),
+  );
+}
+
 /**
  * The base language field, which lives in the language chip's popover: opened first if it is not.
  * Found as an input, because the Formatting toolbar's Language mark is a button of the same name.
@@ -452,16 +472,139 @@ describe('the component editor', () => {
     );
   });
 
-  it('refuses a paste rather than putting unexamined content into the component', async () => {
+  it('CNT-063 pastes through the admission pipeline, and says in a paste report what it changed', async () => {
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    view.dom.dispatchEvent(
+      pasteEvent({
+        'text/html':
+          '<p> Keep <b>the</b> box.<img src="https://example.com/box.png"></p><script>steal()</script>',
+        'text/plain': ' Keep the box.',
+      }),
+    );
+
+    expect(view.state.doc.textContent).toBe('Unbox the printer.Keep the box.');
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    // The paste was the first change, so it claimed the lock, and the claim's own sentence comes
+    // with it rather than in place of it.
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You are editing this component. Pasted. Some of it was changed or left out: the paste report says what.',
+      ),
+    );
+    const report = screen.getByRole('region', { name: 'Paste report' });
+    expect(
+      within(report).getByText('An image was left out. Images cannot be pasted yet.'),
+    ).toBeInTheDocument();
+    expect(
+      within(report).getByText('A script was removed. Scripts are never stored.'),
+    ).toBeInTheDocument();
+    // New identifiers are the pipeline's business: an author can neither see nor act on them.
+    expect(report).not.toHaveTextContent('identifiers');
+
+    await userEvent.click(within(report).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('region', { name: 'Paste report' })).toBeNull();
+    expect(view.hasFocus()).toBe(true);
+  });
+
+  it('says only that it pasted when there is nothing to report, and reaches the report by F6 when there is', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    view.dom.dispatchEvent(pasteEvent({ 'text/plain': ' Keep the box.' }));
+    expect(view.state.doc.textContent).toBe('Unbox the printer. Keep the box.');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Pasted.$/));
+    expect(screen.queryByRole('region', { name: 'Paste report' })).toBeNull();
+
+    view.dom.dispatchEvent(pasteEvent({ 'text/html': '<h2>Tools</h2>' }));
+    const report = await screen.findByRole('region', { name: 'Paste report' });
+    view.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(within(report).getByRole('button', { name: 'Close' })).toHaveFocus();
+  });
+
+  it('keeps a sentence it said until something new happens, rather than repeating its own at the next save', async () => {
+    // Issue #196: the session publishes its notice with every change of state, and repeating it put
+    // "You are editing this component." back over whatever the page had said since.
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+    });
+    const view = await surface();
+    act(() => view.dispatch(view.state.tr.insertText(' Keep', 19)));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('You are editing this component.');
+    act(() => {
+      view.someProp('handleDrop', (handle) =>
+        handle(view, new Event('drop') as DragEvent, view.state.doc.slice(1, 6), false),
+      );
+    });
+    act(() => view.dispatch(view.state.tr.insertText(' it', 24)));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/2',
+      ),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Dragging content in is not available yet. Copy and paste it instead.',
+    );
+  });
+
+  it('refuses a paste nothing can be read from, changing nothing and saying why', async () => {
     const { asked, surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
     const view = await surface();
-    const handled = view.someProp('handlePaste', (handle) =>
-      handle(view, new Event('paste') as ClipboardEvent, view.state.doc.slice(1, 6)),
-    );
-    expect(handled).toBe(true);
+    view.dom.dispatchEvent(pasteEvent({ 'image/png': 'not text' }));
     expect(
-      await screen.findByText('Pasting is not available yet. Type the text instead.'),
+      await screen.findByText('Nothing was added, because the content could not be read.'),
     ).toBeInTheDocument();
+    expect(view.state.doc.textContent).toBe('Unbox the printer.');
+    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+  });
+
+  it("copies in the product's own format, beside HTML and plain text, and changes nothing", async () => {
+    const { asked, surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    const view = await surface();
+    selectText(view, 1, 6);
+    const written = new Map<string, string>();
+    const event = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        clearData: () => written.clear(),
+        setData: (type: string, value: string) => written.set(type, value),
+      },
+    });
+    view.dom.dispatchEvent(event);
+
+    expect([...written.keys()].sort()).toEqual([
+      'application/vnd.alloy-works.content+json',
+      'text/html',
+      'text/plain',
+    ]);
+    expect(written.get('text/plain')).toBe('Unbox');
+    expect(JSON.parse(written.get('application/vnd.alloy-works.content+json')!)).toMatchObject({
+      format: 'alloy-works/content',
+      content: [{ type: 'paragraph', content: [{ value: 'Unbox' }] }],
+    });
+    expect(view.state.doc.textContent).toBe('Unbox the printer.');
     expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
   });
 
@@ -2163,17 +2306,19 @@ describe('the link and language prompts', () => {
     // polish; it is the sentence that says the author's work is in danger.
     const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick, true);
     const view = await surface();
-    view.someProp('handlePaste', (handle) =>
-      handle(view, new Event('paste') as ClipboardEvent, view.state.doc.slice(1, 6)),
+    view.someProp('handleDrop', (handle) =>
+      handle(view, new Event('drop') as DragEvent, view.state.doc.slice(1, 6), false),
     );
-    await screen.findByText('Pasting is not available yet. Type the text instead.');
+    await screen.findByText('Dragging content in is not available yet. Copy and paste it instead.');
     selectRange(view, 1, 6);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Link' }));
     await screen.findByLabelText('Address');
 
     const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Pasting is not available yet. Type the text instead.');
+    expect(status).toHaveTextContent(
+      'Dragging content in is not available yet. Copy and paste it instead.',
+    );
     expect(status.closest('[inert]')).toBeNull();
   });
 
