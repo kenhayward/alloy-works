@@ -1,0 +1,94 @@
+/* The outline pane's tab strip and its collapsed rail (interface slice 15). */
+.strip {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
+.back {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  margin: 3px 0 3px var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-6);
+  color: var(--text);
+}
+
+.back:hover {
+  border-color: var(--input-border);
+  background: var(--accent-weak);
+  text-decoration: none;
+}
+
+.tabs {
+  display: flex;
+}
+
+.tab.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 32px;
+  padding: 0 var(--space-12);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-body-small);
+  font-weight: 600;
+}
+
+.tab.tab:hover {
+  background: transparent;
+  color: var(--text);
+}
+
+.tab.tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.strip > :last-child {
+  width: 30px;
+  margin: 3px var(--space-4) 3px 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.strip > :last-child:hover {
+  border-color: var(--input-border);
+  background: var(--accent-weak);
+}
+
+.rail {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-10);
+  padding: var(--space-6) 0 var(--space-10);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface-2);
+}
+
+.railLabel {
+  color: var(--muted);
+  font-size: var(--size-overline);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+}
+
+.railLabel[data-chosen='true'] {
+  color: var(--accent);
+}

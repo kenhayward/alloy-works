@@ -6,6 +6,7 @@ import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { shimRangeMeasurement } from '../test/range.js';
+import { StatusProvider } from '../shell/Status.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { designTiming } from './session.js';
 
@@ -247,6 +248,27 @@ describe('the component editor', () => {
     await waitFor(() => expect(view.hasFocus() || document.activeElement === view.dom).toBe(true));
     // The paragraph opens at 1, so the sixth character of its text is at 7.
     expect(view.state.selection.from).toBe(7);
+  });
+
+  it('says its notices through the status bar where the application has one, and nowhere else', async () => {
+    const { client } = service({ 'GET /v1/components/{id}': () => json(200, opened()) });
+    render(
+      <StatusProvider>
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+        />
+      </StatusProvider>,
+    );
+    const title = await screen.findByLabelText('Title');
+    await userEvent.clear(title);
+    await userEvent.tab();
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(within(screen.getByRole('contentinfo')).getByRole('status')).toHaveTextContent(
+      'A component needs a title.',
+    );
   });
 
   it('tells the workspace which space the component it opened is in', async () => {

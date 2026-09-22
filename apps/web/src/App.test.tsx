@@ -61,6 +61,15 @@ describe('App', () => {
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 
+  it('puts one status bar along the foot of every page, after the page', () => {
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
+    const bar = screen.getByRole('contentinfo');
+    expect(within(bar).getByRole('status')).toBeInTheDocument();
+    expect(screen.getByRole('main').compareDocumentPosition(bar)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
   it("keeps the environment panel off every page, for Administration's About", async () => {
     vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);

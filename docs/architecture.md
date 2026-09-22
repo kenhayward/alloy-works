@@ -559,9 +559,12 @@ an ARIA toolbar and the reason the toolbar needs a reachable disabled button doe
 **A dialog makes the rest of the component inert.** **Link** and **Language** open a prompt; while one
 stands, the article holding the surface and both toolbars carries `inert`, so a click cannot move the
 selection out from under the dialog and land the mark on text the author never opened it for. The
-session's `<p role="status">` is a permanent sibling of that article rather than inside it, because a
-live region removed from the accessibility tree announces nothing - and the rollback that moves text
-out from under a dialog is exactly what writes that notice.
+session's notice goes to a live region that is never inside that article, because a live region
+removed from the accessibility tree announces nothing - and the rollback that moves text out from
+under a dialog is exactly what writes that notice. In the application that region is the status bar
+along the foot of the page (`web: src/shell/Status.tsx`), the one live region the document page's
+notices use too; an editor rendered with no shell around it keeps a `<p role="status">` of its own
+beside the article.
 
 **Five editor node types for the model's one `list`, and the mapping is where they meet.**
 `list` (`listItem+`, `kind` ordered or unordered, with `start` and `format`), `listItem` (`block+`),

@@ -116,7 +116,9 @@ direction chips, the save chip, `Done`, `Save version`), one row of Formatting i
 surface: [the handoff](handoffs/component-editor/README.md), design 2a, built in interface slice 13.
 
 **C. Document triptych.** The same shape: a 300px outline pane, draggable between 220 and 520 and
-collapsing to a 46px rail; the document's own text in the middle, each component edited in place
+collapsing to a 46px rail, built as a tabbed panel (tab strip, icon toolbar, the document as the
+tree's root row, an indented tree) from [the handoff](handoffs/outline-pane/README.md), designs 4a
+and 4b, in interface slice 15, with every notice in a status bar at the foot of the application; the document's own text in the middle, each component edited in place
 under its section number, opened by clicking its text and closed by Done; the same facet dock on the right. **Structure and content are one screen,
 never two.** The panes' widths and collapsed state are remembered per person.
 

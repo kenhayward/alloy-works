@@ -6,6 +6,7 @@ import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
 import { Header } from './shell/Header.js';
 import { moduleOf } from './shell/moduleOf.js';
+import { StatusProvider } from './shell/Status.js';
 
 interface AppProps {
   bridge?: PlatformBridge;
@@ -45,7 +46,9 @@ export function App({
   }, [bridge]);
 
   return (
-    <>
+    // The status bar's owner: one live region for the application, at the foot of every page
+    // (interface slice 15). The provider draws the bar after what it holds.
+    <StatusProvider>
       {/* The scaffolding's environment panel and the delivery line live in Administration's About
           (interface slice 12), off every page. */}
       <Header
@@ -62,6 +65,6 @@ export function App({
         }
       />
       <main className={styles['page']}>{workspace}</main>
-    </>
+    </StatusProvider>
   );
 }

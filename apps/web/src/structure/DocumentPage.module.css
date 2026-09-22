@@ -9,27 +9,6 @@
   gap: var(--space-12);
 }
 
-.strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-8) var(--space-14);
-  padding-bottom: var(--space-10);
-  border-bottom: 1px solid var(--border);
-}
-
-.strip h2 {
-  margin: 0;
-  font-size: var(--size-doc-title);
-}
-
-.version {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--size-body-small);
-  font-variant-numeric: tabular-nums;
-}
-
 .layout {
   display: grid;
   grid-template-columns: var(--outline-width) 6px minmax(0, 1fr) var(--dock-panel);
@@ -48,42 +27,51 @@
   display: contents;
 }
 
-.paneHead {
-  grid-column: 1;
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-10);
-}
-
-.layout[data-collapsed='true'] .paneHead {
-  grid-row: 1 / span 3;
-  align-items: center;
-  padding-block: var(--space-8);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-8);
-  background: var(--surface-2);
-}
-
-.railLabel {
-  color: var(--muted);
-  font-size: var(--size-overline);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  writing-mode: vertical-rl;
-}
-
+/* The outline pane: a tabbed panel at the top of its column (interface slice 15). */
 .layout > [data-panel] > [data-part='outline'] {
   grid-column: 1;
-  grid-row: 2 / span 2;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: var(--space-12);
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface-2);
   font-size: var(--size-body-small);
+}
+
+/* The document as the tree's root row: its title, the page's heading, and its version number. */
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-14) 7px;
+  border-bottom: 1px solid var(--border);
+}
+
+.folder {
+  display: inline-grid;
+  color: var(--accent);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--size-body);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.number {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: var(--size-label);
+  font-variant-numeric: tabular-nums;
 }
 
 .layout[data-collapsed='true'] > [data-panel] > [data-part='outline'] {

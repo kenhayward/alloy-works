@@ -223,9 +223,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (documents?.kind === 'document') {
     return (
       <>
-        <p>
-          <a href="#/documents">Back to documents</a>
-        </p>
+        {/* Back to the documents is the arrow in the outline pane's tab strip (interface slice 15). */}
         <DocumentPage
           key={documents.document}
           client={client}
