@@ -44,6 +44,12 @@ export const reportMessages = {
       'A suggested change was removed and its text kept as it stood. Suggestions stay with the component they were made on.',
     condition: 'A condition was removed, because this space has no condition of that kind.',
     unrepresentable: 'Something this component cannot hold was left out.',
+    // A reader's, each for something an author pastes often enough to be told about in words of
+    // its own rather than as `unrepresentable`.
+    image: 'An image was left out. Images cannot be pasted yet.',
+    mathematics: 'An equation was left out. Equations cannot be pasted yet.',
+    rule: 'A horizontal line was left out.',
+    control: 'Invisible control characters were removed.',
   },
   rewritten: {
     hyperlink: 'A link target was rewritten in the form every browser reads the same way.',
@@ -56,6 +62,10 @@ export const reportMessages = {
     crossReferenceTarget:
       'Cross-references copied with what they refer to were pointed at the copy.',
     markIdentifier: 'Marks were given new identifiers.',
+    // A reader's: kept, but not as what it was.
+    heading: "A heading was kept as a paragraph. A document's headings are its section titles.",
+    table:
+      'A table was kept as its text, one paragraph for each cell. Tables cannot be pasted yet.',
   },
   /**
    * Kept exactly as it arrived, and worth the author knowing: nothing was removed or changed, so it
