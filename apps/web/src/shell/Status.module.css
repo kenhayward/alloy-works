@@ -1,0 +1,30 @@
+/* The status bar along the foot of the application (interface slice 15). */
+.bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-16);
+  padding: var(--space-6) var(--space-16);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--size-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.notice,
+.context {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 1.5em;
+  margin: 0;
+}
+
+.notice :global([data-icon='Move']) {
+  color: var(--accent);
+}

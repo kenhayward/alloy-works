@@ -17,12 +17,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { everyPage } from '../paging.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
-import { PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
+import { Icon } from '../editor/Icon.js';
+import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
+import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { DocumentText, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { nodeLink } from './links.js';
+import { OutlineRail, OutlineTabs, tabIds, useOutlineTab } from './OutlineTabs.js';
 import {
   OutlinePanel,
   type Answered,
@@ -362,6 +365,22 @@ export function DocumentPage({
   const [undo, setUndo] = useState<readonly OutlineOperation[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, chooseTab] = useOutlineTab(OUTLINE_PANE.storageKey);
+  // The notice and what the document holds go to the application's status bar, its one live region
+  // (interface slice 15); a page rendered on its own, outside the shell, draws the bar itself.
+  const status = useStatus();
+  useEffect(() => {
+    status?.say(notice);
+  }, [status, notice]);
+  useEffect(() => () => status?.say(null), [status]);
+  const shownDocument = loaded.state === 'open' ? loaded.document : null;
+  const context = shownDocument === null ? null : aboutDocument(shownDocument);
+  const contextKey = context?.join('\n') ?? null;
+  useEffect(() => {
+    if (status === null || contextKey === null) return undefined;
+    status.describe(contextKey.split('\n'));
+    return () => status.describe(null);
+  }, [status, contextKey]);
   const pending = useRef(false);
   // The document as the page last received it - written where an answer arrives, never during render.
   const latest = useRef<Opened | null>(null);
@@ -584,10 +603,17 @@ export function DocumentPage({
   );
 
   if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
+  // A document that did not open has no outline pane, and so no arrow back: each notice carries it.
+  const back = (
+    <p>
+      <a href="#/documents">Back to documents</a>
+    </p>
+  );
   if (loaded.state === 'missing') {
     return (
       <Notice tone="refused">
         <p>There is nothing here, or nothing you may read.</p>
+        {back}
       </Notice>
     );
   }
@@ -596,6 +622,7 @@ export function DocumentPage({
       return (
         <Notice tone="signedOut">
           <p>You are signed out. Sign in again to open this document.</p>
+          {back}
         </Notice>
       );
     }
@@ -611,6 +638,7 @@ export function DocumentPage({
         >
           Try again
         </button>
+        {back}
       </Notice>
     );
   }
@@ -618,19 +646,15 @@ export function DocumentPage({
     return (
       <Notice tone="failed">
         <p>This document could not be read.</p>
+        {back}
       </Notice>
     );
   }
 
   const { document } = loaded;
+  const ids = tabIds(tab);
   return (
     <article aria-labelledby="document-title" className={styles['page']}>
-      <header className={styles['strip']}>
-        <h2 id="document-title">{document.outline.title}</h2>
-        <p className={styles['version']}>
-          Version {document.version.number} in {document.space.name}
-        </p>
-      </header>
       {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
       {document.scheme === null && <p>This document's numbering could not be read.</p>}
       <div
@@ -638,16 +662,29 @@ export function DocumentPage({
         data-collapsed={outlinePane.collapsed}
         style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
       >
-        <div className={styles['paneHead']}>
-          <PaneToggle label="outline" pane={outlinePane} />
-          {outlinePane.collapsed && (
-            <span className={styles['railLabel']} aria-hidden="true">
-              Outline
-            </span>
-          )}
-        </div>
+        {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={tab} />}
         <OutlinePanel
           outline={document.outline}
+          head={
+            // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
+            outlinePane.collapsed ? null : (
+              <OutlineTabs pane={outlinePane} chosen={tab} onChoose={chooseTab} />
+            )
+          }
+          tab={ids}
+          root={
+            // The document itself, as the tree's root: its title - the page's heading - and its
+            // version number. The space is said in the status bar.
+            <div className={styles['root']}>
+              <span className={styles['folder']}>
+                <Icon name="Folder" size={14} />
+              </span>
+              <h2 id="document-title" className={styles['title']}>
+                {document.outline.title}
+              </h2>
+              <span className={styles['number']}>{document.version.number}</span>
+            </div>
+          }
           scheme={document.scheme}
           editable={document.mayEdit}
           busy={busy}
@@ -726,6 +763,32 @@ export function DocumentPage({
           />
         </div>
       </div>
+      {status === null && <StatusBar notice={notice} context={context} />}
     </article>
   );
+}
+
+/** How many sections and component references an outline holds, at every depth. */
+function counted(nodes: readonly OutlineViewNode[]): { sections: number; components: number } {
+  let sections = 0;
+  let components = 0;
+  const walk = (list: readonly OutlineViewNode[]) => {
+    for (const node of list) {
+      if (node.type === 'section') sections += 1;
+      else components += 1;
+      walk(node.children);
+    }
+  };
+  walk(nodes);
+  return { sections, components };
+}
+
+/** What the status bar says the document is: what it holds, and which version of it in which space. */
+function aboutDocument(document: Opened): readonly string[] {
+  const { sections, components } = counted(document.outline.nodes);
+  const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  return [
+    `${plural(sections, 'section')}, ${plural(components, 'component')}`,
+    `Version ${document.version.number} in ${document.space.name}`,
+  ];
 }

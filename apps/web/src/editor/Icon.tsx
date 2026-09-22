@@ -34,6 +34,17 @@ const PATHS: Record<string, readonly string[]> = {
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],
+  // The outline pane and the status bar (interface slice 15).
+  Back: ['M13 8H3.4M7 3.8 3 8l4 4.2'],
+  Contents: ['M2.5 4h11M2.5 8h11M2.5 12h7'],
+  'Hide pane': ['M9.5 4 5.5 8l4 4'],
+  'Show pane': ['M6.5 4l4 4-4 4'],
+  'Add section': ['M2.5 3.6h11M2.5 7.2h6.5M2.5 10.8h4', 'M12 9.2v5.2M9.4 11.8h5.2'],
+  'Add component': ['M3 2.4h5.6L11.4 5.2v4.4H3z', 'M12 9.6v4.8M9.6 12h4.8'],
+  Undo: ['M3 5.4h6.2a3.4 3.4 0 0 1 0 6.8H5.4', 'M5.4 2.8 2.6 5.4l2.8 2.6'],
+  Folder: ['M2.4 4.2h4l1.2 1.6h6V12H2.4z'],
+  Document: ['M3.4 2.6h5.4l3 3v7.8H3.4z', 'M8.6 2.6v3.2h3'],
+  Move: ['M8 3v10M5.2 10.2 8 13l2.8-2.8'],
 };
 
 /**
@@ -42,6 +53,9 @@ const PATHS: Record<string, readonly string[]> = {
  * assistive technology: the button it sits in carries the name. A label with no drawing renders
  * nothing, which the toolbar's test would catch.
  */
+/** Drawn filled rather than stroked, on a 10px grid: the outline's section triangle. */
+const TRIANGLE = 'M1.5 2.5h7L5 7.5z';
+
 export function Icon({ name, size = 16 }: { name: string; size?: number }) {
   const letter = LETTERS[name];
   if (letter !== undefined) {
@@ -49,6 +63,21 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
       <span className={styles['letter']} data-icon={name} data-letter={name} aria-hidden="true">
         {letter}
       </span>
+    );
+  }
+  if (name === 'Section') {
+    return (
+      <svg
+        className={styles['path']}
+        data-icon={name}
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 10 10"
+        fill="currentColor"
+      >
+        <path d={TRIANGLE} />
+      </svg>
     );
   }
   const paths = PATHS[name];
@@ -64,7 +93,13 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
       fill="none"
       stroke="currentColor"
       // Heavier for the two single strokes; lighter where it is drawn larger than the toolbar's 16px.
-      strokeWidth={name === 'Done editing' || name === 'Close' ? 1.6 : size > 16 ? 1.4 : 1.5}
+      strokeWidth={
+        name === 'Done editing' || name === 'Close'
+          ? 1.6
+          : name === 'Document' || size > 16
+            ? 1.4
+            : 1.5
+      }
       strokeLinecap="round"
       strokeLinejoin="round"
     >

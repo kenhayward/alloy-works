@@ -3,6 +3,26 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.50.0 - 2026-09-22 (PR #194)
+
+### Added
+
+- **A status bar along the foot of every page.** It says the latest message, such as where a section
+  moved to or why a move was refused, and keeps it until the next one. On a document it also says how
+  many sections and components it holds and which version it is, in which space.
+
+### Changed
+
+- **The document's outline sits in a tidier pane at the top of its column.** A **Contents** tab heads
+  it, with an arrow back to the documents and the button that hides the pane. Add section, Add
+  component and Undo are icons; hover over one to see its name. The document's title and version
+  head the tree.
+- **The outline reads more easily.** Each level is indented, sections carry a small triangle and
+  components a page, the numbers are in the accent colour, and the chosen item is highlighted across
+  the pane.
+- **The title strip above a document and the paragraph listing the outline's keys are gone.** Screen
+  readers still hear the keys. Hidden to its rail, the pane shows its tab's name on its side.
+
 ## 0.49.0 - 2026-09-22 (PR #193)
 
 ### Changed

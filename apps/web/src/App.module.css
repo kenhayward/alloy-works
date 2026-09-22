@@ -1,5 +1,6 @@
 /* The page under the header band: every module sits 4px beneath it, inside the gutter. */
 .page {
+  flex: 1;
   padding: calc(var(--space-4) + var(--space-20)) var(--space-24) var(--space-40);
 }
 

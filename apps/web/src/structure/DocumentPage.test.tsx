@@ -2525,6 +2525,86 @@ describe('the address of every node', () => {
     expect(screen.getByRole('separator', { name: 'Resize the outline' })).toBeInTheDocument();
   });
 
+  it('puts the outline in a tabbed panel: back, Contents and the toggle, then the document as its root', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]),
+    );
+    open(fake.fetch);
+    const tree = await screen.findByRole('tree', { name: 'Outline' });
+
+    const tabs = screen.getByRole('tablist', { name: 'Outline pane' });
+    const contents = within(tabs).getByRole('tab', { name: 'Contents' });
+    expect(contents).toHaveAttribute('aria-selected', 'true');
+    const panel = screen.getByRole('tabpanel', { name: 'Contents' });
+    expect(panel).toContainElement(tree);
+    expect(
+      within(tabs.parentElement!).getByRole('link', { name: 'Back to documents' }),
+    ).toHaveAttribute('href', '#/documents');
+    expect(
+      within(tabs.parentElement!).getByRole('button', { name: 'Hide the outline pane' }),
+    ).toBeInTheDocument();
+
+    // The document is the tree's root row: its title, the page's heading, and its version number.
+    const title = screen.getByRole('heading', { level: 2, name: 'The dosing report' });
+    expect(panel).toContainElement(title);
+    expect(within(panel).getByText('0.1')).toBeInTheDocument();
+
+    // The acts are icons, each still named in words, which a pointer's tooltip shows.
+    const toolbar = within(panel).getByRole('toolbar', { name: 'Outline' });
+    for (const name of ['Add section', 'Add component', 'Undo']) {
+      const button = within(toolbar).getByRole('button', { name });
+      expect(button).toHaveAttribute('title', name);
+      expect(button.querySelector('[data-icon]')).toHaveAttribute('aria-hidden', 'true');
+    }
+
+    // Each row is drawn with its glyph and indented by its depth, not by nested list padding.
+    const row = (name: string) =>
+      screen.getByRole('treeitem', { name }).querySelector<HTMLElement>('[data-row]')!;
+    expect(row('Introduction').querySelector('[data-icon]')).toHaveAttribute(
+      'data-icon',
+      'Section',
+    );
+    expect(row('Introduction').style.paddingInlineStart).toBe('8px');
+    const scope = screen.getAllByRole('treeitem')[1]!.querySelector<HTMLElement>('[data-row]')!;
+    expect(scope.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Document');
+    expect(scope.style.paddingInlineStart).toBe('26px');
+  });
+
+  it('says its notices and what it holds in the status bar, and keeps the keys for a screen reader', async () => {
+    const user = userEvent.setup();
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]),
+    );
+    open(fake.fetch);
+    const tree = await screen.findByRole('tree');
+    const bar = screen.getByRole('contentinfo');
+    expect(within(bar).getByText('1 section, 1 component')).toBeInTheDocument();
+    expect(within(bar).getByText('Version 0.1 in General')).toBeInTheDocument();
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+
+    await user.click(within(tree).getByRole('treeitem', { name: 'Introduction' }));
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await within(bar).findByText('Copied the link to Introduction.')).toBeInTheDocument();
+
+    // Not shown, but still what the tree is described by.
+    const help = document.getElementById(tree.getAttribute('aria-describedby') ?? '')!;
+    expect(help).toHaveTextContent(/Alt and the arrow keys/);
+    expect(help.className).toMatch(/hidden/);
+  });
+
+  it('hides to a rail holding the toggle and the tab turned on its side', async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    await screen.findByRole('tree');
+    await user.click(screen.getByRole('button', { name: 'Hide the outline pane' }));
+    const show = screen.getByRole('button', { name: 'Show the outline pane' });
+    expect(show.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Show pane');
+    expect(show.closest('[data-rail]')).toHaveTextContent('Contents');
+    await user.click(show);
+    expect(screen.getByRole('tab', { name: 'Contents' })).toBeInTheDocument();
+  });
+
   it("copies the chosen node's address, and says it did", async () => {
     const user = userEvent.setup();
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));

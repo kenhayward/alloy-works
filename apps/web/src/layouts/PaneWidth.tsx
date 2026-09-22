@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { Icon } from '../editor/Icon.js';
 
 import styles from './PaneWidth.module.css';
 
@@ -19,7 +20,7 @@ export interface Pane {
 }
 
 /** A value this browser kept, or nothing: a store that will not answer is one that remembers nothing. */
-function kept(key: string): string | null {
+export function kept(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
   } catch {
@@ -27,7 +28,7 @@ function kept(key: string): string | null {
   }
 }
 
-function keep(key: string, value: string): void {
+export function keep(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
   } catch {
@@ -126,7 +127,7 @@ export function PaneToggle({ label, pane }: { label: string; pane: Pane }) {
       title={words}
       onClick={() => pane.setCollapsed(!pane.collapsed)}
     >
-      <span aria-hidden="true">{pane.collapsed ? '>' : '<'}</span>
+      <Icon name={pane.collapsed ? 'Show pane' : 'Hide pane'} />
     </button>
   );
 }

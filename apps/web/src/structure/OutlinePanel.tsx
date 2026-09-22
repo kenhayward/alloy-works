@@ -22,7 +22,11 @@ import {
   type MutableRefObject,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
 } from 'react';
+
+import { Icon } from '../editor/Icon.js';
+import styles from './OutlinePanel.module.css';
 
 import {
   breaksFrontFirst,
@@ -110,6 +114,12 @@ function lostTitles(lost: readonly LostTitle[]): string {
 
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
+  /** What stands above the panel's content in its box: the pane's tab strip. */
+  readonly head?: ReactNode;
+  /** The tab and the panel it shows, by id, when the panel is one tab's (interface slice 15). */
+  readonly tab?: { readonly tab: string; readonly panel: string };
+  /** The tree's root row, above the tree: the document itself. */
+  readonly root?: ReactNode;
   /**
    * The scheme the outline is numbered with: the scheme of the layout version this document would be
    * published under (STR-036), never the product's default, so the panel shows the numbers a publish
@@ -126,9 +136,12 @@ export interface OutlinePanelProps {
    * next - the version, the undo stack, what is announced.
    */
   readonly onOperation: (operation: OutlineOperation) => Promise<Answered>;
-  /** The one status sentence, announced through the panel's `role="status"` region. */
+  /**
+   * The one status sentence, which the page announces through the status bar (interface slice 15).
+   * The panel reads it to know what its own last word was.
+   */
   readonly notice: string | null;
-  /** Says something through that same region: a field refused before anything was sent. */
+  /** Says something through that same bar: a field refused before anything was sent. */
   readonly onNotice?: (message: string | null) => void;
   readonly canUndo?: boolean;
   readonly onUndo?: () => Promise<Answered>;
@@ -251,6 +264,9 @@ function inTextField(event: KeyboardEvent): boolean {
  */
 export function OutlinePanel({
   outline,
+  head = null,
+  tab,
+  root = null,
   scheme,
   editable,
   busy = false,
@@ -663,20 +679,38 @@ export function OutlinePanel({
           {dragging !== null && (
             <div data-drop={`before:${node.id}`} aria-hidden="true" style={{ height: '0.5em' }} />
           )}
-          {shown !== undefined && (
-            <>
-              <span id={numberId}>{shown}</span>{' '}
-            </>
-          )}
-          <span id={labelId} data-drop={`into:${node.id}`}>
-            {node.id === highlighted ? (
-              <mark>{nodeLabel(node, names)}</mark>
-            ) : (
-              nodeLabel(node, names)
+          {/* The row is its own element, indented by its depth, so its hover and its selection
+              fill the pane's width at every level rather than stopping where a list's padding does. */}
+          <div
+            className={styles['row']}
+            data-row
+            style={{ paddingInlineStart: `${8 + (level - 1) * 18}px` }}
+          >
+            <span className={styles['glyph']} data-kind={node.type}>
+              <Icon
+                name={node.type === 'section' ? 'Section' : 'Document'}
+                size={node.type === 'section' ? 10 : 13}
+              />
+            </span>
+            {shown !== undefined && (
+              <>
+                <span id={numberId} className={styles['number']}>
+                  {shown}
+                </span>{' '}
+              </>
             )}
-          </span>
+            <span id={labelId} className={styles['label']} data-drop={`into:${node.id}`}>
+              {node.id === highlighted ? (
+                <mark>{nodeLabel(node, names)}</mark>
+              ) : (
+                nodeLabel(node, names)
+              )}
+            </span>
+          </div>
           {node.children.length > 0 && (
-            <ul role="group">{renderNodes(node.children, level + 1)}</ul>
+            <ul role="group" className={styles['group']}>
+              {renderNodes(node.children, level + 1)}
+            </ul>
           )}
         </li>
       );
@@ -689,114 +723,148 @@ export function OutlinePanel({
     // chosen in it. The document page lays them out in columns of their own (interface slice 8).
     <div data-panel="outline" onKeyDown={onPanelKeyDown}>
       <div data-part="outline">
-        {editable && (
-          <div role="toolbar" aria-label="Outline">
-            {/* Nothing here is disabled while an act is in flight, because a control that is disabled
+        {head}
+        <div
+          className={styles['panel']}
+          {...(tab ? { role: 'tabpanel', id: tab.panel, 'aria-labelledby': tab.tab } : {})}
+        >
+          {editable && (
+            <div role="toolbar" aria-label="Outline" className={styles['toolbar']}>
+              {/* Nothing here is disabled while an act is in flight, because a control that is disabled
               under the focus drops it to the page body in a real browser: each waits instead, and
               Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
-            <button type="button" onClick={() => !busy && openAdding('section')}>
-              Add section
-            </button>
-            <button type="button" onClick={() => !busy && openAdding('component')}>
-              Add component
-            </button>
-            <button
-              type="button"
-              aria-disabled={!canUndo}
-              onClick={() => {
-                if (!busy && canUndo) void onUndo?.();
+              {/* Icons, each still named in words - by `aria-label` for a screen reader and by
+                `title` for a pointer - so the words move rather than going (interface slice 15). */}
+              <button
+                type="button"
+                className={styles['act']}
+                aria-label="Add section"
+                title="Add section"
+                onClick={() => !busy && openAdding('section')}
+              >
+                <Icon name="Add section" />
+              </button>
+              <button
+                type="button"
+                className={styles['act']}
+                aria-label="Add component"
+                title="Add component"
+                onClick={() => !busy && openAdding('component')}
+              >
+                <Icon name="Add component" />
+              </button>
+              <span className={styles['divider']} aria-hidden="true" />
+              <button
+                type="button"
+                className={styles['act']}
+                aria-label="Undo"
+                title="Undo"
+                aria-disabled={!canUndo}
+                onClick={() => {
+                  if (!busy && canUndo) void onUndo?.();
+                }}
+              >
+                <Icon name="Undo" />
+              </button>
+              <span className={styles['overline']} aria-hidden="true">
+                Outline
+              </span>
+            </div>
+          )}
+          {editable && adding?.kind === 'section' && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const text = newTitle.trim();
+                if (!hasText(text)) {
+                  setAttempted(true);
+                  return;
+                }
+                void insert({ type: 'section', title: sectionTitle(text) });
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') cancelAdding();
               }}
             >
-              Undo
-            </button>
-          </div>
-        )}
-        {editable && adding?.kind === 'section' && (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              const text = newTitle.trim();
-              if (!hasText(text)) {
-                setAttempted(true);
-                return;
+              <label>
+                New section title
+                {/* Focus goes where the author asked to type: they opened this form themselves. */}
+                <input
+                  autoFocus
+                  value={newTitle}
+                  onChange={(event) => setNewTitle(event.target.value)}
+                />
+              </label>
+              {/* Said about the field as it stands, so it goes the moment the field is fine. */}
+              {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
+              <button type="submit">Add</button>
+              <button type="button" onClick={cancelAdding}>
+                Cancel
+              </button>
+            </form>
+          )}
+          {editable && adding?.kind === 'component' && (
+            <ComponentChooser
+              components={components}
+              chosen={chosen}
+              onChoose={setChosen}
+              onAdd={(component) =>
+                void insert({ type: 'reference', component, mode: { kind: 'latest' } })
               }
-              void insert({ type: 'section', title: sectionTitle(text) });
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') cancelAdding();
-            }}
-          >
-            <label>
-              New section title
-              {/* Focus goes where the author asked to type: they opened this form themselves. */}
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={(event) => setNewTitle(event.target.value)}
-              />
-            </label>
-            {/* Said about the field as it stands, so it goes the moment the field is fine. */}
-            {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
-            <button type="submit">Add</button>
-            <button type="button" onClick={cancelAdding}>
-              Cancel
-            </button>
-          </form>
-        )}
-        {editable && adding?.kind === 'component' && (
-          <ComponentChooser
-            components={components}
-            chosen={chosen}
-            onChoose={setChosen}
-            onAdd={(component) =>
-              void insert({ type: 'reference', component, mode: { kind: 'latest' } })
-            }
-            onCancel={cancelAdding}
-            onReload={onReloadComponents}
-          />
-        )}
-        <p id={`${prefix}-keys`}>{editable ? KEYS : 'Move between items with the arrow keys.'}</p>
-        {nodes.length === 0 ? (
-          <p>This document has no sections yet.</p>
-        ) : (
-          <ul
-            role="tree"
-            aria-label="Outline"
-            aria-describedby={`${prefix}-keys`}
-            aria-busy={busy}
-            onKeyDown={onTreeKeyDown}
-            onClick={onTreeClick}
-            onDragStart={(event) => {
-              const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
-              const id = item?.dataset.node;
-              if (!may || id === undefined) return;
-              // A tick later, not now: the drop places this renders change the page under the drag,
-              // and Chromium ends a drag whose source changes in the same task it started in.
-              clearTimeout(dragTimer.current);
-              dragTimer.current = setTimeout(() => setDragging(id), 0);
-              // Firefox starts no drag without data; the node's identifier is what is being moved.
-              event.dataTransfer?.setData('text/plain', id);
-              if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-            }}
-            onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
-            onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
-            onDragEnd={() => {
-              clearTimeout(dragTimer.current);
-              setDragging(null);
-            }}
-          >
-            {renderNodes(nodes, 1)}
-          </ul>
-        )}
-        {dragging !== null && (
-          <p
-            onDragOver={(event) => allowDrop(event, endTarget)}
-            onDrop={(event) => dropOnto(event, endTarget)}
-          >
-            Move to the end of the document
+              onCancel={cancelAdding}
+              onReload={onReloadComponents}
+            />
+          )}
+          {root}
+          {/* Not shown, and still what the tree is described by: a screen reader hears how to move,
+            and a pointer finds the acts by their tooltips (interface slice 15). */}
+          <p id={`${prefix}-keys`} className={styles['hidden']}>
+            {editable ? KEYS : 'Move between items with the arrow keys.'}
           </p>
-        )}
-        <p role="status">{notice}</p>
+          {nodes.length === 0 ? (
+            <p>This document has no sections yet.</p>
+          ) : (
+            <ul
+              role="tree"
+              className={styles['tree']}
+              aria-label="Outline"
+              aria-describedby={`${prefix}-keys`}
+              aria-busy={busy}
+              onKeyDown={onTreeKeyDown}
+              onClick={onTreeClick}
+              onDragStart={(event) => {
+                const item = (event.target as HTMLElement).closest<HTMLElement>(
+                  '[role="treeitem"]',
+                );
+                const id = item?.dataset.node;
+                if (!may || id === undefined) return;
+                // A tick later, not now: the drop places this renders change the page under the drag,
+                // and Chromium ends a drag whose source changes in the same task it started in.
+                clearTimeout(dragTimer.current);
+                dragTimer.current = setTimeout(() => setDragging(id), 0);
+                // Firefox starts no drag without data; the node's identifier is what is being moved.
+                event.dataTransfer?.setData('text/plain', id);
+                if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(event) => allowDrop(event, dropTargetOf(event.target))}
+              onDrop={(event) => dropOnto(event, dropTargetOf(event.target))}
+              onDragEnd={() => {
+                clearTimeout(dragTimer.current);
+                setDragging(null);
+              }}
+            >
+              {renderNodes(nodes, 1)}
+            </ul>
+          )}
+          {dragging !== null && (
+            <p
+              onDragOver={(event) => allowDrop(event, endTarget)}
+              onDrop={(event) => dropOnto(event, endTarget)}
+            >
+              Move to the end of the document
+            </p>
+          )}
+        </div>
       </div>
       <div data-part="details">
         {editable && selected && confirming === null && (

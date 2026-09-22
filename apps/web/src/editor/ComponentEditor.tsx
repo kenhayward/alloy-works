@@ -44,6 +44,7 @@ import {
   type SessionView,
   type Timing,
 } from './session.js';
+import { useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 
@@ -163,6 +164,12 @@ export function ComponentEditor({
   const [session, setSession] = useState<SessionView | null>(null);
   const [kept, setKept] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Said through the application's status bar, its one live region, where there is one (interface
+  // slice 15); a component opened in place in a document shares it with the document's own notices.
+  const status = useStatus();
+  useEffect(() => {
+    if (notice !== null) status?.say(notice);
+  }, [status, notice]);
   const [header, setHeader] = useState<Header | null>(null);
   // The surface itself, held as state rather than in a ref, because the formatting toolbar renders
   // from it: what a mark button says about the selection is read off `view.state` during a render,
@@ -883,8 +890,10 @@ export function ComponentEditor({
           opens: `inert` takes the article out of the accessibility tree, so a notice that arrived
           while a dialog stood over the page - newer text saved from another window, signed out,
           the lock lost - would be announced to nobody. A live region that moved between parents
-          would be a live region that lost the announcement instead, so it stays put out here. */}
-      <p role="status">{notice}</p>
+          would be a live region that lost the announcement instead, so it stays put out here.
+          In the application the status bar is that region, outside the article for the same
+          reason; this one is for an editor rendered with no shell around it. */}
+      {status === null && <p role="status">{notice}</p>}
       {asking &&
         // Beside the article rather than inside it, because the article is what it makes inert:
         // a dialog within an inert subtree is a dialog nothing can reach. Keyed by which opening
