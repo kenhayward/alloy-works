@@ -298,15 +298,15 @@ that happen to say the same thing.
 Seven, and the vocabulary is closed. Every addition is a construct that has to survive comparison,
 conditional resolution, translation and three output formats.
 
-| Node           | Carries                                                                                                                                                                                                   |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paragraph`    | Inline content, and a style name                                                                                                                                                                          |
-| `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format |
-| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note                                                                                           |
-| `figure`       | An asset reference, an image style name, a caption, and an alternative-text state                                                                                                                         |
-| `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                          |
-| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                      |
-| `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                             |
+| Node           | Carries                                                                                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paragraph`    | Inline content, and a style name                                                                                                                                                                                |
+| `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format       |
+| `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note. [Tables, before the first is stored](#tables-before-the-first-is-stored) proposes what changes |
+| `figure`       | An asset reference, an image style name, a caption, and an alternative-text state                                                                                                                               |
+| `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                                |
+| `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                            |
+| `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                   |
 
 Two are absent on purpose. **`admonition`** is CNT-120, which is T2 and takes its closed vocabulary
 from an admonition style catalogue that does not exist yet. **A bound table** arrives with T2's
@@ -362,6 +362,37 @@ left undone deliberately, and this is the last slice in which it could be done a
 rewriting a stored version: absence and a default are not the same statement, an author who chose
 `1, 2, 3` said so and a later change to what the default is would silently restyle every list that had
 only omitted it, and a digest records what was written rather than what was seen.
+
+## Tables, before the first is stored
+
+The table was designed with the rest of the model and stored by nothing, because nothing authored one.
+Designing the editor and the publication that make one (publishing.md, [Tables](publishing.md#tables))
+found four things the shape does not yet say, and **every one of them is free to fix only until the
+first table is stored**: a version is insert-only, so after that each is a schema version and a
+migration. Decisions T-A to T-D of that section, **taken as recommended by Ken on 2026-09-22**.
+
+- **A caption is inline content (T-A).** `caption` is a string today, so a caption cannot hold a mark, a
+  link, an equation (CNT-046) or a cross-reference - issue #88. It becomes inline content, walked as a
+  paragraph's is, for **both** caption-bearing blocks, the table and the figure, since neither has ever
+  been stored. The plan confirms that with a read-only count before it changes anything, as content
+  model 3 did for footnotes: the change is made in place, at schema version 1, only on that evidence.
+  What a caption contributes to the numbering (structure.md) is its inline content, and a list of
+  tables sets it as a caption is set.
+- **A table carries a `style` (T-B)**, defaulting to the theme's default table style, because CNT-094
+  gives every block its appearance from a named style and a table is the one block that has none.
+- **The grid is a rule of the walk (T-C).** Every row covers the same number of columns once spans are
+  counted; no two cells cover one place; no span reaches past the last row or column; `headerRows` and
+  `headerColumns` stay inside the grid, and so does every key column, each named once; there is at
+  least one row, and every cell holds at least one block, as a list item does. Each is a narrowing of
+  a shape nothing has stored, which is the only time a narrowing is free.
+- **A cell holds paragraphs and lists, and nothing else, in T1 (T-D).** Today a cell holds any block -
+  another table among them. An image in a cell is an inline image (CNT-086) and an equation an inline
+  one (CNT-046), so neither needs a block; a table in a table, a quotation, preformatted text, a figure
+  and a block equation are refused by the walk. Widening the list later is additive; narrowing it after
+  something is stored is not.
+
+Key columns (CNT-107) and the table's note (CNT-038) stay as they are. Both exist for footnotes, and
+nothing edits either until the footnotes slice.
 
 ## Inlines and marks
 

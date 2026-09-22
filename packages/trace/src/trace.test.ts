@@ -61,6 +61,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1386);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 412, from 409: publishing.md claims PUB-032, TAB-039 and TAB-040 in its Tables section, each
+    // measured against the pinned Typst and veraPDF; TAB-031, TAB-032, TAB-034 and TAB-041 are named
+    // there as unclaimed, each with why.
     // 409, from 408: component-editor.md claims CNT-152, met by the mark prompt naming the tag before
     // it applies anything.
     // 408, from 407: publishing.md claims PUB-095, met by the layout's language matched as a range.
@@ -132,7 +135,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(409);
+    ).toBe(412);
   });
 });
 

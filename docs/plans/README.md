@@ -445,6 +445,18 @@ CNT-139) and autosave measured under load; a theme for a component opened on its
 policy for how every future error code is spelled, this plan's own six having settled on an underscore at
 the wire (decision F) rather than waiting for one; and retiring the scaffolding's `createComponent`.
 
+## Tables
+
+The tables design is publishing.md's [Tables](../design/publishing.md#tables) section, with the shape
+in content-model.md and the editing in component-editor.md, answered by Ken on 2026-09-22 (decisions
+T-A to T-I). Built in two pull requests (decision T-I): the table in a component first, then its
+publication.
+
+| #   | Plan                                                                         | Builds                                                                                                                                                                                                                                                                                                                                           | Status             |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| 1   | [The table in a component](2026-09-22-tables-01-the-table-in-a-component.md) | In `packages/domain`, captions as inline content, a table's `style`, the grid and cell rules, in place at schema version 1 on the evidence of a read-only count; tables read from HTML and Markdown; in `packages/editor`, `prosemirror-tables` 1.8.5, the Table command and its panel's commands; in `apps/web`, the table panel. No publishing | Planned            |
+| 2   | Publishing tables                                                            | `publishing/6` and template `publication/6` under `--features a11y-extras`, the list of tables, `table_without_caption`, a veraPDF regression case, and TAB-049 from #202                                                                                                                                                                        | Sketched in plan 1 |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

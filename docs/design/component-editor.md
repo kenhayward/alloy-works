@@ -249,10 +249,27 @@ block cannot keep its identifier merely because the receiving component did not 
 ### Tables and footnotes
 
 A table's properties - header rows and columns, **key columns**, caption and note - are edited in a table
-panel reached from the table's toolbar and by keyboard. Tables use `prosemirror-tables` with ADR-0023's
-accessible `toDOM` - `scope` on header cells, a `<caption>` - and **column resizing off**, because the
-resizing plugin owns the table's DOM and ignores `toDOM`, so it cannot emit the caption TAB-039 requires.
-A table's widths are the theme's.
+panel reached from the table's toolbar and by keyboard. **What the tables slice builds of that
+(Ken's answer 2026-09-22, with publishing.md's [Tables](publishing.md#tables)):**
+
+- **Table** on the toolbar inserts three columns by three rows, the first a header row, with the cursor
+  in the first cell, and a caption line above it - edited in place, as a quotation's attribution is,
+  because a caption is inline content (content-model.md's decision T-A).
+- **A table panel** - a region in the `F6` ring while the cursor is in a table, as the list panel is -
+  holds the number of header rows and header columns, adding a row or a column on either side of the
+  cursor, deleting one, merging the selected cells and splitting a merged one, and deleting the table.
+  Key columns and the note wait for footnotes, which are all they are for.
+- **The header counts are the model's truth.** `prosemirror-tables` marks each cell as a header or a
+  data cell, where the model stores two counts, so a plugin keeps every cell's kind agreeing with the
+  counts after every transaction, as the identity plugin keeps identifiers.
+- **Tab and Shift-Tab move between cells**, and leave the table from its last cell and its first, so
+  Tab is never a trap (CNT-077). In a list inside a cell they move between cells too, as Word's do; a
+  list there nests with the list's own shortcuts.
+- **A table that the grid rules would refuse cannot be made**: merging and splitting are
+  `prosemirror-tables`' own, which keep the grid whole, and the walk refuses anything else on save. Tables use `prosemirror-tables` with ADR-0023's
+  accessible `toDOM` - `scope` on header cells, a `<caption>` - and **column resizing off**, because the
+  resizing plugin owns the table's DOM and ignores `toDOM`, so it cannot emit the caption TAB-039 requires.
+  A table's widths are the theme's.
 
 | Footnote anchored to | Inserted by                                                                                       | Survives                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -297,8 +314,10 @@ choice of engine does not decide whether this slice meets it.
 
 ### Captions
 
-A table's and a figure's caption is the model's `caption` member, a **plain string**, edited as a text
-field in the table or figure panel. A caption-bearing block's identity is its block `id` (CNT-081), which
+A table's and a figure's caption is the model's `caption` member, a **plain string** today, edited as a
+text field in the table or figure panel. **Inline content, decided 2026-09-22**, edited in place above
+the table - content-model.md's [Tables, before the first is stored](content-model.md#tables-before-the-first-is-stored),
+which answers #88 below for both blocks. A caption-bearing block's identity is its block `id` (CNT-081), which
 every operation in the identity table above treats like any other.
 
 **A plain-string caption cannot hold an equation, a mark or a cross-reference**, so CNT-046's "an equation

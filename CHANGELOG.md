@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.53.2 - 2026-09-22 (PR #201)
+
+### Changed
+
+- **Tables are designed**, ready for review before any of it is built: what a table holds, how it is
+  edited, and how it is published so that a screen reader hears its caption and its header rows and
+  columns, measured against the engine the product publishes with. Nothing changes in the application
+  yet.
+
 ## 0.53.1 - 2026-09-22 (PR #200)
 
 ### Fixed

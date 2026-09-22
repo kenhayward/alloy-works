@@ -80,6 +80,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **PUB-095** | A layout's `language` is a BCP 47 tag, taken as a language range and matched to the document's language by RFC 4647 basic filtering (the second publishing plan's decision G): `en` takes `en-GB`. A document outside it is refused `layout_language` at the request, naming both tags, before anything is queued                                                                     |
 | **PUB-016** | A footnote is set as a Typst footnote at its anchor; a cell-anchored footnote sits in its cell, a table-anchored one at the caption. The regression corpus holds the spike's footnote cases                                                                                                                                                                                           |
 | **PUB-021** | Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers                                                                                                                                                                                                                                                                    |
+| **PUB-032** | A header row is one `table.header` and a header column's cells are `pdf.header-cell(scope: "row")` under `--features a11y-extras`, each a `TH` whose scope veraPDF checks - measured under [Tables](#tables)                                                                                                                                                                          |
 | **PUB-033** | Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block                                                                                                                                                                            |
 | **PUB-034** | The published document carries the document's language, each occurrence's base language where it differs and each `language` mark; the template sets `text(lang)` for each, and the Word writer sets `w:lang` ([word-output.md](word-output.md))                                                                                                                                      |
 | **PUB-091** | veraPDF checks every PDF in the worker against its PDF/UA-1 profile; its report is stored as an object and referenced from the publication's output row                                                                                                                                                                                                                               |
@@ -111,6 +112,8 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **CNT-049** | One converter turns stored MathML into the maths tree both writers read; an element it does not know fails `equation_unrenderable`, naming the block, before either writer runs                                                                                                                                                                                                       |
 | **CNT-054** | A citation resolves against a bibliography entry, and in T1 there are none (LIB is T6), so every citation fails `citation_unresolved`, naming its entry, its block and its component                                                                                                                                                                                                  |
 | **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                                                                                                              |
+| **TAB-039** | A table's caption is set by the `figure` it stands in, which Typst tags as a `Caption` inside the `Table`, first, above it or below - measured; Word names the table by its caption in `w:tblCaption`                                                                                                                                                                                 |
+| **TAB-040** | Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them                                                                                                                                                                              |
 
 **PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
 nine-level regression case passes every veraPDF PDF/UA-1 machine rule - 106 rules, 0 failed - and the
@@ -134,7 +137,7 @@ described under [Verification](#verification).
 
 ## What this document does not own
 
-Forty-seven claims. What is left out is either answered only in part, answered with another design,
+Fifty claims. What is left out is either answered only in part, answered with another design,
 or not T1's.
 
 | Left unclaimed                       | Why                                                                                                                                                                                                                                                    |
@@ -143,7 +146,7 @@ or not T1's.
 | PUB-085                              | Beside the table above: with a cold veraPDF at 11.2 s a page, the ten-second p95 cannot hold alongside PUB-091's report on every publication. Ken deferred the choice - a warm checker, or changing the requirement - to slice 5                       |
 | PUB-004                              | Nothing in T1 approves anything: baselines are T3 and revisions LIF's. Every T1 publication is a draft (decision A); an approved one arrives with `baseline_id`                                                                                        |
 | PUB-089                              | An **approval page** has nothing to show until LIF records approvals; it is T3's since Ken's answer, and waits for them                                                                                                                                |
-| PUB-017, PUB-032                     | The template repeats a table's header rows and sets the continuation label from the table style; but TAB is not designed, and whether Typst tags a **header column** as row headers is not known                                                       |
+| PUB-017                              | A table's header rows repeat and it breaks across pages ([Tables](#tables)); how it breaks is its table style's (STY-013), and there are no table styles until themes.md is built                                                                      |
 | PUB-092                              | Keep-with-next and keep-together are hard in Typst, and widow and orphan control is a cost there. How each style property reaches the engine is themes.md's projection, and which cases the regression corpus holds for them is not designed here      |
 | PUB-022                              | Cross-references are internal links. Citations cannot be until LIB gives them entries to link to                                                                                                                                                       |
 | PUB-031                              | Blocks are emitted in document order. Whether Typst tags a floated figure at its logical place rather than where it lands is not verified; the accessible-output slice verifies it and claims it                                                       |
@@ -328,6 +331,118 @@ is a content-model change, and it must say how its level relates to the outline'
 converter in `packages/domain` that both writers use; a construct it does not know fails the publish
 (CNT-049) rather than reaching either writer. An equation's alternative text is the MathML's `alttext`,
 or text generated from the tree, so Typst is never given an equation without one.
+
+## Tables
+
+A table is the first block of publishing slice 3 to be built, together with the editor that makes it,
+as lists and quotations were: there is no point in an author writing a table a publication drops. This
+section is the TAB area's design - TAB was the one T1 area nothing had designed - and it was written
+after measuring what the pinned engine does, because two of the three questions it had to answer were
+questions about Typst rather than about the product.
+
+**Ken's answer (2026-09-22): decisions T-A to T-I taken as recommended.** They are listed at the end
+of the section; the build is [tables 1](../plans/2026-09-22-tables-01-the-table-in-a-component.md) and
+then tables 2. Decision T-G's requirement is filed as issue #202, which lands as TAB-049 with tables 2.
+
+### What the pinned Typst does with a table, measured
+
+Throwaway files compiled by the pinned Typst 0.15.1 with the pinned faces and `--pdf-standard ua-1`,
+each checked by the pinned veraPDF and its structure tree read back with pdf.js. A table of three
+columns, a header row, a header column, a header cell spanning two rows, a cell spanning two columns
+and sixty body rows - long enough to cross a page.
+
+| Case                                                                             | Result                                                                                                                   |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `table.header(repeat: true, ...)`                                                | The header row is a `TR` of `TH`s. veraPDF passes, 0 rules failed                                                        |
+| The same table crossing a page                                                   | The header repeats on the second page and is **still one header row** in the tree: 63 `TR`s for 63 rows (TAB-040)        |
+| A header column, as `table.cell(scope: ...)`                                     | Refused: `table.cell` takes no `scope`                                                                                   |
+| A header column, as `pdf.header-cell(scope: "row")`                              | Refused without `--features a11y-extras`: the function exists only behind Typst's experimental accessibility flag        |
+| The same, with `--features a11y-extras`                                          | Each is a `TH`. veraPDF passes, 0 rules failed                                                                           |
+| A header cell spanning rows, `table.cell(rowspan: 2, pdf.header-cell(..))`       | **The cell loses its `TH`** and becomes a `TD`                                                                           |
+| The other way round, `pdf.header-cell(scope: "row", table.cell(rowspan: 2)[..])` | A `TH` spanning two rows                                                                                                 |
+| The table in a `figure` with a caption                                           | **A `Caption` inside the `Table`**, its first child, which is what makes the caption programmatic (TAB-039)              |
+| The caption set above the table, `figure.caption(position: top)`                 | The same: still the `Table`'s first child. veraPDF passes                                                                |
+| A table in a `figure`, by default                                                | **Never breaks**: a figure is unbreakable, so the whole table moved to the next page, and a longer one would overflow it |
+| The same with `show figure.where(kind: table): set block(breakable: true)`       | Breaks across pages, one `Table` in the tree (TAB-041)                                                                   |
+
+Three of those change what the template must do, and one changes what the engine is run with:
+
+- **The engine runs with `--features a11y-extras`.** Header columns are in CNT-016, and there is no
+  other way to tag one. The flag is experimental - Typst says its behaviour may change - which matters
+  less than it sounds, because the engine is pinned and a new one is taken deliberately
+  (ADR-0019): the regression corpus gains a table with a header column, so an engine that changed the
+  flag's behaviour fails the corpus before it could publish anything. The alternative, refusing header
+  columns until the flag is stable, would leave CNT-016 half built for a reason no author could see.
+- **A header cell that spans is `pdf.header-cell` around the span**, never the other way round.
+- **Every table's figure is breakable.** A table that does not fit a page must continue on the next, not
+  overflow it silently, which PUB-068 already forbids for anything.
+- **A table's caption stands above it**, as a table's conventionally does and a figure's does not. The
+  position changes nothing about the tagging, measured.
+
+### How a table is published
+
+The published block for a table carries its **label and number** from `number` ("Table 3", decision F
+of the first slice: numbers never come from Typst's counters), its **caption as inline content**, its
+**header rows and header columns** as counts, and its **rows of cells**, each cell with its spans and
+its blocks, published by the same code every other block goes through. It is `publishing/6`, set by
+template `publication/6`:
+
+- the table is a `figure` of kind `table`, breakable, numbering off, the caption at the top with the
+  label set as text;
+- the first `headerRows` rows are one `table.header(repeat: true)`, so they repeat on every page the
+  table reaches and remain one header row to assistive technology;
+- a cell in the first `headerColumns` columns of any other row is a `pdf.header-cell(scope: "row")`,
+  and a cell that is in both is `scope: "both"`;
+- a span is `table.cell(colspan, rowspan)`, inside the header cell where the cell is one;
+- columns share the measure equally until a table style says otherwise, so a table is never wider than
+  its column. A table too wide even then - TAB-033's rotation, scaling or splitting - is T2's.
+
+**A table with no caption is refused at publish, naming it** (`table_without_caption`), and not at
+save. An author inserts a table and types its caption afterwards, and every keystroke is an iteration;
+a rule that refused the iteration would refuse the table the moment it appeared. TAB-034 asks for a
+caption, and a caption is also a table's accessible name, so it is a publish-time rule in the manner of
+a figure's missing alternative text (CNT-022).
+
+**The list of tables comes with tables.** Slice 2 left the layout's `lists` to "slice 3, with figures",
+because every list of a document of paragraphs would be empty; tables make the list of tables the first
+that is not. So layout schema 2, the second version of the default layout and the list itself arrive
+with tables, and figures and equations join the same member when they are built.
+
+**Word** (word-output.md) marks header rows with `w:tblHeader`, which repeats them and marks them as
+headers, and names the table by its caption in `w:tblCaption` beside the caption paragraph. **Word has
+no way to mark a header column**, which is why TAB-031 is challenged below rather than claimed.
+
+### What the TAB claims rest on
+
+TAB-039 and TAB-040 are claimed above for the PDF, as measured here, and for Word as word-output.md
+designs it. PUB-032 - header cells associated with what they describe - is claimed for
+the PDF, where both header rows and header columns are `TH`s with a scope veraPDF checks.
+
+Not claimed, and why:
+
+| Requirement | Why                                                                                                                                                                                                                                                   |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TAB-031     | Asks for header cells associated "in every output", and Word cannot mark a header column. Challenged below                                                                                                                                            |
+| TAB-032     | How a table breaks follows its table style (STY-013), and there are no table styles until themes.md is built. Until then every table repeats its header rows and keeps no rows together, which is a behaviour, not a style                            |
+| TAB-034     | A caption is required at publish, as above. But "numbered by the outline" is STR-023's, which issue #129 reopens for an explicitly unnumbered table, so TAB-034 is claimed only once #129 is decided                                                  |
+| TAB-041     | Its first half - a table's role and reading order in tagged output, and one table across a page break - is measured above. Its second is about a table "rotated, scaled or split by TAB-033", which is T2's and undesigned, so the claim waits for it |
+| PUB-017     | The same as TAB-032, from publishing's side                                                                                                                                                                                                           |
+
+### Decisions for Ken
+
+Each is taken as recommended in the text; a different answer changes the plan, not this design's shape.
+
+| #   | Decision                                                                                                                                                                                                                                                                                                                               | Recommendation                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| T-A | **A caption becomes inline content, now** ([content-model.md](content-model.md#tables-before-the-first-is-stored)), for tables and figures, before either is ever stored. Closes #88 for both                                                                                                                                          | Yes. Once one table is stored, it is a schema version and a migration    |
+| T-B | **A table gains a `style`**, as every block must (CNT-094), defaulting to the theme's default table style                                                                                                                                                                                                                              | Yes, for the same reason                                                 |
+| T-C | **The grid is a rule of the model**: rows cover the same columns once spans are counted, no two cells cover one place, spans stay inside, header counts and key columns stay inside the grid, and a cell holds at least one block                                                                                                      | Yes                                                                      |
+| T-D | **A cell holds paragraphs and lists, and nothing else**, in T1: no table in a table, no quotation, preformatted text, figure or block equation. An image in a cell is an inline image (CNT-086), and an equation an inline one (CNT-046). Widening later is additive; narrowing later is a migration                                   | Yes                                                                      |
+| T-E | **Typst runs with `--features a11y-extras`**, for header columns                                                                                                                                                                                                                                                                       | Yes, guarded by a regression case                                        |
+| T-F | **A table without a caption is refused at publish**, not at save                                                                                                                                                                                                                                                                       | Yes                                                                      |
+| T-G | **TAB-031 is superseded** by a requirement that header rows are associated in every output, and header columns in every output that can express them - the PDF - with Word's publication report saying where a header column could not be marked                                                                                       | Yes: the alternative is a requirement no Word output can meet            |
+| T-H | **The list of tables arrives with tables**, bringing the layout's `lists` forward from figures                                                                                                                                                                                                                                         | Yes                                                                      |
+| T-I | **Two pull requests**: the model, the editor and paste first; then publishing, the list of tables and the regression case. The first can be used and published only as far as today - a table in a component refuses the publish by name until the second lands - which is the order lists would have taken had they not fitted in one | Yes. Or one, as lists were, at the cost of a pull request twice the size |
 
 ## The layout
 
