@@ -37,8 +37,10 @@ export function failureWords(failure: Failure): string {
     // author looking for something that is not there.
     case 'inline_not_publishable':
       return 'This text holds formatting or an inline item that cannot be published yet.';
+    // A table has a style of its own as a paragraph does (tables 2), and the failure names the block
+    // but not its kind, so the sentence names both rather than calling a table a paragraph.
     case 'style_missing':
-      return 'This paragraph uses a style the publication template does not set.';
+      return 'This paragraph or table uses a style the publication template does not set.';
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':
@@ -62,6 +64,11 @@ export function failureWords(failure: Failure): string {
       return `The character ${failure.detail ?? ''} is not in the monospace typeface that preformatted text and inline code are set in.`;
     case 'line_too_wide':
       return `A line of this preformatted text is too wide for the page, so it would be cut off: ${failure.detail ?? ''}. Shorten the line or break it.`;
+    // Tables 2's ruling R8: what a caption is for, so the author knows why it is asked for.
+    case 'table_without_caption':
+      return 'A table has no caption. Give it one: the caption names the table in the PDF and to a screen reader.';
+    case 'table_header_spans_body':
+      return 'A header cell of this table spans down into rows that are not header rows, so the PDF would present them as headers too. Shorten its span, or make those rows header rows.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

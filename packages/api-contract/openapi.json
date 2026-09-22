@@ -6314,6 +6314,8 @@
                               "layout_language_not_publishable",
                               "code_glyph_missing",
                               "line_too_wide",
+                              "table_without_caption",
+                              "table_header_spans_body",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -9047,6 +9049,8 @@
                               "layout_language_not_publishable",
                               "code_glyph_missing",
                               "line_too_wide",
+                              "table_without_caption",
+                              "table_header_spans_body",
                               "engine_failed",
                               "store_failed"
                             ]
