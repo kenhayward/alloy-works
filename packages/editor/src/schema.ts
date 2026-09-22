@@ -1,4 +1,5 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
+import { tableNodes } from 'prosemirror-tables';
 import { isLanguageLabel } from '@alloy-works/domain';
 
 /**
@@ -75,6 +76,30 @@ function markSpec(
  * `fromEditor` refuses one it did not (ADR-0023). A mark's `id` has no default: a mark is only ever
  * made by a command that mints one, or read back from an element that already carries one.
  */
+/**
+ * The four node types `prosemirror-tables` works on - a table, its rows, its data cells and its header
+ * cells - found by the role each spec declares, so their names are its and not ours. A cell holds
+ * paragraphs and lists, which is the content model's rule (tables 1, decision T-D) made a content
+ * expression: ProseMirror itself cannot put a quotation, preformatted text or a table in a cell, so no
+ * command has to remember not to.
+ *
+ * `scope` is the one attribute added. It is not stored - the model's truth is the table's two header
+ * counts - and `tableHeadersAgree` sets it from them, so a header cell on the surface tells a screen
+ * reader which way it reads (TAB-031) as the published one does.
+ */
+const tableSpecs = tableNodes({
+  cellContent: '(paragraph | list | definitionList)+',
+  cellAttributes: {
+    scope: {
+      default: null,
+      getFromDOM: (dom) => dom.getAttribute('scope'),
+      setDOMAttr: (value, attrs) => {
+        if (typeof value === 'string') attrs.scope = value;
+      },
+    },
+  },
+});
+
 export const editorSchema = new Schema({
   nodes: {
     doc: {
@@ -246,6 +271,40 @@ export const editorSchema = new Schema({
       parseDOM: [{ tag: 'blockquote' }],
       toDOM: () => ['blockquote', 0],
     },
+    /**
+     * A stored table, as the editor holds it (tables 1, ruling R1): its caption above a
+     * `prosemirror-tables` table. Two nodes for one because `TableMap` reads every child of a table as
+     * a row, so the caption cannot stand inside it. It carries every one of the stored table's own
+     * members - `keyColumns` and `note` untouched, since nothing edits them until footnotes - and
+     * **the header counts are the truth** the cells' kinds follow (`tableHeadersAgree`).
+     *
+     * Isolating, so no join or lift crosses its edge: a Backspace after a table selects it, and never
+     * pulls a paragraph into its caption.
+     */
+    tableFigure: {
+      group: 'block',
+      content: 'tableCaption table',
+      isolating: true,
+      attrs: {
+        id: { default: null },
+        style: { default: 'table' },
+        headerRows: { default: 0 },
+        headerColumns: { default: 0 },
+        keyColumns: { default: null },
+        note: { default: null },
+      },
+      parseDOM: [{ tag: 'figure[data-table]' }],
+      toDOM: () => ['figure', { 'data-table': '', class: 'aw-table' }, 0],
+    },
+    /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
+    tableCaption: {
+      content: 'text*',
+      marks: '_',
+      defining: true,
+      parseDOM: [{ tag: 'figcaption' }],
+      toDOM: () => ['figcaption', { class: 'aw-table-caption' }, 0],
+    },
+    ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
       content: 'text*',

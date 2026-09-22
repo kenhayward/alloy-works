@@ -8,6 +8,7 @@ import {
 import type { Mark as EditorMark, Node } from 'prosemirror-model';
 
 import { editorSchema } from './schema.js';
+import { tableOf } from './tables.js';
 
 /** A stored document opened for editing, or the names of what this editor cannot yet change. */
 export type Opened =
@@ -74,6 +75,15 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         // no control writes yet - opens the component read-only by name rather than being dropped.
         namesWithNoNode(block.content, found);
         if (block.attribution !== undefined) marksWithNoType(block.attribution, found);
+        break;
+      case 'table':
+        // The caption, every cell and the note, each for what it holds. The note is carried as it is
+        // stored and not edited, so a footnote in it - which the editor has no node for - opens the
+        // component read-only by name, exactly as one in a paragraph does.
+        marksWithNoType(block.caption, found);
+        for (const row of block.rows)
+          for (const cell of row.cells) namesWithNoNode(cell.content, found);
+        if (block.note !== undefined) marksWithNoType(block.note, found);
         break;
       default:
         found.add(block.type);
@@ -167,6 +177,35 @@ function nodeOf(block: BlockNode): Node {
         ...nodesOf(block.content),
         editorSchema.node('attribution', null, (block.attribution ?? []).flatMap(toRun)),
       ]);
+    case 'table':
+      // Two nodes for one (tables 1, ruling R1): the caption above a `prosemirror-tables` table. Key
+      // columns and the note ride on the figure untouched, and absent is null here, as a list's start
+      // is.
+      return editorSchema.node(
+        'tableFigure',
+        {
+          id: block.id,
+          style: block.style,
+          headerRows: block.headerRows,
+          headerColumns: block.headerColumns,
+          keyColumns: block.keyColumns ?? null,
+          note: block.note ?? null,
+        },
+        [
+          editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
+          tableOf(
+            block.rows.map((row) => ({
+              cells: row.cells.map((cell) => ({
+                content: nodesOf(cell.content),
+                colspan: cell.colspan,
+                rowspan: cell.rowspan,
+              })),
+            })),
+            block.headerRows,
+            block.headerColumns,
+          ),
+        ],
+      );
     default:
       // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
       // what keeps it that way. A family given a node in the schema and forgotten here is named
@@ -401,6 +440,33 @@ function storedBlock(node: Node, at: string): unknown {
         id,
         content,
         ...(attribution.length === 0 ? {} : { attribution }),
+      };
+    }
+    case 'tableFigure': {
+      const id = identifierOf(node, at);
+      const rows: unknown[] = [];
+      node.child(1).forEach((row, _offset, rowIndex) => {
+        const cells: unknown[] = [];
+        row.forEach((cell, _cellOffset, cellIndex) => {
+          cells.push({
+            content: storedBlocks(cell, `${at}.${rowIndex}.${cellIndex}`),
+            colspan: cell.attrs.colspan as number,
+            rowspan: cell.attrs.rowspan as number,
+          });
+        });
+        rows.push({ cells });
+      });
+      // **The counts, never the cells' kinds** (ruling R2): what the model stores is two numbers.
+      return {
+        type: 'table',
+        id,
+        style: node.attrs.style as string,
+        caption: runsOf(node.child(0), id),
+        headerRows: node.attrs.headerRows as number,
+        headerColumns: node.attrs.headerColumns as number,
+        ...(node.attrs.keyColumns === null ? {} : { keyColumns: node.attrs.keyColumns }),
+        ...(node.attrs.note === null ? {} : { note: node.attrs.note }),
+        rows,
       };
     }
     default:

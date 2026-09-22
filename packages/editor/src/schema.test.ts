@@ -538,4 +538,13 @@ describe('the editor stylesheet, for preformatted text (editor 5)', () => {
     expect(rule).toMatch(/white-space:\s*pre;/);
     expect(css).toMatch(/\.ProseMirror footer\.aw-empty::before\s*\{[^}]*content:\s*'Attribution'/);
   });
+
+  it('says what an empty caption is for, and tells a table header cell from a data cell', () => {
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    expect(css).toMatch(/\.ProseMirror figcaption\.aw-empty::before\s*\{[^}]*content:\s*'Caption'/);
+    expect(css).toMatch(/\.ProseMirror th\s*\{/);
+  });
 });

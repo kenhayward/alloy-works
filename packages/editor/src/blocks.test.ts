@@ -13,6 +13,7 @@ import {
   setPreformattedLanguage,
 } from './blocks.js';
 import { fromEditor } from './mapping.js';
+import { tableAt, tableCommand } from './tables.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
 
@@ -1478,6 +1479,19 @@ describe('undo, and gestures over a range, never leave the author stuck (issue #
         'liftItem',
         'quotation',
         'preformatted',
+        'table',
+      ] as const;
+      // And what the table panel does, which only means anything once a table is there.
+      const tableActions = [
+        'rowAbove',
+        'rowBelow',
+        'columnBefore',
+        'columnAfter',
+        'deleteRow',
+        'deleteColumn',
+        'merge',
+        'split',
+        'deleteTable',
       ] as const;
       for (let seed = 1; seed <= 1000; seed += 1) {
         let random = seed;
@@ -1527,6 +1541,11 @@ describe('undo, and gestures over a range, never leave the author stuck (issue #
               done.push('Shift-Tab');
             } else if (roll < 0.8) {
               state = run(state, blockCommand(action, counter())).next;
+              if (tableAt(state) !== null) {
+                const extra = tableActions[Math.floor(next() * tableActions.length)]!;
+                state = run(state, tableCommand(extra)).next;
+                done.push(extra);
+              }
               done.push(action);
             } else if (roll < 0.92) {
               undo(state, (tr) => (state = state.apply(tr)));
@@ -1696,5 +1715,48 @@ describe('Backspace and Delete between two definition items (issue #160)', () =>
     expect(nested(press(at(doc, termStart(doc, 1)), 'Backspace').next.doc)).toBe(false);
     const end = inside(doc, 'b1') + 'Slow strain.'.length;
     expect(nested(press(at(doc, end), 'Delete').next.doc)).toBe(false);
+  });
+});
+
+describe('Tab in a table (tables 1, ruling R5)', () => {
+  const cellParagraph = (id: string) => paragraph(id, id);
+  const twoByTwo = () =>
+    documentOf(
+      editorSchema.node('tableFigure', { id: 't1', headerRows: 0, headerColumns: 0 }, [
+        editorSchema.node('tableCaption'),
+        editorSchema.node('table', null, [
+          editorSchema.node('table_row', null, [
+            editorSchema.node('table_cell', null, [cellParagraph('a')]),
+            editorSchema.node('table_cell', null, [cellParagraph('b')]),
+          ]),
+          editorSchema.node('table_row', null, [
+            editorSchema.node('table_cell', null, [cellParagraph('c')]),
+            editorSchema.node('table_cell', null, [
+              list('L1', 'unordered', [item(paragraph('d', 'd'))]),
+            ]),
+          ]),
+        ]),
+      ]),
+    );
+
+  it('moves to the next cell, even from a list inside one, and lets the focus leave from the last', () => {
+    const doc = twoByTwo();
+    const first = press(stateOf(doc, 'a'), 'Tab');
+    expect(first.handled).toBe(true);
+    expect(first.next.selection.$from.parent.attrs.id).toBe('b');
+
+    const fromList = press(stateOf(doc, 'c'), 'Tab');
+    expect(fromList.next.selection.$from.parent.attrs.id).toBe('d');
+    // The last cell: nothing takes the key, so the browser moves the focus on and Tab is no trap -
+    // not even the list's nesting, since an item that is its list's first cannot nest.
+    expect(press(stateOf(doc, 'd'), 'Tab').handled).toBe(false);
+  });
+
+  it('moves back with Shift-Tab, and lets the focus leave from the first cell', () => {
+    const doc = twoByTwo();
+    const back = pressShiftTab(stateOf(doc, 'b'));
+    expect(back.handled).toBe(true);
+    expect(back.next.selection.$from.parent.attrs.id).toBe('a');
+    expect(pressShiftTab(stateOf(doc, 'a')).handled).toBe(false);
   });
 });

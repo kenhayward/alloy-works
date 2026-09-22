@@ -6,6 +6,7 @@ import { Selection, TextSelection, type Command, type EditorState } from 'prosem
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
 import { editorSchema } from './schema.js';
+import { insertTable } from './tables.js';
 
 const listNode = editorSchema.nodes.list;
 const listItemNode = editorSchema.nodes.listItem;
@@ -135,7 +136,8 @@ export type BlockAction =
   | 'nestItem'
   | 'liftItem'
   | 'quotation'
-  | 'preformatted';
+  | 'preformatted'
+  | 'table';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -733,8 +735,29 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
       return quotation(newIdentifier);
     case 'preformatted':
       return preformatted(newIdentifier);
+    case 'table':
+      return insertTable(newIdentifier);
   }
 }
+
+/**
+ * Whether the selection stands anywhere in a table's cell, at any depth. A cell holds paragraphs and
+ * lists alone, and so does a list inside one (tables 1, decision T-D) - which a content expression
+ * cannot say, since a list item holds any block wherever it stands - so the commands that make a
+ * quotation or preformatted text ask this as well as the parent.
+ */
+const inTableCell = (state: EditorState): boolean => {
+  const { $from } = state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if (
+      $from.node(depth).type.spec.tableRole === 'cell' ||
+      $from.node(depth).type.spec.tableRole === 'header_cell'
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
 
 /** Whether the cursor stands in a node whose text is code, as `newlineInCode` asks it. */
 const inCode = (state: EditorState): boolean =>
@@ -879,6 +902,11 @@ function quotation(newIdentifier: () => string): Command {
     }
     const range = blockRangeOf(state);
     if (range === null) return false;
+    // Asked of the parent before anything is built: a table's cell holds paragraphs and lists alone
+    // (tables 1, decision T-D), and a wrap there would throw from inside the transform.
+    if (inTableCell(state)) return false;
+    if (!range.parent.canReplaceWith(range.startIndex, range.endIndex, blockquoteNode))
+      return false;
     // An identifier only when the wrap is really made: the toolbar asks every command on every
     // render whether it is available, and a query that drew one would spend them on nothing.
     const id = dispatch === undefined ? null : newIdentifier();
@@ -920,6 +948,11 @@ function preformatted(newIdentifier: () => string): Command {
     }
     const range = blockRangeOf(state);
     if (range === null) return false;
+    // As Quotation asks: a table's cell holds no preformatted text (tables 1, decision T-D).
+    if (inTableCell(state)) return false;
+    if (!range.parent.canReplaceWith(range.startIndex, range.endIndex, preformattedNode)) {
+      return false;
+    }
     const lines: string[] = [];
     for (let index = range.startIndex; index < range.endIndex; index += 1) {
       const block = range.parent.child(index);
