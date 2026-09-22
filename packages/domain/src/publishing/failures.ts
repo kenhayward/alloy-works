@@ -37,6 +37,10 @@ export const publishFailureCodes = [
   // because an author types the caption after inserting the table (decision T-F). A caption is what
   // names a table in the PDF and to a screen reader (TAB-034, TAB-039).
   'table_without_caption',
+  // compose, from tables 2: a cell that starts in the header rows and spans below them. The pinned
+  // engine grows the header to take in every row such a cell reaches, so a data cell beside it would
+  // be read out as a column header; refused, naming the table, rather than published saying that.
+  'table_header_spans_body',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

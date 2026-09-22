@@ -1588,6 +1588,29 @@ describe('a table, published (tables 2)', () => {
     ]);
   });
 
+  it('refuses a table whose header cell spans down into its body, which a PDF would read as more header', () => {
+    // Measured against the pinned engine: a header cell spanning past the header rows grows the header
+    // to take in the rows it reaches, so the data cell beside it is read out as a column header.
+    const spanning = stored({
+      rows: [
+        { cells: [cell('c1', 'Site', { rowspan: 2 }), cell('c2', 'Value')] },
+        { cells: [cell('c3', '1')] },
+      ],
+    });
+    expect(failuresOf(assemble(oneComponent(spanning)))).toEqual([
+      failed('table_header_spans_body', null),
+    ]);
+    // Spanning within the header rows, or a header column's cell spanning rows, is a table's own.
+    const within = stored({
+      headerRows: 2,
+      rows: [
+        { cells: [cell('c1', 'Site', { rowspan: 2 }), cell('c2', 'Value')] },
+        { cells: [cell('c3', 'At noon')] },
+      ],
+    });
+    expect(assemble(oneComponent(within)).ok).toBe(true);
+  });
+
   it('refuses a table in a style the template does not set, as a paragraph is refused', () => {
     expect(failuresOf(assemble(oneComponent(stored({ style: 'wide' }))))).toEqual([
       failed('style_missing', 'wide'),

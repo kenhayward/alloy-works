@@ -353,6 +353,13 @@ export function assemble(input: AssembleInput): Assembled {
         if (words.join('').trim() === '') {
           failures.push(failure('compose', 'table_without_caption', node, block.id, null));
         }
+        // A header cell spanning past the header rows would take the rows it reaches into the header.
+        const spansBody = block.rows
+          .slice(0, block.headerRows)
+          .some((row, at) => row.cells.some((each) => at + each.rowspan > block.headerRows));
+        if (spansBody) {
+          failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
+        }
         const caption = publishedRuns(block.caption, node, block.id);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
