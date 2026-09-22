@@ -119,7 +119,7 @@ const component = () =>
  */
 const bare = parseLayout({
   ...defaultLayout,
-  matter: { cover: false, contents: null, appendices: { newPage: false } },
+  matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 
 /** What the job would assemble of that component alone, under the bare layout. */

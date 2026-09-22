@@ -542,7 +542,7 @@ describe('template 4 lays out the page', () => {
     // contents, and the second appendix runs on from the first.
     const bare = parseLayout({
       ...defaultLayout,
-      matter: { cover: false, contents: null, appendices: { newPage: false } },
+      matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
     });
     const { read: plain } = await compiled(FIXTURE, bare);
     expect(spoken(plain.taggedText[0]!).startsWith(`${TITLE} ${NOTICE_SENTENCE} Preface`)).toBe(

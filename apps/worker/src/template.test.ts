@@ -12,6 +12,7 @@ import {
   PUBLISHING_SCHEMA_2,
   PUBLISHING_SCHEMA_3,
   PUBLISHING_SCHEMA_4,
+  PUBLISHING_SCHEMA_5,
   type AssembleInput,
   type Layout,
 } from '@alloy-works/domain';
@@ -45,13 +46,16 @@ describe('the publication template', () => {
     // moved once (e1a41129...), when two comments were made exact: that the three markers are
     // cycled rather than a ceiling on the nesting, and that a refused compile tells the author the
     // publish failed and never which block did it. No line that sets anything changed.
-    // Templates 1, 2 and 3 are published versions and their rows never move again.
+    // Template 6 is template 5 with a table and the lists after the contents, and reads
+    // `publishing/6`; it is re-pinned freely until the pull request that makes it merges.
+    // Templates 1 to 5 are published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
       3: '682840cb57284deec3ccfd2c29a7c738f5013b2cc233971d177c34c3f4ac5381',
       4: '13b8f620f4b7bc4c627360aa30ea48d595745df5d01290558d57cf6677f6ba43',
       5: '76e51369e5c83dffc8e263b11dd9f23867aa8e325e72f8a55b59fc8dc8aca7c9',
+      6: 'b2dccbc98e950c7fa64f28efe5a6a855bc6906ec1bd60709fbf3208057cd8939',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -70,14 +74,17 @@ describe('the publication template', () => {
     // the value stays behind - and `satisfies Record<PublishedSchema, ...>` cannot catch it, since
     // `PublishedSchema` is derived from the same constant. Asserted through the constants this row
     // would move with them and say nothing. It has now cost three slices; it stops here.
-    expect(TEMPLATE_READING).toEqual({ 'publishing/1': 1, 'publishing/5': 5 });
+    expect(TEMPLATE_READING).toEqual({ 'publishing/1': 1, 'publishing/6': 6 });
   });
 
   it("never sets an attribution through the engine's own parameter, which writes a dash the author never typed", async () => {
     // Decision D, as a guard a reader can see: Typst's `quote` takes an attribution and prints an em
-    // dash before it. Template 5 sets the attribution itself, so the parameter's name never appears.
-    const source = await readFile(PUBLICATION_TEMPLATE[5].file, 'utf8');
-    expect(source).not.toContain('attribution:');
+    // dash before it. Templates 5 and 6 set the attribution themselves, so the parameter's name never
+    // appears in either.
+    for (const version of [5, 6] as const) {
+      const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
+      expect(source, `template ${version}`).not.toContain('attribution:');
+    }
   });
 
   it('reads the schema it was written for, and a frozen schema stays frozen', async () => {
@@ -91,7 +98,8 @@ describe('the publication template', () => {
       2: PUBLISHING_SCHEMA_2,
       3: PUBLISHING_SCHEMA_3,
       4: PUBLISHING_SCHEMA_4,
-      5: PUBLISHING_SCHEMA,
+      5: PUBLISHING_SCHEMA_5,
+      6: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -173,13 +181,14 @@ describe('the pipeline version', () => {
   // names what made it. '1' is still made, for a request made before layouts; '2' is the record of
   // what was made under a layout before a run carried its marks, and nothing makes one now - which is
   // exactly why the row stays, and why '3' - what was made under a layout before a block could be
-  // a list - stays beside it.
+  // a list - stays beside it, as do '4' and '5', before a quotation and before a table.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
     '3': '1f3c5abc9b8b013b66fa691f73678994f3c3a891c146d63cc08d657dbeb8e9bf',
     '4': 'c23e9fc3e9b230f17a0bdda4763e712f3f295a490b5db866688d408b2a44217a',
     '5': '388ba756e4d6ac9c891e9f94ba056fc65371810f340407cdf945498385e446af',
+    '6': '541f5a22035792e06bcc8154e995c4d44b3e01ca482c0e7fa225d9b01c5834eb',
   };
   const digest = (made: { document: unknown; numbering: unknown }) =>
     createHash('sha256')
@@ -191,7 +200,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/5': '5' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/6': '6' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -212,7 +221,7 @@ describe('the pipeline version', () => {
     const assembled = assemble(fixed((await loadPinnedFonts()).covers, defaultLayout));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('5');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('6');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

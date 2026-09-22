@@ -199,6 +199,15 @@ describe('the pinned fonts (issue #145)', () => {
     expect(flags.slice(path, path + 2)).toEqual(['--font-path', join('/root', 'fonts')]);
   });
 
+  it('runs the engine with its accessibility features, which a header column is tagged through', () => {
+    // Decision T-E: `pdf.header-cell` exists only behind this flag, and without it template 6 refuses
+    // every table with a header column. `tables.test.ts` is the regression case that says what the
+    // flag does to the PDF; this says the worker passes it.
+    const flags = typstArguments('/root', join('/root', 'fonts'), at);
+    const features = flags.indexOf('--features');
+    expect(flags.slice(features, features + 2)).toEqual(['--features', 'a11y-extras']);
+  });
+
   it('hands Typst the pinned faces alone, whatever else lies beside them', async () => {
     // Typst loads every face in the directory it is given. A fifth face beside the pinned four - a
     // copy of the Regular renamed "Interloper Serif", and asked for by name - must not reach the PDF.

@@ -28,7 +28,7 @@ const COLUMN = (8.8 * 1229) / 2048;
 /** No cover and no contents, so the blocks open the document on its first page. */
 const bare = parseLayout({
   ...defaultLayout,
-  matter: { cover: false, contents: null, appendices: { newPage: false } },
+  matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 const pdfFormat = bare.formats.pdf;
 /** The text block's right edge on a first, right-hand page: the outside margin is on the right. */
