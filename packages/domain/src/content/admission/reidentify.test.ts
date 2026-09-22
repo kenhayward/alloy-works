@@ -98,7 +98,7 @@ describe('the re-identify stage', () => {
         {
           type: 'table',
           id: 'old-table',
-          caption: 'Sites',
+          caption: [{ type: 'text', value: 'Sites', marks: [] }],
           headerRows: 0,
           headerColumns: 0,
           note: [text('Note')],
@@ -421,7 +421,7 @@ describe('the re-identify stage', () => {
           id: 'fig',
           asset: 'asset-1',
           imageStyle: 'column-width',
-          caption: 'Dose',
+          caption: [{ type: 'text', value: 'Dose', marks: [] }],
           alternative: { kind: 'decorative' },
         },
       ],

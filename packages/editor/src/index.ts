@@ -18,6 +18,13 @@ export {
   type PasteOutcome,
 } from './clipboard.js';
 export { editorSchema } from './schema.js';
+export {
+  setTableHeaders,
+  tableAt,
+  tableCommand,
+  type TableAction,
+  type TableAt,
+} from './tables.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {

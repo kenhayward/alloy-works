@@ -1,0 +1,19 @@
+/* The table panel: its two counts and its buttons in one wrapping row, like the list panel beside it. */
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6) var(--space-8);
+  font-size: var(--size-body-small);
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.count input {
+  width: 4em;
+}

@@ -40,14 +40,14 @@ const openedDoc = (stored: ContentDocument): Node => {
 
 const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr' };
 
-/** A block this editor has no node for, wherever it is put. */
-const table = (id: string, cell: string): BlockNode => ({
-  type: 'table',
+/** A block this editor has no node for, wherever it is put: a figure, until the assets design. */
+const figure = (id: string): BlockNode => ({
+  type: 'figure',
   id,
-  caption: 'Readings',
-  headerRows: 1,
-  headerColumns: 0,
-  rows: [{ cells: [{ content: [paragraph(cell, 'Ambient')], colspan: 1, rowspan: 1 }] }],
+  asset: 'asset-1',
+  imageStyle: 'wide',
+  caption: [{ type: 'text', value: 'Readings', marks: [] }],
+  alternative: { kind: 'decorative' },
 });
 
 /** One unordered list of one item per line of text. */
@@ -271,11 +271,11 @@ describe('the mapping between the stored model and the editor', () => {
   });
 
   it('refuses to open for editing anything it has no counterpart for, naming what it found', () => {
-    // A table, not a list: a list is carried now, and the block this schema still has no node for
-    // is the one the promise is about.
+    // A figure, not a list or a table: both are carried now, and the block this schema still has no
+    // node for is the one the promise is about.
     const stored = document([
       paragraph('b1', 'Before'),
-      table('t1', 'b2'),
+      figure('t1'),
       {
         type: 'paragraph',
         id: 'b3',
@@ -292,7 +292,7 @@ describe('the mapping between the stored model and the editor', () => {
     ]);
     expect(toEditor(stored)).toEqual({
       editable: false,
-      unsupported: ['table', 'mark:suggestion'],
+      unsupported: ['figure', 'mark:suggestion'],
     });
   });
 
@@ -473,9 +473,9 @@ describe('the mapping carries a list, both ways', () => {
   });
 
   it('opens read-only for a block it cannot edit that is inside a list item, naming it', () => {
-    expect(toEditor(document([listHolding(table('t1', 'b2'))]))).toEqual({
+    expect(toEditor(document([listHolding(figure('t1'))]))).toEqual({
       editable: false,
-      unsupported: ['table'],
+      unsupported: ['figure'],
     });
   });
 

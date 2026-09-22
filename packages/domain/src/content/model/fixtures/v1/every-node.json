@@ -184,7 +184,8 @@
     {
       "type": "table",
       "id": "b4",
-      "caption": "One of every construct",
+      "style": "table",
+      "caption": [{ "type": "text", "value": "One of every construct", "marks": [] }],
       "headerRows": 1,
       "headerColumns": 1,
       "keyColumns": [0],
@@ -301,7 +302,9 @@
       "id": "b9",
       "asset": "asset-3",
       "imageStyle": "column-width",
-      "caption": "A figure carrying its own alternative",
+      "caption": [
+        { "type": "text", "value": "A figure carrying its own alternative", "marks": [] }
+      ],
       "alternative": { "kind": "own", "text": "A bar chart of throughput by measure" }
     },
     {

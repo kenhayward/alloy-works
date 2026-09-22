@@ -86,6 +86,31 @@ describe('reading Markdown', () => {
     ]);
   });
 
+  it("reads a table, the header row Markdown's own", () => {
+    expect(content('| Part | Count |\n| --- | --- |\n| Drum | **2** |\n')).toEqual([
+      {
+        type: 'table',
+        caption: [],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              { content: [paragraph(text('Part'))], colspan: 1, rowspan: 1 },
+              { content: [paragraph(text('Count'))], colspan: 1, rowspan: 1 },
+            ],
+          },
+          {
+            cells: [
+              { content: [paragraph(text('Drum'))], colspan: 1, rowspan: 1 },
+              { content: [paragraph(text('2', { type: 'strong' }))], colspan: 1, rowspan: 1 },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
   it('hands HTML written in the Markdown to the same sanitising as a paste of HTML', () => {
     const receiver = {
       document: {

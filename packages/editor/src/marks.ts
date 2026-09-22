@@ -182,6 +182,15 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and comma',
     prompts: false,
   },
+  {
+    kind: 'block',
+    action: 'table',
+    label: 'Table',
+    // The next of the list family's digits: no browser and no platform takes it.
+    shortcut: 'Mod-Shift-0',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 0',
+    prompts: false,
+  },
 ];
 
 /**

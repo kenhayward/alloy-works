@@ -176,28 +176,137 @@ style='mso-list:Ignore'>2.<span>&nbsp;</span></span><![endif]><b>Alice</b><o:p><
     ]);
   });
 
-  it('keeps a heading and a table as text, leaves out an image, an equation and a line, and says so', () => {
+  it('keeps a heading as a paragraph, leaves out an image, an equation and a line, and says so', () => {
     const input = read(
       `<h1>Title</h1><h3>Part</h3>
-       <table><tr><th>Name</th><td>Ada</td></tr><tr><td></td><td>Grace</td></tr></table>
        <p>A <img src="https://example.com/a.png" alt="chart"> figure</p>
        <math><mi>x</mi></math><hr>`,
     );
     expect((input.candidate as { content: unknown[] }).content).toEqual([
       paragraph(text('Title')),
       paragraph(text('Part')),
-      paragraph(text('Name')),
-      paragraph(text('Ada')),
-      paragraph(text('Grace')),
       paragraph(text('A figure')),
     ]);
     expect(happened(input.report)).toEqual([
       { stage: 'read', action: 'rewritten', subject: 'heading', count: 2 },
-      { stage: 'read', action: 'rewritten', subject: 'table', count: 1 },
       { stage: 'read', action: 'discarded', subject: 'image', count: 1 },
       { stage: 'read', action: 'discarded', subject: 'mathematics', count: 1 },
       { stage: 'read', action: 'discarded', subject: 'rule', count: 1 },
     ]);
+  });
+
+  const cell = (...content: unknown[]) => ({ content, colspan: 1, rowspan: 1 });
+  const spanning = (colspan: number, rowspan: number, ...content: unknown[]) => ({
+    content,
+    colspan,
+    rowspan,
+  });
+
+  it('reads a table: its caption, header rows and columns, and merged cells', () => {
+    expect(
+      content(`<table>
+         <caption>Readings <i>at noon</i></caption>
+         <thead><tr><th>Site</th><th colspan="2">Values</th></tr></thead>
+         <tbody>
+           <tr><th rowspan="2">York</th><td>1</td><td>2</td></tr>
+           <tr><td>3</td><td><ul><li>4</li></ul></td></tr>
+         </tbody>
+       </table>`),
+    ).toEqual([
+      {
+        type: 'table',
+        caption: [text('Readings '), text('at noon', emphasis)],
+        headerRows: 1,
+        headerColumns: 1,
+        rows: [
+          { cells: [cell(paragraph(text('Site'))), spanning(2, 1, paragraph(text('Values')))] },
+          {
+            cells: [
+              spanning(1, 2, paragraph(text('York'))),
+              cell(paragraph(text('1'))),
+              cell(paragraph(text('2'))),
+            ],
+          },
+          {
+            cells: [
+              cell(paragraph(text('3'))),
+              cell({
+                type: 'list',
+                kind: 'unordered',
+                items: [{ content: [paragraph(text('4'))] }],
+              }),
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('makes a ragged table a grid, and keeps what a cell may not hold as paragraphs, saying so', () => {
+    const input = read(`<table>
+       <tr><td>a</td><td>b</td><td>c</td></tr>
+       <tr><td><blockquote><p>q</p></blockquote></td></tr>
+       <tr><td><pre>x\ny</pre></td><td><table><tr><td>inner</td></tr></table></td><td></td></tr>
+     </table>`);
+    expect((input.candidate as { content: unknown[] }).content).toEqual([
+      {
+        type: 'table',
+        caption: [],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              cell(paragraph(text('a'))),
+              cell(paragraph(text('b'))),
+              cell(paragraph(text('c'))),
+            ],
+          },
+          { cells: [cell(paragraph(text('q'))), cell(paragraph()), cell(paragraph())] },
+          {
+            cells: [
+              cell(paragraph(text('x')), paragraph(text('y'))),
+              cell(paragraph(text('inner'))),
+              cell(paragraph()),
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(happened(input.report)).toEqual([
+      { stage: 'read', action: 'rewritten', subject: 'table', count: 1 },
+      { stage: 'read', action: 'rewritten', subject: 'tableShape', count: 1 },
+      { stage: 'read', action: 'rewritten', subject: 'cellBlocks', count: 2 },
+    ]);
+  });
+
+  it("reads a table from Word's HTML, where nothing marks a header row", () => {
+    const input = read(`<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+       style='border-collapse:collapse;mso-yfti-tbllook:1184'>
+       <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes'>
+         <td width=301 valign=top style='width:225.4pt'><p class=MsoNormal><b>Part<o:p></o:p></b></p></td>
+         <td width=301 valign=top style='width:225.4pt'><p class=MsoNormal><b>Count<o:p></o:p></b></p></td>
+       </tr>
+       <tr style='mso-yfti-irow:1;mso-yfti-lastrow:yes'>
+         <td width=301 valign=top style='width:225.4pt'><p class=MsoNormal>Drum<o:p></o:p></p></td>
+         <td width=301 valign=top style='width:225.4pt'><p class=MsoNormal>2<o:p></o:p></p></td>
+       </tr>
+     </table>`);
+    expect((input.candidate as { content: unknown[] }).content).toEqual([
+      {
+        type: 'table',
+        caption: [],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [cell(paragraph(text('Part', strong))), cell(paragraph(text('Count', strong)))],
+          },
+          { cells: [cell(paragraph(text('Drum'))), cell(paragraph(text('2')))] },
+        ],
+      },
+    ]);
+    expect(input.report).toEqual([]);
   });
 
   it('reports a paragraph holding only an image as the image, not as spacing', () => {
@@ -282,6 +391,17 @@ describe('HTML through the admission pipeline', () => {
         'executableStyle',
       ]),
     );
+  });
+
+  it('admits a table the reader made, the grid and every cell as the model holds them', () => {
+    const outcome = admit(
+      read('<table><tr><th>A</th><th>B</th></tr><tr><td colspan="2">wide</td></tr></table>'),
+      receiver,
+    );
+    if (!outcome.ok) throw new Error(outcome.failure);
+    expect(outcome.content).toMatchObject([
+      { type: 'table', style: 'table', headerRows: 1, headerColumns: 0 },
+    ]);
   });
 
   it("admits what the reader made of Word's list, with every block and mark given an identifier", () => {

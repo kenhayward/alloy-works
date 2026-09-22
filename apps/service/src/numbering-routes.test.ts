@@ -69,14 +69,14 @@ const figure = (id: string) => ({
   id,
   asset: 'asset',
   imageStyle: 'wide',
-  caption: 'A caption',
+  caption: [{ type: 'text', value: 'A caption', marks: [] }],
   alternative: { kind: 'decorative' },
 });
 
 const table = (id: string) => ({
   type: 'table',
   id,
-  caption: 'Parts',
+  caption: [{ type: 'text', value: 'Parts', marks: [] }],
   headerRows: 0,
   headerColumns: 0,
   rows: [

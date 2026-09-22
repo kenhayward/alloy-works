@@ -21,7 +21,9 @@ a web application and a desktop application**.
 > kept exactly, with a language label set in a panel of its own. Text
 > pasted from a web page, Word, Google Docs, plain text or another component passes through the
 > admission pipeline, read by `packages/readers`, and what it changed is shown in a paste report;
-> **Paste as Markdown** on the toolbar reads the clipboard as Markdown instead. A
+> **Paste as Markdown** on the toolbar reads the clipboard as Markdown instead. A table - a caption,
+> header rows and columns, merged cells, cells of paragraphs and lists - is made from the toolbar or
+> a paste and changed from a Table panel, over `prosemirror-tables`, and is not yet published. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -33,7 +35,7 @@ a web application and a desktop application**.
 > and preformatted text as code, set in a pinned Liberation Mono beside Liberation Serif - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no table, footnote or equation can be written or pasted, no metadata panel,
+> publishes content: no footnote or equation can be written or pasted, no table published, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of figures, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and

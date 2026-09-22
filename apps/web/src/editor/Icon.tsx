@@ -31,6 +31,7 @@ const PATHS: Record<string, readonly string[]> = {
   'Lift item': ['M7 4.5h6.5M7 8h6.5M7 11.5h6.5', 'M4.6 6.3 2.5 8l2.1 1.7'],
   Quotation: ['M3.6 4.3v7.4', 'M6.8 5.4h6.6M6.8 8.4h6.6M6.8 11.4h4.2'],
   'Preformatted text': ['M2.6 3.6h10.8v8.8H2.6z', 'M5 6.8h3M5 9.4h6'],
+  Table: ['M2.5 3h11v10h-11z', 'M2.5 6.4h11M2.5 9.7h11M6.2 3v10M9.8 3v10'],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],

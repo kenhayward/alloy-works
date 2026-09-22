@@ -154,31 +154,78 @@ describe('pasting', () => {
   });
 
   it('refuses what the pipeline admits and this editor cannot hold, by name', () => {
-    const table = JSON.stringify({
+    // A figure: the one block the editor still has no node for.
+    const figure = JSON.stringify({
       format: 'alloy-works/content',
       schemaVersion: 1,
       content: [
         {
-          type: 'table',
-          caption: 'Visits',
-          headerRows: 0,
-          headerColumns: 0,
-          rows: [
-            { cells: [{ content: [{ type: 'paragraph', content: [] }], colspan: 1, rowspan: 1 }] },
-          ],
+          type: 'figure',
+          asset: 'asset-1',
+          imageStyle: 'wide',
+          caption: [{ type: 'text', value: 'Visits', marks: [] }],
+          alternative: { kind: 'decorative' },
         },
       ],
     });
     const outcome = pasteInto(
       stateOf([paragraph('b1', 'York')]),
-      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: table }), 'blocks'),
+      readClipboard(clipboard({ [PRODUCT_CLIPBOARD_TYPE]: figure }), 'blocks'),
       counter(),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.report.slice(-2)).toMatchObject([
-      { action: 'discarded', subject: 'unrepresentable', detail: 'table' },
+      { action: 'discarded', subject: 'unrepresentable', detail: 'figure' },
       { action: 'refused', subject: 'invalid' },
     ]);
+  });
+});
+
+describe('pasting into a table', () => {
+  it('refuses a paste that would put a quotation in a list in a cell, which the store would not take', () => {
+    const state = stateOf([
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [
+          {
+            cells: [
+              {
+                content: [
+                  {
+                    type: 'list',
+                    id: 'l1',
+                    kind: 'unordered',
+                    items: [{ content: [paragraph('li1', 'one')] }],
+                  },
+                ],
+                colspan: 1,
+                rowspan: 1,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    let at = -1;
+    state.doc.descendants((node, pos) => {
+      if (node.attrs.id === 'li1') at = pos + 4;
+    });
+    const placed = state.apply(state.tr.setSelection(TextSelection.create(state.doc, at)));
+    const outcome = pasteInto(
+      placed,
+      readClipboard(
+        clipboard({ 'text/html': '<p>A</p><blockquote><p>Said</p></blockquote><p>B</p>' }),
+        'blocks',
+      ),
+      counter('p'),
+    );
+    expect(outcome.ok).toBe(false);
+    expect(outcome.report.at(-1)).toMatchObject({ action: 'refused', subject: 'invalid' });
   });
 });
 

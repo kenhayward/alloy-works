@@ -123,6 +123,17 @@ export function pasteInto(
     .scrollIntoView()
     .setMeta('paste', true)
     .setMeta('uiEvent', 'paste');
+  // **Placed, the paste must still be a document the store takes.** The admitted blocks are valid on
+  // their own, but where they land can make them not so: a quotation pasted into a list in a table's
+  // cell fits ProseMirror's schema - a list item holds any block - and not the model's (tables 1,
+  // decision T-D). Refused whole and by name rather than placed and refused at the next save.
+  try {
+    fromEditor(transaction.doc);
+  } catch {
+    const report = createReport(admitted.report);
+    report.add('validate', 'refused', 'invalid');
+    return { ok: false, report: report.entries };
+  }
   return { ok: true, transaction, report: admitted.report };
 }
 

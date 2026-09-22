@@ -72,14 +72,14 @@ const block = (component: number, index: number) => {
         id,
         asset: 'asset',
         imageStyle: 'wide',
-        caption: `Figure caption ${index}`,
+        caption: [{ type: 'text', value: `Figure caption ${index}` }],
         alternative: { kind: 'decorative' },
       };
     case 3:
       return {
         type: 'table',
         id,
-        caption: `Table caption ${index}`,
+        caption: [{ type: 'text', value: `Table caption ${index}` }],
         headerRows: 0,
         headerColumns: 0,
         rows: [{ cells: [{ content: [{ type: 'paragraph', id: `${id}c`, content: text('A') }] }] }],

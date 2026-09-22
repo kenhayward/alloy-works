@@ -20,7 +20,8 @@ export type BlockNode =
   | {
       type: 'table';
       id: string;
-      caption: string;
+      style: string;
+      caption: z.infer<typeof inlineNodeSchema>[];
       headerRows: number;
       headerColumns: number;
       keyColumns?: number[] | undefined;
@@ -32,7 +33,7 @@ export type BlockNode =
       id: string;
       asset: string;
       imageStyle: string;
-      caption: string;
+      caption: z.infer<typeof inlineNodeSchema>[];
       alternative: z.infer<typeof alternativeSchema>;
     }
   | { type: 'preformatted'; id: string; text: string; language?: string | undefined }
@@ -121,24 +122,36 @@ export function startsOutsideItsNumbering(list: ListNode): boolean {
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),
   ...identified,
-  caption: z.string(),
+  /** CNT-094: a table takes its appearance from a table style (STY-012), as a paragraph does from its. */
+  style: z.string().min(1).default('table'),
+  /**
+   * Inline content, as a paragraph's is, so a caption can hold a mark, a link, an equation (CNT-046)
+   * or a cross-reference (issue #88). A string until tables 1, changed in place at schema version 1
+   * because a read-only count found no table or figure stored anywhere.
+   */
+  caption: z.array(inlineNodeSchema),
   headerRows: z.number().int().min(0),
   headerColumns: z.number().int().min(0),
   /** CNT-107: where declared, a footnote anchors by key value rather than by position. */
   keyColumns: z.array(z.number().int().min(0)).optional(),
   /** CNT-038: a note on the table as a whole, which is not an inline anchor because a table is not a span. */
   note: z.array(inlineNodeSchema).optional(),
-  rows: z.array(
-    z.strictObject({
-      cells: z.array(
-        z.strictObject({
-          content: z.array(blockNodeSchema),
-          colspan: z.number().int().min(1).default(1),
-          rowspan: z.number().int().min(1).default(1),
-        }),
-      ),
-    }),
-  ),
+  // The grid - rows covering one number of columns, no two cells covering one place - is a rule of
+  // the walk, which can see the whole table (`checkTable` in document.ts).
+  rows: z
+    .array(
+      z.strictObject({
+        cells: z.array(
+          z.strictObject({
+            // At least one block, as a list item holds: a cursor needs somewhere to stand.
+            content: z.array(blockNodeSchema).min(1),
+            colspan: z.number().int().min(1).default(1),
+            rowspan: z.number().int().min(1).default(1),
+          }),
+        ),
+      }),
+    )
+    .min(1),
 });
 
 export const figureNodeSchema = z.strictObject({
@@ -146,7 +159,8 @@ export const figureNodeSchema = z.strictObject({
   ...identified,
   asset: z.string().min(1),
   imageStyle: z.string().min(1),
-  caption: z.string(),
+  /** Inline content, as a table's caption is (issue #88). */
+  caption: z.array(inlineNodeSchema),
   alternative: alternativeSchema,
 });
 

@@ -105,7 +105,7 @@ describe('numbering an outline', () => {
       id: block,
       asset: 'asset',
       imageStyle: 'wide',
-      caption: 'A caption',
+      caption: [{ type: 'text', value: 'A caption', marks: [] }],
       alternative: { kind: 'decorative' },
     });
     const content = parseContentDocument({
@@ -118,17 +118,17 @@ describe('numbering an outline', () => {
         {
           type: 'table',
           id: 't1',
-          caption: 'Doses',
+          caption: [{ type: 'text', value: 'Doses', marks: [] }],
           headerRows: 1,
           headerColumns: 0,
           rows: [
             {
-              cells: [
-                { content: [{ type: 'equation', id: 'e1', mathml: MATHML, numbered: true }] },
-              ],
+              cells: [{ content: [{ type: 'paragraph', id: 'c1', content: [] }] }],
             },
           ],
         },
+        // A cell holds paragraphs and lists alone (tables 1, decision T-D).
+        { type: 'equation', id: 'e1', mathml: MATHML, numbered: true },
         { type: 'list', id: 'l1', kind: 'unordered', items: [{ content: [figure('f2')] }] },
         {
           type: 'blockquote',

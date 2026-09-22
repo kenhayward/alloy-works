@@ -1,6 +1,7 @@
 import { baseKeymap, chainCommands, splitBlock } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
+import { goToNextCell, tableEditing } from 'prosemirror-tables';
 import type { MarkType, Node } from 'prosemirror-model';
 import { EditorState, Plugin, Selection, TextSelection, type Command } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
@@ -15,6 +16,7 @@ import {
   refusePastTheLimit,
 } from './blocks.js';
 import { identityPlugin } from './identity.js';
+import { tableHeadersAgree } from './tables.js';
 import { commandKeymap, spansOf } from './marks.js';
 
 const isEmptyParagraph = (node: Node | null | undefined) =>
@@ -222,7 +224,12 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
 export function placeholderDecorations(doc: Node): DecorationSet {
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
-    if (node.type.name === 'attribution' && node.content.size === 0) {
+    // An attribution and a table's caption: each is where an author types something optional-looking
+    // that a reader needs, and an empty one says what it is for.
+    if (
+      (node.type.name === 'attribution' || node.type.name === 'tableCaption') &&
+      node.content.size === 0
+    ) {
       decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'aw-empty' }));
     }
   });
@@ -366,8 +373,18 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // In preformatted text Tab types a tab, the character CNT-018 keeps, and Shift-Tab is **never
         // taken** - not even to lift the item a preformatted block stands in - so focus can always
         // leave backwards by keyboard and the tab is not a trap (decision I).
-        Tab: chainCommands(insertTabInCode, blockCommand('nestItem', options.newIdentifier)),
-        'Shift-Tab': outsideCode(blockCommand('liftItem', options.newIdentifier)),
+        // **In a table, Tab moves between cells first** (tables 1, ruling R5), even in a list inside
+        // a cell, as Word's does; it answers false from the last cell and Shift-Tab from the first,
+        // so the focus can leave the table and neither is a trap.
+        Tab: chainCommands(
+          goToNextCell(1),
+          insertTabInCode,
+          blockCommand('nestItem', options.newIdentifier),
+        ),
+        'Shift-Tab': chainCommands(
+          goToNextCell(-1),
+          outsideCode(blockCommand('liftItem', options.newIdentifier)),
+        ),
       }),
       // Every command the toolbar offers - nine marks and seven block actions - from the one
       // registry, so the two cannot drift (CNT-077). A mark's identifier is drawn from the same
@@ -414,6 +431,10 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // identity reads its positions in and the one it writes them back in. Both descend now, so
       // both are walking the same nested positions, and keeping a deletion out of that round is
       // worth the line it takes to say so.
+      // Cell selection, and the repair of a table's shape after any transaction; column resizing is
+      // off, since its plugin owns the table's DOM (component-editor.md, "Tables and footnotes").
+      tableEditing(),
+      tableHeadersAgree,
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       attributionAlwaysThere,

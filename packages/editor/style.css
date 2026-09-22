@@ -198,3 +198,51 @@
   content: 'Attribution';
   color: var(--muted);
 }
+
+/* A table: its caption above it, as the published one stands (publishing.md, "Tables"), and a grid
+ * of cells ruled on every side. Header cells are told apart by weight and a fill, not by colour
+ * alone. The widths are the theme's once there is one; until then the columns share the measure. */
+.ProseMirror figure.aw-table {
+  margin: 0.75em 0;
+}
+
+.ProseMirror figcaption {
+  font-weight: 600;
+  margin-bottom: 0.25em;
+}
+
+.ProseMirror figcaption.aw-empty::before {
+  content: 'Caption';
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 1px solid var(--input-border);
+  padding: 0.25em 0.5em;
+  vertical-align: top;
+}
+
+.ProseMirror th {
+  font-weight: 600;
+  text-align: start;
+  background: var(--chip-bg);
+}
+
+.ProseMirror td p,
+.ProseMirror th p {
+  margin: 0;
+}
+
+/* The cells a cell selection holds, which `prosemirror-tables` marks with this class. */
+.ProseMirror .selectedCell {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
