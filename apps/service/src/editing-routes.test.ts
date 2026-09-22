@@ -395,6 +395,32 @@ describe('writing in an editing session through the service', () => {
       expect(response.body).not.toContain('p1');
     });
 
+    it('refuses a blank title, and text the store cannot hold, as invalid content rather than as a failure', async () => {
+      // Issues #116 and #127: creating a component refuses a title of spaces, and a section title
+      // refuses a NUL or half a surrogate pair, but saving an iteration took both - the first stored
+      // a blank title, the second failed the insert and was answered as the service's fault.
+      const made = await component();
+      const session = randomUUID();
+      await call('ada', 'POST', `/v1/components/${made.id}/lock`, { session });
+      const nul = String.fromCharCode(0);
+      const halfAPair = String.fromCharCode(0xd800);
+      const refused = [
+        { ...paragraphs('Unbox it.'), title: '   ' },
+        paragraphs(`Unbox${nul} it.`),
+        paragraphs(`Unbox ${halfAPair} it.`),
+      ];
+      for (const [index, content] of refused.entries()) {
+        const response = await call(
+          'ada',
+          'PUT',
+          `/v1/components/${made.id}/iterations/${session}/${index + 1}`,
+          { openedFrom: made.openedFrom, content },
+        );
+        expect(response.statusCode, `case ${index}`).toBe(400);
+        expect(response.json()).toMatchObject({ code: 'content_invalid' });
+      }
+    });
+
     it('refuses an uppercase session as invalid, on claim and on save, rather than comparing it wrong forever', async () => {
       const made = await component();
       const upper = randomUUID().toUpperCase();

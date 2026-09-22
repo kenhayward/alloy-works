@@ -16,7 +16,12 @@ import {
   type HolderRefusal,
   type StoredVersion,
 } from '@alloy-works/db';
-import { parseContentDocument, type ContentDocument } from '@alloy-works/domain';
+import {
+  hasText,
+  parseContentDocument,
+  storableEverywhere,
+  type ContentDocument,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { lockView, versionView } from './components.js';
@@ -112,6 +117,12 @@ export function editingHandlers() {
       let content: ContentDocument;
       try {
         content = parseContentDocument(body.content);
+        // Two rules the content model's own parse does not hold, and every other way in does: a
+        // title that trims to nothing, which creating a component and the header both refuse
+        // (issue #116), and a string Postgres cannot store - a NUL or half a surrogate pair - which
+        // would otherwise fail the insert and be answered as our failure (issue #127). Neither is
+        // narrowed in the parse itself, because the parse also reads what is already stored.
+        if (!hasText(content.title) || !storableEverywhere(content)) throw new Error('unstorable');
       } catch {
         // A fixed message: what failed to parse is the author's content, and never goes back as prose.
         throw new AppError(

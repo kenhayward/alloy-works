@@ -178,11 +178,8 @@ export type CreateComponentAnswer =
  * `contentDocumentSchema.title` is `min(1)` with no trim, so a title of spaces alone would otherwise
  * parse - trimmed here, and refused if trimming leaves nothing. `packages/editor`'s `setTitle` holds
  * the same agreement on every edit: trimmed before it is set, and refused only when trimming leaves
- * nothing. **That agreement holds between creating and the header, and nowhere else** - saving an
- * iteration validates the document against `contentDocumentSchema` alone, so a client putting a title
- * of spaces straight to the iteration route stores it and cuts it, and the component then lists with a
- * blank title. Issue #116; not reachable from the application, which has no path that does not go
- * through one of these two. The language is checked against `contentDocumentSchema.shape.language`, the same schema `parseContentDocument`
+ * nothing. Saving an iteration refuses a title that trims to nothing as well (`apps/service`'s
+ * `editing.ts`, issue #116), so no route stores a blank one. The language is checked against `contentDocumentSchema.shape.language`, the same schema `parseContentDocument`
  * checks it with. Validating first, rather than catching whatever `createArtifact` throws, means
  * nothing else in this content can be mistaken for a bad header: the block identifier is freshly made
  * and the empty paragraph is fixed, so `createArtifact` throwing past this point is a bug, not a
