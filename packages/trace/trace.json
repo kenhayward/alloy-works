@@ -14795,6 +14795,10 @@
           "howItIsMet": "Headings come from outline nodes alone and are bookmarked, so the PDF's bookmarks are the outline with its numbers"
         },
         {
+          "id": "PUB-032",
+          "howItIsMet": "A header row is one `table.header` and a header column's cells are `pdf.header-cell(scope: \"row\")` under `--features a11y-extras`, each a `TH` whose scope veraPDF checks - measured under [Tables](#tables)"
+        },
+        {
           "id": "PUB-033",
           "howItIsMet": "Compose resolves each figure's alternative text - its own, decorative, or inherited from the asset version's default - and a figure with none fails `alternative_missing`, naming the occurrence and block"
         },
@@ -14917,6 +14921,14 @@
         {
           "id": "CNT-084",
           "howItIsMet": "As PUB-034: each run's language reaches the published document, and each writer emits it"
+        },
+        {
+          "id": "TAB-039",
+          "howItIsMet": "A table's caption is set by the `figure` it stands in, which Typst tags as a `Caption` inside the `Table`, first, above it or below - measured; Word names the table by its caption in `w:tblCaption`"
+        },
+        {
+          "id": "TAB-040",
+          "howItIsMet": "Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them"
         }
       ]
     },
