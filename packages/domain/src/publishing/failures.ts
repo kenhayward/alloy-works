@@ -33,6 +33,10 @@ export const publishFailureCodes = [
   // the page, which would otherwise be wrapped or cut off.
   'code_glyph_missing',
   'line_too_wide',
+  // compose, from tables 2: a table whose caption says nothing, refused at publish rather than at save
+  // because an author types the caption after inserting the table (decision T-F). A caption is what
+  // names a table in the PDF and to a screen reader (TAB-034, TAB-039).
+  'table_without_caption',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

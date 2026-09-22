@@ -45,6 +45,9 @@ export {
   // Frozen by editor 5, which made `publishing/5`: the schema template 4 reads, and the schema of
   // every publication made before a block could be a quotation or preformatted text.
   PUBLISHING_SCHEMA_4,
+  // Frozen by tables 2, which made `publishing/6`: the schema template 5 reads, and the schema of
+  // every publication made before a block could be a table.
+  PUBLISHING_SCHEMA_5,
 } from './published.js';
 export type {
   PublishedBlock,

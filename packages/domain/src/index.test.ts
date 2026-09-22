@@ -135,6 +135,7 @@ describe('the domain package', () => {
         // And the schema template 4 reads, frozen by editor 5 when quotations and preformatted text
         // made `publishing/5`.
         'PUBLISHING_SCHEMA_4',
+        'PUBLISHING_SCHEMA_5',
         'assemble',
         'publishFailureCodes',
         'setWithoutAGlyph',

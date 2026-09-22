@@ -12,13 +12,20 @@ import {
 import { assemble, type Assembled, type AssembleInput } from './assemble.js';
 import type { PublishFailure } from './failures.js';
 import { publishedLanguage } from './language.js';
-import { defaultLayout, parseLayout, type Layout } from './layout.js';
+import {
+  defaultLayout,
+  FIRST_DEFAULT_LAYOUT,
+  parseLayout,
+  readLayout,
+  type Layout,
+} from './layout.js';
 import {
   DRAFT_NOTICE,
   PUBLISHED_MARK_ORDER,
   PUBLISHING_SCHEMA,
   PUBLISHING_SCHEMA_3,
   PUBLISHING_SCHEMA_4,
+  PUBLISHING_SCHEMA_5,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedItem,
@@ -783,7 +790,7 @@ describe('assemble', () => {
   it('PUB-079 publishes an empty document as the cover its layout declares, and refuses one whose layout declares nothing with something to show', () => {
     const empty = assemble(input({ outline: outline([]) }));
     expect(empty.ok).toBe(true);
-    expect(empty.ok && empty.document.front).toEqual({ cover: true, contents: null });
+    expect(empty.ok && empty.document.front).toEqual({ cover: true, contents: null, lists: [] });
     expect(empty.ok && empty.document.nodes).toEqual([]);
 
     const nothing = [
@@ -809,7 +816,11 @@ describe('assemble', () => {
     const held = assemble(
       input({ outline: outline([section('intro', 'Introduction')]), layout: contentsOnly }),
     );
-    expect(held.ok && held.document.front).toEqual({ cover: false, contents: { depth: 3 } });
+    expect(held.ok && held.document.front).toEqual({
+      cover: false,
+      contents: { depth: 3 },
+      lists: [],
+    });
   });
 
   it("carries the layout's page in points, its heads and feet, its page numbering as Typst patterns and its words in its own language", () => {
@@ -837,7 +848,7 @@ describe('assemble', () => {
       noticeSentence:
         'Not approved. This is a draft publication, not made from an approved baseline.',
     });
-    expect(assembled.document.front).toEqual({ cover: true, contents: { depth: 3 } });
+    expect(assembled.document.front).toEqual({ cover: true, contents: { depth: 3 }, lists: [] });
     expect(assembled.document.appendices).toEqual({ newPage: true });
     // The document's language is its own, whatever the layout's words are in.
     expect(assembled.document.language).toEqual({ lang: 'en', region: 'GB' });
@@ -948,8 +959,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/5, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/5');
+  it('assembles under a layout as publishing/6, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/6');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1475,8 +1486,143 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/5, and publishing/4 is frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/5');
+  it('makes publishing/6, and publishing/4 and publishing/5 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/6');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
+    expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
+  });
+});
+
+describe('a table, published (tables 2)', () => {
+  const cell = (
+    name: string,
+    value: string,
+    spans: { colspan?: number; rowspan?: number } = {},
+  ) => ({
+    content: [paragraph(name, text(value))],
+    colspan: spans.colspan ?? 1,
+    rowspan: spans.rowspan ?? 1,
+  });
+  const stored = (over: object = {}) => ({
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [text('Readings '), marked('at noon', { type: 'emphasis', id: 'm1' })],
+    headerRows: 1,
+    headerColumns: 1,
+    rows: [
+      { cells: [cell('c1', 'Site'), cell('c2', 'Values', { colspan: 2 })] },
+      { cells: [cell('c3', 'York', { rowspan: 2 }), cell('c4', '1'), cell('c5', '2')] },
+      { cells: [cell('c6', '3'), cell('c7', '4')] },
+    ],
+    ...over,
+  });
+  const failed = (code: string, detail: string | null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block: 't1',
+    detail,
+  });
+  const published = (runs: string) => ({
+    type: 'paragraph',
+    id: runs,
+    runs: [
+      {
+        text: { c1: 'Site', c2: 'Values', c3: 'York', c4: '1', c5: '2', c6: '3', c7: '4' }[runs],
+        marks: [],
+      },
+    ],
+  });
+
+  it('publishes a table with its number, its caption, its header counts and every cell', () => {
+    const assembled = assemble(oneComponent(stored()));
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    expect(assembled.document.schema).toBe('publishing/6');
+    expect(blocksOf(assembled)).toEqual([
+      {
+        type: 'table',
+        id: 't1',
+        label: 'Table 1.1',
+        caption: [
+          { text: 'Readings ', marks: [] },
+          { text: 'at noon', marks: [{ kind: 'emphasis' }] },
+        ],
+        headerRows: 1,
+        headerColumns: 1,
+        rows: [
+          {
+            cells: [
+              { blocks: [published('c1')], colspan: 1, rowspan: 1 },
+              { blocks: [published('c2')], colspan: 2, rowspan: 1 },
+            ],
+          },
+          {
+            cells: [
+              { blocks: [published('c3')], colspan: 1, rowspan: 2 },
+              { blocks: [published('c4')], colspan: 1, rowspan: 1 },
+              { blocks: [published('c5')], colspan: 1, rowspan: 1 },
+            ],
+          },
+          {
+            cells: [
+              { blocks: [published('c6')], colspan: 1, rowspan: 1 },
+              { blocks: [published('c7')], colspan: 1, rowspan: 1 },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('refuses a table with no caption, naming it, since a caption is what names a table to a reader', () => {
+    expect(failuresOf(assemble(oneComponent(stored({ caption: [] }))))).toEqual([
+      failed('table_without_caption', null),
+    ]);
+    expect(failuresOf(assemble(oneComponent(stored({ caption: [text('   ')] }))))).toEqual([
+      failed('table_without_caption', null),
+    ]);
+  });
+
+  it('refuses a table in a style the template does not set, as a paragraph is refused', () => {
+    expect(failuresOf(assemble(oneComponent(stored({ style: 'wide' }))))).toEqual([
+      failed('style_missing', 'wide'),
+    ]);
+  });
+
+  it('refuses a table where there is no layout, since the frozen first shape holds paragraphs alone', () => {
+    const { layout: _, ...withoutLayout } = oneComponent(stored());
+    expect(failuresOf(assemble({ ...withoutLayout, layout: null }))).toEqual([
+      failed('block_not_publishable', 'table'),
+    ]);
+  });
+
+  it('lists the tables after the contents, under the title the layout gives it, and only where there is one', () => {
+    const withTable = assemble(oneComponent(stored()));
+    if (!withTable.ok) throw new Error(JSON.stringify(withTable.failures));
+    expect(withTable.document.front.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
+
+    const withNone = assemble(oneComponent(paragraph('b1', text('Nothing to list.'))));
+    if (!withNone.ok) throw new Error(JSON.stringify(withNone.failures));
+    expect(withNone.document.front.lists).toEqual([]);
+
+    // A request made under the default layout's 0.1, which declared no list, makes none.
+    const first = readLayout(JSON.parse(JSON.stringify(FIRST_DEFAULT_LAYOUT)), {
+      artifact: 'a',
+      version: 'v',
+    });
+    if (!first.ok) throw new Error(first.failure);
+    const underFirst = assemble({ ...oneComponent(stored()), layout: first.layout });
+    if (!underFirst.ok) throw new Error(JSON.stringify(underFirst.failures));
+    expect(underFirst.document.front.lists).toEqual([]);
+  });
+
+  it("checks a list's title against the faces, as the layout's own words", () => {
+    const layout = layoutWith((each) => {
+      each.matter.lists = [{ sequence: 'table', title: 'Tables \u{2016}' }];
+    });
+    expect(failuresOf(assemble({ ...oneComponent(stored()), layout }))).toEqual([
+      { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+2016' },
+    ]);
   });
 });

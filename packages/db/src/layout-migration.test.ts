@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  defaultLayout as productDefaultLayout,
   FIRST_DEFAULT_LAYOUT,
   defaultNumberingScheme,
   type Layout,

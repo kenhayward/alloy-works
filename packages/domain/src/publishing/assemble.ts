@@ -3,7 +3,7 @@ import type { ContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
-import { contents } from '../structure/lists.js';
+import { contents, listOf } from '../structure/lists.js';
 import {
   conditions,
   number,
@@ -69,6 +69,9 @@ export type Assembled<
 
 /** The paragraph style the template sets. Every other is `style_missing` until themes (slice 4). */
 const BODY = 'body';
+
+/** The one table style the template sets until themes.md gives styles (tables 2, ruling R4). */
+const TABLE_STYLE = 'table';
 
 /** Each number format as Typst's page numbering writes it, by name, never by position. */
 const PATTERNS: Readonly<Record<NumberFormat, PublishedPattern>> = {
@@ -153,7 +156,8 @@ export function assemble(input: AssembleInput): Assembled {
       .flat()
       .flatMap((part) => (part.kind === 'words' ? [part.text] : []));
     const { contents: title, notice, noticeSentence } = layout.words;
-    for (const words of [title, notice, noticeSentence, ...slotWords]) {
+    const listTitles = layout.matter.lists.map((list) => list.title);
+    for (const words of [title, notice, noticeSentence, ...slotWords, ...listTitles]) {
       for (const { codePoint } of characterProblems(words, input.covers, 'body')) {
         failures.push(
           failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)),
@@ -333,7 +337,45 @@ export function assemble(input: AssembleInput): Assembled {
           },
         ];
       }
-      case 'table':
+      case 'table': {
+        // Refused by name without a layout, as a list is: the frozen first shape holds paragraphs alone.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+          return [];
+        }
+        // The table's own style is the one the template sets until themes.md gives styles (ruling R4).
+        if (block.style !== TABLE_STYLE) {
+          failures.push(failure('compose', 'style_missing', node, block.id, block.style));
+        }
+        // A caption of no words names nothing (ruling R3), whatever else it holds.
+        const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
+        if (words.join('').trim() === '') {
+          failures.push(failure('compose', 'table_without_caption', node, block.id, null));
+        }
+        const caption = publishedRuns(block.caption, node, block.id);
+        const label =
+          numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
+            ?.label ?? null;
+        if (label !== null) check(label, node, block.id);
+        return [
+          {
+            type: 'table',
+            id: block.id,
+            label,
+            caption,
+            headerRows: block.headerRows,
+            headerColumns: block.headerColumns,
+            rows: block.rows.map((row) => ({
+              cells: row.cells.map((cell) => ({
+                // Paragraphs and lists alone (decision T-D), each published as it is anywhere else.
+                blocks: cell.content.flatMap((each) => publishable(each, node, indent)),
+                colspan: cell.colspan,
+                rowspan: cell.rowspan,
+              })),
+            })),
+          },
+        ];
+      }
       case 'figure':
       case 'equation':
         failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
@@ -465,7 +507,15 @@ export function assemble(input: AssembleInput): Assembled {
         noticeSentence: words.noticeSentence,
       },
       format: publishedPdf(layout.formats.pdf),
-      front: { cover, contents: shownContents },
+      // Each list the layout declares that has an entry, in its order (ruling R7): a list of nothing
+      // is not published, as a contents of nothing is not (decision K).
+      front: {
+        cover,
+        contents: shownContents,
+        lists: layout.matter.lists
+          .filter((list) => listOf(conditioned, numbering, list.sequence).length > 0)
+          .map((list) => ({ sequence: list.sequence, title: list.title })),
+      },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
     },
@@ -513,7 +563,8 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
     case 'list':
     case 'preformatted':
     case 'blockquote':
-      // Unreachable for the same reason as a list: without a layout both are refused by name first.
+    case 'table':
+      // Unreachable for the same reason as a list: without a layout each is refused by name first.
       throw new Error(
         `publishing/1 holds paragraphs alone, and block ${block.id} is a ${block.type}`,
       );

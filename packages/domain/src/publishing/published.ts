@@ -5,12 +5,13 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/5` is the document under a layout whose runs carry their marks and whose blocks may be
- * lists, quotations and preformatted text, which `apps/worker/templates/publication/5/` reads. It is never stored - only its digest is,
+ * `publishing/6` is the document under a layout whose runs carry their marks and whose blocks may be
+ * lists, quotations, preformatted text and tables, with its generated lists after the contents, which
+ * `apps/worker/templates/publication/6/` reads. It is never stored - only its digest is,
  * on the publication - so a later shape is a new schema string and a new template version, not a
  * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/5';
+export const PUBLISHING_SCHEMA = 'publishing/6';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -41,6 +42,13 @@ export const PUBLISHING_SCHEMA_3 = 'publishing/3';
  * asserts it, and a template version and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_4 = 'publishing/4';
+
+/**
+ * The document under a layout as it stood before a block could be a table, frozen by tables 2 for the
+ * reason `publishing/4` is: `apps/worker/templates/publication/5/` asserts it, and a template version
+ * and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_5 = 'publishing/5';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -168,8 +176,38 @@ export interface PublishedQuotation {
   readonly attribution: readonly PublishedRun[] | null;
 }
 
+/** One cell of a published table: its blocks - paragraphs and lists - and the grid it covers. */
+export interface PublishedCell {
+  readonly blocks: readonly PublishedBlock[];
+  readonly colspan: number;
+  readonly rowspan: number;
+}
+
+/**
+ * A table of `publishing/6` (tables 2, ruling R2). `label` is `number`'s - "Table 1.1" - set as text,
+ * never Typst's counter (decision F of the first slice), and null where a caption before any numbered
+ * appendix takes no number. The caption is runs, which a template sets above the table as its
+ * caption. The header counts are the stored table's, and the template makes the header rows one
+ * repeating header and a header column's cells row headers.
+ */
+export interface PublishedTable {
+  readonly type: 'table';
+  readonly id: string;
+  readonly label: string | null;
+  readonly caption: readonly PublishedRun[];
+  readonly headerRows: number;
+  readonly headerColumns: number;
+  readonly rows: readonly { readonly cells: readonly PublishedCell[] }[];
+}
+
 export type PublishedBlock =
-  PublishedParagraph | PublishedList | PublishedPreformatted | PublishedQuotation;
+  PublishedParagraph | PublishedList | PublishedPreformatted | PublishedQuotation | PublishedTable;
+
+/** A generated list the template sets after the contents: which sequence, under which title. */
+export interface PublishedGeneratedList {
+  readonly sequence: string;
+  readonly title: string;
+}
 
 /**
  * A run of `publishing/1` and `publishing/2`, before a run carried its marks: its text and nothing
@@ -290,7 +328,12 @@ export interface PublishedDocument {
     readonly noticeSentence: string;
   };
   readonly format: PublishedPdfFormat;
-  readonly front: { readonly cover: boolean; readonly contents: { readonly depth: number } | null };
+  readonly front: {
+    readonly cover: boolean;
+    readonly contents: { readonly depth: number } | null;
+    /** The lists the layout declares that have an entry, in its order; an empty one is not set. */
+    readonly lists: readonly PublishedGeneratedList[];
+  };
   readonly appendices: { readonly newPage: boolean };
   readonly nodes: readonly PublishedNode[];
 }
