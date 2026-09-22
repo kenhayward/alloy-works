@@ -160,7 +160,7 @@ describe('pasting', () => {
       content: [
         {
           type: 'table',
-          caption: 'Visits',
+          caption: [{ type: 'text', value: 'Visits', marks: [] }],
           headerRows: 0,
           headerColumns: 0,
           rows: [

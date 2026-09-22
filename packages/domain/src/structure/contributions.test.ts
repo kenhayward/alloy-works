@@ -19,7 +19,7 @@ const figure = (id: string) => ({
   id,
   asset: 'asset',
   imageStyle: 'wide',
-  caption: 'A caption',
+  caption: [{ type: 'text', value: 'A caption', marks: [] }],
   alternative: { kind: 'decorative' },
 });
 
@@ -40,7 +40,7 @@ describe('what a component contributes to the sequences', () => {
         {
           type: 'table',
           id: 't1',
-          caption: 'Parts',
+          caption: [{ type: 'text', value: 'Parts', marks: [] }],
           headerRows: 1,
           headerColumns: 0,
           note: [{ type: 'text', value: 'Sizes vary.' }, note('n3')],
@@ -48,11 +48,14 @@ describe('what a component contributes to the sequences', () => {
             {
               cells: [
                 { content: [{ type: 'paragraph', id: 'c1', content: [note('n2')] }] },
-                { content: [{ type: 'equation', id: 'e1', mathml: MATHML, numbered: true }] },
+                { content: [{ type: 'paragraph', id: 'c2', content: [] }] },
               ],
             },
           ],
         },
+        // A cell holds paragraphs and lists alone (tables 1, decision T-D), so the equation that stood
+        // in one stands after the table.
+        { type: 'equation', id: 'e1', mathml: MATHML, numbered: true },
         { type: 'list', id: 'l1', kind: 'ordered', items: [{ content: [figure('f2')] }] },
         {
           type: 'blockquote',
@@ -69,8 +72,8 @@ describe('what a component contributes to the sequences', () => {
       { block: 'f1', sequence: 'figure', numbered: true, caption: 'A caption' },
       { block: 't1', sequence: 'table', numbered: true, caption: 'Parts' },
       { block: 'n2', sequence: 'footnote', numbered: true },
-      { block: 'e1', sequence: 'equation', numbered: true },
       { block: 'n3', sequence: 'footnote', numbered: true },
+      { block: 'e1', sequence: 'equation', numbered: true },
       { block: 'f2', sequence: 'figure', numbered: true, caption: 'A caption' },
       { block: 'e2', sequence: 'equation', numbered: false },
       { block: 'n4', sequence: 'footnote', numbered: true },

@@ -133,7 +133,7 @@ describe('canonical serialisation', () => {
           id: 'b2',
           asset: 'asset-1',
           imageStyle: 'column-width',
-          caption: 'Dose',
+          caption: [{ type: 'text', value: 'Dose', marks: [] }],
           alternative: { kind: 'decorative' },
         },
       ],
@@ -160,7 +160,7 @@ describe('canonical serialisation', () => {
         },
         {
           alternative: { kind: 'decorative' },
-          caption: 'Dose',
+          caption: [{ type: 'text', value: 'Dose', marks: [] }],
           imageStyle: 'column-width',
           asset: 'asset-1',
           id: 'b2',

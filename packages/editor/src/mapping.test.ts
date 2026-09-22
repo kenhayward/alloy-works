@@ -44,7 +44,8 @@ const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr'
 const table = (id: string, cell: string): BlockNode => ({
   type: 'table',
   id,
-  caption: 'Readings',
+  style: 'table',
+  caption: [{ type: 'text', value: 'Readings', marks: [] }],
   headerRows: 1,
   headerColumns: 0,
   rows: [{ cells: [{ content: [paragraph(cell, 'Ambient')], colspan: 1, rowspan: 1 }] }],

@@ -521,21 +521,87 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
       return { ...block, text };
     }
     case 'table': {
+      checkGrid(block);
+      const caption = checkInlineContent(block.caption, 'component', claimed);
       const note = block.note && checkInlineContent(block.note, 'component', claimed);
       return {
         ...block,
+        caption,
         ...(note === undefined ? {} : { note }),
         rows: block.rows.map((row) => ({
           ...row,
-          cells: row.cells.map((cell) => ({
-            ...cell,
-            content: checkBlocks(cell.content, claimed),
-          })),
+          cells: row.cells.map((cell) => {
+            refuseInACell(block.id, cell.content);
+            return { ...cell, content: checkBlocks(cell.content, claimed) };
+          }),
         })),
       };
     }
+    case 'figure':
+      return { ...block, caption: checkInlineContent(block.caption, 'component', claimed) };
     default:
       return block;
+  }
+}
+
+/**
+ * **A table is a grid** (tables 1, decision T-C). Every row covers the same number of columns once
+ * spans are counted; no two cells cover one place; no span reaches past the last row; the header
+ * rows and columns and every key column, each named once, stand inside the grid. The shape cannot say
+ * any of it, because each is about the table as a whole, and each is a narrowing of a shape nothing
+ * has stored - the only time a narrowing is free.
+ */
+function checkGrid(table: Extract<BlockNode, { type: 'table' }>): void {
+  const covered: boolean[][] = table.rows.map(() => []);
+  table.rows.forEach((row, rowIndex) => {
+    let column = 0;
+    for (const cell of row.cells) {
+      while (covered[rowIndex]![column]) column += 1;
+      if (rowIndex + cell.rowspan > table.rows.length) {
+        throw new Error(`Table ${table.id} has a cell spanning past its last row`);
+      }
+      for (let down = 0; down < cell.rowspan; down += 1) {
+        for (let across = 0; across < cell.colspan; across += 1) {
+          const place = covered[rowIndex + down]!;
+          if (place[column + across]) {
+            throw new Error(`Table ${table.id} has two cells covering one place`);
+          }
+          place[column + across] = true;
+        }
+      }
+      column += cell.colspan;
+    }
+  });
+  const width = covered[0]!.length;
+  if (width === 0) throw new Error(`Table ${table.id} has no cells`);
+  for (const row of covered) {
+    if (row.length !== width || !Array.from({ length: width }, (_, at) => row[at]).every(Boolean)) {
+      throw new Error(`Table ${table.id} has rows covering different numbers of columns`);
+    }
+  }
+  if (table.headerRows > table.rows.length || table.headerColumns > width) {
+    throw new Error(`Table ${table.id} declares more header rows or columns than it has`);
+  }
+  const keys = table.keyColumns ?? [];
+  if (keys.some((key) => key >= width) || new Set(keys).size !== keys.length) {
+    throw new Error(`Table ${table.id} names a key column outside it, or one twice`);
+  }
+}
+
+/**
+ * **A cell holds paragraphs and lists, and nothing else** (tables 1, decision T-D), at any depth: a
+ * list in a cell holds the same. An image in a cell is an inline image (CNT-086) and an equation an
+ * inline one (CNT-046), so neither needs a block of its own, and a table in a table, a quotation,
+ * preformatted text, a figure and a block equation are refused. Widening this later is additive;
+ * narrowing it after something is stored would not be.
+ */
+function refuseInACell(table: string, blocks: readonly BlockNode[]): void {
+  for (const block of blocks) {
+    if (block.type === 'list') {
+      for (const item of block.items) refuseInACell(table, item.content);
+    } else if (block.type !== 'paragraph') {
+      throw new Error(`Table ${table} holds a ${block.type} in a cell`);
+    }
   }
 }
 

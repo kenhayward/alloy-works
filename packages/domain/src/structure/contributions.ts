@@ -28,6 +28,15 @@ export function inlineContributions(inlines: readonly InlineNode[]): Contributio
   );
 }
 
+/**
+ * A caption's words, for a generated list: its text runs joined. A caption is inline content, and what
+ * a list sets beside a number is the text a reader sees there; the marks and anything that is not text
+ * are the published caption's, which tables 2 carries.
+ */
+export function captionText(caption: readonly InlineNode[]): string {
+  return caption.map((inline) => (inline.type === 'text' ? inline.value : '')).join('');
+}
+
 function blockContributions(block: BlockNode): Contribution[] {
   switch (block.type) {
     case 'paragraph':
@@ -43,14 +52,24 @@ function blockContributions(block: BlockNode): Contribution[] {
       // The table takes its number before anything inside it, and its note - rendered below the body -
       // after its cells.
       return [
-        { block: block.id, sequence: 'table', numbered: true, caption: block.caption },
+        { block: block.id, sequence: 'table', numbered: true, caption: captionText(block.caption) },
+        // A footnote in the caption stands above the body, so it takes its number before the cells'.
+        ...inlineContributions(block.caption),
         ...block.rows.flatMap((row) =>
           row.cells.flatMap((cell) => cell.content.flatMap(blockContributions)),
         ),
         ...inlineContributions(block.note ?? []),
       ];
     case 'figure':
-      return [{ block: block.id, sequence: 'figure', numbered: true, caption: block.caption }];
+      return [
+        {
+          block: block.id,
+          sequence: 'figure',
+          numbered: true,
+          caption: captionText(block.caption),
+        },
+        ...inlineContributions(block.caption),
+      ];
     case 'equation':
       return [{ block: block.id, sequence: 'equation', numbered: block.numbered }];
     case 'preformatted':

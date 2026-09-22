@@ -35,7 +35,7 @@ const figured = (title: string): ContentDocument => {
     id,
     asset: 'asset',
     imageStyle: 'wide',
-    caption: 'A caption',
+    caption: [{ type: 'text' as const, value: 'A caption', marks: [] }],
     alternative: { kind: 'decorative' as const },
   });
   return {
@@ -344,7 +344,7 @@ describe('what a document numbers against, read from the store', () => {
         id: 'f4',
         asset: 'asset',
         imageStyle: 'wide' as const,
-        caption: 'A caption',
+        caption: [{ type: 'text' as const, value: 'A caption', marks: [] }],
         alternative: { kind: 'decorative' as const },
       };
       const revised = await recordVersion(trx, {

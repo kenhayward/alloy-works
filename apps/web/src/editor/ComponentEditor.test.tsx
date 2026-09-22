@@ -713,7 +713,7 @@ describe('the component editor', () => {
     withTable.content.push({
       type: 'table',
       id: 't1',
-      caption: 'Readings',
+      caption: [{ type: 'text', value: 'Readings', marks: [] }],
       headerRows: 1,
       headerColumns: 0,
       rows: [

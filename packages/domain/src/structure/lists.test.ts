@@ -42,7 +42,7 @@ const figure = (block: string, caption: string) => ({
   id: block,
   asset: 'asset',
   imageStyle: 'wide',
-  caption,
+  caption: caption === '' ? [] : [{ type: 'text', value: caption, marks: [] }],
   alternative: { kind: 'decorative' },
 });
 
@@ -141,7 +141,7 @@ describe('a list of figures, of tables or of equations', () => {
     {
       type: 'table',
       id: 't1',
-      caption: 'Parts',
+      caption: [{ type: 'text', value: 'Parts', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
       rows: [{ cells: [{ content: [{ type: 'paragraph', id: 'c1', content: [] }] }] }],
@@ -159,7 +159,7 @@ describe('a list of figures, of tables or of equations', () => {
     {
       type: 'table',
       id: 't1',
-      caption: 'Parts',
+      caption: [{ type: 'text', value: 'Parts', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
       rows: [{ cells: [{ content: [{ type: 'paragraph', id: 'c1', content: [] }] }] }],

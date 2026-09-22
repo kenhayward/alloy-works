@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../admission/mathml.js';
 
+import type { BlockNode } from './blocks.js';
 import { canonicalise } from './canonical.js';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -135,7 +136,7 @@ describe('the content document', () => {
     const tabling = (content: unknown[]) => ({
       type: 'table',
       id: 't1',
-      caption: 'Doses',
+      caption: [{ type: 'text', value: 'Doses', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
       rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
@@ -223,7 +224,7 @@ describe('the content document', () => {
     const table = {
       type: 'table',
       id: 'b4',
-      caption: 'Revenue',
+      caption: [{ type: 'text', value: 'Revenue', marks: [] }],
       headerRows: 1,
       headerColumns: 1,
       keyColumns: [0],
@@ -238,7 +239,7 @@ describe('the content document', () => {
       id: 'b6',
       asset: 'asset-1',
       imageStyle: 'column-width',
-      caption: 'Figure',
+      caption: [{ type: 'text', value: 'Figure', marks: [] }],
     };
     const figure = { ...withoutAlternative, alternative: { kind: 'inherited' } };
     expect(parseContentDocument(doc([figure])).content[0]).toMatchObject({ asset: 'asset-1' });
@@ -282,7 +283,7 @@ describe('the content document', () => {
     const table = {
       type: 'table',
       id: 'b10',
-      caption: 'x',
+      caption: [{ type: 'text', value: 'x', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
       rows: [],
@@ -982,10 +983,14 @@ describe('adjacent runs, which the canonical form merges (issue #154)', () => {
         {
           type: 'table',
           id: 'b3',
-          caption: 'A table',
+          caption: [{ type: 'text', value: 'A table', marks: [] }],
           headerRows: 0,
           headerColumns: 0,
-          rows: [],
+          rows: [
+            {
+              cells: [{ content: [{ type: 'paragraph', id: 'b3c', style: 'body', content: [] }] }],
+            },
+          ],
           note: [emphasised('Measured ', 'm2'), emphasised('at sea level.', 'm2')],
         },
         {
@@ -1048,7 +1053,7 @@ describe('the parse of what the parse returned, which must be what it returned',
     const tabling = (content: unknown[]) => ({
       type: 'table',
       id: 't1',
-      caption: 'Doses',
+      caption: [{ type: 'text', value: 'Doses', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
       rows: [{ cells: [{ content, colspan: 1, rowspan: 1 }] }],
@@ -1313,10 +1318,12 @@ describe('a mark identifier, which names one annotation and not two', () => {
     const table = (mark: unknown) => ({
       type: 'table',
       id: 'b3',
-      caption: 'A table',
+      caption: [{ type: 'text', value: 'A table', marks: [] }],
       headerRows: 0,
       headerColumns: 0,
-      rows: [],
+      rows: [
+        { cells: [{ content: [{ type: 'paragraph', id: 'b3c', style: 'body', content: [] }] }] },
+      ],
       note: marked(mark),
     });
     const quote = (mark: unknown) => ({
@@ -1650,5 +1657,126 @@ describe('a quotation and a preformatted block, held before anything stores one 
       ]);
     expect(() => parseContentDocument(across('x'))).toThrow(/two separate ranges/);
     expect(parseContentDocument(across('')).content).toHaveLength(3);
+  });
+});
+
+describe('a table, as tables 1 settled it before the first was stored', () => {
+  const cell = (id: string, extra: Record<string, unknown> = {}) => ({
+    content: [{ type: 'paragraph', id, style: 'body', content: [] }],
+    ...extra,
+  });
+  const tableOf = (rows: unknown[], extra: Record<string, unknown> = {}) => ({
+    schemaVersion: 1,
+    title: 'Readings',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'table',
+        id: 't1',
+        caption: [{ type: 'text', value: 'Readings', marks: [] }],
+        headerRows: 0,
+        headerColumns: 0,
+        rows,
+        ...extra,
+      },
+    ],
+  });
+  const grid = [{ cells: [cell('a'), cell('b')] }, { cells: [cell('c'), cell('d')] }];
+
+  it('CNT-016 holds a caption as inline content, marks and all, and a style that defaults', () => {
+    const parsed = parseContentDocument(
+      tableOf(grid, {
+        caption: [
+          { type: 'text', value: 'Readings ', marks: [] },
+          { type: 'text', value: 'at noon', marks: [{ type: 'emphasis', id: 'm1' }] },
+        ],
+      }),
+    );
+    const table = parsed.content[0] as Extract<BlockNode, { type: 'table' }>;
+    expect(table.style).toBe('table');
+    expect(table.caption).toEqual([
+      { type: 'text', value: 'Readings ', marks: [] },
+      { type: 'text', value: 'at noon', marks: [{ type: 'emphasis', id: 'm1' }] },
+    ]);
+  });
+
+  it('CNT-016 takes merged cells that tile the grid, and header rows and columns inside it', () => {
+    expect(() =>
+      parseContentDocument(
+        tableOf(
+          [
+            { cells: [cell('a', { rowspan: 2 }), cell('b', { colspan: 2 })] },
+            { cells: [cell('c'), cell('d')] },
+          ],
+          { headerRows: 1, headerColumns: 1, keyColumns: [0] },
+        ),
+      ),
+    ).not.toThrow();
+  });
+
+  it('refuses rows that cover different numbers of columns', () => {
+    expect(() =>
+      parseContentDocument(tableOf([{ cells: [cell('a'), cell('b')] }, { cells: [cell('c')] }])),
+    ).toThrow('rows covering different numbers of columns');
+  });
+
+  it('refuses two cells covering one place, and a span past the last row', () => {
+    expect(() =>
+      parseContentDocument(
+        tableOf([
+          { cells: [cell('a', { rowspan: 2 }), cell('b')] },
+          { cells: [cell('c'), cell('d'), cell('e')] },
+        ]),
+      ),
+    ).toThrow('rows covering different numbers of columns');
+    expect(() => parseContentDocument(tableOf([{ cells: [cell('a', { rowspan: 2 })] }]))).toThrow(
+      'spanning past its last row',
+    );
+  });
+
+  it('refuses header rows, header columns or key columns outside the grid', () => {
+    expect(() => parseContentDocument(tableOf(grid, { headerRows: 3 }))).toThrow(
+      'more header rows or columns',
+    );
+    expect(() => parseContentDocument(tableOf(grid, { headerColumns: 3 }))).toThrow(
+      'more header rows or columns',
+    );
+    expect(() => parseContentDocument(tableOf(grid, { keyColumns: [2] }))).toThrow('key column');
+    expect(() => parseContentDocument(tableOf(grid, { keyColumns: [0, 0] }))).toThrow('key column');
+  });
+
+  it('refuses a table with no rows, and a cell with no block', () => {
+    expect(() => parseContentDocument(tableOf([]))).toThrow();
+    expect(() => parseContentDocument(tableOf([{ cells: [{ content: [] }] }]))).toThrow();
+  });
+
+  it('holds paragraphs and lists in a cell, at any depth, and nothing else', () => {
+    const list = {
+      type: 'list',
+      id: 'l1',
+      kind: 'unordered',
+      items: [{ content: [{ type: 'paragraph', id: 'l1p', style: 'body', content: [] }] }],
+    };
+    expect(() => parseContentDocument(tableOf([{ cells: [{ content: [list] }] }]))).not.toThrow();
+    const quotation = {
+      type: 'blockquote',
+      id: 'q1',
+      content: [{ type: 'paragraph', id: 'q1p', style: 'body', content: [] }],
+    };
+    expect(() => parseContentDocument(tableOf([{ cells: [{ content: [quotation] }] }]))).toThrow(
+      'holds a blockquote in a cell',
+    );
+    const inList = {
+      ...list,
+      items: [{ content: [{ type: 'preformatted', id: 'x1', text: 'a' }] }],
+    };
+    expect(() => parseContentDocument(tableOf([{ cells: [{ content: [inList] }] }]))).toThrow(
+      'holds a preformatted in a cell',
+    );
+    const inner = tableOf(grid).content[0];
+    expect(() => parseContentDocument(tableOf([{ cells: [{ content: [inner] }] }]))).toThrow(
+      'holds a table in a cell',
+    );
   });
 });

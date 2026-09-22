@@ -51,7 +51,7 @@ const figure = (id: string, caption: string) => ({
   id,
   asset: 'asset',
   imageStyle: 'wide',
-  caption,
+  caption: [{ type: 'text', value: caption, marks: [] }],
   alternative: { kind: 'decorative' },
 });
 

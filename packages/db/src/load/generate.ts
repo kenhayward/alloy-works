@@ -102,7 +102,8 @@ export function generateContent(bytes: number, random: () => number): ContentDoc
     blocks.push({
       type: 'table',
       id: id(),
-      caption: sentence(5, random),
+      style: 'table',
+      caption: [{ type: 'text' as const, value: sentence(5, random), marks: [] }],
       headerRows: 1,
       headerColumns: 0,
       rows,
