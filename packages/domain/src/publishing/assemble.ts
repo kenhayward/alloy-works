@@ -50,7 +50,6 @@ import {
   type PublishedNode1,
   type PublishedPattern,
   type PublishedPdfFormat,
-  type PublishedRun,
 } from './published.js';
 
 /**

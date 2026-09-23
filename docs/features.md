@@ -231,8 +231,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and one that cannot be shown says _An image you may not see_ in its place. Selected, it is given the
   same panel as a figure, titled **Image**, with **Replace image** and **Delete image**. It takes no
   formatting of its own, and a link or a mark over the words either side of it is still one. One copied within the
-  product pastes as one. **A document holding an image in a line of text cannot be published yet**,
-  and one cannot be placed in a caption, a term, an attribution or preformatted text.
+  product pastes as one, and a published document prints it (see Publishing). One cannot be placed
+  in a caption, a term, an attribution or preformatted text.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -383,9 +383,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A component's own base language, in the header, is not warned about: one of these tags typed there
   is taken without comment and refused only when the document is published (issue #156).
 
-  **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and figures, not
-  publishing.** No footnotes, equations or images in a line of text - a document holding any of them
-  is refused. A table too wide
+  **An image in a line of text prints** one line high, in the paragraph or table cell it stands in,
+  and a screen reader is told what it shows in the language that description is written in; a
+  decorative one is passed over. One wider than the room it stands in - the line, or its cell - is
+  refused, naming where it is, as are the same things a figure is refused for.
+
+  **This is a PDF of paragraphs, lists, quotations, preformatted text, tables, figures and images in
+  a line of text, not publishing.** No footnotes or equations - a document holding either is refused. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested

@@ -44,6 +44,18 @@ written in - or, decorative, an artifact - inside the paragraph or the table cel
 - **R7. The web's sentence** for `image_too_wide`: "An image in a line of text is wider than the room it
   stands in. Use a narrower image, or make it a figure."
 
+## What the build changed
+
+- **The language of an inline image's description is not always on its `Figure`.** Measured in the
+  regression case: the engine hoists a `/Lang` to an ancestor where that is shorter - a table row whose
+  first cell holds a German description declares German once - so the flag's `Figure` declares none
+  and is read in German all the same. `readPdf` gains each `Figure`'s `spoken` language, read up the
+  tree, and its `parent`, and the test asserts on those.
+- **A block is named once** however many of its images the publisher may not read, so an author is not
+  told the same sentence twice.
+- **The text either side of an image** is compared without its spaces: pdf.js drops the space at the
+  edge of a run an image breaks, which the page itself still sets.
+
 ## Tasks
 
 1. **`packages/domain`, `assemble`**: `publishing/8` with an image run (R2 to R4), the room in a table's
