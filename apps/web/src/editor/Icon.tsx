@@ -41,6 +41,9 @@ const PATHS: Record<string, readonly string[]> = {
     'M9.5 2.5h4v4h-4z',
     'M3.5 7.8c0-2 1.4-3.3 3.8-3.3M5.9 3.1l1.4 1.4-1.4 1.4',
   ],
+  // A root sign over an x: an equation (equations 1). Provisional: the task that builds its dialog
+  // settles the face of its button.
+  Equation: ['M1.8 8.6h1.8l2.2 4.4L9 3h5.2', 'M9.8 6.6l3 3.6M12.8 6.6l-3 3.6'],
   'Save version': ['M3 2.6h7.2L13.4 5.8V13.4H3z', 'M5.6 2.6v3.6h4.8'],
   'Done editing': ['M3.2 8.4 6.3 11.5 12.8 5'],
   Close: ['M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8'],

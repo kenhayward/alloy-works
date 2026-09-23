@@ -2,18 +2,26 @@ import type { BlockNode, ContentDocument, InlineNode, Mark } from '@alloy-works/
 import { undo } from 'prosemirror-history';
 import { Fragment, type Node } from 'prosemirror-model';
 import {
+  EditorState,
   NodeSelection,
   TextSelection,
   type Command,
-  type EditorState,
   type Transaction,
 } from 'prosemirror-state';
 import { describe, expect, it } from 'vitest';
 
+import { blockCommand } from './blocks.js';
+import { changeEquation, equationAt, equationPlaceable, insertEquation } from './equations.js';
 import { fromEditor, toEditor } from './mapping.js';
-import { markThroughout, somewhereToPutMark, toggleMarkCommand } from './marks.js';
+import {
+  commandKeymap,
+  EDITOR_COMMANDS,
+  markThroughout,
+  somewhereToPutMark,
+  toggleMarkCommand,
+} from './marks.js';
 import { editorSchema } from './schema.js';
-import { createEditorState } from './state.js';
+import { createEditorState, footnotePluginsOf } from './state.js';
 
 const { nodes } = editorSchema;
 
@@ -343,5 +351,388 @@ describe('a block equation named as a block is (equations 1)', () => {
     undo(gone, (tr) => (back = gone.apply(tr)));
     expect(startOf(back.doc, 'e1')).toBe(at);
     expect(stored(back)[1]).toEqual(blockEquation('e1'));
+  });
+});
+
+/** A caret this many characters into the inline content of the node starting at `start`. */
+const caretIn = (state: EditorState, start: number, offset = 0) =>
+  select(state, start + 1 + offset);
+
+/** The footnote's own editing state, as its nested editor holds it: its node is the document. */
+function footnoteState(outer: EditorState, id: string, offset = 0): EditorState {
+  const node = outer.doc.nodeAt(startOf(outer.doc, id))!;
+  const state = EditorState.create({ doc: node, plugins: footnotePluginsOf(outer)(() => 'en-GB') });
+  return state.apply(state.tr.setSelection(TextSelection.create(state.doc, 1 + offset)));
+}
+
+const INLINE = { display: 'inline', mathml: SQUARED, latex: 'x^2' } as const;
+const BLOCK = { display: 'block', mathml: SQUARED, latex: 'x^2', numbered: true } as const;
+
+/** Every stored block's type and identifier, at the top level. */
+const outline = (state: EditorState) =>
+  stored(state).map((block) => [block.type, block.id] as const);
+
+/**
+ * One of every place a caret can stand: each inline home, and the blocks around them, so a command's
+ * answer can be read for all of them at once.
+ */
+const everywhere = () =>
+  stateOf(
+    documentOf(
+      paragraph('p1', text('Where')),
+      {
+        type: 'list',
+        id: 'l1',
+        kind: 'definition',
+        items: [{ term: [text('Load')], content: [paragraph('i1', text('Weight'))] }],
+      },
+      {
+        type: 'list',
+        id: 'l2',
+        kind: 'unordered',
+        items: [{ content: [paragraph('i2', text('First'))] }],
+      },
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('b1', text('Said'))],
+        attribution: [text('Ada')],
+      },
+      {
+        ...(table(
+          [text('Readings')],
+          [
+            paragraph('c1', text('North')),
+            {
+              type: 'list',
+              id: 'cl1',
+              kind: 'unordered',
+              items: [{ content: [paragraph('c2', text('South'))] }],
+            },
+          ],
+        ) as object),
+        note: [text('Estimated')],
+      } as BlockNode,
+      {
+        type: 'figure',
+        id: 'g1',
+        asset: '00000000-0000-4000-8000-00000000a551',
+        imageStyle: 'figure',
+        caption: [text('Visits')],
+        alternative: { kind: 'decorative' },
+      },
+      { type: 'preformatted', id: 'pre1', text: 'code' },
+      paragraph('p9', text('End')),
+    ),
+  );
+
+/** Where each kind of home starts in `everywhere()`, by name. */
+function homesOf(state: EditorState): Record<string, number> {
+  const tableAt = startOf(state.doc, 't1');
+  const table = state.doc.nodeAt(tableAt)!;
+  const quotation = startOf(state.doc, 'q1');
+  return {
+    paragraph: startOf(state.doc, 'p1'),
+    term: startOf(state.doc, 'l1') + 2,
+    'definition body': startOf(state.doc, 'i1'),
+    'list item': startOf(state.doc, 'i2'),
+    quotation: startOf(state.doc, 'b1'),
+    attribution:
+      quotation +
+      state.doc.nodeAt(quotation)!.nodeSize -
+      1 -
+      state.doc.nodeAt(quotation)!.lastChild!.nodeSize,
+    caption: tableAt + 1,
+    cell: startOf(state.doc, 'c1'),
+    'list in a cell': startOf(state.doc, 'c2'),
+    note: tableAt + table.nodeSize - 1 - table.lastChild!.nodeSize,
+    'figure caption': startOf(state.doc, 'g1') + 1,
+    preformatted: startOf(state.doc, 'pre1'),
+  };
+}
+
+describe('placing an equation (equations 1)', () => {
+  it('places an inline one at the caret, selected whole, with its MathML and its LaTeX', () => {
+    const state = caretIn(stateOf(documentOf(paragraph('p1', text('Where it grows.')))), 0, 5);
+    const { handled, next } = run(state, insertEquation(INLINE));
+    expect(handled).toBe(true);
+    expect(stored(next)).toEqual([paragraph('p1', text('Where'), squared, text(' it grows.'))]);
+    expect(equationAt(next)).toEqual({
+      display: 'inline',
+      pos: 6,
+      mathml: SQUARED,
+      latex: 'x^2',
+    });
+  });
+
+  it('places it at the end of a selection, leaving the selected words where they are', () => {
+    const state = select(stateOf(documentOf(paragraph('p1', text('Where it grows.')))), 1, 6);
+    const { next } = run(state, insertEquation({ ...INLINE, latex: null }));
+    expect(stored(next)).toEqual([
+      paragraph('p1', text('Where'), { type: 'equation', mathml: SQUARED }, text(' it grows.')),
+    ]);
+  });
+
+  it('places an inline one in every inline home, and never in preformatted text', () => {
+    const state = everywhere();
+    for (const [name, start] of Object.entries(homesOf(state))) {
+      expect(state.doc.nodeAt(start)!.inlineContent, name).toBe(true);
+      const at = caretIn(state, start, 1);
+      const expected = name !== 'preformatted';
+      expect(equationPlaceable(at, 'inline'), name).toBe(expected);
+      const { handled, next } = run(at, insertEquation(INLINE));
+      expect(handled, name).toBe(expected);
+      if (!expected) continue;
+      expect(equationAt(next), name).toMatchObject({ display: 'inline', mathml: SQUARED });
+      expect(() => fromEditor(next.doc), name).not.toThrow();
+    }
+  });
+
+  it('places a block one after the paragraph the caret is in, selected whole and named', () => {
+    const state = caretIn(
+      stateOf(documentOf(paragraph('p1', text('Where')), paragraph('p2', text('Then')))),
+      0,
+      2,
+    );
+    const { handled, next } = run(state, insertEquation(BLOCK));
+    expect(handled).toBe(true);
+    const [, equation] = stored(next);
+    expect(outline(next)).toEqual([
+      ['paragraph', 'p1'],
+      ['equation', equation!.id],
+      ['paragraph', 'p2'],
+    ]);
+    expect(equation).toEqual({ ...blockEquation(equation!.id), numbered: true });
+    expect(equationAt(next)).toEqual({
+      display: 'block',
+      pos: startOf(next.doc, equation!.id),
+      id: equation!.id,
+      mathml: SQUARED,
+      latex: 'x^2',
+      numbered: true,
+    });
+  });
+
+  it('places a block one in place of an empty paragraph, as a figure is placed', () => {
+    const opened = stateOf(
+      documentOf(paragraph('p1', text('Where')), paragraph('p2'), paragraph('p3', text('Then'))),
+    );
+    const state = caretIn(opened, startOf(opened.doc, 'p2'));
+    const { next } = run(state, insertEquation({ ...BLOCK, numbered: false, latex: null }));
+    const [, equation] = stored(next);
+    expect(outline(next)).toEqual([
+      ['paragraph', 'p1'],
+      ['equation', equation!.id],
+      ['paragraph', 'p3'],
+    ]);
+    expect(equation).toEqual({
+      type: 'equation',
+      id: equation!.id,
+      mathml: SQUARED,
+      numbered: false,
+    });
+  });
+
+  it('leaves a paragraph after a block one that would otherwise end what holds it', () => {
+    // An equation is an atom with nothing inside to type into, so where nothing followed it there
+    // would be nowhere for a caret to stand after it.
+    const last = caretIn(stateOf(documentOf(paragraph('p1', text('Where')))), 0, 5);
+    const after = run(last, insertEquation(BLOCK)).next;
+    expect(stored(after).map((block) => block.type)).toEqual([
+      'paragraph',
+      'equation',
+      'paragraph',
+    ]);
+    expect(stored(after)[2]).toMatchObject({ type: 'paragraph', content: [] });
+    expect(equationAt(after)).toMatchObject({ display: 'block' });
+    // In place of an empty last paragraph, the same: the empty line the author stood on stays below.
+    const empty = caretIn(stateOf(documentOf(paragraph('p1', text('Where')), paragraph('p2'))), 7);
+    const placed = run(empty, insertEquation(BLOCK)).next;
+    expect(stored(placed).map((block) => block.type)).toEqual([
+      'paragraph',
+      'equation',
+      'paragraph',
+    ]);
+    expect(() => fromEditor(placed.doc)).not.toThrow();
+  });
+
+  it('places a block one wherever a block may stand, and nowhere in a table or out of a paragraph', () => {
+    const state = everywhere();
+    const may = new Set(['paragraph', 'definition body', 'list item', 'quotation']);
+    for (const [name, start] of Object.entries(homesOf(state))) {
+      const at = caretIn(state, start, 1);
+      expect(equationPlaceable(at, 'block'), name).toBe(may.has(name));
+      const { handled, next } = run(at, insertEquation(BLOCK));
+      expect(handled, name).toBe(may.has(name));
+      if (!may.has(name)) {
+        expect(next.doc.eq(at.doc), name).toBe(true);
+        continue;
+      }
+      const placed = equationAt(next);
+      expect(placed, name).toMatchObject({ display: 'block', numbered: true });
+      // Straight after the paragraph the caret was in, which had words in it, in the same parent.
+      expect(next.doc.resolve(placed!.pos).nodeBefore!.attrs.id, name).toBe(
+        state.doc.nodeAt(start)!.attrs.id,
+      );
+      expect(() => fromEditor(next.doc), name).not.toThrow();
+    }
+    // Nor over a selection reaching across two blocks.
+    const across = select(state, startOf(state.doc, 'p1') + 2, startOf(state.doc, 'p9') + 2);
+    expect(equationPlaceable(across, 'block')).toBe(false);
+  });
+
+  it("places an inline one in a footnote's own text, and never a block one there", () => {
+    const outer = stateOf(
+      documentOf(
+        paragraph('p1', text('Visited'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', text('Once'))],
+        }),
+      ),
+    );
+    const inside = footnoteState(outer, 'f1', 4);
+    const { handled, next } = run(inside, insertEquation(INLINE));
+    expect(handled).toBe(true);
+    expect(next.doc.firstChild!.lastChild!.type.name).toBe('equation');
+    expect(equationPlaceable(inside, 'block')).toBe(false);
+    expect(insertEquation(BLOCK)(inside)).toBe(false);
+  });
+
+  it('refuses MathML or LaTeX the stored model would refuse, and reads empty LaTeX as none', () => {
+    const state = caretIn(stateOf(documentOf(paragraph('p1', text('Where')))), 0, 5);
+    // Not the one form the reader writes: a save would refuse it, so nothing places it.
+    expect(insertEquation({ ...INLINE, mathml: '<math><mi>x</mi></math>' })(state)).toBe(false);
+    expect(insertEquation({ ...BLOCK, mathml: '' })(state)).toBe(false);
+    const { next } = run(state, insertEquation({ ...INLINE, latex: '' }));
+    expect(equationAt(next)).toMatchObject({ latex: null });
+  });
+});
+
+describe('the equation selected, and changing it (equations 1)', () => {
+  it('answers the equation selected whole, inline or block, and nothing for anything else', () => {
+    const state = stateOf(
+      documentOf(
+        paragraph('p1', text('Where '), { type: 'equation', mathml: SQUARED }),
+        blockEquation('e1', false),
+      ),
+    );
+    expect(equationAt(state)).toBeNull();
+    const inline = equationIn(state.doc);
+    expect(equationAt(selectAt(state, inline))).toEqual({
+      display: 'inline',
+      pos: inline,
+      mathml: SQUARED,
+      latex: null,
+    });
+    expect(equationAt(selectAt(state, startOf(state.doc, 'e1')))).toEqual({
+      display: 'block',
+      pos: startOf(state.doc, 'e1'),
+      id: 'e1',
+      mathml: SQUARED,
+      latex: 'x^2',
+      numbered: false,
+    });
+    expect(equationAt(selectAt(state, startOf(state.doc, 'p1')))).toBeNull();
+  });
+
+  it('changes one in place, keeping a block its identifier, and keeps it selected whole', () => {
+    const state = stateOf(
+      documentOf(paragraph('p1', text('Where '), squared, text(' grows')), blockEquation('e1')),
+    );
+    const inline = equationIn(state.doc);
+    const changedInline = run(
+      selectAt(state, inline),
+      changeEquation(inline, { display: 'inline', mathml: UNSPOKEN, latex: null }),
+    );
+    expect(changedInline.handled).toBe(true);
+    expect(stored(changedInline.next)[0]).toEqual(
+      paragraph('p1', text('Where '), { type: 'equation', mathml: UNSPOKEN }, text(' grows')),
+    );
+    expect(equationAt(changedInline.next)).toMatchObject({ display: 'inline', pos: inline });
+
+    const block = startOf(state.doc, 'e1');
+    const { handled, next } = run(
+      selectAt(state, block),
+      changeEquation(block, { display: 'block', mathml: UNSPOKEN, latex: 'E=m', numbered: false }),
+    );
+    expect(handled).toBe(true);
+    expect(stored(next)[1]).toEqual({
+      type: 'equation',
+      id: 'e1',
+      mathml: UNSPOKEN,
+      latex: 'E=m',
+      numbered: false,
+    });
+    expect(equationAt(next)).toMatchObject({ display: 'block', pos: block, id: 'e1' });
+  });
+
+  it('changes nothing where no equation stands, or where it would change which kind it is', () => {
+    const state = stateOf(
+      documentOf(paragraph('p1', text('Where '), squared), blockEquation('e1')),
+    );
+    expect(changeEquation(1, INLINE)(state)).toBe(false);
+    expect(changeEquation(equationIn(state.doc), BLOCK)(state)).toBe(false);
+    expect(changeEquation(startOf(state.doc, 'e1'), INLINE)(state)).toBe(false);
+    expect(changeEquation(equationIn(state.doc), { ...INLINE, mathml: '<math/>' })(state)).toBe(
+      false,
+    );
+  });
+});
+
+describe('Equation in the registry (equations 1)', () => {
+  it('is a registry command on Ctrl or Cmd, Shift and E, which asks the renderer', () => {
+    const entry = EDITOR_COMMANDS.find((command) => command.label === 'Equation');
+    expect(entry).toEqual({
+      kind: 'block',
+      action: 'equation',
+      label: 'Equation',
+      shortcut: 'Mod-Shift-e',
+      shortcutSaid: 'Ctrl or Cmd, Shift and E',
+      prompts: true,
+    });
+    const state = everywhere();
+    const homes = homesOf(state);
+    const inText = caretIn(state, homes.caption!, 1);
+    const inCode = caretIn(state, homes.preformatted!, 1);
+    // As a block command it answers where an inline one could be placed - a caption holds no block,
+    // and still an equation - and places nothing: its LaTeX is a value only the dialog can ask for.
+    const equation = blockCommand('equation', counter());
+    expect(equation(inText)).toBe(true);
+    expect(equation(inCode)).toBe(false);
+    expect(run(inText, equation).next.doc.eq(inText.doc)).toBe(true);
+    const asked: string[] = [];
+    const listening = commandKeymap(counter(), (name) => {
+      asked.push(name);
+      return true;
+    });
+    expect(listening['Mod-Shift-e']!(inText, () => undefined)).toBe(true);
+    expect(listening['Mod-Shift-e']!(inCode, () => undefined)).toBe(false);
+    expect(asked).toEqual(['equation']);
+    expect(commandKeymap(counter())['Mod-Shift-e']!(inText, () => undefined)).toBe(false);
+  });
+
+  it('is available over an equation selected whole, a block one included, to change it', () => {
+    const state = stateOf(documentOf(paragraph('p1', text('Where'), squared), blockEquation('e1')));
+    const equation = blockCommand('equation', counter());
+    expect(equation(selectAt(state, equationIn(state.doc)))).toBe(true);
+    const block = selectAt(state, startOf(state.doc, 'e1'));
+    expect(equationPlaceable(block, 'inline')).toBe(false);
+    expect(equation(block)).toBe(true);
+  });
+
+  it("is available in a footnote's own text, as a reference is", () => {
+    const outer = stateOf(
+      documentOf(
+        paragraph('p1', text('Visited'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', text('Once'))],
+        }),
+      ),
+    );
+    expect(blockCommand('equation', counter())(footnoteState(outer, 'f1', 2))).toBe(true);
   });
 });

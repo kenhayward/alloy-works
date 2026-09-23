@@ -38,6 +38,14 @@ export {
 export { MISSING_IMAGE } from './figureView.js';
 export { footnoteAt, insertFootnote, openFootnote, type FootnoteAt } from './footnotes.js';
 export {
+  changeEquation,
+  equationAt,
+  equationPlaceable,
+  insertEquation,
+  type EquationAt,
+  type EquationChoice,
+} from './equations.js';
+export {
   changeReference,
   insertReference,
   referenceAt,

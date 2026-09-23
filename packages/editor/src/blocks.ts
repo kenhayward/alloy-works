@@ -5,6 +5,7 @@ import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirr
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
+import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
 import { editorSchema } from './schema.js';
@@ -143,7 +144,8 @@ export type BlockAction =
   | 'preformatted'
   | 'table'
   | 'footnote'
-  | 'reference';
+  | 'reference'
+  | 'equation';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -752,6 +754,11 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // renderer's dialog runs `insertReference` with the answer.
     case 'reference':
       return canPlaceReference;
+    // Reference's kind (equations 1, ruling R6): its LaTeX is a value only the author can give, so as a
+    // command it answers where one could be placed or changed, and the renderer's dialog runs
+    // `insertEquation` or `changeEquation` with the answer.
+    case 'equation':
+      return canPlaceEquation;
   }
 }
 
