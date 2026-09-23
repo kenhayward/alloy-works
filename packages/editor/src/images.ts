@@ -11,6 +11,11 @@ import { kept } from './figures.js';
 import { editorSchema } from './schema.js';
 
 const imageNode = editorSchema.nodes.image!;
+const footnoteNode = editorSchema.nodes.footnote!;
+
+/** An inline node that carries no marks and ends no annotation: an image, and a footnote's mark. */
+const unmarkedInline = (node: { type: unknown }) =>
+  node.type === imageNode || node.type === footnoteNode;
 const paragraphNode = editorSchema.nodes.paragraph!;
 
 /** The image selected whole, as the panel reads it: where it stands, what it shows, how it is described. */
@@ -91,21 +96,22 @@ export function replaceImageAsset(asset: string, alternative: Alternative): Comm
  * and an image rested on the image too - shown on the surface, never stored, since the stored image
  * has no marks (final review of figures 4). Taken off in the transaction that put it there, so an undo
  * has nothing of it to bring back.
+ *
+ * **A footnote carries none either** (footnotes 1, ruling R4), and for it the mark is taken off the
+ * node alone: taken off over the node's range, it would come off the footnote's own text too.
  */
 export const imagesUnmarked = new Plugin({
   appendTransaction(transactions, _before, state) {
     if (!transactions.some((transaction) => transaction.docChanged)) return null;
-    const marked: { from: number; to: number }[] = [];
+    const marked: number[] = [];
     state.doc.descendants((node, pos) => {
-      if (node.type === imageNode && node.marks.length > 0) {
-        marked.push({ from: pos, to: pos + node.nodeSize });
-      }
+      if (unmarkedInline(node) && node.marks.length > 0) marked.push(pos);
       return true;
     });
     if (marked.length === 0) return null;
     const tr = state.tr;
-    for (const { from, to } of marked) {
-      for (const mark of tr.doc.nodeAt(from)!.marks) tr.removeMark(from, to, mark.type);
+    for (const pos of marked) {
+      for (const mark of tr.doc.nodeAt(pos)!.marks) tr.removeNodeMark(pos, mark);
     }
     return tr;
   },
@@ -117,7 +123,8 @@ export const imagesUnmarked = new Plugin({
  * image carries none, so text typed there fell out of the link or the emphasis it stood in, and the
  * link was split and its far half renamed (re-review of figures 4). ProseMirror's own rule decides which
  * carry on: an inclusive mark does, and one that is not - a link - only where the text after has it
- * too. Set as the stored marks, which typing reads first, and never over marks a command stored.
+ * too. Set as the stored marks, which typing reads first, and never over marks a command stored. A
+ * footnote's mark is passed over the same way (footnotes 1, ruling R4).
  */
 export const marksPastImages = new Plugin({
   appendTransaction(transactions, _before, state) {
@@ -128,8 +135,8 @@ export const marksPastImages = new Plugin({
     const parent = $from.parent;
     if (!parent.inlineContent || $from.textOffset !== 0) return null;
     let index = $from.index() - 1;
-    if (index < 0 || parent.child(index).type !== imageNode) return null;
-    while (index >= 0 && parent.child(index).type === imageNode) index -= 1;
+    if (index < 0 || !unmarkedInline(parent.child(index))) return null;
+    while (index >= 0 && unmarkedInline(parent.child(index))) index -= 1;
     if (index < 0) return null;
     const before = parent.child(index);
     const after = parent.maybeChild($from.index());

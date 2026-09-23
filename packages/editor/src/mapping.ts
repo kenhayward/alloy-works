@@ -49,7 +49,8 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
   for (const block of blocks) {
     switch (block.type) {
       case 'paragraph':
-        // The one inline home an image may stand in (figures 4, ruling R2).
+        // The one inline home an image and a footnote may stand in (figures 4, ruling R2; footnotes
+        // 1, ruling R2).
         marksWithNoType(block.content, found, true);
         break;
       case 'list':
@@ -78,9 +79,9 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         if (block.attribution !== undefined) marksWithNoType(block.attribution, found);
         break;
       case 'table':
-        // The caption, every cell and the note, each for what it holds. The note is carried as it is
-        // stored and not edited, so a footnote in it - which the editor has no node for - opens the
-        // component read-only by name, exactly as one in a paragraph does.
+        // The caption, every cell and the note, each for what it holds. A footnote may stand in a
+        // cell's paragraph and nowhere else a table has (FN-B), so one in the caption or the note
+        // opens the component read-only by name.
         marksWithNoType(block.caption, found);
         for (const row of block.rows)
           for (const cell of row.cells) namesWithNoNode(cell.content, found);
@@ -98,16 +99,22 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
 
 /**
  * The inline nodes and the marks of one run sequence that this schema has no counterpart for. An image
- * has one only in a paragraph, so `holdsImages` is true there alone: in a term, an attribution or a
- * caption an image still opens the component read-only by name, rather than being dropped.
+ * and a footnote have one only in a paragraph, so `inParagraph` is true there alone: in a term, an
+ * attribution, a caption or a table's note either still opens the component read-only by name, rather
+ * than being dropped. A footnote's own paragraphs are walked as runs that are in no paragraph, since
+ * neither may stand in one (CNT-129).
  */
 function marksWithNoType(
   content: readonly InlineNode[],
   found: Set<string>,
-  holdsImages = false,
+  inParagraph = false,
 ): void {
   for (const inline of content) {
-    if (inline.type === 'image' && holdsImages) continue;
+    if (inline.type === 'image' && inParagraph) continue;
+    if (inline.type === 'footnote' && inParagraph) {
+      for (const paragraph of footnoteParagraphs(inline)) marksWithNoType(paragraph.content, found);
+      continue;
+    }
     if (inline.type !== 'text') {
       found.add(inline.type);
       continue;
@@ -120,6 +127,17 @@ function marksWithNoType(
       types.add(mark.type);
     }
   }
+}
+
+/**
+ * A stored footnote's paragraphs. The inline schema cannot name a paragraph, so the model types a
+ * footnote's content as unknown; `parseContentDocument` has already parsed it as paragraphs (CNT-129)
+ * by the time anything reaches this mapping.
+ */
+function footnoteParagraphs(
+  footnote: Extract<InlineNode, { type: 'footnote' }>,
+): Extract<BlockNode, { type: 'paragraph' }>[] {
+  return footnote.content as Extract<BlockNode, { type: 'paragraph' }>[];
 }
 
 /**
@@ -142,6 +160,20 @@ function toRun(inline: InlineNode): Node[] {
   if (inline.type === 'image') {
     const { asset, imageStyle, alternative } = inline;
     return [editorSchema.nodes.image!.create({ asset, imageStyle, alternative })];
+  }
+  if (inline.type === 'footnote') {
+    // Its paragraphs are the stored model's, spelt as the one node type a footnote holds (ruling R1).
+    return [
+      editorSchema.nodes.footnote!.create(
+        { id: inline.id, anchor: inline.anchor },
+        footnoteParagraphs(inline).map((paragraph) =>
+          editorSchema.nodes.footnoteParagraph!.create(
+            { id: paragraph.id, style: paragraph.style },
+            paragraph.content.flatMap(toRun),
+          ),
+        ),
+      ),
+    ];
   }
   const text = inline as Extract<InlineNode, { type: 'text' }>;
   if (text.value === '') return [];
@@ -196,9 +228,9 @@ function nodeOf(block: BlockNode): Node {
         editorSchema.node('attribution', null, (block.attribution ?? []).flatMap(toRun)),
       ]);
     case 'table':
-      // Two nodes for one (tables 1, ruling R1): the caption above a `prosemirror-tables` table. Key
-      // columns and the note ride on the figure untouched, and absent is null here, as a list's start
-      // is.
+      // Two nodes for one (tables 1, ruling R1): the caption above a `prosemirror-tables` table, and
+      // a third where the table has a note (footnotes 1, ruling R1). Key columns ride on the figure
+      // untouched, and absent is null here, as a list's start is.
       return editorSchema.node(
         'tableFigure',
         {
@@ -207,7 +239,6 @@ function nodeOf(block: BlockNode): Node {
           headerRows: block.headerRows,
           headerColumns: block.headerColumns,
           keyColumns: block.keyColumns ?? null,
-          note: block.note ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -222,6 +253,9 @@ function nodeOf(block: BlockNode): Node {
             block.headerRows,
             block.headerColumns,
           ),
+          ...(block.note === undefined
+            ? []
+            : [editorSchema.node('tableNote', null, block.note.flatMap(toRun))]),
         ],
       );
     case 'figure':
@@ -318,9 +352,9 @@ function markOf(mark: EditorMark): unknown {
  * spurious version. `parseContentDocument` merges back any two adjacent runs the editor left split
  * carrying one mark set, so what this returns has one stored spelling (issue #154).
  *
- * A child that is not a text node is **refused by name**, as a block with no identifier is, rather
- * than coerced into a run with no text. Today the schema's `paragraph` holds `text*` and nothing
- * else can get in; the day it holds an image or a footnote, this says which node has no run yet
+ * An image and a footnote are runs of their own, a footnote carrying its paragraphs back as the stored
+ * model's. Any other child that is not a text node is **refused by name**, as a block with no
+ * identifier is, rather than coerced into a run with no text: this says which node has no run yet
  * instead of storing a document quietly missing it.
  *
  * **`id` here is an identifier, where `storedBlock`'s identically worded message carries a path.**
@@ -337,6 +371,21 @@ function runsOf(textblock: Node, id: string): unknown[] {
     if (child.type.name === 'image') {
       const { asset, imageStyle, alternative } = child.attrs;
       runs.push({ type: 'image', asset, imageStyle, alternative });
+      return;
+    }
+    if (child.type.name === 'footnote') {
+      const footnote = identifierOf(child, id);
+      const content: unknown[] = [];
+      child.forEach((paragraph) => {
+        const at = identifierOf(paragraph, `${footnote}.${content.length}`);
+        content.push({
+          type: 'paragraph',
+          id: at,
+          style: paragraph.attrs.style as string,
+          content: runsOf(paragraph, at),
+        });
+      });
+      runs.push({ type: 'footnote', id: footnote, anchor: child.attrs.anchor as object, content });
       return;
     }
     if (child.type.name !== 'text') {
@@ -492,6 +541,9 @@ function storedBlock(node: Node, at: string): unknown {
         });
         rows.push({ cells });
       });
+      // **Judged on what `runsOf` returned**, as an attribution is: a note nobody has typed is no
+      // note, and `note: []` is a second spelling of absent (footnotes 1, ruling R3).
+      const note = node.childCount > 2 ? runsOf(node.child(2), id) : [];
       // **The counts, never the cells' kinds** (ruling R2): what the model stores is two numbers.
       return {
         type: 'table',
@@ -501,7 +553,7 @@ function storedBlock(node: Node, at: string): unknown {
         headerRows: node.attrs.headerRows as number,
         headerColumns: node.attrs.headerColumns as number,
         ...(node.attrs.keyColumns === null ? {} : { keyColumns: node.attrs.keyColumns }),
-        ...(node.attrs.note === null ? {} : { note: node.attrs.note }),
+        ...(note.length === 0 ? {} : { note }),
         rows,
       };
     }

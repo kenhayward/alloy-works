@@ -29,7 +29,10 @@ a web application and a desktop application**.
 > uploads one that way, with its description or as decorative, and places it as a figure, captioned,
 > described, replaced and deleted from a Figure panel; the Image button places one in a line of text,
 > in any paragraph, a table's cell's included, with the same dialog and panel, and a publish sets it
-> one line high in its paragraph or cell. A
+> one line high in its paragraph or cell. A footnote is placed at the cursor in a paragraph from the
+> toolbar or `Ctrl+Alt+F` and written in a nested editor beneath the text, over its own paragraphs in
+> the component's one history, and a table's note is added and removed from the Table panel; a publish
+> refuses either by name. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -45,7 +48,7 @@ a web application and a desktop application**.
 > publisher and held to its hash, and lists of figures and tables after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no image pasted from outside the product, no footnote or equation written or pasted, no metadata panel,
+> publishes content: no image pasted from outside the product, no footnote or table's note published, no equation written or pasted, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of equations, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and

@@ -3,6 +3,33 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.61.0 - 2026-09-23 (PR #216)
+
+### Added
+
+- **Footnotes, written in the editor.** **Footnote** on the toolbar, or `Ctrl+Alt+F`, places a
+  footnote at the cursor in a paragraph - in running text, a list, a quotation or a table's cell - and
+  opens its text beneath the paragraph for you to write. Its mark is a small raised asterisk with no
+  number, since the number is the document's. Select the mark to open its text again, press `Enter`
+  on it to go into the text and `Escape` to come back. The text is paragraphs you format and link as
+  any others, from the toolbar or the keyboard; pasting into it keeps paragraphs and refuses the rest;
+  `Ctrl+Z` undoes it with the rest of the component. Delete the mark to delete the footnote.
+- **A note on a table.** **Add note** in the Table panel adds a note beneath the table for what is true
+  of the whole table, and **Remove note** takes it away.
+- A component holding a footnote in a paragraph now opens for editing rather than for reading only.
+
+### Changed
+
+- **Publishing refuses a footnote or a table's note by name**, saying _A footnote cannot be published
+  yet._ or _A table's note cannot be published yet._, until the next release publishes them. A table
+  with a note was published without it before; now the publish says so instead.
+
+### Fixed
+
+- Pressing **Strong**, or any formatting button, over words formatted on both sides of an image in a
+  line of text now takes the formatting off, as the pressed button says it will; before, nothing
+  happened.
+
 ## 0.60.1 - 2026-09-23 (PR #215)
 
 ### Changed

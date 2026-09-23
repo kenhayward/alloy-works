@@ -20,6 +20,9 @@ const ACTIONS: readonly { readonly action: TableAction; readonly label: string }
   { action: 'merge', label: 'Merge cells' },
   { action: 'split', label: 'Split cell' },
   { action: 'deleteTable', label: 'Delete table' },
+  // A note on the table as a whole, beneath it (CNT-038, footnotes 1, ruling R11).
+  { action: 'addNote', label: 'Add note' },
+  { action: 'removeNote', label: 'Remove note' },
 ];
 
 export interface TablePanelProps {

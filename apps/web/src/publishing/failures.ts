@@ -16,6 +16,13 @@ const BLOCKS: Readonly<Record<string, string>> = {
   equation: 'An equation',
 };
 
+/** What an inline item an author can place is called, when it cannot be published yet. */
+const INLINES: Readonly<Record<string, string>> = {
+  image: 'An image in a line of text cannot be published yet.',
+  footnote: 'A footnote cannot be published yet.',
+  note: "A table's note cannot be published yet.",
+};
+
 /**
  * What a failure says to the author, in words: never a code, never an engine's diagnostic, and never
  * anything of a component they may not read - an unreadable place is named by where it is, which the
@@ -35,11 +42,13 @@ export function failureWords(failure: Failure): string {
     // as well as for a paragraph, and names the LIST in that case, because a term carries no
     // identifier of its own. A sentence that said paragraph while pointing at a list would send an
     // author looking for something that is not there.
-    // An image in a line of text is named as one, now an author can place it (figures 4).
+    // An image in a line of text is named as one, now an author can place it (figures 4), and so are a
+    // footnote and a table's note (footnotes 1), until footnotes 2 publishes them.
     case 'inline_not_publishable':
-      return failure.detail === 'image'
-        ? 'An image in a line of text cannot be published yet.'
-        : 'This text holds formatting or an inline item that cannot be published yet.';
+      return (
+        INLINES[failure.detail ?? ''] ??
+        'This text holds formatting or an inline item that cannot be published yet.'
+      );
     // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
     case 'style_missing':

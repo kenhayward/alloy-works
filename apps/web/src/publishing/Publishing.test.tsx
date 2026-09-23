@@ -302,6 +302,24 @@ describe('publishing from the document page', () => {
     );
   });
 
+  it("names a footnote and a table's note as what cannot be published yet (footnotes 1)", async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'inline_not_publishable',
+        node: null,
+        block: 'b1',
+        detail: 'footnote',
+      },
+      { stage: 'compose', code: 'inline_not_publishable', node: null, block: 't1', detail: 'note' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent('A footnote cannot be published yet.');
+    expect(why).toHaveTextContent("A table's note cannot be published yet.");
+  });
+
   it("blames the layout, not the document, for the layout's own words and language", async () => {
     const fake = failing([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },

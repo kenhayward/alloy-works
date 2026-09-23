@@ -1589,6 +1589,14 @@ describe('a table, published (tables 2)', () => {
     ]);
   });
 
+  it("refuses a table's note by name until footnotes 2 publishes it, rather than dropping it", () => {
+    expect(failuresOf(assemble(oneComponent(stored({ note: [text('Estimated.')] }))))).toEqual([
+      failed('inline_not_publishable', 'note'),
+    ]);
+    // A note that says nothing - another route may store one - has nothing to publish or refuse.
+    expect(failuresOf(assemble(oneComponent(stored({ note: [] }))))).toEqual([]);
+  });
+
   it('refuses a table with no caption, naming it, since a caption is what names a table to a reader', () => {
     expect(failuresOf(assemble(oneComponent(stored({ caption: [] }))))).toEqual([
       failed('table_without_caption', null),

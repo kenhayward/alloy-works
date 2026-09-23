@@ -3,7 +3,14 @@ import { history, redo, undo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import { goToNextCell, tableEditing } from 'prosemirror-tables';
 import type { MarkType, Node } from 'prosemirror-model';
-import { EditorState, Plugin, Selection, TextSelection, type Command } from 'prosemirror-state';
+import {
+  EditorState,
+  Plugin,
+  PluginKey,
+  Selection,
+  TextSelection,
+  type Command,
+} from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import {
@@ -15,13 +22,21 @@ import {
   outsideCode,
   refusePastTheLimit,
 } from './blocks.js';
+import { enterFootnote, isFootnote, openFootnote } from './footnotes.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
 import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 
+// A footnote's paragraph is a paragraph to CNT-023 (footnotes 1, ruling R6): the stored model has one
+// paragraph type, and holds two empty ones apart in a footnote as it does anywhere else.
 const isEmptyParagraph = (node: Node | null | undefined) =>
-  node?.type.name === 'paragraph' && node.content.size === 0;
+  (node?.type.name === 'paragraph' || node?.type.name === 'footnoteParagraph') &&
+  node.content.size === 0;
+
+/** Whether a child is a member of a block sequence: a block, or a footnote's paragraph. */
+const inSequence = (node: Node) =>
+  node.type.isInGroup('block') || node.type.name === 'footnoteParagraph';
 
 /**
  * Every second of two adjacent empty paragraphs in the document, as a range to delete, in ascending
@@ -64,7 +79,7 @@ function adjacentEmpties(parent: Node, start: number, removals: [number, number]
   let previous: Node | null = null;
   parent.forEach((child, offset) => {
     const at = start + offset;
-    if (child.type.isInGroup('block')) {
+    if (inSequence(child)) {
       if (isEmptyParagraph(previous) && isEmptyParagraph(child)) {
         removals.push([at, at + child.nodeSize]);
       }
@@ -193,7 +208,17 @@ export function annotationsInOnePiece(newIdentifier: () => string): Plugin {
           let fresh = newIdentifier();
           while (taken.has(fresh)) fresh = newIdentifier();
           taken.add(fresh);
-          tr.addMark(span.from, span.to, type.create({ ...span.mark.attrs, id: fresh }));
+          // Text node by text node, never over the range: a footnote standing inside the span is a
+          // range of its own, and marking over it would reach its text (footnotes 1, ruling R5). One
+          // that holds the span begins before it, and is walked into.
+          const renamed = type.create({ ...span.mark.attrs, id: fresh });
+          newState.doc.nodesBetween(span.from, span.to, (node, pos) => {
+            if (isFootnote(node) && pos >= span.from) return false;
+            if (node.isText && span.mark.isInSet(node.marks)) {
+              tr.addMark(Math.max(pos, span.from), Math.min(pos + node.nodeSize, span.to), renamed);
+            }
+            return true;
+          });
           repaired = true;
         }
       }
@@ -230,6 +255,7 @@ export function placeholderDecorations(doc: Node): DecorationSet {
     if (
       (node.type.name === 'attribution' ||
         node.type.name === 'tableCaption' ||
+        node.type.name === 'tableNote' ||
         node.type.name === 'figureCaption') &&
       node.content.size === 0
     ) {
@@ -239,8 +265,10 @@ export function placeholderDecorations(doc: Node): DecorationSet {
   return DecorationSet.create(doc, decorations);
 }
 
-export function spellcheckDecorations(doc: Node): DecorationSet {
-  const base: unknown = doc.attrs.language;
+export function spellcheckDecorations(
+  doc: Node,
+  base: unknown = doc.attrs.language,
+): DecorationSet {
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
     if (!node.isText) return;
@@ -341,6 +369,34 @@ export interface EditorStateOptions {
  * is why ADR-0023 gives each component its own view), the keymap, and the three plugins that keep
  * what the editor holds storable.
  */
+/** Where a surface's state keeps what a footnote's own editor is built with (footnotes 1, R8). */
+const footnoteEditing = new PluginKey('footnoteEditing');
+
+/**
+ * What a footnote's own editing state carries, given the language its text is checked in (FN-E): the
+ * same Enter the component has at its end - nothing in an empty paragraph, a split elsewhere - the
+ * same registry keymap, so the nine marks and links apply from their shortcuts and every other
+ * command declines by the footnote's content expression, the base keymap, and the spellcheck rule
+ * over its runs. History is the view's, which binds undo to the component's own (ruling R8).
+ */
+function footnoteEditingPlugins(options: EditorStateOptions) {
+  return (language: () => unknown): Plugin[] => [
+    keymap({ Enter: chainCommands(enterOverRange(enterWithoutEmpties), enterWithoutEmpties) }),
+    keymap(commandKeymap(options.newIdentifier, options.onPrompt)),
+    keymap(baseKeymap),
+    new Plugin({
+      props: { decorations: (state) => spellcheckDecorations(state.doc, language()) },
+    }),
+  ];
+}
+
+/** The plugins a footnote's own editor is built with, from the surface's state it stands in. */
+export function footnotePluginsOf(state: EditorState): (language: () => unknown) => Plugin[] {
+  const made = footnoteEditing.get(state)?.spec.footnotePlugins as
+    ((language: () => unknown) => Plugin[]) | undefined;
+  return made ?? (() => []);
+}
+
 export function createEditorState(options: EditorStateOptions): EditorState {
   const enterAtCaret = chainCommands(
     codeAwareEnter(options.newIdentifier),
@@ -366,7 +422,10 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         // **And the code-aware links come first of all** (editor 5): in preformatted text Enter
         // types a line break, which `splitListItem` and `splitBlock` would otherwise answer by
         // splitting the item or the block around it; in an attribution it leaves the quotation.
-        Enter: chainCommands(enterOverRange(enterAtCaret), enterAtCaret),
+        //
+        // **A footnote selected whole comes first** (footnotes 1): Enter opens its text for writing,
+        // and would otherwise split the paragraph over it, taking the footnote with the split.
+        Enter: chainCommands(enterFootnote, enterOverRange(enterAtCaret), enterAtCaret),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
@@ -441,13 +500,21 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       attributionAlwaysThere,
-      // An image carries no marks (figures 4), taken off before annotations are made whole, so the
-      // two pieces of one either side of it are still read as one.
+      // An image and a footnote carry no marks (figures 4, footnotes 1), taken off before annotations
+      // are made whole, so the two pieces of one either side of either are still read as one.
       imagesUnmarked,
       // And what is typed straight after one carries on the marks it stands in.
       marksPastImages,
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
+      // What a footnote's own editor is built with, from these same options - and the one open kept
+      // as fresh as the surface, so it takes changes exactly while the surface does (final review,
+      // finding 2): a surface's props changing reaches no node view of its own accord.
+      new Plugin({
+        key: footnoteEditing,
+        footnotePlugins: footnoteEditingPlugins(options),
+        view: () => ({ update: (view) => openFootnote(view)?.setProps({}) }),
+      }),
       // One decorations plugin, holding both the spellcheck rule and the empty attribution's
       // placeholder: the view merges every plugin's set anyway, and one set is one thing to test.
       new Plugin({

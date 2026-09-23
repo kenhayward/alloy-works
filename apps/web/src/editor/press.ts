@@ -70,7 +70,8 @@ export function pressCommand({
 }: PressOptions): boolean {
   const dispatch = view.dispatch.bind(view);
   if (command.kind === 'block') {
-    return blockCommand(command.action, newIdentifier)(view.state, dispatch);
+    // With the view, so a command that opens something - a footnote's text - can put the focus there.
+    return blockCommand(command.action, newIdentifier)(view.state, dispatch, view);
   }
   if (!command.prompts) {
     return toggleMarkCommand(command.mark, newIdentifier)(view.state, dispatch);

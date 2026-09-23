@@ -7,8 +7,8 @@ import {
   type ReportEntry,
 } from '@alloy-works/domain';
 import { readHtml, readPlainText } from '@alloy-works/readers';
-import { Fragment, Slice } from 'prosemirror-model';
-import type { EditorState, Transaction } from 'prosemirror-state';
+import { Fragment, Slice, type Node } from 'prosemirror-model';
+import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 
 import { fromEditor, toEditor } from './mapping.js';
 import { editorSchema } from './schema.js';
@@ -97,6 +97,10 @@ export type PasteOutcome =
  *
  * Admitted content this editor cannot hold - a table from another component - is refused whole and
  * by name, as opening one is: placing part of it would be the silent loss the pipeline exists to stop.
+ *
+ * **Into a footnote's text** (footnotes 1, ruling R10), what arrives must be paragraphs of runs, which
+ * become the footnote's paragraphs; anything else - a list, a table, an image, a footnote - is refused
+ * whole and by name, as a component that cannot hold it is.
  */
 export function pasteInto(
   state: EditorState,
@@ -121,11 +125,41 @@ export function pasteInto(
   // Opened as far as it goes but never into an isolating node - a figure, a table - whose inside the
   // text either side of the caret would otherwise run into: its caption or its last cell took the
   // rest of the paragraph (figures 2, final review).
-  const transaction = state.tr
-    .replaceSelection(Slice.maxOpen(opened.doc.content, false))
-    .scrollIntoView()
-    .setMeta('paste', true)
-    .setMeta('uiEvent', 'paste');
+  const footnote = footnoteHolding(state);
+  let content = opened.doc.content;
+  if (footnote !== null) {
+    const refused = new Set<string>();
+    const paragraphs: Node[] = [];
+    opened.doc.forEach((block) => {
+      if (block.type !== editorSchema.nodes.paragraph) {
+        refused.add(STORED_NAMES[block.type.name] ?? block.type.name);
+        return;
+      }
+      block.forEach((child) => {
+        if (!child.isText) refused.add(child.type.name);
+      });
+      paragraphs.push(editorSchema.nodes.footnoteParagraph!.create(block.attrs, block.content));
+    });
+    if (refused.size > 0 || !footnote) {
+      const report = createReport(admitted.report);
+      report.add('validate', 'discarded', 'unrepresentable', { detail: [...refused].join(', ') });
+      report.add('validate', 'refused', 'invalid');
+      return { ok: false, report: report.entries };
+    }
+    content = Fragment.from(paragraphs);
+  }
+
+  // Into a footnote, a plain replace of the selection: `replaceSelection` widens the range to where
+  // the slice's first node would fit, which from inside a footnote is past its edge and into the
+  // paragraph holding it.
+  const slice = Slice.maxOpen(content, false);
+  const { from, to } = state.selection;
+  const placed =
+    footnote === null ? state.tr.replaceSelection(slice) : state.tr.replace(from, to, slice);
+  if (footnote !== null) {
+    placed.setSelection(TextSelection.near(placed.doc.resolve(placed.mapping.map(to)), -1));
+  }
+  const transaction = placed.scrollIntoView().setMeta('paste', true).setMeta('uiEvent', 'paste');
   // **Placed, the paste must still be a document the store takes.** The admitted blocks are valid on
   // their own, but where they land can make them not so: a quotation pasted into a list in a table's
   // cell fits ProseMirror's schema - a list item holds any block - and not the model's (tables 1,
@@ -150,6 +184,27 @@ export function pasteInto(
  * paragraph - and a list item's words in the item and the list - they are the blocks they were copied
  * from, which the receiving component then joins to its own text as any paste is joined.
  */
+/** The stored model's name for an editor block whose type is spelt differently. */
+const STORED_NAMES: Record<string, string> = { definitionList: 'list', tableFigure: 'table' };
+
+/**
+ * Whether the selection stands in a footnote's text, both ends in the one footnote: true, false where
+ * it is split across one's edge, which nothing can paste into, and null where it is in none.
+ */
+function footnoteHolding(state: EditorState): boolean | null {
+  const holder = (depth: number, $pos: typeof state.selection.$from) => {
+    for (let at = depth; at > 0; at -= 1) {
+      if ($pos.node(at).type === editorSchema.nodes.footnote) return $pos.before(at);
+    }
+    return null;
+  };
+  const { $from, $to } = state.selection;
+  const from = holder($from.depth, $from);
+  const to = holder($to.depth, $to);
+  if (from === null && to === null) return null;
+  return from === to;
+}
+
 export function productClipboard(state: EditorState, from: number, to: number): string | undefined {
   try {
     const $from = state.doc.resolve(from);
