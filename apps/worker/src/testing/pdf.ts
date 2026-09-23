@@ -22,8 +22,8 @@ export interface TaggedLanguage {
 /**
  * A PDF as a reader and assistive technology meet it, read by pdf.js rather than by our own code: its
  * bookmarks; per page, the text inside artifacts (running heads and feet, which assistive technology
- * skips), the text in tagged content, the addresses its link annotations take a reader to and the
- * runs that declare a language of their own; the structure roles in document order after the role map,
+ * skips), the text in tagged content, the addresses its link annotations take a reader to, the pages
+ * its links inside the document take a reader to, and the runs that declare a language of their own; the structure roles in document order after the role map,
  * which is what a screen reader is told; whether it is marked tagged; and its PDF/UA part. And the
  * page as it is set: each page's label, as a reader's page box shows it (null where the PDF declares
  * none); each page's width and height in points, as it is turned; and the least x of each page's
@@ -47,6 +47,13 @@ export interface ReadPdf {
    * assertion about the links on a page passing beside an annotation nothing had looked at.
    */
   readonly links: readonly (readonly string[])[];
+  /**
+   * Every link annotation, per page, that takes a reader somewhere inside the document - a contents
+   * entry, a footnote's mark, a cross-reference - with where it stands and the page it takes them to
+   * (cross-references 2). A destination this cannot follow to a page throws, as `markedLanguages`
+   * does: a link quietly left out would leave an assertion that a page holds no link passing.
+   */
+  readonly destinations: readonly (readonly InternalLink[])[];
   /** Every run of a page's tagged text that declares a language of its own, in the page's order. */
   readonly languages: readonly (readonly TaggedLanguage[])[];
   readonly roles: readonly string[];
@@ -98,6 +105,13 @@ export interface TaggedFigure {
    * `/Lang` alone does not say what it is read in.
    */
   readonly spoken: string | null;
+}
+
+export interface InternalLink {
+  /** Where the link stands on its page, `[left, bottom, right, top]` in points from its bottom left. */
+  readonly rect: readonly [number, number, number, number];
+  /** The page it takes a reader to, counted from 0 as `taggedText` is. */
+  readonly to: number;
 }
 
 export interface TextItem {
@@ -332,6 +346,16 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     const artifactText: string[][] = [];
     const taggedText: string[][] = [];
     const links: string[][] = [];
+    const destinations: InternalLink[][] = [];
+    // A destination is named, and looked up, or explicit; either way its first member is the page, as
+    // its object or, rarely, its index.
+    const pageTo = async (dest: unknown): Promise<number> => {
+      const explicit: unknown = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
+      const page: unknown = Array.isArray(explicit) ? explicit[0] : undefined;
+      if (typeof page === 'number') return page;
+      if (page !== null && typeof page === 'object') return pdf.getPageIndex(page as PageRef);
+      throw new Error(`A link's destination names no page: ${JSON.stringify(dest)}`);
+    };
     const languages: TaggedLanguage[][] = [];
     const roles: string[] = [];
     const pageSizes: (readonly [number, number])[] = [];
@@ -404,6 +428,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
         url?: string;
         unsafeUrl?: string;
         dest?: unknown;
+        rect?: number[];
       }[];
       links.push(
         annotations
@@ -413,6 +438,21 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
               (annotation.dest === undefined || annotation.dest === null),
           )
           .map((annotation) => annotation.url ?? annotation.unsafeUrl ?? ''),
+      );
+      destinations.push(
+        await Promise.all(
+          annotations
+            .filter(
+              (annotation) =>
+                annotation.subtype === 'Link' &&
+                annotation.dest !== undefined &&
+                annotation.dest !== null,
+            )
+            .map(async (annotation) => ({
+              rect: annotation.rect as unknown as [number, number, number, number],
+              to: await pageTo(annotation.dest),
+            })),
+        ),
       );
       textLeft.push(left);
       textBaselines.push(baselines);
@@ -438,6 +478,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       artifactText,
       taggedText,
       links,
+      destinations,
       languages,
       roles,
       elements: structureElements(text),
