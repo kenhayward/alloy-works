@@ -1,5 +1,6 @@
 import { baseKeymap, chainCommands, splitBlock } from 'prosemirror-commands';
 import { history, redo, undo } from 'prosemirror-history';
+import { gapCursor } from 'prosemirror-gapcursor';
 import { keymap } from 'prosemirror-keymap';
 import { goToNextCell, tableEditing } from 'prosemirror-tables';
 import type { MarkType, Node } from 'prosemirror-model';
@@ -22,7 +23,7 @@ import {
   outsideCode,
   refusePastTheLimit,
 } from './blocks.js';
-import { enterEquation, pastEquationBlock } from './equations.js';
+import { enterEquation } from './equations.js';
 import { enterFootnote, isFootnote, openFootnote } from './footnotes.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
@@ -450,12 +451,6 @@ export function createEditorState(options: EditorStateOptions): EditorState {
           enterOverRange(enterAtCaret),
           enterAtCaret,
         ),
-        // The way past a block equation that ends or begins what holds it (equations 1, ruling R5),
-        // ahead of ProseMirror's own arrows, which find nowhere to go there.
-        ArrowUp: pastEquationBlock('ArrowUp'),
-        ArrowDown: pastEquationBlock('ArrowDown'),
-        ArrowLeft: pastEquationBlock('ArrowLeft'),
-        ArrowRight: pastEquationBlock('ArrowRight'),
         // **Bound literally, and only these two.** Tab and Shift-Tab have no row in
         // `EDITOR_COMMANDS` by design - they are a second route to nesting and lifting rather than
         // the named shortcut, and a shortcut written in two places is the drift the registry exists
@@ -515,6 +510,15 @@ export function createEditorState(options: EditorStateOptions): EditorState {
         ),
       ),
       keymap(baseKeymap),
+      // **The way past a block that has no text of its own to stand in** (equations 1, ruling R5):
+      // ProseMirror's gap cursor, a caret drawn between two blocks where neither side holds text - past
+      // a block equation that ends the component or begins it, between two of them, after a figure or
+      // a table at the end. An arrow puts it there and changes nothing; typing there makes a
+      // paragraph, which the identity plugin below names. Ahead of `tableEditing`, whose arrows would
+      // otherwise take the caret out of a table ending the component and back into it. It stands
+      // nowhere inside a table's figure (`allowGapCursor` in the schema), where typing would make a
+      // note.
+      gapCursor(),
       // **Identity before adjacency, and it is a preference rather than a rule.** ProseMirror
       // re-runs every `appendTransaction` over whatever any of them appends, so each of these two
       // sees the document the other left however they are ordered, and swapping them changes no

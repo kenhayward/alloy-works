@@ -309,11 +309,16 @@ export const editorSchema = new Schema({
      *
      * Isolating, so no join or lift crosses its edge: a Backspace after a table selects it, and never
      * pulls a paragraph into its caption.
+     *
+     * **No gap cursor inside it** (equations 1): the table and the note are both closed to the text
+     * around them, so ProseMirror's gap cursor would otherwise stand between them, or after a table
+     * with no note, where typing makes a note - which the Table panel alone adds.
      */
     tableFigure: {
       group: 'block',
       content: 'tableCaption table tableNote?',
       isolating: true,
+      allowGapCursor: false,
       attrs: {
         id: { default: null },
         style: { default: 'table' },

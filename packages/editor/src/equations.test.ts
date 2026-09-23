@@ -536,8 +536,9 @@ describe('placing an equation (equations 1)', () => {
   });
 
   it('leaves a paragraph after a block one that would otherwise end what holds it', () => {
-    // An equation is an atom with nothing inside to type into, so where nothing followed it there
-    // would be nowhere for a caret to stand after it.
+    // An equation is an atom with nothing inside to type into, so where nothing followed it in its
+    // list's item there would be nowhere for a caret to stand after it: the gap cursor stands past one
+    // only where nothing follows it anywhere (`insertEquation`).
     const last = caretIn(stateOf(documentOf(paragraph('p1', text('Where')))), 0, 5);
     const after = run(last, insertEquation(BLOCK)).next;
     expect(stored(after).map((block) => block.type)).toEqual([
@@ -762,5 +763,21 @@ describe('the editor stylesheet, for an equation (equations 1, ruling R5)', () =
     expect(rule('.aw-equation-block.ProseMirror-selectednode')).toMatch(/outline:/);
     expect(rule('.aw-equation-undescribed')).toMatch(/border:[^;]*dashed/);
     expect(rule('.aw-equation-unshown')).toMatch(/border:[^;]*dashed/);
+  });
+
+  it("draws the gap cursor, as prosemirror-gapcursor's own stylesheet does, only while the surface has the focus", () => {
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const rule = (selector: string) =>
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter((match) => match[1]!.split(',').some((each) => each.trim() === selector))
+        .map((match) => match[2])
+        .join(';');
+    expect(rule('.ProseMirror-gapcursor')).toMatch(/display:\s*none/);
+    expect(rule('.ProseMirror-gapcursor')).toMatch(/position:\s*absolute/);
+    expect(rule('.ProseMirror-gapcursor::after')).toMatch(/border-top:/);
+    expect(rule('.ProseMirror-focused .ProseMirror-gapcursor')).toMatch(/display:\s*block/);
   });
 });

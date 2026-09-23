@@ -1,5 +1,6 @@
 import {
   createEditorState,
+  fromEditor,
   mountEditor,
   NodeSelection,
   openFootnote,
@@ -42,15 +43,12 @@ const block = (id: string, mathml = ENERGY, numbered = true) => ({
 });
 
 /** A surface over these blocks, mounted as the component editor mounts one; what it prompted for. */
-function mount(
-  content: unknown[],
-  direction: 'ltr' | 'rtl' = 'ltr',
-): { view: EditorView; prompted: string[] } {
+function mount(content: unknown[]): { view: EditorView; prompted: string[] } {
   const opened = toEditor({
     schemaVersion: 1,
     title: 'Site visits',
     language: 'en-GB',
-    direction,
+    direction: 'ltr',
     content,
   } as never);
   if (!opened.editable) throw new Error(opened.unsupported.join(', '));
@@ -90,6 +88,10 @@ function find(view: EditorView, type: string): number {
 
 const select = (view: EditorView, pos: number) =>
   view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)));
+
+/** A character typed where the selection is, as a key press reaches ProseMirror. */
+const typeInto = (view: EditorView, character: string) =>
+  fireEvent.keyPress(view.dom, { key: character, charCode: character.charCodeAt(0) });
 
 /** Every top-level block's type, and a paragraph's text, to read a document's shape at a glance. */
 const shape = (view: EditorView) => {
@@ -222,52 +224,46 @@ describe('an equation on the surface (equations 1, ruling R5)', () => {
     expect(prompted).toEqual(['equation', 'equation']);
   });
 
-  it('lets the caret past a block equation that ends what holds it, and before one that begins it', () => {
+  it('puts a gap cursor past a block equation that ends the component, changing nothing, where typing makes a named paragraph', () => {
     const { view } = mount([block('e1')]);
+    const before = view.state.doc;
     select(view, 0);
     fireEvent.keyDown(view.dom, { key: 'ArrowDown', keyCode: 40 });
-    expect(shape(view)).toEqual(['equationBlock', 'p:']);
-    view.dispatch(view.state.tr.insertText('After.'));
-    expect(shape(view)).toEqual(['equationBlock', 'p:After.']);
+    expect(view.state.selection.toJSON()).toEqual({ type: 'gapcursor', pos: before.content.size });
+    expect(view.state.doc.eq(before)).toBe(true);
+    expect(view.dom.querySelector('.ProseMirror-gapcursor')).not.toBeNull();
 
+    typeInto(view, 'A');
+    expect(shape(view)).toEqual(['equationBlock', 'p:A']);
+    // Named by the identity plugin as any new block is, and storable where it landed.
+    expect(view.state.doc.lastChild!.attrs.id).toEqual(expect.any(String));
+    expect(() => fromEditor(view.state.doc)).not.toThrow();
+
+    // And before one that begins it, by the arrow pointing that way.
+    const after = view.state.doc;
     select(view, 0);
     fireEvent.keyDown(view.dom, { key: 'ArrowUp', keyCode: 38 });
-    expect(shape(view)).toEqual(['p:', 'equationBlock', 'p:After.']);
-    view.dispatch(view.state.tr.insertText('Before.'));
-    expect(shape(view)).toEqual(['p:Before.', 'equationBlock', 'p:After.']);
-
-    // With something on either side, the arrows are ProseMirror's and make nothing.
-    select(view, find(view, 'equationBlock'));
-    fireEvent.keyDown(view.dom, { key: 'ArrowDown', keyCode: 40 });
-    select(view, find(view, 'equationBlock'));
-    fireEvent.keyDown(view.dom, { key: 'ArrowUp', keyCode: 38 });
-    expect(shape(view)).toEqual(['p:Before.', 'equationBlock', 'p:After.']);
+    expect(view.state.selection.toJSON()).toEqual({ type: 'gapcursor', pos: 0 });
+    expect(view.state.doc.eq(after)).toBe(true);
+    typeInto(view, 'B');
+    expect(shape(view)).toEqual(['p:B', 'equationBlock', 'p:A']);
+    expect(view.state.doc.firstChild!.attrs.id).toEqual(expect.any(String));
   });
 
-  it("lets the caret past one that ends a list's item, and by the arrow pointing past it in either direction", () => {
-    const { view } = mount([
-      {
-        type: 'list',
-        id: 'l1',
-        kind: 'unordered',
-        items: [{ content: [para('b1', text('North')), block('e1')] }, { content: [para('b2')] }],
-      },
-    ]);
-    select(view, find(view, 'equationBlock'));
+  it('puts a gap cursor between two block equations, and leaves the arrows alone where text stands beyond one', () => {
+    const { view } = mount([para('b1', text('Energy:')), block('e1'), block('e2'), para('b2')]);
+    const before = view.state.doc;
+    const first = find(view, 'equationBlock');
+    select(view, first);
     fireEvent.keyDown(view.dom, { key: 'ArrowRight', keyCode: 39 });
-    const item = view.state.doc.firstChild!.firstChild!;
-    expect(item.childCount).toBe(3);
-    expect(item.lastChild!.type.name).toBe('paragraph');
-    expect(view.state.selection.$from.parent).toBe(item.lastChild);
+    const between = first + view.state.doc.nodeAt(first)!.nodeSize;
+    expect(view.state.selection.toJSON()).toEqual({ type: 'gapcursor', pos: between });
 
-    // In a component written right to left, the arrow pointing past its end is the left one.
-    const rtl = mount([block('e1')], 'rtl').view;
-    select(rtl, 0);
-    fireEvent.keyDown(rtl.dom, { key: 'ArrowRight', keyCode: 39 });
-    expect(shape(rtl)).toEqual(['p:', 'equationBlock']);
-    select(rtl, find(rtl, 'equationBlock'));
-    fireEvent.keyDown(rtl.dom, { key: 'ArrowLeft', keyCode: 37 });
-    expect(shape(rtl)).toEqual(['p:', 'equationBlock', 'p:']);
+    // After the second there is a paragraph to stand in, so no gap is made there.
+    select(view, between);
+    fireEvent.keyDown(view.dom, { key: 'ArrowDown', keyCode: 40 });
+    expect(view.state.selection.toJSON().type).not.toBe('gapcursor');
+    expect(view.state.doc.eq(before)).toBe(true);
   });
 
   it("is drawn the same in a footnote's open editor, where Enter over it opens it too", () => {
