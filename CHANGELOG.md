@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.64.1 - 2026-09-23 (PR #221)
+
+### Changed
+
+- **Equations are designed**, ready for review before any of it is built: typing an equation as LaTeX
+  in a dialog and seeing it as it will print, its spoken alternative written for you and yours to
+  change, and an equation in running text, a list, a quotation, a table, a footnote, a caption or a
+  section's heading. A numbered equation carries its number beside it, can be pointed at by a
+  cross-reference, and can be listed after the contents. Measured against the typesetting engine
+  first: no equation can be set until a maths typeface is added, so the design adds one.
+
 ## 0.64.0 - 2026-09-23 (PR #220)
 
 ### Added

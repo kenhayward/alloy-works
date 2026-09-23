@@ -53,34 +53,34 @@ noticed and explained rather than discovered at a refusal.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **CNT-066** | After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts                                                                                             |
-| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one                                                                    |
-| **CNT-068** | A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced                                                           |
-| **CNT-069** | One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from                                       |
-| **CNT-103** | Cutting a version clears the history and the stored steps, and a reload that finds steps recorded against an older version discards them, so undo never reaches past a version                                           |
-| **CNT-070** | A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout                                                                                  |
-| **CNT-089** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and visible only to the lock holder (VER-001 to VER-003)                                                      |
-| **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration                         |
-| **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                                                         |
-| **COL-005** | The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused                                                             |
-| **COL-006** | The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it                                                                                               |
-| **COL-008** | A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it                                                                  |
-| **COL-010** | **Done editing** releases the lock and cuts a version of what changed; a lock expiring cuts nothing                                                                                                                      |
-| **COL-011** | The lock is a row per component; nothing locks a document                                                                                                                                                                |
-| **API-039** | The service checks the lock on every mutating component request and refuses one from anybody but the holder with `lock.held`, naming the holder and the expected release                                                 |
-| **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it                                     |
-| **CNT-149** | "Creating a component" takes a title, a base language and a base direction, in a space the author chose from those `GET /v1/spaces` says they may create in; the component exists at `0.1` from the moment it is created |
-| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration or a cut whose value for it differs from the default, naming field and schema                             |
-| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                                                                  |
-| **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                                                |
-| **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - on entry, and on load for any equation that lacks one - stored as `alttext`, and always editable                              |
-| **CNT-080** | Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard                                                                                  |
-| **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                          |
-| **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                        |
-| **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                           |
-| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                             |
+| ID          | How it is met                                                                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-066** | After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts                                                                                                                               |
+| **CNT-067** | The renderer reports a change saved only when its iteration is acknowledged, so reopening after any interruption offers that iteration or a later one                                                                                                      |
+| **CNT-068** | A save indicator with three states - saved, saving, not saved and retrying - with the time of the last acknowledged save; the change to not saved is announced                                                                                             |
+| **CNT-069** | One `prosemirror-history` per component; the session's steps are kept in `sessionStorage` and replayed into a fresh history on reload, back to the version the session opened from                                                                         |
+| **CNT-103** | Cutting a version clears the history and the stored steps, and a reload that finds steps recorded against an older version discards them, so undo never reaches past a version                                                                             |
+| **CNT-070** | A version is cut by **Save version** or **Done editing** and by nothing else - not a keystroke, a timer, a lost connection or a timeout                                                                                                                    |
+| **CNT-089** | The session never promotes an iteration on its own; iterations are rows the storage design keeps immutable and visible only to the lock holder (VER-001 to VER-003)                                                                                        |
+| **CNT-090** | A **Recovery** panel lists the component's retained iterations to its lock holder, newest first, and restores one - content and values together - after saving the current state as an iteration                                                           |
+| **CNT-071** | Every write in the session - iteration, version, release - carries the lock, and nothing here assumes the author is the only one who could write                                                                                                           |
+| **COL-005** | The lock is claimed by the first change an author makes, to content or metadata, not by a separate act; changes wait for the claim rather than being refused                                                                                               |
+| **COL-006** | The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it                                                                                                                                 |
+| **COL-008** | A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it                                                                                                    |
+| **COL-010** | **Done editing** releases the lock and cuts a version of what changed; a lock expiring cuts nothing                                                                                                                                                        |
+| **COL-011** | The lock is a row per component; nothing locks a document                                                                                                                                                                                                  |
+| **API-039** | The service checks the lock on every mutating component request and refuses one from anybody but the holder with `lock.held`, naming the holder and the expected release                                                                                   |
+| **MET-011** | Creating a component requires a component type, offered with the tenant's default preselected; the version row's type column is not nullable, and no iteration or version changes it                                                                       |
+| **CNT-149** | "Creating a component" takes a title, a base language and a base direction, in a space the author chose from those `GET /v1/spaces` says they may create in; the component exists at `0.1` from the moment it is created                                   |
+| **MET-033** | A fixed field is read-only in the panel, naming the schema that fixes it, and the service refuses an iteration or a cut whose value for it differs from the default, naming field and schema                                                               |
+| **CNT-057** | An insertion palette of mathematical, Greek, and scientific and technical symbols, as a keyboard-navigable grid that inserts characters                                                                                                                    |
+| **CNT-077** | Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view                                                                                                  |
+| **CNT-048** | An equation's alternative is generated from its MathML wherever a generator is available - when an equation is made or changed, in the component's language where the generator speaks it (publishing.md, EQ-D) - stored as `alttext`, and always editable |
+| **CNT-080** | Equations render as native MathML carrying `alttext`, which assistive technology reads; an equation is reachable and opened by keyboard                                                                                                                    |
+| **CNT-098** | The surface sets `spellcheck`, so the delivery's own checker marks spelling as the author types                                                                                                                                                            |
+| **CNT-147** | A run carrying a language mark whose language differs from the component's base language is rendered with `spellcheck="false"`, so a passage in another language is never flagged                                                                          |
+| **CNT-148** | The web delivery uses the browser's checker; the desktop shell enables the base languages of the components open, through one platform bridge call, so neither lacks a checker                                                                             |
+| **CNT-152** | A language tag the content model takes and a publication cannot carry is named back to the author, in the dialog they typed it in, before the mark is applied; **OK anyway** then applies it                                                               |
 
 **What CNT-147's test shows, and what it does not.** The test asserts the attribute the product sets:
 a run whose language mark differs from the component's base language is rendered with
@@ -388,18 +388,19 @@ equal; nothing requires it, and a comparison showing a re-entered equation as ch
 
 Chromium renders MathML Core and Electron is Chromium, so there is no typesetting library in the editor.
 
-| Context                              | Equation                                          |
-| ------------------------------------ | ------------------------------------------------- |
-| Running text, list items, quotations | Inline, and block where blocks are allowed        |
-| A table cell                         | Inline, in the cell's paragraphs, and block       |
-| A footnote                           | Inline                                            |
-| A caption                            | **Not representable** - see [Captions](#captions) |
-| A heading                            | The document view's                               |
+| Context                              | Equation                                               |
+| ------------------------------------ | ------------------------------------------------------ |
+| Running text, list items, quotations | Inline, and block where blocks are allowed             |
+| A table cell                         | Inline, in the cell's paragraphs, and block            |
+| A footnote                           | Inline                                                 |
+| A caption                            | Inline: a caption is inline content since 2026-09-22   |
+| A section's title                    | Inline, from the outline's title (publishing.md, EQ-G) |
 
 **Generating the alternative is assistance, and its absence is never silent.** The alternative is
-generated from the MathML by a speech rule engine where one is available - when an equation is entered,
-and on load for any equation that has none, which covers pasted, migrated and restored ones. It is always
-editable. If no generator is available or it produces nothing, the field is empty and marked, and a
+generated from the MathML by a speech rule engine where one is available - when an equation is made or
+changed, in the component's language where the engine speaks it, and **never on load** (publishing.md's
+[Equations](publishing.md#equations), EQ-D, which narrowed this: generating on load made opening a
+component change it). It is always editable. If no generator is available or it produces nothing, the field is empty and marked, and a
 missing alternative fails the publish (PUB-072). CNT-048 asks for generation "where possible", so the
 choice of engine does not decide whether this slice meets it.
 
@@ -414,6 +415,8 @@ every operation in the identity table above treats like any other.
 **A plain-string caption cannot hold an equation, a mark or a cross-reference**, so CNT-046's "an equation
 in a caption" is not representable in the model as built. That is a finding about the content model rather
 than the editor, raised as [#88](https://github.com/kenhayward/alloy-works/issues/88) rather than worked around here.
+**Answered since**: a caption is inline content (2026-09-22), and publishing.md's
+[Equations](publishing.md#equations) measured an equation in one, with the list that sets it again.
 
 ### Figures
 

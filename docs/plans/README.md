@@ -498,6 +498,13 @@ through an undo and a cut and paste, then references published.
 | 1   | [References in the editor](2026-09-23-cross-references-01-references-in-the-editor.md) | A reference to a section, a figure, a table or a footnote placed from a dialog and shown as it will print, or as broken; identifiers kept through an undo, and references re-pointed through a cut and paste; refused by name at publish              | Built (PR #219) |
 | 2   | [Publishing references](2026-09-23-cross-references-02-publishing-references.md)       | A reference resolved and printed as a number, a title, both, a page or above and below in the layout's words, a link in a paragraph's text and text elsewhere; one the document cannot resolve, or asked for a form its target lacks, refused by name | Built (PR #220) |
 
+## Equations
+
+The equations design is publishing.md's [Equations](../design/publishing.md#equations), over the
+content model's MathML and the editor's and Word's earlier designs, measured against the pinned engine
+on 2026-09-23 (decisions EQ-A to EQ-H). Planned as two pull requests (decision EQ-H): equations in the
+editor, then equations published; Word's OMML comes with Word output.
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in
