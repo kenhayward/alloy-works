@@ -155,7 +155,7 @@ export function documentTargets({
     if (own) passed = true;
     const relative = !found || own ? null : passed ? 'below' : 'above';
     if (node.type === 'section') {
-      const words = captionText(node.title);
+      const words = titleWords(node.title, labelOf);
       targets.push({
         target: { kind: 'node', node: node.id },
         kind: 'section',
@@ -189,6 +189,27 @@ export function documentTargets({
 
 /** A numbering entry's key: its node, and its block where it is one. */
 const entryKey = (node: string, block: string | null) => `${node}\u{0}${block ?? ''}`;
+
+/**
+ * **A section's title, in its own words, its own reference resolved** (cross-references 2, ruling
+ * R9's part 2): a title's reference is always a `node` target and always a number
+ * (`checkInlineContent` enforces both, so a title never needs the full resolution `assemble` runs),
+ * so it prints the same label `labelOf` already gives that section for every other target - "Results
+ * of 1", not "Results of " with the reference silently dropped, as `captionText` would read it.
+ */
+const titleWords = (
+  title: readonly InlineNode[],
+  labelOf: (node: string, block: string | null) => string | null,
+): string =>
+  title
+    .map((inline) => {
+      if (inline.type === 'text') return inline.value;
+      if (inline.type === 'crossReference' && inline.target.kind === 'node') {
+        return labelOf(inline.target.node, null) ?? '';
+      }
+      return '';
+    })
+    .join('');
 
 /**
  * **What a reference prints** in a form (XR-C): `number` the label; `title` the title; `numberAndTitle`

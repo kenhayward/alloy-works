@@ -296,6 +296,40 @@ describe('what a document offers a reference', () => {
     ]);
   });
 
+  it("includes a title's own reference as the number the same numbering gives its target, never dropped as a caption's would be", () => {
+    // A title's reference is always to a section, and always a number (the content model's rule), so
+    // it resolves from the same numbering entries `labelOf` already reads for every other target.
+    const results: OutlineViewNode = {
+      type: 'section',
+      id: id('results'),
+      title: [
+        { type: 'text', value: 'Results of ', marks: [] },
+        { type: 'crossReference', id: 'xtitle', target: toSection('method'), display: 'number' },
+      ],
+      ...positional('body', true),
+      children: [],
+    };
+    const targets = offered([section('method', 'Method'), results, occurrence('ada', ADA)], {
+      ada: [],
+    });
+    expect(targets).toEqual([
+      {
+        target: toSection('method'),
+        kind: 'section',
+        label: '1',
+        title: 'Method',
+        relative: 'above',
+      },
+      {
+        target: toSection('results'),
+        kind: 'section',
+        label: '2',
+        title: 'Results of 1',
+        relative: 'above',
+      },
+    ]);
+  });
+
   it('says nothing is above or below where the occurrence being edited is not in the outline', () => {
     const targets = offered(
       [section('method', 'Method'), occurrence('grace', GRACE), occurrence('ada', ADA)],
