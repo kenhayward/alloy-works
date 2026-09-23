@@ -2,6 +2,7 @@ import { parseContentDocument, type ContentDocument } from '@alloy-works/domain'
 import { DOMSerializer } from 'prosemirror-model';
 
 import { toEditor } from './mapping.js';
+import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
 import { editorSchema } from './schema.js';
 
 /**
@@ -11,10 +12,15 @@ import { editorSchema } from './schema.js';
  * lets a document show a hundred of them (interface slice 9). `null` for content that does not read
  * as a content document, or that holds what the editor cannot show yet. Browser code, like the view:
  * the document is the caller's.
+ *
+ * `context` is the document the component is shown in, as the surface's is (cross-references 1,
+ * ruling R12): each reference shows what it will print there, and on its own - no context - what the
+ * component alone can say of it.
  */
 export function renderContent(
   content: unknown,
   document: Document,
+  context: ReferenceContext | null = null,
 ): HTMLElement | DocumentFragment | null {
   let parsed: ContentDocument;
   try {
@@ -24,5 +30,29 @@ export function renderContent(
   }
   const opened = toEditor(parsed);
   if (!opened.editable) return null;
-  return DOMSerializer.fromSchema(editorSchema).serializeFragment(opened.doc.content, { document });
+  const rendered = DOMSerializer.fromSchema(editorSchema).serializeFragment(opened.doc.content, {
+    document,
+  });
+  drawReferences(rendered, referencesShown(opened.doc, context));
+  return rendered;
+}
+
+/**
+ * Each cross-reference's text, as the surface draws it (cross-references 1, ruling R12): what it will
+ * print in the document `context` describes, or its kind and caption where there is none, and _Broken
+ * reference_, drawn apart, where its target has gone. `toDOM` can say only what the node alone tells
+ * it. The serializer writes a node's content where its own element stands, a footnote's text
+ * included, so the spans come in the order `referencesShown` walks the document in.
+ */
+function drawReferences(
+  rendered: HTMLElement | DocumentFragment,
+  shown: readonly { readonly text: string; readonly broken: boolean }[],
+): void {
+  const spans = rendered.querySelectorAll('span[data-reference]');
+  shown.forEach(({ text, broken }, index) => {
+    const span = spans[index];
+    if (span === undefined) return;
+    span.textContent = text;
+    if (broken) span.classList.add(BROKEN_CLASS);
+  });
 }
