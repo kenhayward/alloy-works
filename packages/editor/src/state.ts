@@ -500,8 +500,9 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       identityPlugin(options.newIdentifier),
       noAdjacentEmptyParagraphs(),
       attributionAlwaysThere,
-      // An image and a footnote carry no marks (figures 4, footnotes 1), taken off before annotations
-      // are made whole, so the two pieces of one either side of either are still read as one.
+      // An image, a footnote and a cross-reference carry no marks (figures 4, footnotes 1,
+      // cross-references 1), taken off before annotations are made whole, so the two pieces of one
+      // either side of any of them are still read as one.
       imagesUnmarked,
       // And what is typed straight after one carries on the marks it stands in.
       marksPastImages,

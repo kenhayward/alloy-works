@@ -277,7 +277,8 @@ export function spansOf(
   type Span = { mark: EditorMark; from: number; to: number };
   const spans: Span[] = [];
   // `open` is the span a range is still in, or undefined once text without the mark has ended it:
-  // only a text node ends a span, so a block boundary, an image and a footnote's mark are passed over.
+  // only a text node ends a span, so a block boundary, an image, a footnote's mark and a
+  // cross-reference are passed over.
   const walk = (parent: Node, start: number, range: { open?: Span | undefined }) => {
     parent.forEach((node, offset) => {
       const pos = start + offset;
@@ -405,10 +406,12 @@ export function applyMarkCommand(
 function rangeToMark(state: EditorState, type: MarkType): { from: number; to: number } | null {
   // An image selected whole is nothing to put a mark on: it carries none (figures 4, ruling R1).
   // Nor is a footnote selected whole: its mark carries none, and its text is edited in its own
-  // editor (footnotes 1).
+  // editor (footnotes 1). Nor is a cross-reference, which carries none (cross-references 1, R6).
   if (
     state.selection instanceof NodeSelection &&
-    (state.selection.node.type.name === 'image' || isFootnote(state.selection.node))
+    (state.selection.node.type.name === 'image' ||
+      state.selection.node.type.name === 'crossReference' ||
+      isFootnote(state.selection.node))
   ) {
     return null;
   }
