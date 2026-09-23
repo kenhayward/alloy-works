@@ -334,7 +334,7 @@ describe('publishing from the document page', () => {
     );
   });
 
-  it('names a cross-reference as something that cannot be published yet', async () => {
+  it('names a cross-reference as something a request made before layouts cannot publish (cross-references 2)', async () => {
     const fake = failing([
       {
         stage: 'compose',
@@ -347,7 +347,95 @@ describe('publishing from the document page', () => {
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
-    expect(why).toHaveTextContent('A cross-reference cannot be published yet.');
+    expect(why).toHaveTextContent(
+      "A cross-reference cannot be published under this request's layout.",
+    );
+  });
+
+  it('says a cross-reference points at something this document does not hold, or holds more than once (cross-references 2)', async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'cross_reference_unresolved',
+        node: null,
+        block: 'x1',
+        detail: 'block gone',
+      },
+      {
+        stage: 'compose',
+        code: 'cross_reference_unresolved',
+        node: CALIBRATION,
+        block: 'x2',
+        detail: 'component cccccccc-0000-4000-8000-000000000002 block x2',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A cross-reference points at something this document does not hold, or at a component it holds more than once.',
+    );
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: A cross-reference points at something this document does not hold, or at a component it holds more than once.',
+    );
+  });
+
+  it("names the form a cross-reference asked for that what it points at cannot show, never the author's text (cross-references 2)", async () => {
+    const fake = failing([
+      {
+        stage: 'compose',
+        code: 'cross_reference_form_unavailable',
+        node: null,
+        block: 'x1',
+        detail: 'number',
+      },
+      {
+        stage: 'compose',
+        code: 'cross_reference_form_unavailable',
+        node: null,
+        block: 'x2',
+        detail: 'title',
+      },
+      {
+        stage: 'compose',
+        code: 'cross_reference_form_unavailable',
+        node: null,
+        block: 'x3',
+        detail: 'numberAndTitle',
+      },
+      {
+        stage: 'compose',
+        code: 'cross_reference_form_unavailable',
+        node: null,
+        block: 'x4',
+        detail: 'page',
+      },
+      {
+        stage: 'compose',
+        code: 'cross_reference_form_unavailable',
+        node: null,
+        block: 'x5',
+        detail: 'relative',
+      },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, or a section with no number of its own.',
+    );
+    expect(why).toHaveTextContent(
+      'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, or a footnote.',
+    );
+    expect(why).toHaveTextContent(
+      'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, or a section with no number of its own.',
+    );
+    expect(why).toHaveTextContent(
+      "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
+    );
+    expect(why).toHaveTextContent(
+      "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",
+    );
   });
 
   it("blames the layout, not the document, for the layout's own words and language", async () => {
