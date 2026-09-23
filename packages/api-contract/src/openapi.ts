@@ -41,6 +41,17 @@ function content(schema: z.ZodType) {
 }
 
 function response(status: number, declared: RouteResponse): Json {
+  if (declared.binary) {
+    return {
+      description: declared.description,
+      content: Object.fromEntries(
+        declared.binary.contentTypes.map((type) => [
+          type,
+          { schema: { type: 'string', contentMediaType: type } },
+        ]),
+      ),
+    };
+  }
   if (declared.stream) {
     return {
       description: declared.description,
@@ -119,6 +130,22 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
       security: route.access.check === 'none' ? [] : [{ session: [] }],
       ...(parameters.length > 0 ? { parameters } : {}),
       ...(route.body ? { requestBody: requestBody(route.body) } : {}),
+      ...(route.rawBody
+        ? {
+            requestBody: {
+              required: true,
+              content: {
+                [route.rawBody.contentType]: {
+                  schema: {
+                    type: 'string',
+                    contentMediaType: route.rawBody.contentType,
+                    maxLength: route.rawBody.maxBytes,
+                  },
+                },
+              },
+            },
+          }
+        : {}),
       responses,
     };
   }

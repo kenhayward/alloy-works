@@ -33,7 +33,7 @@ const figured = (title: string): ContentDocument => {
   const figure = (id: string) => ({
     type: 'figure' as const,
     id,
-    asset: 'asset',
+    asset: '00000000-0000-4000-8000-00000000a551',
     imageStyle: 'wide',
     caption: [{ type: 'text' as const, value: 'A caption', marks: [] }],
     alternative: { kind: 'decorative' as const },
@@ -342,7 +342,7 @@ describe('what a document numbers against, read from the store', () => {
       const fourth = {
         type: 'figure' as const,
         id: 'f4',
-        asset: 'asset',
+        asset: '00000000-0000-4000-8000-00000000a551',
         imageStyle: 'wide' as const,
         caption: [{ type: 'text' as const, value: 'A caption', marks: [] }],
         alternative: { kind: 'decorative' as const },

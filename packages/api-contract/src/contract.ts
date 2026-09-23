@@ -9,6 +9,12 @@ export interface RouteResponse {
   readonly schema?: z.ZodType;
   /** A stream of events rather than a body: `text/event-stream`, which no schema describes. */
   readonly stream?: true;
+  /**
+   * Bytes rather than JSON, of one of these types (figures 1, R2). A permission-checked handler
+   * returns `{ contentType, bytes, immutable }`, and the service sends it after the transaction
+   * commits, never sniffed and never run: `nosniff` and a sandboxing policy on every one.
+   */
+  readonly binary?: { readonly contentTypes: readonly string[] };
 }
 
 /**
@@ -21,6 +27,8 @@ export type RouteTarget =
   | { readonly tenant: true }
   | { readonly space: string }
   | { readonly artifact: string }
+  /** The path parameter holding an artifact VERSION's id: decided on the artifact it belongs to. */
+  | { readonly artifactVersion: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };
@@ -64,5 +72,13 @@ export interface RouteContract {
   readonly query?: z.ZodObject;
   /** A JSON request body. The service validates it before a handler, as it does parameters. */
   readonly body?: z.ZodObject;
+  /**
+   * A request body of bytes, of one content type and no more than `maxBytes`: refused as `413` before
+   * it is read whole (figures 1, R2). A route declares this or `body`, never both.
+   */
+  readonly rawBody?: {
+    readonly contentType: 'application/octet-stream';
+    readonly maxBytes: number;
+  };
   readonly responses: Readonly<Record<number, RouteResponse>>;
 }

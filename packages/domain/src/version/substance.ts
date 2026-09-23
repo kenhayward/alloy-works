@@ -8,6 +8,7 @@ import {
   type DefinitionRef,
 } from '../metadata/record.js';
 import type { MetadataValues } from '../metadata/values.js';
+import type { AssetVersionContent } from '../assets/version.js';
 import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
@@ -43,8 +44,14 @@ export type DocumentSubstance = {
  */
 export type LayoutSubstance = { readonly kind: 'layout'; readonly content: Layout };
 
+/**
+ * An asset version says its recorded properties and its default description, and nothing else
+ * (docs/design/assets.md). Its content takes the shared rule, as a layout's does: nothing in it is a set.
+ */
+export type AssetSubstance = { readonly kind: 'asset'; readonly content: AssetVersionContent };
+
 export type VersionSubstance =
-  ComponentSubstance | DefinitionSubstance | DocumentSubstance | LayoutSubstance;
+  ComponentSubstance | DefinitionSubstance | DocumentSubstance | LayoutSubstance | AssetSubstance;
 
 /**
  * The version of the one component type a component version was written against. `definitionsFor`

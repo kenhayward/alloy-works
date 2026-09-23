@@ -1,6 +1,7 @@
 import type { DefinitionKind, Permission, PrincipalKind } from '@alloy-works/domain';
 import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import type { AssetUploadTable } from './assets-tables.js';
 import type {
   PublicationInputTable,
   PublicationOutputTable,
@@ -329,6 +330,7 @@ export interface TenantTables {
   publication: PublicationTable;
   publication_input: PublicationInputTable;
   publication_output: PublicationOutputTable;
+  asset_upload: AssetUploadTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

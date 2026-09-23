@@ -16,7 +16,8 @@ import { codePointSpelling, forbiddenInPreformatted, isLanguageLabel } from './p
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
-const bcp47 = z
+/** A well-formed BCP 47 tag, as a component's language and an asset's description take it. */
+export const languageTagSchema = z
   .string()
   .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?(-[a-z0-9]{5,8})*$/, 'not a BCP 47 tag');
 
@@ -27,7 +28,7 @@ const bcp47 = z
 export const contentDocumentSchema = z.strictObject({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   title: z.string().min(1),
-  language: bcp47,
+  language: languageTagSchema,
   direction: z.enum(['ltr', 'rtl']),
   content: z.array(blockNodeSchema).min(1),
 });

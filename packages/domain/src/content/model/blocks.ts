@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { alternativeSchema, equationContentSchema, inlineNodeSchema } from './inline.js';
+import { artifactIdentifierSchema } from './identifier.js';
 
 const identified = { id: z.string().min(1) };
 
@@ -157,7 +158,9 @@ export const tableNodeSchema = z.strictObject({
 export const figureNodeSchema = z.strictObject({
   type: z.literal('figure'),
   ...identified,
-  asset: z.string().min(1),
+  // An asset VERSION, pinned (figures 1, R4; decision F-H): a component version shows the image it
+  // was saved with. Tightened in place at schema version 1 on a read-only count of none stored.
+  asset: artifactIdentifierSchema,
   imageStyle: z.string().min(1),
   /** Inline content, as a table's caption is (issue #88). */
   caption: z.array(inlineNodeSchema),

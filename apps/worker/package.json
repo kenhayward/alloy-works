@@ -18,6 +18,7 @@
     "@alloy-works/objects": "workspace:^",
     "pg": "^8.23.0",
     "pino": "^10.3.1",
+    "sharp": "0.35.4",
     "zod": "^4.6.1"
   },
   "devDependencies": {

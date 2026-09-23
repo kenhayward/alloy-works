@@ -34,6 +34,21 @@ export {
   type StoredPublication,
   type StoredPublicationRequest,
 } from './publishing.js';
+export {
+  createAssetUpload,
+  holdObject,
+  objectInUse,
+  readAssetUpload,
+  readAssetVersion,
+  receiveAssetBytes,
+  recordAsset,
+  refuseAssetUpload,
+  type AssetUploadReason,
+  type AssetUploadState,
+  type StoredAssetUpload,
+  type StoredAssetVersion,
+} from './assets.js';
+export type { AssetUploadTable } from './assets-tables.js';
 export type {
   PublicationInputTable,
   PublicationOutputTable,

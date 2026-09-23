@@ -23,7 +23,9 @@ a web application and a desktop application**.
 > admission pipeline, read by `packages/readers`, and what it changed is shown in a paste report;
 > **Paste as Markdown** on the toolbar reads the clipboard as Markdown instead. A table - a caption,
 > header rows and columns, merged cells, cells of paragraphs and lists - is made from the toolbar or
-> a paste and changed from a Table panel, over `prosemirror-tables`. A
+> a paste and changed from a Table panel, over `prosemirror-tables`. An image - a PNG or a JPEG - can
+> be uploaded into a space through the API, read from its own bytes at the door and decoded whole by
+> sharp in the worker's `ingest` job before it is recorded as an asset, though nothing places one yet. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -83,7 +85,7 @@ where they are.
 
 ## Requirements, designs and the trace (required)
 
-There are 1,387 requirements in 22 documents under
+There are 1,388 requirements in 22 documents under
 [`docs/specification/requirements/`](docs/specification/requirements/). **Do not read them to find
 out what to build.** They are compiled to `packages/trace/trace.json` and queried - `pnpm trace
 tranche T1` to see where a tranche stands by area, `tranche T1 CNT` for that tranche's requirements

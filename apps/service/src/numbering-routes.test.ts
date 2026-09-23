@@ -67,7 +67,7 @@ const MATHML = '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"
 const figure = (id: string) => ({
   type: 'figure',
   id,
-  asset: 'asset',
+  asset: '00000000-0000-4000-8000-00000000a551',
   imageStyle: 'wide',
   caption: [{ type: 'text', value: 'A caption', marks: [] }],
   alternative: { kind: 'decorative' },

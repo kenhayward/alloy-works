@@ -36,6 +36,18 @@ describe('the domain package', () => {
         'readProductClipboard',
         'readerEntry',
         'writeProductClipboard',
+        // Assets, promoted by figures 1: the formats and limits the service refuses at the door, the
+        // header walk the service and the worker both run, and an asset version's stored shape.
+        'ADMITTED_FORMATS',
+        'ALTERNATIVE_MAX_LENGTH',
+        'ASSET_MAX_BYTES',
+        'ASSET_MAX_PIXELS',
+        'ASSET_SCHEMA_VERSION',
+        'admittedFormat',
+        'assetAlternativeSchema',
+        'assetVersionSchema',
+        'parseAssetVersion',
+        'readImageHeader',
         // Metadata, promoted in the plan that built it, on the same terms.
         'DEFINITION_SCHEMA_VERSION',
         'DefinitionConflictError',

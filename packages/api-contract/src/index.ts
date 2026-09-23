@@ -56,6 +56,13 @@ export {
   InvitationView,
   InvitationWithdrawn,
 } from './invitations.js';
+export {
+  AssetUploadParams,
+  AssetUploadView,
+  AssetVersionParams,
+  AssetVersionView,
+  CreateAssetUploadBody,
+} from './assets.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export {
   PublicationList,

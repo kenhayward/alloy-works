@@ -203,6 +203,7 @@ describe('migration 0018, which gives every environment its default layout', () 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0018_layouts',
       '0019_default_layout_lists',
+      '0020_assets',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -498,6 +499,7 @@ describe('migration 0018, which gives every environment its default layout', () 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0018_layouts',
       '0019_default_layout_lists',
+      '0020_assets',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({

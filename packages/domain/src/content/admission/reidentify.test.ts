@@ -203,7 +203,7 @@ describe('the re-identify stage', () => {
 
   it('gives a cross-reference a new identifier, and points one at the copy of what it refers to', () => {
     const component = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
-    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const dose = figure('old-figure', '00000000-0000-4000-8000-00000000a551', 'Dose');
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -245,7 +245,7 @@ describe('the re-identify stage', () => {
   });
 
   it('points a reference inside a footnote at a copy travelling in the body, and the reverse', () => {
-    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const dose = figure('old-figure', '00000000-0000-4000-8000-00000000a551', 'Dose');
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -281,8 +281,8 @@ describe('the re-identify stage', () => {
   });
 
   it('does not repoint a reference to an identifier that arrived on two blocks, leaving it to resolve as missing', () => {
-    const one = figure('fig', 'asset-1', 'One');
-    const two = figure('fig', 'asset-2', 'Two');
+    const one = figure('fig', '00000000-0000-4000-8000-00000000a551', 'One');
+    const two = figure('fig', '00000000-0000-4000-8000-00000000a552', 'Two');
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -317,7 +317,7 @@ describe('the re-identify stage', () => {
   });
 
   it('does not repoint a reference to an identifier a footnote and a block both arrived with', () => {
-    const dose = figure('fig', 'asset-1', 'Dose');
+    const dose = figure('fig', '00000000-0000-4000-8000-00000000a551', 'Dose');
     const { outcome, entries } = run({
       schemaVersion: 1,
       content: [
@@ -400,7 +400,7 @@ describe('the re-identify stage', () => {
         },
       ],
     };
-    const dose = figure('old-figure', 'asset-1', 'Dose');
+    const dose = figure('old-figure', '00000000-0000-4000-8000-00000000a551', 'Dose');
     const { outcome } = run({ schemaVersion: 1, content: [dose] }, receiver({ document: citing }));
     // Given n3, the pasted figure would silently become what the receiver's reference resolves to.
     expect(outcome).toEqual({
@@ -419,7 +419,7 @@ describe('the re-identify stage', () => {
         {
           type: 'figure',
           id: 'fig',
-          asset: 'asset-1',
+          asset: '00000000-0000-4000-8000-00000000a551',
           imageStyle: 'column-width',
           caption: [{ type: 'text', value: 'Dose', marks: [] }],
           alternative: { kind: 'decorative' },

@@ -64,6 +64,18 @@ async function targetOf(
     const id = params[declared.grant];
     return typeof id === 'string' && UUID.test(id) ? grantLevel(trx, id) : undefined;
   }
+  if ('artifactVersion' in declared) {
+    // A version is decided on the artifact it belongs to, read in the deciding transaction (figures
+    // 1, R2): a version this tenant does not hold is no level at all, and so not found.
+    const id = params[declared.artifactVersion];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select('artifact_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return version ? parseLevel(`artifact:${version.artifact_id}`) : undefined;
+  }
   const [kind, name] =
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];
@@ -98,6 +110,25 @@ export function administerOrAbove(facts: AccessFacts): Decision {
     if (decision.allowed) return decision;
   }
   return decide('administer', facts);
+}
+
+/**
+ * `authorise`, for a level a handler found for itself - an upload's space - rather than one its path
+ * names: decided in the handler's transaction under the access epoch's shared lock, a level the
+ * principal may not read refused as not found, one they may read refused as forbidden.
+ */
+export async function authoriseAt(
+  trx: TenantTransaction,
+  principalId: string,
+  permission: Exclude<PermissionCheck['permission'], 'administer'>,
+  target: Level,
+): Promise<Decision> {
+  await decideOnly(trx);
+  const facts = await loadFacts(trx, principalId, target);
+  if (!facts || (target.kind !== 'tenant' && !decide('read', facts).allowed)) throw notFound();
+  const decision = decide(permission, facts);
+  if (!decision.allowed) throw forbidden(permission);
+  return decision;
 }
 
 /**

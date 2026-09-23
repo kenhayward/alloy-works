@@ -126,6 +126,7 @@ describe('the real corpus', () => {
   });
 
   it('finds exactly the corpus this plan was written against', () => {
+    // 1388, from 1387: AST-051, superseding AST-003 (issue #206).
     // 1387, from 1386: TAB-049, superseding TAB-031 (issue #202).
     // 1386, from 1385: CNT-153, an ordered list's start number of 1 or more except in decimal,
     // superseding CNT-119, landed by the lists plan.
@@ -153,7 +154,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1387);
+    expect(total((document) => document.requirements)).toBe(1388);
     expect(total((document) => document.nonRequirements)).toBe(117);
     expect(total((document) => document.questions)).toBe(135);
   });

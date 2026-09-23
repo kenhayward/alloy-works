@@ -457,6 +457,17 @@ publication.
 | 1   | [The table in a component](2026-09-22-tables-01-the-table-in-a-component.md) | In `packages/domain`, captions as inline content, a table's `style`, the grid and cell rules, in place at schema version 1 on the evidence of a read-only count; tables read from HTML and Markdown; in `packages/editor`, `prosemirror-tables` 1.8.5, the Table command and its panel's commands; in `apps/web`, the table panel. No publishing | Built (PR #203) |
 | 2   | [Publishing tables](2026-09-22-tables-02-publishing-tables.md)               | `publishing/6` and template `publication/6` under `--features a11y-extras`, layout schema 2 with `matter.lists` and the default layout 0.2 declaring a list of tables, `table_without_caption`, a veraPDF regression case, and TAB-049 from #202                                                                                                 | Built (PR #204) |
 
+## Figures
+
+The figures design is [assets.md](../design/assets.md) with publishing.md's
+[Figures](../design/publishing.md#figures) and component-editor.md's [Figures](../design/component-editor.md#figures),
+taken by Ken as recommended on 2026-09-23 (decisions F-A to F-P). Built in four pull requests (decision
+F-O): assets, the figure in the editor, figures published, then inline images.
+
+| #   | Plan                                      | Builds                                                                                                                                                                                                                         | Status          |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| 1   | [Assets](2026-09-23-figures-01-assets.md) | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | Built (PR #207) |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

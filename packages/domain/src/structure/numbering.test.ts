@@ -103,7 +103,7 @@ describe('numbering an outline', () => {
     const figure = (block: string) => ({
       type: 'figure',
       id: block,
-      asset: 'asset',
+      asset: '00000000-0000-4000-8000-00000000a551',
       imageStyle: 'wide',
       caption: [{ type: 'text', value: 'A caption', marks: [] }],
       alternative: { kind: 'decorative' },

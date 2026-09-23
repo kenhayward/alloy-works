@@ -4,6 +4,7 @@ import {
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
   parseContentDocument,
+  parseAssetVersion,
   parseLayout,
   parseOutlineDocument,
   type DefinitionRef,
@@ -49,10 +50,12 @@ export interface Authorship {
 export type NewArtifact = Authorship &
   (
     | {
-        readonly substance: Extract<VersionSubstance, { kind: 'component' | 'document' }>;
+        readonly substance: Extract<VersionSubstance, { kind: 'component' | 'document' | 'asset' }>;
         readonly spaceId: string;
       }
-    | { readonly substance: Exclude<VersionSubstance, { kind: 'component' | 'document' }> }
+    | {
+        readonly substance: Exclude<VersionSubstance, { kind: 'component' | 'document' | 'asset' }>;
+      }
   );
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -94,6 +97,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'layout') {
     // A layout carries no `id` either: it is a definition in no space, identified by its artifact row.
     return { kind: 'layout', content: parseLayout(substance.content) };
+  }
+  if (substance.kind === 'asset') {
+    // Nor does an asset version: an asset is in a space, as content is (docs/design/assets.md).
+    return { kind: 'asset', content: parseAssetVersion(substance.content) };
   }
   const content = definitionSchemas[substance.kind].parse(substance.content);
   if (!UUID.test(content.id)) {
@@ -178,7 +185,7 @@ export async function createArtifact(
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      substance.kind === 'component' || substance.kind === 'document'
+      substance.kind === 'component' || substance.kind === 'document' || substance.kind === 'asset'
         ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
         : { id: substance.content.id, kind: substance.kind, space_id: null },
     )
@@ -339,11 +346,12 @@ export async function recordVersion(
 
   const substance = prepare(input.substance);
   // A definition's rule, not content's: a definition's payload repeats its identity, and a
-  // component's content, a document's outline and a layout carry none.
+  // component's content, a document's outline, a layout and an asset version carry none.
   if (
     substance.kind !== 'component' &&
     substance.kind !== 'document' &&
     substance.kind !== 'layout' &&
+    substance.kind !== 'asset' &&
     substance.content.id !== input.artifactId
   ) {
     throw new Error(

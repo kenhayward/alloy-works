@@ -22,6 +22,9 @@ const paragraph = (id: string, value = 'A sentence.') => ({
   content: [{ type: 'text', value, marks: [] }],
 });
 
+/** An asset version's identifier, invented: a figure and an image name one (figures 1, R4). */
+const ASSET_VERSION = '00000000-0000-4000-8000-00000000a551';
+
 const doc = (content: unknown[]) => ({
   schemaVersion: CURRENT_SCHEMA_VERSION,
   title: 'A component',
@@ -237,13 +240,43 @@ describe('the content document', () => {
     const withoutAlternative = {
       type: 'figure',
       id: 'b6',
-      asset: 'asset-1',
+      asset: '00000000-0000-4000-8000-00000000a551',
       imageStyle: 'column-width',
       caption: [{ type: 'text', value: 'Figure', marks: [] }],
     };
     const figure = { ...withoutAlternative, alternative: { kind: 'inherited' } };
-    expect(parseContentDocument(doc([figure])).content[0]).toMatchObject({ asset: 'asset-1' });
+    expect(parseContentDocument(doc([figure])).content[0]).toMatchObject({
+      asset: '00000000-0000-4000-8000-00000000a551',
+    });
     expect(() => contentDocumentSchema.parse(doc([withoutAlternative]))).toThrow();
+  });
+
+  it('CNT-017 makes a figure and an inline image name an asset version, and nothing else', () => {
+    // Figures 1, R4: tightened in place at schema version 1, on a read-only count that found no
+    // figure or image stored anywhere. A figure pins the version it shows (decision F-H).
+    const figure = (asset: string) => ({
+      type: 'figure',
+      id: 'b6',
+      asset,
+      imageStyle: 'figure',
+      caption: [],
+      alternative: { kind: 'decorative' },
+    });
+    const image = (asset: string) => ({
+      type: 'paragraph',
+      id: 'b7',
+      style: 'body',
+      content: [
+        { type: 'image', asset, imageStyle: 'inline', alternative: { kind: 'decorative' } },
+      ],
+    });
+    for (const asset of ['asset-1', 'x', ASSET_VERSION.toUpperCase(), `${ASSET_VERSION} `]) {
+      expect(() => parseContentDocument(doc([figure(asset)])), asset).toThrow();
+      expect(() => parseContentDocument(doc([image(asset)])), asset).toThrow();
+    }
+    expect(
+      parseContentDocument(doc([figure(ASSET_VERSION), image(ASSET_VERSION)])).content,
+    ).toHaveLength(2);
   });
 
   // Not CNT-047, deliberately. Its second clause - that an unnumbered equation consumes no
@@ -290,7 +323,7 @@ describe('the content document', () => {
     };
     const image = {
       type: 'image',
-      asset: 'asset-1',
+      asset: '00000000-0000-4000-8000-00000000a551',
       imageStyle: 'inline',
       alternative: { kind: 'decorative' },
     };

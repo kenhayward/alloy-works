@@ -150,7 +150,7 @@ describe('the inline vocabulary', () => {
   it('CNT-123 refuses a dimension on an inline image', () => {
     const ok = {
       type: 'image',
-      asset: 'asset-1',
+      asset: '00000000-0000-4000-8000-00000000a551',
       imageStyle: 'inline',
       alternative: { kind: 'decorative' },
     };

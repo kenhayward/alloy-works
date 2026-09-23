@@ -5,6 +5,7 @@ import {
   bootstrapCluster,
   configureOrganisationSignIn,
   createArtifact,
+  createAssetUpload,
   createDocument,
   createRole,
   createSpace,
@@ -13,6 +14,8 @@ import {
   findRole,
   grant,
   migrate,
+  receiveAssetBytes,
+  recordAsset,
   recordPublication,
   requestPublication,
   type NewGrant,
@@ -51,6 +54,7 @@ describe('routes that check a permission', () => {
   let audit: string;
   let report: string;
   let reportPublication: string;
+  let clinicalImage: string;
   let graceAuthors: string;
 
   const give = async (input: Omit<NewGrant, 'grantedBy' | 'roleId'> & { role: string }) => {
@@ -186,6 +190,31 @@ describe('routes that check a permission', () => {
       });
       if (!recorded) throw new Error('The publication was not recorded');
       reportPublication = recorded;
+      // And an image in Clinical, made as the `ingest` job makes one, over an object that need not
+      // exist: a route reading it must refuse before it reads the store.
+      const upload = await createAssetUpload(trx, {
+        spaceId: clinical,
+        uploader: ids.ada!,
+        alternative: null,
+      });
+      await receiveAssetBytes(trx, upload.id, {
+        key: `${tenant.role}/sha256/${'e'.repeat(64)}`,
+        format: 'png',
+        bytes: 1,
+      });
+      clinicalImage = (
+        await recordAsset(trx, upload.id, {
+          format: 'png',
+          width: 1,
+          height: 1,
+          orientation: 1,
+          colour: 'rgb',
+          alpha: false,
+          depth: 8,
+          resolution: null,
+          end: 1,
+        })
+      ).id;
     });
     await give({
       role: 'Administrator',
@@ -612,6 +641,16 @@ describe('routes that check a permission', () => {
       payload: { email: 'ivy@example.com' },
     }),
     withdrawInvitation: () => ({ url: `/v1/invitations/${MISSING}`, status: 403 }),
+    createAssetUpload: () => ({
+      url: `/v1/spaces/${clinical}/asset-uploads`,
+      status: 404,
+      payload: { alternative: null },
+    }),
+    getAssetVersion: () => ({ url: `/v1/asset-versions/${clinicalImage}`, status: 404 }),
+    getAssetVersionContent: () => ({
+      url: `/v1/asset-versions/${clinicalImage}/content`,
+      status: 404,
+    }),
   };
 
   const checked = allRoutes.filter((route) => route.access.check === 'permission');

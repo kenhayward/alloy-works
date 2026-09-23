@@ -17,7 +17,7 @@ const note = (id: string) => ({
 const figure = (id: string) => ({
   type: 'figure',
   id,
-  asset: 'asset',
+  asset: '00000000-0000-4000-8000-00000000a551',
   imageStyle: 'wide',
   caption: [{ type: 'text', value: 'A caption', marks: [] }],
   alternative: { kind: 'decorative' },
