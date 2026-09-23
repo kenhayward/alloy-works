@@ -112,3 +112,7 @@ $$;
 
 create trigger asset_upload_moves_forward before update on asset_upload
   for each row execute function asset_upload_moves_forward();
+
+-- And back to how every deferrable constraint here is declared - initially deferred - so a later
+-- migration run in the same transaction on a fresh database meets them as it would on an existing one.
+set constraints all deferred;

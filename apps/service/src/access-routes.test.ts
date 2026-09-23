@@ -212,6 +212,7 @@ describe('routes that check a permission', () => {
           alpha: false,
           depth: 8,
           resolution: null,
+          end: 1,
         })
       ).id;
     });

@@ -1065,7 +1065,7 @@
     {
       "id": "AST-051",
       "area": "AST",
-      "statement": "Each format admitted as an asset must declare how an upload of it is made safe before anything can reference it: scanned for malware, or proved by a strict parse of its structure and a full decode to hold nothing but content of that format. A format that can carry active content - script, links, or embedded files, such as SVG, PDF or an Office document - must be scanned",
+      "statement": "Each format admitted as an asset must declare how an upload of it is made safe before anything can reference it: scanned for malware, or proved by a strict parse of its structure and a full decode to be a well-formed file of that format, with nothing that follows its end kept. A format that can carry active content - script, links or embedded files a reader would act on, such as SVG, PDF or an Office document - must be scanned",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
@@ -14271,19 +14271,15 @@
         },
         {
           "id": "AST-006",
-          "howItIsMet": "The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole"
+          "howItIsMet": "The walk refuses, `malformed`, and the job, `undecodable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole"
         },
         {
           "id": "AST-051",
-          "howItIsMet": "The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk that refuses any byte after the image's end, and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content is admitted, so none needs the scan AST-051 requires of one"
+          "howItIsMet": "The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk of the structure, the image alone kept - whatever follows its end is dropped at the door - and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content a reader would act on is admitted, so none needs the scan AST-051 requires of one"
         },
         {
           "id": "AST-035",
           "howItIsMet": "`checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one"
-        },
-        {
-          "id": "AST-037",
-          "howItIsMet": "A refused upload is `refused` with its reason - kept as the record, never deleted - never names an asset version, and its bytes are removed from the store unless an asset already holds the same ones"
         },
         {
           "id": "AST-026",
@@ -15925,49 +15921,43 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 351,
+      "line": 352,
       "kind": "title"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 213,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "AST-002",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 213,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 268,
+      "line": 301,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 253,
+      "line": 286,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 213,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 225,
-      "kind": "title"
-    },
-    {
-      "id": "AST-051",
-      "file": "apps/service/src/asset-routes.test.ts",
-      "line": 225,
+      "line": 267,
       "kind": "title"
     },
     {
@@ -15985,7 +15975,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 421,
+      "line": 422,
       "kind": "title"
     },
     {
@@ -16219,19 +16209,13 @@
     {
       "id": "AST-006",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 163,
-      "kind": "title"
-    },
-    {
-      "id": "AST-037",
-      "file": "apps/worker/src/ingest.test.ts",
-      "line": 163,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 175,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -16357,13 +16341,13 @@
     {
       "id": "AST-005",
       "file": "packages/db/src/assets.test.ts",
-      "line": 89,
+      "line": 90,
       "kind": "title"
     },
     {
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
-      "line": 89,
+      "line": 90,
       "kind": "title"
     },
     {
@@ -16513,41 +16497,35 @@
     {
       "id": "AST-002",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 131,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "AST-005",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 149,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 250,
+      "line": 359,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 131,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 250,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "AST-005",
-      "file": "packages/domain/src/assets/version.test.ts",
-      "line": 24,
-      "kind": "title"
-    },
-    {
-      "id": "AST-012",
       "file": "packages/domain/src/assets/version.test.ts",
       "line": 24,
       "kind": "title"

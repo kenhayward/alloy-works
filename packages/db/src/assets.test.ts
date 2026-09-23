@@ -3,7 +3,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createAssetUpload,
-  objectNamedByAsset,
+  objectInUse,
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,
@@ -28,6 +28,7 @@ const header: ImageHeader = {
   alpha: false,
   depth: 8,
   resolution: null,
+  end: 3530,
 };
 
 describe('an asset upload, and the asset it makes (figures 1)', () => {
@@ -122,21 +123,36 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
       spaceId: general,
       content: version.content,
     });
-    expect(await inTenant((trx) => objectNamedByAsset(trx, key('b')))).toBe(true);
-    expect(await inTenant((trx) => objectNamedByAsset(trx, key('c')))).toBe(false);
+    expect(await inTenant((trx) => objectInUse(trx, key('b'), upload.id))).toBe(true);
+    expect(await inTenant((trx) => objectInUse(trx, key('c'), upload.id))).toBe(false);
+  });
+
+  it('counts an object in use by another upload of the same bytes that is still checking, but not by the one asking', async () => {
+    // Two uploads of one photograph share its key. Refusing the first must not remove what the
+    // second is still being checked against (final review, finding 5).
+    const first = await made();
+    const second = await made();
+    for (const each of [first, second]) {
+      await inTenant((trx) =>
+        receiveAssetBytes(trx, each.id, { key: key('7'), format: 'png', bytes: 1 }),
+      );
+    }
+    expect(await inTenant((trx) => objectInUse(trx, key('7'), first.id))).toBe(true);
+    await inTenant((trx) => refuseAssetUpload(trx, second.id, 'undecodable', 'checking'));
+    expect(await inTenant((trx) => objectInUse(trx, key('7'), first.id))).toBe(false);
   });
 
   it('refuses an upload, at the door or after its check, saying why and never making an asset', async () => {
     const atTheDoor = await made();
     expect(
-      await inTenant((trx) => refuseAssetUpload(trx, atTheDoor.id, 'not_permitted')),
+      await inTenant((trx) => refuseAssetUpload(trx, atTheDoor.id, 'not_permitted', 'awaiting')),
     ).toMatchObject({ state: 'refused', reason: 'not_permitted', assetVersionId: null });
     const checked = await made();
     await inTenant((trx) =>
       receiveAssetBytes(trx, checked.id, { key: key('d'), format: 'jpeg', bytes: 10 }),
     );
     expect(
-      await inTenant((trx) => refuseAssetUpload(trx, checked.id, 'undecodable')),
+      await inTenant((trx) => refuseAssetUpload(trx, checked.id, 'undecodable', 'checking')),
     ).toMatchObject({
       state: 'refused',
       reason: 'undecodable',
@@ -145,20 +161,34 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
 
   it('moves an upload forwards only, and never changes what it was made with', async () => {
     const upload = await made();
-    // Recorded before its bytes, or twice, or refused once ready: each is refused by the database.
+    // Recorded before its bytes is refused. Filled twice, or refused from a state it has left, is
+    // answered as not done - undefined - so two requests racing each other are told, not failed.
     await expect(inTenant((trx) => recordAsset(trx, upload.id, header))).rejects.toThrow();
     await inTenant((trx) =>
       receiveAssetBytes(trx, upload.id, { key: key('e'), format: 'png', bytes: 1 }),
     );
-    await expect(
-      inTenant((trx) =>
+    expect(
+      await inTenant((trx) =>
         receiveAssetBytes(trx, upload.id, { key: key('f'), format: 'png', bytes: 1 }),
       ),
-    ).rejects.toThrow();
+    ).toBeUndefined();
+    expect(
+      await inTenant((trx) => refuseAssetUpload(trx, upload.id, 'malformed', 'awaiting')),
+    ).toBeUndefined();
     await inTenant((trx) => recordAsset(trx, upload.id, header));
-    await expect(inTenant((trx) => refuseAssetUpload(trx, upload.id, 'malformed'))).rejects.toThrow(
-      /moves forwards/,
-    );
+    expect(
+      await inTenant((trx) => refuseAssetUpload(trx, upload.id, 'malformed', 'checking')),
+    ).toBeUndefined();
+    // And beneath the functions, the database holds the same line.
+    await expect(
+      inTenant((trx) =>
+        trx
+          .updateTable('asset_upload')
+          .set({ state: 'refused', reason: 'malformed', finished_at: new Date() })
+          .where('id', '=', upload.id)
+          .execute(),
+      ),
+    ).rejects.toThrow(/moves forwards/);
     await expect(
       inTenant((trx) =>
         trx

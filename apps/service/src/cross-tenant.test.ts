@@ -285,6 +285,7 @@ const assetIn = (tenant: Tenant, db: TenantDatabase) =>
       alpha: false,
       depth: 8,
       resolution: null,
+      end: 1,
     });
     return { upload: upload.id, version: version.id };
   });

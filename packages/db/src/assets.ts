@@ -123,14 +123,26 @@ export async function readAssetUpload(
 }
 
 /**
+ * Holds the bytes of this hash for the rest of the transaction: storing them for an upload and
+ * removing them for a refusal each take it, so one never removes what the other has just kept for a
+ * second upload of the same image (final review, finding 5).
+ */
+export async function holdObject(trx: TenantTransaction, sha256: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:object:${sha256}`}, 0))`.execute(
+    trx,
+  );
+}
+
+/**
  * Records the bytes an awaiting upload was filled with - already stored under their hash, and already
  * read at the door - moves it to `checking`, and queues the job that proves them, in one transaction.
+ * Undefined where the upload is no longer awaiting: a second request filling it lost the race.
  */
 export async function receiveAssetBytes(
   trx: TenantTransaction,
   id: string,
   bytes: { readonly key: string; readonly format: AssetFormat; readonly bytes: number },
-): Promise<StoredAssetUpload> {
+): Promise<StoredAssetUpload | undefined> {
   const row = await trx
     .updateTable('asset_upload')
     .set({ state: 'checking', object_key: bytes.key, format: bytes.format, bytes: bytes.bytes })
@@ -138,7 +150,7 @@ export async function receiveAssetBytes(
     .where('state', '=', 'awaiting')
     .returningAll()
     .executeTakeFirst();
-  if (!row) throw new Error(`Upload ${id} is not awaiting its bytes`);
+  if (!row) return undefined;
   await enqueueJob(trx, 'ingest', id);
   return uploadOf(row);
 }
@@ -190,35 +202,55 @@ export async function recordAsset(
   return version;
 }
 
-/** Refuses an upload, at the door or after its check, saying why. The caller removes its bytes. */
+/**
+ * Refuses an upload in the state named - at the door, `awaiting`; after its check, `checking` - saying
+ * why. Undefined where it is no longer in that state, so a refusal never overwrites what another request
+ * or another attempt has already moved it to. The caller removes its bytes.
+ */
 export async function refuseAssetUpload(
   trx: TenantTransaction,
   id: string,
   reason: AssetUploadReason,
-): Promise<StoredAssetUpload> {
+  from: 'awaiting' | 'checking',
+): Promise<StoredAssetUpload | undefined> {
   const row = await trx
     .updateTable('asset_upload')
     .set({ state: 'refused', reason, finished_at: new Date() })
     .where('id', '=', id)
+    .where('state', '=', from)
     .returningAll()
     .executeTakeFirst();
-  if (!row) throw new Error(`No upload ${id}`);
-  return uploadOf(row);
+  return row && uploadOf(row);
 }
 
 /**
- * Whether any asset version names this object. A key is the bytes' hash, so a second upload of bytes
- * already made into an asset shares its key, and a refusal of the second must not remove them.
+ * Whether anything but this upload still needs the object: an asset version naming it, or another
+ * upload of the same bytes that is checking or ready. A key is the bytes' hash, so two uploads of one
+ * image share it, and refusing one must not remove what the other stands on. Asked under
+ * `holdObject`, so nothing can come to need it between the question and the removal.
  */
-export async function objectNamedByAsset(trx: TenantTransaction, key: string): Promise<boolean> {
-  const row = await trx
+export async function objectInUse(
+  trx: TenantTransaction,
+  key: string,
+  exceptUpload: string,
+): Promise<boolean> {
+  const version = await trx
     .selectFrom('artifact_version')
     .select('id')
     .where('kind', '=', 'asset')
     .where(sql<boolean>`content ->> 'object' = ${key}`)
     .limit(1)
     .executeTakeFirst();
-  return row !== undefined;
+  if (version) return true;
+  const upload = await trx
+    .selectFrom('asset_upload')
+    .select('id')
+    .where('object_key', '=', key)
+    .where('id', '<>', exceptUpload)
+    .where('state', 'in', ['checking', 'ready'])
+    .limit(1)
+    .executeTakeFirst();
+  return upload !== undefined;
 }
 
 /** An asset version and its asset's space, or undefined when this tenant holds no such version. */

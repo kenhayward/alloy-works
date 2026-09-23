@@ -9,8 +9,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Images can be uploaded into a space, through the API.** A PNG or a JPEG of up to 25 MB and 50
   million pixels, with a description for somebody who cannot see it. Before anything can use it, it is
-  checked by what its own bytes say it is, never its name, and then decoded whole in the background, so
-  a file that is not exactly one image is refused, with the reason, and not kept. Whoever may read the
+  checked by what its own bytes say it is, never its name, and then decoded whole in the background: a
+  file that is not a complete PNG or JPEG, or whose pixels do not decode, is refused with the reason and
+  not kept. Only the picture is kept - a phone's second picture or motion clip after it is left behind. Whoever may read the
   space may see it. Nothing in the application places an image yet: this is what figures will be made
   from.
 

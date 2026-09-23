@@ -5,8 +5,10 @@ import type {
   AssetVersionView,
   CreateAssetUploadBody,
 } from '@alloy-works/api-contract';
+import { createHash } from 'node:crypto';
 import {
   createAssetUpload,
+  holdObject,
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,
@@ -20,7 +22,7 @@ import {
 import { ADMITTED_FORMATS, ASSET_MAX_BYTES, readImageHeader } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { authoriseAt, notFound, type Authorised } from './access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -103,31 +105,57 @@ export function assetHandlers(
      */
     putAssetUploadBytes: async (request: FastifyRequest): Promise<AssetUploadView> => {
       const tenant = tenantOf(request);
-      const bytes = Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0);
-      if (bytes.length > ASSET_MAX_BYTES) {
+      // Bytes, or nothing is read at all: a JSON or text body, or none, is not an image that failed its
+      // check, and must not burn the upload as one would. Asked after the upload is found to be the
+      // caller's, so an upload that is not is not found, whatever was sent (IAM-004's harness).
+      const bytes =
+        Buffer.isBuffer(request.body) &&
+        request.headers['content-type']?.split(';')[0]?.trim() === 'application/octet-stream'
+          ? request.body
+          : undefined;
+      if (bytes !== undefined && bytes.length > ASSET_MAX_BYTES) {
         throw new AppError(413, 'asset_too_large', 'This file is larger than an image may be.');
       }
+      const filled = () =>
+        new AppError(409, 'asset_upload_filled', 'This upload already has its image.');
       const outcome = await db.withTenant(tenant, async (trx) => {
         const upload = await theirs(request, trx);
-        if (upload.state !== 'awaiting') {
-          throw new AppError(409, 'asset_upload_filled', 'This upload already has its image.');
+        // `create` in the space, decided again now that something will be made in it: a grant
+        // removed since the upload was made stops it here (final review, finding 6).
+        await authoriseAt(trx, principalOf(request).principalId, 'create', {
+          kind: 'space',
+          id: upload.spaceId,
+        });
+        if (bytes === undefined) {
+          throw new AppError(
+            415,
+            'asset_bytes_expected',
+            "Send the image's bytes as application/octet-stream.",
+          );
         }
+        if (upload.state !== 'awaiting') throw filled();
         const read = readImageHeader(bytes);
         if (!read.ok) {
-          await refuseAssetUpload(trx, upload.id, read.refusal);
+          if (!(await refuseAssetUpload(trx, upload.id, read.refusal, 'awaiting'))) throw filled();
           return { refused: REFUSED_AT_THE_DOOR[read.refusal] } as const;
         }
         if (!objects) throw storageUnavailable();
+        // The image alone: whatever follows its end - a phone's second picture or motion clip, or a
+        // file hidden in a polyglot - is left behind here and never stored (final review, findings 1
+        // and 2). Held by its hash while it is stored, so no refusal of another upload of the same
+        // image can remove it in between.
+        const image = bytes.subarray(0, read.header.end);
+        await holdObject(trx, createHash('sha256').update(image).digest('hex'));
         const store = await objects.forTenant(trx, tenant);
         const format = read.header.format;
-        const stored = await store.put(bytes, ADMITTED_FORMATS[format].contentType);
-        return {
-          upload: await receiveAssetBytes(trx, upload.id, {
-            key: stored.key,
-            format,
-            bytes: stored.size,
-          }),
-        } as const;
+        const stored = await store.put(image, ADMITTED_FORMATS[format].contentType);
+        const received = await receiveAssetBytes(trx, upload.id, {
+          key: stored.key,
+          format,
+          bytes: stored.size,
+        });
+        if (!received) throw filled();
+        return { upload: received } as const;
       });
       if ('refused' in outcome) {
         const { status, code, message } = outcome.refused;

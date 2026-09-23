@@ -4,9 +4,11 @@
  * runs it again before it trusts the decode: the two readings must agree.
  *
  * It decodes nothing. It walks a PNG's chunks by their lengths and CRCs to `IEND`, and a JPEG's
- * markers by their lengths, then its entropy-coded data, to `EOI`, and refuses anything after the end
- * of either - the byte where a second file hides in a polyglot, which a decoder does not notice
- * (measured: sharp decodes a PNG with a zip header appended and says nothing).
+ * markers by their lengths, then its entropy-coded data, to `EOI`, and says where the image ends. What
+ * follows it - a phone's second picture or motion clip, or a second file hidden in a polyglot, which a
+ * decoder does not notice (measured: sharp decodes a PNG with a zip appended and says nothing) - is not
+ * the image: the service keeps the bytes up to `end` and no further, and the worker refuses stored
+ * bytes that run past it, since by then they can only have been put there some other way.
  */
 
 /** The formats T1 admits (AST-038), and how each is made safe (AST-051): by proof, not by a scan. */
@@ -37,6 +39,8 @@ export interface ImageHeader {
   readonly depth: 8 | 16;
   /** Dots per inch as the file declares them, to two places, or null where it declares none. */
   readonly resolution: number | null;
+  /** How many bytes the image occupies from the start: anything after this is not the image. */
+  readonly end: number;
 }
 
 /**
@@ -146,7 +150,7 @@ const KNOWN_CRITICAL = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
 function walkPng(bytes: Uint8Array): ImageHeader {
   const read = reader(bytes);
   let at = 8;
-  let header: Omit<ImageHeader, 'resolution'> | undefined;
+  let header: Omit<ImageHeader, 'resolution' | 'end'> | undefined;
   let resolution: number | null = null;
   let sawData = false;
   for (;;) {
@@ -185,18 +189,23 @@ function walkPng(bytes: Uint8Array): ImageHeader {
     } else if (type === 'tRNS') {
       header = { ...header!, alpha: true };
     } else if (type === 'pHYs' && length === 9) {
-      if (read.u8(dataAt + 8) === 1) resolution = twoPlaces(read.u32(dataAt) * 0.0254);
+      const perMetre = read.u32(dataAt);
+      // Zero declares nothing, as a JFIF density of zero does.
+      if (read.u8(dataAt + 8) === 1 && perMetre > 0) resolution = twoPlaces(perMetre * 0.0254);
+    } else if (type === 'acTL') {
+      // An animated PNG: animation means nothing on a page, which is why GIF is not admitted either.
+      malformed('an animated PNG');
     } else if (type === 'eXIf') {
       // Nobody has measured what the engine does with a PNG's orientation, so one that would turn
       // the image is refused rather than guessed at.
-      const orientation = exifOrientation(bytes.subarray(dataAt, end));
-      if (orientation !== 1) malformed('a PNG with an EXIF orientation');
+      if (readExif(bytes.subarray(dataAt, end)).orientation !== 1) {
+        malformed('a PNG with an EXIF orientation');
+      }
     } else if (type === 'IDAT') {
       sawData = true;
     } else if (type === 'IEND') {
       if (length !== 0 || !sawData) malformed('IEND');
-      if (end + 4 !== bytes.length) malformed('bytes after IEND');
-      return { ...header!, resolution };
+      return { ...header!, resolution, end: end + 4 };
     }
     at = end + 4;
   }
@@ -215,7 +224,9 @@ function walkJpeg(bytes: Uint8Array): ImageHeader {
   let at = 2;
   let frame: { width: number; height: number; components: number } | undefined;
   let orientation = 1;
-  let resolution: number | null = null;
+  // JFIF's density is preferred where both declare one: it is what JPEG itself defines.
+  let jfifResolution: number | null = null;
+  let exifResolution: number | null = null;
   for (;;) {
     if (read.u8(at) !== 0xff) malformed(`no marker at ${at}`);
     // Any number of 0xFF may pad before a marker.
@@ -224,7 +235,6 @@ function walkJpeg(bytes: Uint8Array): ImageHeader {
     at += 2;
     if (marker === 0xd9) {
       if (frame === undefined) malformed('EOI before a frame');
-      if (at !== bytes.length) malformed('bytes after EOI');
       const turned = displayed(frame.width, frame.height, orientation);
       return {
         format: 'jpeg',
@@ -233,7 +243,8 @@ function walkJpeg(bytes: Uint8Array): ImageHeader {
         colour: frame.components === 1 ? 'grey' : frame.components === 3 ? 'rgb' : 'cmyk',
         alpha: false,
         depth: 8,
-        resolution,
+        resolution: jfifResolution ?? exifResolution,
+        end: at,
       };
     }
     if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
@@ -256,10 +267,12 @@ function walkJpeg(bytes: Uint8Array): ImageHeader {
     } else if (marker === 0xe0 && length >= 16 && read.ascii(payload, 5) === 'JFIF\u0000') {
       const units = read.u8(payload + 7);
       const x = read.u16(payload + 8);
-      if (units === 1 && x > 0) resolution = x;
-      else if (units === 2 && x > 0) resolution = twoPlaces(x * 2.54);
+      if (units === 1 && x > 0) jfifResolution = x;
+      else if (units === 2 && x > 0) jfifResolution = twoPlaces(x * 2.54);
     } else if (marker === 0xe1 && length >= 8 && read.ascii(payload, 6) === 'Exif\u0000\u0000') {
-      orientation = exifOrientation(bytes.subarray(payload + 6, end));
+      const exif = readExif(bytes.subarray(payload + 6, end));
+      orientation = exif.orientation;
+      exifResolution = exif.resolution;
     } else if (marker === 0xda) {
       if (frame === undefined) malformed('a scan before a frame');
       at = entropyEnd(bytes, end);
@@ -288,34 +301,65 @@ function entropyEnd(bytes: Uint8Array, from: number): number {
 }
 
 /**
- * The orientation tag (0x0112) of a TIFF-structured EXIF block's first directory, 1 where there is
- * none. A block that cannot be walked is malformed: an orientation that cannot be read is dimensions
- * that cannot be trusted.
+ * The orientation (0x0112) and resolution (0x011A with its unit, 0x0128) of a TIFF-structured EXIF
+ * block's first directory, each read by the type it declares. Read as the decoder reads them: a block
+ * that cannot be walked, or an orientation out of range, is none - 1 - rather than a refusal, because
+ * sharp sets such a file upright and so does the engine; the two readings are compared by the worker.
  */
-function exifOrientation(tiff: Uint8Array): number {
+function readExif(tiff: Uint8Array): { orientation: number; resolution: number | null } {
+  const none = { orientation: 1, resolution: null };
   const order = String.fromCharCode(tiff[0] ?? 0, tiff[1] ?? 0);
-  if (order !== 'II' && order !== 'MM') malformed('EXIF byte order');
+  if (order !== 'II' && order !== 'MM') return none;
   const little = order === 'II';
-  const u16 = (at: number) => {
-    if (at + 2 > tiff.length) malformed('EXIF truncated');
-    return little ? tiff[at]! | (tiff[at + 1]! << 8) : (tiff[at]! << 8) | tiff[at + 1]!;
-  };
-  const u32 = (at: number) => {
-    if (at + 4 > tiff.length) malformed('EXIF truncated');
-    return little
-      ? (tiff[at]! | (tiff[at + 1]! << 8) | (tiff[at + 2]! << 16) | (tiff[at + 3]! << 24)) >>> 0
-      : ((tiff[at]! << 24) | (tiff[at + 1]! << 16) | (tiff[at + 2]! << 8) | tiff[at + 3]!) >>> 0;
-  };
-  if (u16(2) !== 42) malformed('EXIF magic');
+  const u16 = (at: number) =>
+    at + 2 > tiff.length
+      ? undefined
+      : little
+        ? tiff[at]! | (tiff[at + 1]! << 8)
+        : (tiff[at]! << 8) | tiff[at + 1]!;
+  const u32 = (at: number) =>
+    at + 4 > tiff.length
+      ? undefined
+      : little
+        ? (tiff[at]! | (tiff[at + 1]! << 8) | (tiff[at + 2]! << 16) | (tiff[at + 3]! << 24)) >>> 0
+        : ((tiff[at]! << 24) | (tiff[at + 1]! << 16) | (tiff[at + 2]! << 8) | tiff[at + 3]!) >>> 0;
+  if (u16(2) !== 42) return none;
   const directory = u32(4);
-  const entries = u16(directory);
+  const entries = directory === undefined ? undefined : u16(directory);
+  if (directory === undefined || entries === undefined) return none;
+  /** A SHORT or a LONG value held in its entry, or undefined. */
+  const integer = (at: number) => {
+    const type = u16(at + 2);
+    return type === 3 ? u16(at + 8) : type === 4 ? u32(at + 8) : undefined;
+  };
+  /** A RATIONAL at the offset its entry holds, or undefined. */
+  const rational = (at: number) => {
+    const offset = u16(at + 2) === 5 ? u32(at + 8) : undefined;
+    if (offset === undefined) return undefined;
+    const numerator = u32(offset);
+    const denominator = u32(offset + 4);
+    return numerator === undefined || !denominator ? undefined : numerator / denominator;
+  };
+  let orientation = 1;
+  let perUnit: number | undefined;
+  let unit = 2;
   for (let entry = 0; entry < entries; entry += 1) {
     const at = directory + 2 + entry * 12;
-    if (u16(at) === 0x0112) {
-      const value = u16(at + 8);
-      if (value < 1 || value > 8) malformed('EXIF orientation');
-      return value;
+    const tag = u16(at);
+    if (tag === undefined) break;
+    if (tag === 0x0112) {
+      const value = integer(at);
+      orientation = value !== undefined && value >= 1 && value <= 8 ? value : 1;
+    } else if (tag === 0x011a) {
+      perUnit = rational(at);
+    } else if (tag === 0x0128) {
+      unit = integer(at) ?? 2;
     }
   }
-  return 1;
+  // TIFF's unit: 2 is inches, and the default; 3 is centimetres; 1 declares no absolute unit.
+  const resolution =
+    perUnit === undefined || perUnit <= 0 || unit === 1
+      ? null
+      : twoPlaces(unit === 3 ? perUnit * 2.54 : perUnit);
+  return { orientation, resolution };
 }

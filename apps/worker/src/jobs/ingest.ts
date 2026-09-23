@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
-  objectNamedByAsset,
+  holdObject,
+  objectInUse,
   readAssetUpload,
   recordAsset,
   refuseAssetUpload,
@@ -16,7 +17,9 @@ import type { JobHandler } from '../worker.js';
 
 /**
  * What the decoder makes of an image: its dimensions as stored and its EXIF orientation, or that it
- * does not decode. Injected, so a test can stand in a decoder that refuses what sharp would take.
+ * does not decode. A decoder that fails for its own reasons - memory, a thread - throws instead, and
+ * the job is tried again rather than refusing the author's image. Injected, so a test can stand in a
+ * decoder that refuses what sharp would take.
  */
 export type Decode = (
   bytes: Buffer,
@@ -31,17 +34,33 @@ export const decodeWithSharp: Decode = async (bytes) => {
   const options = { limitInputPixels: ASSET_MAX_PIXELS, failOn: 'error' } as const;
   try {
     const metadata = await sharp(bytes, options).metadata();
-    const { info } = await sharp(bytes, options).raw().toBuffer({ resolveWithObject: true });
+    // Every pixel decoded and none kept: `stats` reads the whole image to answer, so it proves the
+    // decode without holding a 50-million-pixel buffer in the worker (final review, 13).
+    await sharp(bytes, options).stats();
+    if (metadata.width === undefined || metadata.height === undefined) return { ok: false };
     return {
       ok: true,
-      width: info.width,
-      height: info.height,
+      width: metadata.width,
+      height: metadata.height,
       orientation: metadata.orientation ?? 1,
     };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    if (theFilesFault(error)) return { ok: false };
+    throw error;
   }
 };
+
+/**
+ * Whether sharp refused the file itself - its format, its data, its size - rather than failing for
+ * its own reasons. Read from libvips' messages, which name the loader or the input; anything else is
+ * the decoder's fault and is tried again (final review, 4).
+ */
+function theFilesFault(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /input|unsupported image format|pixel limit|vipsjpeg|jpegload|pngload|libpng|spng|premature|corrupt|truncated|invalid|bad /i.test(
+    message,
+  );
+}
 
 /** The decoder's dimensions, turned as the walk turns them, must be the walk's (assets.md). */
 const agrees = (
@@ -79,7 +98,12 @@ export function ingestJob(deps: {
     return agrees(header, decoded) ? undefined : 'malformed';
   };
 
-  /** Refuses the upload, then removes its bytes once the refusal has committed. */
+  /**
+   * Refuses the upload and removes its bytes in one transaction, holding them by their hash so no
+   * other upload of the same image can come to need them in between; they are kept where anything
+   * else still does (final review, 5). Removal inside the transaction means a removal that fails
+   * rolls the refusal back, and the next attempt tries both again (final review, 5 and M5).
+   */
   const refuse = async (
     tenant: Tenant,
     store: TenantStore,
@@ -87,11 +111,11 @@ export function ingestJob(deps: {
     key: string | null,
     reason: AssetUploadReason,
   ) => {
-    const named = await deps.db.withTenant(tenant, async (trx) => {
-      await refuseAssetUpload(trx, id, reason);
-      return key !== null && (await objectNamedByAsset(trx, key));
+    await deps.db.withTenant(tenant, async (trx) => {
+      if (key !== null) await holdObject(trx, key.slice(key.lastIndexOf('/') + 1));
+      if (!(await refuseAssetUpload(trx, id, reason, 'checking'))) return;
+      if (key !== null && !(await objectInUse(trx, key, id))) await store.remove(key);
     });
-    if (key !== null && !named) await store.remove(key);
   };
 
   return {
@@ -111,7 +135,11 @@ export function ingestJob(deps: {
         // upload, so the job fails and is tried again rather than refusing the author's image.
         throw new Error('The stored bytes do not match their key');
       }
-      const walked = readImageHeader(bytes);
+      // The service stored the image alone, up to its end; bytes past it can only have been put
+      // there some other way, so they are refused rather than left behind.
+      const read = readImageHeader(bytes);
+      const walked: typeof read =
+        read.ok && read.header.end !== bytes.length ? { ok: false, refusal: 'malformed' } : read;
       const refusal = walked.ok ? await refusalOfDecode(walked.header, bytes) : walked.refusal;
       if (refusal !== undefined || !walked.ok) {
         await refuse(tenant, store, upload.id, upload.objectKey, refusal ?? 'malformed');

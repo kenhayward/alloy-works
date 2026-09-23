@@ -36,7 +36,8 @@ export {
 } from './publishing.js';
 export {
   createAssetUpload,
-  objectNamedByAsset,
+  holdObject,
+  objectInUse,
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,

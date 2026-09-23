@@ -202,9 +202,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Images, through the API.** An image can be uploaded into a space you may create in - a PNG or a
   JPEG of up to 25 MB and 50 million pixels, with a description for somebody who cannot see it, in a
   language. It is checked twice before anything may use it: by what its own bytes say it is, never its
-  name, and then decoded whole by the worker, so a file that is not exactly one image - with another
-  file hidden after it, or pixels that do not decode - is refused, saying why, and its bytes are not
-  kept. Its width and height are recorded as it is displayed, turned the way the camera meant.
+  name, and then decoded whole by the worker, so a file that is not a complete PNG or JPEG, or whose
+  pixels do not decode, is refused, saying why, and its bytes are not kept. Only the picture is kept:
+  anything after it in the file - a phone's second picture or motion clip, say - is left behind. Its width and height are recorded as it is displayed, turned the way the camera meant.
   Everybody who may read the space may see it. **Nothing in the application uses an image yet**: this
   is what figures will be made from, and there is no button for it until they are.
 

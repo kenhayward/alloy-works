@@ -69,6 +69,33 @@ const exif = (entries: [tag: number, value: number][]) => {
   ];
   return segment(0xe1, [...bytes('Exif'), 0, 0, ...bytes('MM'), 0, 42, ...u32(8), ...ifd]);
 };
+/** A big-endian TIFF block whose first directory holds these entries: SHORT, LONG or RATIONAL. */
+const tiff = (entries: { tag: number; type: 3 | 4 | 5; value: number | [number, number] }[]) => {
+  const dataAt = 8 + 2 + entries.length * 12 + 4;
+  const data: number[] = [];
+  const directory = entries.flatMap(({ tag, type, value }) => {
+    if (type === 5) {
+      const [numerator, denominator] = value as [number, number];
+      const offset = dataAt + data.length;
+      data.push(...u32(numerator), ...u32(denominator));
+      return [...u16(tag), ...u16(5), ...u32(1), ...u32(offset)];
+    }
+    const field = type === 3 ? [...u16(value as number), 0, 0] : u32(value as number);
+    return [...u16(tag), ...u16(type), ...u32(1), ...field];
+  });
+  return [
+    ...bytes('MM'),
+    0,
+    42,
+    ...u32(8),
+    ...u16(entries.length),
+    ...directory,
+    ...u32(0),
+    ...data,
+  ];
+};
+const exifBlock = (entries: Parameters<typeof tiff>[0]) =>
+  segment(0xe1, [...bytes('Exif'), 0, 0, ...tiff(entries)]);
 const adobe = () => segment(0xee, [...bytes('Adobe'), 0, 100, 0, 0, 0, 0, 2]);
 const sos = (components: number) =>
   segment(0xda, [
@@ -159,8 +186,8 @@ describe('the header walk (figures 1)', () => {
         [6, 16, 'rgb', true],
       ] as const;
       for (const [colourType, depth, colour, alpha] of cases) {
-        const read = readImageHeader(png({ colourType, depth, width: 640, height: 480 }));
-        expect(read, `colour type ${colourType} at ${depth}`).toEqual({
+        const file = png({ colourType, depth, width: 640, height: 480 });
+        expect(readImageHeader(file), `colour type ${colourType} at ${depth}`).toEqual({
           ok: true,
           header: {
             format: 'png',
@@ -171,6 +198,7 @@ describe('the header walk (figures 1)', () => {
             alpha,
             depth: depth === 16 ? 16 : 8,
             resolution: null,
+            end: file.length,
           },
         });
       }
@@ -189,12 +217,21 @@ describe('the header walk (figures 1)', () => {
         header: { resolution: 300 },
       });
       expect(readImageHeader(unknown)).toMatchObject({ header: { resolution: null } });
+      // Zero per metre declares nothing, as a JFIF density of zero does.
+      const zero = png({ extra: [chunk('pHYs', [...u32(0), ...u32(0), 1])] });
+      expect(readImageHeader(zero)).toMatchObject({ header: { resolution: null } });
+    });
+
+    it('refuses an animated PNG, which means nothing on a page, as GIF is refused', () => {
+      const animated = png({ extra: [chunk('acTL', [...u32(2), ...u32(0)])] });
+      expect(refusal(animated)).toBe('malformed');
     });
   });
 
   describe('AST-005 what a JPEG records', () => {
     it('reads a baseline and a progressive JPEG, in colour, grey and CMYK', () => {
-      expect(readImageHeader(jpeg())).toEqual({
+      const file = jpeg();
+      expect(readImageHeader(file)).toEqual({
         ok: true,
         header: {
           format: 'jpeg',
@@ -205,6 +242,7 @@ describe('the header walk (figures 1)', () => {
           alpha: false,
           depth: 8,
           resolution: null,
+          end: file.length,
         },
       });
       expect(readImageHeader(jpeg({ sofMarker: 0xc2, scans: 3 }))).toMatchObject({ ok: true });
@@ -228,6 +266,32 @@ describe('the header walk (figures 1)', () => {
       });
     });
 
+    it('reads a resolution from EXIF where there is no JFIF density, as phones and cameras write one', () => {
+      const inches = exifBlock([
+        { tag: 0x011a, type: 5, value: [300, 1] },
+        { tag: 0x0128, type: 3, value: 2 },
+      ]);
+      expect(readImageHeader(jpeg({ before: [inches] }))).toMatchObject({
+        header: { resolution: 300 },
+      });
+      // No unit is inches, as TIFF says; centimetres are turned into inches.
+      const noUnit = exifBlock([{ tag: 0x011a, type: 5, value: [72, 1] }]);
+      expect(readImageHeader(jpeg({ before: [noUnit] }))).toMatchObject({
+        header: { resolution: 72 },
+      });
+      const centimetres = exifBlock([
+        { tag: 0x011a, type: 5, value: [118, 1] },
+        { tag: 0x0128, type: 3, value: 3 },
+      ]);
+      expect(readImageHeader(jpeg({ before: [centimetres] }))).toMatchObject({
+        header: { resolution: 299.72 },
+      });
+      // JFIF's density is preferred where both declare one.
+      expect(readImageHeader(jpeg({ before: [jfif(1, 150, 150), inches] }))).toMatchObject({
+        header: { resolution: 150 },
+      });
+    });
+
     it('records its dimensions as displayed, turned by its EXIF orientation, which the engine applies', () => {
       // Measured (assets.md): Typst sets a JPEG stored 800 by 500 with orientation 6 as 500 by 800.
       for (const orientation of [5, 6, 7, 8]) {
@@ -242,22 +306,48 @@ describe('the header walk (figures 1)', () => {
       }
     });
 
+    it('reads an orientation however it is stored, and one out of range as none, as the decoder does', () => {
+      const long = exifBlock([{ tag: 0x0112, type: 4, value: 6 }]);
+      expect(readImageHeader(jpeg({ before: [long] }))).toMatchObject({
+        header: { width: 500, height: 800, orientation: 6 },
+      });
+      for (const orientation of [0, 9]) {
+        expect(readImageHeader(jpeg({ before: [exif([[0x0112, orientation]])] }))).toMatchObject({
+          header: { width: 800, height: 500, orientation: 1 },
+        });
+      }
+      // An Exif block with nothing readable in it is read as no orientation, not refused.
+      const empty = segment(0xe1, [...bytes('Exif'), 0, 0]);
+      expect(readImageHeader(jpeg({ before: [empty] }))).toMatchObject({
+        header: { orientation: 1 },
+      });
+    });
+
     it('passes over a stuffed byte and a restart marker in the scan, and the markers between scans', () => {
       expect(refusal(jpeg({ sofMarker: 0xc2, scans: 4 }))).toBe('accepted');
     });
   });
 
-  describe('AST-040 AST-006 what the walk refuses', () => {
-    it('refuses a byte after a PNG ends, which is where a second file hides', () => {
-      expect(refusal(png({ after: [0] }))).toBe('malformed');
-      expect(refusal(png({ after: [...bytes('PK'), 3, 4] }))).toBe('malformed');
+  describe('where an image ends', () => {
+    it('reports where a PNG ends, so what follows it - a hidden file - can be left behind', () => {
+      const file = png();
+      const followed = png({ after: [...bytes('PK'), 3, 4] });
+      expect(readImageHeader(followed)).toMatchObject({ ok: true, header: { end: file.length } });
     });
 
-    it('refuses a byte after a JPEG ends, however it got there', () => {
-      expect(refusal(jpeg({ after: [0] }))).toBe('malformed');
-      expect(refusal(jpeg({ after: [0xff, 0xd9] }))).toBe('malformed');
+    it("reports where a JPEG ends, so a phone's second picture, a motion clip or a hidden file is left behind", () => {
+      // An Ultra HDR photograph carries its gain map as a second JPEG after the first one's end, and
+      // a motion photograph its clip; neither is the picture a page prints.
+      const first = jpeg();
+      const followed = bytes(first, jpeg({ width: 100, height: 50 }));
+      expect(readImageHeader(followed)).toMatchObject({
+        ok: true,
+        header: { width: 800, height: 500, end: first.length },
+      });
     });
+  });
 
+  describe('what the walk refuses', () => {
     it('refuses a PNG chunk whose CRC is wrong, a critical chunk it does not know, and a missing IDAT', () => {
       expect(refusal(png({ extra: [chunk('tEXt', [65], 1)] }))).toBe('malformed');
       expect(refusal(png({ extra: [chunk('ZZZZ', [1])] }))).toBe('malformed');
@@ -266,7 +356,7 @@ describe('the header walk (figures 1)', () => {
       expect(refusal(png({ withoutIdat: true }))).toBe('malformed');
     });
 
-    it('refuses a PNG whose header is not a PNG header', () => {
+    it('AST-006 refuses a PNG whose header does not say what it is', () => {
       expect(refusal(png({ depth: 3 }))).toBe('malformed');
       expect(refusal(png({ colourType: 5 }))).toBe('malformed');
       expect(refusal(png({ width: 0 }))).toBe('malformed');
@@ -275,7 +365,7 @@ describe('the header walk (figures 1)', () => {
       );
     });
 
-    it('refuses a PNG carrying an EXIF orientation, which nothing in the pipeline has measured', () => {
+    it('refuses a PNG carrying an EXIF orientation that would turn it, which nothing in the pipeline has measured', () => {
       const turned = [
         ...bytes('MM'),
         0,
@@ -293,7 +383,7 @@ describe('the header walk (figures 1)', () => {
       expect(refusal(png({ extra: [chunk('eXIf', turned)] }))).toBe('malformed');
     });
 
-    it('refuses a truncated file of either format', () => {
+    it('AST-006 refuses a truncated file of either format, whose properties cannot be read to its end', () => {
       const whole = png();
       expect(refusal(whole.subarray(0, whole.length - 5))).toBe('malformed');
       expect(refusal(jpeg({ withoutEoi: true }))).toBe('malformed');

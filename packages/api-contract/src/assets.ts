@@ -116,6 +116,11 @@ export const assetRoutes = {
         description: '`asset_upload_filled`: the upload already has its bytes',
         schema: ErrorBody,
       },
+      415: {
+        description:
+          '`asset_bytes_expected`: the body is not application/octet-stream. Nothing is read, and the upload still awaits its bytes',
+        schema: ErrorBody,
+      },
       413: {
         description:
           '`asset_too_large`: more pixels than an image may have, which refuses the upload; or more bytes, read no further, which leaves it awaiting a smaller file',

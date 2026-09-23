@@ -160,7 +160,8 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     expect(version?.spaceId).toBe(general);
   });
 
-  it('AST-037 AST-006 refuses a file whose structure is sound but whose pixels do not decode, and keeps no bytes', async () => {
+  // Not cited as AST-037, whose refusal must be audited: nothing audits one until LIF's log exists.
+  it('AST-006 AST-051 refuses a file whose structure is sound but whose pixels do not decode, and keeps no bytes', async () => {
     const broken = pngHolding(8, 8, deflateSync(Buffer.alloc(3)));
     const { id, key } = await uploaded(broken);
     expect(await work()).toBe('failed');
@@ -207,6 +208,26 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     }
   });
 
+  it("retries a decode that failed for the decoder's own reasons rather than refusing the image", async () => {
+    const image = await sharp({
+      create: { width: 6, height: 6, channels: 3, background: { r: 4, g: 5, b: 6 } },
+    })
+      .png()
+      .toBuffer();
+    const faulty: Decode = async () => {
+      throw new Error('vips: out of memory');
+    };
+    handlers = { ingest: ingestJob({ db: worker, stores, decode: faulty }) };
+    try {
+      const { id, key } = await uploaded(image);
+      expect(await work()).toBe('retry');
+      expect(await uploadOf(id)).toMatchObject({ state: 'checking' });
+      expect(await gone(key)).toBe(false);
+    } finally {
+      handlers = { ingest: ingestJob({ db: worker, stores }) };
+    }
+  });
+
   it('refuses an upload whose check never finished, once its job has failed for the last time', async () => {
     const image = await sharp({
       create: { width: 3, height: 3, channels: 3, background: { r: 9, g: 9, b: 9 } },
@@ -224,5 +245,33 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     };
     await ingestJob({ db: worker, stores }).failed(tenant, job as never);
     expect(await uploadOf(id)).toMatchObject({ state: 'refused', reason: 'unchecked' });
+  });
+
+  it('keeps the bytes another upload of the same image is still being checked against, when refusing one', async () => {
+    const image = await sharp({
+      create: { width: 7, height: 7, channels: 3, background: { r: 7, g: 7, b: 7 } },
+    })
+      .png()
+      .toBuffer();
+    const first = await uploaded(image);
+    const second = await uploaded(image);
+    expect(second.key).toBe(first.key);
+    // The first's check fails for the last time for the store's reasons; the second has not run yet.
+    const job = {
+      id: 'job',
+      tenantId: tenant.id,
+      kind: 'ingest',
+      subjectId: first.id,
+      attempts: 3,
+      maxAttempts: 3,
+    };
+    await ingestJob({ db: worker, stores }).failed(tenant, job as never);
+    expect(await uploadOf(first.id)).toMatchObject({ state: 'refused', reason: 'unchecked' });
+    expect(await gone(first.key)).toBe(false);
+    // And the second is recorded over them, whatever order the queue gives the two jobs in.
+    for (let turn = 0; turn < 4 && (await uploadOf(second.id))?.state === 'checking'; turn += 1) {
+      await work();
+    }
+    expect(await uploadOf(second.id)).toMatchObject({ state: 'ready' });
   });
 });

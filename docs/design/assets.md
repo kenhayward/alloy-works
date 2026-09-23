@@ -22,11 +22,11 @@ figure reaches the PDF.
 ## The shape in one paragraph
 
 An upload is **checked twice**. The service reads what the bytes say they are - never the name or the
-type a client claims - refuses anything but a PNG or a JPEG within the declared limits, hashes the
-bytes, keeps them in the tenant's store under that hash and records an **upload** in the state
+type a client claims - refuses anything but a PNG or a JPEG within the declared limits, keeps the
+image alone - dropping whatever follows its end - and stores it in the tenant's store under its hash and records an **upload** in the state
 `checking`. Nothing can place an upload that is checking. A worker's `ingest` job then proves the
-file is what its format permits and nothing more: a strict walk of its structure refuses anything
-after the image's end, and a full decode under a pixel limit refuses a file that lies about its size
+file is what its format permits: a strict walk of its structure, which refuses stored bytes running
+past the image's end, and a full decode under a pixel limit refuses a file that lies about its size
 or does not decode. The two readings must agree on the dimensions. Only then is the upload recorded as
 an **asset** - an artifact of its own kind, in a space, versioning through the chain - with its
 intrinsic properties: its format, its dimensions **as it is displayed**, its colour space, the
@@ -38,22 +38,30 @@ a document places into the compile root under its hash.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AST-001** | An upload is refused, `asset_format_not_permitted`, unless its bytes begin as a PNG or a JPEG does; the service refuses it before anything is stored                                                                                                                                                                                  |
-| **AST-002** | The format is read from the file's first bytes - the PNG signature, the JPEG start-of-image marker - and the name and the claimed content type are never read                                                                                                                                                                         |
-| **AST-038** | The one class T1 admits is **raster images**, declared as `ADMITTED_FORMATS` in `packages/domain`: PNG and JPEG. Any other file is refused rather than stored                                                                                                                                                                         |
-| **AST-040** | The job decodes the whole file under a pixel limit, so a file whose header promises more than it holds, or whose decoded size exceeds the limit, is refused; the header walk refuses dimensions over the limit before the decoder runs. Neither admitted format nests, so there is no depth to bound                                  |
-| **AST-041** | The store keeps the original under the SHA-256 of its bytes (`put` already chooses no other key), and that hash is what the asset version records and what a figure's bytes are fetched by                                                                                                                                            |
-| **AST-005** | The asset version records format, dimensions as displayed, the EXIF orientation that turned them, colour space, bit depth, alpha, and the resolution the file declares, or none. Page count and duration do not apply to either admitted format                                                                                       |
-| **AST-006** | The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole                                                                                                                                                                               |
-| **AST-051** | The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk that refuses any byte after the image's end, and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content is admitted, so none needs the scan AST-051 requires of one |
-| **AST-035** | `checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one                                                                                                                                                                           |
-| **AST-037** | A refused upload is `refused` with its reason - kept as the record, never deleted - never names an asset version, and its bytes are removed from the store unless an asset already holds the same ones                                                                                                                                |
-| **AST-026** | An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's                                                                                                                                                                                      |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AST-001** | An upload is refused, `asset_format_not_permitted`, unless its bytes begin as a PNG or a JPEG does; the service refuses it before anything is stored                                                                                                                                                                                                                                                      |
+| **AST-002** | The format is read from the file's first bytes - the PNG signature, the JPEG start-of-image marker - and the name and the claimed content type are never read                                                                                                                                                                                                                                             |
+| **AST-038** | The one class T1 admits is **raster images**, declared as `ADMITTED_FORMATS` in `packages/domain`: PNG and JPEG. Any other file is refused rather than stored                                                                                                                                                                                                                                             |
+| **AST-040** | The job decodes the whole file under a pixel limit, so a file whose header promises more than it holds, or whose decoded size exceeds the limit, is refused; the header walk refuses dimensions over the limit before the decoder runs. Neither admitted format nests, so there is no depth to bound                                                                                                      |
+| **AST-041** | The store keeps the original under the SHA-256 of its bytes (`put` already chooses no other key), and that hash is what the asset version records and what a figure's bytes are fetched by                                                                                                                                                                                                                |
+| **AST-005** | The asset version records format, dimensions as displayed, the EXIF orientation that turned them, colour space, bit depth, alpha, and the resolution the file declares, or none. Page count and duration do not apply to either admitted format                                                                                                                                                           |
+| **AST-006** | The walk refuses, `malformed`, and the job, `undecodable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole                                                                                                                                                                                                                             |
+| **AST-051** | The two admitted formats are made safe by proof, as `ADMITTED_FORMATS` declares each: a strict walk of the structure, the image alone kept - whatever follows its end is dropped at the door - and a full decode under the pixel limit, whose dimensions must equal the walk's. No format that can carry active content a reader would act on is admitted, so none needs the scan AST-051 requires of one |
+| **AST-035** | `checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one                                                                                                                                                                                                                                               |
+| **AST-026** | An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's                                                                                                                                                                                                                                                          |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
-upload's **check** rather than its scan; so all three are claimed above.
+upload's **check** rather than its scan. AST-051 and AST-035 are claimed above. **AST-037 is not**:
+a refused upload is recorded on its row, never deleted, and its bytes are removed, but AST-037 asks
+for the refusal to be **audited**, and the audit log is LIF's and not designed - as access.md says of
+its own, nothing here claims to be audited until it is.
+
+**What a parse and a decode do not prove.** A PNG's text and private chunks, and a JPEG's comment
+and application segments, can carry any bytes at all - a zip in a text chunk is still a well-formed
+PNG, measured by the figures 1 review. They are inert here: the bytes are served only as the image's
+own type, never sniffed and never run, and never offered for download. Removing what metadata carries
+is AST-007's declared policy, which is T2's; until then the design claims no more than AST-051 says.
 
 ## What this document does not own
 
@@ -122,7 +130,7 @@ sequenceDiagram
     E->>S: PUT /v1/asset-uploads/{id}/bytes (the bytes)
     S->>S: create in the space? size under the limit? PNG or JPEG by its first bytes? header walk?
     S->>O: put(bytes) - keyed by its hash
-    S-->>E: 202, the upload, checking
+    S-->>E: the upload, checking
     S->>W: job ingest(upload)
     W->>O: get(key)
     W->>W: strict walk, full decode under the pixel limit, the two readings agree
@@ -159,13 +167,18 @@ it. A job that fails for the store's or the database's reasons is retried as any
 the service and the worker alike and is tested without either:
 
 - **PNG**: the signature, then every chunk by its length and CRC, to `IEND`; `IHDR` for dimensions,
-  bit depth and colour type; `pHYs` for resolution where its unit is the metre; `iCCP` or `sRGB` for
-  the colour space it declares. **A byte after `IEND` is refused.** So is a chunk whose CRC is wrong,
-  or a critical chunk the walk does not know.
+  bit depth and colour model; `pHYs` for resolution where its unit is the metre. A chunk whose CRC is
+  wrong, a critical chunk the walk does not know, and `acTL` - an animated PNG, refused as GIF is -
+  are refused. An ICC profile is not read: the colour recorded is the model, not the profile.
 - **JPEG**: the markers from `SOI` to `SOS` by their lengths, then the entropy-coded data to `EOI`;
-  `SOF0` to `SOF2` for dimensions and components; `APP0` (JFIF) for resolution; `APP1` (EXIF) for
-  orientation; `APP14` (Adobe) with four components for CMYK. **A byte after `EOI` is refused**, and
-  so is arithmetic coding or a lossless process, which the decoders in the pipeline do not share.
+  `SOF0` to `SOF2` for dimensions and components - four components are CMYK; `APP0` (JFIF) for
+  resolution, or `APP1` (EXIF) where JFIF declares none; `APP1` for orientation, read by its declared
+  type and read as none where it is out of range, as the decoder reads it. Arithmetic coding and a
+  lossless or hierarchical process are refused, since the decoders in the pipeline do not share them.
+- **Where the image ends.** The walk reports it. The service keeps the bytes up to it and no further:
+  a phone's Ultra HDR gain map or second picture, a motion clip, or a file hidden after the image is
+  not the image, and a refusal of one would refuse most photographs a phone takes. The job refuses
+  stored bytes that run past it, since by then they can only have been put there some other way.
 
 **The decode** is sharp's, with `limitInputPixels` at the pixel limit and `failOn: 'error'`: a
 truncated JPEG is refused, measured, and a 30000 by 30000 PNG of 109 KB is refused in a millisecond
@@ -173,11 +186,10 @@ without allocating anything.
 
 ### Limits
 
-| Limit           | Value           | Why                                                                                                                           |
-| --------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Bytes           | **25 MB**       | A high-quality 50-megapixel JPEG is under 20 MB; nothing larger is a picture for a report                                     |
-| Pixels          | **50 million**  | Every phone and most cameras under it (a 6000 by 4000 photograph is 24 million); a decoded RGBA image of 50 million is 200 MB |
-| Uploads at once | One per session | The editor uploads one image at a time; a second waits                                                                        |
+| Limit  | Value          | Why                                                                                                                           |
+| ------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Bytes  | **25 MB**      | A high-quality 50-megapixel JPEG is under 20 MB; nothing larger is a picture for a report                                     |
+| Pixels | **50 million** | Every phone and most cameras under it (a 6000 by 4000 photograph is 24 million); a decoded RGBA image of 50 million is 200 MB |
 
 AST-004 asks for a limit per format that a tenant can lower. That is T2's, and these constants are
 where it will read from.
@@ -293,11 +305,19 @@ check" and "fails its check", and this design claims all three. Decision F-A.
 
 ## Changed while planning and building the first slice
 
-| What                                                                                          | Why                                                                                                                                                                                                    |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Two requests, not one**: an upload is made with its description, then filled with its bytes | The contract declares JSON bodies, and a description in a header or a query string is somewhere a log keeps it. The contract grew a raw body of one type for the second request (figures 1, R1 and R2) |
-| **An upload is `awaiting` before it is `checking`**                                           | The first request makes it and the second fills it. A body over the byte limit is refused before it is read and leaves it awaiting; every other refusal at the door refuses it                         |
-| **`unchecked`**, a reason the design did not have                                             | A job that fails for the last time for the store's or the database's reasons - never the bytes' - must not leave an upload checking for ever, so its `failed` handler refuses it as unchecked          |
-| **The walk refuses too many pixels on the header alone**                                      | A bomb is refused by what its header claims, before anything after it is read                                                                                                                          |
-| **Changing a default description is not built**                                               | Nothing in these slices changes one, and the editor's panel does not (component-editor.md); the route waits for the asset library                                                                      |
-| **A PNG carrying an EXIF orientation is refused**                                             | Nobody has measured what the engine does with one, so an orientation that would turn the image is refused rather than guessed at                                                                       |
+| What                                                                                                                        | Why                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Two requests, not one**: an upload is made with its description, then filled with its bytes                               | The contract declares JSON bodies, and a description in a header or a query string is somewhere a log keeps it. The contract grew a raw body of one type for the second request (figures 1, R1 and R2)                     |
+| **An upload is `awaiting` before it is `checking`**                                                                         | The first request makes it and the second fills it. A body over the byte limit is refused before it is read and leaves it awaiting; every other refusal at the door refuses it                                             |
+| **`unchecked`**, a reason the design did not have                                                                           | A job that fails for the last time for the store's or the database's reasons - never the bytes' - must not leave an upload checking for ever, so its `failed` handler refuses it as unchecked                              |
+| **The walk refuses too many pixels on the header alone**                                                                    | A bomb is refused by what its header claims, before anything after it is read                                                                                                                                              |
+| **Changing a default description is not built**                                                                             | Nothing in these slices changes one, and the editor's panel does not (component-editor.md); the route waits for the asset library                                                                                          |
+| **A PNG carrying an EXIF orientation is refused**                                                                           | Nobody has measured what the engine does with one, so an orientation that would turn the image is refused rather than guessed at                                                                                           |
+| **The image alone is kept**, whatever follows its end dropped at the door (final review, 2 and 1)                           | Refusing bytes after the end refused most phone photographs - an Ultra HDR gain map or a camera's preview is a second JPEG after the first - and still let a file hide inside the image's own metadata, which is AST-007's |
+| **AST-037 is not claimed**                                                                                                  | It asks for the refusal to be audited, and nothing audits one until LIF's log is designed (final review, 3)                                                                                                                |
+| **Resolution is read from EXIF** where JFIF declares none; an out-of-range orientation reads as none                        | Phones and cameras write EXIF and no JFIF, and "declares none" in an immutable version must be true; the decoder sets such an orientation upright (final review, 4 and M10)                                                |
+| **`create` is decided again when the bytes arrive**                                                                         | A grant removed since the upload was made must stop it, as every other creation is decided where it happens (final review, 6)                                                                                              |
+| **Bytes are held by their hash** while they are stored or removed, and in use while any upload checking or ready names them | A refusal of one upload of an image must not remove what a second upload of it stands on (final review, 5)                                                                                                                 |
+| **Anything but `application/octet-stream` is `415`**, and the upload still awaits                                           | A JSON or text body is not an image that failed its check, and must not burn the upload as one would (final review, M1)                                                                                                    |
+| **A decoder's own failure is retried**, only the file's refused                                                             | Memory or a thread failing is not the author's image failing (final review, M4)                                                                                                                                            |
+| **One upload per session is not built**                                                                                     | The editor, figures 2, uploads one at a time; nothing on the service limits it                                                                                                                                             |

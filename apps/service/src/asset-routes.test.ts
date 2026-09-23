@@ -8,7 +8,9 @@ import {
   findRole,
   grant,
   migrate,
+  readAssetUpload,
   recordAsset,
+  removeGrant,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
@@ -64,6 +66,7 @@ describe('uploading an image through the service (figures 1)', () => {
   let tenant: Tenant;
   let general: string;
   let quality: string;
+  let graceOnQuality: string;
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
 
@@ -172,6 +175,7 @@ describe('uploading an image through the service (figures 1)', () => {
           grantedBy: ids.ada!,
         });
         if (!('granted' in answer)) throw new Error(JSON.stringify(answer));
+        if (space === quality) graceOnQuality = answer.granted.id;
       }
     });
   });
@@ -217,21 +221,50 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(answer.statusCode).toBe(400);
     expect(code(answer)).toBe('asset_format_not_permitted');
     expect(await upload('grace', id)).toMatchObject({ state: 'refused', reason: 'not_permitted' });
-    // A content type other than bytes is refused before anything is read.
-    const other = await made('grace', general);
-    expect((await fill('grace', other, png(), 'image/png')).statusCode).toBe(415);
+    // Refused rather than stored: the upload names no bytes at all.
+    const stored = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
+    expect(stored?.objectKey).toBeNull();
   });
 
-  it('AST-051 AST-040 refuses a PNG with a second file after its end, and one with more pixels than the limit, before storing it', async () => {
-    const hidden = await made('grace', general);
-    const polyglot = await fill(
+  it('refuses anything but bytes before reading it, and leaves the upload to be filled properly', async () => {
+    const id = await made('grace', general);
+    expect((await fill('grace', id, png(), 'image/png')).statusCode).toBe(415);
+    const json = await app.inject({
+      method: 'PUT',
+      url: `/v1/asset-uploads/${id}/bytes`,
+      headers: { host: HOST, cookie: cookies.grace!, 'content-type': 'application/json' },
+      payload: { image: 'not bytes' },
+    });
+    expect(json.statusCode).toBe(415);
+    expect(code(json)).toBe('asset_bytes_expected');
+    const none = await app.inject({
+      method: 'PUT',
+      url: `/v1/asset-uploads/${id}/bytes`,
+      headers: { host: HOST, cookie: cookies.grace! },
+    });
+    expect(none.statusCode).toBe(415);
+    expect(await upload('grace', id)).toMatchObject({ state: 'awaiting' });
+    expect((await fill('grace', id, png())).statusCode).toBe(200);
+  });
+
+  it('keeps the image alone, leaving behind whatever follows its end: a second picture, a clip or a hidden file', async () => {
+    const image = png(3, 2);
+    const id = await made('grace', general);
+    const followed = await fill(
       'grace',
-      hidden,
-      Buffer.concat([png(), Buffer.from([0x50, 0x4b, 3, 4])]),
+      id,
+      Buffer.concat([image, Buffer.from([0x50, 0x4b, 3, 4])]),
     );
-    expect(polyglot.statusCode).toBe(400);
-    expect(code(polyglot)).toBe('asset_unreadable');
-    expect(await upload('grace', hidden)).toMatchObject({ state: 'refused', reason: 'malformed' });
+    expect(followed.statusCode, followed.body).toBe(200);
+    const version = await ingested(id, image);
+    const content = await call('grace', 'GET', `/v1/asset-versions/${version.id}/content`);
+    expect(content.rawPayload.equals(image)).toBe(true);
+    expect((await call('grace', 'GET', `/v1/asset-versions/${version.id}`)).json()).toMatchObject({
+      bytes: image.length,
+    });
+  });
+
+  it('AST-040 refuses more pixels than the limit on the header alone, before storing anything', async () => {
     const huge = await made('grace', general);
     const tooMany = await fill('grace', huge, png(8000, 8000).subarray(0, 33));
     expect(tooMany.statusCode).toBe(413);
@@ -242,7 +275,7 @@ describe('uploading an image through the service (figures 1)', () => {
     });
   });
 
-  it('AST-040 refuses a body over the byte limit before reading it whole, and leaves the upload awaiting', async () => {
+  it('refuses a body over the byte limit before reading it whole, and leaves the upload awaiting', async () => {
     const id = await made('grace', general);
     const answer = await fill('grace', id, Buffer.alloc(25_000_001));
     expect(answer.statusCode).toBe(413);
@@ -325,5 +358,14 @@ describe('uploading an image through the service (figures 1)', () => {
         .executeTakeFirstOrThrow(),
     );
     expect((await call('grace', 'GET', `/v1/asset-versions/${component.id}`)).statusCode).toBe(404);
+  });
+
+  it('decides create in the space again when the bytes arrive, so a grant removed since stops the upload', async () => {
+    const id = await made('grace', quality);
+    await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, graceOnQuality));
+    const answer = await fill('grace', id, png());
+    expect(answer.statusCode).toBe(404);
+    const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
+    expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
 });

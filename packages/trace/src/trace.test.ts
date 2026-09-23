@@ -65,8 +65,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1388);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
-    // 425, from 422: figures 1. assets.md claims AST-051, and AST-035 and AST-037 once they speak of
-    // an upload's check rather than its scan.
+    // 424, from 422: figures 1. assets.md claims AST-051, and AST-035 once it speaks of an upload's
+    // check rather than its scan. AST-037 is not claimed: it asks for the refusal to be audited, and
+    // nothing audits one until LIF's log is designed.
     // 422, from 413: the figures design. assets.md claims eight - AST-001, AST-002, AST-038 and
     // AST-040 (what an upload may be, read from its bytes and proved by decoding it), AST-041, AST-005
     // and AST-006 (its hash and its recorded properties) and AST-026 (an asset in a space) - and
@@ -148,7 +149,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(425);
+    ).toBe(424);
   });
 });
 
@@ -365,12 +366,13 @@ describe('the citations in the committed model', () => {
   // The list tests beside it keep their words and no identifier: the start rule's requirement is
   // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
   // already there, because a citation is kept once per identifier per kind per file.
-  // 253, from 231: figures 1 cites the AST ingest rows where each test demonstrates them whole -
+  // 250, from 231: figures 1 cites the AST ingest rows where each test demonstrates them whole -
   // the header walk in packages/domain (AST-002, AST-005, AST-006, AST-038, AST-040), the stored shape
-  // (AST-005, AST-012, AST-041), the database (AST-005, AST-041), the routes (AST-001, AST-002,
-  // AST-026, AST-035, AST-038, AST-040, AST-051), the ingest job (AST-005, AST-006, AST-037, AST-051)
-  // and the whole system (AST-005) - and CNT-017 once more, in document.test.ts, for a figure naming
-  // an asset version. AST-039 is left to figures 2: its second clause is about a figure's own text.
+  // (AST-005, AST-041), the database (AST-005, AST-041), the routes (AST-001, AST-002, AST-026,
+  // AST-035, AST-038, AST-040), the ingest job (AST-005, AST-006, AST-051) and the whole system
+  // (AST-005) - and CNT-017 once more, in document.test.ts, for a figure naming an asset version.
+  // AST-012 and AST-039 are left to figures 2, which makes a figure's own text; AST-037 is uncited
+  // because nothing audits a refusal yet.
   // 231, from 229: tables 2 cites PUB-032 and TAB-040 once each in apps/worker/src/tables.test.ts,
   // whose body publishes a table with a header row, a header column and spans across a page, passes
   // it through veraPDF and counts its rows and header cells in the whole file. PUB-038 stays uncited:
@@ -384,7 +386,7 @@ describe('the citations in the committed model', () => {
   // paste report beside the surface. CNT-060, CNT-061 and CNT-062 stay uncited: a paste keeps no
   // table or footnote, and reads no Markdown.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(253);
+    expect(model.citations).toHaveLength(250);
   });
 
   it('cites no identifier the corpus does not hold', () => {

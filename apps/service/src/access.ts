@@ -113,6 +113,25 @@ export function administerOrAbove(facts: AccessFacts): Decision {
 }
 
 /**
+ * `authorise`, for a level a handler found for itself - an upload's space - rather than one its path
+ * names: decided in the handler's transaction under the access epoch's shared lock, a level the
+ * principal may not read refused as not found, one they may read refused as forbidden.
+ */
+export async function authoriseAt(
+  trx: TenantTransaction,
+  principalId: string,
+  permission: Exclude<PermissionCheck['permission'], 'administer'>,
+  target: Level,
+): Promise<Decision> {
+  await decideOnly(trx);
+  const facts = await loadFacts(trx, principalId, target);
+  if (!facts || (target.kind !== 'tenant' && !decide('read', facts).allowed)) throw notFound();
+  const decision = decide(permission, facts);
+  if (!decision.allowed) throw forbidden(permission);
+  return decision;
+}
+
+/**
  * Decides a route's permission for the signed-in principal, inside the transaction its handler will
  * run in, taking the access epoch FOR SHARE so no change to access lands between the two (IAM-063).
  * A target the tenant does not hold, or one the caller may not read, is refused as not found; a

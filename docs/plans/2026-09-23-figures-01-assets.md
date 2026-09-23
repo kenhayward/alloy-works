@@ -84,6 +84,23 @@ description left for the asset library. Migration 0020 fires the deferred checks
 pending before it alters `artifact_version`, which Postgres otherwise refuses within the one migration
 transaction.
 
+**The final review** (no Critical, six Important, fifteen Minor) changed the slice before the pull
+request, each fix test first:
+
+- **The image alone is kept.** Refusing a byte after the image's end refused most phone photographs -
+  an Ultra HDR gain map or a camera's preview is a second JPEG after the first - so the service keeps
+  the bytes up to the end and the job refuses stored bytes running past it. A file hidden inside the
+  image's own metadata is still possible, and inert here; AST-051 was reworded before landing to what a
+  parse and a decode prove, and what metadata to keep is AST-007's (T2).
+- **AST-037 is not claimed**: nothing audits a refusal until LIF's log is designed.
+- **EXIF resolution is read**, an out-of-range orientation reads as none, an animated PNG is refused,
+  and a `pHYs` of zero declares nothing.
+- **`create` is decided again at `PUT`**, anything but bytes is `415` without burning the upload, and
+  two racing requests are told `409` rather than failing.
+- **Bytes are held by their hash** and counted in use while another upload names them, and a refusal
+  removes them in its own transaction; a decoder's own failure is retried.
+- Citations narrowed: AST-040 off the byte limit, AST-012 and AST-037 dropped.
+
 ## Tasks
 
 1. **`packages/domain`, assets.** `ADMITTED_FORMATS` (each with `madeSafeBy: 'proof'`, AST-051),

@@ -646,6 +646,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   const http = app.withTypeProvider<ZodTypeProvider>();
   for (const [name, route] of Object.entries(routes) as [keyof Handlers, RouteContract][]) {
+    // Bytes are sent only by the permission-checked path, after its transaction commits; a binary
+    // answer declared anywhere else would be serialised as JSON with no error (final review, 11).
+    if (route.responses[200]?.binary !== undefined && route.access.check !== 'permission') {
+      throw new Error(`${route.operationId} answers bytes without deciding a permission`);
+    }
     const response = Object.fromEntries(
       Object.entries(route.responses).flatMap(([status, declared]) =>
         declared.schema ? [[status, declared.schema]] : [],
