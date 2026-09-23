@@ -391,8 +391,11 @@ describe('the citations in the committed model', () => {
   // 259, from 255: figures 3 cites PUB-033 and AST-014 in packages/domain's assemble.test.ts, where a
   // figure with no alternative text is refused by name, and AST-015 and AST-039 in apps/worker's
   // figures.test.ts, where the PDF tags a decorative image as nothing and German text as German.
+  // 262, from 259: figures 4 cites CNT-086 and CNT-087 in packages/editor's images.test.ts, placing an
+  // image in a table's cell and in a run of text and storing each, and CNT-087 in ComponentEditor.test.tsx,
+  // where the Image button places one.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(259);
+    expect(model.citations).toHaveLength(262);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.59.0 - 2026-09-23 (PR #213)
+
+### Added
+
+- **Images in a line of text.** **Image** on the formatting toolbar places a PNG or a JPEG inside a
+  paragraph at the cursor - in running text, a list, a quotation or a table's cell - one line high,
+  described or marked decorative as it is uploaded, through the same dialog as a figure. Selected, it
+  has the same panel, where its description can be changed and the image replaced or deleted. A
+  component holding one now opens for editing. Publishing a document with an image in a line of text
+  is still refused, until a later change.
+
 ## 0.58.0 - 2026-09-23 (PR #212)
 
 ### Added

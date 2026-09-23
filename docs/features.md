@@ -182,7 +182,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   columns and merged cells.
 
   **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
-  component holding an equation, a footnote or an image in a line of text opens for reading only. There is no control for
+  component holding an equation, a footnote, or an image anywhere but a paragraph - in a caption, a
+  term or an attribution - opens for reading only. There is no control for
   a defined term or a citation, an image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
@@ -222,7 +223,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   nothing until something is typed; or **Decorative**. **Replace image** gives it another image through
   the same dialog, keeping its caption and its place, and **Delete figure** removes it. A figure copied
   within the product pastes as a figure, and a published document prints it (see Publishing). An
-  image cannot be pasted, dropped or placed in a line of text.
+  image cannot be pasted from outside the product or dropped.
+
+- **Images in a line of text.** **Image** on the formatting toolbar places an image inside a paragraph -
+  in running text, a list, a quotation or a table's cell - at the cursor, through the same dialog as a
+  figure: a PNG or a JPEG, described or marked decorative as it is uploaded. It stands one line high,
+  and one that cannot be shown says _An image you may not see_ in its place. Selected, it is given the
+  same panel as a figure, titled **Image**, with **Replace image** and **Delete image**. It takes no
+  formatting, so a link or a mark over the words either side of it is two. One copied within the
+  product pastes as one. **A document holding an image in a line of text cannot be published yet**,
+  and one cannot be placed in a caption, a term, an attribution or preformatted text.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -393,7 +403,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 Named explicitly so nobody has to read the source to find out:
 
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
-  tables and figures: a component holding a footnote, an equation or an image in a line of text still opens for reading only, and
+  tables, figures and images in a line of text: a component holding a footnote, an equation or an
+  image anywhere but a paragraph still opens for reading only, and
   there is no control for a defined term or a
   citation. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a

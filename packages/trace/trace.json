@@ -16095,49 +16095,55 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3477,
+      "line": 3483,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3395,
+      "line": 3401,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3080,
+      "line": 3086,
       "kind": "title"
     },
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 481,
+      "line": 487,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2892,
+      "line": 2898,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-087",
+      "file": "apps/web/src/editor/ComponentEditor.test.tsx",
+      "line": 3706,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2009,
+      "line": 2015,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2019,
+      "line": 2025,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2410,
+      "line": 2416,
       "kind": "title"
     },
     {
@@ -17361,13 +17367,13 @@
     {
       "id": "AST-013",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 212,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 219,
+      "line": 218,
       "kind": "title"
     },
     {
@@ -17380,6 +17386,18 @@
       "id": "CNT-002",
       "file": "packages/editor/src/identity.test.ts",
       "line": 234,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-086",
+      "file": "packages/editor/src/images.test.ts",
+      "line": 177,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-087",
+      "file": "packages/editor/src/images.test.ts",
+      "line": 105,
       "kind": "title"
     },
     {

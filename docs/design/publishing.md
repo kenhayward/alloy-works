@@ -542,7 +542,9 @@ migration with the same guard as 0019's: only where the environment's layout is 
 | F-O | **Four pull requests**: assets; the figure in the editor; figures published with the list of figures; then inline images in a paragraph and a table cell. Each lands usable, and a figure refuses the publish by name until the third | Yes. Inline images last, because they need all three before them and a figure needs none of theirs                                  |
 
 **Built by [figures 3](../plans/2026-09-23-figures-03-publishing-figures.md)**, all but an image in a
-line of text or a table cell, which is figures 4's. Building it changed these things here:
+line of text or a table cell. The fourth slice F-O names is built as two: figures 4 places inline
+images in the editor, and figures 5 publishes them - an image in a cell and one in running text being
+one node, the slice divides as figures 2 and 3 did, not by where the image stands. Building it changed these things here:
 
 - **A figure with no caption is refused**, `figure_without_caption`, naming it, as a table with none
   is. The design above said nothing either way; CNT-017 says a figure carries a caption, and a figure
