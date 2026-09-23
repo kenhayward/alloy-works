@@ -707,6 +707,116 @@ The final whole-branch review found three things and several smaller; these were
   footnote is told every reason it is refused, not the first; and a request made before layouts keeps
   saying a title's footnote is what cannot be published, as it did.
 
+## Equations
+
+Designed on 2026-09-23 against the pinned engine, as footnotes and cross-references were. An equation
+is the content model's `equation`: MathML, canonical (CNT-043), with the LaTeX it was typed as kept
+beside it as a record, inline in a paragraph or a block of its own, a block one numbered or not
+(CNT-047) in the equation sequence `number` already keeps (STR-014). Earlier designs settled the
+shape: the editor converts LaTeX to MathML with Temml as the author types and shows it as the browser's
+own MathML ([component-editor.md](component-editor.md#equations)); one converter in `packages/domain`
+turns the stored MathML into a maths tree both writers read, the template assembling the tree from
+Typst's own maths functions (ADR-0013) and the Word writer into OMML
+([word-output.md](word-output.md#equations)); a construct the converter does not know fails the
+publish (CNT-049). What none of them had done is put an equation through the pinned engine.
+
+### What the pinned Typst does with an equation, measured
+
+Throwaway files compiled by the pinned Typst 0.15.1 with the worker's own arguments - PDF/UA-1,
+`--features a11y-extras`, the pinned fonts and no others - checked by the pinned veraPDF and read back
+from the file's structure tree. 66 equations went the whole way: LaTeX, Temml, the repository's strict
+MathML reader, a converter to a tree in the data, and a template building each from maths functions.
+
+| Case                                                                                                                                                                              | Result                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`$x^2$` with the worker's fonts**                                                                                                                                               | **Refused**: "no font could be found". The worker passes `--ignore-embedded-fonts`, which removes the engine's own maths face, and Liberation Serif is refused as one under PDF/UA-1 ("could not be displayed")                                                                                                                |
+| The same with **STIX Two Math 2.13** in the font folder and `show math.equation: set text(font: ..)`                                                                              | Compiles; veraPDF passes; the face is embedded. Libertinus Math and XITS Math work too; STIX Two is the Times-like match for Liberation Serif, and the most complete (every maths operator and supplementary operator code point)                                                                                              |
+| 63 equations built from data - fractions, scripts, limits, roots, matrices, cases, accents, braces, text, spacing, primes                                                         | Each a `Formula` carrying its `/Alt`; veraPDF passes every one; two compiles byte-identical                                                                                                                                                                                                                                    |
+| **Strings a template could mistake for code** - `#read("/etc/passwd")`, `$`, `\`, `#panic("x")`, `@ref <label>`, `*bold*` - as identifiers and text                               | **Printed literally**, every one. Nothing is evaluated: each symbol is a string handed to `symbol()` or `text`, never parsed (PUB-062)                                                                                                                                                                                         |
+| **An equation with no `alt`, or an empty one**                                                                                                                                    | **Refused** by the engine: "PDF/UA-1 error: missing alt text"                                                                                                                                                                                                                                                                  |
+| An `alt` in another language, under `text(lang: ..)`                                                                                                                              | The `Formula` carries its own `/Lang`; veraPDF passes                                                                                                                                                                                                                                                                          |
+| A block equation numbered by the engine's own `numbering:`                                                                                                                        | Passes, but **the number is inside the `Formula`**, so a screen reader hears the alternative and never the number, and the engine's counter and wording come with it                                                                                                                                                           |
+| A block equation with `number`'s label set beside it, `place(right + horizon, ..)` in a full-width block                                                                          | A `Formula` and a `Span` holding the number, siblings; veraPDF passes                                                                                                                                                                                                                                                          |
+| In running text, a list's item, a quotation, a table's body cell, a header column, a footnote                                                                                     | A `Formula` in its `P`, `LBody`, `BlockQuote`, `TD`, `TH` or `Note`; veraPDF passes                                                                                                                                                                                                                                            |
+| **In a table's header row repeated over three pages**                                                                                                                             | **One** `Formula`: the repeats are artifacts. Unlike a link or a label, an equation there is safe                                                                                                                                                                                                                              |
+| In a figure's or a table's caption, with the list after the contents                                                                                                              | A `Formula` in the `Caption` and one in the list's entry; veraPDF passes                                                                                                                                                                                                                                                       |
+| **In a section's title**, with the contents and a running head                                                                                                                    | Compiles and passes - the head's copy is artifact text. **The bookmark flattens it to its glyphs**, "Section on a+bc", not its alternative                                                                                                                                                                                     |
+| A label on a numbered block equation, a link to it, and `counter(page).at`                                                                                                        | Both land on the equation's page. The engine's own `ref` prints "Equation (3.1)" in its English wording, so a cross-reference uses `number`'s label as it does for a table                                                                                                                                                     |
+| A numbered block equation set as `figure(kind: "equation")`, its caption the number, placed right by a show rule, and listed by `outline(target: figure.where(kind: "equation"))` | A `Formula` then a `Span` holding the number - no `Caption` - and the list a `TOC` of `TOCI` links reading "(1.1) ..... 2", as the lists of figures and tables are. An unnumbered block equation stays out of it, and a label on the figure serves a link and a page. A list built by hand instead is not tagged as a contents |
+
+**Two things the converter must do that the engine will not.** Text built as markup is set upright in
+an equation, so every identifier is set italic or upright explicitly, by MathML Core's rule (a
+single-letter `mi` italic, anything else upright); and content is joined, never laid out in markup,
+which would insert spaces. **What it refuses**, as `equation_unrenderable` naming the block: `merror`,
+right-to-left maths, more than one pair of scripts on a side of `mmultiscripts`, `mpadded`'s vertical
+offset (the engine has no way to move maths and keep it maths), and a table cell spanning others.
+
+**The editor's side, measured in Node.** Temml 0.13.5 (MIT, 50 kB compressed, no dependencies) turned
+32 samples into MathML the strict reader kept - 4 as they were, 28 once it dropped Temml's `class` and
+`style`, none refused - but **the reader loses content in two places**: `\overline`, `\underline` and
+`\cancel` arrive as `menclose`, which is not MathML Core, and the reader removes it **and what it
+holds**; and a `cases` or `aligned` block's column alignment, which Temml writes only as classes. Left
+to its defaults, Temml also renders an unknown command such as `\foo` as the text "\foo", which the
+reader would store as maths. The speech rule engine (Apache-2.0) reads the samples well in English and
+German in about 10 ms each once loaded - "the fraction with numerator a plus b and denominator c" - but
+its current release is a candidate, it is 130 kB compressed in a browser with 44 kB per language, and
+it fetches its language data from a CDN unless told otherwise.
+
+### How an equation is published
+
+- **In every context the model admits one** (CNT-046, as measured): running text, a list's item, a
+  quotation, a table's cell - header rows included - a footnote's text, a figure's or a table's
+  caption, and a section's title. A caption is inline content since 2026-09-22, so the component
+  editor's finding that a caption could not hold one is answered.
+- **Set in STIX Two Math** (EQ-A), with the engine's fallback off, and its characters checked against
+  that face before the engine starts, as a paragraph's are against Liberation Serif: one it lacks
+  fails `glyph_missing`, naming the block.
+- **Built from the maths tree** (EQ-B), one converter in `packages/domain`, both writers reading it; a
+  construct it refuses fails `equation_unrenderable`, naming the block and the construct, never the
+  equation's text.
+- **Always with its alternative**, the MathML's `alttext`, in the language of the text it stands in;
+  one with none fails `alternative_missing` by name before the engine could refuse the document without
+  saying which (EQ-D).
+- **A numbered block equation** carries `number`'s label beside it, right-aligned and centred on the
+  equation, as text the reader hears after the equation; never the engine's numbering (EQ-E). It is
+  set as a figure of its own kind whose caption is that number, so it is listed after the contents
+  where the layout declares a list of equations (EQ-F), and it can be the target of a cross-reference,
+  by number, page or position, as a table can - the Reference dialog offers it.
+- **The published document gains** an equation run beside text, an image, a footnote and a reference,
+  and an equation block - each the tree, the alternative and its language, a block's label and anchor.
+
+### How an equation is made
+
+- **From a dialog** (EQ-H), **Equation** on the toolbar: the author types LaTeX and sees the equation
+  as the browser draws it, with its generated alternative beneath, editable; an inline equation, or a
+  block one numbered or not where a block may stand. Selecting an equation and asking again reopens it
+  on its LaTeX. One that arrived without LaTeX reopens on its alternative and numbering alone, since
+  MathML is not turned back into LaTeX.
+- **Temml is pinned and strict** (EQ-C): called with `throwOnError`, so an unknown command is an error
+  in the dialog, never text in the equation; and its output is rewritten before the reader sees it -
+  `menclose` over or under a thing becomes the `mover` or `munder` MathML Core has for it, and anything
+  else `menclose` draws (`\cancel`, `\boxed`) is refused in the dialog by name. The reader keeps
+  `columnalign` on a table, its row and its cell, so a `cases` block keeps its left-aligned columns; the
+  editor's stylesheet draws it and the template sets it.
+- **The alternative is generated once, when the equation is made or changed** (EQ-D), in the
+  component's language where the engine speaks it, and never on load: a component opened is not a
+  component changed. Where no generator speaks the language, the field is empty and marked, and the
+  publish refuses the equation by name until the author writes one. The engine is loaded the first
+  time the dialog opens, from the product's own files, never a CDN.
+
+### Decisions for Ken
+
+| #    | Decision                                                                                                                                                                                                                                                    | Recommended                                                                                                                                                                                                                                                                                    |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EQ-A | **Pin STIX Two Math 2.13** as the maths face, beside Liberation Serif and Liberation Mono, with the glyph check extended to maths                                                                                                                           | Yes. No equation compiles without a pinned maths face, Liberation Serif is refused as one, and STIX Two is open-licence (ADR-0010), Times-like and the most complete of the five measured                                                                                                      |
+| EQ-B | **One maths tree, built by one converter in `packages/domain`**, refusing by name what the engine cannot set                                                                                                                                                | Yes, as ADR-0013 and word-output.md already have it; measured, it covers every element the reader keeps but the five refused                                                                                                                                                                   |
+| EQ-C | **Temml strict, its `menclose` rewritten, `columnalign` kept** - both before the first equation is stored                                                                                                                                                   | Yes. Without them `\overline{z}` stores nothing where the `z` was, and a stored version is immutable, so the loss would be permanent. `\cancel` and `\boxed` are refused rather than drawn wrongly                                                                                             |
+| EQ-D | **The alternative generated when the equation is made, never on load**, in the component's language or not at all; a missing one refuses the publish by name                                                                                                | Yes - **narrowing the editor design**, which generated one on load too. Generating on load turns opening a component into changing it, and English words in a German component would be read out as German. CNT-048 asks for generation where possible, which this is                          |
+| EQ-E | **The number beside the equation, as its own text**, from `number`, never the engine's counter                                                                                                                                                              | Yes: measured, the engine's number is inside the `Formula` where a screen reader never hears it                                                                                                                                                                                                |
+| EQ-F | **The list of equations is set as the lists of figures and tables are**: a numbered block equation is a figure of its own kind whose caption is its number, placed beside it, and the layout may declare the list (`equation` is already a listed sequence) | Yes: measured, the list is a contents with links, the number is still read after the equation, and nothing new is needed but the figure kind. PUB-038 and STR-041's list of equations comes with it                                                                                            |
+| EQ-G | **Every context CNT-046 names**, a section's title included                                                                                                                                                                                                 | Yes, measured to pass in each. **Or leave the title out of T1**: the outline panel's title field would need an equation control of its own, and the bookmark shows the glyphs rather than the alternative. Keeping it costs one control; cutting it leaves CNT-046 unclaimed, naming the title |
+| EQ-H | **Two pull requests**: equations in the editor (EQ-C, EQ-D and the dialog); then equations published (EQ-A, EQ-B, EQ-E, EQ-F, EQ-G). Word's OMML comes with Word output                                                                                     | Yes, as footnotes and cross-references were split. Each lands usable, and an equation refuses the publish by name until the second                                                                                                                                                             |
+
 ## The layout
 
 A **layout** is an artifact kind of its own, versioned by the chain (PUB-013), and like a style

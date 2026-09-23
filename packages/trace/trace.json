@@ -14372,7 +14372,7 @@
         },
         {
           "id": "CNT-048",
-          "howItIsMet": "An equation's alternative is generated from its MathML wherever a generator is available - on entry, and on load for any equation that lacks one - stored as `alttext`, and always editable"
+          "howItIsMet": "An equation's alternative is generated from its MathML wherever a generator is available - when an equation is made or changed, in the component's language where the generator speaks it (publishing.md, EQ-D) - stored as `alttext`, and always editable"
         },
         {
           "id": "CNT-080",
