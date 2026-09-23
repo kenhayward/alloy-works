@@ -192,6 +192,135 @@ describe("the document's text", () => {
     window.getSelection()!.removeAllRanges();
   });
 
+  describe('a cross-reference in the text (cross-references 1)', () => {
+    /** The printer's text with a table of readings, and a paragraph referring to it and to a section. */
+    const referring = {
+      ...printerText,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'See ', marks: [] },
+            {
+              type: 'crossReference',
+              id: 'x1',
+              target: { kind: 'block', block: 't1' },
+              display: 'number',
+            },
+            { type: 'text', value: ' and ', marks: [] },
+            {
+              type: 'crossReference',
+              id: 'x2',
+              target: { kind: 'node', node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa' },
+              display: 'numberAndTitle',
+            },
+            { type: 'text', value: '.', marks: [] },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Readings', marks: [] }],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [{ type: 'text', value: 'York', marks: [] }],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const texts = new Map<string, unknown>([[PRINTER_NODE, referring]]);
+    const names = new Map([[PRINTER, 'Install the printer']]);
+
+    it('shows what each reference will print, numbered by the page as a publish numbers it', () => {
+      render(
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={texts}
+          contributions={
+            new Map([
+              [
+                PRINTER_NODE,
+                [{ block: 't1', sequence: 'table', numbered: true, caption: 'Readings' }],
+              ],
+            ])
+          }
+        />,
+      );
+      const shown = [...document.querySelectorAll('[data-reference]')].map(
+        (each) => each.textContent,
+      );
+      expect(shown).toEqual(['Table 2.1', '1 Introduction']);
+    });
+
+    it('shows the table by its kind and caption until the page has heard what the component holds', () => {
+      render(
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={texts}
+        />,
+      );
+      const shown = [...document.querySelectorAll('[data-reference]')].map(
+        (each) => each.textContent,
+      );
+      expect(shown).toEqual(['Table: Readings', '1 Introduction']);
+    });
+
+    it('hands the editor opened in place the same context the text is shown with', () => {
+      const contexts: unknown[] = [];
+      render(
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={texts}
+          editing={PRINTER_NODE}
+          onEdit={() => undefined}
+          editor={(_component, place) => {
+            contexts.push(place.referenceContext);
+            return null;
+          }}
+        />,
+      );
+      expect(contexts.at(-1)).toMatchObject({
+        targets: [
+          {
+            target: { kind: 'node', node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa' },
+            label: '1',
+            title: 'Introduction',
+          },
+          {
+            target: { kind: 'node', node: 'bbbbbbbbbbbbbbbbbbbbbbbbbb' },
+            label: '2',
+            title: 'Method',
+          },
+        ],
+      });
+    });
+  });
+
   it('numbers nothing when the scheme could not be read', () => {
     render(<DocumentText outline={outline} scheme={null} names={null} />);
     expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([

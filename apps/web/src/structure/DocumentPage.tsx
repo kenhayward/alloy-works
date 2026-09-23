@@ -722,6 +722,10 @@ export function DocumentPage({
             scheme={document.scheme}
             names={names}
             texts={texts}
+            // What each occurrence holds, as the lists beside it number it: what a reference in the
+            // text, and in the editor opened in place, is numbered from (cross-references 1). The
+            // editor takes its context through its place, and is told again as this is read again.
+            {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
             editing={editing}
             {...(principalId === undefined
               ? {}
