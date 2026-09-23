@@ -198,6 +198,17 @@ function pdfString(text: string, at: number): string | null {
     let depth = 0;
     for (let i = at; i < text.length; i += 1) {
       const c = text[i]!;
+      // An end of line in a literal string is one newline, however the file spells it (ISO 32000-1,
+      // 7.3.4.2), and a backslash before one continues the string on the next line and says nothing.
+      if (c === '\r') {
+        bytes += '\n';
+        if (text[i + 1] === '\n') i += 1;
+        continue;
+      }
+      if (c === '\\' && (text[i + 1] === '\r' || text[i + 1] === '\n')) {
+        i += text[i + 1] === '\r' && text[i + 2] === '\n' ? 2 : 1;
+        continue;
+      }
       if (c === '\\') {
         const next = text[i + 1]!;
         const escapes: Record<string, string> = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f' };

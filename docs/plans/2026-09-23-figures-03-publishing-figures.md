@@ -102,6 +102,24 @@ Recorded here as the design documents record them (publishing.md's and assets.md
 - **`readPdf` reads each `Figure`'s `/Alt`, `/Lang` and layout box** from the objects, which is
   what shows a tall image kept inside its page's text block.
 
+The final whole-branch review found two things and four smaller; these were changed:
+
+- **A figure's own text of spaces alone publishes as nothing** - refused now as `alternative_missing`,
+  held by the PUB-033 test.
+- **A long caption ran off the page** - `assemble` now leaves the caption room, shrinking the image,
+  and refuses one too long for any image as `caption_too_long` (publishing.md's note says why
+  breaking the figure was set aside).
+- **The image's path was worked out twice** - `publishedImagePath` is the one rule now.
+- **`pdfString`** reads a line continuation and a raw end of line as the PDF standard says.
+
+And these were not, with why:
+
+- **`requestPublication` now reads each resolved component's content**, so a stored version that does
+  not read throws at the request rather than in the job. Every stored version was parsed on the way
+  in; this cannot happen without a broken store, and failing where it is found is no worse.
+- **A panorama of 50,000,000 by 1 pixels prints 0 points high.** Harmless - veraPDF passes it - and an
+  author who places one sees a line. A floor would be a design rule, and waits for themes.
+
 ## Tasks
 
 1. **`packages/domain` and `packages/db`, the layout.** `defaultLayout` at 0.3 with Figures before

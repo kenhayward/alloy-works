@@ -310,9 +310,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the page. A screen reader is told what it shows, in the language that description is written in -
   the image's own description in its own language, or the figure's own in the component's. A
   decorative figure's image is passed over by a screen reader altogether; its caption and number stay.
-  A figure is refused, naming it, where its caption is empty, where neither it nor its image has a
-  description and it is not marked decorative, and where its image is in a space you may not read -
-  which says nothing more about the image. The publication records every image it printed.
+  A long caption makes the image smaller, so the two still stand on one page. A figure is refused,
+  naming it, where its caption is empty or too long to stand on a page with even a small image, where
+  neither it nor its image has a description and it is not marked decorative, and where its image is
+  in a space you may not read - which says nothing more about the image. The publication records every image it printed.
 
   **The publication is laid out.** It opens with a cover carrying the title, then a contents page a
   screen reader announces as a table of contents, then a **list of figures** and a **list of

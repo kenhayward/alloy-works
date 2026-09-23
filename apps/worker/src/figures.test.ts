@@ -78,7 +78,10 @@ const content = [
   figure('f4', TALL, { kind: 'inherited' }, 'A tall one'),
 ];
 
-const inputOf = (assets: ReadonlyMap<string, PublishingAsset>): AssembleInput => ({
+const inputOf = (
+  assets: ReadonlyMap<string, PublishingAsset>,
+  blocks: readonly unknown[] = content,
+): AssembleInput => ({
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'The shapes',
@@ -106,7 +109,7 @@ const inputOf = (assets: ReadonlyMap<string, PublishingAsset>): AssembleInput =>
         title: 'Shapes',
         language: 'en-GB',
         direction: 'ltr',
-        content,
+        content: blocks,
       }) as ContentDocument,
     ],
   ]),
@@ -196,6 +199,42 @@ describe('a figure in the PDF (figures 3)', () => {
     expect(list).toBeGreaterThanOrEqual(0);
     for (const entry of ['Figure 1.1 Our shapes', 'Figure 1.3 A border', 'Figure 1.4 A tall one']) {
       expect(pages[list]).toContain(entry);
+    }
+  });
+
+  it('keeps a long caption on the page with its image, making the image smaller, and refuses one too long for any', async () => {
+    // Found by the final review: a figure does not break - and made breakable, the engine writes no
+    // layout box on its `Figure` - so a caption longer than the room below its image ran under the
+    // running foot and off the page. `assemble` now leaves the caption room.
+    const tall = await imageOf(TALL, { width: 200, height: 2000 }, 'png', {
+      text: 'A tall shape',
+      language: 'en-GB',
+    });
+    const caption = (count: number) =>
+      Array.from({ length: count }, (_, at) => `word${at}`).join(' ');
+    const assets = new Map([[tall.version, tall.asset]]);
+    const refused = assemble(
+      inputOf(assets, [figure('f1', TALL, { kind: 'inherited' }, caption(400))]),
+    );
+    expect(refused.ok === false && refused.failures.map((each) => each.code)).toEqual([
+      'caption_too_long',
+    ]);
+    const assembled = assemble(
+      inputOf(assets, [figure('f1', TALL, { kind: 'inherited' }, caption(240))]),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const long = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(assembled.document),
+      at,
+      await rootImages(assets, async () => tall.bytes),
+    );
+    const readLong = await readPdf(long);
+    expect(await checkPdfUa1(long)).toMatchObject({ compliant: true, failedRules: 0 });
+    // Every word is set, the last included, and no line of it stands in the bottom margin.
+    expect(readLong.taggedText.flat().join(' ')).toContain('word239');
+    for (const item of readLong.items) {
+      expect(item.y, item.text).toBeGreaterThanOrEqual(72 - 0.5);
     }
   });
 });

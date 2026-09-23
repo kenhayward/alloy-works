@@ -7274,6 +7274,7 @@
                               "table_header_spans_body",
                               "figure_without_caption",
                               "alternative_missing",
+                              "caption_too_long",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10012,6 +10013,7 @@
                               "table_header_spans_body",
                               "figure_without_caption",
                               "alternative_missing",
+                              "caption_too_long",
                               "engine_failed",
                               "store_failed"
                             ]

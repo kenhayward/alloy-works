@@ -558,6 +558,15 @@ line of text or a table cell, which is figures 4's. Building it changed these th
   whole-record check now holds a publication's images to exactly its request's.
 - **A length is carried to hundredths of a point**, so the bytes Typst reads, and the digest a
   publication records, do not move with floating point.
+- **A figure's own text of spaces alone is `alternative_missing`** (final review): the stored shape
+  takes any text that is not empty, and only the editor refuses a blank one.
+- **The image gives way to its caption** (final review). A figure does not break, so a caption longer
+  than the room below its image ran under the running foot and off the page. `assemble` estimates the
+  caption's height generously (`captionHeight`: 0.6 em a grapheme, a line more for wrapping, 1.5 em a
+  line, an em of gap) and holds the image to what that leaves when it is less than the 60 per cent
+  share; a caption that leaves less than an inch is refused, `caption_too_long`. Making the figure
+  breakable was measured and set aside: the pinned engine then writes no `BBox` on any `Figure`,
+  which ISO 32000-1 asks of a figure. A caption of capitals throughout may still be estimated short.
 
 ## The layout
 

@@ -150,6 +150,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_5',
         'PUBLISHING_SCHEMA_6',
         'assemble',
+        'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
         // Promoted by the editor's marks slice, so the editor can warn about a tag a publication

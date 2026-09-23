@@ -1739,6 +1739,27 @@ describe('a figure, published (figures 3)', () => {
     expect(figureIn(assembled)).toMatchObject({ width: 104.68, height: 418.73 });
   });
 
+  it('makes a tall image smaller to leave its long caption room on the page, and refuses a caption no image leaves room for', () => {
+    // Found by the final review: a figure does not break, so a caption longer than the room below its
+    // image ran off the page. The caption's height is estimated generously - more room than it takes,
+    // never less - and the image gives way to it.
+    const long = stored({ caption: [text('x'.repeat(3000))] });
+    const tall = asset({ width: 500, height: 2000 });
+    // 3011 characters with the label, at 6.6 points each over 451.28, is 45 lines and one more for a
+    // broken word, each 16.5 points, and 11 between the image and its caption: 770 points, more than
+    // the whole text block of 697.89. Refused.
+    expect(failuresOf(assemble(withAssets({ [RED]: tall }, long)))).toEqual([
+      failed('caption_too_long', null),
+    ]);
+    // 1511 characters: 24 lines, 407 points with the gap, which leaves the image 290.89 of the text
+    // block - less than its share of 418.73 - and the width from the proportions.
+    const longish = stored({ caption: [text('x'.repeat(1500))] });
+    expect(figureIn(assemble(withAssets({ [RED]: tall }, longish)))).toMatchObject({
+      width: 72.72,
+      height: 290.89,
+    });
+  });
+
   it('takes the room a quotation leaves it, not the whole measure', () => {
     const quoted = { type: 'blockquote', id: 'q1', content: [stored()] };
     const assembled = assemble(withAssets({ [RED]: asset() }, quoted));
@@ -1778,6 +1799,12 @@ describe('a figure, published (figures 3)', () => {
     expect(
       failuresOf(assemble(withAssets({ [RED]: asset({ alternative: null }) }, stored()))),
     ).toEqual([failed('alternative_missing', null)]);
+    // Its own text of spaces alone says nothing either, whatever wrote it: the stored shape takes any
+    // text that is not empty, and a reader would be told of an image and nothing of what it shows.
+    const blank = stored({ alternative: { kind: 'own', text: '   ' } });
+    expect(failuresOf(assemble(withAssets({ [RED]: asset() }, blank)))).toEqual([
+      failed('alternative_missing', null),
+    ]);
   });
 
   it('refuses inherited text in a language the engine cannot carry, naming the tag', () => {

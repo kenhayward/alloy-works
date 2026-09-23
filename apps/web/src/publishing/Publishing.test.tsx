@@ -266,6 +266,7 @@ describe('publishing from the document page', () => {
       { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },
       { stage: 'compose', code: 'alternative_missing', node: null, block: 'f2', detail: null },
       { stage: 'resolve', code: 'asset_unreadable', node: null, block: 'f3', detail: null },
+      { stage: 'compose', code: 'caption_too_long', node: null, block: 'f4', detail: null },
     ]);
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
@@ -278,6 +279,9 @@ describe('publishing from the document page', () => {
     );
     expect(why).toHaveTextContent(
       'A figure shows an image you may not see, so you cannot publish it.',
+    );
+    expect(why).toHaveTextContent(
+      "A figure's caption is too long to stand on a page with its image. Shorten the caption.",
     );
   });
 

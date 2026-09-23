@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { ADMITTED_FORMATS, type PublishingAsset } from '@alloy-works/domain';
+import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import {
   failPublicationRequest,
   publicationInputs,
@@ -72,7 +72,8 @@ export async function rootImages(
     if (createHash('sha256').update(bytes).digest('hex') !== hash) {
       throw new Error(`The bytes under ${asset.object} are not the bytes it names`);
     }
-    images.push({ path: `assets/${hash}.${ADMITTED_FORMATS[asset.format].extension}`, bytes });
+    // The place the published document names it at, by the one rule that names it.
+    images.push({ path: publishedImagePath(asset), bytes });
   }
   return images;
 }

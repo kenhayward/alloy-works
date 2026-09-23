@@ -1220,8 +1220,11 @@ have left such a request unable to finish at all.
   null where it is decorative. `assemble` sizes the image: the width where the figure stands, the
   height from the proportions as displayed, and past 60 per cent of the text block's height
   (`textBlockHeight`), that height and the width from it, because the engine lets an image run off
-  its page in silence. It refuses a figure with no words in its caption (`figure_without_caption`),
-  one given alternative text by neither itself nor its image (`alternative_missing`, PUB-033), one
+  its page in silence - and where the caption's generous estimate (`captionHeight`) leaves less than
+  that share, what it leaves, since a figure does not break; a caption leaving less than an inch is
+  `caption_too_long`. It refuses a figure with no words in its caption (`figure_without_caption`),
+  one given alternative text by neither itself nor its image, or its own of spaces alone
+  (`alternative_missing`, PUB-033), one
   whose image the request could not read (`asset_unreadable`), and one in an image style other than
   `figure`. The template sets a `figure(kind: image)` with numbering off and the caption below it,
   the image inside `text(lang:, region:)` of its alternative text's language so the `Figure` carries

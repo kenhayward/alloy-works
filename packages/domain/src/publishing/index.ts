@@ -1,4 +1,4 @@
-export { assemble } from './assemble.js';
+export { assemble, publishedImagePath } from './assemble.js';
 export type { Assembled, AssembleInput, PublishingAsset } from './assemble.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';

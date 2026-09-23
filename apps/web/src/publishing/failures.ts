@@ -77,6 +77,9 @@ export function failureWords(failure: Failure): string {
     // Named by where the figure is, never by the image, which the author may not read.
     case 'asset_unreadable':
       return 'A figure shows an image you may not see, so you cannot publish it.';
+    // A figure does not break across pages, so its image and caption must stand on one together.
+    case 'caption_too_long':
+      return "A figure's caption is too long to stand on a page with its image. Shorten the caption.";
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

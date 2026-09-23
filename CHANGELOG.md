@@ -13,8 +13,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   is told what the image shows, in the language its description is written in; a decorative image is
   passed over, and its caption and number stay. A **list of figures** follows the contents, before
   the list of tables.
-- A figure is refused, and named, when its caption is empty, when neither it nor its image has a
-  description and it is not marked decorative, or when its image is in a space you may not read.
+- A long caption makes its image smaller, so the two stay on one page.
+- A figure is refused, and named, when its caption is empty or too long to stand on a page with its
+  image, when neither it nor its image has a description and it is not marked decorative, or when its
+  image is in a space you may not read.
 
 ### Changed
 

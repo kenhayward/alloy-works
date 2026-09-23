@@ -19,6 +19,7 @@ import { defaultNumberingScheme, type NumberFormat } from '../structure/scheme.j
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
 import {
+  captionHeight,
   columnsAt,
   columnsOf,
   expandTabs,
@@ -97,6 +98,16 @@ const BODY = 'body';
 /** The one table style the template sets until themes.md gives styles (tables 2, ruling R4). */
 const TABLE_STYLE = 'table';
 
+/**
+ * Where an image stands in the compile root (figures 3, ruling R2): `assets/`, the hash its key ends
+ * in, and the extension its format declares. The one rule, which the published document names and the
+ * job writes the file at, so the two cannot name different places.
+ */
+export function publishedImagePath(asset: Pick<PublishingAsset, 'object' | 'format'>): string {
+  const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
+  return `assets/${hash}.${ADMITTED_FORMATS[asset.format].extension}`;
+}
+
 /** The one image style the template sets for a figure until themes.md gives styles (decision F-K). */
 const FIGURE_STYLE = 'figure';
 
@@ -106,6 +117,12 @@ const FIGURE_STYLE = 'figure';
  * engine lets an image run off its page and says nothing.
  */
 const FIGURE_HEIGHT_SHARE = 0.6;
+
+/**
+ * The least an image may be given, in points - an inch - where its caption takes the rest of the page:
+ * a caption that leaves less is refused, `caption_too_long`, rather than set beside a smudge.
+ */
+const FIGURE_LEAST_HEIGHT = 72;
 
 /** A length in points as a published document carries it: to hundredths, so its bytes are stable. */
 const points = (length: number) => Math.round(length * 100) / 100;
@@ -469,22 +486,28 @@ export function assemble(input: AssembleInput): Assembled {
         if (alternative === undefined) return [];
 
         // Sized here, never by the template (ruling R3): the width where the figure stands, the height
-        // from the proportions as displayed, and past its share of the text block, that height instead.
+        // from the proportions as displayed, and past its share of the text block - or past what its
+        // caption leaves of the page, where that is less - that height instead. A figure does not
+        // break, so image and caption must stand on one page together (final review).
         const format = publishedPdf(layout.formats.pdf);
         const across = textMeasure(format) - indent;
-        const most = textBlockHeight(format) * FIGURE_HEIGHT_SHARE;
+        const said = (label === null ? '' : `${label} `) + caption.map((run) => run.text).join('');
+        const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
+        if (left < FIGURE_LEAST_HEIGHT) {
+          failures.push(failure('compose', 'caption_too_long', node, block.id, null));
+          return [];
+        }
+        const most = Math.min(textBlockHeight(format) * FIGURE_HEIGHT_SHARE, left);
         const tall = (across * asset.height) / asset.width;
         const [width, height] =
           tall > most ? [(most * asset.width) / asset.height, most] : [across, tall];
-        // The key ends in the bytes' hash, which is what the job names the file by in the root.
-        const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
         return [
           {
             type: 'figure',
             id: block.id,
             label,
             caption,
-            path: `assets/${hash}.${ADMITTED_FORMATS[asset.format].extension}`,
+            path: publishedImagePath(asset),
             width: points(width),
             height: points(height),
             alternative,
@@ -523,6 +546,12 @@ export function assemble(input: AssembleInput): Assembled {
   ): PublishedFigure['alternative'] | undefined => {
     if (stored.kind === 'decorative') return null;
     if (stored.kind === 'own') {
+      // Its own text of spaces alone says nothing, whatever wrote it - the stored shape takes any text
+      // that is not empty, and only the editor refuses a blank one - so it is none (final review).
+      if (stored.text.trim() === '') {
+        failures.push(failure('compose', 'alternative_missing', node, block, null));
+        return undefined;
+      }
       const content = input.occurrences.get(node);
       const language = content === undefined ? null : publishedLanguage(content.language);
       return language === null ? undefined : { text: stored.text, language };

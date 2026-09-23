@@ -50,6 +50,9 @@ export const publishFailureCodes = [
   // the engine would refuse the whole document for without saying which (PUB-033, AST-014).
   'figure_without_caption',
   'alternative_missing',
+  // compose, from the final review of figures 3: a caption too long to stand on a page beside even a
+  // small image. A figure does not break, so it would run off the page; refused, naming the figure.
+  'caption_too_long',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
