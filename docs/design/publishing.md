@@ -114,6 +114,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                                                                                                              |
 | **TAB-039** | A table's caption is set by the `figure` it stands in, which Typst tags as a `Caption` inside the `Table`, first, above it or below - measured; Word names the table by its caption in `w:tblCaption`                                                                                                                                                                                 |
 | **TAB-040** | Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them                                                                                                                                                                              |
+| **TAB-049** | Header rows are `TH`s of a column in the PDF and `w:tblHeader` rows in Word; a header column's cells are `pdf.header-cell(scope: "row")` `TH`s in the PDF - measured - and in Word, which has no header column, the publication's report names each table whose header column it could not mark (word-output.md)                                                                      |
 
 **PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
 nine-level regression case passes every veraPDF PDF/UA-1 machine rule - 106 rules, 0 failed - and the
@@ -342,7 +343,8 @@ questions about Typst rather than about the product.
 
 **Ken's answer (2026-09-22): decisions T-A to T-I taken as recommended.** They are listed at the end
 of the section; the build is [tables 1](../plans/2026-09-22-tables-01-the-table-in-a-component.md) and
-then tables 2. Decision T-G's requirement is filed as issue #202, which lands as TAB-049 with tables 2.
+then [tables 2](../plans/2026-09-22-tables-02-publishing-tables.md). Decision T-G's requirement was
+filed as issue #202, and landed as TAB-049 with tables 2.
 
 ### What the pinned Typst does with a table, measured
 
@@ -393,9 +395,18 @@ template `publication/6`:
   table reaches and remain one header row to assistive technology;
 - a cell in the first `headerColumns` columns of any other row is a `pdf.header-cell(scope: "row")`,
   and a cell that is in both is `scope: "both"`;
-- a span is `table.cell(colspan, rowspan)`, inside the header cell where the cell is one;
+- a span is `table.cell(colspan, rowspan)`, inside the header cell where the cell is one, and what
+  each cell heads - a column, a row, both or nothing - is worked out by `assemble` from where the
+  cell starts in the grid, so the template places no spans of its own;
 - columns share the measure equally until a table style says otherwise, so a table is never wider than
   its column. A table too wide even then - TAB-033's rotation, scaling or splitting - is T2's.
+
+**A header cell that spans down past the header rows is refused, naming the table**
+(`table_header_spans_body`, tables 2). Measured: the pinned engine grows the header to take in every
+row such a cell reaches, so the data cell beside it is tagged a `TH` and read out as a column
+header, and veraPDF passes it. The table said something its author never did, which is the one thing a
+publish must not do in silence. A header cell spanning rows inside the header, or a header column's
+cell spanning rows, is a table's own and is published.
 
 **A table with no caption is refused at publish, naming it** (`table_without_caption`), and not at
 save. An author inserts a table and types its caption afterwards, and every keystroke is an iteration;
@@ -410,19 +421,20 @@ with tables, and figures and equations join the same member when they are built.
 
 **Word** (word-output.md) marks header rows with `w:tblHeader`, which repeats them and marks them as
 headers, and names the table by its caption in `w:tblCaption` beside the caption paragraph. **Word has
-no way to mark a header column**, which is why TAB-031 is challenged below rather than claimed.
+no way to mark a header column**, which is why TAB-031 was challenged and superseded by TAB-049
+(decision T-G): Word's publication report names each table whose header column it could not mark.
 
 ### What the TAB claims rest on
 
-TAB-039 and TAB-040 are claimed above for the PDF, as measured here, and for Word as word-output.md
-designs it. PUB-032 - header cells associated with what they describe - is claimed for
+TAB-039, TAB-040 and TAB-049 are claimed above for the PDF, as measured here, and for Word as
+word-output.md designs it. PUB-032 - header cells associated with what they describe - is claimed for
 the PDF, where both header rows and header columns are `TH`s with a scope veraPDF checks.
 
 Not claimed, and why:
 
 | Requirement | Why                                                                                                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TAB-031     | Asks for header cells associated "in every output", and Word cannot mark a header column. Challenged below                                                                                                                                            |
+| TAB-031     | Superseded by TAB-049 (decision T-G): it asked for header cells associated "in every output", and Word cannot mark a header column. TAB-049 is claimed above                                                                                          |
 | TAB-032     | How a table breaks follows its table style (STY-013), and there are no table styles until themes.md is built. Until then every table repeats its header rows and keeps no rows together, which is a behaviour, not a style                            |
 | TAB-034     | A caption is required at publish, as above. But "numbered by the outline" is STR-023's, which issue #129 reopens for an explicitly unnumbered table, so TAB-034 is claimed only once #129 is decided                                                  |
 | TAB-041     | Its first half - a table's role and reading order in tagged output, and one table across a page break - is measured above. Its second is about a table "rotated, scaled or split by TAB-033", which is T2's and undesigned, so the claim waits for it |

@@ -7,6 +7,7 @@ import { canonicaliseVersionContent } from '../version/substance.js';
 
 import {
   defaultLayout,
+  FIRST_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   parseLayout,
   readLayout,
@@ -40,7 +41,7 @@ describe('a layout', () => {
 
   it('holds the default layout to its own schema', () => {
     const expected: Layout = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -48,7 +49,12 @@ describe('a layout', () => {
         noticeSentence: DRAFT_NOTICE.text,
       },
       scheme: defaultNumberingScheme,
-      matter: { cover: true, contents: { depth: 3 }, appendices: { newPage: true } },
+      matter: {
+        cover: true,
+        contents: { depth: 3 },
+        appendices: { newPage: true },
+        lists: [{ sequence: 'table', title: 'Tables' }],
+      },
       formats: {
         pdf: {
           page: { width: 595.28, height: 841.89 },
@@ -75,7 +81,7 @@ describe('a layout', () => {
         },
       },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(1);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(2);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
 
@@ -87,14 +93,57 @@ describe('a layout', () => {
   });
 
   it('reports a stored layout it cannot read with its artifact and version, and yields nothing', () => {
-    const newer = { ...copy(), schemaVersion: 2 };
+    const newer = { ...copy(), schemaVersion: 3 };
     const read = readLayout(newer, { artifact: 'layout-artifact', version: 'layout-version' });
     expect(read).toMatchObject({
       ok: false,
       artifact: 'layout-artifact',
       version: 'layout-version',
     });
-    expect(read.ok === false && read.failure).toMatch(/layout.*2/);
+    expect(read.ok === false && read.failure).toMatch(/layout.*3/);
+  });
+
+  it('reads a layout stored at schema version 1 as one that generates no lists', () => {
+    // The first version of the default layout, as 0018 stored it: it publishes exactly as it did.
+    expect(FIRST_DEFAULT_LAYOUT.schemaVersion).toBe(1);
+    const read = readLayout(JSON.parse(JSON.stringify(FIRST_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout.matter.lists).toEqual([]);
+    expect({
+      ...read.layout,
+      schemaVersion: 1,
+      matter: { ...read.layout.matter, lists: undefined },
+    }).toEqual({
+      ...FIRST_DEFAULT_LAYOUT,
+      matter: { ...FIRST_DEFAULT_LAYOUT.matter, lists: undefined },
+    });
+  });
+
+  it('declares the lists it generates, each sequence once, and names only a caption sequence', () => {
+    const both = copy();
+    both.matter.lists = [
+      { sequence: 'table', title: 'Tables' },
+      { sequence: 'figure', title: 'Figures' },
+    ];
+    expect(parseLayout(both).matter.lists).toHaveLength(2);
+
+    const twice = copy();
+    twice.matter.lists = [
+      { sequence: 'table', title: 'Tables' },
+      { sequence: 'table', title: 'More tables' },
+    ];
+    expect(() => parseLayout(twice)).toThrow(/once/);
+
+    const sections = copy();
+    (sections.matter.lists as unknown[]) = [{ sequence: 'section', title: 'Sections' }];
+    expect(() => parseLayout(sections)).toThrow();
+
+    const blank = copy();
+    blank.matter.lists = [{ sequence: 'table', title: '   ' }];
+    expect(() => parseLayout(blank)).toThrow();
   });
 
   it('refuses every member it does not declare, at every depth', () => {
@@ -123,6 +172,7 @@ describe('a layout', () => {
       ['matter', (layout) => layout.matter],
       ['the contents', (layout) => layout.matter.contents!],
       ['appendices', (layout) => layout.matter.appendices],
+      ['a list', (layout) => layout.matter.lists[0]!],
       ['formats', (layout) => layout.formats],
       ['pdf', (layout) => pdfOf(layout)],
       ['the page', (layout) => pdfOf(layout).page],

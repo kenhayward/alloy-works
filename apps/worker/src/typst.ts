@@ -134,6 +134,12 @@ export function createTypst(options: {
  * Typst's own (issue #145), the pinned faces' directory alone, no packages, a root the template cannot
  * read outside of, PDF/UA-1 always and never a page range (PUB-061), the creation time pinned, and
  * short diagnostics, which nothing reads.
+ *
+ * And the engine's experimental accessibility features (tables 2, decision T-E), because
+ * `pdf.header-cell` - the only way the pinned engine tags a header column - exists only behind them.
+ * Measured to leave the bytes of templates 1 and 5, which call nothing behind the flag, exactly as
+ * they were; that the flag's behaviour may change in a later engine is caught by `tables.test.ts`
+ * before that engine is taken (ADR-0019).
  */
 export function typstArguments(root: string, fonts: string, createdAt: Date): string[] {
   return [
@@ -150,6 +156,8 @@ export function typstArguments(root: string, fonts: string, createdAt: Date): st
     join(root, 'no-packages'),
     '--pdf-standard',
     'ua-1',
+    '--features',
+    'a11y-extras',
     '--creation-timestamp',
     String(Math.floor(createdAt.getTime() / 1000)),
     '--diagnostic-format',

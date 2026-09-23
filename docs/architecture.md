@@ -13,8 +13,9 @@
 > [the document and its outline](#the-document-and-its-outline), which makes a document in a space,
 > restructures its outline of sections and component references a version at a time, and numbers it -
 > and [publishing](#publishing), which makes a document's latest version into a tagged PDF of its
-> outline and its marked paragraphs, keeps it and lists it. Nothing yet edits, pastes or publishes a table,
-> a footnote or an equation, makes a component type or resolves a cross-reference; an administrator
+> outline, its marked paragraphs, lists, quotations, preformatted text and tables, with a list of
+> tables after the contents, keeps it and lists it. Nothing yet edits, pastes or publishes a footnote
+> or an equation, makes a component type or resolves a cross-reference; an administrator
 > invites people by address and grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the scaffolding's, and nothing
 > renders it any more.
 >
@@ -357,6 +358,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0015_component_types`      | The component type every environment starts with, _Topic_; `component_type_default`, one row, declaring it; and an author nullable for a definition alone                                                                       |
 | `migrations/tenant/0016_documents`            | `document` as a kind in `artifact_kind_check`, in exactly one space by `artifact_space_by_kind`, and required to have an author by `artifact_version_component_author`; no new table                                            |
 | `migrations/tenant/0018_layouts`              | `layout` as a kind in `artifact_kind_check`, in no space, unauthored, and one seeded version of the product's default (see [publishing](#publishing))                                                                           |
+| `migrations/tenant/0019_default_layout_lists` | The default layout's version 0.2, at layout schema 2 with a list of tables, inserted only where the environment's layout is still the unchanged 0.1 that 0018 seeded                                                            |
 | `src/version-digest.ts`                       | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                   |
 | `src/spaces.ts`                               | `createSpace`                                                                                                                                                                                                                   |
 | `src/versions.ts`                             | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, which only its migration makes |
@@ -936,27 +938,31 @@ layout, kept for ever, listed with the document and downloaded, designed in
 [the first publishing plan](plans/2026-09-19-publishing-01-a-document-to-pdf.md) and then by
 [the second](plans/2026-09-19-publishing-02-the-layout.md), which added the layout, and
 [the marks plan](plans/2026-09-20-editor-03-marks-and-links.md), which carried a run's marks into it,
-and then by [the lists plan](plans/2026-09-21-editor-04-lists-and-quotations.md), which carried lists.
+and then by [the lists plan](plans/2026-09-21-editor-04-lists-and-quotations.md), which carried lists,
+[editor 5](plans/2026-09-21-editor-05-quotations-and-preformatted-text.md), which carried quotations
+and preformatted text, and [tables 2](plans/2026-09-22-tables-02-publishing-tables.md), which carried
+tables and the list of tables.
 Every page says **Not approved**, because nothing can approve a publication yet. A run's emphasis,
 strong, underline, subscript, superscript, inline code, quoted phrase, link and language are
 published; a defined term, a condition, a suggestion and a comment are refused by name, and so is
-every block but a paragraph and a list and every inline item but text. The theme, the lists of figures and
-tables, veraPDF on every publication, preview and Word are later slices'. Nothing chooses or edits a
+every block but a paragraph, a list, a quotation, preformatted text and a table, and every inline
+item but text. The theme, the lists of figures and equations, veraPDF on every publication, preview and Word are later slices'. Nothing chooses or edits a
 layout: every environment has the one its migration seeded, and every document publishes under it.
 
-| Where                                      | Holds                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db: migrations/tenant/0017_publishing`    | `publication` as a kind of artifact, in exactly one space; the Publisher role; `publication_request` and `publication_request_occurrence`, the operational rows a job works from; `publication`, `publication_input` and `publication_output`, the record; and the grants and triggers that hold it, below                                                                 |
-| `db: migrations/tenant/0018_layouts`       | `layout` as a kind of artifact, in no space; the product's default layout seeded as version 0.1 and declared by `layout_default`, one row the runtime role reads and never changes; `layout_id` and `layout_version_id` on a request and on a publication, keyed into `artifact_version`, and the checks and triggers that hold them, below                                |
-| `domain: publishing/layout.ts`             | The layout's stored shape, closed at its first version and strict at every depth; `parseLayout`, `readLayout` and its migration chain; `defaultLayout`, the product's own, which 0018's literal is checked against in TypeScript; `speaksFor` (RFC 4647 basic filtering) and `unsupportedFormats`                                                                          |
-| `db: src/layouts.ts`                       | `DEFAULT_LAYOUT_ID` and `defaultLayout(trx)`: the environment's declared layout at its latest version, parsed, throwing where the environment declares none or the content does not read                                                                                                                                                                                   |
-| `db: src/publishing.ts`                    | `resolveOccurrences` and `requestPublication`, which resolve every reference as the publisher - restricted to what they may read inside the query - and record the request, its occurrences and its job; `publicationInputs`, `recordPublication` and `failPublicationRequest`, the job's; `readPublicationRequest`, `readPublication` and `listPublications`, the routes' |
-| `api-contract: publishing.ts`              | The four routes below and their schemas; `DocumentView.mayPublish` is in `documents.ts`                                                                                                                                                                                                                                                                                    |
-| `service: src/publishing.ts`               | Their handlers, and `DOWNLOAD_SECONDS`, the five minutes a download link is signed for, which the sample routes in `app.ts` use too; `storageUnavailable`, shared with them, is in `errors.ts`                                                                                                                                                                             |
-| `objects: src/store.ts`                    | `signedLink(key, seconds, fileName?)`: a file name sets the download's `Content-Disposition`, and is refused unless it is a lowercase identifier and an extension, so nothing a header could be split on is ever signed                                                                                                                                                    |
-| `worker: src/jobs/publish.ts`              | The `publish` job, below                                                                                                                                                                                                                                                                                                                                                   |
-| `worker: templates/publication/1/` to `5/` | The publication templates, below: version 1 reads `publishing/1`, version 2 the document under a layout (`publishing/2`), version 3 that document with a run's marks set (`publishing/3`), version 4 that document with lists (`publishing/4`), version 5 with quotations and preformatted text (`publishing/5`)                                                           |
-| `web: src/publishing/`                     | `Publishing.tsx`, the panel beneath a document's outline; `PublicationPage.tsx`, a publication's own page at `#/publications/{id}`; `failures.ts`, each failure's words                                                                                                                                                                                                    |
+| Where                                             | Holds                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db: migrations/tenant/0017_publishing`           | `publication` as a kind of artifact, in exactly one space; the Publisher role; `publication_request` and `publication_request_occurrence`, the operational rows a job works from; `publication`, `publication_input` and `publication_output`, the record; and the grants and triggers that hold it, below                                                                                                           |
+| `db: migrations/tenant/0018_layouts`              | `layout` as a kind of artifact, in no space; the product's default layout seeded as version 0.1 and declared by `layout_default`, one row the runtime role reads and never changes; `layout_id` and `layout_version_id` on a request and on a publication, keyed into `artifact_version`, and the checks and triggers that hold them, below                                                                          |
+| `db: migrations/tenant/0019_default_layout_lists` | The default layout's version 0.2, declaring a list of tables, as literals `default-layout.test.ts` recomputes from `defaultLayout`; inserted only where version 0.1 is 0018's own, by its content hash, and nothing later exists, so an environment's own layout is never overlaid. A request made under 0.1 keeps it and publishes with no list                                                                     |
+| `domain: publishing/layout.ts`                    | The layout's stored shape at schema 2, strict at every depth, with `matter.lists` - the generated lists it declares, each sequence once, each with its title; `parseLayout`, `readLayout` and its migration chain, which reads a schema 1 layout as declaring no lists; `FIRST_DEFAULT_LAYOUT`, 0018's literal, frozen, and `defaultLayout`, 0019's; `speaksFor` (RFC 4647 basic filtering) and `unsupportedFormats` |
+| `db: src/layouts.ts`                              | `DEFAULT_LAYOUT_ID` and `defaultLayout(trx)`: the environment's declared layout at its latest version, parsed, throwing where the environment declares none or the content does not read                                                                                                                                                                                                                             |
+| `db: src/publishing.ts`                           | `resolveOccurrences` and `requestPublication`, which resolve every reference as the publisher - restricted to what they may read inside the query - and record the request, its occurrences and its job; `publicationInputs`, `recordPublication` and `failPublicationRequest`, the job's; `readPublicationRequest`, `readPublication` and `listPublications`, the routes'                                           |
+| `api-contract: publishing.ts`                     | The four routes below and their schemas; `DocumentView.mayPublish` is in `documents.ts`                                                                                                                                                                                                                                                                                                                              |
+| `service: src/publishing.ts`                      | Their handlers, and `DOWNLOAD_SECONDS`, the five minutes a download link is signed for, which the sample routes in `app.ts` use too; `storageUnavailable`, shared with them, is in `errors.ts`                                                                                                                                                                                                                       |
+| `objects: src/store.ts`                           | `signedLink(key, seconds, fileName?)`: a file name sets the download's `Content-Disposition`, and is refused unless it is a lowercase identifier and an extension, so nothing a header could be split on is ever signed                                                                                                                                                                                              |
+| `worker: src/jobs/publish.ts`                     | The `publish` job, below                                                                                                                                                                                                                                                                                                                                                                                             |
+| `worker: templates/publication/1/` to `6/`        | The publication templates, below: version 1 reads `publishing/1`, version 2 the document under a layout (`publishing/2`), version 3 that document with a run's marks set (`publishing/3`), version 4 that document with lists (`publishing/4`), version 5 with quotations and preformatted text (`publishing/5`), version 6 with tables and the lists after the contents (`publishing/6`)                            |
+| `web: src/publishing/`                            | `Publishing.tsx`, the panel beneath a document's outline; `PublicationPage.tsx`, a publication's own page at `#/publications/{id}`; `failures.ts`, each failure's words                                                                                                                                                                                                                                              |
 
 **Four routes.**
 
@@ -1179,8 +1185,28 @@ have left such a request unable to finish at all.
   the whole fixture through veraPDF. Adding Mono to the font path has one effect on older templates:
   templates 3 and 4 set inline code with `raw` and name no font for it, so it now falls back to Mono
   where it fell back to Serif - no glyph check changes, Mono being a subset.
+- **Tables and the list of tables (`publishing/6`, template 6).** A published block may also be a
+  `PublishedTable`: `number`'s label, the caption as runs, the header counts, its width in
+  `columns`, and rows of cells, each with its blocks, its spans and its `scope` - `column`, `row`,
+  `both` or null - which `assemble` works out from where the cell starts in the grid. `assemble`
+  refuses a table with no words in its caption (`table_without_caption`), one whose header cell
+  spans down past the header rows (`table_header_spans_body`: the engine would grow the header over
+  a data row and tag it a `TH`), and one in a style other than `table`. The template sets a
+  **breakable** `figure(kind: table)` - a figure is unbreakable by default, and a long table would
+  overflow its page - with numbering off and the caption above it, the label written as text; the
+  header rows as one `table.header(repeat: true)`; and a header column's cells as
+  `pdf.header-cell(scope: ...)` **around** `table.cell(colspan:, rowspan:)`, because the other way
+  round a spanning header cell is tagged a `TD`. `pdf.header-cell` exists only behind
+  `--features a11y-extras`, which `typstArguments` now passes to every compile; templates 1 and 5
+  were measured to compile to the same bytes with and without it. Each list the layout declares and
+  `assemble` found an entry for (`front.lists`) is Typst's `outline` over the figures of its kind,
+  on a page of its own after the contents, so it too is tagged `TOC` and `TOCI`.
+  `apps/worker/src/tables.test.ts` is the regression case: a header row, a header column, a cell
+  spanning rows and one spanning columns, sixty rows crossing a page, through veraPDF and read back.
 - **What a test can see of a PDF.** `apps/worker/src/testing/pdf.ts` reads a compiled PDF back:
-  `taggedText` per page, `roles` flat in document order, `links` - each page's link annotations by
+  `taggedText` per page, `roles` flat in document order - read a page at a time, as pdf.js answers,
+  so an element crossing a page appears once per page - `elements`, every structure element in the
+  file counted once from the objects themselves, `links` - each page's link annotations by
   their target - and `languages`, each declaring run's language paired with the text it covers. That
   last one exists because `/Lang` lives only on a marked-content property dictionary inside the page's
   compressed content stream: no role, no annotation, nothing in the uncompressed bytes, so deleting

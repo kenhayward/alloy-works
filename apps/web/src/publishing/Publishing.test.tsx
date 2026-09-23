@@ -239,6 +239,27 @@ describe('publishing from the document page', () => {
     );
   });
 
+  it('says what a table needs before it can be published, in words an author can act on', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'table_without_caption', node: null, block: 't1', detail: null },
+      { stage: 'compose', code: 'table_header_spans_body', node: null, block: 't1', detail: null },
+      { stage: 'compose', code: 'style_missing', node: null, block: 't1', detail: 'wide' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A table has no caption. Give it one: the caption names the table in the PDF and to a screen reader.',
+    );
+    expect(why).toHaveTextContent(
+      'A header cell of this table spans down into rows that are not header rows, so the PDF would present them as headers too. Shorten its span, or make those rows header rows.',
+    );
+    // A table has a style as a paragraph does, so the sentence no longer says it is a paragraph.
+    expect(why).toHaveTextContent(
+      'This paragraph or table uses a style the publication template does not set.',
+    );
+  });
+
   it("blames the layout, not the document, for the layout's own words and language", async () => {
     const fake = failing([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+0627' },

@@ -114,6 +114,9 @@ renders with - does not support it.
   without one (PUB-033).
 - Table header rows carry `w:tblHeader`, which both repeats them across pages and marks them as
   headers.
+- **Word has no header column.** A table whose header columns the PDF tags as row headers loses them
+  in Word, so the publication's report names each such table (TAB-049, decision T-G of
+  [publishing.md](publishing.md#tables)), and the author is told rather than finding out from a reader.
 - Every run carries `w:lang` where its language differs from the document's, and the document's
   language is set in `settings.xml` and the styles (PUB-034) - the thing WeasyPrint failed at in the
   engine spike, which the Word writer must not repeat.

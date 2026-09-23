@@ -146,21 +146,29 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 
 ## 9. Accessibility and paging
 
-| ID          | Requirement                                                                                                                                                                                             | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **TAB-031** | Header cells must be associated with the cells they describe, in every output (**PUB-032**)                                                                                                             | T1      | Specified |
-| **TAB-032** | A table's behaviour at a page break must follow its table style (**STY-013**)                                                                                                                           | T1      | Specified |
-| **TAB-033** | A table too wide for its page must be handled by a declared strategy - rotation, scaling or splitting - not by silent clipping                                                                          | T2      | Specified |
-| **TAB-034** | A table must carry a caption, and must be numbered by the outline (**STR-023**)                                                                                                                         | T1      | Specified |
-| **TAB-039** | A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)                                                                                 | T1      | Specified |
-| **TAB-040** | Header rows repeated across a page break must be exposed to assistive technology as headers rather than as new rows of data (**PUB-031**, **PUB-032**)                                                  | T1      | Specified |
-| **TAB-041** | A table must carry its role and reading order into tagged output, and a table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones | T1      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                        | Tranche | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **TAB-031** | Header cells must be associated with the cells they describe, in every output (**PUB-032**)                                                                                                                                                                                                        | T1      | Superseded by TAB-049 |
+| **TAB-032** | A table's behaviour at a page break must follow its table style (**STY-013**)                                                                                                                                                                                                                      | T1      | Specified             |
+| **TAB-033** | A table too wide for its page must be handled by a declared strategy - rotation, scaling or splitting - not by silent clipping                                                                                                                                                                     | T2      | Specified             |
+| **TAB-034** | A table must carry a caption, and must be numbered by the outline (**STR-023**)                                                                                                                                                                                                                    | T1      | Specified             |
+| **TAB-039** | A caption must be programmatically associated with its table in every output, not merely placed beside it (**PUB-090**)                                                                                                                                                                            | T1      | Specified             |
+| **TAB-040** | Header rows repeated across a page break must be exposed to assistive technology as headers rather than as new rows of data (**PUB-031**, **PUB-032**)                                                                                                                                             | T1      | Specified             |
+| **TAB-041** | A table must carry its role and reading order into tagged output, and a table rotated, scaled or split by TAB-033 must remain one table to assistive technology rather than becoming two unrelated ones                                                                                            | T1      | Specified             |
+| **TAB-049** | A table's header rows must be associated with the cells they describe in every output. Its header columns must be associated wherever the output format can express a header column, and where a format cannot, the publication's report must say which tables lost that association (**PUB-032**) | T1      | Specified             |
 
 **TAB-039 to TAB-041 fill a gap that reads as under-covered rather than delegated.** TAB-030 cites
 accessibility as binding, and this section carried one requirement about header association plus two
 about visual behaviour. The three added are the ones a screen reader user meets in a long table: a
 caption that is associated rather than adjacent, repeated headers that announce as headers, and a
 table split across pages that is still one table.
+
+**TAB-049 supersedes TAB-031 because TAB-031 asked for something no Word output can do.** Word marks
+a header row, and repeats it across pages, but has no way to mark a header column: a document can say
+which rows head a table and never which column does. Tagged PDF can say both. So header rows are
+associated everywhere, header columns wherever the format can express one, and a publication that
+could not carry a header column says so in its report rather than losing it in silence. Decision T-G
+of [the publishing design](../../design/publishing.md#tables), filed as issue #202.
 
 ## 10. Non-requirements
 
@@ -194,6 +202,7 @@ table split across pages that is still one table.
 | TAB-024, TAB-025   | DAT-012, CNT-039, spike case 3                                                     |
 | TAB-019            | DAT section 9, provenance records what the source returned                         |
 | TAB-031            | PUB-032, scope §11 accessibility                                                   |
+| TAB-049            | PUB-032 - header association, as far as each output format can carry it            |
 | TAB-012, TAB-028   | STY-012 to STY-014                                                                 |
 
 ## 13. Change history
@@ -244,3 +253,13 @@ added, superseded or withdrawn here.
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TAB-039 cited PUB-030, superseded by PUB-090                                      | TAB-039 now cites **PUB-090**. It relies on tagged output, which PUB-090 requires of every PDF; Word's side was never PUB-030's, and is PUB-035's |
 | Section 12's traceability row for TAB-039 to TAB-041 rested on PUB-030 to PUB-032 | It rests on **PUB-090**, PUB-031 and PUB-032 - tagged output, reading order and header association                                                |
+
+### A header column in Word, 2026-09-22
+
+Not a review. The tables design found that Word cannot mark a header column
+([decision T-G](../../design/publishing.md#tables)); Ken took the decision as recommended, and it was
+filed as issue #202.
+
+| What was found                                                                           | Change                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TAB-031 asked for header cells associated in every output, and Word has no header column | **TAB-031 superseded by TAB-049**: header rows in every output, header columns wherever the format can express one, and the publication's report naming each table that lost one |

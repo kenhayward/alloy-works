@@ -21,6 +21,8 @@ describe('the committed trace.json', () => {
   it('holds the corpus this plan was written against', () => {
     const model = TraceModel.parse(committed);
 
+    // 1387, from 1386: TAB-049, header rows associated in every output and header columns wherever
+    // the format can express one, superseding TAB-031, which Word could never meet (issue #202).
     // 1386, from 1385: CNT-153, an ordered list's start number of 1 or more except in decimal,
     // superseding CNT-119, which permitted the roman zero the engine sets as `n.`, landed by the
     // lists plan. CNT-119 keeps its row as `Superseded by CNT-153`, so the count rises by one.
@@ -58,9 +60,12 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    expect(model.requirements).toHaveLength(1386);
+    expect(model.requirements).toHaveLength(1387);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 413, from 412: publishing.md claims TAB-049 with tables 2 - header rows and columns tagged in
+    // the PDF, measured, and Word's report naming each table whose header column it could not mark,
+    // as word-output.md designs it. TAB-031, which it supersedes, was never claimed.
     // 412, from 409: publishing.md claims PUB-032, TAB-039 and TAB-040 in its Tables section, each
     // measured against the pinned Typst and veraPDF; TAB-031, TAB-032, TAB-034 and TAB-041 are named
     // there as unclaimed, each with why.
@@ -135,7 +140,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(412);
+    ).toBe(413);
   });
 });
 
@@ -352,6 +357,10 @@ describe('the citations in the committed model', () => {
   // The list tests beside it keep their words and no identifier: the start rule's requirement is
   // filed later in the same plan, and a second PUB-052 in that file would hide behind the one
   // already there, because a citation is kept once per identifier per kind per file.
+  // 231, from 229: tables 2 cites PUB-032 and TAB-040 once each in apps/worker/src/tables.test.ts,
+  // whose body publishes a table with a header row, a header column and spans across a page, passes
+  // it through veraPDF and counts its rows and header cells in the whole file. PUB-038 stays uncited:
+  // the same file sets a list of tables, and lists of figures and equations cannot be published yet.
   // 229, from 228: tables 1 cites CNT-016 once in packages/editor/src/tables.test.ts, whose body
   // opens a stored table - caption, spans, header counts, key columns and note - and stores it back
   // exactly. The domain's own table tests cite CNT-016 in document.test.ts, which already did.
@@ -361,7 +370,7 @@ describe('the citations in the committed model', () => {
   // paste report beside the surface. CNT-060, CNT-061 and CNT-062 stay uncited: a paste keeps no
   // table or footnote, and reads no Markdown.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(229);
+    expect(model.citations).toHaveLength(231);
   });
 
   it('cites no identifier the corpus does not hold', () => {

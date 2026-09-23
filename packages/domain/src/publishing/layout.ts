@@ -19,10 +19,23 @@ import { DRAFT_NOTICE } from './published.js';
  * The layout's stored shape (docs/design/publishing.md, "The layout"). A layout is an artifact kind
  * whose versions are insert-only, so **the shape is closed at its first version**: every object is
  * strict at every depth, and whatever this parse accepts a later reader must go on accepting. A member
- * nothing reads yet - `lists`, `paged`, a `docx` format - is refused rather than stored, and arrives
- * with the schema version that reads it.
+ * nothing reads yet - `paged`, a `docx` format - is refused rather than stored, and arrives with the
+ * schema version that reads it.
+ *
+ * **Version 2 added `matter.lists`** (tables 2): the generated lists of figures, tables and equations a
+ * layout declares, each with its title. A layout stored at version 1 reads as one that generates none,
+ * so it publishes exactly as it did.
  */
-export const LAYOUT_SCHEMA_VERSION = 1;
+export const LAYOUT_SCHEMA_VERSION = 2;
+
+/** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
+export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
+
+/** A generated list the layout declares (PUB-038): which sequence, and the title it is set under. */
+export interface LayoutList {
+  sequence: (typeof LISTED_SEQUENCES)[number];
+  title: string;
+}
 
 /** The formats a layout may declare a member for (PUB-012, PUB-014). Word arrives with its slice. */
 export const PUBLISHING_FORMATS = ['pdf'] as const;
@@ -58,7 +71,13 @@ export interface Layout {
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
   /** The generated front and back matter (PUB-088). */
-  matter: { cover: boolean; contents: { depth: number } | null; appendices: { newPage: boolean } };
+  matter: {
+    cover: boolean;
+    contents: { depth: number } | null;
+    appendices: { newPage: boolean };
+    /** In the order they are set, after the contents; an empty list of one is not set (decision K). */
+    lists: LayoutList[];
+  };
   /** One member per format it makes, each declared on its own (PUB-012, PUB-014). */
   formats: { pdf: PdfFormat };
 }
@@ -172,6 +191,12 @@ export const layoutSchema: z.ZodType<Layout> = z
         .strictObject({ depth: z.number().int().min(1).max(MAXIMUM_OUTLINE_DEPTH) })
         .nullable(),
       appendices: z.strictObject({ newPage: z.boolean() }),
+      lists: z
+        .array(z.strictObject({ sequence: z.enum(LISTED_SEQUENCES), title: words }))
+        .refine(
+          (lists) => new Set(lists.map((list) => list.sequence)).size === lists.length,
+          'A layout lists each sequence once',
+        ),
     }),
     formats: z.strictObject({ pdf: pdfFormatSchema }),
   })
@@ -182,12 +207,17 @@ export function parseLayout(value: unknown): Layout {
   return layoutSchema.parse(value);
 }
 
-// Empty while there is one schema version, created now for the reason the outline's was: a chain
-// nobody built is discovered to be missing on the day it is needed.
+// A read-time projection, as every chain's is: the stored bytes never change.
 export const layoutMigrationChain: MigrationChain = {
   subject: 'layout',
   current: LAYOUT_SCHEMA_VERSION,
-  migrations: {},
+  migrations: {
+    // Version 1 generated no lists, so it reads as declaring none.
+    1: (layout) => ({
+      ...layout,
+      matter: { ...(layout.matter as Record<string, unknown>), lists: [] },
+    }),
+  },
 };
 
 export type LayoutReadOutcome =
@@ -220,8 +250,38 @@ export function readLayout(
  * inch margin: the title and the section in the head, the revision and the page in the foot. Front
  * matter is paged in lower roman, the body from 1, and appendices carry on from the body.
  */
-export const defaultLayout: Layout = parseLayout({
-  schemaVersion: LAYOUT_SCHEMA_VERSION,
+/** The default layout's page and its running matter, which its two versions share. */
+const defaultPdf: PdfFormat = {
+  page: { width: 595.28, height: 841.89 },
+  orientation: 'portrait',
+  margins: { top: 72, bottom: 72, inside: 72, outside: 72 },
+  gutter: 0,
+  head: [[{ kind: 'field', field: 'title' }], [], [{ kind: 'field', field: 'section' }]],
+  foot: [
+    [
+      { kind: 'words', text: 'Revision ' },
+      { kind: 'field', field: 'revision' },
+    ],
+    [],
+    [
+      { kind: 'words', text: 'Page ' },
+      { kind: 'field', field: 'page' },
+    ],
+  ],
+  pageNumbering: {
+    front: { format: 'lowerRoman', restart: true },
+    body: { format: 'decimal', restart: true },
+    appendix: { format: 'decimal', restart: false },
+  },
+};
+
+/**
+ * **The default layout's first version, 0.1, as migration 0018 stored it**: schema version 1, which
+ * generated no lists. Frozen, because the row is insert-only and `default-layout.test.ts` checks it
+ * against this; nothing publishes under it any more but a request made while it was the default.
+ */
+export const FIRST_DEFAULT_LAYOUT = {
+  schemaVersion: 1,
   language: 'en',
   words: {
     contents: 'Contents',
@@ -230,30 +290,19 @@ export const defaultLayout: Layout = parseLayout({
   },
   scheme: defaultNumberingScheme,
   matter: { cover: true, contents: { depth: 3 }, appendices: { newPage: true } },
-  formats: {
-    pdf: {
-      page: { width: 595.28, height: 841.89 },
-      orientation: 'portrait',
-      margins: { top: 72, bottom: 72, inside: 72, outside: 72 },
-      gutter: 0,
-      head: [[{ kind: 'field', field: 'title' }], [], [{ kind: 'field', field: 'section' }]],
-      foot: [
-        [
-          { kind: 'words', text: 'Revision ' },
-          { kind: 'field', field: 'revision' },
-        ],
-        [],
-        [
-          { kind: 'words', text: 'Page ' },
-          { kind: 'field', field: 'page' },
-        ],
-      ],
-      pageNumbering: {
-        front: { format: 'lowerRoman', restart: true },
-        body: { format: 'decimal', restart: true },
-        appendix: { format: 'decimal', restart: false },
-      },
-    },
+  formats: { pdf: defaultPdf },
+} as const;
+
+/**
+ * The default layout as it stands, **version 0.2** (seeded by migration 0019): the first version with
+ * a list of tables after the contents, which tables brought (tables 2, ruling R6).
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...FIRST_DEFAULT_LAYOUT,
+  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  matter: {
+    ...FIRST_DEFAULT_LAYOUT.matter,
+    lists: [{ sequence: 'table', title: 'Tables' }],
   },
 });
 

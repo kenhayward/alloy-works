@@ -50,6 +50,14 @@ export interface ReadPdf {
   /** Every run of a page's tagged text that declares a language of its own, in the page's order. */
   readonly languages: readonly (readonly TaggedLanguage[])[];
   readonly roles: readonly string[];
+  /**
+   * Every structure element in the file, counted once, by its structure type as the file writes it
+   * (before the role map). `roles` is read a page at a time, since that is how pdf.js answers, so an
+   * element whose content crosses a page - a table, and every ancestor of it - is in `roles` once for
+   * each page it reaches. Where the question is how many elements a reader is told there are, such
+   * as whether a header repeated on a second page is a new row, this is the count to ask.
+   */
+  readonly elements: Readonly<Record<string, number>>;
   readonly marked: boolean;
   readonly pdfuaPart: string | null;
   readonly title: string | null;
@@ -137,6 +145,28 @@ function markedLanguages(bytes: Buffer, text: string, ref: PageRef): Map<number,
     }
   }
   return declared;
+}
+
+/**
+ * Every structure element's type, counted, read from the objects themselves: the pinned Typst writes
+ * every object on its own rather than inside an object stream (see `markedLanguages`), and a
+ * structure element is a dictionary, never a stream, so each is found by its `/Type /StructElem`.
+ * Throws where it finds none, since a count of nothing would pass any assertion that something is
+ * absent.
+ */
+function structureElements(text: string): Record<string, number> {
+  const counted: Record<string, number> = {};
+  let found = 0;
+  for (const object of text.matchAll(/\sobj\b([\s\S]*?)\bendobj\b/g)) {
+    const body = object[1] ?? '';
+    if (!/\/Type\s*\/StructElem\b/.test(body)) continue;
+    const type = /\/S\s*\/([^\s/<>[\]()]+)/.exec(body);
+    if (type === null) throw new Error('A structure element declares no type');
+    counted[type[1]!] = (counted[type[1]!] ?? 0) + 1;
+    found += 1;
+  }
+  if (found === 0) throw new Error('The PDF has no structure elements');
+  return counted;
 }
 
 export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
@@ -262,6 +292,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       links,
       languages,
       roles,
+      elements: structureElements(text),
       marked: markInfo?.get('Marked') === true,
       pdfuaPart: metadata.metadata?.get('pdfuaid:part') ?? null,
       title: info.Title ?? null,

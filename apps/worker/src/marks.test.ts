@@ -119,7 +119,7 @@ const component = () =>
  */
 const bare = parseLayout({
   ...defaultLayout,
-  matter: { cover: false, contents: null, appendices: { newPage: false } },
+  matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 
 /** What the job would assemble of that component alone, under the bare layout. */
@@ -183,6 +183,11 @@ const kindsIn = (document: PublishedDocument) => {
       if (block.type === 'blockquote') {
         marksIn(block.attribution ?? []);
         inBlocks(block.blocks);
+        continue;
+      }
+      if (block.type === 'table') {
+        marksIn(block.caption);
+        for (const row of block.rows) for (const cell of row.cells) inBlocks(cell.blocks);
         continue;
       }
       for (const item of block.items) {

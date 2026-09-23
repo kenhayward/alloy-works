@@ -7,11 +7,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
 > versioned, their text formatted, linked, marked with a language and arranged into lists, and
 > documents made, their
-> outlines restructured, their sections numbered and their paragraphs and lists published as a
-> laid-out PDF with
-> a cover, a contents and numbered pages that carries all of that formatting. A component can hold a
-> table, which is not yet published; nothing holds a footnote or an equation, and nothing is
-> cross-referenced.
+> outlines restructured, their sections numbered and their paragraphs, lists and tables published as
+> a laid-out PDF with
+> a cover, a contents, a list of tables and numbered pages that carries all of that formatting.
+> Nothing holds a footnote or an equation, and nothing is cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -179,8 +178,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   (over cells you have selected by dragging), **Split cell** and **Delete table**; a button that would
   do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
   from a web page, Word, Google Docs or Markdown arrives as a table, with its caption, header rows and
-  columns and merged cells. **A table is not published yet**: publishing a document whose components
-  hold one is refused, naming it, until the next step builds it.
+  columns and merged cells.
 
   **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
   component holding an equation, a figure or a footnote opens for reading only. There is no control for
@@ -269,12 +267,24 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   when, and each has its own page with a download. Who may read a publication is decided on the
   publication, so somebody given a single document does not see its publications unless given them
   too. When a document cannot be published you are told every reason at once, each at its place in the
-  outline: a component you may not read, without saying which; a table, a footnote or any other block
-  that cannot be published yet; a defined term, which has no control and no published form yet; or a
+  outline: a component you may not read, without saying which; a footnote or any other block that
+  cannot be published yet; a table with no caption, or whose header cell reaches down into rows that
+  are not header rows; a defined term, which has no control and no published form yet; or a
   character no typeface can set.
 
+  **Tables are published.** A table prints under its caption, which begins with its number -
+  **Table 1.1** - and a screen reader is told the caption is the table's. Its header rows are marked
+  as headers and repeat at the top of every page the table reaches, and a reader still hears them
+  once, as headers, not as new rows of data. Its header columns are marked as the headers of their
+  rows, and merged cells print merged. The columns share the width of the page equally. A table
+  whose caption is empty is refused, naming it, because the caption is what names it to a reader; so
+  is one whose header cell is merged down into rows that are not header rows, which would make the
+  PDF read a row of data as more header.
+
   **The publication is laid out.** It opens with a cover carrying the title, then a contents page a
-  screen reader announces as a table of contents, then the document. Every page after the cover
+  screen reader announces as a table of contents, then a **list of tables**, where the document has
+  any, on a page of its own and announced the same way, each entry leading to its table and naming
+  its page, then the document. Every page after the cover
   carries a running head with the title and the part you are in, and a foot with the revision and the
   page number. Pages are numbered per part: roman numerals through the front matter, from 1 again in
   the body, and appendices carrying on from the body. How all of that is set comes from a **layout** -
@@ -328,13 +338,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A component's own base language, in the header, is not warned about: one of these tags typed there
   is taken without comment and refused only when the document is published (issue #156).
 
-  **This is a PDF of paragraphs, lists, quotations and preformatted text, not publishing.** No
-  tables, figures, footnotes or equations - a document holding any of them is refused. A citation
+  **This is a PDF of paragraphs, lists, quotations, preformatted text and tables, not publishing.**
+  No figures, footnotes or equations - a document holding any of them is refused. A table too wide
+  for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
+  style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
   the most a publication can set.
-  There is no list of figures or tables, no caption labels and no theme; nothing chooses, makes or
+  There is no list of figures or equations, no caption labels and no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
@@ -347,9 +359,9 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text and
   tables: a component holding a figure, a footnote or an equation still opens for reading only, and
   there is no control for a defined term or a
-  citation. A table is not published. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
+  citation. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
-  published PDF of a document's paragraphs, lists, quotations and preformatted text. The one sample document is a fixed template with
+  published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
   no content of yours in it.
 - No way to make, change or choose between component types: every environment has one, named Topic, and
   nothing yet lets an administrator add another or change which is the default.
@@ -357,9 +369,9 @@ Named explicitly so nobody has to read the source to find out:
 - No document view: a document's outline is a tree you build, and a component still opens on its own
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
-- No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs and its lists:
-  no tables, figures, footnotes or equations in a publication, no definition-list structure of PDF's
-  own, no list of figures or tables, no caption
+- No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
+  quotations, preformatted text and tables: no figures, footnotes or equations in a publication, no
+  definition-list structure of PDF's own, no list of figures or equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,

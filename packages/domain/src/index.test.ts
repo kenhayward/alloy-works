@@ -135,6 +135,7 @@ describe('the domain package', () => {
         // And the schema template 4 reads, frozen by editor 5 when quotations and preformatted text
         // made `publishing/5`.
         'PUBLISHING_SCHEMA_4',
+        'PUBLISHING_SCHEMA_5',
         'assemble',
         'publishFailureCodes',
         'setWithoutAGlyph',
@@ -150,6 +151,10 @@ describe('the domain package', () => {
         'readLayout',
         'layoutMigrationChain',
         'defaultLayout',
+        // The default layout's first version as 0018 stored it, and the sequences a layout lists,
+        // promoted by tables 2 for the store's own test and the worker's.
+        'FIRST_DEFAULT_LAYOUT',
+        'LISTED_SEQUENCES',
         'speaksFor',
         'unsupportedFormats',
       ].sort(),
