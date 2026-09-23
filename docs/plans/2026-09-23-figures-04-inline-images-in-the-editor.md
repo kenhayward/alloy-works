@@ -57,6 +57,10 @@ of those. Figures 5 publishes them.
   children carry - so the image took a mark on the surface that was never stored, and a link changed
   from one side after a reopen changed half. `imagesUnmarked` takes marks off an image, `annotationAt`
   joins across one, and a mark command sees nothing to mark in an image selected whole.
+- **Text typed straight after an image carries on the marks it stands in** (re-review): ProseMirror
+  takes them from the node before the cursor, and the image has none, so typing there split a link and
+  renamed its far half. `marksPastImages` gives such a cursor the marks of the text before the image, by
+  ProseMirror's own rule for which carry on.
 - **Preformatted text declines over a paragraph holding an image**, rather than dropping it; the seeded
   gesture test now starts from a document holding one.
 - **The panel says "image" of an image**, and a publish refused for one says "An image in a line of

@@ -111,6 +111,35 @@ export const imagesUnmarked = new Plugin({
   },
 });
 
+/**
+ * **A cursor straight after an image carries the marks of the text before it**, as though the image
+ * were not there. ProseMirror takes the marks for what is typed from the node before the cursor, and an
+ * image carries none, so text typed there fell out of the link or the emphasis it stood in, and the
+ * link was split and its far half renamed (re-review of figures 4). ProseMirror's own rule decides which
+ * carry on: an inclusive mark does, and one that is not - a link - only where the text after has it
+ * too. Set as the stored marks, which typing reads first, and never over marks a command stored.
+ */
+export const marksPastImages = new Plugin({
+  appendTransaction(transactions, _before, state) {
+    if (!transactions.some((each) => each.docChanged || each.selectionSet)) return null;
+    const { selection, storedMarks } = state;
+    if (!selection.empty || storedMarks !== null) return null;
+    const { $from } = selection;
+    const parent = $from.parent;
+    if (!parent.inlineContent || $from.textOffset !== 0) return null;
+    let index = $from.index() - 1;
+    if (index < 0 || parent.child(index).type !== imageNode) return null;
+    while (index >= 0 && parent.child(index).type === imageNode) index -= 1;
+    if (index < 0) return null;
+    const before = parent.child(index);
+    const after = parent.maybeChild($from.index());
+    const marks = before.marks.filter(
+      (mark) => mark.type.spec.inclusive !== false || (after !== null && mark.isInSet(after.marks)),
+    );
+    return marks.length === 0 ? null : state.tr.setStoredMarks(marks);
+  },
+});
+
 /** Removes the selected image, leaving the cursor where it stood. */
 export const deleteImage: Command = (state, dispatch) => {
   if (imageAt(state) === null) return false;

@@ -17,7 +17,7 @@ import {
 } from './blocks.js';
 import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
-import { imagesUnmarked } from './images.js';
+import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 
 const isEmptyParagraph = (node: Node | null | undefined) =>
@@ -444,6 +444,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // An image carries no marks (figures 4), taken off before annotations are made whole, so the
       // two pieces of one either side of it are still read as one.
       imagesUnmarked,
+      // And what is typed straight after one carries on the marks it stands in.
+      marksPastImages,
       // A mark's identifier comes from the same source a block's does, here as in the keymap above.
       annotationsInOnePiece(options.newIdentifier),
       // One decorations plugin, holding both the spellcheck rule and the empty attribution's

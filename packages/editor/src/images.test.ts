@@ -265,6 +265,30 @@ describe('an inline image in the editor (figures 4)', () => {
     expect(targets).toEqual(['https://new.example/', 'https://new.example/']);
   });
 
+  it('goes on with the link and the formatting it stands in when text is typed straight after an image', () => {
+    // Found by the re-review: text typed after an image took its marks from the image, which has
+    // none, so a link over words either side of the image was split, the far half renamed.
+    const link = (value: string): InlineNode => ({
+      type: 'text',
+      value,
+      // In the schema's order, which the editor writes a run's marks in.
+      marks: [
+        { type: 'strong', id: 's1' },
+        { type: 'hyperlink', id: 'k1', href: 'https://old.example/' },
+      ],
+    });
+    const state = stateOf(
+      documentOf(paragraph('p1', link('ab'), image({ kind: 'decorative' }), link('cd'))),
+    );
+    // Just after the image: two characters and the image into the paragraph.
+    const after = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, inside(state.doc, 'p1') + 3)),
+    );
+    const typed = after.apply(after.tr.insertText('X'));
+    const [block] = stored(typed) as unknown as [{ content: InlineNode[] }];
+    expect(block.content).toEqual([link('ab'), image({ kind: 'decorative' }), { ...link('Xcd') }]);
+  });
+
   it('reads, sets, replaces and deletes an image selected whole', () => {
     const state = selectImage(
       stateOf(documentOf(paragraph('p1', text('Press '), image({ kind: 'inherited' })))),
