@@ -1,12 +1,16 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { parseContentDocument, type ReportEntry } from '@alloy-works/domain';
 import {
+  changeEquation,
   changeReference,
   createEditorState,
   EDITOR_COMMANDS,
+  equationAt,
+  equationPlaceable,
   figureAt,
   fromEditor,
   imageAt,
+  insertEquation,
   insertFigure,
   insertImage,
   insertReference,
@@ -33,6 +37,7 @@ import {
   toEditor,
   type ComponentHeader as Header,
   type EditorView,
+  type EquationAt,
   type ReferenceContext,
   type Selection,
 } from '@alloy-works/editor';
@@ -44,6 +49,7 @@ import { createPortal } from 'react-dom';
 import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
+import { EquationDialog } from './EquationDialog.js';
 import { FigureDialog } from './FigureDialog.js';
 import { FigurePanel } from './FigurePanel.js';
 import { Icon } from './Icon.js';
@@ -268,6 +274,16 @@ export function ComponentEditor({
   // What was focused as it opened, for the same reason as `opener` below, and apart from it: the
   // two dialogs are never open together, and each puts back only what it took.
   const referenceOpener = useRef<HTMLElement | null>(null);
+  // The Equation dialog, open over the view it was asked from - the surface, or a footnote's open
+  // editor - on the equation selected whole there or none, with whether a block may stand where a new
+  // one would go; or closed (equations 1, ruling R8).
+  const [equating, setEquating] = useState<{
+    readonly view: EditorView;
+    readonly current: EquationAt | null;
+    readonly blockPlaceable: boolean;
+  } | null>(null);
+  // What was focused as it opened, as for the Reference dialog, and apart from it.
+  const equationOpener = useRef<HTMLElement | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -446,6 +462,31 @@ export function ComponentEditor({
     back?.focus();
   }, [referring]);
 
+  /**
+   * Opens the Equation dialog over `editing` - the surface, or the footnote open in it - on the
+   * equation selected whole there, to change it, or to place a new one; answers true, since the
+   * command has already said an equation could be placed or is selected (equations 1, ruling R8).
+   * Whether a block is offered is asked of the same state: never in a footnote, a cell or a caption.
+   */
+  const openEquation = (editing: EditorView): boolean => {
+    equationOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEquating({
+      view: editing,
+      current: equationAt(editing.state),
+      blockPlaceable: equationPlaceable(editing.state, 'block'),
+    });
+    return true;
+  };
+
+  // And the same for it.
+  useEffect(() => {
+    if (equating !== null) return;
+    const back = equationOpener.current;
+    equationOpener.current = null;
+    back?.focus();
+  }, [equating]);
+
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
   // rebuild the surface from the original content on every render. Read fresh at the moment the effect
@@ -464,6 +505,8 @@ export function ComponentEditor({
   openAtRef.current = openAt;
   const openReferenceRef = useRef(openReference);
   openReferenceRef.current = openReference;
+  const openEquationRef = useRef(openEquation);
+  openEquationRef.current = openEquation;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
@@ -533,6 +576,9 @@ export function ComponentEditor({
           // **Reference** asks through its own dialog, as its button does (cross-references 1): the
           // keymap has already asked whether one could be placed here.
           if (name === 'reference') return openReferenceRef.current(view, into);
+          // **Equation** too (equations 1, ruling R8), from its shortcut and from Enter over an
+          // equation selected whole, in the footnote's text as in the component's.
+          if (name === 'equation') return openEquationRef.current(into);
           const command = EDITOR_COMMANDS.find(
             (each) => each.kind === 'mark' && each.mark === name,
           );
@@ -917,7 +963,7 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={asking !== null || figureDialog !== null || referring !== null}
+        inert={asking !== null || figureDialog !== null || referring !== null || equating !== null}
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -1030,7 +1076,9 @@ export function ComponentEditor({
                 editing && askAgain(editing, command, whyRefused(editing, command))
               }
               openDialog={(action, view) =>
-                action === 'reference' && surface !== null && openReference(surface, view)
+                surface !== null &&
+                ((action === 'reference' && openReference(surface, view)) ||
+                  (action === 'equation' && openEquation(view)))
               }
             />
             {!shown.mayEdit && (
@@ -1214,6 +1262,44 @@ export function ComponentEditor({
               return null;
             }}
             onCancel={() => setReferring(null)}
+          />,
+          document.body,
+        )}
+      {equating !== null &&
+        surface !== null &&
+        // Beside the article, as the prompt is, and for the same reason.
+        createPortal(
+          <EquationDialog
+            current={equating.current}
+            blockPlaceable={equating.blockPlaceable}
+            // The component's base language as it is now, which the header may have changed.
+            language={headerOf(surface.state.doc).language}
+            onDone={(choice) => {
+              // As the Reference dialog asks: the phase as it is now, since the lock can be lost
+              // while the dialog stands.
+              const now = controls.current?.view().phase;
+              const into = equating.view;
+              if (
+                !shown.mayEdit ||
+                now === undefined ||
+                !isEditablePhase(now) ||
+                into.isDestroyed
+              ) {
+                return 'This component can no longer be edited here, so the equation was not placed.';
+              }
+              const command =
+                equating.current === null
+                  ? insertEquation(choice)
+                  : changeEquation(equating.current.pos, choice);
+              if (!command(into.state, into.dispatch.bind(into))) {
+                return equating.current === null
+                  ? 'An equation cannot be placed where the cursor is.'
+                  : 'That equation is not there any more.';
+              }
+              setEquating(null);
+              return null;
+            }}
+            onCancel={() => setEquating(null)}
           />,
           document.body,
         )}

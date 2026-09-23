@@ -1,4 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
+import { equationAlternative } from '@alloy-works/domain';
 import {
   fromEditor,
   NodeSelection,
@@ -15,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { StatusProvider } from '../shell/Status.js';
 import { ComponentEditor } from './ComponentEditor.js';
+import { describeEquation } from './speech.js';
 import { designTiming } from './session.js';
 
 shimRangeMeasurement();
@@ -4480,5 +4482,421 @@ describe('cross-references in the editor (cross-references 1)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');
     expect(drawn()).toEqual(['Table 1.1']);
+  });
+});
+
+describe('equations in the editor (equations 1)', () => {
+  // Every change saves as the author goes; enough answered that no test runs out of them.
+  const everySave = Object.fromEntries(
+    Array.from({ length: 64 }, (_, at) => [
+      `PUT /v1/components/{id}/iterations/{session}/${at + 1}`,
+      () => json(200, { sequence: at + 1, lock }),
+    ]),
+  );
+  const answers = (stored: unknown) => ({
+    'GET /v1/components/{id}': () => json(200, opened({ content: stored })),
+    'POST /v1/components/{id}/lock': () => json(200, { lock }),
+    ...everySave,
+  });
+  const openWith = (stored: unknown) => open(answers(stored), quick, true);
+
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  /** An equation as the reader writes it: its alternative, then anything else, on the root. */
+  const stored = (inner: string, alternative: string | null, block = false) =>
+    `<math xmlns="${NS}"${alternative === null ? '' : ` alttext="${alternative}"`}${block ? ' display="block"' : ''}>${inner}</math>`;
+  const SQUARE = '<msup><mi>x</mi><mn>2</mn></msup>';
+  const FRACTION = '<mfrac><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mi>c</mi></mfrac>';
+  /** What the engine says of FRACTION in English: the same in jsdom as in a browser. */
+  const SPOKEN = 'the fraction with numerator a plus b and denominator c';
+
+  const text = (value: string) => ({ type: 'text', value, marks: [] });
+  const paragraph = (id: string, ...content: unknown[]) => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+
+  /** Every equation the stored document holds, inline or a block, as a save would send it. */
+  const equationsIn = (view: EditorView) => {
+    const found: Record<string, unknown>[] = [];
+    const walk = (value: unknown) => {
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (typeof value === 'object' && value !== null) {
+        if ((value as { type?: unknown }).type === 'equation') {
+          found.push(value as Record<string, unknown>);
+        }
+        Object.values(value).forEach(walk);
+      }
+    };
+    walk(fromEditor(view.state.doc));
+    return found;
+  };
+  /** Selects the first node of that type whole, as a click on it does. */
+  const selectFirst = (view: EditorView, type: string) =>
+    act(() => {
+      let at = -1;
+      view.state.doc.descendants((node, pos) => {
+        if (at === -1 && node.type.name === type) at = pos;
+        return at === -1;
+      });
+      view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    });
+  const opens = async () => screen.findByRole('dialog', { name: 'Equation' });
+  const latexOf = (dialog: HTMLElement) => within(dialog).getByLabelText('LaTeX');
+  const descriptionOf = (dialog: HTMLElement) => within(dialog).getByLabelText('Description');
+  /** LaTeX given as an author pastes it, since userEvent reads a brace it types as a key's name. */
+  const write = async (dialog: HTMLElement, latex: string) => {
+    await userEvent.clear(latexOf(dialog));
+    await userEvent.paste(latex);
+  };
+  /**
+   * Waits out every description the dialog has asked for: the engine answers one request after
+   * another, so one asked for now is answered only after them. Then React has what they answered.
+   */
+  const described = () => act(() => describeEquation(stored(SQUARE, null), 'en').then(() => {}));
+  const drawnIn = (dialog: HTMLElement) =>
+    within(dialog).getByRole('group', { name: 'Preview' }).querySelector('math');
+
+  it('CNT-044 stores the MathML Temml makes of the LaTeX an author types, with the LaTeX as its record', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    const button = screen.getByRole('button', { name: 'Equation' });
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    await userEvent.click(button);
+    const dialog = await opens();
+    expect(latexOf(dialog)).toHaveFocus();
+
+    await write(dialog, '\\frac{a+b}{c}');
+    // Drawn beneath as it is typed, as the browser draws MathML.
+    const drawn = drawnIn(dialog)!;
+    expect(drawn.namespaceURI).toBe(NS);
+    expect(drawn.querySelector('mfrac')!.namespaceURI).toBe(NS);
+    await waitFor(() => expect(descriptionOf(dialog)).toHaveValue(SPOKEN));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(equationsIn(view)).toEqual([
+      { type: 'equation', mathml: stored(FRACTION, SPOKEN), latex: '\\frac{a+b}{c}' },
+    ]);
+    expect(view.dom.querySelector('.aw-equation math')!.querySelector('mfrac')).not.toBeNull();
+  });
+
+  it("CNT-048 writes the alternative in the component's language, keeps the author's change of it, and leaves it empty and marked in a language it cannot speak", async () => {
+    const { surface } = openWith({
+      ...blocksOf(para('b1', 'Wo es wächst.'), para('b2', 'Lle mae.')),
+      language: 'de-DE',
+    });
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    let dialog = await opens();
+    await write(dialog, '\\frac{a+b}{c}');
+    await waitFor(() =>
+      expect(descriptionOf(dialog)).toHaveValue('Bruch mit Zähler a plus b und Nenner c'),
+    );
+
+    // The author's words are theirs: a change of LaTeX afterwards leaves them as they are.
+    await userEvent.clear(descriptionOf(dialog));
+    await userEvent.type(descriptionOf(dialog), 'a plus b geteilt durch c');
+    await write(dialog, '\\frac{a+b}{c} + 1');
+    await described();
+    expect(descriptionOf(dialog)).toHaveValue('a plus b geteilt durch c');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    expect(equationsIn(view).map((each) => equationAlternative(each.mathml as string))).toEqual([
+      'a plus b geteilt durch c',
+    ]);
+
+    // In a language the engine does not speak the field is left empty, and says why.
+    fireEvent.change(await languageField(), { target: { value: 'cy' } });
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    dialog = await opens();
+    await write(dialog, 'x^2');
+    await described();
+    const unspoken = 'No description can be written for you in Welsh. Write one yourself.';
+    expect(descriptionOf(dialog)).toHaveValue('');
+    expect(descriptionOf(dialog)).toHaveAccessibleDescription(expect.stringContaining(unspoken));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    const [, second] = equationsIn(view);
+    expect(second).toEqual({ type: 'equation', mathml: stored(SQUARE, null), latex: 'x^2' });
+    // And marked where it stands, in words a screen reader hears.
+    const holders = view.dom.querySelectorAll('.aw-equation');
+    expect(holders[1]).toHaveClass('aw-equation-undescribed');
+    expect(holders[1]).toHaveTextContent('No description');
+  });
+
+  it('CNT-080 draws an equation as native MathML carrying its alternative, reached by the keyboard and opened by Enter', async () => {
+    const { surface } = openWith(
+      blocksOf(
+        paragraph(
+          'b1',
+          { type: 'equation', mathml: stored(SQUARE, 'x squared'), latex: 'x^2' },
+          text(' grows.'),
+        ),
+      ),
+    );
+    const view = await surface();
+    const math = view.dom.querySelector('.aw-equation math')!;
+    expect(math.namespaceURI).toBe(NS);
+    expect(math.getAttribute('alttext')).toBe('x squared');
+    expect(math.getAttribute('aria-label')).toBe('x squared');
+
+    // Tab reaches the surface, the caret stands before the equation, and the arrow selects it.
+    screen.getByLabelText('Title').focus();
+    for (let stops = 0; stops < 40 && document.activeElement !== view.dom; stops += 1) {
+      await userEvent.tab();
+    }
+    expect(view.dom).toHaveFocus();
+    // As a browser sends it, with its key code: ProseMirror's own arrow handling, which selects an
+    // atom whole, reads the code, and userEvent's events carry none.
+    fireEvent.keyDown(view.dom, { key: 'ArrowRight', keyCode: 39 });
+    expect(view.dom.querySelector('.aw-equation')).toHaveClass('ProseMirror-selectednode');
+    await userEvent.keyboard('{Enter}');
+
+    const dialog = await opens();
+    expect(latexOf(dialog)).toHaveValue('x^2');
+    expect(descriptionOf(dialog)).toHaveValue('x squared');
+    expect(within(dialog).getByRole('button', { name: 'Change' })).toBeInTheDocument();
+    expect(equationsIn(view)).toHaveLength(1);
+  });
+
+  it('opens on a block equation selected whole and changes it, keeping its identifier and the words the author gave it', async () => {
+    const { surface } = openWith(
+      blocksOf(
+        para('b1', 'Growth:'),
+        {
+          type: 'equation',
+          id: 'e1',
+          mathml: stored(SQUARE, 'x squared', true),
+          latex: 'x^2',
+          numbered: false,
+        },
+        para('b2', 'As shown.'),
+      ),
+    );
+    const view = await surface();
+    selectFirst(view, 'equationBlock');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    expect(latexOf(dialog)).toHaveValue('x^2');
+    // Its kind is its own: changing an equation never moves it.
+    expect(within(dialog).queryByRole('radio')).toBeNull();
+    const numbered = within(dialog).getByRole('checkbox', { name: 'Numbered' });
+    expect(numbered).not.toBeChecked();
+    await userEvent.click(numbered);
+    await write(dialog, 'x^3');
+    await described();
+    // Not what the engine would say of x squared here, so the author's, and kept - with a word.
+    expect(descriptionOf(dialog)).toHaveValue('x squared');
+    expect(dialog).toHaveTextContent(
+      'The description is yours, so it was not written again. Generate again writes it for the equation as it is now.',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+
+    expect(equationsIn(view)).toEqual([
+      {
+        type: 'equation',
+        id: 'e1',
+        mathml: stored('<msup><mi>x</mi><mn>3</mn></msup>', 'x squared', true),
+        latex: 'x^3',
+        numbered: true,
+      },
+    ]);
+  });
+
+  it("writes the description again for a changed equation where it was the engine's own, and on Generate again where it was the author's", async () => {
+    const { surface } = openWith(
+      blocksOf(
+        paragraph(
+          'b1',
+          { type: 'equation', mathml: stored(FRACTION, SPOKEN), latex: '\\frac{a+b}{c}' },
+          { type: 'equation', mathml: stored(FRACTION, 'a over c'), latex: '\\frac{a+b}{c}' },
+        ),
+      ),
+    );
+    const view = await surface();
+    selectFirst(view, 'equation');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    let dialog = await opens();
+    // Never written on opening: what is there is what was stored.
+    expect(descriptionOf(dialog)).toHaveValue(SPOKEN);
+    await write(dialog, '\\frac{a+b}{d}');
+    await waitFor(() =>
+      expect(descriptionOf(dialog)).toHaveValue(
+        'the fraction with numerator a plus b and denominator d',
+      ),
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    act(() => view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, 2))));
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    dialog = await opens();
+    await write(dialog, '\\frac{a+b}{d}');
+    await described();
+    expect(descriptionOf(dialog)).toHaveValue('a over c');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Generate again' }));
+    await waitFor(() =>
+      expect(descriptionOf(dialog)).toHaveValue(
+        'the fraction with numerator a plus b and denominator d',
+      ),
+    );
+  });
+
+  it('writes no description on opening, even for an equation that has none', async () => {
+    const { surface } = openWith(
+      blocksOf(
+        paragraph('b1', {
+          type: 'equation',
+          mathml: stored(FRACTION, null),
+          latex: '\\frac{a+b}{c}',
+        }),
+      ),
+    );
+    const view = await surface();
+    selectFirst(view, 'equation');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    await described();
+    expect(descriptionOf(dialog)).toHaveValue('');
+    // Until the author asks.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Generate again' }));
+    await waitFor(() => expect(descriptionOf(dialog)).toHaveValue(SPOKEN));
+  });
+
+  it('opens an equation stored without LaTeX with the field empty, saying typing replaces it, and keeps it as it is otherwise', async () => {
+    const { surface } = openWith(
+      blocksOf(paragraph('b1', { type: 'equation', mathml: stored(SQUARE, null) }, text('.'))),
+    );
+    const view = await surface();
+    selectFirst(view, 'equation');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    expect(latexOf(dialog)).toHaveValue('');
+    expect(latexOf(dialog)).toHaveAccessibleDescription(
+      expect.stringContaining(
+        'This equation was stored without its LaTeX. Typing LaTeX here replaces it.',
+      ),
+    );
+    expect(drawnIn(dialog)!.querySelector('msup')).not.toBeNull();
+    await userEvent.type(descriptionOf(dialog), 'x squared');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Change' }));
+
+    expect(equationsIn(view)).toEqual([{ type: 'equation', mathml: stored(SQUARE, 'x squared') }]);
+  });
+
+  it('offers a block where one may stand, placed numbered, and only an inline one in an open footnote', async () => {
+    const { surface } = openWith(
+      blocksOf(
+        paragraph('b1', text('Visited'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [para('fp1', 'See.')],
+        }),
+        para('b2', 'Growth:'),
+      ),
+    );
+    const view = await surface();
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    let dialog = await opens();
+    expect(within(dialog).getByRole('radio', { name: 'Inline' })).toBeChecked();
+    expect(within(dialog).queryByRole('checkbox', { name: 'Numbered' })).toBeNull();
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Block' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Numbered' }));
+    await write(dialog, 'E = mc^2');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    expect(equationsIn(view)).toMatchObject([
+      { type: 'equation', id: expect.any(String), latex: 'E = mc^2', numbered: true },
+    ]);
+    expect(view.dom.querySelector('.aw-equation-block .aw-equation-number')).not.toBeNull();
+
+    selectFirst(view, 'footnote');
+    act(() => {
+      const inner = openFootnote(view)!;
+      inner.dispatch(
+        inner.state.tr.setSelection(
+          Selection.fromJSON(inner.state.doc, { type: 'text', anchor: 4, head: 4 }),
+        ),
+      );
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    dialog = await opens();
+    expect(within(dialog).queryByRole('radio')).toBeNull();
+    await write(dialog, 'x^2');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    const [block] = fromEditor(view.state.doc).content as unknown as [
+      { content: [unknown, { content: { content: unknown[] }[] }] },
+    ];
+    expect(block.content[1].content[0]!.content).toMatchObject([
+      { type: 'text', value: 'See' },
+      { type: 'equation', latex: 'x^2' },
+      { type: 'text', value: '.' },
+    ]);
+  });
+
+  it('says what is wrong with the LaTeX beneath it, draws nothing, and places nothing', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Equation' }));
+    const dialog = await opens();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Type the equation in LaTeX.');
+
+    await write(dialog, '\\cancel{x}');
+    expect(latexOf(dialog)).toHaveAttribute('aria-invalid', 'true');
+    expect(latexOf(dialog)).toHaveAccessibleDescription(
+      expect.stringContaining('An equation here cannot keep \\cancel. Write it another way.'),
+    );
+    expect(drawnIn(dialog)).toBeNull();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    // Back in the field whose words say what to put right.
+    expect(latexOf(dialog)).toHaveFocus();
+    expect(equationsIn(view)).toEqual([]);
+  });
+
+  it('places nothing on Escape or Cancel, keeps the keyboard inside, and puts the focus back on what opened it', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    caretIn(view, 'b1');
+    const button = screen.getByRole('button', { name: 'Equation' });
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+    let dialog = await opens();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    // The same drawing as the button that opened it.
+    expect(
+      within(dialog).getByRole('heading', { name: 'Equation' }).querySelector('[data-icon]'),
+    ).toHaveAttribute('data-icon', 'Equation');
+    await write(dialog, 'x^2');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(button).toHaveFocus();
+
+    await userEvent.click(button);
+    dialog = await opens();
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+    close.focus();
+    await userEvent.tab();
+    expect(latexOf(dialog)).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(close).toHaveFocus();
+    await write(dialog, 'x^2');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(equationsIn(view)).toEqual([]);
+  });
+
+  it('opens from the keyboard alone, with Ctrl, Shift and E', async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'Where it grows.')));
+    const view = await surface();
+    await screen.findByRole('button', { name: 'Equation' });
+    caretIn(view, 'b1');
+    fireEvent.keyDown(view.dom, { key: 'E', keyCode: 69, ctrlKey: true, shiftKey: true });
+    expect(latexOf(await opens())).toHaveFocus();
   });
 });

@@ -1,0 +1,75 @@
+/*
+ * The Equation dialog inside the link dialog's form (MarkPrompt.module.css): the LaTeX in the code
+ * face, the equation drawn beneath it in a framed box of its own, and the kind and numbering as one
+ * row of choices each, as the Reference dialog's forms are.
+ */
+.latex {
+  font-family: var(--mono);
+  resize: vertical;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.label {
+  font-size: var(--size-body-small);
+}
+
+/* Wide enough for a long equation to scroll within rather than widen the dialog past the page. */
+.drawn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  padding: var(--space-8) var(--space-12);
+  overflow-x: auto;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-6);
+}
+
+.drawn:empty {
+  min-height: 2rem;
+}
+
+/* A block's own centring and its number's room, from the editor's stylesheet, fill the box. */
+.drawn > :global(.aw-equation-block) {
+  width: 100%;
+}
+
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.group legend {
+  padding: 0 0 var(--space-4);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-16);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0;
+}
+
+.again {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.again button {
+  min-height: 28px;
+  padding: var(--space-4) var(--space-12);
+}
