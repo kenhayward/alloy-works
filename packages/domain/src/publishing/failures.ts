@@ -59,6 +59,14 @@ export const publishFailureCodes = [
   // compose, from the final review of figures 5: an image in a figure's or a table's caption, which
   // the caption's height is not estimated with and which the list after the contents would set again.
   'image_in_caption',
+  // compose, from footnotes 2: a footnote anywhere but a paragraph's text, or anchored to a table as a
+  // whole (FN-B, FN-C); one anchored to a cell its table does not have (CNT-042); and one with no text.
+  'footnote_not_publishable_here',
+  'footnote_anchor_unresolved',
+  'footnote_empty',
+  // compose, from the final review of footnotes 2: a footnote the layout's scheme gives no number,
+  // which would print as a mark with nothing in it.
+  'footnote_unnumbered',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

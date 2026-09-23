@@ -583,7 +583,8 @@ caption again, so the image would be read twice. Building figures 3 changed thes
 Designed on 2026-09-23 against the pinned engine, as tables and figures were. A footnote is the content
 model's `footnote`: an inline node holding paragraphs (CNT-129), with an anchor in one of four kinds -
 a span, a cell by key, a cell by position, or the table as a whole - and a number `number` gives it,
-straight through the document (CNT-041, STR-022). A table also carries an optional **note** of its own
+straight through the body and on its own in front matter and each appendix under the default scheme
+(CNT-041, STR-022). A table also carries an optional **note** of its own
 (CNT-038), inline content that is not a footnote.
 
 ### What the pinned Typst does with a footnote, measured
@@ -623,9 +624,13 @@ own structure elements.
   its cell's text already. One that does not resolve fails `footnote_anchor_unresolved`, naming the
   footnote and its component. A footnote anchored to **the table as a whole** is refused
   `footnote_not_publishable_here`: the table's note is how a note on a table is published (FN-C).
-- **The table's note** (CNT-038) is published beneath the table, inside the table's own `figure`, as a
-  paragraph of runs in the body text's size less a point, with no label of its own - the layout has no
-  word for one, and adding one is a layout schema change nothing else needs yet.
+- **The table's note** (CNT-038) is published beneath the table, as a paragraph of runs in the body
+  text's size less a point, with no label of its own - the layout has no word for one, and adding one is
+  a layout schema change nothing else needs yet. It is set straight **after** the table's `figure`, not
+  inside it as FN-D had it: measured in footnotes 2, a figure whose body is more than its table is
+  tagged a `Div` holding the `Caption` beside a second `Div` of the `Table` and the note, so the caption
+  stops being the table's own first child and the table loses its programmatic caption (TAB-039). After
+  the figure, the note is a `P` straight after the `Table`.
 - **The published document gains** a run kind for a footnote -
   `{ footnote: { label, paragraphs } }` beside a text run and an image - and a table's `note` as runs or
   null. `publishing/9`, template 9.
@@ -641,10 +646,43 @@ own structure elements.
 | FN-E | **The editor shows a footnote as a mark in the text and edits its paragraphs inline**, beneath the paragraph it stands in - ProseMirror's own footnote pattern, a nested editor over the node's content - never a dialog (component-editor.md, "Accessibility")                                   | Yes. A dialog would hide the text a note belongs to. The mark shows no number: the number is the outline's (CNT-041), and a component has none of its own                                 |
 | FN-F | **Two pull requests**: footnotes in the editor, with the table's note; then footnotes and notes published. Each lands usable, and a footnote refuses the publish by name until the second, as a figure did                                                                                        | Yes                                                                                                                                                                                       |
 
-**FN-F's first pull request is built**: [footnotes 1](../plans/2026-09-23-footnotes-01-footnotes-in-the-editor.md)
-puts footnotes and the table's note in the editor. Until footnotes 2, a publish refuses a footnote by
-name, `inline_not_publishable` with the detail `footnote`, and a table's note the same way with the
-detail `note`, rather than setting the table without it.
+**Both of FN-F's pull requests are built**: [footnotes 1](../plans/2026-09-23-footnotes-01-footnotes-in-the-editor.md)
+puts footnotes and the table's note in the editor, and
+[footnotes 2](../plans/2026-09-23-footnotes-02-publishing-footnotes.md) publishes them, as
+`publishing/9` and template 9. Building footnotes 2 changed these things here:
+
+- **The table's note is set after the table's figure**, as the bullet above says, since inside it the
+  caption stopped being the table's.
+- **A footnote's paragraphs are not each a `par`.** The engine sets the number before the note's body,
+  and a body opening with a `par` put the number in a paragraph of its own above the words - which at
+  a page's foot the engine left beneath the anchor while carrying the words to the next page. Joined
+  by paragraph breaks, the number opens the first paragraph, and a note too long for its page begins
+  there and carries on, as measured above.
+- **A footnote with no text is refused**, `footnote_empty`, naming it: the editor places one with an
+  empty paragraph, and a numbered mark over nothing would publish a note the author never wrote.
+- **A key over several key columns does not resolve**, `footnote_anchor_unresolved`: how one is spelt
+  is not yet defined, and nothing makes one, so it is refused rather than matched by a rule invented in
+  the publisher. A key over one key column is that column's cell's words. **Resolving says only that
+  the table has such a cell**, not that it is the cell the footnote stands in, and a key can match a
+  header row's cell: nothing makes a key or a position anchor in T1, and the key-columns slice decides
+  whether an anchor must name the footnote's own cell.
+
+The final whole-branch review found three things and several smaller; these were changed:
+
+- **A footnote in a table's header row is refused**, `footnote_not_publishable_here`, naming the
+  paragraph it stands in. The header rows repeat on every page a table reaches, set as artifacts, and
+  the engine refuses a footnote's link inside one outright, naming nothing - measured with a table of
+  ninety rows. It is refused whether or not the table crosses a page, since that is not known before
+  the layout. A footnote in a header column is set once and is published.
+- **A note is read in the language its mark stands in.** The engine lays a note out at the foot of the
+  page in the document's language, so a German component's note was tagged English. Template 9 reads
+  the language and direction where the mark stands and sets them around the note's body.
+- **A footnote the layout's scheme gives no number is refused**, `footnote_unnumbered`, naming it. A
+  scheme may prefix footnotes with their chapter, and in a part with no numbered section before it
+  `number` gives none; the footnote would have printed as a mark with nothing in it.
+- **Smaller**: a footnote or a table's note of spaces alone is empty, as a caption of spaces is; a
+  footnote is told every reason it is refused, not the first; and a request made before layouts keeps
+  saying a title's footnote is what cannot be published, as it did.
 
 ## The layout
 

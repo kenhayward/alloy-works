@@ -399,8 +399,11 @@ describe('the citations in the committed model', () => {
   // 268, from 264: footnotes 1 cites CNT-036 and CNT-038 in packages/editor's footnotes.test.ts,
   // placing a footnote at the cursor and a note on a table and storing each, and both again in
   // ComponentEditor.test.tsx, where the Footnote button and the Table panel's Add note make them.
+  // 272, from 268: footnotes 2 cites CNT-042 in packages/domain's assemble.test.ts, where an anchor
+  // that does not resolve fails the publish naming the footnote, and PUB-016, CNT-036 and CNT-038 in
+  // apps/worker's footnotes.test.ts, where footnotes and a table's note are read back from the PDF.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(268);
+    expect(model.citations).toHaveLength(272);
   });
 
   it('cites no identifier the corpus does not hold', () => {

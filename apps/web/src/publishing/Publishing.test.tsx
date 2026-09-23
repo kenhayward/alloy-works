@@ -302,22 +302,36 @@ describe('publishing from the document page', () => {
     );
   });
 
-  it("names a footnote and a table's note as what cannot be published yet (footnotes 1)", async () => {
+  it('says where a footnote cannot stand, which cell its anchor lacks, and that it has no text (footnotes 2)', async () => {
     const fake = failing([
       {
         stage: 'compose',
-        code: 'inline_not_publishable',
+        code: 'footnote_not_publishable_here',
         node: null,
-        block: 'b1',
-        detail: 'footnote',
+        block: 't1',
+        detail: null,
       },
-      { stage: 'compose', code: 'inline_not_publishable', node: null, block: 't1', detail: 'note' },
+      {
+        stage: 'compose',
+        code: 'footnote_anchor_unresolved',
+        node: null,
+        block: 'f1',
+        detail: null,
+      },
+      { stage: 'compose', code: 'footnote_empty', node: null, block: 'f2', detail: null },
+      { stage: 'compose', code: 'footnote_unnumbered', node: null, block: 'f3', detail: null },
     ]);
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
-    expect(why).toHaveTextContent('A footnote cannot be published yet.');
-    expect(why).toHaveTextContent("A table's note cannot be published yet.");
+    expect(why).toHaveTextContent(
+      "A footnote stands where it cannot be published. A footnote can stand only in a paragraph's text; a note on a whole table is the table's note.",
+    );
+    expect(why).toHaveTextContent('A footnote is anchored to a cell its table does not have.');
+    expect(why).toHaveTextContent('A footnote has no text. Write it, or delete its mark.');
+    expect(why).toHaveTextContent(
+      'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.',
+    );
   });
 
   it("blames the layout, not the document, for the layout's own words and language", async () => {

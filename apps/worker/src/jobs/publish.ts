@@ -29,8 +29,8 @@ import type { JobHandler } from '../worker.js';
  * one made before a block could be a list, version 4 before one could be a quotation, and version 5
  * before one could be a table, and version 6 before one could be a figure - each named only by the
  * publications it made. Version 6 was also the first whose compile runs with
- * `--features a11y-extras` (`typstArguments`), 7 the first to read images from the store, and 8 the
- * first to set one in a run of text.
+ * `--features a11y-extras` (`typstArguments`), 7 the first to read images from the store, 8 the
+ * first to set one in a run of text, and 9 the first to set a footnote and a table's note.
  *
  * **Both keys are computed.** Repoint `PUBLISHING_SCHEMA` and the key moves while the value stays
  * behind, and the `satisfies` clause cannot catch it because `PublishedSchema` derives from the
@@ -40,7 +40,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA]: '8',
+  [PUBLISHING_SCHEMA]: '9',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -132,8 +132,8 @@ export function publishJob(deps: {
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
       // Chosen by what `assemble` made, so a document is never handed to a template that cannot read
-      // it: template 1 and pipeline 1 for `publishing/1`, template 8 and pipeline 8 for `publishing/8`.
-      // A publication under template 8 must name a layout, which only a request made under one has.
+      // it: template 1 and pipeline 1 for `publishing/1`, template 9 and pipeline 9 for `publishing/9`.
+      // A publication under template 9 must name a layout, which only a request made under one has.
       const { schema } = assembled.document;
       const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // The digest is of the bytes Typst reads, so a reproduction can tell input from engine.
