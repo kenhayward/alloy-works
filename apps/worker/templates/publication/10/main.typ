@@ -191,7 +191,10 @@
 // contents, where it would nest inside the entry's own link. A reference carries no marks. Every
 // target's label is in the file (`assemble` fails a reference it cannot resolve, and emits a marker
 // for a named target that publishes nothing), so `locate` and `link` never meet a missing one. As
-// measured (structure.md, "What the pinned Typst does with a reference").
+// measured (structure.md, "What the pinned Typst does with a reference"). Above and below are the
+// layout's own words (`relative`), set in the layout's language with `words`, as its other words are:
+// a French paragraph's "earlier" is read to a reader in the English of the layout that gave it (the
+// final review of cross-references 2). A number and a title are the document's, and set bare.
 #let reference-run(r) = {
   let target = label(r.anchor)
   let said = if r.page {
@@ -202,6 +205,8 @@
       assert(at.page-numbering() != none, message: "reference to " + r.anchor + " has no page number")
       numbering(at.page-numbering(), ..counter(page).at(at))
     }
+  } else if r.relative {
+    words(r.text)
   } else {
     r.text
   }
@@ -229,13 +234,22 @@
 // document's English (final review of footnotes 2). As measured (publishing.md, "What the pinned Typst
 // does with a footnote", and footnotes 2's plan). A reference in a note's text is a link, as in any
 // paragraph's; the footnote itself carries its label, where its mark stands, when a reference names it.
+// So does each of its paragraphs a reference names (CNT-125), on an empty marker where the paragraph
+// begins - the paragraph is no element of its own here, and one a reference names may hold no runs.
+// Measured (the final review of cross-references 2): a page reference to it prints the page the note's
+// text stands on, a note carried on to the next page included, a link to it lands there, and the
+// label is set once.
+#let note-paragraph(p) = {
+  let body = p.runs.map(base-run).join()
+  if p.anchor == none { body } else [#metadata(none) #label(p.anchor)#body]
+}
 #let footnote-run(n) = context labelled(n.anchor, footnote(
   numbering: _ => n.label,
   text(
     lang: text.lang,
     region: text.region,
     dir: text.dir,
-    n.paragraphs.map(p => p.runs.map(base-run).join()).join(parbreak()),
+    n.paragraphs.map(note-paragraph).join(parbreak()),
   ),
 ))
 #let run(r) = if "footnote" in r { footnote-run(r.footnote) } else { base-run(r) }

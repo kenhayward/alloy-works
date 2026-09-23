@@ -30,7 +30,9 @@ const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
  * surface it opens into. Without a scheme nothing is numbered, and every target is offered with no
  * label rather than with one a publication would not print. `words` is the layout's own for above and
  * below (cross-references 2, ruling R9), carried into every context alike so a relative reference
- * prints what a publish would, wherever in the document it stands.
+ * prints what a publish would, wherever in the document it stands. `component` is the occurrence's
+ * own, so a reference naming its own component by a `component` target reads as a block of its own,
+ * as a publish binds it (the final review of cross-references 2).
  */
 function referenceContexts(
   outline: OutlineView,
@@ -48,6 +50,7 @@ function referenceContexts(
     const editing = { component: node.component, node: node.id };
     contexts.set(node.id, {
       targets: documentTargets({ outline, numbering, contributions, editing }),
+      component: node.component,
       ...(words === null ? {} : { words }),
     });
   });

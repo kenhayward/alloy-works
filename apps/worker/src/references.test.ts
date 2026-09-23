@@ -76,8 +76,8 @@ const filler = (from: string, count: number) =>
 
 /**
  * The regression case (cross-references 2, ruling R10): every form, a forward and a backward
- * reference, a reference to a section, a figure, a table, a footnote and a paragraph, standing in
- * front matter and in the body. A link in running text, a list's item, a quotation, a table's body
+ * reference, a reference to a section, a figure, a table, a footnote, a footnote's own paragraph and
+ * a paragraph, standing in front matter and in the body. A link in running text, a list's item, a quotation, a table's body
  * cell and a footnote's text; text in a caption, a term, an attribution, a table's note, a header row
  * and a section's title. Filler between, so that a target is seldom on the page of what refers to it.
  */
@@ -154,7 +154,11 @@ const measuring = [
     type: 'footnote',
     id: 'n1',
     anchor: { kind: 'span' },
-    content: [referring('n1p', 'O', xref('xo', toBlock('t1'), 'numberAndTitle'))],
+    content: [
+      referring('n1p', 'O', xref('xo', toBlock('t1'), 'numberAndTitle')),
+      // A footnote's own paragraph, which a reference names (CNT-125): its label is in the note.
+      para('n1q', text('Second note paragraph.')),
+    ],
   }),
   ...filler('c', 45),
   // A paragraph with nothing in it, which publishes nothing and so carries its label on a marker, and
@@ -172,6 +176,14 @@ const findings = [
   referring('r6', 'U', xref('xu', toComponent(MEASURING, 'mQ'), 'page')),
   referring('r7', 'V', xref('xv', toComponent(MEASURING, 'mP'), 'page')),
   referring('r8', 'W', xref('xw', toComponent(MEASURING, 'mE'), 'page')),
+  referring('r9', 'X', xref('xx', toComponent(MEASURING, 'n1q'), 'page')),
+  // A relative reference set as text rather than a link, in an attribution.
+  {
+    type: 'blockquote',
+    id: 'rQ',
+    content: [para('rq1', text('Cité.'))],
+    attribution: tagged('Y', xref('xy', toComponent(MEASURING, 't1'), 'relative')),
+  },
 ];
 
 const occurrence = (name: string, component: string, matter: string, numbered = true) => ({
@@ -195,11 +207,11 @@ const section = (name: string, title: unknown[], children: unknown[]) => ({
   values: {},
   children,
 });
-const component = (title: string, content: unknown[]) =>
+const component = (title: string, content: unknown[], language = 'en-GB') =>
   parseContentDocument({
     schemaVersion: 1,
     title,
-    language: 'en-GB',
+    language,
     direction: 'ltr',
     content,
   }) as ContentDocument;
@@ -236,7 +248,9 @@ const compile = async () => {
     occurrences: new Map([
       [id('preface'), component('Preface', preface)],
       [id('measuring'), component('Measuring', measuring)],
-      [id('findings'), component('Findings', findings)],
+      // In French, under a layout in English: its relative reference prints the layout's word, which
+      // is read in the layout's language, not in the paragraph's around it.
+      [id('findings'), component('Findings', findings, 'fr-FR')],
     ]),
     refused: [],
     layout: worded,
@@ -310,6 +324,8 @@ describe('cross-references in the PDF (cross-references 2)', () => {
     table: pageOf(read, 'Site'),
     figure: pageOf(read, 'Figure 1.1 Shapes, see'),
     footnote: pageOf(read, 'The footnoted paragraph.'),
+    // A footnote's paragraph stands at the foot of the page its footnote's mark is set on.
+    footnoteParagraph: pageOf(read, 'Second note paragraph.'),
     paragraph: pageOf(read, 'Ref A '),
     // A list and a quotation begin with the words of their first paragraph.
     list: pageOf(read, 'Ref H '),
@@ -354,6 +370,7 @@ describe('cross-references in the PDF (cross-references 2)', () => {
       ['U', on.quotation],
       ['V', on.preformatted],
       ['W', on.marker],
+      ['X', on.footnoteParagraph],
     ];
     for (const [tag, page] of pageReferences) {
       expect(page, tag).toBeGreaterThanOrEqual(0);
@@ -385,6 +402,8 @@ describe('cross-references in the PDF (cross-references 2)', () => {
       ['U', on.quotation],
       ['V', on.preformatted],
       ['W', on.marker],
+      // And to a footnote's own paragraph, at the foot of its page.
+      ['X', on.footnoteParagraph],
       // A list's item, a quotation, a table's body cell and a footnote's text.
       ['H', on.figure],
       ['J', on.figure],
@@ -398,9 +417,23 @@ describe('cross-references in the PDF (cross-references 2)', () => {
       ).toEqual([page]);
     }
     // A term, an attribution, a header row and a table's note: text, with no link.
-    for (const tag of ['I', 'K', 'L', 'N']) expect(linksAt(read, tag), tag).toEqual([]);
+    for (const tag of ['I', 'K', 'L', 'N', 'Y']) expect(linksAt(read, tag), tag).toEqual([]);
     // The targets are spread, so a link landing on the wrong page would be seen.
     expect(new Set(links.map(([, page]) => page)).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it("sets above and below in the layout's language, inside a paragraph in another", () => {
+    // Findings is French and the layout English: "earlier" is the layout's word, and a reader is told
+    // it is English where the attribution around it is French. Read where it is set as text, whose
+    // language is its marked content's, which `languages` reads. Set as a link - Ref P - the engine
+    // declares it on the link's structure element instead (`/Link /Lang(en)` inside the French
+    // paragraph's `/P /Lang(fr-FR)`, read from the file by hand), which `readPdf` does not read.
+    const said = (read.languages[pageOf(read, 'Ref Y ')] ?? []).map((each) => ({
+      language: each.language,
+      text: each.runs.join(' ').replace(/\s+/g, ' ').trim(),
+    }));
+    expect(said).toEqual([{ language: 'en', text: 'earlier' }]);
+    expect(printed(read, 'Y')).toBe('earlier');
   });
 
   it('sets no link of its own in a caption, a title, the contents, the lists or a running head', () => {

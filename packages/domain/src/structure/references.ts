@@ -64,8 +64,10 @@ export function formsFor(kind: ReferenceKind): readonly CrossReferenceDisplay[] 
 
 /**
  * Each kind in one word - what a reference shows where it has nothing better, and what the editor
- * shows beside a caption for a reference it cannot number (_Table: Readings_, R10). English, as
- * `printed`'s words are, until a layout has words of its own (cross-references 2).
+ * shows beside a caption for a reference it cannot number (_Table: Readings_, R10), and what a
+ * caption's reference to a target with no number prints where a title form reads that caption. English,
+ * as `printed`'s _page of_ is: a layout's own words are for above and below alone (cross-references 2,
+ * ruling R9), and nothing gives these yet.
  */
 const KIND_WORDS: Readonly<Record<ReferenceKind, string>> = {
   section: 'Section',
@@ -307,7 +309,11 @@ export interface Reading {
  *   STR-028).
  * - **A `component` target** reaches a block or footnote of that component's **one** occurrence in this
  *   document, and fails where the document places it in none or in several rather than taking the
- *   first (STR-062). It resolves alike wherever it is read.
+ *   first (STR-062). It resolves alike wherever it is read - **except in an occurrence of the very
+ *   component it names**, where it is a block of its own and resolves exactly as a `block` target, to
+ *   the occurrence it is read in (STR-056, STR-062). Such a target is stored by a reference pasted
+ *   from another component into this one: admission (`repoint`) leaves every `component` target
+ *   standing, and one placed twice is not ambiguous where it is read.
  * - **A `node` target** reaches the node: a section, by its number and its title's words, or an
  *   occurrence, which is a heading, by its number and its component's title.
  *
@@ -316,10 +322,11 @@ export interface Reading {
  * figure, a table and a footnote take their label from the numbering table; any other block - a
  * paragraph, a list, a quotation, preformatted text, and an equation, which nothing points at by
  * number until references to one are planned - is a `block`, with neither label nor title, which a
- * page or a relative form can still name (XR-C). **A footnote's own paragraphs are not found**: they
- * are the footnote's rather than the component's blocks - set in its note, on its page, where it
- * stands - so a reference names the footnote, and a label inside a note is not one the engine was
- * measured with (XR-D).
+ * page or a relative form can still name (XR-C). **So is a footnote's own paragraph** (CNT-125: any
+ * block), set in its note at the foot of the page its text stands on: a label at the start of it, a
+ * page reference to it and a link to it were measured against the pinned engine - a note carried on
+ * to the next page included - and print and land on the page that paragraph stands on (the final
+ * review of cross-references 2).
  */
 export function referenceResolver(
   document: ResolvingDocument,
@@ -379,6 +386,11 @@ export function referenceResolver(
       case 'block':
         return inOccurrence(reading.node, target.block);
       case 'component': {
+        // Read in an occurrence of the component it names, it is a block of its own (STR-056).
+        const reader = nodes.get(reading.node);
+        if (reader?.type === 'reference' && reader.component === target.component) {
+          return inOccurrence(reading.node, target.block);
+        }
         const [only, ...others] = placements.get(target.component) ?? [];
         if (only === undefined) return { ok: false, reason: 'componentAbsent' };
         if (others.length > 0) return { ok: false, reason: 'componentRepeated' };
@@ -421,13 +433,16 @@ interface Found {
 }
 
 /**
- * Every footnote in some inline content, as `inlineContributions` finds one, without descending into
- * the footnote's own paragraphs - a footnote holds no footnote (CNT-129), and its paragraphs are its
- * own, not blocks a reference names.
+ * Every footnote in some inline content, as `inlineContributions` finds one, and each of its own
+ * paragraphs, as a block with neither number nor title. Its paragraphs hold no footnote (CNT-129), so
+ * nothing is looked for in them.
  */
 function footnotesIn(inlines: readonly InlineNode[], index: Map<string, Found>): void {
   for (const inline of inlines) {
-    if (inline.type === 'footnote') index.set(inline.id, { kind: 'footnote', caption: null });
+    if (inline.type !== 'footnote') continue;
+    index.set(inline.id, { kind: 'footnote', caption: null });
+    const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
+    for (const paragraph of paragraphs) index.set(paragraph.id, { kind: 'block', caption: null });
   }
 }
 

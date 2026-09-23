@@ -273,6 +273,47 @@ describe("the document's text", () => {
       expect(shown).toEqual(['Table 2.1', '1 Introduction']);
     });
 
+    it('shows a reference naming its own component, as a paste from another leaves it, as the block of its own it is', () => {
+      const [first, ...rest] = referring.content;
+      const pasted = {
+        ...referring,
+        content: [
+          {
+            ...first,
+            content: [
+              {
+                type: 'crossReference',
+                id: 'x1',
+                target: { kind: 'component', component: PRINTER, block: 't1' },
+                display: 'number',
+              },
+            ],
+          },
+          ...rest,
+        ],
+      };
+      render(
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={new Map([[PRINTER_NODE, pasted]])}
+          contributions={
+            new Map([
+              [
+                PRINTER_NODE,
+                [{ block: 't1', sequence: 'table', numbered: true, caption: 'Readings' }],
+              ],
+            ])
+          }
+        />,
+      );
+      const shown = [...document.querySelectorAll('[data-reference]')].map(
+        (each) => each.textContent,
+      );
+      expect(shown).toEqual(['Table 2.1']);
+    });
+
     it('shows the table by its kind and caption until the page has heard what the component holds', () => {
       render(
         <DocumentText

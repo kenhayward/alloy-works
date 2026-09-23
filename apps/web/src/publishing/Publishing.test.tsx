@@ -347,8 +347,9 @@ describe('publishing from the document page', () => {
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    // The request has no layout at all, so the sentence names none; a publish now is made under one.
     expect(why).toHaveTextContent(
-      "A cross-reference cannot be published under this request's layout.",
+      'A cross-reference cannot be published from this request. Publish again.',
     );
   });
 

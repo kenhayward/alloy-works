@@ -612,6 +612,28 @@ describe('resolving a reference in the document that publishes it', () => {
     });
   });
 
+  it('binds a component target naming the component it is read in to that occurrence, as a block target', () => {
+    // Pasted from another component into this one, a reference to this one's table keeps its
+    // component target (admission's `repoint` leaves it standing), and names a block of its own.
+    const resolver = resolving(
+      [
+        stored('method', 'Method', [placed('first', ADA)]),
+        stored('results', 'Results', [placed('again', ADA)]),
+      ],
+      { first: ada, again: ada },
+    );
+    const own: CrossReferenceTarget = { kind: 'component', component: ADA, block: 'f1' };
+    const figureIn = (name: string, label: string) =>
+      bound({ node: id(name), block: 'f1', kind: 'figure', label, title: 'Readings' });
+    expect(resolver(own, { node: id('first') })).toEqual(figureIn('first', 'Figure 1.1'));
+    expect(resolver(own, { node: id('again') })).toEqual(figureIn('again', 'Figure 2.1'));
+    // Read anywhere else, it is another component's block, and which occurrence was meant is unknown.
+    expect(resolver(own, { node: id('method') })).toEqual({
+      ok: false,
+      reason: 'componentRepeated',
+    });
+  });
+
   it('binds a node target to the section, or the occurrence, it names', () => {
     const resolver = resolving(
       [
@@ -642,7 +664,8 @@ describe('resolving a reference in the document that publishes it', () => {
     const found = (name: string, kind: ReferenceKind, label: string | null, title: string | null) =>
       bound({ node: id('ada'), block: name, kind, label, title });
     // Every block the component holds, at any depth, is a place a page or a relative form can name.
-    for (const name of ['p1', 'l1', 'lp1', 'l2', 'lp2', 'c1', 'q1', 'qp1', 'x1']) {
+    // A footnote's own paragraph among them: set in its note, on the page the note's text stands on.
+    for (const name of ['p1', 'n1p', 'l1', 'lp1', 'l2', 'lp2', 'c1', 'q1', 'qp1', 'x1']) {
       expect(resolver(block(name), reading), name).toEqual(found(name, 'block', null, null));
     }
     // A table, and a figure whose caption has no words, whose title is none.
@@ -661,8 +684,6 @@ describe('resolving a reference in the document that publishes it', () => {
     // No such block, and a block of another component named as the reading occurrence's own.
     expect(resolver(block('nothing'), reading)).toEqual(missing);
     expect(resolver(block('gt1'), reading)).toEqual(missing);
-    // A footnote's own paragraph is the footnote's, and a reference names the footnote.
-    expect(resolver(block('n1p'), reading)).toEqual(missing);
     // A block target read where no occurrence is: a section, or a node the outline does not hold.
     expect(resolver(block('p1'), { node: id('method') })).toEqual(missing);
     expect(resolver(block('p1'), { node: id('elsewhere') })).toEqual(missing);

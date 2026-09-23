@@ -245,6 +245,36 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
       ]);
     });
 
+    it('reads a component target naming the component being edited as a block of its own, as a publish binds it', () => {
+      // Pasted in from another component, a reference to this one's table keeps its component target;
+      // the document offers the table as a block of this occurrence, and the reference is not broken.
+      const SELF = '00000000-0000-4000-8000-00000000a1a0';
+      const doc = docOf(
+        table('t1', 'Readings'),
+        para(
+          'b1',
+          ref({ kind: 'component', component: SELF, block: 't1' }, 'number', 'x1'),
+          ref({ kind: 'component', component: SELF, block: 't1' }, 'relative', 'x2'),
+          ref({ kind: 'component', component: SELF, block: 'gone' }, 'number', 'x3'),
+        ),
+      );
+      expect(shown(doc, { targets: [readings], component: SELF })).toEqual([
+        { text: 'Table 1.1', broken: false },
+        { text: 'above', broken: false },
+        { text: 'Broken reference', broken: true },
+      ]);
+      // Placed since the page last numbered the document: its kind and caption, as its own would be.
+      expect(
+        onlyText(
+          docOf(
+            table('t1', 'Readings'),
+            para('b1', ref({ kind: 'component', component: SELF, block: 't1' })),
+          ),
+          { targets: [], component: SELF },
+        ),
+      ).toBe('Table: Readings');
+    });
+
     it('cannot be judged on its own, so says what it points at and is not broken', () => {
       const doc = docOf(
         para(

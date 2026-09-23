@@ -22,12 +22,14 @@ const BLOCKS: Readonly<Record<string, string>> = {
  * layouts, which could never publish one. A cross-reference is resolved and printed under a layout
  * since cross-references 2 (`cross_reference_unresolved` and `cross_reference_form_unavailable` say
  * why one there fails); this sentence is what is left for a request made before layouts, which has no
- * layout to resolve one under at all.
+ * layout to resolve one under at all. So it names no layout - the request has none - and says what
+ * mends it: every publish asked for now is made under the document's layout (the final review of
+ * cross-references 2).
  */
 const INLINES: Readonly<Record<string, string>> = {
   image: 'An image in a line of text cannot be published yet.',
   footnote: 'A footnote cannot be published yet.',
-  crossReference: "A cross-reference cannot be published under this request's layout.",
+  crossReference: 'A cross-reference cannot be published from this request. Publish again.',
 };
 
 /**

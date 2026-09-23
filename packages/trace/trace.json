@@ -16377,7 +16377,7 @@
     {
       "id": "STR-027",
       "file": "apps/worker/src/references.test.ts",
-      "line": 322,
+      "line": 338,
       "kind": "title"
     },
     {
@@ -17199,37 +17199,37 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3251,
+      "line": 3377,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3054,
+      "line": 3102,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3275,
+      "line": 3401,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2968,
+      "line": 2996,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2997,
+      "line": 3025,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3020,
+      "line": 3048,
       "kind": "title"
     },
     {

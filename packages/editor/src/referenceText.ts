@@ -22,6 +22,13 @@ export interface ReferenceContext {
    * `printed` falls back to the English literal, exactly as before layouts had words of their own.
    */
   readonly words?: { readonly above: string; readonly below: string };
+  /**
+   * The component being edited, where the host knows it. A `component` target naming it - a reference
+   * pasted in from another component keeps the target it had there - is a block of its own, and is
+   * shown exactly as a `block` target is, since a publish binds it to the occurrence being read
+   * (STR-056). Absent, such a target is shown as another component's.
+   */
+  readonly component?: string;
 }
 
 /** What one reference shows, and where it stands in the document it was read from. */
@@ -75,6 +82,8 @@ interface Held {
  *   the document: the kind of thing it is and a figure's or a table's caption, _Table: Readings_,
  *   _Figure_, _Footnote_, _Paragraph_, read from the live document. Not broken: it is there, and a
  *   number is simply not known yet;
+ * - a `component` target naming the component being edited (`context.component`): a block of its own,
+ *   shown as a `block` target naming that block is;
  * - a `node` or a `component` target in a document: what the context says it prints, or _Broken
  *   reference to a section_ or _to another component_, and broken, where the document does not offer
  *   it; on its own, _Section_ or _In another component_, and not broken, since nothing there can judge
@@ -99,8 +108,12 @@ export function referencesShown(
     if (node.type.name !== 'crossReference') return true;
     held ??= identified(component);
     offered ??= new Map(context?.targets.map((each) => [keyOf(each.target), each]));
-    const target = node.attrs.target as CrossReferenceTarget;
+    const stored = node.attrs.target as CrossReferenceTarget;
     const display = node.attrs.display as CrossReferenceDisplay;
+    const target: CrossReferenceTarget =
+      stored.kind === 'component' && stored.component === context?.component
+        ? { kind: 'block', block: stored.block }
+        : stored;
     const found = offered.get(keyOf(target));
     if (target.kind === 'block') {
       const own = held.get(target.block);

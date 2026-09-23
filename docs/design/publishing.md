@@ -314,8 +314,9 @@ page, and whether it is a link. **An anchor names an occurrence and a block toge
 (STR-010); a node's anchor is `n-<node>`.
 
 **Cross-references are published** (cross-references 2, `publishing/10`, template 10). A run may be
-`{ reference: { anchor, text, page, link } }`: the text `assemble` printed - the label, the title,
-both, or the layout's word for above or below - or `page: true` and no text, which the template sets
+`{ reference: { anchor, text, page, relative, link } }`: the text `assemble` printed - the label, the
+title, both, or the layout's word for above or below, which `relative` marks so the template sets it
+in the layout's language, as its other words - or `page: true` and no text, which the template sets
 in `context` from `locate`, `counter(page).at` and the location's own `page-numbering`. It is a link
 in a paragraph's text - running text, a list's item, a quotation, a table's body cell, a footnote's
 text - and text in a caption, a term, an attribution, a table's note, a table's header row or a

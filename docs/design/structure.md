@@ -693,7 +693,11 @@ and STR-028 together: a component saying "see Figure 2" resolves to Figure 2 in 
 in another, which is what STR-021 makes true of the numbers. **A `component` target names the
 component, not an occurrence of it**, so it survives the component being used in a second document;
 where the resolving document holds that component in no occurrence or in several, resolution fails by
-name rather than taking the first (STR-062). A way to say which of several - a key held in the
+name rather than taking the first (STR-062). **Read in an occurrence of the component it names**, it is
+a block of that component's own and resolves as a `block` target does, to the occurrence being read:
+a reference pasted from another component keeps the `component` target it had there, and one component
+placed twice is not ambiguous where it is read (built in cross-references 2's final review). A way to
+say which of several - a key held in the
 outline, as DITA's keys are - is a widening for later. **A title's reference names a node and nothing
 else**: a title is in no component, and a `component` target in a title would carry a component's
 identity past the withholding "Who is shown what" requires. A bibliography entry (**LIB**) joins the
@@ -716,11 +720,12 @@ target whose component the document holds in no occurrence or in several, is a f
 reference and the target it wanted, and that list is what PUB-072 fails a publish on. **Built**, a
 block that takes no number - a paragraph, a list, a quotation, preformatted text - is found in the
 occurrence's content wherever it is nested, and binds with neither number nor title, for a page or a
-relative form to name. **A footnote's own paragraphs are not found**: they are the footnote's, set in
-its note on its page, a reference names the footnote, and a label inside a note is not among the
-cases measured below. So CNT-125's "any block can be a target", which content-model.md claims for
-the model's half, is not reached at publish for a footnote's paragraph, nor demonstrated for an
-equation, which nothing publishes; no test cites it.
+relative form to name. **So is a footnote's own paragraph**, as a block, by its page or where it
+stands: the template sets its label on an empty marker where the paragraph begins in the note, and
+the pinned engine was measured printing and linking the page the note's text stands on, a note
+carried on to the next page included, with the label set once (cross-references 2's final review).
+CNT-125's "any block can be a target", which content-model.md claims for the model's half, is still
+not demonstrated for an equation, which nothing publishes; no test cites it.
 
 **`display` decides the form, and two of its five are not answerable here.** `number`, `title` and
 `numberAndTitle` come from the table. `page` needs the paginator, and `relative` - "above", "below" -
@@ -866,13 +871,17 @@ publishes them - structure 4's resolution, XR-C's layout words, XR-D and XR-F's 
 Building it changed these things here:
 
 - **Resolution is a factory over the stored outline**, under [Numbering](#numbering)'s stage table,
-  and a footnote's own paragraphs are not targets, under Cross-references above.
+  and a footnote's own paragraphs are targets, measured, under Cross-references above. A `component`
+  target naming the component it is read in resolves as a `block` target, in the publish and in the
+  editor, which is told the component it edits.
 - **A target in a table's header rows is refused**, measured above, as
   `cross_reference_form_unavailable` naming the form, since the target resolves.
 - **A section's title is printed with its own reference as its number** - _Results of 1_ - where a
-  reference asks for its title, in the publish and in the editor. **A caption is printed in its
-  author's words**, a reference inside it left out, since a caption printing another could have no
-  end.
+  reference asks for its title, in the publish and in the editor. **A caption is printed as a title in
+  its author's words, each of its own references as its target's number** - or its kind, where the
+  target has none - whatever form that reference asks for: a number never reads a caption, so a
+  caption printing another's has an end. The editor's offered titles still read a caption without
+  its references.
 - **A request made before layouts still refuses a reference by name**, `inline_not_publishable` with
   the detail `crossReference`: its published document has no run to carry one.
 

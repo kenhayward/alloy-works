@@ -180,6 +180,47 @@ citations (PUB-022's other half, with LIB).
   tests - a failure of `assemble` is the publish's, as footnotes 2's CNT-042 test has it - and
   STR-027 by the worker's regression case, which reads each form back from the PDF.
 
+The final whole-branch review found a `component` target naming the component it is read in failing
+where that component is placed twice, and shown broken in the editor; a footnote's own paragraph not
+a target, shown as fine in the editor and failed at publish with an untrue sentence, while
+content-model.md claimed CNT-125 whole; a caption read as a title losing its own references; the
+layout's word for above or below set in the surrounding paragraph's language; the pre-layout
+refusal's sentence naming a layout the request did not have; and a stale comment. These were
+changed:
+
+- **A `component` target naming the component it is read in resolves as a `block` target**, to the
+  occurrence being read (STR-056, STR-062), in `referenceResolver` and in the editor: the editor's
+  `ReferenceContext` carries the component being edited, which the document page sets, and
+  `referencesShown` reads such a target as a block of its own. STR-062's test publishes one placed
+  twice, each occurrence printing its own.
+- **A footnote's own paragraphs are targets, as blocks** - a page and a place - since the measurement
+  chose the engine: a throwaway compile with the pinned Typst put a label on a `metadata(none)` where
+  a footnote's paragraph begins in its note (and, as a second variant, on the paragraph's runs), and
+  through veraPDF both passed PDF/UA-1 with no failed rule. The page reference printed the page the
+  note's text stands on, the link landed there, a note carried on to the next page put its second
+  paragraph's label on the next page and printed that page, a named empty paragraph found its label,
+  and no label occurred twice. The marker variant is taken, as a marker already stands for a block
+  that publishes nothing. `referenceResolver` finds them, `assemble` places them in its walk and
+  anchors them, keeping a named empty one with no runs, and template 10 sets the label; the worker's
+  regression case points at one by its page and follows its link. The editor's _Paragraph_ is now
+  true, and CNT-125's claim in content-model.md stands: the gap left is the equation's, which nothing
+  publishes, as structure.md says.
+- **A caption read as a title prints each of its own references as its target's number**, or its
+  kind where the target has none, whatever form the reference asks for: a number never reads a
+  caption, so two captions printing each other's titles end. `documentTargets` still offers a
+  caption's title without its references, so the editor's _Title_ of such a target reads less than
+  the publish prints.
+- **Above and below are set in the layout's language.** A published reference run carries
+  `relative`, and template 10 sets such a text with `words(..)`, as the layout's other words.
+  `readPdf` reads a language from marked content, which is where the engine declares it for a
+  relative word set as text, so the regression case checks one in a French attribution under an
+  English layout; set as a link, the engine declares it on the `Link` structure element instead,
+  which `readPdf` does not read, and that was checked by reading the file by hand. Template 10's hash
+  is re-pinned; the pipeline's is unchanged, since its fixed input holds no reference.
+- **The pre-layout refusal and the comment**: _A cross-reference cannot be published from this
+  request. Publish again._ - a request made before layouts has no layout, and every publish asked for
+  now is made under one - and `kindWord`'s comment says which words stay English.
+
 ## Tasks
 
 1. **`packages/domain`, resolution and the layout**: R1 and R2 - `references.ts`'s resolution, layout

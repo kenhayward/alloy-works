@@ -161,7 +161,9 @@ export interface PublishedImageRun {
 /**
  * A footnote (footnotes 2, ruling R2): the numbering table's label for it, which the template sets as
  * its mark and at the foot of the page, and its paragraphs, published as a paragraph's are. Only a
- * paragraph's runs hold one, and a footnote's own paragraphs hold none (CNT-129).
+ * paragraph's runs hold one, and a footnote's own paragraphs hold none (CNT-129). Each paragraph
+ * carries its anchor where a reference names it (CNT-125), and one a reference names is kept even
+ * where it holds no runs, so the template sets its label where it would have begun.
  */
 export interface PublishedFootnoteRun {
   readonly footnote: {
@@ -181,6 +183,10 @@ export interface PublishedFootnoteRun {
  * - `text` is what it prints - a number, a title, both, or the layout's word for above or below - and
  *   **null where `page` is asked for**, since a page is known only once the document is typeset: the
  *   template prints the target's page number, in the numbering of the matter it stands in.
+ * - `relative` is whether `text` is the layout's own word for above or below, which the template sets
+ *   in the layout's language, as it sets the layout's other words - a French paragraph's "earlier" is
+ *   read in the English of the layout that gave it (the final review of cross-references 2). A number
+ *   or a title is the document's, and false; so is a page.
  * - `link` is whether it is set as a link to its target: in a paragraph's text, and never in a table's
  *   header rows, a caption, a term, an attribution or a table's note, where it is text (XR-D) - a link
  *   in a repeated header row is refused by the engine, and a caption is set again in the lists.
@@ -193,12 +199,14 @@ export interface PublishedReferenceRun {
         readonly anchor: string;
         readonly text: string;
         readonly page: false;
+        readonly relative: boolean;
         readonly link: boolean;
       }
     | {
         readonly anchor: string;
         readonly text: null;
         readonly page: true;
+        readonly relative: false;
         readonly link: boolean;
       };
 }

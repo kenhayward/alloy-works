@@ -2644,7 +2644,10 @@ describe('cross-references, published (cross-references 2)', () => {
         if ('reference' in run) references.push(run.reference);
         if ('footnote' in run) {
           carry(run.footnote.anchor);
-          for (const each of run.footnote.paragraphs) runs(each.runs);
+          for (const each of run.footnote.paragraphs) {
+            carry(each.anchor);
+            runs(each.runs);
+          }
         }
       }
     };
@@ -2680,11 +2683,15 @@ describe('cross-references, published (cross-references 2)', () => {
     nodes(assembled.document.nodes);
     return { references, anchors };
   };
-  /** A reference as it is published: a page where there is no text, linked unless `link` says not. */
-  const printed = (anchor: string, text: string | null, link = true) => ({
+  /**
+   * A reference as it is published: a page where there is no text, linked unless `link` says not, and
+   * the layout's own words where `relative` says so.
+   */
+  const printed = (anchor: string, text: string | null, link = true, relative = false) => ({
     anchor,
     text,
     page: text === null,
+    relative,
     link,
   });
 
@@ -2716,13 +2723,13 @@ describe('cross-references, published (cross-references 2)', () => {
       printed(B('calib', 't1'), 'Table 1.1 Readings'),
       // The page is the template's to print, from where the target is set.
       printed(B('calib', 't1'), null),
-      printed(B('calib', 't1'), 'above'),
+      printed(B('calib', 't1'), 'above', true, true),
       printed(N('intro'), '1 Introduction'),
       // An occurrence is a heading, titled by its component.
       printed(N('calib'), 'Calibration'),
       printed(B('calib', 'n1'), '1'),
       printed(B('calib', 'p1'), null),
-      printed(B('calib', 'b2'), 'below'),
+      printed(B('calib', 'b2'), 'below', true, true),
     ]);
   });
 
@@ -2747,6 +2754,27 @@ describe('cross-references, published (cross-references 2)', () => {
     expect(publishedOf(assembled).references.map((each) => each.text)).toEqual([
       'earlier',
       'later',
+    ]);
+  });
+
+  it("says which references print the layout's own words, so the template sets them in the layout's language", () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1'),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'relative'),
+          xref('x2', toBlock('t1'), 'number'),
+          xref('x3', toBlock('t1'), 'title'),
+          xref('x4', toBlock('t1'), 'page'),
+        ),
+      ),
+    );
+    expect(publishedOf(assembled).references.map((each) => each.relative)).toEqual([
+      true,
+      false,
+      false,
+      false,
     ]);
   });
 
@@ -3049,6 +3077,26 @@ describe('cross-references, published (cross-references 2)', () => {
     const unresolved = [failed('cross_reference_unresolved', 'x2', `component ${OTHER} block t2`)];
     expect(failuresOf(assemble(withOther('other', 'again')))).toEqual(unresolved);
     expect(failuresOf(assemble(withOther()))).toEqual(unresolved);
+    // A block of the component it is read in, named by its component - as a reference pasted in from
+    // another component stores it - is its own block (STR-056): placed twice, each prints its own.
+    const selfNamed = component([
+      table('t1'),
+      paragraph('b1', text('See '), xref('x1', toComponent(COMPONENT, 't1'), 'number')),
+    ]);
+    const twice = input({
+      outline: outline([
+        section('first', 'First', [reference('once')]),
+        section('second', 'Second', [reference('twice')]),
+      ]),
+      occurrences: new Map([
+        [id('once'), selfNamed],
+        [id('twice'), selfNamed],
+      ]),
+    });
+    expect(publishedOf(assemble(twice)).references).toEqual([
+      printed(B('once', 't1'), 'Table 1.1'),
+      printed(B('twice', 't1'), 'Table 2.1'),
+    ]);
   });
 
   it('STR-029 fails the publish naming every reference whose target the document does not hold, and its target', () => {
@@ -3083,6 +3131,84 @@ describe('cross-references, published (cross-references 2)', () => {
       failed('cross_reference_unresolved', 'x2', `node ${id('elsewhere')}`),
       failed('cross_reference_unresolved', 'x3', `component ${OTHER} block t9`),
       failed('cross_reference_unresolved', 'x5', 'block none'),
+    ]);
+  });
+
+  it("publishes a footnote's own paragraph as a target, by its page and where it stands, its anchor on the paragraph", () => {
+    const assembled = assemble(
+      inIntro(
+        paragraph(
+          'p1',
+          text('Measured'),
+          footnote(
+            'n1',
+            paragraph('np1', text('Twice.')),
+            // Empty, so it publishes nothing of its own - but named, so it stays to carry its anchor.
+            blank('np2'),
+            paragraph('np3', text('As '), xref('x3', toBlock('np1'), 'relative')),
+          ),
+        ),
+        paragraph('b1', xref('x1', toBlock('np1'), 'page'), xref('x2', toBlock('np2'), 'relative')),
+      ),
+    );
+    expect(publishedOf(assembled)).toEqual({
+      references: [
+        printed(B('calib', 'np1'), 'above', true, true),
+        printed(B('calib', 'np1'), null),
+        printed(B('calib', 'np2'), 'above', true, true),
+      ],
+      anchors: [B('calib', 'np1'), B('calib', 'np2')],
+    });
+    if (!assembled.ok) throw new Error('refused');
+    const [run] = paragraphRuns(assembled.document.nodes[0]!.children[0]!.blocks[0]).filter(
+      (each) => 'footnote' in each,
+    );
+    expect(
+      run !== undefined && 'footnote' in run
+        ? run.footnote.paragraphs.map((each) => [each.id, each.anchor, each.runs.length])
+        : null,
+    ).toEqual([
+      ['np1', B('calib', 'np1'), 1],
+      ['np2', B('calib', 'np2'), 0],
+      ['np3', null, 2],
+    ]);
+    // A paragraph has no number and no title, in a footnote as anywhere.
+    expect(
+      failuresOf(
+        assemble(
+          inIntro(
+            paragraph('p1', text('Measured'), footnote('n1', paragraph('np1', text('Twice.')))),
+            paragraph('b1', xref('x1', toBlock('np1'), 'number')),
+          ),
+        ),
+      ),
+    ).toEqual([failed('cross_reference_form_unavailable', 'x1', 'number')]);
+  });
+
+  it("prints a caption's own references as their targets' numbers where a title reads it, so a title never loops", () => {
+    const assembled = assemble(
+      inIntro(
+        table('t1', [text('See '), xref('c1', toBlock('t2'), 'title'), text(' for more')]),
+        table('t2', [
+          text('Weights by '),
+          xref('c2', toBlock('t1'), 'title'),
+          text(', on '),
+          xref('c3', toBlock('b1'), 'page'),
+        ]),
+        paragraph(
+          'b1',
+          xref('x1', toBlock('t1'), 'title'),
+          xref('x2', toBlock('t2'), 'numberAndTitle'),
+        ),
+      ),
+    );
+    expect(publishedOf(assembled).references.map((each) => each.text)).toEqual([
+      // Each caption's title, its references as their numbers: a paragraph, which has none, by its kind.
+      'Weights by Table 1.1, on Paragraph',
+      'See Table 1.2 for more',
+      null,
+      'See Table 1.2 for more',
+      'Table 1.2 Weights by Table 1.1, on Paragraph',
     ]);
   });
 

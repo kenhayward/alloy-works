@@ -21,6 +21,7 @@ import {
   type OutlineNode,
 } from '../structure/outline.js';
 import {
+  kindWord,
   printableForms,
   referenceResolver,
   type BoundTarget,
@@ -432,10 +433,13 @@ export function assemble(input: AssembleInput): Assembled {
         table,
         heading: false,
       });
-      // A footnote's own paragraphs are not a reference's to name (R1), so none carries an anchor.
-      return runs.length === 0
+      // A footnote's own paragraph is a block a reference can name (CNT-125), and carries its anchor
+      // where one does. An empty one is dropped unless it is named: then it stays, holding nothing,
+      // and the template sets its label where it would have begun, as a marker stands for a block.
+      const anchor = anchorOf(node, paragraph.id);
+      return runs.length === 0 && anchor === null
         ? []
-        : [{ type: 'paragraph' as const, id: paragraph.id, anchor: null, runs }];
+        : [{ type: 'paragraph' as const, id: paragraph.id, anchor, runs }];
     });
     check(label, node, footnote.id);
     return { footnote: { label, anchor: anchorOf(node, footnote.id), paragraphs } };
@@ -1055,10 +1059,19 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
 /** A cross-reference as the content model stores it. */
 type ReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
 
-/** What a resolved reference prints, before where it stands says whether it is a link. */
+/**
+ * What a resolved reference prints, before where it stands says whether it is a link. `relative` says
+ * the text is the layout's own word for above or below, which the template sets in the layout's
+ * language (the final review of cross-references 2); a number or a title is the document's.
+ */
 type Printed =
-  | { readonly anchor: string; readonly text: string; readonly page: false }
-  | { readonly anchor: string; readonly text: null; readonly page: true };
+  | {
+      readonly anchor: string;
+      readonly text: string;
+      readonly page: false;
+      readonly relative: boolean;
+    }
+  | { readonly anchor: string; readonly text: null; readonly page: true; readonly relative: false };
 
 /** Every reference in a document, resolved: what each prints, what is named, and what failed. */
 interface ResolvedReferences {
@@ -1123,7 +1136,8 @@ interface Found {
  * content is stored: a section's title, and in a component a paragraph, a list's term and items at any
  * depth, a quotation and its attribution, a table's caption, cells and note, a figure's caption, and a
  * footnote's paragraphs - a footnote refused for where it stands included, so every reference's
- * failure is said, not only those in what is published.
+ * failure is said, not only those in what is published. A footnote's paragraph is a target too
+ * (CNT-125), placed after its footnote's mark, where its note begins.
  *
  * Each is resolved in the occurrence it is read in (`referenceResolver`, R1), and then:
  *
@@ -1144,8 +1158,12 @@ interface Found {
  *
  * A section's title is the words it is **published** with, its own references as their numbers, so a
  * reference to it prints what its heading shows. A title's reference is a number or a page alone
- * (`checkInlineContent`), so this never asks a title for a title. A caption is its author's words, as
- * resolution reads it: a reference in a caption printing the caption of another would have no end.
+ * (`checkInlineContent`), so this never asks a title for a title. **A caption, read as a title**, is
+ * its author's words with each of its own references printed as its target's number - or, where that
+ * target has none, its kind in one word - whatever form the reference itself asks for: a number never
+ * reads a caption, so a caption naming another's title, which names the first's, has an end (the final
+ * review of cross-references 2). Dropping the reference instead would print words the author never
+ * wrote, "See  for more".
  */
 function resolveReferences(
   input: AssembleInput,
@@ -1156,6 +1174,11 @@ function resolveReferences(
   const found: Found[] = [];
   const positions = new Map<string, number>();
   const sections = new Map<string, Extract<OutlineNode, { type: 'section' }>>();
+  /** Every figure's and table's caption, by the block's anchor, with the occurrence it is read in. */
+  const captions = new Map<
+    string,
+    { readonly node: string; readonly caption: readonly InlineNode[] }
+  >();
   /** Every anchor standing in a table's header rows, which the engine sets on every page. */
   const repeated = new Set<string>();
   let at = 0;
@@ -1176,7 +1199,10 @@ function resolveReferences(
       } else if (inline.type === 'footnote') {
         place(blockAnchor(node, inline.id), inHeader);
         const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
-        for (const paragraph of paragraphs) inlines(paragraph.content, node, inTitle, inHeader);
+        for (const paragraph of paragraphs) {
+          place(blockAnchor(node, paragraph.id), inHeader);
+          inlines(paragraph.content, node, inTitle, inHeader);
+        }
       }
     }
   };
@@ -1199,6 +1225,7 @@ function resolveReferences(
         inlines(stored.attribution ?? [], node, false, inHeader);
         return;
       case 'table':
+        captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
         inlines(stored.caption, node, false, inHeader);
         stored.rows.forEach((row, index) => {
           const header = inHeader || index < stored.headerRows;
@@ -1207,6 +1234,7 @@ function resolveReferences(
         inlines(stored.note ?? [], node, false, inHeader);
         return;
       case 'figure':
+        captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
         inlines(stored.caption, node, false, inHeader);
         return;
       case 'preformatted':
@@ -1237,8 +1265,31 @@ function resolveReferences(
   for (const { node, reference } of found) {
     resolutions.set(referenceKey(node, reference.id), resolve(reference.target, { node }));
   }
-  /** A section's title as it is published: its references as the numbers they resolved to. */
+  /** The number a reference resolved to, or its target's kind where it has none; nothing if it failed. */
+  const numberOf = (node: string, reference: ReferenceNode): string => {
+    const resolution = resolutions.get(referenceKey(node, reference.id));
+    return resolution?.ok === true
+      ? (resolution.target.label ?? kindWord(resolution.target.kind))
+      : '';
+  };
+  /**
+   * A section's title as it is published: its references as the numbers they resolved to. And a
+   * figure's or a table's caption as a title form prints it: its words, its references as their
+   * numbers, each falling back to its kind.
+   */
   const published = (target: BoundTarget): BoundTarget => {
+    const captioned =
+      target.block === null ? undefined : captions.get(blockAnchor(target.node, target.block));
+    if (captioned !== undefined) {
+      const words = captioned.caption
+        .map((inline) => {
+          if (inline.type === 'text') return inline.value;
+          if (inline.type === 'crossReference') return numberOf(captioned.node, inline);
+          return '';
+        })
+        .join('');
+      return { ...target, title: hasText(words) ? words : null };
+    }
     const section = target.block === null ? sections.get(target.node) : undefined;
     if (section === undefined) return target;
     const title = textOf(section.title, (reference) => {
@@ -1297,8 +1348,8 @@ function resolveReferences(
     printed.set(
       key,
       display === 'page'
-        ? { anchor, text: null, page: true }
-        : { anchor, text: text[display], page: false },
+        ? { anchor, text: null, page: true, relative: false }
+        : { anchor, text: text[display], page: false, relative: display === 'relative' },
     );
   }
   return { printed, named, failures };
