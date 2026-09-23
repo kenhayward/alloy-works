@@ -89,6 +89,19 @@ refused until figures 4.
     Describe it in the figure's panel, or mark it decorative."
   - `asset_unreadable`: "A figure shows an image you may not see, so you cannot publish it."
 
+## What the build changed
+
+Recorded here as the design documents record them (publishing.md's and assets.md's Figures notes):
+
+- **The template always sets the language around the image** (R8), and the engine writes `/Lang` on
+  a `Figure` only where it differs from its parent's: measured, the output is the same as comparing.
+- **0018's whole-record check is replaced**, not only extended by triggers, so a publication naming
+  fewer images than its request recorded does not commit; a test writes one by hand to show it.
+- **`compile` refuses any image path but `assets/<sha256>.<png|jpg>`**, before Typst starts, beside
+  the job's hash check.
+- **`readPdf` reads each `Figure`'s `/Alt`, `/Lang` and layout box** from the objects, which is
+  what shows a tall image kept inside its page's text block.
+
 ## Tasks
 
 1. **`packages/domain` and `packages/db`, the layout.** `defaultLayout` at 0.3 with Figures before

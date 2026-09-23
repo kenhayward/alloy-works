@@ -7,9 +7,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > **Status: the first pieces of the first tranche, on scaffolding.** Components can be made, edited and
 > versioned, their text formatted, linked, marked with a language and arranged into lists, and
 > documents made, their
-> outlines restructured, their sections numbered and their paragraphs, lists and tables published as
-> a laid-out PDF with
-> a cover, a contents, a list of tables and numbered pages that carries all of that formatting.
+> outlines restructured, their sections numbered and their paragraphs, lists, tables and figures
+> published as a laid-out PDF with
+> a cover, a contents, lists of figures and tables and numbered pages that carries all of that
+> formatting.
 > Nothing holds a footnote or an equation, and nothing is cross-referenced.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
@@ -220,8 +221,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   given one where the image has none; **Describe it here**, in the component's language, which stores
   nothing until something is typed; or **Decorative**. **Replace image** gives it another image through
   the same dialog, keeping its caption and its place, and **Delete figure** removes it. A figure copied
-  within the product pastes as a figure. **A document holding a figure cannot be published yet**, and
-  an image cannot be pasted, dropped or placed in a line of text.
+  within the product pastes as a figure, and a published document prints it (see Publishing). An
+  image cannot be pasted, dropped or placed in a line of text.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -304,10 +305,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is one whose header cell is merged down into rows that are not header rows, which would make the
   PDF read a row of data as more header.
 
+  **A figure prints** with its number and its caption below it, no wider than the text and no taller
+  than 60 per cent of the page's text area, so a tall image is made smaller rather than running off
+  the page. A screen reader is told what it shows, in the language that description is written in -
+  the image's own description in its own language, or the figure's own in the component's. A
+  decorative figure's image is passed over by a screen reader altogether; its caption and number stay.
+  A figure is refused, naming it, where its caption is empty, where neither it nor its image has a
+  description and it is not marked decorative, and where its image is in a space you may not read -
+  which says nothing more about the image. The publication records every image it printed.
+
   **The publication is laid out.** It opens with a cover carrying the title, then a contents page a
-  screen reader announces as a table of contents, then a **list of tables**, where the document has
-  any, on a page of its own and announced the same way, each entry leading to its table and naming
-  its page, then the document. Every page after the cover
+  screen reader announces as a table of contents, then a **list of figures** and a **list of
+  tables**, each where the document has any, on a page of its own and announced the same way, each
+  entry leading to what it lists and naming its page, then the document. A decorative figure is
+  listed too. Every page after the cover
   carries a running head with the title and the part you are in, and a foot with the revision and the
   page number. Pages are numbered per part: roman numerals through the front matter, from 1 again in
   the body, and appendices carrying on from the body. How all of that is set comes from a **layout** -
@@ -361,15 +372,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   A component's own base language, in the header, is not warned about: one of these tags typed there
   is taken without comment and refused only when the document is published (issue #156).
 
-  **This is a PDF of paragraphs, lists, quotations, preformatted text and tables, not publishing.**
-  No figures, footnotes or equations - a document holding any of them is refused. A table too wide
+  **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and figures, not
+  publishing.** No footnotes, equations or images in a line of text - a document holding any of them
+  is refused. A table too wide
   for the page is not turned, shrunk or split, and how it breaks across pages is not yet chosen by a
   style: every table repeats its header rows. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
   the most a publication can set.
-  There is no list of figures or equations, no caption labels and no theme; nothing chooses, makes or
+  There is no list of equations, no caption labels and no theme; nothing chooses, makes or
   edits a layout, and there is only ever the one the environment started with; and there is no Word
   file, no preview, and no way to approve a publication. The page asks how a publish is going for as
   long as it stays open, and a download link lasts five minutes from when the publication's page was
@@ -382,7 +394,7 @@ Named explicitly so nobody has to read the source to find out:
 - No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
   tables and figures: a component holding a footnote, an equation or an image in a line of text still opens for reading only, and
   there is no control for a defined term or a
-  citation. A figure can be made and not published. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
+  citation. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
   no content of yours in it.
@@ -393,8 +405,8 @@ Named explicitly so nobody has to read the source to find out:
   to be edited. No cross-references resolved, and no reading view. No reuse or transclusion. No way to
   make a figure or a table unnumbered: every one takes a number.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
-  quotations, preformatted text and tables: no figures, footnotes or equations in a publication, no
-  definition-list structure of PDF's own, no list of figures or equations, no caption
+  quotations, preformatted text, tables and figures: no footnotes, equations or images in a line of
+  text in a publication, no definition-list structure of PDF's own, no list of equations, no caption
   labels, no theme, no monospace face for inline code, no Word, no preview, and no way to approve a
   publication.
 - No way to choose, make or edit a layout: every environment has the one it started with, in English,

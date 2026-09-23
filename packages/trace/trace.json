@@ -16213,6 +16213,18 @@
       "kind": "title"
     },
     {
+      "id": "AST-015",
+      "file": "apps/worker/src/figures.test.ts",
+      "line": 149,
+      "kind": "title"
+    },
+    {
+      "id": "AST-039",
+      "file": "apps/worker/src/figures.test.ts",
+      "line": 149,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
       "line": 136,
@@ -16233,97 +16245,97 @@
     {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 296,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "PUB-008",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 443,
+      "line": 444,
       "kind": "title"
     },
     {
       "id": "PUB-009",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 345,
+      "line": 346,
       "kind": "title"
     },
     {
       "id": "PUB-037",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 479,
+      "line": 480,
       "kind": "title"
     },
     {
       "id": "PUB-088",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 530,
+      "line": 531,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 335,
+      "line": 342,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 543,
+      "line": 550,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 363,
+      "line": 370,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 379,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 384,
+      "line": 391,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 561,
+      "line": 568,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 349,
+      "line": 356,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 488,
+      "line": 495,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
-      "line": 153,
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "PUB-032",
       "file": "apps/worker/src/tables.test.ts",
-      "line": 120,
+      "line": 121,
       "kind": "title"
     },
     {
       "id": "TAB-040",
       "file": "apps/worker/src/tables.test.ts",
-      "line": 120,
+      "line": 121,
       "kind": "title"
     },
     {
@@ -16407,19 +16419,19 @@
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 318,
+      "line": 319,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 756,
+      "line": 757,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 364,
+      "line": 365,
       "kind": "title"
     },
     {
@@ -16857,7 +16869,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 176,
+      "line": 179,
       "kind": "title"
     },
     {
@@ -17083,39 +17095,51 @@
       "kind": "title"
     },
     {
+      "id": "AST-014",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 1777,
+      "kind": "title"
+    },
+    {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1067,
+      "line": 1069,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-033",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 1777,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 596,
+      "line": 598,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 790,
+      "line": 792,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 674,
+      "line": 676,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 763,
+      "line": 765,
       "kind": "title"
     },
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 26,
+      "line": 27,
       "kind": "title"
     },
     {

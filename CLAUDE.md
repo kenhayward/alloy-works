@@ -38,12 +38,14 @@ a web application and a desktop application**.
 > carrying its own numbering and read to assistive technology as a list, a quotation tagged as one
 > and preformatted text as code, set in a pinned Liberation Mono beside Liberation Serif, and a table
 > under its numbered caption with its header rows repeated and its header columns tagged, run with
-> Typst's `--features a11y-extras`, and a list of tables after the contents - marked
+> Typst's `--features a11y-extras`, and a figure sized to the page with its caption below and its
+> description tagged in its own language, or an artifact where decorative, its image read as the
+> publisher and held to its hash, and lists of figures and tables after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no figure published, no image pasted from outside the product, no footnote or equation written or pasted, no metadata panel,
+> publishes content: no image pasted from outside the product or placed in a line of text, no footnote or equation written or pasted, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
-> document view, no list of figures or equations, no
+> document view, no list of equations, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and
 > nothing renders it any more. [`docs/features.md`](docs/features.md) lists what does and does not
 > exist.

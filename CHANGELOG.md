@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.58.0 - 2026-09-23 (PR #212)
+
+### Added
+
+- **Figures are published.** A document holding figures now publishes: each figure is printed with
+  its number and its caption below it, no wider than the text and no taller than 60 per cent of the
+  page's text area, so a tall image is made smaller rather than running off the page. A screen reader
+  is told what the image shows, in the language its description is written in; a decorative image is
+  passed over, and its caption and number stay. A **list of figures** follows the contents, before
+  the list of tables.
+- A figure is refused, and named, when its caption is empty, when neither it nor its image has a
+  description and it is not marked decorative, or when its image is in a space you may not read.
+
+### Changed
+
+- The default layout now lists figures before tables after the contents. A document published under
+  the earlier layout keeps it.
+
 ## 0.57.0 - 2026-09-23 (PR #209)
 
 ### Added
