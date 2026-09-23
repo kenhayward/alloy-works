@@ -119,6 +119,18 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
       expect(onlyText(docOf(para('b1', relative), table('t1', 'Readings')), context)).toBe('below');
     });
 
+    it("says the layout's own words for above and below, where the context carries them (cross-references 2, ruling R9)", () => {
+      const words = { above: 'plus haut', below: 'plus bas' };
+      const context = { targets: [readings], words };
+      const relative = ref({ kind: 'block', block: 't1' }, 'relative');
+      expect(onlyText(docOf(table('t1', 'Readings'), para('b1', relative)), context)).toBe(
+        'plus haut',
+      );
+      expect(onlyText(docOf(para('b1', relative), table('t1', 'Readings')), context)).toBe(
+        'plus bas',
+      );
+    });
+
     it("counts a target holding the reference as above it, as a section's heading is", () => {
       const doc = docOf({
         ...(table('t1', '') as object),
@@ -199,6 +211,23 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
           text: words,
           broken: false,
         })),
+      );
+    });
+
+    it("says the layout's own words for above and below, for a section or another component too (cross-references 2, ruling R9)", () => {
+      const context = {
+        targets: [section, elsewhere],
+        words: { above: 'plus haut', below: 'plus bas' },
+      };
+      const doc = docOf(
+        para(
+          'b1',
+          ref({ kind: 'node', node: SECTION }, 'relative', 'x1'),
+          ref({ kind: 'component', component: OTHER, block: 'g9' }, 'relative', 'x2'),
+        ),
+      );
+      expect(shown(doc, context)).toEqual(
+        ['plus bas', 'plus haut'].map((words) => ({ text: words, broken: false })),
       );
     });
 

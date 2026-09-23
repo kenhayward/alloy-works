@@ -9,6 +9,7 @@ import {
   defaultLayout,
   FIRST_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
+  layoutWordsSchema,
   parseLayout,
   readLayout,
   SECOND_DEFAULT_LAYOUT,
@@ -176,6 +177,18 @@ describe('a layout', () => {
       nul.words[said] = `ab${String.fromCharCode(0)}ove`;
       expect(() => parseLayout(nul), said).toThrow(/cannot be stored/);
     }
+  });
+
+  it("checks a layout's words on their own, for a caller shown only that much of the layout (cross-references 2, ruling R9)", () => {
+    // The default's own words, exactly as the whole layout holds them.
+    expect(layoutWordsSchema.parse(defaultLayout.words)).toEqual(defaultLayout.words);
+    // Neither above nor below: still a layout's words, as a layout stored before them reads.
+    const neither = { contents: 'Contents', notice: 'DRAFT', noticeSentence: 'This is a draft.' };
+    expect(layoutWordsSchema.parse(neither)).toEqual(neither);
+    // One without the other refuses, as the whole layout does.
+    expect(() => layoutWordsSchema.parse({ ...neither, above: 'above' })).toThrow(
+      /above and below together/,
+    );
   });
 
   it('reports a stored layout it cannot read with its artifact and version, and yields nothing', () => {

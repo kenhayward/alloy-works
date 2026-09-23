@@ -20,6 +20,7 @@ export {
   LISTED_SEQUENCES,
   layoutMigrationChain,
   layoutSchema,
+  layoutWordsSchema,
   parseLayout,
   PUBLISHING_FORMATS,
   readLayout,

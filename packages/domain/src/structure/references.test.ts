@@ -355,6 +355,18 @@ describe('what a reference prints', () => {
     expect(printed({ ...readings, relative: 'above' }, 'relative', 'below')).toBe('below');
   });
 
+  it("prints a layout's own words for above and below where it is given them (cross-references 2, ruling R9), and English otherwise", () => {
+    const method = target('section', '2.1', 'Method');
+    const words = { above: 'ci-dessus', below: 'ci-dessous' };
+    expect(printed(method, 'relative', 'above', words)).toBe('ci-dessus');
+    expect(printed(method, 'relative', 'below', words)).toBe('ci-dessous');
+    // Where the order is not known, both of the layout's own words, never a guess.
+    expect(printed(method, 'relative', null, words)).toBe('ci-dessus or ci-dessous');
+    // No words given: the English literal, exactly as before.
+    expect(printed(method, 'relative', 'above')).toBe('above');
+    expect(printed(method, 'relative', null)).toBe('above or below');
+  });
+
   it('falls back to what the target has, and never prints nothing', () => {
     // No number known: the caption stands in for it.
     const unnumbered = target('figure', null, 'Readings');

@@ -193,19 +193,22 @@ const entryKey = (node: string, block: string | null) => `${node}\u{0}${block ??
 /**
  * **What a reference prints** in a form (XR-C): `number` the label; `title` the title; `numberAndTitle`
  * both with a space between, as a generated list sets them; `page` _page of_ and the label or the
- * title, since the page is known only once the document is typeset; `relative` _above_ or _below_ as
- * the caller says, or _above or below_ where the order is not known. `relative` is the caller's rather
- * than the target's because only the caller knows it for a block of the occurrence being edited: the
- * editor, by position in the component.
+ * title, since the page is known only once the document is typeset; `relative` `words`' _above_ or
+ * _below_ as the caller says, or both, joined by "or", where the order is not known. `relative` is the
+ * caller's rather than the target's because only the caller knows it for a block of the occurrence
+ * being edited: the editor, by position in the component.
  *
  * **Total, and never empty.** A form asks for what the target may lack - a number not known, a
  * caption with no words, a paragraph with neither - so each falls back to what the target has, and in
- * the end to the kind of thing it is. English words: the layout's own arrive with cross-references 2.
+ * the end to the kind of thing it is. `words` is the layout's own, in its own language
+ * (cross-references 2, ruling R9); without it - a component opened on its own, or a layout with none -
+ * the English literal, as before layouts gave any.
  */
 export function printed(
   target: ReferenceTarget,
   display: CrossReferenceDisplay,
   relative: 'above' | 'below' | null,
+  words?: { readonly above: string; readonly below: string },
 ): string {
   const { label, title } = target;
   const named = label ?? title ?? kindWord(target.kind);
@@ -219,7 +222,8 @@ export function printed(
     case 'page':
       return `page of ${named}`;
     case 'relative':
-      return relative ?? 'above or below';
+      if (relative === null) return words ? `${words.above} or ${words.below}` : 'above or below';
+      return words ? words[relative] : relative;
   }
 }
 

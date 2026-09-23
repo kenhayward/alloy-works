@@ -16,6 +16,12 @@ import type { Node } from 'prosemirror-model';
  */
 export interface ReferenceContext {
   readonly targets: readonly ReferenceTarget[];
+  /**
+   * What a `relative` reference prints for _above_ and _below_, in the layout's own words
+   * (cross-references 2, ruling R9). Absent where there is no document, or its layout gives neither -
+   * `printed` falls back to the English literal, exactly as before layouts had words of their own.
+   */
+  readonly words?: { readonly above: string; readonly below: string };
 }
 
 /** What one reference shows, and where it stands in the document it was read from. */
@@ -102,7 +108,7 @@ export function referencesShown(
         shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
       } else if (found !== undefined) {
         const relative = own.pos < pos + offset ? 'above' : 'below';
-        shown.push({ pos, text: printed(found, display, relative), broken: false });
+        shown.push({ pos, text: printed(found, display, relative, context?.words), broken: false });
       } else {
         shown.push({ pos, text: named(own.node), broken: false });
       }
@@ -110,7 +116,11 @@ export function referencesShown(
       const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT;
       shown.push({ pos, text, broken: false });
     } else if (found !== undefined) {
-      shown.push({ pos, text: printed(found, display, found.relative), broken: false });
+      shown.push({
+        pos,
+        text: printed(found, display, found.relative, context?.words),
+        broken: false,
+      });
     } else {
       const text = target.kind === 'node' ? BROKEN_SECTION_REFERENCE : BROKEN_COMPONENT_REFERENCE;
       shown.push({ pos, text, broken: true });

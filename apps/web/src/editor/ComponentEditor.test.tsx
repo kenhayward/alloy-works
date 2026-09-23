@@ -4177,6 +4177,24 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(drawn()).toEqual(['Table 1.1']);
   });
 
+  it("shows the layout's own words for above and below, where the document carries them (cross-references 2, ruling R9)", async () => {
+    const { surface } = openWith(blocksOf(para('b1', 'See the readings.'), readings), {
+      referenceContext: { ...inADocument, words: { above: 'plus haut', below: 'plus bas' } },
+    });
+    const view = await surface();
+    caretIn(view, 'b1');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Table 1.1 Readings' }));
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Above or below' }));
+    // The table stands after the paragraph the cursor is in.
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: plus bas');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(drawn()).toEqual(['plus bas']);
+  });
+
   it('offers a footnote by its number, with only the forms a footnote has', async () => {
     const { surface } = openWith(
       blocksOf(

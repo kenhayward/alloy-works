@@ -183,6 +183,26 @@ const pdfFormatSchema = z
   }, 'A page leaves at least an inch each way to set text in, inside its margins and gutter');
 
 /**
+ * **A layout's words on their own** (`Layout['words']`): what the product sets itself, above and
+ * below both or neither, since one without the other would print a relative reference one way and
+ * refuse it the other. Exported apart from `layoutSchema` for a caller shown only this much of a
+ * layout - the document page reads a reference's _above_ and _below_ from it (cross-references 2,
+ * ruling R9) without reading the rest, exactly as it already reads the numbering scheme apart.
+ */
+export const layoutWordsSchema = z
+  .strictObject({
+    contents: words,
+    notice: words,
+    noticeSentence: words,
+    above: words.optional(),
+    below: words.optional(),
+  })
+  .refine(
+    ({ above, below }) => (above === undefined) === (below === undefined),
+    'A layout gives its words for above and below together, or neither',
+  );
+
+/**
  * Every layout version, as it is stored. The language is held to the rule `assemble` holds a document's
  * to (`publishedLanguage`, `language_not_publishable`): a tag the engine cannot carry is refused, never
  * shortened to one it can. And every string in it, member names and scheme labels among them, is one
@@ -199,20 +219,7 @@ export const layoutSchema: z.ZodType<Layout> = z
         });
       }
     }),
-    words: z
-      .strictObject({
-        contents: words,
-        notice: words,
-        noticeSentence: words,
-        above: words.optional(),
-        below: words.optional(),
-      })
-      // One without the other would print a relative reference one way and refuse it the other, so
-      // a layout says both or neither.
-      .refine(
-        ({ above, below }) => (above === undefined) === (below === undefined),
-        'A layout gives its words for above and below together, or neither',
-      ),
+    words: layoutWordsSchema,
     scheme: numberingSchemeSchema,
     matter: z.strictObject({
       cover: z.boolean(),

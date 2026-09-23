@@ -117,7 +117,8 @@ export function referenceOptions(
       target: target.target,
       name,
       forms: formsFor(target.kind),
-      shows: (display) => (isNumbered ? printed(target, display, target.relative) : name),
+      shows: (display) =>
+        isNumbered ? printed(target, display, target.relative, context?.words) : name,
     };
   };
   const mine = own.map((each) => {

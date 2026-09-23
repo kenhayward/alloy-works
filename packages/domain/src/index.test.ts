@@ -175,6 +175,9 @@ describe('the domain package', () => {
         'LAYOUT_SCHEMA_VERSION',
         'PUBLISHING_FORMATS',
         'layoutSchema',
+        // A layout's words alone, for a caller shown only that much of a layout - the document page
+        // reads a relative reference's above and below from it (cross-references 2, ruling R9).
+        'layoutWordsSchema',
         'parseLayout',
         'readLayout',
         'layoutMigrationChain',
