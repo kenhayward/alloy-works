@@ -18,7 +18,9 @@
     "@alloy-works/domain": "workspace:*",
     "@alloy-works/editor": "workspace:^",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "speech-rule-engine": "4.1.4",
+    "temml": "0.13.5"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
