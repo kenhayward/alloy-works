@@ -35,6 +35,7 @@ export {
   setFigureAlternative,
   type FigureAt,
 } from './figures.js';
+export { MISSING_IMAGE } from './figureView.js';
 export { fromEditor, toEditor, type Opened } from './mapping.js';
 export { identityPlugin, newBlockIdentifier } from './identity.js';
 export {

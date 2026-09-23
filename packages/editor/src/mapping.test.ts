@@ -45,7 +45,7 @@ const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr'
 const equation = (id: string): BlockNode => ({
   type: 'equation',
   id,
-  mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"></math>',
+  mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
   numbered: false,
 });
 

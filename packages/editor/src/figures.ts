@@ -62,11 +62,14 @@ function nowhereForAFigure(state: EditorState): boolean {
   return false;
 }
 
-/** An own text that says something, trimmed; anything else as it came. */
+/**
+ * An own text that says something, as it was typed - trimming it would take the space an author has
+ * just typed between two words, since the panel sets the text on every keystroke - or anything else
+ * as it came; null for an own text that says nothing.
+ */
 function kept(alternative: Alternative): Alternative | null {
   if (alternative.kind !== 'own') return alternative;
-  const text = alternative.text.trim();
-  return text === '' ? null : { kind: 'own', text };
+  return alternative.text.trim() === '' ? null : alternative;
 }
 
 /**

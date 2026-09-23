@@ -246,3 +246,35 @@
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
+
+/* A figure: its image at the column's width and never taller than most of the window, and its caption
+ * below it, as the published one stands (publishing.md, "Figures"). An image that does not load is
+ * marked in its place rather than left as a broken icon (figures 2, ruling R6). Not scoped to the
+ * surface, since a document's text shows the same figure. */
+.aw-figure {
+  margin: 0.75em 0;
+}
+
+.aw-figure-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  height: auto;
+  object-fit: contain;
+}
+
+.aw-figure-image.aw-image-missing img {
+  display: none;
+}
+
+.aw-figure-image.aw-image-missing::after {
+  content: attr(data-missing);
+  display: block;
+  padding: 1em;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+}
+
+.aw-figure-caption {
+  margin-top: 0.25em;
+}

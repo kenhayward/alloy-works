@@ -161,7 +161,7 @@ describe('pasting', () => {
       content: [
         {
           type: 'equation',
-          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"></math>',
+          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"/>',
           numbered: false,
         },
       ],
