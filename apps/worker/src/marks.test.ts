@@ -12,7 +12,7 @@ import {
   type PublishedDocument,
   type PublishedMark,
   type PublishedNode,
-  type PublishedRun,
+  type PublishedInline,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { loadPinnedFonts } from './fonts.js';
@@ -169,8 +169,9 @@ const markedDocument = () => JSON.stringify(assembled());
 /** Every kind of mark the document's runs carry, at any depth - a list item holds blocks too. */
 const kindsIn = (document: PublishedDocument) => {
   const kinds = new Set<string>();
-  const marksIn = (runs: readonly PublishedRun[]) => {
-    for (const run of runs) for (const mark of run.marks) kinds.add(mark.kind);
+  // An image in a run carries no marks, so it adds none.
+  const marksIn = (runs: readonly PublishedInline[]) => {
+    for (const run of runs) if ('marks' in run) for (const mark of run.marks) kinds.add(mark.kind);
   };
   // The paragraph branch is the positive test, so a third published block kind fails to compile
   // here rather than being read as a list and quietly contributing no marks.

@@ -13,6 +13,7 @@ import {
   type PublishFailure,
   type PublishingAsset,
   type BlockNode,
+  type InlineNode,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -135,20 +136,37 @@ export async function resolveOccurrences(
   });
 }
 
-/** Each figure in these blocks at any depth, with the asset version it places. */
-function figuresIn(
+/**
+ * Each image in these blocks at any depth, with the asset version it places and the block a refusal
+ * names: a figure's own, and for an image in a run of text (figures 5) the block holding the run - a
+ * paragraph's own, and for a term, an attribution or a caption the list's, the quotation's, the table's
+ * or the figure's, as publishing names a failure in one.
+ */
+function imagesIn(
   blocks: readonly BlockNode[],
 ): { readonly block: string; readonly asset: string }[] {
+  const inRuns = (content: readonly InlineNode[] | undefined, block: string) =>
+    (content ?? []).flatMap((inline) =>
+      inline.type === 'image' ? [{ block, asset: inline.asset }] : [],
+    );
   return blocks.flatMap((block) => {
     switch (block.type) {
+      case 'paragraph':
+        return inRuns(block.content, block.id);
       case 'figure':
-        return [{ block: block.id, asset: block.asset }];
+        return [{ block: block.id, asset: block.asset }, ...inRuns(block.caption, block.id)];
       case 'list':
-        return block.items.flatMap((item) => figuresIn(item.content));
+        return block.items.flatMap((item) => [
+          ...inRuns(item.term, block.id),
+          ...imagesIn(item.content),
+        ]);
       case 'blockquote':
-        return figuresIn(block.content);
+        return [...imagesIn(block.content), ...inRuns(block.attribution, block.id)];
       case 'table':
-        return block.rows.flatMap((row) => row.cells.flatMap((cell) => figuresIn(cell.content)));
+        return [
+          ...inRuns(block.caption, block.id),
+          ...block.rows.flatMap((row) => row.cells.flatMap((cell) => imagesIn(cell.content))),
+        ];
       default:
         return [];
     }
@@ -186,7 +204,7 @@ async function resolveImages(
     const row = contentOf.get(version)!;
     const read = readContent(row.content, { artifact: row.artifact_id, version });
     if (!read.ok) throw new Error(`The component ${row.artifact_id} at ${version} does not read`);
-    return figuresIn(read.document.content).map((figure) => ({ node, ...figure }));
+    return imagesIn(read.document.content).map((figure) => ({ node, ...figure }));
   });
   if (placed.length === 0) return { assets: [], failures: [] };
 
@@ -203,19 +221,22 @@ async function resolveImages(
         .execute()
     : [];
   const assetOf = new Map(images.map((row) => [row.id, row.artifact_id]));
-  const failures = placed.flatMap((each) =>
-    assetOf.has(each.asset)
-      ? []
-      : [
-          {
-            stage: 'resolve' as const,
-            code: 'asset_unreadable' as const,
-            node: each.node,
-            block: each.block,
-            detail: null,
-          },
-        ],
-  );
+  // Named once per block, however many images in it the publisher may not read: a paragraph with two
+  // is one place to look, and the author is not told it twice (figures 5).
+  const named = new Set<string>();
+  const failures: PublishFailure[] = [];
+  for (const each of placed) {
+    const place = `${each.node} ${each.block}`;
+    if (assetOf.has(each.asset) || named.has(place)) continue;
+    named.add(place);
+    failures.push({
+      stage: 'resolve',
+      code: 'asset_unreadable',
+      node: each.node,
+      block: each.block,
+      detail: null,
+    });
+  }
   const assets = [...assetOf].map(([version, asset]) => ({ version, asset }));
   return { assets, failures };
 }

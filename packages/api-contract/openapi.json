@@ -7275,6 +7275,8 @@
                               "figure_without_caption",
                               "alternative_missing",
                               "caption_too_long",
+                              "image_too_wide",
+                              "image_in_caption",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -10014,6 +10016,8 @@
                               "figure_without_caption",
                               "alternative_missing",
                               "caption_too_long",
+                              "image_too_wide",
+                              "image_in_caption",
                               "engine_failed",
                               "store_failed"
                             ]

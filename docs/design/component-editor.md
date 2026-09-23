@@ -408,7 +408,7 @@ review, changed these things here:
   isolating node, `Ctrl+Z` gives it back, and a rule of its own waits for evidence it is met.
 
 **Inline images are built by [figures 4](../plans/2026-09-23-figures-04-inline-images-in-the-editor.md)**,
-and publishing one waits for figures 5. Building them settled three things the design above left open:
+and [figures 5](../plans/2026-09-23-figures-05-publishing-inline-images.md) publishes them. Building them settled three things the design above left open:
 
 - **An image stands in a paragraph alone**, wherever the paragraph is - running text, a list, a
   quotation, a table's cell. A term, an attribution, a caption and preformatted text take none, and a

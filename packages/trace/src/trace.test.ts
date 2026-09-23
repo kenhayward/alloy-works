@@ -394,8 +394,10 @@ describe('the citations in the committed model', () => {
   // 262, from 259: figures 4 cites CNT-086 and CNT-087 in packages/editor's images.test.ts, placing an
   // image in a table's cell and in a run of text and storing each, and CNT-087 in ComponentEditor.test.tsx,
   // where the Image button places one.
+  // 264, from 262: figures 5 cites CNT-086 and CNT-087 in apps/worker's figures.test.ts, where an image
+  // in a table's cell and one in a run of text are published and read back from the PDF.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(262);
+    expect(model.citations).toHaveLength(264);
   });
 
   it('cites no identifier the corpus does not hold', () => {

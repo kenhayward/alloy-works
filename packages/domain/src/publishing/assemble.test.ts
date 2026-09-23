@@ -27,8 +27,10 @@ import {
   PUBLISHING_SCHEMA_4,
   PUBLISHING_SCHEMA_5,
   PUBLISHING_SCHEMA_6,
+  PUBLISHING_SCHEMA_7,
   type PublishedBlock,
   type PublishedDocument,
+  type PublishedInline,
   type PublishedItem,
   type PublishedList,
   type PublishedRun,
@@ -170,7 +172,11 @@ const runsOf = (assembled: Assembled<PublishedDocument>): readonly PublishedRun[
   if (block === undefined || otherBlocks.length > 0) {
     throw new Error(`${blocksOf(assembled).length} blocks, not one`);
   }
-  return paragraphRuns(block);
+  // Runs of text alone: a test that published an image reads it through `paragraphRuns`.
+  return paragraphRuns(block).map((run) => {
+    if (!('text' in run)) throw new Error('an image, not a run of text');
+    return run;
+  });
 };
 
 /**
@@ -187,7 +193,7 @@ const blocksOf = (assembled: Assembled<PublishedDocument>): readonly PublishedBl
 };
 
 /** The runs of a block that must be a paragraph, naming what it was where it is not. */
-const paragraphRuns = (block: PublishedBlock | undefined): readonly PublishedRun[] => {
+const paragraphRuns = (block: PublishedBlock | undefined): readonly PublishedInline[] => {
   if (block?.type !== 'paragraph') {
     throw new Error(`${block?.type ?? 'nothing'} is not a paragraph`);
   }
@@ -961,8 +967,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/7, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/7');
+  it('assembles under a layout as publishing/8, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/8');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1488,11 +1494,12 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/7, and publishing/4 to publishing/6 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/7');
+  it('makes publishing/8, and publishing/4 to publishing/7 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/8');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
+    expect(PUBLISHING_SCHEMA_7).toBe('publishing/7');
   });
 });
 
@@ -1541,7 +1548,7 @@ describe('a table, published (tables 2)', () => {
   it('publishes a table with its number, its caption, its header counts and every cell', () => {
     const assembled = assemble(oneComponent(stored()));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/7');
+    expect(assembled.document.schema).toBe('publishing/8');
     expect(blocksOf(assembled)).toEqual([
       {
         type: 'table',
@@ -1707,7 +1714,7 @@ describe('a figure, published (figures 3)', () => {
 
   it('publishes a figure with its number, its caption, its image and its alternative text', () => {
     const assembled = assemble(withAssets({ [RED]: asset() }, stored()));
-    expect(assembled.ok && assembled.document.schema).toBe('publishing/7');
+    expect(assembled.ok && assembled.document.schema).toBe('publishing/8');
     expect(figureIn(assembled)).toEqual({
       type: 'figure',
       id: 'f1',
@@ -1873,5 +1880,249 @@ describe('a figure, published (figures 3)', () => {
     const tableAlone = assemble(oneComponent(table));
     if (!tableAlone.ok) throw new Error(JSON.stringify(tableAlone.failures));
     expect(tableAlone.document.front.lists).toEqual([{ sequence: 'table', title: 'Tables' }]);
+  });
+});
+
+describe('an inline image, published (figures 5)', () => {
+  const RED = '00000000-0000-4000-8000-00000000a551';
+  const HASH = 'cd'.repeat(32);
+  const asset = (over: Partial<PublishingAsset> = {}): PublishingAsset => ({
+    object: `t_acme/sha256/${HASH}`,
+    format: 'png',
+    width: 800,
+    height: 600,
+    alternative: { text: 'Our logo', language: 'en-GB' },
+    ...over,
+  });
+  const image = (alternative: object = { kind: 'inherited' }, imageStyle = 'inline') => ({
+    type: 'image',
+    asset: RED,
+    imageStyle,
+    alternative,
+  });
+  const inParagraph = (...inlines: unknown[]) => ({
+    type: 'paragraph',
+    id: 'p1',
+    style: 'body',
+    content: inlines,
+  });
+  const withAssets = (assets: Record<string, PublishingAsset>, ...blocks: unknown[]) => ({
+    ...oneComponent(...blocks),
+    assets: new Map(Object.entries(assets)),
+  });
+  const failed = (
+    code: string,
+    block: string,
+    detail: string | null = null,
+    stage = 'compose',
+  ) => ({
+    stage,
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+
+  it('publishes an image in a run of text one line high, its width from its proportions', () => {
+    const assembled = assemble(
+      withAssets({ [RED]: asset() }, inParagraph(text('Press '), image(), text(' to start.'))),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    expect(assembled.document.schema).toBe('publishing/8');
+    expect(blocksOf(assembled)).toEqual([
+      {
+        type: 'paragraph',
+        id: 'p1',
+        runs: [
+          { text: 'Press ', marks: [] },
+          {
+            image: {
+              path: `assets/${HASH}.png`,
+              // 1.2 ems of the 11-point body text, and 800 by 600 to that height.
+              width: 17.6,
+              height: 13.2,
+              alternative: { text: 'Our logo', language: { lang: 'en', region: 'GB' } },
+            },
+          },
+          { text: ' to start.', marks: [] },
+        ],
+      },
+    ]);
+  });
+
+  it('publishes a decorative image with no alternative text, and its own in the component language', () => {
+    const decorative = assemble(
+      withAssets({ [RED]: asset() }, inParagraph(image({ kind: 'decorative' }))),
+    );
+    expect(paragraphRuns(blocksOf(decorative as never)[0])).toEqual([
+      expect.objectContaining({ image: expect.objectContaining({ alternative: null }) }),
+    ]);
+    const own = assemble(
+      withAssets({ [RED]: asset() }, inParagraph(image({ kind: 'own', text: 'A red flag' }))),
+    );
+    expect(paragraphRuns(blocksOf(own as never)[0])).toEqual([
+      expect.objectContaining({
+        image: expect.objectContaining({
+          alternative: { text: 'A red flag', language: { lang: 'en', region: 'GB' } },
+        }),
+      }),
+    ]);
+  });
+
+  it('refuses an image wider than the line it stands in, naming the paragraph', () => {
+    // 6000 by 100 at 13.2 points high is 792 points wide, and the measure is 451.28.
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset({ width: 6000, height: 100 }) }, inParagraph(image()))),
+      ),
+    ).toEqual([failed('image_too_wide', 'p1')]);
+  });
+
+  it("takes a table's cell for the room an image has there, not the whole measure", () => {
+    // 1100 by 100 is 145.2 points wide: it fits a line, and not a third of the measure less the cell's
+    // inset of five points each side, 140.43.
+    const wide = asset({ width: 1100, height: 100 });
+    expect(assemble(withAssets({ [RED]: wide }, inParagraph(image()))).ok).toBe(true);
+    const cell = (content: unknown[]) => ({ content, colspan: 1, rowspan: 1 });
+    const table = {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [
+        {
+          cells: [
+            cell([inParagraph(image())]),
+            cell([paragraph('c2', text('b'))]),
+            cell([paragraph('c3', text('c'))]),
+          ],
+        },
+      ],
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: wide }, table)))).toEqual([
+      failed('image_too_wide', 'p1'),
+    ]);
+    // Spanning two columns, it has two thirds, and fits.
+    const spanning = {
+      ...table,
+      rows: [
+        {
+          cells: [
+            { content: [inParagraph(image())], colspan: 2, rowspan: 1 },
+            cell([paragraph('c3', text('c'))]),
+          ],
+        },
+      ],
+    };
+    expect(assemble(withAssets({ [RED]: wide }, spanning)).ok).toBe(true);
+  });
+
+  it('refuses an image as a figure is refused, naming the block that holds it', () => {
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset({ alternative: null }) }, inParagraph(image()))),
+      ),
+    ).toEqual([failed('alternative_missing', 'p1')]);
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset() }, inParagraph(image({ kind: 'own', text: ' ' })))),
+      ),
+    ).toEqual([failed('alternative_missing', 'p1')]);
+    expect(failuresOf(assemble(withAssets({}, inParagraph(image()))))).toEqual([
+      failed('asset_unreadable', 'p1', null, 'resolve'),
+    ]);
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset() }, inParagraph(image({ kind: 'inherited' }, 'wide')))),
+      ),
+    ).toEqual([failed('style_missing', 'p1', 'wide')]);
+    // In a quotation's attribution, the quotation is what is named.
+    const quoted = {
+      type: 'blockquote',
+      id: 'q1',
+      content: [paragraph('b1', text('Words.'))],
+      attribution: [image()],
+    };
+    expect(
+      failuresOf(assemble(withAssets({ [RED]: asset({ alternative: null }) }, quoted))),
+    ).toEqual([failed('alternative_missing', 'q1')]);
+  });
+
+  it("refuses an image in a figure's or a table's caption, which would run the figure off its page and repeat in the lists", () => {
+    // Found by the final review: the caption's height is estimated from its words, and a caption is set
+    // again in the list after the contents, so an image there is refused by name rather than set.
+    const figure = {
+      type: 'figure',
+      id: 'f1',
+      asset: RED,
+      imageStyle: 'figure',
+      caption: [text('Shapes '), image()],
+      alternative: { kind: 'decorative' },
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: asset() }, figure)))).toEqual([
+      failed('image_in_caption', 'f1'),
+    ]);
+    const table = {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings '), image()],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [paragraph('c1', text('1'))], colspan: 1, rowspan: 1 }] }],
+    };
+    expect(failuresOf(assemble(withAssets({ [RED]: asset() }, table)))).toEqual([
+      failed('image_in_caption', 't1'),
+    ]);
+  });
+
+  it('names a block once for each reason, however many of its images share it', () => {
+    const wide = asset({ width: 6000, height: 100, alternative: null });
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: wide }, inParagraph(image(), text(' and '), image()))),
+      ),
+    ).toEqual([failed('alternative_missing', 'p1'), failed('image_too_wide', 'p1')]);
+  });
+
+  it('takes the room a list leaves inside a cell, less than the cell itself', () => {
+    // 1100 by 100 is 145.2 points wide. A table of one column gives a cell 441.28 points, and a
+    // bulleted list inside it takes its marker's width from that: it still fits. 3300 by 100 does not.
+    const cellOf = (inline: unknown) => ({
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'list',
+                  id: 'l1',
+                  kind: 'unordered',
+                  items: [{ content: [inParagraph(inline)] }],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      assemble(withAssets({ [RED]: asset({ width: 1100, height: 100 }) }, cellOf(image()))).ok,
+    ).toBe(true);
+    expect(
+      failuresOf(
+        assemble(withAssets({ [RED]: asset({ width: 3300, height: 100 }) }, cellOf(image()))),
+      ),
+    ).toEqual([failed('image_too_wide', 'p1')]);
   });
 });

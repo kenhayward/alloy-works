@@ -5,13 +5,13 @@ import type { SlotPart } from './layout.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/7` is the document under a layout whose runs carry their marks and whose blocks may be
- * lists, quotations, preformatted text, tables and figures, with its generated lists after the
- * contents, which `apps/worker/templates/publication/7/` reads. It is never stored - only its digest is,
+ * `publishing/8` is the document under a layout whose runs carry their marks and may be images, and
+ * whose blocks may be lists, quotations, preformatted text, tables and figures, with its generated
+ * lists after the contents, which `apps/worker/templates/publication/8/` reads. It is never stored - only its digest is,
  * on the publication - so a later shape is a new schema string and a new template version, not a
  * migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/7';
+export const PUBLISHING_SCHEMA = 'publishing/8';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -56,6 +56,13 @@ export const PUBLISHING_SCHEMA_5 = 'publishing/5';
  * version and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_6 = 'publishing/6';
+
+/**
+ * The document under a layout as it stood before a run could be an image, frozen by figures 5 for the
+ * reason `publishing/6` is: `apps/worker/templates/publication/7/` asserts it, and a template version
+ * and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_7 = 'publishing/7';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -121,10 +128,27 @@ export interface PublishedRun {
   readonly marks: readonly PublishedMark[];
 }
 
+/**
+ * An image in a run of text (figures 5, ruling R2): where it stands in the compile root, its printed
+ * size in points - one line high - and its alternative text resolved, or null where it is decorative,
+ * all as a figure's are. It carries no marks, as the stored image carries none.
+ */
+export interface PublishedImageRun {
+  readonly image: {
+    readonly path: string;
+    readonly width: number;
+    readonly height: number;
+    readonly alternative: { readonly text: string; readonly language: PublishedLanguage } | null;
+  };
+}
+
+/** One piece of a published run sequence: text with its marks, or an image. */
+export type PublishedInline = PublishedRun | PublishedImageRun;
+
 export interface PublishedParagraph {
   readonly type: 'paragraph';
   readonly id: string;
-  readonly runs: readonly PublishedRun[];
+  readonly runs: readonly PublishedInline[];
 }
 
 /**
@@ -139,7 +163,7 @@ export interface PublishedParagraph {
  * term prints an empty label, which is honest about an item nobody has finished.
  */
 export interface PublishedItem {
-  readonly term: readonly PublishedRun[] | null;
+  readonly term: readonly PublishedInline[] | null;
   readonly blocks: readonly PublishedBlock[];
 }
 
@@ -180,7 +204,7 @@ export interface PublishedQuotation {
   readonly type: 'blockquote';
   readonly id: string;
   readonly blocks: readonly PublishedBlock[];
-  readonly attribution: readonly PublishedRun[] | null;
+  readonly attribution: readonly PublishedInline[] | null;
 }
 
 /** One cell of a published table: its blocks - paragraphs and lists - and the grid it covers. */
@@ -207,7 +231,7 @@ export interface PublishedTable {
   readonly type: 'table';
   readonly id: string;
   readonly label: string | null;
-  readonly caption: readonly PublishedRun[];
+  readonly caption: readonly PublishedInline[];
   readonly headerRows: number;
   readonly headerColumns: number;
   /** How many columns the grid is wide, which a template gives its table as that many equal columns. */
@@ -227,7 +251,7 @@ export interface PublishedFigure {
   readonly type: 'figure';
   readonly id: string;
   readonly label: string | null;
-  readonly caption: readonly PublishedRun[];
+  readonly caption: readonly PublishedInline[];
   readonly path: string;
   readonly width: number;
   readonly height: number;

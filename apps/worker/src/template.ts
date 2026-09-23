@@ -21,7 +21,8 @@ const at = (version: number) =>
  * `publishing/4`, the same again with a block that may be a list, version 5 `publishing/5`, the
  * same again with a block that may be a quotation or preformatted text, and version 6
  * `publishing/6`, the same again with a block that may be a table and the lists after the contents,
- * and version 7 `publishing/7`, the same again with a block that may be a figure. Versions 2 to 6 are
+ * version 7 `publishing/7`, the same again with a block that may be a figure, and version 8
+ * `publishing/8`, the same again with a run that may be an image. Versions 2 to 7 are
  * kept although `assemble` makes none of their schemas any more: they are what the publications made
  * before a run carried its marks, before a block could be a list, before one could be a quotation or
  * preformatted text, before one could be a table, and before one could be a figure, were compiled
@@ -35,13 +36,14 @@ export const PUBLICATION_TEMPLATE = {
   5: { name: 'publication', version: 5, file: at(5) },
   6: { name: 'publication', version: 6, file: at(6) },
   7: { name: 'publication', version: 7, file: at(7) },
+  8: { name: 'publication', version: 8, file: at(8) },
 } as const;
 
 /**
  * The template that reads a published document of each schema. `assemble` makes `publishing/1` only
  * for a request made before layouts, which publishes with template 1 as it would have then (Ken's
- * answer F); every request since is made under a layout, and publishes with template 7. No row names
- * templates 2 to 6, because nothing makes a document of their schemas to hand them.
+ * answer F); every request since is made under a layout, and publishes with template 8. No row names
+ * templates 2 to 7, because nothing makes a document of their schemas to hand them.
  *
  * **Both keys are computed, and that is the hazard this map carries.** Repoint `PUBLISHING_SCHEMA`
  * and the KEY moves while the value stays where it was, and `satisfies Record<PublishedSchema, ...>`
@@ -50,5 +52,5 @@ export const PUBLICATION_TEMPLATE = {
  */
 export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_1]: 1,
-  [PUBLISHING_SCHEMA]: 7,
+  [PUBLISHING_SCHEMA]: 8,
 } as const satisfies Record<PublishedSchema, keyof typeof PUBLICATION_TEMPLATE>;

@@ -274,6 +274,8 @@ describe('publishing from the document page', () => {
         block: 'b5',
         detail: 'image',
       },
+      { stage: 'compose', code: 'image_too_wide', node: null, block: 'b6', detail: null },
+      { stage: 'compose', code: 'image_in_caption', node: null, block: 'b7', detail: null },
     ]);
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
@@ -292,6 +294,12 @@ describe('publishing from the document page', () => {
     );
     // An image in a line of text, named as one rather than as formatting or an inline item.
     expect(why).toHaveTextContent('An image in a line of text cannot be published yet.');
+    expect(why).toHaveTextContent(
+      'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.',
+    );
+    expect(why).toHaveTextContent(
+      'A caption holds an image, which a caption cannot publish. Take the image out of the caption.',
+    );
   });
 
   it("blames the layout, not the document, for the layout's own words and language", async () => {

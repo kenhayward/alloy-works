@@ -84,6 +84,15 @@ export interface TaggedFigure {
   readonly alt: string | null;
   readonly lang: string | null;
   readonly box: readonly [number, number, number, number] | null;
+  /** The structure type of the element it stands in - a `P`, a `TD` - or null where it names none. */
+  readonly parent: string | null;
+  /**
+   * The language a reader is told it is in: its own `/Lang`, or the nearest ancestor's, or null where
+   * none declares one and the document's own stands. The engine hoists a `/Lang` to an ancestor where
+   * that is shorter - a table row whose first cell is in German says so once - so an element's own
+   * `/Lang` alone does not say what it is read in.
+   */
+  readonly spoken: string | null;
 }
 
 export interface TextItem {
@@ -247,8 +256,12 @@ function pdfString(text: string, at: number): string | null {
 /** Every `Figure` structure element, read from the objects themselves as `structureElements` reads. */
 function taggedFigures(text: string): TaggedFigure[] {
   const figures: TaggedFigure[] = [];
-  for (const object of text.matchAll(/\sobj\b([\s\S]*?)\bendobj\b/g)) {
-    const body = object[1] ?? '';
+  // Every object by its number, so a `Figure`'s `/P` can be followed to the element it stands in.
+  const objects = new Map<string, string>();
+  for (const object of text.matchAll(/(\d+)\s+0\s+obj\b([\s\S]*?)\bendobj\b/g)) {
+    objects.set(object[1]!, object[2] ?? '');
+  }
+  for (const body of objects.values()) {
     if (!/\/Type\s*\/StructElem\b/.test(body) || !/\/S\s*\/Figure\b/.test(body)) continue;
     const valueOf = (key: string) => {
       const found = new RegExp(`/${key}\\s*([(<])`).exec(body);
@@ -260,6 +273,21 @@ function taggedFigures(text: string): TaggedFigure[] {
       alt: valueOf('Alt'),
       lang: valueOf('Lang'),
       box: corners?.length === 4 ? (corners as [number, number, number, number]) : null,
+      spoken: (() => {
+        let at: string | undefined = body;
+        for (let depth = 0; at !== undefined && depth < 64; depth += 1) {
+          const declared = /\/Lang\s*([(<])/.exec(at);
+          if (declared !== null) return pdfString(at, declared.index + declared[0].length - 1);
+          const held = /\/P\s+(\d+)\s+0\s+R/.exec(at);
+          at = held === null ? undefined : objects.get(held[1]!);
+        }
+        return null;
+      })(),
+      parent: (() => {
+        const held = /\/P\s+(\d+)\s+0\s+R/.exec(body);
+        const above = held === null ? undefined : objects.get(held[1]!);
+        return above === undefined ? null : (/\/S\s*\/([^\s/<>[\]()]+)/.exec(above)?.[1] ?? null);
+      })(),
     });
   }
   return figures;

@@ -53,6 +53,12 @@ export const publishFailureCodes = [
   // compose, from the final review of figures 3: a caption too long to stand on a page beside even a
   // small image. A figure does not break, so it would run off the page; refused, naming the figure.
   'caption_too_long',
+  // compose, from figures 5: an image in a run of text wider than the room it stands in - a line, or
+  // a table's cell - which the engine would let run past its edge, as a preformatted line would.
+  'image_too_wide',
+  // compose, from the final review of figures 5: an image in a figure's or a table's caption, which
+  // the caption's height is not estimated with and which the list after the contents would set again.
+  'image_in_caption',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

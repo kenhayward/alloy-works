@@ -20,9 +20,11 @@ import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Face } from './glyphs.js';
 import {
   captionHeight,
+  CELL_INSET,
   columnsAt,
   columnsOf,
   expandTabs,
+  INLINE_IMAGE_HEIGHT,
   listIndent,
   QUOTATION_INDENT,
   textBlockHeight,
@@ -41,13 +43,13 @@ import {
   type PublishedDocument,
   type PublishedDocument1,
   type PublishedFigure,
+  type PublishedInline,
   type PublishedItem,
   type PublishedMark,
   type PublishedNode,
   type PublishedNode1,
   type PublishedPattern,
   type PublishedPdfFormat,
-  type PublishedRun,
 } from './published.js';
 
 /**
@@ -110,6 +112,9 @@ export function publishedImagePath(asset: Pick<PublishingAsset, 'object' | 'form
 
 /** The one image style the template sets for a figure until themes.md gives styles (decision F-K). */
 const FIGURE_STYLE = 'figure';
+
+/** And the one it sets for an image in a run of text (figures 5, ruling R3). */
+const INLINE_STYLE = 'inline';
 
 /**
  * The share of the text block's height a figure may stand (decision F-K): past it, the height is held
@@ -175,6 +180,22 @@ export function assemble(input: AssembleInput): Assembled {
 
   // check and project: one walk, collecting every failure.
   const refusedNodes = new Set(input.refused.map((each) => each.node));
+  /**
+   * A failure recorded once however many times it is met: two images in one paragraph too wide, or
+   * both with no description, are one place to look and one reason, said once (final review of
+   * figures 5). Used where one block can meet the same reason again - its images - and nowhere else.
+   */
+  const failOnce = (next: PublishFailure) => {
+    const said = failures.some(
+      (each) =>
+        each.stage === next.stage &&
+        each.code === next.code &&
+        each.node === next.node &&
+        each.block === next.block &&
+        each.detail === next.detail,
+    );
+    if (!said) failures.push(next);
+  };
   // A figure whose image the request could not read, where it said so: told once, not twice.
   const refusedAssets = new Set(
     input.refused
@@ -236,14 +257,32 @@ export function assemble(input: AssembleInput): Assembled {
    * and for a definition item's **term the list's**, because a stored item carries no identifier of
    * its own and the list is the nearest real thing to point an author at. `runsOf` in
    * `packages/editor/src/mapping.ts` names the same place for the same reason.
+   *
+   * **An image is published among the runs** under a layout (figures 5): one line high, its width from
+   * its proportions and no wider than the room where it stands - `indent` is what the measure has
+   * lost by then, a table's cell included - and described as a figure is. Its failures name `block`,
+   * the block that holds it.
    */
   const publishedRuns = (
     content: readonly InlineNode[],
     node: string,
     block: string,
-  ): PublishedRun[] => {
-    const runs: PublishedRun[] = [];
+    indent = 0,
+    caption = false,
+  ): PublishedInline[] => {
+    const runs: PublishedInline[] = [];
     for (const inline of content) {
+      // A caption's height is estimated from its words, and the list after the contents sets it again,
+      // so an image in one is refused rather than set (final review of figures 5).
+      if (inline.type === 'image' && layout !== null && caption) {
+        failOnce(failure('compose', 'image_in_caption', node, block, null));
+        continue;
+      }
+      if (inline.type === 'image' && layout !== null) {
+        const published = publishedImage(inline, node, block, indent);
+        if (published !== null) runs.push(published);
+        continue;
+      }
       if (inline.type !== 'text') {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
@@ -284,7 +323,7 @@ export function assemble(input: AssembleInput): Assembled {
         if (block.style !== BODY) {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         }
-        const runs = publishedRuns(block.content, node, block.id);
+        const runs = publishedRuns(block.content, node, block.id, indent);
         return runs.length === 0 ? [] : [{ type: 'paragraph', id: block.id, runs }];
       }
       case 'list': {
@@ -322,7 +361,8 @@ export function assemble(input: AssembleInput): Assembled {
           // publication that is confidently false, and the two are not the same call. `checkBlock`
           // refuses both on the way in, and every occurrence reaches here through
           // `parseContentDocument`, so neither is reachable today by any producer.
-          const term = item.term === undefined ? [] : publishedRuns(item.term, node, block.id);
+          const term =
+            item.term === undefined ? [] : publishedRuns(item.term, node, block.id, indent);
           return {
             term: term.length === 0 ? null : term,
             blocks: item.content.flatMap((each) =>
@@ -384,7 +424,9 @@ export function assemble(input: AssembleInput): Assembled {
           publishable(each, node, indent + 2 * QUOTATION_INDENT),
         );
         const attribution =
-          block.attribution === undefined ? [] : publishedRuns(block.attribution, node, block.id);
+          block.attribution === undefined
+            ? []
+            : publishedRuns(block.attribution, node, block.id, indent + 2 * QUOTATION_INDENT);
         // Nothing to show and nothing to attribute contributes nothing, rather than an empty
         // `BlockQuote` (decision P).
         if (blocks.length === 0 && attribution.length === 0) return [];
@@ -419,7 +461,7 @@ export function assemble(input: AssembleInput): Assembled {
         if (spansBody) {
           failures.push(failure('compose', 'table_header_spans_body', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id);
+        const caption = publishedRuns(block.caption, node, block.id, indent, true);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -443,8 +485,11 @@ export function assemble(input: AssembleInput): Assembled {
             columns,
             rows: block.rows.map((row, rowIndex) => ({
               cells: row.cells.map((cell, cellIndex) => ({
-                // Paragraphs and lists alone (decision T-D), each published as it is anywhere else.
-                blocks: cell.content.flatMap((each) => publishable(each, node, indent)),
+                // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
+                // in the room the cell has: its share of the measure, less the engine's inset each side.
+                blocks: cell.content.flatMap((each) =>
+                  publishable(each, node, cellIndent(indent, columns, cell.colspan)),
+                ),
                 colspan: cell.colspan,
                 rowspan: cell.rowspan,
                 scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
@@ -467,7 +512,7 @@ export function assemble(input: AssembleInput): Assembled {
         if (words.join('').trim() === '') {
           failures.push(failure('compose', 'figure_without_caption', node, block.id, null));
         }
-        const caption = publishedRuns(block.caption, node, block.id);
+        const caption = publishedRuns(block.caption, node, block.id, indent, true);
         const label =
           numbering.entries.find((entry) => entry.node === node && entry.block === block.id)
             ?.label ?? null;
@@ -488,7 +533,9 @@ export function assemble(input: AssembleInput): Assembled {
         // break, so image and caption must stand on one page together (final review).
         const format = publishedPdf(layout.formats.pdf);
         const across = textMeasure(format) - indent;
-        const said = (label === null ? '' : `${label} `) + caption.map((run) => run.text).join('');
+        const said =
+          (label === null ? '' : `${label} `) +
+          caption.map((run) => ('text' in run ? run.text : '')).join('');
         const left = textBlockHeight(format) - captionHeight(columnsOf(said), across);
         const tooLong = left < FIGURE_LEAST_HEIGHT;
         if (tooLong) failures.push(failure('compose', 'caption_too_long', node, block.id, null));
@@ -547,7 +594,7 @@ export function assemble(input: AssembleInput): Assembled {
       // Its own text of spaces alone says nothing, whatever wrote it - the stored shape takes any text
       // that is not empty, and only the editor refuses a blank one - so it is none (final review).
       if (stored.text.trim() === '') {
-        failures.push(failure('compose', 'alternative_missing', node, block, null));
+        failOnce(failure('compose', 'alternative_missing', node, block, null));
         return undefined;
       }
       const content = input.occurrences.get(node);
@@ -555,17 +602,67 @@ export function assemble(input: AssembleInput): Assembled {
       return language === null ? undefined : { text: stored.text, language };
     }
     if (asset.alternative === null) {
-      failures.push(failure('compose', 'alternative_missing', node, block, null));
+      failOnce(failure('compose', 'alternative_missing', node, block, null));
       return undefined;
     }
     const language = publishedLanguage(asset.alternative.language);
     if (language === null) {
-      failures.push(
+      failOnce(
         failure('compose', 'language_not_publishable', node, block, asset.alternative.language),
       );
       return undefined;
     }
     return { text: asset.alternative.text, language };
+  };
+
+  /**
+   * The indent a table's cell stands at: what the measure has lost where the table stands, and the
+   * rest of the measure the cell does not have - its columns' share less the engine's inset each side.
+   */
+  const cellIndent = (indent: number, columns: number, colspan: number): number => {
+    const measure = textMeasure(publishedPdf(layout!.formats.pdf));
+    const cell = ((measure - indent) * colspan) / columns - 2 * CELL_INSET;
+    return measure - cell;
+  };
+
+  /**
+   * An image in a run of text as the template reads it (figures 5, rulings R2 to R4), or null with its
+   * failures recorded: the `inline` style, an image the request resolved, alternative text as a
+   * figure's, and one line high no wider than the room where it stands.
+   */
+  const publishedImage = (
+    image: Extract<InlineNode, { type: 'image' }>,
+    node: string,
+    block: string,
+    indent: number,
+  ): PublishedInline | null => {
+    if (image.imageStyle !== INLINE_STYLE) {
+      failOnce(failure('compose', 'style_missing', node, block, image.imageStyle));
+      return null;
+    }
+    const asset = input.assets.get(image.asset);
+    if (asset === undefined) {
+      if (!refusedAssets.has(`${node} ${block}`)) {
+        failOnce(failure('resolve', 'asset_unreadable', node, block, null));
+      }
+      return null;
+    }
+    const alternative = alternativeOf(image.alternative, asset, node, block);
+    const width = (INLINE_IMAGE_HEIGHT * asset.width) / asset.height;
+    const room = textMeasure(publishedPdf(layout!.formats.pdf)) - indent;
+    if (width > room) {
+      failOnce(failure('compose', 'image_too_wide', node, block, null));
+      return null;
+    }
+    if (alternative === undefined) return null;
+    return {
+      image: {
+        path: publishedImagePath(asset),
+        width: points(width),
+        height: points(INLINE_IMAGE_HEIGHT),
+        alternative,
+      },
+    };
   };
 
   /** A node and every node beneath it, in the matter of the top-level node that holds them. */
@@ -731,7 +828,8 @@ function withoutMarks(block: PublishedBlock): PublishedBlock1 {
       return {
         type: block.type,
         id: block.id,
-        runs: block.runs.map((run) => ({ text: run.text })),
+        // Every run here is text: an image is refused by name without a layout, as any inline is.
+        runs: block.runs.map((run) => ({ text: 'text' in run ? run.text : '' })),
       };
     case 'list':
     case 'preformatted':

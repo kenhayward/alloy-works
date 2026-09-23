@@ -471,6 +471,7 @@ inline images in the editor and then published, since each is the size of figure
 | 2   | [The figure in the editor](2026-09-23-figures-02-the-figure-in-the-editor.md)       | The figure and its caption as nodes, opened for editing; a dialog that uploads an image with its description or as decorative; a panel for the three states of its alternative text, replacing its image and deleting it       | Built (PR #209) |
 | 3   | [Publishing figures](2026-09-23-figures-03-publishing-figures.md)                   | A figure published sized to its page, captioned below, tagged with its alternative text in its language or as decorative, and listed after the contents; its images resolved as the publisher and recorded on the publication  | Built (PR #212) |
 | 4   | [Inline images in the editor](2026-09-23-figures-04-inline-images-in-the-editor.md) | An image placed inside a paragraph - in running text, a list, a quotation or a table cell - through the figure's dialog and panel, opened for editing; publishing it waits for figures 5                                       | Built (PR #213) |
+| 5   | [Publishing inline images](2026-09-23-figures-05-publishing-inline-images.md)       | An image in a line of text or a table cell published one line high, tagged with its alternative text in its language or as decorative, inside the paragraph or cell it stands in; one wider than its room refused              | Built (PR #214) |
 
 ## Publishing
 

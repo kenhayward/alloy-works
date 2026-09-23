@@ -238,3 +238,107 @@ describe('a figure in the PDF (figures 3)', () => {
     }
   });
 });
+
+describe('an image in a line of text in the PDF (figures 5)', () => {
+  const LOGO = '00000000-0000-4000-8000-0000000010c0';
+  const FLAG = '00000000-0000-4000-8000-00000000f1a6';
+  const inline = (asset: string, alternative: object) => ({
+    type: 'image',
+    asset,
+    imageStyle: 'inline',
+    alternative,
+  });
+  const words = (value: string) => ({ type: 'text', value, marks: [] });
+
+  it('CNT-086 CNT-087 sets an image in a paragraph and in a table cell, each tagged where it stands, and passes veraPDF', async () => {
+    const images = [
+      await imageOf(LOGO, { width: 80, height: 60 }, 'png', {
+        text: 'The printer logo',
+        language: 'en-GB',
+      }),
+      await imageOf(FLAG, { width: 60, height: 40 }, 'jpeg', {
+        text: 'Deutsche Flagge',
+        language: 'de',
+      }),
+    ];
+    const assets = new Map(images.map((each) => [each.version, each.asset]));
+    const stored = new Map(images.map((each) => [each.asset.object, each.bytes]));
+    const assembled = assemble(
+      inputOf(assets, [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            words('Press '),
+            inline(LOGO, { kind: 'inherited' }),
+            words(' to start, then '),
+            inline(LOGO, { kind: 'decorative' }),
+            words(' again.'),
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [words('Flags')],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: 'paragraph',
+                      id: 'c1',
+                      style: 'body',
+                      content: [inline(FLAG, { kind: 'inherited' })],
+                    },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+                {
+                  content: [
+                    { type: 'paragraph', id: 'c2', style: 'body', content: [words('Germany')] },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(assembled.document),
+      at,
+      await rootImages(assets, async (key) => stored.get(key)!),
+    );
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    const read = await readPdf(pdf);
+    // Two `Figure`s: the described image in its paragraph, and the flag in its cell, read in German -
+    // which the engine declares on the table's row rather than on the `Figure` itself. The decorative
+    // one is an artifact, no `Figure` at all.
+    expect(read.figures.map(({ alt, spoken, parent }) => ({ alt, spoken, parent }))).toEqual([
+      { alt: 'The printer logo', spoken: null, parent: 'P' },
+      { alt: 'Deutsche Flagge', spoken: 'de', parent: 'P' },
+    ]);
+    // The flag's paragraph stands in the table's data cell.
+    expect(read.elements).toMatchObject({ Figure: 2, TD: 2 });
+    // The text either side of an image reads on, in order. Compared without its spaces: the extraction
+    // drops the space at the edge of each run an image breaks, which the page itself still sets.
+    expect(read.taggedText.flat().join('').replace(/\s+/g, '')).toContain(
+      'Presstostart,thenagain.',
+    );
+    // One line high: 1.2 ems of the 11-point body.
+    for (const figure of read.figures) {
+      const [, bottom, , top] = figure.box!;
+      expect(top - bottom).toBeCloseTo(13.2, 0);
+    }
+  });
+});

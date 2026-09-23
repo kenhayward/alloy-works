@@ -149,6 +149,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_4',
         'PUBLISHING_SCHEMA_5',
         'PUBLISHING_SCHEMA_6',
+        'PUBLISHING_SCHEMA_7',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
