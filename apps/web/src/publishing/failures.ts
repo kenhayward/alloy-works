@@ -37,10 +37,10 @@ export function failureWords(failure: Failure): string {
     // author looking for something that is not there.
     case 'inline_not_publishable':
       return 'This text holds formatting or an inline item that cannot be published yet.';
-    // A table has a style of its own as a paragraph does (tables 2), and the failure names the block
-    // but not its kind, so the sentence names both rather than calling a table a paragraph.
+    // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
+    // (figures 3); the failure names the block but not its kind, so the sentence names all three.
     case 'style_missing':
-      return 'This paragraph or table uses a style the publication template does not set.';
+      return 'This paragraph, table or figure uses a style the publication template does not set.';
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':
@@ -69,6 +69,14 @@ export function failureWords(failure: Failure): string {
       return 'A table has no caption. Give it one: the caption names the table in the PDF and to a screen reader.';
     case 'table_header_spans_body':
       return 'A header cell of this table spans down into rows that are not header rows, so the PDF would present them as headers too. Shorten its span, or make those rows header rows.';
+    // Figures 3's ruling R10: what a caption and a description are for, and where each is given.
+    case 'figure_without_caption':
+      return 'A figure has no caption. Give it one: the caption names the figure in the PDF and to a screen reader.';
+    case 'alternative_missing':
+      return "A figure's image has no description, and the figure is not given one. Describe it in the figure's panel, or mark it decorative.";
+    // Named by where the figure is, never by the image, which the author may not read.
+    case 'asset_unreadable':
+      return 'A figure shows an image you may not see, so you cannot publish it.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

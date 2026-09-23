@@ -254,9 +254,30 @@ describe('publishing from the document page', () => {
     expect(why).toHaveTextContent(
       'A header cell of this table spans down into rows that are not header rows, so the PDF would present them as headers too. Shorten its span, or make those rows header rows.',
     );
-    // A table has a style as a paragraph does, so the sentence no longer says it is a paragraph.
+    // A table has a style as a paragraph does, and a figure an image style, so the sentence names all
+    // three rather than calling one of them a paragraph.
     expect(why).toHaveTextContent(
-      'This paragraph or table uses a style the publication template does not set.',
+      'This paragraph, table or figure uses a style the publication template does not set.',
+    );
+  });
+
+  it('says what a figure needs before it can be published, and names nothing of an image it may not read', async () => {
+    const fake = failing([
+      { stage: 'compose', code: 'figure_without_caption', node: null, block: 'f1', detail: null },
+      { stage: 'compose', code: 'alternative_missing', node: null, block: 'f2', detail: null },
+      { stage: 'resolve', code: 'asset_unreadable', node: null, block: 'f3', detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A figure has no caption. Give it one: the caption names the figure in the PDF and to a screen reader.',
+    );
+    expect(why).toHaveTextContent(
+      "A figure's image has no description, and the figure is not given one. Describe it in the figure's panel, or mark it decorative.",
+    );
+    expect(why).toHaveTextContent(
+      'A figure shows an image you may not see, so you cannot publish it.',
     );
   });
 
