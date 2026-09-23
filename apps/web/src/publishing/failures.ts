@@ -83,6 +83,9 @@ export function failureWords(failure: Failure): string {
     // A figure does not break across pages, so its image and caption must stand on one together.
     case 'caption_too_long':
       return "A figure's caption is too long to stand on a page with its image. Shorten the caption.";
+    // Figures 5's ruling R7: an image set in a line has only the line's room, or its cell's.
+    case 'image_too_wide':
+      return 'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
