@@ -25,7 +25,9 @@ a web application and a desktop application**.
 > header rows and columns, merged cells, cells of paragraphs and lists - is made from the toolbar or
 > a paste and changed from a Table panel, over `prosemirror-tables`. An image - a PNG or a JPEG - can
 > be uploaded into a space through the API, read from its own bytes at the door and decoded whole by
-> sharp in the worker's `ingest` job before it is recorded as an asset, though nothing places one yet. A
+> sharp in the worker's `ingest` job before it is recorded as an asset; the toolbar's Figure dialog
+> uploads one that way, with its description or as decorative, and places it as a figure, captioned,
+> described, replaced and deleted from a Figure panel. A
 > document can be created in a space and its outline - a tree of front matter, sections and component
 > references - restructured a version at a time, through `packages/domain/src/structure/`, the same
 > chain and the documents page in `apps/web`, which numbers its sections with the environment's
@@ -39,7 +41,7 @@ a web application and a desktop application**.
 > Typst's `--features a11y-extras`, and a list of tables after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no footnote or equation can be written or pasted, no metadata panel,
+> publishes content: no figure published or pasted, no footnote or equation written or pasted, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of figures or equations, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and

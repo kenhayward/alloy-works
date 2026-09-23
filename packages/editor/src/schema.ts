@@ -324,7 +324,9 @@ export const editorSchema = new Schema({
      * because the caption is inline content and the image is not content at all.
      *
      * **The image is drawn by `toDOM`, uneditable**, above the caption, from the asset version's own
-     * route - so the surface and `renderContent` show the same picture with no node view. Its `alt`
+     * route - so `renderContent` and the surface show the same picture. The surface draws it through
+     * `figureView`, which renders this same spec and adds only the marker for an image that does not
+     * load, since ProseMirror does not re-render an uneditable node's inside. Its `alt`
      * is what a screen reader in the editor is given: the figure's own text, nothing where it is
      * decorative, and a sentence saying the image's own description is used where it inherits one.
      * No `parseDOM`: a figure never enters a component through the DOM, only through a paste the

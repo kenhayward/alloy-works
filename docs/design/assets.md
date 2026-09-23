@@ -15,7 +15,7 @@ figure reaches the PDF.
 
 > **Built through the API** by [figures 1](../plans/2026-09-23-figures-01-assets.md): an image is
 > uploaded into a space, checked in the service and in a worker's `ingest` job, stored by its hash and
-> read back by who may read the space. Nothing in the editor uses it yet - that is figures 2 - and
+> read back by who may read the space. [Figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md) places it in the editor as a figure, and
 > [`../architecture.md`](../architecture.md) describes it as it stands. **Ken's answer (2026-09-23):
 > decisions F-A to F-P taken as recommended**, by merging this design and asking to continue.
 

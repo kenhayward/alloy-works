@@ -181,7 +181,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   columns and merged cells.
 
   **This is formatted paragraphs, lists, quotations, preformatted text and tables, not the editor.** A
-  component holding an equation, a figure or a footnote opens for reading only. There is no control for
+  component holding an equation, a footnote or an image in a line of text opens for reading only. There is no control for
   a defined term or a citation, an image or an equation cannot be pasted, changes saved but never made into a version are
   kept and cannot yet be got back, undo does not survive a reload, and there is no metadata to fill in.
   A list stops nesting at thirty levels: every control that would build a level becomes unavailable
@@ -205,8 +205,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   name, and then decoded whole by the worker, so a file that is not a complete PNG or JPEG, or whose
   pixels do not decode, is refused, saying why, and its bytes are not kept. Only the picture is kept:
   anything after it in the file - a phone's second picture or motion clip, say - is left behind. Its width and height are recorded as it is displayed, turned the way the camera meant.
-  Everybody who may read the space may see it. **Nothing in the application uses an image yet**: this
-  is what figures will be made from, and there is no button for it until they are.
+  Everybody who may read the space may see it. The editor's **Figure** button uploads one this way.
+
+- **Figures.** **Figure** on the formatting toolbar asks for a PNG or a JPEG and for one of two answers:
+  a description of the image, for someone who cannot see it, in a language that starts as the
+  component's - or **It is decorative**. It will not upload without one of them. While the image is
+  checked it says _Checking the image_; a refusal is said in words, and nothing is placed. Otherwise
+  the figure is placed after the paragraph the cursor is in, or in its place if it is empty, with the
+  cursor in its caption, which says **Caption** until something is typed. The image is shown no wider
+  than the column and no taller than 60 per cent of the window; one that cannot be shown - you may not
+  read its space, or it is gone - says _An image you may not see_ in its place. While the cursor is in
+  a figure, a **Figure** panel in the `F6` ring sets its alternative text: **Use the image's
+  description**, showing it and its language, or saying the figure cannot be published until it is
+  given one where the image has none; **Describe it here**, in the component's language, which stores
+  nothing until something is typed; or **Decorative**. **Replace image** gives it another image through
+  the same dialog, keeping its caption and its place, and **Delete figure** removes it. A figure copied
+  within the product pastes as a figure. **A document holding a figure cannot be published yet**, and
+  an image cannot be pasted, dropped or placed in a line of text.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.
@@ -365,10 +380,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 Named explicitly so nobody has to read the source to find out:
 
-- No way to author anything but formatted paragraphs, lists, quotations, preformatted text and
-  tables: a component holding a figure, a footnote or an equation still opens for reading only, and
+- No way to author anything but formatted paragraphs, lists, quotations, preformatted text,
+  tables and figures: a component holding a footnote, an equation or an image in a line of text still opens for reading only, and
   there is no control for a defined term or a
-  citation. An image can be uploaded through the API and placed nowhere. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
+  citation. A figure can be made and not published. A paste keeps no footnote, image or equation, reads Markdown only when **Paste as
   Markdown** is pressed, and nothing can be dragged into a component. Nothing imports content from a Word file, and nothing exports it but a
   published PDF of a document's paragraphs, lists, quotations, preformatted text and tables. The one sample document is a fixed template with
   no content of yours in it.
