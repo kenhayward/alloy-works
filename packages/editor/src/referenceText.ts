@@ -29,8 +29,17 @@ export interface ReferenceShown {
 /** The class a broken reference carries, on the surface and read-only, so it is drawn apart. */
 export const BROKEN_CLASS = 'aw-reference-broken';
 
-/** What a reference whose target has gone says, in place of anything it would print. */
+/**
+ * What a reference whose target has gone says, in place of anything it would print - naming what it
+ * pointed at as far as the editor can know it (XR-F). A `node` target was a section, and a `component`
+ * target is in another component, whatever it is there; a `block` target's kind went with the block,
+ * and the stored target names only an identifier, so it says no more than that it is broken.
+ */
 export const BROKEN_REFERENCE = 'Broken reference';
+
+/** A broken reference to a section, and one to another component: what each pointed at, named. */
+export const BROKEN_SECTION_REFERENCE = 'Broken reference to a section';
+export const BROKEN_COMPONENT_REFERENCE = 'Broken reference to another component';
 
 /**
  * What a reference to another component says where there is no document to find that component in.
@@ -61,8 +70,9 @@ interface Held {
  *   _Figure_, _Footnote_, _Paragraph_, read from the live document. Not broken: it is there, and a
  *   number is simply not known yet;
  * - a `node` or a `component` target in a document: what the context says it prints, or _Broken
- *   reference_ and broken where the document does not offer it; on its own, _Section_ or _In another
- *   component_, and not broken, since nothing there can judge it.
+ *   reference to a section_ or _to another component_, and broken, where the document does not offer
+ *   it; on its own, _Section_ or _In another component_, and not broken, since nothing there can judge
+ *   it.
  *
  * `within` is for a footnote's own editor, whose document is the footnote alone: the component that
  * footnote stands in, whose blocks its references name, and where the footnote's content begins in
@@ -102,7 +112,8 @@ export function referencesShown(
     } else if (found !== undefined) {
       shown.push({ pos, text: printed(found, display, found.relative), broken: false });
     } else {
-      shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
+      const text = target.kind === 'node' ? BROKEN_SECTION_REFERENCE : BROKEN_COMPONENT_REFERENCE;
+      shown.push({ pos, text, broken: true });
     }
     return false;
   });

@@ -4,6 +4,7 @@ import {
   mountEditor,
   NodeSelection,
   openFootnote,
+  Selection,
   setReferenceContext,
   toEditor,
   type EditorView,
@@ -149,5 +150,61 @@ describe('a cross-reference on the surface (cross-references 1, ruling R10)', ()
     const now = openFootnote(view)!;
     expect(drawn(now.dom)).toHaveTextContent(/^Broken reference$/);
     expect(drawn(now.dom)).toHaveClass('aw-reference-broken');
+  });
+});
+
+describe('a cross-reference copied from the surface (cross-references 1)', () => {
+  /** Copies the paragraph that refers to the table, as the author would, and what each type holds. */
+  const copied = (view: EditorView) => {
+    const paragraph = find(view, 'paragraph');
+    let from = paragraph.pos;
+    view.state.doc.forEach((node, offset) => {
+      if (node.attrs.id === 'b1') from = offset;
+    });
+    const to = from + view.state.doc.nodeAt(from)!.nodeSize - 1;
+    view.dispatch(
+      view.state.tr.setSelection(
+        Selection.fromJSON(view.state.doc, { type: 'text', anchor: from + 1, head: to }),
+      ),
+    );
+    const written = new Map<string, string>();
+    const event = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        clearData: () => written.clear(),
+        setData: (type: string, value: string) => written.set(type, value),
+      },
+    });
+    view.dom.dispatchEvent(event);
+    const html = document.createElement('div');
+    html.innerHTML = written.get('text/html')!;
+    return { text: written.get('text/plain')!, html };
+  };
+  const spans = (html: HTMLElement) =>
+    [...html.querySelectorAll('[data-reference]')].map((each) => ({
+      text: each.textContent,
+      broken: each.classList.contains('aw-reference-broken'),
+    }));
+
+  it('carries what the author sees for each reference, in plain text and in HTML', () => {
+    const { text, html } = copied(mount({ targets: [readings()] }));
+    expect(text).toMatch(/^See Table 1\.1/);
+    expect(text).toMatch(/As in Table 1\.1$/);
+    expect(spans(html)).toEqual([
+      { text: 'Table 1.1', broken: false },
+      { text: 'Table 1.1', broken: false },
+    ]);
+  });
+
+  it('carries a broken reference as the surface shows it, drawn apart in HTML', () => {
+    const view = mount(null);
+    const table = find(view, 'tableFigure');
+    view.dispatch(view.state.tr.delete(table.pos, table.pos + table.size));
+    const { text, html } = copied(view);
+    expect(text).toMatch(/^See Broken reference/);
+    expect(spans(html)).toEqual([
+      { text: 'Broken reference', broken: true },
+      { text: 'Broken reference', broken: true },
+    ]);
   });
 });

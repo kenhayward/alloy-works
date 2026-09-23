@@ -827,12 +827,15 @@ could hold. Neither carries the author's text.
 
 **XR-G's first pull request is built**: [cross-references 1](../plans/2026-09-23-cross-references-01-references-in-the-editor.md)
 builds XR-A, XR-B, XR-C and XR-E in the editor, and XR-F's half there - a reference made and changed
-from the **Reference** dialog, shown as it will print or as broken, kept through an undo and re-pointed
-through a cut and a paste - with what a document offers and what a reference prints in
+from the **Reference** dialog, shown as it will print or as broken, kept through an undo and
+re-pointed through a cut and a paste - with what a document offers and what a reference prints in
 `packages/domain/src/structure/references.ts`. Nothing resolves a reference at publish yet: until
 cross-references 2 builds XR-D and XR-F's publish half, a publish refuses one by name,
-`inline_not_publishable` with the detail `crossReference`. The words a reference prints are English
-until then, since the layout's own arrive with it.
+`inline_not_publishable` with the detail `crossReference`. **XR-F's editor half names what a broken
+reference pointed at only as far as the editor can know it**: _Broken reference to a section_, _to
+another component_, but a `block` target's kind and caption went with the block, and the stored
+target names only its identifier, so that one says _Broken reference_ alone. The words a reference
+prints are English until then, since the layout's own arrive with it.
 
 ## Navigation
 

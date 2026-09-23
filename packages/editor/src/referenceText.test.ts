@@ -77,7 +77,7 @@ const readings = target({ kind: 'block', block: 't1' }, 'table', 'Table 1.1', 'R
 
 describe('what a cross-reference shows (cross-references 1, ruling R10)', () => {
   describe('a reference to a block of its own component', () => {
-    it('is broken where the component no longer holds its target, in a document and on its own', () => {
+    it('is broken where the component no longer holds its target, in a document and on its own, with no kind to name, since that went with the block', () => {
       const doc = docOf(para('b1', text('See '), ref({ kind: 'block', block: 'gone' })));
       const broken = [{ text: 'Broken reference', broken: true }];
       expect(shown(doc, null)).toEqual(broken);
@@ -202,7 +202,7 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
       );
     });
 
-    it('is broken in a document that does not offer its target', () => {
+    it('is broken in a document that does not offer its target, and says what it pointed at', () => {
       const doc = docOf(
         para(
           'b1',
@@ -211,8 +211,8 @@ describe('what a cross-reference shows (cross-references 1, ruling R10)', () => 
         ),
       );
       expect(shown(doc, { targets: [readings] })).toEqual([
-        { text: 'Broken reference', broken: true },
-        { text: 'Broken reference', broken: true },
+        { text: 'Broken reference to a section', broken: true },
+        { text: 'Broken reference to another component', broken: true },
       ]);
     });
 

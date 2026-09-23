@@ -314,9 +314,11 @@ inline content CNT-129 allows, and no table or image - so the restriction is str
 
 **What building footnotes 1 changed** ([its plan](../plans/2026-09-23-footnotes-01-footnotes-in-the-editor.md)):
 
-- **Undo brings a deleted footnote back whole, under new identifiers.** What an undo puts back is
-  placed, and ADR-0023's descent rule names whatever is placed, as it names a block brought back the
-  same way; its paragraphs and their words are as they were.
+- **Undo brought a deleted footnote back whole, under new identifiers.** What an undo put back was
+  placed, and ADR-0023's descent rule named whatever was placed, as it named a block brought back
+  the same way; its paragraphs and their words were as they had been. Cross-references 1 changed
+  this (its ruling R7): an undo now brings a footnote back under the identifiers it had - see
+  [Identity, by operation](#identity-by-operation).
 - **A footnote's paragraphs are a node type of their own**, `footnoteParagraph`, holding text alone
   and standing in nothing but a footnote. That is what makes the restricted schema structural: a
   paragraph admits an image and a footnote, and a footnote's paragraph admits neither.
@@ -357,11 +359,13 @@ one is cross-references 2's, and until then a publish refuses it by name.
   is one annotation, as with an inline image. A component holding a reference opens for editing.
 - **What it shows** is drawn by a node view from a decoration, so it redraws when its target or the
   page's numbering changes: in a document, what it will print - _Table 1.1_, a section's title,
-  _above_ - from the numbering the page holds; a target the page has not numbered yet, and any target
-  in a component on its own, by kind and caption - _Table: Readings_; a section or another
+  _above_ - from the numbering the page holds; a target the page has not numbered yet, and any
+  target in a component on its own, by kind and caption - _Table: Readings_; a section or another
   component's block on its own, _Section_ or _In another component_, since only a document can judge
-  it. A reference whose target has gone shows _Broken reference_, drawn apart by more than colour.
-  The document's text, rendered for reading, shows the same.
+  it. A reference whose target has gone shows _Broken reference_, drawn apart by more than colour -
+  _to a section_ or _to another component_ where that is what it pointed at; a block's kind went
+  with the block. The document's text, rendered for reading, shows the same, and a copy to another
+  application carries the same words, in its plain text and its HTML.
 - **Its target survives the two commonest edits** (XR-E), by [Identity, by operation](#identity-by-operation):
   an undo puts a deleted target back under its own identifier, and a cut and a paste in the same
   component re-points every reference left behind, which the paste report counts.

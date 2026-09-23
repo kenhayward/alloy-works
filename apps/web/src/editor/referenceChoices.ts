@@ -98,6 +98,11 @@ export interface Standing {
  * paste pointed at, a table since deleted, a section on its own - puts that target first, named as
  * the surface shows it, so opening the dialog on a reference and pressing Change keeps it (the plan's
  * "one stored by another route is shown and kept"). Its forms are its kind's and the one it has.
+ *
+ * **Two options of the same name are told apart by a count**: the second and later take _(2)_,
+ * _(3)_ in the order listed - two footnotes on their own are _Footnote_ and _Footnote (2)_, two
+ * uncaptioned tables _Table_ and _Table (2)_ - so each radio's accessible name is its own. The count
+ * is the list's alone: what each **shows** stays what the surface draws, which has no count to give.
  */
 export function referenceOptions(
   context: ReferenceContext | null,
@@ -147,7 +152,17 @@ export function referenceOptions(
       ...options,
     ];
   }
-  return options;
+  return distinctlyNamed(options);
+}
+
+/** Each option whose name an earlier one already has, given a count in brackets: _Footnote (2)_. */
+function distinctlyNamed(options: readonly ReferenceOption[]): readonly ReferenceOption[] {
+  const seen = new Map<string, number>();
+  return options.map((each) => {
+    const count = (seen.get(each.name) ?? 0) + 1;
+    seen.set(each.name, count);
+    return count === 1 ? each : { ...each, name: `${each.name} (${count})` };
+  });
 }
 
 /** What the dialog opens with: its options, whether it is in a document, and the reference it changes. */

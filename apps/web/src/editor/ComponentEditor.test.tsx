@@ -4334,6 +4334,44 @@ describe('cross-references in the editor (cross-references 1)', () => {
     expect(within(dialog).queryByRole('button', { name: 'Insert' })).toBeNull();
   });
 
+  it('tells two targets of the same name apart by a count, and says each will show as the surface does', async () => {
+    const note = (id: string, words: string) => ({
+      type: 'footnote',
+      id,
+      anchor: { kind: 'span' },
+      content: [para(`${id}p`, words)],
+    });
+    const { surface } = openWith(
+      blocksOf(
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Visited', marks: [] },
+            note('f1', 'Once.'),
+            { type: 'text', value: ' and seen', marks: [] },
+            note('f2', 'Twice.'),
+          ],
+        },
+        para('b2', 'See the notes.'),
+      ),
+    );
+    const view = await surface();
+    caretIn(view, 'b2');
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reference' });
+
+    expect(choices(dialog, 'Refer to')).toEqual(['Footnote', 'Footnote (2)']);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Footnote (2)' }));
+    // The count is the list's alone: the surface draws the reference by its kind.
+    expect(within(dialog).getByText(/It will show/)).toHaveTextContent('It will show: Footnote');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+
+    expect(referencesIn(view)).toMatchObject([{ target: { kind: 'block', block: 'f2' } }]);
+    expect(drawn()).toEqual(['Footnote']);
+  });
+
   it("places the reference in a footnote's text while it is open", async () => {
     const { surface } = openWith(
       blocksOf(

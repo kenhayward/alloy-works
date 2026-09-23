@@ -12,11 +12,12 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   of the document's sections and any figure, table or footnote its components hold; in a component
   opened on its own, its own figures, tables and footnotes. Choose how it shows - its number, its
   title, both, its page, or above or below - and the dialog says what that will be before you insert
-  it. The reference shows it in the text, such as _Table 1.1_, or the target's kind and caption, such
-  as _Table: Readings_, where nothing has numbered it yet; one whose target has been deleted says
-  _Broken reference_. Select a reference and press **Reference** again to change it, or delete it to
-  delete it. A reference can stand anywhere text can but preformatted text, a footnote's text
-  included.
+  it. The reference shows it in the text, such as _Table 1.1_, or the target's kind and caption,
+  such as _Table: Readings_, where nothing has numbered it yet; one whose target has been deleted
+  says _Broken reference_, or _Broken reference to a section_ where that is what it pointed at, and
+  a copy to another application carries the words it shows. Select a reference and press
+  **Reference** again to change it, or delete it to delete it. A reference can stand anywhere text
+  can but preformatted text, a footnote's text included.
 - **A reference follows what it points at.** Delete a table and press `Ctrl+Z`, or cut a figure and
   paste it back in the same component, and every reference to it still points at it; the paste report
   says how many references were pointed again.

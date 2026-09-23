@@ -66,9 +66,12 @@ const keepsIdentifiers = (transaction: Transaction): boolean =>
  * does what a transaction marked `KEEPS_IDENTIFIERS` places: in such a transaction a node standing
  * anywhere keeps an identifier **no other node in the new document holds**. Read by the descent rule
  * alone, a table deleted and brought back by `Ctrl+Z` is placed, not descended from anything, and was
- * renamed - leaving every reference to it pointing at nothing. An identifier held twice is still the
- * descent rule's to settle, so a redo of a split, whose second half carries the first's identifier,
- * still names the half that did not descend anew; so ADR-0023 stands as written.
+ * renamed - leaving every reference to it pointing at nothing. A redo of a split brings back the names
+ * the split was left with: the history replays the document as this plugin left it, the second half
+ * already renamed, so the redo puts back that name and nothing is held twice. An identifier that is
+ * held twice - a node a paste or a command places carrying one another node keeps - is still the
+ * descent rule's to settle, so the half that did not descend is named anew and ADR-0023 stands as
+ * written.
  *
  * **Every position is collected before any attribute is set.** `tr.setNodeAttribute` produces an
  * `AttrStep`, which maps every position to itself, so the one pass over the positions read from

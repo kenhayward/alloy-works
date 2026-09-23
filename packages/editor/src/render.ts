@@ -42,9 +42,10 @@ export function renderContent(
  * print in the document `context` describes, or its kind and caption where there is none, and _Broken
  * reference_, drawn apart, where its target has gone. `toDOM` can say only what the node alone tells
  * it. The serializer writes a node's content where its own element stands, a footnote's text
- * included, so the spans come in the order `referencesShown` walks the document in.
+ * included, so the spans come in the order `referencesShown` walks the document in. The surface's
+ * copy fills the HTML it writes the same way (`view.ts`).
  */
-function drawReferences(
+export function drawReferences(
   rendered: HTMLElement | DocumentFragment,
   shown: readonly { readonly text: string; readonly broken: boolean }[],
 ): void {

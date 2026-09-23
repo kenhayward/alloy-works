@@ -172,6 +172,33 @@ bibliography entry still missing. Nothing here demonstrates any of them in full.
   in the document's text, and reaches the editor opened in place through `Place`; the page passes its
   contributions. The targets are two groups of radio buttons, not a listbox, and the dialog's button
   says **Insert** or **Change**. Two targets of the same kind and caption, or with none, share a name.
+- **R10's broken reference names what it pointed at only where the editor can know it**: XR-F asks
+  for its target named, and a `node` target says _Broken reference to a section_, a `component`
+  target _Broken reference to another component_. A `block` target's kind cannot be named once it is
+  gone: the kind and the caption went with the block, and the stored target holds only its
+  identifier, so it says _Broken reference_ alone. Naming it is publish's, whose
+  `cross_reference_unresolved` names the reference and its target, or a later slice's.
+
+The final whole-branch review found one thing and five smaller; these were changed:
+
+- **A click in the document's text after a reference put the caret too far along**, by the length of
+  the reference's drawn words, into a later block even: the click's offset counted the words
+  `renderContent` draws, and the editor's document, where a reference is an atom, holds none.
+  `textOffsetIn` now counts nothing inside a reference's span, as it counts nothing for an image, so
+  a click lands where it was made and one on the reference just before it.
+- **A broken reference said only _Broken reference_**, where XR-F asks it to name what it pointed
+  at: it now does for a section and another component, and the one it cannot name is recorded above.
+- **A copy to another application lost each reference's words**: the plain text left a gap and the
+  HTML said _Reference_. The surface's copy now fills both with what the surface shows, from its
+  context, as `renderContent` fills a span; the product's own type, which a paste back reads, is
+  unchanged. A footnote's open editor copies as ProseMirror does, as before.
+- **The dialog gave two targets of the same name the same name**, two footnotes on their own both
+  _Footnote_: the second and later now take a count, _Footnote (2)_, the list's alone, while the
+  line saying what it will show stays what the surface draws.
+- **The identity plugin's comment said a redo of a split renames its second half**, which the tests
+  show it does not: the redo brings back the name the split was left with. The comment says so, and
+  component-editor.md's footnotes 1 bullet, which said an undo brings a footnote back under new
+  identifiers, is now in the past tense and points at this plan's R7.
 
 ## Tasks
 

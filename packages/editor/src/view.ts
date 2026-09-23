@@ -12,8 +12,10 @@ import {
 import { figureView } from './figureView.js';
 import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
-import { referenceView } from './referenceView.js';
+import { referenceContextOf, referenceView } from './referenceView.js';
 import { newBlockIdentifier } from './identity.js';
+import { referencesShown, type ReferenceShown } from './referenceText.js';
+import { drawReferences } from './render.js';
 
 export interface MountOptions {
   readonly state: EditorState;
@@ -133,13 +135,30 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
  * Copy, and cut when `remove` says the surface may lose the selection: the product's own format
  * where the selection is a document on its own, and always HTML and plain text, which ProseMirror
  * serialises as it would itself. A collapsed selection is left to the browser, which copies nothing.
+ *
+ * **Each cross-reference is copied as the author sees it** (cross-references 1): the HTML's span is
+ * filled as `renderContent` fills one, and the plain text carries the same words where ProseMirror
+ * would write nothing, a reference holding no text. The words are the surface's - what the reference
+ * prints in the document it is edited in, from the surface's context - so another application gets
+ * _Table 1.1_, not _Reference_. Not a `leafText` on the node: that would change `textContent`, which
+ * a caption's words, spellcheck and the caret's count all read. A paste back into Alloy Works reads the
+ * product's own type, which stores the target, and never these words.
  */
 function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean): boolean {
   const data = event.clipboardData;
   if (!data || view.state.selection.empty) return false;
   event.preventDefault();
   const { from, to } = view.state.selection;
-  const { dom, text } = view.serializeForClipboard(view.state.selection.content());
+  const slice = view.state.selection.content();
+  const { dom } = view.serializeForClipboard(slice);
+  const shown = copiedReferences(view);
+  drawReferences(dom, shown);
+  const words = shown.map((each) => each.text);
+  const text = slice.content.textBetween(0, slice.content.size, '\n\n', (leaf) =>
+    leaf.type.name === 'crossReference'
+      ? (words.shift() ?? '')
+      : (leaf.type.spec.leafText?.(leaf) ?? ''),
+  );
   data.clearData();
   data.setData('text/html', dom.innerHTML);
   data.setData('text/plain', text);
@@ -149,4 +168,18 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
     view.dispatch(view.state.tr.deleteSelection().scrollIntoView().setMeta('uiEvent', 'cut'));
   }
   return true;
+}
+
+/**
+ * What each reference the selection copies shows on the surface, in document order - which is the
+ * order the copied slice's serializer writes their spans in and `textBetween` meets them in. Every
+ * reference of the component is judged against the whole component, as the surface judges it, and
+ * those standing in the selection's ranges kept: a table's cells selected are ranges of their own,
+ * and a reference in a cell outside them is not copied.
+ */
+function copiedReferences(view: EditorView): readonly ReferenceShown[] {
+  const { ranges } = view.state.selection;
+  return referencesShown(view.state.doc, referenceContextOf(view.state)).filter(({ pos }) =>
+    ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
+  );
 }

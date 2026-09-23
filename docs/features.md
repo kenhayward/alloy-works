@@ -263,14 +263,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   though never in preformatted text. In the text it shows what it will print - _Table 1.1_, a
   section's title, _above_ - or, on its own or for something the page has not numbered yet, the
   target's kind and caption, such as _Table: Readings_; a reference whose target has been deleted
-  says _Broken reference_, drawn apart and said so to a screen reader. Select a reference and press
-  **Reference** again to change what it points at or how it shows, with **Change**; delete it to
-  delete it. It takes no formatting of its own. Deleting a table and pressing `Ctrl+Z` leaves every
-  reference to it pointing at it, and so does cutting a figure and pasting it back into the same
-  component, which the paste report says. A component holding a reference opens for editing. The
-  document's text on its page shows each reference as the editor does. **A published document
-  refuses a cross-reference by name, for now**, and the words it shows - _page of_, _above_,
-  _below_ - are English until the layout's own arrive.
+  says _Broken reference_, or _Broken reference to a section_ where the section is not in the
+  document, drawn apart and said so to a screen reader. Copied to another application, it carries
+  the words it shows. Select a reference and press **Reference** again to change what it points at
+  or how it shows, with **Change**; delete it to delete it. It takes no formatting of its own.
+  Deleting a table and pressing `Ctrl+Z` leaves every reference to it pointing at it, and so does
+  cutting a figure and pasting it back into the same component, which the paste report says. A
+  component holding a reference opens for editing. The document's text on its page shows each
+  reference as the editor does. **A published document refuses a cross-reference by name, for now**,
+  and the words it shows - _page of_, _above_, _below_ - are English until the layout's own arrive.
 
 - **Documents and their outlines.** A document is a thing of its own, made in a space you may create
   in, with a title, a base language and a direction; it opens at version 0.1 with nothing in it yet.

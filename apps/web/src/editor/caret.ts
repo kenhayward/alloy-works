@@ -8,6 +8,12 @@ type Doc = EditorView['state']['doc'];
  * same count lands on the same character (interface slice 13). The point is a node and an offset,
  * as a browser reports one - a character offset in a text node, or a child index in an element.
  * Null where the point is not inside `root` at all.
+ *
+ * **A cross-reference's drawn words count as nothing** (cross-references 1). `renderContent` writes
+ * what a reference prints into its span - _Table 1.1_ - but in the editor's document a reference is
+ * an atom holding no text, as an inline image is, so `positionAtTextOffset` counts nothing for it.
+ * Counted here, every click after a reference would land the length of its words too far along, into
+ * a later block even. A click inside a reference's words lands just before it.
  */
 export function textOffsetIn(root: Node, node: Node, offset: number): number | null {
   if (!root.contains(node)) return null;
@@ -15,9 +21,10 @@ export function textOffsetIn(root: Node, node: Node, offset: number): number | n
   const [stop, extra] =
     node.nodeType === Node.TEXT_NODE ? [node, offset] : [node.childNodes[offset] ?? null, 0];
   const walker = root.ownerDocument!.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const drawn = (text: Node) => text.parentElement?.closest('[data-reference]') != null;
   let count = 0;
   for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
-    if (text === stop) return count + extra;
+    if (text === stop) return drawn(text) ? count : count + extra;
     // Past the point where it is an element: every text before that child has been counted.
     if (stop !== null && stop.nodeType !== Node.TEXT_NODE) {
       const order = stop.compareDocumentPosition(text);
@@ -25,7 +32,7 @@ export function textOffsetIn(root: Node, node: Node, offset: number): number | n
         return count;
       }
     }
-    count += text.textContent?.length ?? 0;
+    if (!drawn(text)) count += text.textContent?.length ?? 0;
   }
   return count;
 }

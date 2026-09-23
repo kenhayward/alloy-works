@@ -319,6 +319,41 @@ describe("the document's text", () => {
         ],
       });
     });
+
+    it('opens the editor with the caret where a click after a reference landed, not past it by its words', () => {
+      const places: (number | undefined)[] = [];
+      const shown = (editing: string | null) => (
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={texts}
+          editing={editing}
+          onEdit={() => undefined}
+          editor={(_component, place) => {
+            places.push(place.openAt);
+            return null;
+          }}
+        />
+      );
+      const { rerender } = render(shown(null));
+      // jsdom cannot say where a point is, so the browser's answer is given: just before "and",
+      // after the reference drawn _Table: Readings_.
+      const and = [...document.querySelectorAll('[data-reference]')][0]!.nextSibling!;
+      expect(and.textContent).toBe(' and ');
+      Object.defineProperty(document, 'caretPositionFromPoint', {
+        configurable: true,
+        value: () => ({ offsetNode: and, offset: 1 }),
+      });
+      try {
+        fireEvent.click(and.parentElement!);
+      } finally {
+        Reflect.deleteProperty(document, 'caretPositionFromPoint');
+      }
+      rerender(shown(PRINTER_NODE));
+      // "See " and the space: the reference counts as the one position it takes, with no text.
+      expect(places.at(-1)).toBe(5);
+    });
   });
 
   it('numbers nothing when the scheme could not be read', () => {
