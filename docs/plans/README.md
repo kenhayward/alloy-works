@@ -493,9 +493,9 @@ over the resolution structure 4 designed, measured against the pinned engine on 
 to XR-G). Planned as two pull requests (decision XR-G): references in the editor, with identifiers kept
 through an undo and a cut and paste, then references published.
 
-| #   | Plan                                                                                   | Builds                                                                                                                                                                                                                                   | Status      |
-| --- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 1   | [References in the editor](2026-09-23-cross-references-01-references-in-the-editor.md) | A reference to a section, a figure, a table or a footnote placed from a dialog and shown as it will print, or as broken; identifiers kept through an undo, and references re-pointed through a cut and paste; refused by name at publish | In progress |
+| #   | Plan                                                                                   | Builds                                                                                                                                                                                                                                   | Status          |
+| --- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 1   | [References in the editor](2026-09-23-cross-references-01-references-in-the-editor.md) | A reference to a section, a figure, a table or a footnote placed from a dialog and shown as it will print, or as broken; identifiers kept through an undo, and references re-pointed through a cut and paste; refused by name at publish | Built (PR #219) |
 
 ## Publishing
 
