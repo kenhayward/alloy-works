@@ -18,6 +18,13 @@ import {
   spellcheckDecorations,
 } from './state.js';
 
+/**
+ * A minute, as blocks.test.ts's seeded run and structure's randomised tests have (issue #140): the two
+ * sequence runs below took under four seconds on CI for weeks, and one took 5.26 on a busy runner and
+ * failed the build on Vitest's five-second default without failing a single assertion (issue #210).
+ */
+const RANDOMISED_TEST_TIMEOUT_MS = 60_000;
+
 const counter = () => {
   let next = 0;
   return () => `n${(next += 1)}`;
@@ -229,62 +236,70 @@ describe('what the editor always holds', () => {
     }
   };
 
-  it('holds a storable document after any sequence of typing, splitting, joining, deleting and undoing', () => {
-    storableAfterAnySequence(stateOf([['b1', 'Unbox the printer.']]), 20260916);
-  });
+  it(
+    'holds a storable document after any sequence of typing, splitting, joining, deleting and undoing',
+    () => {
+      storableAfterAnySequence(stateOf([['b1', 'Unbox the printer.']]), 20260916);
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
 
-  it('holds one after any such sequence inside a list and a definition list too', () => {
-    // The sequence above never leaves the top level, where every position is a paragraph's. Seeded
-    // with a document that nests, the same two thousand edits land inside list items, inside a
-    // definition item's body and inside its term - which is where identity, adjacency and the
-    // mapping all had to learn to descend, and where a position they disagree about first shows up.
-    const opened = toEditor({
-      schemaVersion: 1,
-      title: 'Install the printer',
-      language: 'en-GB',
-      direction: 'ltr',
-      content: [
-        { type: 'paragraph', id: 'b1', style: 'body', content: [] },
-        {
-          type: 'list',
-          id: 'L1',
-          kind: 'unordered',
-          items: [
-            { content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }] },
-            {
-              content: [
-                { type: 'paragraph', id: 'b3', style: 'body', content: [] },
-                {
-                  type: 'list',
-                  id: 'L2',
-                  kind: 'ordered',
-                  items: [
-                    { content: [{ type: 'paragraph', id: 'b4', style: 'body', content: [] }] },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          type: 'list',
-          id: 'D1',
-          kind: 'definition',
-          items: [
-            {
-              term: [{ type: 'text', value: 'Tensile strength', marks: [] }],
-              content: [{ type: 'paragraph', id: 'b5', style: 'body', content: [] }],
-            },
-          ],
-        },
-      ],
-    });
-    if (!opened.editable) throw new Error('expected an editable document');
-    storableAfterAnySequence(
-      createEditorState({ doc: opened.doc, newIdentifier: counter() }),
-      20260921,
-    );
-  });
+  it(
+    'holds one after any such sequence inside a list and a definition list too',
+    () => {
+      // The sequence above never leaves the top level, where every position is a paragraph's. Seeded
+      // with a document that nests, the same two thousand edits land inside list items, inside a
+      // definition item's body and inside its term - which is where identity, adjacency and the
+      // mapping all had to learn to descend, and where a position they disagree about first shows up.
+      const opened = toEditor({
+        schemaVersion: 1,
+        title: 'Install the printer',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          { type: 'paragraph', id: 'b1', style: 'body', content: [] },
+          {
+            type: 'list',
+            id: 'L1',
+            kind: 'unordered',
+            items: [
+              { content: [{ type: 'paragraph', id: 'b2', style: 'body', content: [] }] },
+              {
+                content: [
+                  { type: 'paragraph', id: 'b3', style: 'body', content: [] },
+                  {
+                    type: 'list',
+                    id: 'L2',
+                    kind: 'ordered',
+                    items: [
+                      { content: [{ type: 'paragraph', id: 'b4', style: 'body', content: [] }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'list',
+            id: 'D1',
+            kind: 'definition',
+            items: [
+              {
+                term: [{ type: 'text', value: 'Tensile strength', marks: [] }],
+                content: [{ type: 'paragraph', id: 'b5', style: 'body', content: [] }],
+              },
+            ],
+          },
+        ],
+      });
+      if (!opened.editable) throw new Error('expected an editable document');
+      storableAfterAnySequence(
+        createEditorState({ doc: opened.doc, newIdentifier: counter() }),
+        20260921,
+      );
+    },
+    RANDOMISED_TEST_TIMEOUT_MS,
+  );
 });
 
 /**
