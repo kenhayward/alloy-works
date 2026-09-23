@@ -14,7 +14,13 @@ import { createArtifact, readVersion, type StoredVersion } from './versions.js';
 
 /** Why an upload was refused: at the door by the service, or by the `ingest` job's decode. */
 export type AssetUploadReason =
-  'not_permitted' | 'too_large' | 'too_many_pixels' | 'malformed' | 'undecodable';
+  | 'not_permitted'
+  | 'too_large'
+  | 'too_many_pixels'
+  | 'malformed'
+  | 'undecodable'
+  /** The job's last attempt failed for the store's or the database's reasons, never the bytes'. */
+  | 'unchecked';
 
 export type AssetUploadState = 'awaiting' | 'checking' | 'ready' | 'refused';
 

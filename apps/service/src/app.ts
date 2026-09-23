@@ -32,11 +32,12 @@ import {
   notFound,
   type Authorised,
 } from './access.js';
+import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { editingHandlers } from './editing.js';
-import { AppError, storageUnavailable } from './errors.js';
+import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, type HttpOptions } from './http.js';
 import { invitationHandlers } from './invitations.js';
@@ -102,7 +103,9 @@ type Success<R extends RouteContract> = R['responses'] extends {
   200: { schema: infer S extends z.ZodType };
 }
   ? z.input<S>
-  : never;
+  : R['responses'] extends { 200: { binary: object } }
+    ? BinaryBody
+    : never;
 
 /**
  * A route that checks a permission is handed what was decided, and runs in the transaction it was
@@ -292,6 +295,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
     ...publishingHandlers(db, tenantOf, principalOf, options.objects),
+    ...assetHandlers(db, tenantOf, principalOf, options.objects),
     ...editingHandlers(),
     ...managingAccessHandlers(),
     ...invitationHandlers(),
@@ -606,21 +610,39 @@ export function buildApp(options: AppOptions): FastifyInstance {
   function permissionChecked(
     access: RouteAccess,
     handler: Handlers[keyof Handlers],
+    binary: boolean,
   ): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
     if (access.check !== 'permission') {
       const run = handler as (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
       return (request, reply) => run(request, reply);
     }
     const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
-    return (request) =>
-      db.withTenant(tenantOf(request), async (trx) => {
+    return async (request, reply) => {
+      const body = await db.withTenant(tenantOf(request), async (trx) => {
         await beforeDeciding(trx, access);
         return run(
           request,
           await authorise(trx, principalOf(request).principalId, access, request),
         );
       });
+      if (!binary) return body;
+      // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never
+      // sniffed into something a browser would run, and never run as a document of this origin.
+      const bytes = body as BinaryBody;
+      void reply.header('X-Content-Type-Options', 'nosniff');
+      void reply.header('Content-Security-Policy', 'sandbox');
+      if (bytes.immutable)
+        void reply.header('Cache-Control', 'private, max-age=31536000, immutable');
+      return reply.type(bytes.contentType).send(bytes.bytes);
+    };
   }
+
+  // A raw body is bytes, kept as they came: one content type, declared by the route that takes it.
+  app.addContentTypeParser(
+    'application/octet-stream',
+    { parseAs: 'buffer' },
+    (_request, body, done) => done(null, body),
+  );
 
   const http = app.withTypeProvider<ZodTypeProvider>();
   for (const [name, route] of Object.entries(routes) as [keyof Handlers, RouteContract][]) {
@@ -667,7 +689,32 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...(route.body ? { body: route.body } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
-      handler: permissionChecked(route.access, handlers[name]),
+      ...(route.rawBody
+        ? {
+            bodyLimit: route.rawBody.maxBytes,
+            // A body over the limit is refused before it is read whole, in the route's own words.
+            errorHandler: (error: unknown, request: FastifyRequest, reply: FastifyReply) => {
+              const tooLarge = (error as { code?: string }).code === 'FST_ERR_CTP_BODY_TOO_LARGE';
+              const { status, body } = toErrorBody(
+                tooLarge
+                  ? new AppError(
+                      413,
+                      'asset_too_large',
+                      'This file is larger than an image may be.',
+                    )
+                  : error,
+                request.id,
+              );
+              if (status >= 500) request.log.error({ err: error }, 'request failed');
+              return reply.status(status).send(body);
+            },
+          }
+        : {}),
+      handler: permissionChecked(
+        route.access,
+        handlers[name],
+        route.responses[200]?.binary !== undefined,
+      ),
     });
   }
   return app;

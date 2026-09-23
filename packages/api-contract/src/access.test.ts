@@ -28,6 +28,10 @@ describe('what each route checks', () => {
       if ('body' in target) {
         expect(route.body?.shape, route.operationId).toHaveProperty(target.body);
       }
+      if ('artifactVersion' in target) {
+        expect(route.path, route.operationId).toContain(`{${target.artifactVersion}}`);
+        expect(route.params?.shape, route.operationId).toHaveProperty(target.artifactVersion);
+      }
       if ('grant' in target) {
         expect(route.path, route.operationId).toContain(`{${target.grant}}`);
         expect(route.params?.shape, route.operationId).toHaveProperty(target.grant);

@@ -1,3 +1,4 @@
+import { assetRoutes } from './assets.js';
 import { componentRoutes } from './components.js';
 import type { RouteContract } from './contract.js';
 import { documentRoutes } from './documents.js';
@@ -248,6 +249,7 @@ export const routes = {
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,
+  ...assetRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

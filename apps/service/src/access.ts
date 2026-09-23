@@ -64,6 +64,18 @@ async function targetOf(
     const id = params[declared.grant];
     return typeof id === 'string' && UUID.test(id) ? grantLevel(trx, id) : undefined;
   }
+  if ('artifactVersion' in declared) {
+    // A version is decided on the artifact it belongs to, read in the deciding transaction (figures
+    // 1, R2): a version this tenant does not hold is no level at all, and so not found.
+    const id = params[declared.artifactVersion];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select('artifact_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return version ? parseLevel(`artifact:${version.artifact_id}`) : undefined;
+  }
   const [kind, name] =
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];

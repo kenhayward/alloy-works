@@ -5,6 +5,7 @@ import {
   bootstrapCluster,
   configureOrganisationSignIn,
   createArtifact,
+  createAssetUpload,
   createDocument,
   createTenant,
   createTenantDatabase,
@@ -12,6 +13,8 @@ import {
   grant,
   invite,
   migrate,
+  receiveAssetBytes,
+  recordAsset,
   recordPublication,
   requestPublication,
   type Tenant,
@@ -89,6 +92,11 @@ const OTHER_TENANT_IDS: Readonly<
     sequence: '1',
   }),
   removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
+  createAssetUpload: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  putAssetUploadBytes: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
+  getAssetUpload: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
+  getAssetVersion: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
+  getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
 };
 
@@ -104,6 +112,7 @@ const VALID_INPUT: Readonly<
     payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' },
   },
   createDocument: { payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' } },
+  createAssetUpload: { payload: { alternative: null } },
   editOutline: {
     payload: {
       openedFrom: SESSION,
@@ -236,6 +245,50 @@ const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>
  * A publication in environment B, and the request that made it: asked for through the store and
  * recorded as a worker records one, over an output that need not exist - nothing here fetches it.
  */
+/**
+ * An asset in the tenant's General space, made as the `ingest` job makes one, over an object that need
+ * not exist: a route reaching it from another environment must refuse before it reads the store.
+ */
+const assetIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const space = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const uploader = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const upload = await createAssetUpload(trx, {
+      spaceId: space.id,
+      uploader: uploader.id,
+      alternative: null,
+    });
+    await receiveAssetBytes(trx, upload.id, {
+      key: `${tenant.role}/sha256/${'d'.repeat(64)}`,
+      format: 'png',
+      bytes: 1,
+    });
+    const version = await recordAsset(trx, upload.id, {
+      format: 'png',
+      width: 1,
+      height: 1,
+      orientation: 1,
+      colour: 'rgb',
+      alpha: false,
+      depth: 8,
+      resolution: null,
+    });
+    return { upload: upload.id, version: version.id };
+  });
+
 const publicationIn = async (tenant: Tenant, db: TenantDatabase) => {
   const document = await documentIdIn(tenant, db);
   return db.withTenant(tenant, async (trx) => {
