@@ -1,5 +1,11 @@
 import type { Alternative } from '@alloy-works/domain';
-import { NodeSelection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
+import {
+  NodeSelection,
+  Plugin,
+  TextSelection,
+  type Command,
+  type EditorState,
+} from 'prosemirror-state';
 
 import { kept } from './figures.js';
 import { editorSchema } from './schema.js';
@@ -78,6 +84,32 @@ export function replaceImageAsset(asset: string, alternative: Alternative): Comm
     ? () => false
     : changeImage((attrs) => ({ ...attrs, asset, alternative: given }));
 }
+
+/**
+ * **An image carries no marks** (ruling R1), kept after every transaction. A paragraph allows every
+ * mark, and ProseMirror puts a mark on each inline node it is applied over, so a mark put over words
+ * and an image rested on the image too - shown on the surface, never stored, since the stored image
+ * has no marks (final review of figures 4). Taken off in the transaction that put it there, so an undo
+ * has nothing of it to bring back.
+ */
+export const imagesUnmarked = new Plugin({
+  appendTransaction(transactions, _before, state) {
+    if (!transactions.some((transaction) => transaction.docChanged)) return null;
+    const marked: { from: number; to: number }[] = [];
+    state.doc.descendants((node, pos) => {
+      if (node.type === imageNode && node.marks.length > 0) {
+        marked.push({ from: pos, to: pos + node.nodeSize });
+      }
+      return true;
+    });
+    if (marked.length === 0) return null;
+    const tr = state.tr;
+    for (const { from, to } of marked) {
+      for (const mark of tr.doc.nodeAt(from)!.marks) tr.removeMark(from, to, mark.type);
+    }
+    return tr;
+  },
+});
 
 /** Removes the selected image, leaving the cursor where it stood. */
 export const deleteImage: Command = (state, dispatch) => {

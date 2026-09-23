@@ -230,7 +230,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   figure: a PNG or a JPEG, described or marked decorative as it is uploaded. It stands one line high,
   and one that cannot be shown says _An image you may not see_ in its place. Selected, it is given the
   same panel as a figure, titled **Image**, with **Replace image** and **Delete image**. It takes no
-  formatting, so a link or a mark over the words either side of it is two. One copied within the
+  formatting of its own, and a link or a mark over the words either side of it is still one. One copied within the
   product pastes as one. **A document holding an image in a line of text cannot be published yet**,
   and one cannot be placed in a caption, a term, an attribution or preformatted text.
 

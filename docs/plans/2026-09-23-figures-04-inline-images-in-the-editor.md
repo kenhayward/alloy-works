@@ -49,6 +49,24 @@ of those. Figures 5 publishes them.
 - **R8. Copying** within the product keeps an image, through the product's clipboard type, as it keeps
   a figure. A paste from outside still keeps no image.
 
+## What the build and its review changed
+
+- **R1 said an annotation over text either side of an image is two pieces; it is one.** The stored
+  model ends an annotation only at text without it (`claimRange`), and `spansOf` already agreed. The
+  final review found `marks: ''` did not keep marks off the image - a paragraph decides what its
+  children carry - so the image took a mark on the surface that was never stored, and a link changed
+  from one side after a reopen changed half. `imagesUnmarked` takes marks off an image, `annotationAt`
+  joins across one, and a mark command sees nothing to mark in an image selected whole.
+- **Preformatted text declines over a paragraph holding an image**, rather than dropping it; the seeded
+  gesture test now starts from a document holding one.
+- **The panel says "image" of an image**, and a publish refused for one says "An image in a line of
+  text cannot be published yet." rather than naming formatting.
+- **A selected image is outlined**, since a browser draws no selection over a replaced element.
+- **Not changed:** an image copied out of the product carries no text - its plain text is nothing, its
+  HTML a relative address another program cannot load. Giving it a `leafText` would make `spansOf`
+  and the stored model disagree about where an annotation ends; what an image should paste as in
+  another program waits for export.
+
 ## Tasks
 
 1. **`packages/editor`**: the node and the mapping (R1 to R4), the commands (R5), the node view, and

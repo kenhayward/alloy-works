@@ -1317,6 +1317,25 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
     expect(() => stored(back.next.doc)).not.toThrow();
   });
 
+  it('declines to make preformatted a paragraph holding an image, which is content and not formatting', () => {
+    // Found by the final review of figures 4: preformatted text holds text alone, and the image was
+    // dropped with nothing said.
+    const image = editorSchema.nodes.image!.create({
+      asset: '00000000-0000-4000-8000-00000000a551',
+      alternative: { kind: 'decorative' },
+    });
+    const doc = documentOf(
+      paragraph('b1', 'a'),
+      editorSchema.node('paragraph', { id: 'b2', style: 'body' }, [
+        editorSchema.text('ab'),
+        image,
+        editorSchema.text('cd'),
+      ]),
+    );
+    expect(blockCommand('preformatted', counter())(across(doc, 'b1', 'b2'))).toBe(false);
+    expect(blockCommand('preformatted', counter())(stateOf(doc, 'b2'))).toBe(false);
+  });
+
   it('drops the marks of a paragraph it makes preformatted, and one undo brings them back', () => {
     const strong = editorSchema.marks.strong!.create({ id: 'm1' });
     const link = editorSchema.marks.hyperlink!.create({
@@ -1527,7 +1546,15 @@ describe('undo, and gestures over a range, never leave the author stuck (issue #
         let state = createEditorState({
           doc: documentOf(
             paragraph('b1', 'Alpha'),
-            paragraph('b2', 'Beta'),
+            // An inline image among the runs (figures 4), so every gesture meets one.
+            editorSchema.node('paragraph', { id: 'b2', style: 'body' }, [
+              editorSchema.text('Be'),
+              editorSchema.nodes.image!.create({
+                asset: '00000000-0000-4000-8000-00000000a551',
+                alternative: { kind: 'decorative' },
+              }),
+              editorSchema.text('ta'),
+            ]),
             paragraph('b3', 'Gamma'),
           ),
           newIdentifier: counter(),

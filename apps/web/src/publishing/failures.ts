@@ -35,8 +35,11 @@ export function failureWords(failure: Failure): string {
     // as well as for a paragraph, and names the LIST in that case, because a term carries no
     // identifier of its own. A sentence that said paragraph while pointing at a list would send an
     // author looking for something that is not there.
+    // An image in a line of text is named as one, now an author can place it (figures 4).
     case 'inline_not_publishable':
-      return 'This text holds formatting or an inline item that cannot be published yet.';
+      return failure.detail === 'image'
+        ? 'An image in a line of text cannot be published yet.'
+        : 'This text holds formatting or an inline item that cannot be published yet.';
     // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
     case 'style_missing':

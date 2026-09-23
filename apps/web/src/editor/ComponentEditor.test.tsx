@@ -3748,6 +3748,12 @@ describe('a figure in the editor (figures 2)', () => {
       const view = await surface();
       selectTheImage(view);
       const panel = await screen.findByRole('group', { name: 'Image' });
+      // Said of the image, not a figure (final review).
+      expect(
+        await within(panel).findByText(
+          /so this image cannot be published until it is given one here/,
+        ),
+      ).toBeInTheDocument();
       await userEvent.click(within(panel).getByLabelText('Decorative'));
       await waitFor(() => expect(runsOf(view)[1]).toEqual(inline({ kind: 'decorative' })));
 

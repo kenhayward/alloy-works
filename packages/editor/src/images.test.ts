@@ -18,6 +18,7 @@ import {
   setImageAlternative,
 } from './images.js';
 import { fromEditor, toEditor } from './mapping.js';
+import { applyMarkCommand, somewhereToPutMark, toggleMarkCommand } from './marks.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
 
@@ -213,6 +214,55 @@ describe('an inline image in the editor (figures 4)', () => {
 
     const plain = stateOf(documentOf(paragraph('p1', text('Press'))), 2);
     expect(insertImage(RED, { kind: 'own', text: '   ' })(plain)).toBe(false);
+  });
+
+  it('never lets a mark rest on an image, whatever the mark is put over', () => {
+    // Found by the final review: the paragraph allows every mark, so ProseMirror put one on the image
+    // too - shown on the surface and never stored. Ruling R1: the image carries none.
+    const document = documentOf(
+      paragraph('p1', text('ab'), image({ kind: 'decorative' }), text('cd')),
+    );
+    const state = stateOf(document);
+    const all = state.apply(
+      state.tr.setSelection(
+        TextSelection.create(state.doc, inside(state.doc, 'p1'), inside(state.doc, 'p1') + 5),
+      ),
+    );
+    const bold = run(all, toggleMarkCommand('strong', counter('s')));
+    expect(bold.handled).toBe(true);
+    bold.next.doc.descendants((node) => {
+      if (node.type.name === 'image') expect(node.marks).toEqual([]);
+    });
+    // An image selected whole is nothing to put a mark on, so no dialog opens for it.
+    const selected = selectImage(stateOf(document));
+    expect(somewhereToPutMark(selected, 'hyperlink')).toBe(false);
+    expect(somewhereToPutMark(selected, 'strong')).toBe(false);
+  });
+
+  it('changes a link that runs across an image as the one annotation it is', () => {
+    // The stored model closes an annotation only at text without it, so an image inside a link does
+    // not break it; the editor, asked from one side, must change both.
+    const link = (value: string): InlineNode => ({
+      type: 'text',
+      value,
+      marks: [{ type: 'hyperlink', id: 'k1', href: 'https://old.example/' }],
+    });
+    const state = stateOf(
+      documentOf(paragraph('p1', link('ab'), image({ kind: 'decorative' }), link('cd'))),
+    );
+    const cursor = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, inside(state.doc, 'p1') + 1)),
+    );
+    const changed = run(
+      cursor,
+      applyMarkCommand('hyperlink', counter('k'), { href: 'https://new.example/' }),
+    );
+    expect(changed.handled).toBe(true);
+    const [block] = stored(changed.next) as unknown as [{ content: InlineNode[] }];
+    const targets = block.content.flatMap((each) =>
+      each.type === 'text' ? each.marks.map((mark) => (mark as { href: string }).href) : [],
+    );
+    expect(targets).toEqual(['https://new.example/', 'https://new.example/']);
   });
 
   it('reads, sets, replaces and deletes an image selected whole', () => {

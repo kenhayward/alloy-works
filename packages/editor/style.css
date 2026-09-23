@@ -283,6 +283,13 @@
   vertical-align: text-bottom;
 }
 
+/* An inline image selected whole - which is how the panel for it opens - is outlined, so an author
+ * can see which it is: the browser draws no selection over a replaced element of its own. */
+.aw-inline-image-holder.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* An inline image that does not load: marked in its place, as a figure is, in a line of its text. */
 .aw-inline-image-holder.aw-image-missing .aw-inline-image {
   display: none;

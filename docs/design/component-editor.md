@@ -413,8 +413,12 @@ and publishing one waits for figures 5. Building them settled three things the d
 - **An image stands in a paragraph alone**, wherever the paragraph is - running text, a list, a
   quotation, a table's cell. A term, an attribution, a caption and preformatted text take none, and a
   stored image in one still opens the component read-only, naming it.
-- **It carries no marks**, since the stored node carries none: a link or an annotation over the words
-  either side of an image is two pieces, as it is over any break in its run.
+- **It carries no marks**, since the stored node carries none: a mark put over words and an image rests
+  on the words alone, and a link or an annotation over the words either side of an image is still
+  one - changed or taken off whole - because the stored model ends an annotation only at text without
+  it. The final review found the first draft saying "two pieces" and doing worse: the image took the
+  mark on the surface and never stored it, and a link changed from one side after a reopen changed
+  half.
 - **It has a button of its own, Image**, beside Figure, rather than Figure choosing by where the cursor
   is: an author placing an image in running text and one placing a figure after a paragraph want
   different things, and a button that did either would hide which.

@@ -143,7 +143,7 @@ export function FigurePanel({
           {described.state === 'described'
             ? `${described.text} (${described.language})`
             : described.state === 'none'
-              ? 'The image has no description of its own, so this figure cannot be published until it is given one here.'
+              ? `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`
               : described.state === 'unknown'
                 ? 'The image cannot be read, so its description cannot be shown.'
                 : 'Reading the image'}
@@ -165,7 +165,7 @@ export function FigurePanel({
         )}
         {choice === 'own' && own.trim() === '' && (
           <p className={styles['note']}>
-            Until something is typed here, the figure keeps what it had.
+            Until something is typed here, the {kind} keeps what it had.
           </p>
         )}
         <label>

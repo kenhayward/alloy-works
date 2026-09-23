@@ -108,10 +108,6 @@ const tableSpecs = tableNodes({
 export const IMAGE_OWN_DESCRIPTION = "The image, described by the image's own description";
 
 /**
- * Where an asset version's bytes are read from. The renderer is served on the service's own origin,
- * so one path serves the surface and a document's text alike (figures 2, ruling R1).
- */
-/**
  * The `alt` an image on the surface is given: its own text, nothing where it is decorative, and a
  * sentence saying the image's own description is used where it inherits one - a figure's and an
  * inline image's alike.
@@ -121,6 +117,10 @@ function altOf(alternative: { kind: string; text?: string }): string {
   return alternative.kind === 'decorative' ? '' : IMAGE_OWN_DESCRIPTION;
 }
 
+/**
+ * Where an asset version's bytes are read from. The renderer is served on the service's own origin,
+ * so one path serves the surface and a document's text alike (figures 2, ruling R1).
+ */
 export const assetContentPath = (asset: string): string =>
   `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
 
@@ -380,7 +380,9 @@ export const editorSchema = new Schema({
     /**
      * An image in a run of text (figures 4, ruling R1): the asset version it shows, its image style and
      * its alternative text, as the stored `image` holds them - and **no marks**, since the stored node
-     * carries none, so an annotation over text either side of it is two pieces. An atom, drawn one line
+     * carries none. `marks: ''` cannot say so - a paragraph decides which marks its children carry - so
+     * `imagesUnmarked` takes off any a command puts on one, and an annotation over the words either side
+     * of an image is still one annotation, as the stored model reads it. An atom, drawn one line
      * high from the asset version's route, with its `alt` as a figure's is; `imageView` marks one that
      * does not load. No `parseDOM`, for the figure's reason: an image enters a component only through the
      * dialog or the product's own clipboard, never with a guessed alternative text.
