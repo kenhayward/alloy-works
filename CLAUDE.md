@@ -41,7 +41,7 @@ a web application and a desktop application**.
 > Typst's `--features a11y-extras`, and a list of tables after the contents - marked
 > **Not approved** on every page, through the `publish` job in `apps/worker` and the routes in
 > `apps/service/src/publishing.ts` - and nothing else authors or
-> publishes content: no figure published or pasted, no footnote or equation written or pasted, no metadata panel,
+> publishes content: no figure published, no image pasted from outside the product, no footnote or equation written or pasted, no metadata panel,
 > no making a component type, no defined term written or resolved, no cross-references resolved, no
 > document view, no list of figures or equations, no
 > choosing or editing a layout, and no theme, preview or Word output. The single `Component` in `packages/domain` is the scaffolding's, and

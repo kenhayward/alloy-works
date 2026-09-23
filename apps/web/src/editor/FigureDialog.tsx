@@ -1,10 +1,13 @@
-import type { Alternative } from '@alloy-works/domain';
+import { contentDocumentSchema, type Alternative } from '@alloy-works/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import type { UploadOutcome } from './upload.js';
+
+/** The language rule a component's own base language is held to, which an asset's is too. */
+const languageTag = contentDocumentSchema.shape.language;
 
 export interface FigureDialogProps {
   /** `Figure` to make one, `Replace image` to give an existing one another. */
@@ -16,11 +19,14 @@ export interface FigureDialogProps {
     bytes: Uint8Array,
     alternative: { readonly text: string; readonly language: string } | null,
   ) => Promise<UploadOutcome>;
-  /** The asset version made, and how the figure's alternative text is given as a result. */
+  /**
+   * The asset version made, and how the figure's alternative text is given as a result; answers why
+   * it could not be placed, which the dialog says and stays open for, or null once it has been.
+   */
   readonly onDone: (result: {
     readonly assetVersion: string;
     readonly alternative: Alternative;
-  }) => void;
+  }) => string | null;
   readonly onCancel: () => void;
 }
 
@@ -62,21 +68,32 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
       setSaid('Describe the image, or say it is decorative.');
       return;
     }
+    const language = tag.trim();
+    if (!decorative && !languageTag.safeParse(language).success) {
+      setSaid('Give the language as a tag, such as en-GB.');
+      return;
+    }
     setBusy(true);
     setSaid(null);
-    const outcome = await upload(
-      new Uint8Array(await file.arrayBuffer()),
-      decorative ? null : { text, language: tag.trim() },
-    );
-    setBusy(false);
+    let outcome: UploadOutcome;
+    try {
+      outcome = await upload(
+        new Uint8Array(await file.arrayBuffer()),
+        decorative ? null : { text, language },
+      );
+    } finally {
+      setBusy(false);
+    }
     if (!outcome.ok) {
       setSaid(outcome.sentence);
       return;
     }
-    onDone({
-      assetVersion: outcome.assetVersion,
-      alternative: decorative ? { kind: 'decorative' } : { kind: 'inherited' },
-    });
+    setSaid(
+      onDone({
+        assetVersion: outcome.assetVersion,
+        alternative: decorative ? { kind: 'decorative' } : { kind: 'inherited' },
+      }),
+    );
   };
 
   return (

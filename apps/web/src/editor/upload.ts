@@ -24,6 +24,8 @@ const SAID: Readonly<Record<string, string>> = {
   malformed: 'This is not a complete PNG or JPEG image.',
   undecodable: 'This image could not be read all the way through, so it may be damaged.',
   unchecked: 'The image could not be checked. Try again.',
+  // Editing a component does not by itself let its author add to the space it is in.
+  forbidden: 'You may not add an image to this space.',
 };
 
 const FAILED = 'The image could not be uploaded. Try again.';
@@ -52,6 +54,20 @@ export async function uploadImage(
     readonly alternative: { readonly text: string; readonly language: string } | null;
   },
   wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<UploadOutcome> {
+  // A request that never reaches the service rejects rather than answering; it is said as any other
+  // failure is, so the dialog waiting on this always hears back (figures 2, final review).
+  try {
+    return await attempt(client, input, wait);
+  } catch {
+    return refusal(undefined);
+  }
+}
+
+async function attempt(
+  client: Client,
+  input: Parameters<typeof uploadImage>[1],
+  wait: (ms: number) => Promise<void>,
 ): Promise<UploadOutcome> {
   const made = await client.POST('/v1/spaces/{space}/asset-uploads', {
     params: { path: { space: input.space } },

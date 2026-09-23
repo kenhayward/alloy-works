@@ -1263,6 +1263,31 @@ describe('quotations and preformatted text: the commands and the keys (editor 5)
     expect(pressed.next.selection.$from.depth).toBe(1);
   });
 
+  it("leaves a figure for a paragraph after it on Enter in its caption, even as the component's last block", () => {
+    const caption = editorSchema.node('figureCaption', null, [editorSchema.text('Shapes')]);
+    const figure = editorSchema.node(
+      'figure',
+      {
+        id: 'f1',
+        asset: '00000000-0000-4000-8000-00000000a551',
+        alternative: { kind: 'decorative' },
+      },
+      [caption],
+    );
+    const pressed = chord(
+      atEndOf(documentOf(paragraph('p1', 'a'), figure), 'figureCaption'),
+      'Enter',
+    );
+    expect(pressed.handled).toBe(true);
+    expect(shapeOf(pressed.next.doc)).toEqual([
+      'doc',
+      ['paragraph', 'a'],
+      ['figure', ['figureCaption', 'Shapes']],
+      'paragraph',
+    ]);
+    expect(pressed.next.selection.$from.parent.type.name).toBe('paragraph');
+  });
+
   it('moves an empty last paragraph out of a quotation on Enter, and does nothing in its only one', () => {
     const doc = documentOf(quotation('q1', [paragraph('b1', 'Words.'), paragraph('b2', '')]));
     const pressed = chord(stateOf(doc, 'b2'), 'Enter');

@@ -6,7 +6,7 @@ import {
   type EditorView,
   type FigureAt,
 } from '@alloy-works/editor';
-import { useEffect, useId, useState, type Ref } from 'react';
+import { useEffect, useId, useRef, useState, type Ref } from 'react';
 
 import styles from './FigurePanel.module.css';
 
@@ -43,16 +43,20 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
   const [choice, setChoice] = useState<Alternative['kind']>(figure.alternative.kind);
   const [own, setOwn] = useState(figure.alternative.kind === 'own' ? figure.alternative.text : '');
   const [described, setDescribed] = useState<Described>({ state: 'reading' });
+  // What the panel itself last set, so its own step is not echoed back into it: the field holds what
+  // is typed, and an emptied field holds nothing while the figure keeps what it had.
+  const sent = useRef<Alternative | null>(null);
+  // What the figure held before its own text was begun here: what an emptied field gives it back.
+  const before = useRef<Alternative>(figure.alternative);
 
-  // The figure the panel is about can change under it - the cursor moves to another figure, or the
-  // image is replaced - and the panel follows what the figure holds.
+  // The figure can change under the panel - an undo, or its image replaced - and the panel follows
+  // what it holds. Another figure is another panel: the page keys it by the figure.
   useEffect(() => {
     const held = figure.alternative;
+    if (held === sent.current) return;
     setChoice(held.kind);
-    // What the author is typing is what the figure holds, so a keystroke's own step is not echoed
-    // back into the field; anything else - another figure, an undo - is shown as the figure holds it.
-    if (held.kind === 'own') setOwn((was) => (was === held.text ? was : held.text));
-  }, [figure.pos, figure.alternative]);
+    if (held.kind === 'own') setOwn(held.text);
+  }, [figure.alternative]);
 
   useEffect(() => {
     let current = true;
@@ -73,13 +77,26 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
 
   const apply = (alternative: Alternative) => {
     if (!enabled) return;
-    setFigureAlternative(alternative)(view.state, view.dispatch);
+    const set = setFigureAlternative(alternative);
+    if (!set(view.state)) return;
+    sent.current = alternative;
+    set(view.state, view.dispatch);
   };
 
   const choose = (kind: Alternative['kind']) => {
     setChoice(kind);
     if (kind === 'inherited' || kind === 'decorative') apply({ kind });
-    else if (own.trim() !== '') apply({ kind: 'own', text: own });
+    else {
+      before.current = figure.alternative;
+      if (own.trim() !== '') apply({ kind: 'own', text: own });
+    }
+  };
+
+  const type = (text: string) => {
+    setOwn(text);
+    // Every keystroke is the figure's, until the field says nothing: then the figure goes back to
+    // what it had, rather than keeping the last letter left in it (figures 2, final review).
+    apply(text.trim() !== '' ? { kind: 'own', text } : before.current);
   };
 
   return (
@@ -116,16 +133,13 @@ export function FigurePanel({ view, figure, enabled, client, onReplace, ref }: F
         {choice === 'own' && (
           <label>
             Its own description
-            <textarea
-              value={own}
-              onChange={(event) => {
-                setOwn(event.target.value);
-                if (event.target.value.trim() !== '') {
-                  apply({ kind: 'own', text: event.target.value });
-                }
-              }}
-            />
+            <textarea value={own} onChange={(event) => type(event.target.value)} />
           </label>
+        )}
+        {choice === 'own' && own.trim() === '' && (
+          <p className={styles['note']}>
+            Until something is typed here, the figure keeps what it had.
+          </p>
         )}
         <label>
           <input

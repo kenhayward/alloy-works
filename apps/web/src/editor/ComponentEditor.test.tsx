@@ -3366,11 +3366,13 @@ describe('a figure in the editor (figures 2)', () => {
       caption: [{ type: 'text', value: 'Shapes', marks: [] }],
       alternative,
     });
-  const caretInCaption = (view: EditorView) =>
+  /** The caret into the caption of the figure counted from the first, the first unless said. */
+  const caretInCaption = (view: EditorView, which = 0) =>
     act(() => {
       let at = -1;
+      let seen = 0;
       view.state.doc.descendants((node, pos) => {
-        if (at === -1 && node.type.name === 'figureCaption') at = pos + 1;
+        if (at === -1 && node.type.name === 'figureCaption' && seen++ === which) at = pos + 1;
         return at === -1;
       });
       view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
@@ -3502,5 +3504,138 @@ describe('a figure in the editor (figures 2)', () => {
     fireEvent.error(image);
     expect(image.parentElement).toHaveClass('aw-image-missing');
     expect(image.parentElement).toHaveAttribute('data-missing', 'An image you may not see');
+  });
+
+  // The final review's findings, each reproduced before it was fixed.
+  const figureBlock = (id: string, asset: string, alternative: unknown) => ({
+    type: 'figure',
+    id,
+    asset,
+    imageStyle: 'figure',
+    caption: [{ type: 'text', value: id, marks: [] }],
+    alternative,
+  });
+  const alternativeOf = (view: EditorView, id: string) =>
+    (
+      fromEditor(view.state.doc).content.find((block) => block.id === id) as
+        { alternative: unknown } | undefined
+    )?.alternative;
+
+  it('keeps the dialog open, and says so, when the service cannot be reached', async () => {
+    const { surface } = openWith(content('Unbox the printer.'), {
+      'POST /v1/spaces/s1/asset-uploads': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      await within(dialog).findByText('The image could not be uploaded. Try again.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it("does not carry one figure's own description over to another", async () => {
+    const { surface } = openWith(
+      blocksOf(
+        para('b1', 'Before.'),
+        figureBlock('f1', RED, { kind: 'own', text: 'Alpha text' }),
+        figureBlock('f2', BLUE, { kind: 'inherited' }),
+      ),
+      { ...assetVersion(RED, null), ...assetVersion(BLUE, null) },
+    );
+    const view = await surface();
+    caretInCaption(view, 0);
+    let panel = await screen.findByRole('group', { name: 'Figure' });
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Alpha text');
+    caretInCaption(view, 1);
+    panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    expect(within(panel).getByLabelText('Its own description')).toHaveValue('');
+    expect(alternativeOf(view, 'f2')).toEqual({ kind: 'inherited' });
+  });
+
+  it('keeps nothing an emptied description held, and says the figure keeps what it had', async () => {
+    const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    await userEvent.click(within(panel).getByLabelText('Describe it here'));
+    const field = within(panel).getByLabelText('Its own description');
+    await userEvent.type(field, 'Red');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
+    await userEvent.type(field, '{Backspace}{Backspace}{Backspace}');
+    await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'inherited' }));
+    expect(field).toHaveValue('');
+    expect(within(panel).getByLabelText('Describe it here')).toBeChecked();
+    expect(
+      within(panel).getByText('Until something is typed here, the figure keeps what it had.'),
+    ).toBeInTheDocument();
+  });
+
+  it('offers Figure only where a figure can be placed', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const button = screen.getByRole('button', { name: 'Figure' });
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'));
+    await userEvent.click(button);
+    expect(screen.queryByRole('dialog', { name: 'Figure' })).toBeNull();
+    act(() => selectText(view, 3, 3));
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'false'));
+  });
+
+  it('places nothing once the component can no longer be edited, and says so', async () => {
+    let checked: ((response: Response) => void) | undefined;
+    const { surface } = openWith(content('Unbox the printer.'), {
+      ...uploads(RED),
+      [`GET /v1/asset-uploads/${UPLOAD}`]: () =>
+        new Promise<Response>((resolve) => {
+          checked = resolve;
+        }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () =>
+        json(409, { code: 'iteration_stale', message: 'stale', traceId: 't', latest: 7 }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.click(within(dialog).getByLabelText('It is decorative'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    await waitFor(() => expect(checked).toBeDefined());
+    act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
+    await screen.findByRole('button', { name: 'Continue' });
+    act(() => checked!(json(200, uploadView('ready', { assetVersion: RED }))));
+    expect(
+      await within(dialog).findByText(
+        'This component can no longer be edited here, so the image was not placed.',
+      ),
+    ).toBeInTheDocument();
+    expect(figureOf(view)).toBeUndefined();
+  });
+
+  it('will not upload a description in a language that is not a tag, and says so', async () => {
+    const { asked, surface } = openWith(content('Unbox the printer.'), uploads(RED));
+    const view = await surface();
+    selectText(view, 19, 19);
+    await userEvent.click(screen.getByRole('button', { name: 'Figure' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Figure' });
+    await chooseImage(dialog);
+    await userEvent.type(within(dialog).getByLabelText('Description'), 'Two shapes');
+    const language = within(dialog).getByLabelText('Language');
+    await userEvent.clear(language);
+    await userEvent.type(language, 'en GB');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Upload' }));
+    expect(
+      within(dialog).getByText('Give the language as a tag, such as en-GB.'),
+    ).toBeInTheDocument();
+    expect(asked.some((each) => each.route.includes('asset-uploads'))).toBe(false);
   });
 });

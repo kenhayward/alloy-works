@@ -17,6 +17,7 @@ const paragraphNode = editorSchema.nodes.paragraph;
 const preformattedNode = editorSchema.nodes.preformatted;
 const blockquoteNode = editorSchema.nodes.blockquote;
 const attributionNode = editorSchema.nodes.attribution;
+const figureCaptionNode = editorSchema.nodes.figureCaption;
 
 /** What the stored model's `format` may say, and nothing else (CNT-153, and the start rule below). */
 const NUMBERINGS = new Set(['decimal', 'alphabetic', 'roman']);
@@ -792,12 +793,14 @@ function innermostQuotation(state: EditorState): { node: Node; pos: number } | n
 
 /**
  * `Enter` in an attribution leaves the quotation for a paragraph after it: an attribution is one
- * line, and there is nothing it could split into.
+ * line, and there is nothing it could split into. A figure's caption is left the same way, which is
+ * also the way past a figure that is the component's last block (figures 2, final review).
  */
 function exitAttribution(newIdentifier: () => string): Command {
   return (state, dispatch) => {
     const { $from } = state.selection;
-    if ($from.parent.type !== attributionNode) return false;
+    const parent = $from.parent.type;
+    if (parent !== attributionNode && parent !== figureCaptionNode) return false;
     if (dispatch) {
       const after = $from.after(-1);
       const tr = state.tr.insert(after, paragraphNode.create({ id: newIdentifier() }));

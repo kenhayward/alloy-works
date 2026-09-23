@@ -46,9 +46,9 @@ const PATHS: Record<string, readonly string[]> = {
   Folder: ['M2.4 4.2h4l1.2 1.6h6V12H2.4z'],
   Document: ['M3.4 2.6h5.4l3 3v7.8H3.4z', 'M8.6 2.6v3.2h3'],
   Move: ['M8 3v10M5.2 10.2 8 13l2.8-2.8'],
-  // A clipboard holding Markdown's own mark, an M and a downward arrow.
   // A picture in a frame: a hill and the sun, as every image button draws one.
   Figure: ['M2.5 3h11v10h-11z', 'M2.5 11.5 6 8l3 3 2-2 2.5 2.5', 'M10.5 5.8h.01'],
+  // A clipboard holding Markdown's own mark, an M and a downward arrow.
   'Paste as Markdown': [
     'M5.4 3H3.2v10.8h9.6V3h-2.2M5.8 1.8h4.4v2.4H5.8z',
     'M4.8 11.4V7.2l1.4 1.8 1.4-1.8v4.2M10.4 7.2v4.2M9 10l1.4 1.4 1.4-1.4',

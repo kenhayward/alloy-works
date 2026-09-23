@@ -467,7 +467,7 @@ F-O): assets, the figure in the editor, figures published, then inline images.
 | #   | Plan                                                                          | Builds                                                                                                                                                                                                                         | Status          |
 | --- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
 | 1   | [Assets](2026-09-23-figures-01-assets.md)                                     | An image uploaded into a space through the API, checked by its header in the service and decoded whole by sharp in a worker job, stored by its hash and read by who may read the space; AST-051 from #206, superseding AST-003 | Built (PR #207) |
-| 2   | [The figure in the editor](2026-09-23-figures-02-the-figure-in-the-editor.md) | The figure and its caption as nodes, opened for editing; a dialog that uploads an image with its description or as decorative; a panel for the three states of its alternative text, replacing its image and deleting it       | Built (PR #208) |
+| 2   | [The figure in the editor](2026-09-23-figures-02-the-figure-in-the-editor.md) | The figure and its caption as nodes, opened for editing; a dialog that uploads an image with its description or as decorative; a panel for the three states of its alternative text, replacing its image and deleting it       | Built (PR #209) |
 
 ## Publishing
 

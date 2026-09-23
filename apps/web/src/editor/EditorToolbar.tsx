@@ -55,6 +55,8 @@ export interface EditorToolbarProps {
    * has no shortcut.
    */
   readonly onInsertFigure?: () => void;
+  /** Whether a figure could be placed where the cursor is; **Figure** is unavailable where not. */
+  readonly figurePlaceable?: boolean;
   /**
    * The toolbar's own element. It is one of the three regions `F6` moves between (CNT-077), and the
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
@@ -145,6 +147,7 @@ export function EditorToolbar({
   onRefused,
   onPasteMarkdown,
   onInsertFigure,
+  figurePlaceable = true,
   ref,
 }: EditorToolbarProps) {
   const [tabStop, setTabStop] = useState(0);
@@ -277,12 +280,12 @@ export function EditorToolbar({
           ref={(element) => {
             buttons.current[figureAt] = element;
           }}
-          aria-disabled={!enabled || view === null}
+          aria-disabled={!enabled || view === null || !figurePlaceable}
           tabIndex={tabStop === figureAt ? 0 : -1}
           title="Figure"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
-            if (enabled && view !== null) onInsertFigure();
+            if (enabled && view !== null && figurePlaceable) onInsertFigure();
           }}
         >
           <Icon name="Figure" />

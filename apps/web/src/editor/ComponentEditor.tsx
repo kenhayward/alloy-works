@@ -776,6 +776,10 @@ export function ComponentEditor({
   const table = surface === null ? null : tableAt(surface.state);
   const figure = surface === null ? null : figureAt(surface.state);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  // Asked of the command itself, without dispatching, so **Figure** is offered exactly where a figure
+  // can go - never in a caption, a cell or preformatted text, where an upload would place nothing.
+  const mayPlaceFigure =
+    surface !== null && insertFigure('', { kind: 'decorative' }, () => '')(surface.state);
 
   /**
    * **Paste as Markdown**: the clipboard's plain text read as Markdown and placed as a paste is,
@@ -930,6 +934,7 @@ export function ComponentEditor({
             <EditorToolbar
               onPasteMarkdown={() => void pasteMarkdown()}
               onInsertFigure={() => setFigureDialog('Figure')}
+              figurePlaceable={mayPlaceFigure}
               ref={toolbarRegion}
               view={surface}
               enabled={mayFormat}
@@ -989,6 +994,8 @@ export function ComponentEditor({
                 and what can be done to its image. */}
             {surface !== null && figure !== null && (
               <FigurePanel
+                // One panel per figure, so what was typed for one is never offered to the next.
+                key={figure.id ?? figure.pos}
                 ref={figureRegion}
                 view={surface}
                 figure={figure}
@@ -1040,18 +1047,26 @@ export function ComponentEditor({
               uploadImage(client, { space: shown.space.id, bytes, alternative })
             }
             onDone={({ assetVersion, alternative }) => {
-              const dispatch = surface.dispatch.bind(surface);
-              if (figureDialog === 'Figure') {
-                insertFigure(
-                  assetVersion,
-                  alternative,
-                  newBlockIdentifier,
-                )(surface.state, dispatch);
-              } else {
-                replaceFigureImage(assetVersion, alternative)(surface.state, dispatch);
+              // The phase as it is now, from the session, not as this render saw it: the lock can
+              // be lost while the image is checked, and a command dispatches whatever the surface's
+              // own `editable` says (figures 2, final review).
+              const now = controls.current?.view().phase;
+              if (!shown.mayEdit || now === undefined || !isEditablePhase(now)) {
+                return 'This component can no longer be edited here, so the image was not placed.';
               }
+              const dispatch = surface.dispatch.bind(surface);
+              const placed =
+                figureDialog === 'Figure'
+                  ? insertFigure(
+                      assetVersion,
+                      alternative,
+                      newBlockIdentifier,
+                    )(surface.state, dispatch)
+                  : replaceFigureImage(assetVersion, alternative)(surface.state, dispatch);
+              if (!placed) return 'The image could not be placed where the cursor is.';
               setFigureDialog(null);
               surface.focus();
+              return null;
             }}
             onCancel={() => {
               setFigureDialog(null);

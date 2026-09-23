@@ -376,8 +376,8 @@ today and still will after them.
 dialog and the same panel, and come in the last of the four slices (publishing.md's F-O).
 
 **Built by [figures 2](../plans/2026-09-23-figures-02-the-figure-in-the-editor.md)**, all but inline
-images, and publishing still refuses a figure by name until figures 3. Building it changed five
-things here:
+images, and publishing still refuses a figure by name until figures 3. Building it, and its final
+review, changed these things here:
 
 - **The height rule is the stylesheet's**, no taller than 60 per cent of the viewport, not a function
   in `packages/domain` shared with the publisher: the publisher's rule is figures 3's, and the
@@ -390,10 +390,22 @@ things here:
   redraw the figure when its image or alternative text changes, which a listener could not.
 - **A figure's own text is stored as typed**, trailing spaces and all: the panel sets it on every
   keystroke, so trimming it would take the space an author has just typed between two words. Text of
-  spaces alone is still not stored.
+  spaces alone is still not stored: **an emptied field gives the figure back what it held** before
+  its own text was begun, and says so, rather than keeping the last letter left in it.
 - **A figure is placed from a paragraph only, never in a table's cell**, after it, or in its place
   where it is empty. A cell holds paragraphs and lists alone (tables 1, decision T-D); an image there
-  is an inline image, figures 4's.
+  is an inline image, figures 4's. **Figure** is unavailable wherever it could not be placed, and a
+  figure whose image arrives after the component has stopped being editable - the lock lost while it
+  was checked - is not placed, and the dialog says so.
+- **`Enter` in a caption leaves the figure** for a paragraph after it, as it leaves an attribution:
+  a caption is one line, and it is the keyboard's way past a figure that is the component's last
+  block.
+- **The dialog checks the description's language** by the rule a component's own is held to before
+  anything is sent, and says an upload refused because the author may not add to the space in words
+  of its own.
+- **Not changed:** a selection from a paragraph into a caption, deleted, takes the figure with it and
+  joins what is left of the caption to the paragraph. It is ProseMirror's own deletion across an
+  isolating node, `Ctrl+Z` gives it back, and a rule of its own waits for evidence it is met.
 
 ## Theme and rendering
 

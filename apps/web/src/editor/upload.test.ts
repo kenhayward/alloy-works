@@ -101,6 +101,27 @@ describe('uploading an image for a figure (figures 2)', () => {
     });
   });
 
+  it('says so in words when the service cannot be reached, or will not let the author add an image', async () => {
+    const unreachable = createApiClient({
+      baseUrl: 'http://dev.acme.test',
+      fetch: (async () => {
+        throw new TypeError('Failed to fetch');
+      }) as unknown as typeof fetch,
+    });
+    expect(
+      await uploadImage(unreachable, { space: SPACE, bytes, alternative: null }, noWait),
+    ).toEqual({ ok: false, sentence: 'The image could not be uploaded. Try again.' });
+
+    const forbidden = service({
+      [`POST /v1/spaces/${SPACE}/asset-uploads`]: [
+        () => json(403, { code: 'forbidden', message: 'x', traceId: 't' }),
+      ],
+    });
+    expect(
+      await uploadImage(forbidden.client, { space: SPACE, bytes, alternative: null }, noWait),
+    ).toEqual({ ok: false, sentence: 'You may not add an image to this space.' });
+  });
+
   it('gives up following an upload that never finishes, and says so rather than waiting for ever', async () => {
     const stuck = service({
       [`POST /v1/spaces/${SPACE}/asset-uploads`]: [() => json(200, view('awaiting'))],

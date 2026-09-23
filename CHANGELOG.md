@@ -3,7 +3,7 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
-## 0.57.0 - 2026-09-23 (PR #208)
+## 0.57.0 - 2026-09-23 (PR #209)
 
 ### Added
 
@@ -15,6 +15,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   image you cannot see is marked in its place. A component holding a figure now opens for editing.
   Publishing a document with a figure in it is still refused, and an image cannot yet be pasted or
   placed in a line of text.
+
+### Fixed
+
+- A table pasted into the middle of a paragraph no longer takes the rest of the paragraph into its
+  last cell: the text after the cursor stays in a paragraph after the table (#208).
 
 ## 0.56.0 - 2026-09-23 (PR #207)
 

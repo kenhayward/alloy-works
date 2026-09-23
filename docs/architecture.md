@@ -16,7 +16,7 @@
 > outline, its marked paragraphs, lists, quotations, preformatted text and tables, with a list of
 > tables after the contents, keeps it and lists it - and [assets](#assets), which takes an image
 > uploaded into a space through the API, proves it is only a PNG or a JPEG, and hands it back to who may
-> read the space, and which the editor places as a figure. Nothing yet publishes or pastes a figure,
+> read the space, and which the editor places as a figure. Nothing yet publishes a figure or pastes an image from outside the product,
 > edits, pastes or publishes a footnote or an equation, makes a component type or resolves a cross-reference; an administrator
 > invites people by address and grants and removes roles from a component's access page. The single `Component` in `packages/domain` is still the scaffolding's, and nothing
 > renders it any more.
@@ -1232,7 +1232,7 @@ have left such a request unable to finish at all.
 ## Assets
 
 An image uploaded into a space and proved to be only an image, built by
-[figures 1](plans/2026-09-23-figures-01-assets.md) from [assets.md](design/assets.md). Nothing in the
+[figures 1](plans/2026-09-23-figures-01-assets.md) from [assets.md](design/assets.md). The
 editor places it as a figure through these routes (see [the editor](#the-editor-and-its-session)).
 
 | Where                               | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

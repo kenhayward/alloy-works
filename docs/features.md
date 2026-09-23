@@ -242,8 +242,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `2.1` - and a move renumbers everything at once. Untick **Numbered** to leave a node and everything
   under it out of the section numbering. Figures, tables, equations and footnotes are numbered too -
   figures and tables per chapter, equations and footnotes straight through, and each appendix on its
-  own - and the service answers every number with where it came from - but the editor does not yet
-  write a figure, so you only see those through the API. A number that depends on a component you may
+  own - and the service answers every number with where it came from. A number that depends on a component you may
   not read is left out rather than guessed. **The numbers are the ones the document will publish
   with**: the panel numbers with the very scheme its layout carries, not with a scheme of the page's
   own, so what you see in the outline is what comes out of the PDF.

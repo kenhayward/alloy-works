@@ -40,7 +40,6 @@ const openedDoc = (stored: ContentDocument): Node => {
 
 const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr' };
 
-/** A block this editor has no node for, wherever it is put: a figure, until the assets design. */
 /** A block equation: the one block this editor still has no node for, since figures 2 gave figures one. */
 const equation = (id: string): BlockNode => ({
   type: 'equation',
