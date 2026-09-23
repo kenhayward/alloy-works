@@ -37,6 +37,7 @@ export const PUBLICATION_TEMPLATE = {
   6: { name: 'publication', version: 6, file: at(6) },
   7: { name: 'publication', version: 7, file: at(7) },
   8: { name: 'publication', version: 8, file: at(8) },
+  9: { name: 'publication', version: 9, file: at(9) },
 } as const;
 
 /**
@@ -52,5 +53,5 @@ export const PUBLICATION_TEMPLATE = {
  */
 export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_1]: 1,
-  [PUBLISHING_SCHEMA]: 8,
+  [PUBLISHING_SCHEMA]: 9,
 } as const satisfies Record<PublishedSchema, keyof typeof PUBLICATION_TEMPLATE>;
