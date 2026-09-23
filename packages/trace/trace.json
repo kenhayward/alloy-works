@@ -14234,6 +14234,43 @@
       ]
     },
     {
+      "document": "assets.md",
+      "owns": [
+        {
+          "id": "AST-001",
+          "howItIsMet": "An upload is refused, `asset_format_not_permitted`, unless its bytes begin as a PNG or a JPEG does; the service refuses it before anything is stored"
+        },
+        {
+          "id": "AST-002",
+          "howItIsMet": "The format is read from the file's first bytes - the PNG signature, the JPEG start-of-image marker - and the name and the claimed content type are never read"
+        },
+        {
+          "id": "AST-038",
+          "howItIsMet": "The one class T1 admits is **raster images**, declared as `ADMITTED_FORMATS` in `packages/domain`: PNG and JPEG. Any other file is refused rather than stored"
+        },
+        {
+          "id": "AST-040",
+          "howItIsMet": "The job decodes the whole file under a pixel limit, so a file whose header promises more than it holds, or whose decoded size exceeds the limit, is refused; the header walk refuses dimensions over the limit before the decoder runs. Neither admitted format nests, so there is no depth to bound"
+        },
+        {
+          "id": "AST-041",
+          "howItIsMet": "The store keeps the original under the SHA-256 of its bytes (`put` already chooses no other key), and that hash is what the asset version records and what a figure's bytes are fetched by"
+        },
+        {
+          "id": "AST-005",
+          "howItIsMet": "The asset version records format, dimensions as displayed, the EXIF orientation that turned them, colour space, bit depth, alpha, and the resolution the file declares, or none. Page count and duration do not apply to either admitted format"
+        },
+        {
+          "id": "AST-006",
+          "howItIsMet": "The job refuses, `asset_unreadable`, a file whose dimensions or colour space cannot be read, whose two readings disagree, or that does not decode whole"
+        },
+        {
+          "id": "AST-026",
+          "howItIsMet": "An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's"
+        }
+      ]
+    },
+    {
       "document": "component-editor.md",
       "owns": [
         {
@@ -14938,6 +14975,10 @@
         {
           "id": "TAB-040",
           "howItIsMet": "Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them"
+        },
+        {
+          "id": "AST-014",
+          "howItIsMet": "`assemble` resolves a figure's alternative text before the engine runs: `inherited` reads the asset version's default, and a figure whose asset version has none, and which neither carries its own nor is decorative, fails `alternative_missing`, naming it - measured, the engine would refuse the document without saying which figure"
         },
         {
           "id": "TAB-049",

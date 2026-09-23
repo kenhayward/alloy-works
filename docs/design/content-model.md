@@ -133,21 +133,21 @@ answers that requirement in full. Several of CNT's rows are two requirements in 
 the model answers one clause and the outline or the publisher answers the other. Claiming them would
 say this design holds ground it does not.
 
-| Left unclaimed            | Why                                                                                                                                           |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                             |
-| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's         |
-| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                |
-| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                             |
-| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                      |
-| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                    |
-| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case          |
-| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                  |
-| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                      |
-| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                     |
-| CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content     |
-| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                       |
-| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to an assets design rather than to a figure's reference |
+| Left unclaimed            | Why                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-041, CNT-047          | The model carries no number and no sequence; **STR** owns the numbering the other clause requires                                                   |
+| CNT-045, CNT-048, CNT-049 | One stored representation is here; rendering it on screen, in PDF and in Word, and failing a publish that cannot, are the publisher's               |
+| CNT-042, CNT-054          | The model produces the named failure; making a publish fail on it is **PUB**'s                                                                      |
+| CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                   |
+| CNT-035, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's                                                                            |
+| CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                          |
+| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                |
+| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                        |
+| CNT-122                   | Resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                            |
+| CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                           |
+| CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content           |
+| CNT-046                   | An equation in a heading needs a heading to be inline content, which is **STR**'s to design - see below                                             |
+| AST-005, AST-006          | Asset ingest, and refusing an asset whose intrinsic properties cannot be read, belong to [assets.md](assets.md) rather than to a figure's reference |
 
 **A definition list reaches a reader as a list, and that is a named limit rather than a claim.** The
 stored shape is right: a definition list's item carries the term it defines as inline content, so the

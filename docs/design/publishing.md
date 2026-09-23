@@ -114,6 +114,7 @@ digests that made it. A failed publish produces no publication at all. Every T1 
 | **CNT-084** | As PUB-034: each run's language reaches the published document, and each writer emits it                                                                                                                                                                                                                                                                                              |
 | **TAB-039** | A table's caption is set by the `figure` it stands in, which Typst tags as a `Caption` inside the `Table`, first, above it or below - measured; Word names the table by its caption in `w:tblCaption`                                                                                                                                                                                 |
 | **TAB-040** | Header rows are one `table.header(repeat: true)`: they repeat on every page the table reaches and stay one header row in the structure tree - measured; Word's `w:tblHeader` both repeats and marks them                                                                                                                                                                              |
+| **AST-014** | `assemble` resolves a figure's alternative text before the engine runs: `inherited` reads the asset version's default, and a figure whose asset version has none, and which neither carries its own nor is decorative, fails `alternative_missing`, naming it - measured, the engine would refuse the document without saying which figure                                            |
 | **TAB-049** | Header rows are `TH`s of a column in the PDF and `w:tblHeader` rows in Word; a header column's cells are `pdf.header-cell(scope: "row")` `TH`s in the PDF - measured - and in Word, which has no header column, the publication's report names each table whose header column it could not mark (word-output.md)                                                                      |
 
 **PUB-090 is not claimed. Measured, in the worker's suite (the first publishing plan's task 1):** the
@@ -455,6 +456,90 @@ Each is taken as recommended in the text; a different answer changes the plan, n
 | T-G | **TAB-031 is superseded** by a requirement that header rows are associated in every output, and header columns in every output that can express them - the PDF - with Word's publication report saying where a header column could not be marked                                                                                       | Yes: the alternative is a requirement no Word output can meet            |
 | T-H | **The list of tables arrives with tables**, bringing the layout's `lists` forward from figures                                                                                                                                                                                                                                         | Yes                                                                      |
 | T-I | **Two pull requests**: the model, the editor and paste first; then publishing, the list of tables and the regression case. The first can be used and published only as far as today - a table in a component refuses the publish by name until the second lands - which is the order lists would have taken had they not fitted in one | Yes. Or one, as lists were, at the cost of a pull request twice the size |
+
+## Figures
+
+Designed on 2026-09-23 against the pinned engine, as tables were, and alongside
+[assets.md](assets.md), which says how an image arrives and is proved to be one. A figure is the
+content model's `figure`: an asset version, an image style, an inline caption and its alternative text
+in three states - its own, inherited from the asset, or decorative.
+
+### What the pinned Typst does with an image, measured
+
+Throwaway files compiled by the pinned Typst 0.15.1 with the worker's flags - PDF/UA-1 and
+`--features a11y-extras` - checked by the pinned veraPDF and read back with pdf.js and from the file's
+own structure elements.
+
+| Case                                                                                        | Result                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `figure(image(.., alt: ..), caption: ..)`                                                   | A `Div` holding the `Caption` and a `Figure` carrying `/Alt`. veraPDF passes, 0 rules failed                                                                                            |
+| The same with **no** `alt`                                                                  | **Refused by Typst**: `PDF/UA-1 error: missing alt text`. The engine will not publish an image without one, so `assemble` must refuse first, naming the figure                          |
+| A bare `image(..)` with no `alt`, outside a figure                                          | Refused the same way                                                                                                                                                                    |
+| `pdf.artifact(image(..))`                                                                   | No `Figure` and no alternative text; veraPDF passes. This is what decorative is                                                                                                         |
+| `figure(kind: image, numbering: none, pdf.artifact(image(..)), caption: ..)`                | A `Div` with its `Caption` and no `Figure`; listed by `outline`, veraPDF passes. **A decorative image can keep its caption and its number**                                             |
+| `figure(kind: image, numbering: none, ..)` with the label written into the caption          | The caption reads "Figure 1.1 Shapes" and nothing else, and `outline(target: figure.where(kind: image))` lists it as `TOC` and `TOCI`. Numbering on, Typst prefixes its own "Figure 1:" |
+| `text(lang: "de", figure(..))`, or the `text(lang:)` around the **image alone**             | The `Figure` carries `/Lang (de)`. Around the image alone, the caption keeps the component's language - which is what AST-039 needs when inherited text is in another                   |
+| An image inline in a paragraph, `box(image(.., height: 1em, alt: ..))`, and in a table cell | A `Figure` with its `/Alt` inside the paragraph or the `TD`. veraPDF passes (CNT-086, CNT-087)                                                                                          |
+| A 500 by 2000 image at the full measure                                                     | **Overflows its page with nothing said**: the document took three pages and veraPDF passed it. Nothing in the engine keeps an image on its page                                         |
+| A 6000 by 4000 JPEG                                                                         | 83 ms, embedded as it came                                                                                                                                                              |
+
+Two of those change what the publisher must do before Typst runs, and one is a gift:
+
+- **`assemble` sizes every image.** The engine lets a tall image run off its page and says nothing,
+  which PUB-068 forbids for anything. So the size is worked out from the asset's recorded dimensions
+  and the layout's measure before the template sees it, and the template is given points, never a
+  percentage. This is what AST-005's dimensions are for.
+- **`assemble` refuses a figure with no alternative text** (`alternative_missing`), since the engine
+  would refuse the whole document with no word of which figure - `TypstRefused` carries no cause.
+- **A decorative figure keeps its caption and its number.** Measured, so it is not a choice forced by
+  the engine: decision F-M.
+
+### How a figure is published
+
+The published block for a figure carries **`number`'s label** as text, its **caption** as runs, its
+**alternative text** resolved to text and a language or to decorative, its image's **path in the
+compile root** - `assets/<hash>.<png|jpg>`, named by the extension its bytes declared at ingest,
+because the engine trusts an extension when there is one (measured in [assets.md](assets.md)) - and
+its **printed width and height in points**. It is `publishing/7`, set by template `publication/7`:
+
+- the figure is a `figure` of kind `image`, numbering off, **the caption below it** with the label set
+  as text - a figure's caption conventionally stands below, as a table's stands above;
+- the image is `image(path, width:, height:, alt:)` inside `text(lang:)` where its alternative text
+  is in another language than the component's; a decorative image is `pdf.artifact(image(..))`;
+- an image inline in a run is `box(image(..))` at the height the inline style gives it.
+
+**Alternative text is resolved by `assemble`** (PUB-033): `own` is the figure's text in the
+component's language; `inherited` is the asset version's default in the language it declares, and an
+asset version with no default is `alternative_missing`; `decorative` is decorative. Nothing else
+reaches the template, so the template never decides.
+
+**Until themes are built, one image style for each placement**, in the manner of the table's (ruling
+R4 of tables 2): `figure` for a figure and `inline` for an inline image. Any other name is
+`style_missing`.
+
+| Style    | Printed size, worked out by `assemble`                                                                                                                                                                                  |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `figure` | The full measure wide, the height from the displayed proportions; where that height is over **60 per cent of the text block's height**, that height instead, and the width from it (STY-017's rule, with fixed numbers) |
+| `inline` | **The line's height**, 1.2 ems of the body size, and the width from the proportions; wider than the measure is refused, `image_too_wide`, as a preformatted line is                                                     |
+
+These are STY-015 to STY-017's behaviour with fixed numbers. CNT-122 - resolved by STY's rules, which
+the editor shares - is claimed by themes.md's resolver when themes are built, and not here.
+
+**The list of figures comes with figures**, on layout schema 2's `lists` member, which tables built.
+The default layout's version 0.3 lists **Figures before Tables**, as convention has them, inserted by a
+migration with the same guard as 0019's: only where the environment's layout is still 0019's own 0.2.
+
+### Decisions for Ken
+
+| #   | Decision                                                                                                                                                                                                                              | Recommended                                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| F-J | **`assemble` sizes every image in points** from the recorded dimensions and the layout, because the engine lets an image overflow its page in silence                                                                                 | Yes                                                                                                                                 |
+| F-K | **Two fixed image styles until themes**: `figure` at the full measure capped at 60 per cent of the text block's height, `inline` at the line's height                                                                                 | Yes, the numbers are the ones to argue with                                                                                         |
+| F-L | **A figure's caption stands below it**, a table's above                                                                                                                                                                               | Yes                                                                                                                                 |
+| F-M | **A decorative figure keeps its caption and its number** and stays in the list of figures; only the image becomes an artifact                                                                                                         | Yes. Or refuse a caption on a decorative figure, which would renumber every figure after it the moment an author changes their mind |
+| F-N | **The default layout's 0.3 lists Figures before Tables**                                                                                                                                                                              | Yes                                                                                                                                 |
+| F-P | **The editor asks for a description or "decorative" before it uploads** ([component-editor.md](component-editor.md#figures)): a description becomes the asset's default, which the figure inherits                                    | Yes. The model cannot say "not yet described", and the moment of choosing the picture is when the author knows what it shows        |
+| F-O | **Four pull requests**: assets; the figure in the editor; figures published with the list of figures; then inline images in a paragraph and a table cell. Each lands usable, and a figure refuses the publish by name until the third | Yes. Inline images last, because they need all three before them and a figure needs none of theirs                                  |
 
 ## The layout
 
